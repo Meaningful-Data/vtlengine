@@ -35,7 +35,7 @@ from vtlengine.AST import (
     VarID,
     Windowing,
 )
-from vtlengine.AST.ASTConstructorModules import extract_token_info
+from vtlengine.AST.ASTConstructorModules import extract_token_info, script_location
 from vtlengine.AST.ASTConstructorModules.ExprComponents import ExprComp
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
 from vtlengine.AST.ASTDataExchange import de_ruleset_elements
@@ -174,7 +174,7 @@ class Expr:
 
         else:
             # AST_ASTCONSTRUCTOR.3
-            raise SemanticError("1-3-13", construct="Expr")
+            raise SemanticError("1-3-14", location=f"Expr.visitExpr at {script_location(ctx)}")
 
     def bin_op_creator(self, ctx: Any) -> BinOp:
         ctx_list = ctx.children
@@ -208,7 +208,9 @@ class Expr:
         elif not ctx_list[2].is_terminal and ctx_list[2].rule_index == RC.VALUE_DOMAIN_ID[0]:
             right_node = Terminals().visitValueDomainID(ctx_list[2])
         else:
-            raise SemanticError("1-3-13", construct="InNotInExpr")
+            raise SemanticError(
+                "1-3-14", location=f"Expr.visitInNotInExpr at {script_location(ctx)}"
+            )
         bin_op_node = BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
         return bin_op_node
@@ -323,7 +325,9 @@ class Expr:
             return self.visitAnalyticFunctions(c)
 
         else:
-            raise SemanticError("1-3-13", construct="FunctionsExpression")
+            raise SemanticError(
+                "1-3-14", location=f"Expr.visitFunctionsExpression at {script_location(ctx)}"
+            )
 
     """
                         -----------------------------------
@@ -444,7 +448,9 @@ class Expr:
 
         for c in ctx_list:
             if c.is_terminal:
-                raise SemanticError("1-3-13", construct="JoinBody")
+                raise SemanticError(
+                    "1-3-14", location=f"Expr.visitJoinBody at {script_location(ctx)}"
+                )
             elif c.rule_index == RC.FILTER_CLAUSE[0]:
                 body_nodes.append(self.visitFilterClause(c))
             elif c.rule_index == RC.CALC_CLAUSE[0]:
@@ -458,7 +464,9 @@ class Expr:
             elif c.rule_index == RC.RENAME_CLAUSE[0]:
                 body_nodes.append(self.visitRenameClause(c))
             else:
-                raise SemanticError("1-3-13", construct="JoinBody")
+                raise SemanticError(
+                    "1-3-14", location=f"Expr.visitJoinBody at {script_location(ctx)}"
+                )
 
         return body_nodes
 
@@ -487,7 +495,9 @@ class Expr:
         elif ctx.ctx_id == RC.CAST_EXPR_DATASET:
             return self.visitCastExprDataset(ctx)
         else:
-            raise SemanticError("1-3-13", construct="GenericFunctions")
+            raise SemanticError(
+                "1-3-14", location=f"Expr.visitGenericFunctions at {script_location(ctx)}"
+            )
 
     def visitCallDataset(self, ctx: Any) -> UDOCall:
         """
@@ -603,7 +613,9 @@ class Expr:
 
         else:
             # AST_ASTCONSTRUCTOR.14
-            raise SemanticError("1-3-13", construct="CastExprDataset")
+            raise SemanticError(
+                "1-3-14", location=f"Expr.visitCastExprDataset at {script_location(ctx)}"
+            )
 
     def visitParameter(self, ctx: Any) -> Any:
         ctx_list = ctx.children
@@ -614,7 +626,7 @@ class Expr:
         elif c.is_terminal:
             return ID(type_="OPTIONAL", value=c.text, **extract_token_info(c))
         else:
-            raise SemanticError("1-3-13", construct="Parameter")
+            raise SemanticError("1-3-14", location=f"Expr.visitParameter at {script_location(ctx)}")
 
     """
                         -----------------------------------
@@ -634,7 +646,9 @@ class Expr:
         elif ctx.ctx_id == RC.STRING_DISTANCE_ATOM:
             return self.visitStringDistanceAtom(ctx)
         else:
-            raise SemanticError("1-3-13", construct="StringFunctions")
+            raise SemanticError(
+                "1-3-14", location=f"Expr.visitStringFunctions at {script_location(ctx)}"
+            )
 
     def visitUnaryStringFunction(self, ctx: Any) -> UnaryOp:
         ctx_list = ctx.children
@@ -776,7 +790,9 @@ class Expr:
         elif ctx.ctx_id == RC.BINARY_NUMERIC:
             return self.visitBinaryNumeric(ctx)
         else:
-            raise SemanticError("1-3-13", construct="NumericFunctions")
+            raise SemanticError(
+                "1-3-14", location=f"Expr.visitNumericFunctions at {script_location(ctx)}"
+            )
 
     def visitUnaryNumeric(self, ctx: Any) -> UnaryOp:
         ctx_list = ctx.children
@@ -842,7 +858,9 @@ class Expr:
         elif ctx.ctx_id == RC.EXIST_IN_ATOM:
             return self.visitExistInAtom(ctx)
         else:
-            raise SemanticError("1-3-13", construct="ComparisonFunctions")
+            raise SemanticError(
+                "1-3-14", location=f"Expr.visitComparisonFunctions at {script_location(ctx)}"
+            )
 
     def visitBetweenAtom(self, ctx: Any) -> MulOp:
         ctx_list = ctx.children
@@ -928,7 +946,9 @@ class Expr:
         ):
             return self.visitTimeUnaryAtom(ctx)
         else:
-            raise SemanticError("1-3-13", construct="TimeFunctions")
+            raise SemanticError(
+                "1-3-14", location=f"Expr.visitTimeFunctions at {script_location(ctx)}"
+            )
 
     def visitTimeUnaryAtom(self, ctx: Any) -> UnaryOp:
         ctx_list = ctx.children
@@ -943,7 +963,9 @@ class Expr:
 
         if len(operand_node) == 0:
             # AST_ASTCONSTRUCTOR.15
-            raise SemanticError("1-3-13", construct="TimeUnaryAtom")
+            raise SemanticError(
+                "1-3-14", location=f"Expr.visitTimeUnaryAtom at {script_location(ctx)}"
+            )
 
         return UnaryOp(op=op, operand=operand_node[0], **extract_token_info(ctx))
 
@@ -1113,7 +1135,9 @@ class Expr:
         if ctx.ctx_id == RC.NVL_ATOM:
             return self.visitNvlAtom(ctx)
         else:
-            raise SemanticError("1-3-13", construct="ConditionalFunctions")
+            raise SemanticError(
+                "1-3-14", location=f"Expr.visitConditionalFunctions at {script_location(ctx)}"
+            )
 
     def visitNvlAtom(self, ctx: Any) -> BinOp:
         ctx_list = ctx.children
@@ -1143,7 +1167,9 @@ class Expr:
         elif ctx.ctx_id == RC.SET_OR_SYM_DIFF_ATOM:
             return self.visitSetOrSYmDiffAtom(ctx)
         else:
-            raise SemanticError("1-3-13", construct="SetFunctions")
+            raise SemanticError(
+                "1-3-14", location=f"Expr.visitSetFunctions at {script_location(ctx)}"
+            )
 
     def visitUnionAtom(self, ctx: Any) -> MulOp:
         ctx_list = ctx.children
@@ -1430,7 +1456,9 @@ class Expr:
         if ctx.ctx_id == RC.AGGR_DATASET:
             return self.visitAggrDataset(ctx)
         else:
-            raise SemanticError("1-3-13", construct="AggregateFunctions")
+            raise SemanticError(
+                "1-3-14", location=f"Expr.visitAggregateFunctions at {script_location(ctx)}"
+            )
 
     def visitAggrDataset(self, ctx: Any) -> Aggregation:
         ctx_list = ctx.children
@@ -1483,7 +1511,9 @@ class Expr:
         elif ctx.ctx_id == RC.RATIO_TO_REPORT_AN:
             return self.visitRatioToReportAn(ctx)
         else:
-            raise SemanticError("1-3-13", construct="AnalyticFunctions")
+            raise SemanticError(
+                "1-3-14", location=f"Expr.visitAnalyticFunctions at {script_location(ctx)}"
+            )
 
     def visitAnSimpleFunction(self, ctx: Any) -> Analytic:
         ctx_list = ctx.children
@@ -1507,7 +1537,9 @@ class Expr:
                 window = Terminals().visitWindowingClause(c)
                 continue
             else:
-                raise SemanticError("1-3-13", construct="AnSimpleFunction")
+                raise SemanticError(
+                    "1-3-14", location=f"Expr.visitAnSimpleFunction at {script_location(ctx)}"
+                )
 
         if window is None and (partition_by is not None or order_by is not None):
             window = Windowing(
@@ -1803,7 +1835,9 @@ class Expr:
         elif ctx.ctx_id == RC.GROUP_ALL:
             return self.visitGroupAll(ctx)
         else:
-            raise SemanticError("1-3-13", construct="GroupingClause")
+            raise SemanticError(
+                "1-3-14", location=f"Expr.visitGroupingClause at {script_location(ctx)}"
+            )
 
     def visitHavingClause(self, ctx: Any) -> Any:
         """
@@ -1829,7 +1863,9 @@ class Expr:
         elif expr_component.ctx_id == RC.BOOLEAN_EXPR_COMP:
             param_nodes = ExprComp().visitBooleanExprComp(expr_component)
         else:
-            raise SemanticError("1-3-13", construct="HavingClause")
+            raise SemanticError(
+                "1-3-13", construct=f"having condition {script_location(expr_component)}"
+            )
 
         return ParamOp(
             op=op_node, children=None, params=param_nodes, **extract_token_info(ctx)
@@ -1877,7 +1913,9 @@ class Expr:
         if has_time_agg:
             period_to, period_to_ref, conf = self._extract_time_agg_tokens(ctx_list)
             if period_to is None and period_to_ref is None:
-                raise SemanticError("1-3-13", construct="GroupByOrExcept")
+                raise SemanticError(
+                    "1-3-14", location=f"Expr.visitGroupByOrExcept at {script_location(ctx)}"
+                )
             children_nodes.append(
                 TimeAggregation(
                     op="time_agg",

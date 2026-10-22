@@ -283,11 +283,11 @@ class Rename(Operator):
 class Pivot(Operator):
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        raise SemanticError("1-3-13", construct="pivot")
+        raise SemanticError("1-3-13", construct="pivot clause")
 
     @classmethod
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        raise SemanticError("1-3-13", construct="pivot")
+        raise SemanticError("1-3-13", construct="pivot clause")
 
 
 class Unpivot(Operator):

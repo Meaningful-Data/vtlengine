@@ -375,7 +375,7 @@ class OrderBy(AST):
 
     def __post_init__(self):
         if self.order not in ["asc", "desc"]:
-            raise SemanticError("1-3-13", construct=f"order {self.order}")
+            raise SemanticError("1-3-14", location=f"OrderBy (order {self.order})")
 
     __eq__ = AST.ast_equality
 

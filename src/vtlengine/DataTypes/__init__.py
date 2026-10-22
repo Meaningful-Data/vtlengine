@@ -56,7 +56,7 @@ class ScalarType(metaclass=DataTypeSimpleRepr):
 
     def strictly_same_class(self, obj: "ScalarType") -> bool:
         if not isinstance(obj, ScalarType):
-            raise SemanticError("1-3-13", construct="strictly_same_class")
+            raise SemanticError("1-3-14", location="ScalarType.strictly_same_class")
         return self.__class__ == obj.__class__
 
     def __eq__(self, other: Any) -> bool:
@@ -78,11 +78,11 @@ class ScalarType(metaclass=DataTypeSimpleRepr):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> Any:
-        raise SemanticError("1-3-13", construct=f"{cls.__name__}.implicit_cast")
+        raise SemanticError("1-3-14", location=f"{cls.__name__}.implicit_cast")
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
-        raise SemanticError("1-3-13", construct=f"{cls.__name__}.explicit_cast")
+        raise SemanticError("1-3-14", location=f"{cls.__name__}.explicit_cast")
 
     @classmethod
     def is_subtype(cls, obj: Any) -> bool:

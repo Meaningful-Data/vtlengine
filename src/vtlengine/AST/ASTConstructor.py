@@ -27,7 +27,7 @@ from vtlengine.AST import (
     Start,
     ViralPropagationDef,
 )
-from vtlengine.AST.ASTConstructorModules import extract_token_info
+from vtlengine.AST.ASTConstructorModules import extract_token_info, script_location
 from vtlengine.AST.ASTConstructorModules.Expr import Expr
 from vtlengine.AST.ASTConstructorModules.ExprComponents import ExprComp
 from vtlengine.AST.ASTConstructorModules.Terminals import (
@@ -108,7 +108,9 @@ class ASTVisitor:
         elif ctx.ctx_id == RC.DEFINE_EXPRESSION:
             return self.visitDefineExpression(c)
         else:
-            raise SemanticError("1-3-13", construct="Statement")
+            raise SemanticError(
+                "1-3-14", location=f"ASTVisitor.visitStatement at {script_location(ctx)}"
+            )
 
     # varID ASSIGN expr                # temporaryAssignment
     def visitTemporaryAssignment(self, ctx):
@@ -681,7 +683,10 @@ class ASTVisitor:
         expr = [expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == RC.EXPR[0]]
         if len(expr) != 0:
             # AST_ASTCONSTRUCTOR.8
-            raise SemanticError("1-3-13", construct="CodeItemRelationClause")
+            raise SemanticError(
+                "1-3-14",
+                location=f"ASTVisitor.visitCodeItemRelationClause at {script_location(ctx)}",
+            )
 
         right_condition = [
             ExprComp().visitExprComponent(right_condition)

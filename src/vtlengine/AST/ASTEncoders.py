@@ -21,7 +21,10 @@ class ComplexDecoder(json.JSONDecoder):
     def object_hook(dictionary):
         if "class_name" in dictionary:
             if not hasattr(AST, dictionary["class_name"]):
-                raise SemanticError("1-3-13", construct=f"AST class {dictionary['class_name']}")
+                raise SemanticError(
+                    "1-3-14",
+                    location=f"ComplexDecoder.object_hook (AST class {dictionary['class_name']})",
+                )
 
             ast_class = getattr(AST, dictionary["class_name"])
             del dictionary["class_name"]

@@ -24,4 +24,4 @@ class NodeVisitor(object):
     def generic_visit(self, node):
         """ """
         # AST_ASTVISITOR.1
-        raise SemanticError("1-3-13", construct=type(node).__name__)
+        raise SemanticError("1-3-14", location=f"NodeVisitor.generic_visit ({type(node).__name__})")

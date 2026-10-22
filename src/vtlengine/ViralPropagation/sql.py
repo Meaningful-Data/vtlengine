@@ -94,7 +94,7 @@ def vp_pair_sql(rule: ViralPropagationRule, a_ref: str, b_ref: str) -> str:
 def vp_reduce_refs(rule: ViralPropagationRule, refs: List[str]) -> str:
     """Fold vp_pair_sql across an ordered list of column refs (>=1)."""
     if not refs:
-        raise SemanticError("1-3-13", construct="viral propagation without column references")
+        raise SemanticError("1-3-14", location="vp_reduce_refs (no column references)")
     acc = refs[0]
     for ref in refs[1:]:
         acc = vp_pair_sql(rule, acc, ref)

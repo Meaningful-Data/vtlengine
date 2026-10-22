@@ -253,11 +253,11 @@ class Parameterized(Unary):
 
     @classmethod
     def check_param(cls, *args: Any) -> None:
-        raise SemanticError("1-3-13", construct=f"{cls.__name__}.check_param")
+        raise SemanticError("1-3-14", location=f"{cls.__name__}.check_param")
 
     @classmethod
     def check_param_value(cls, *args: Any) -> None:
-        raise SemanticError("1-3-13", construct=f"{cls.__name__}.check_param_value")
+        raise SemanticError("1-3-14", location=f"{cls.__name__}.check_param_value")
 
     @classmethod
     def generate_series_from_param(cls, *args: Any) -> Any:

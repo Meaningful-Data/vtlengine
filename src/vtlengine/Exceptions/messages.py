@@ -1321,8 +1321,14 @@ centralised_messages = {
     },
     "1-3-13": {
         "message": "Unsupported VTL construct: {construct}.",
-        "description": "Raised when the engine meets a construct it does not support or does "
-        "not expect, which points to a missing feature or to an engine bug.",
+        "description": "Raised when the script uses a VTL construct that the engine does not "
+        "support.",
+    },
+    "1-3-14": {
+        "message": "Internal engine error in {location}. Please report it at "
+        "https://github.com/Meaningful-Data/vtlengine/issues.",
+        "description": "Raised when the engine reaches a state that no script should lead to, "
+        "which points to an engine bug.",
     },
     # AST Creation
     "1-3-2-0": {

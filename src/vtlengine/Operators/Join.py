@@ -533,7 +533,7 @@ class Apply(Operator):
         if not isinstance(child, BinOp):
             raise SemanticError("1-1-13-20", op=APPLY, expression=child)
         if child.op not in op_map:
-            raise SemanticError("1-3-13", construct=f"apply with {child.op}")
+            raise SemanticError("1-3-14", location=f"Apply._check_bin_expr (operator {child.op})")
         if hasattr(child.left, "value") and hasattr(child.right, "value"):
             left_components = [
                 comp.name[len(child.left.value) + 1]

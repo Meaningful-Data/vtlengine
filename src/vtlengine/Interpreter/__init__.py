@@ -580,7 +580,9 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_UnaryOp(self, node: AST.UnaryOp) -> None:
         operand = self.visit(node.operand)
         if node.op not in UNARY_MAPPING and node.op not in ROLE_SETTER_MAPPING:
-            raise SemanticError("1-3-13", construct=f"unary operator {node.op}")
+            raise SemanticError(
+                "1-3-14", location=f"InterpreterAnalyzer.visit_UnaryOp (operator {node.op})"
+            )
         if (
             node.op in (PLUS, MINUS)
             and isinstance(node.operand, AST.Constant)
@@ -1496,7 +1498,9 @@ class InterpreterAnalyzer(ASTTemplate):
             elif node.op == INSTR:
                 return Instr.analyze(op_element, param1, param2, param3)
             else:
-                raise SemanticError("1-3-13", construct=f"string operator {node.op}")
+                raise SemanticError(
+                    "1-3-14", location=f"InterpreterAnalyzer.visit_ParamOp (operator {node.op})"
+                )
         elif node.op == HAVING:
             if self.aggregation_dataset is not None and self.aggregation_grouping is not None:
                 for id_name in self.aggregation_grouping:
@@ -1608,8 +1612,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise SemanticError("1-1-10-4", op=node.op)
             elif component is None:
                 raise SemanticError(
-                    "1-3-13",
-                    construct="hierarchical ruleset without component and variable signature",
+                    "1-3-14",
+                    location="InterpreterAnalyzer.visit_HROperation (no rule component)",
                 )
 
             cond_info = {}
@@ -2246,7 +2250,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
                     else:
                         raise SemanticError(
-                            "1-3-13", construct=f"user defined operator parameter {param['type']}"
+                            "1-3-14",
+                            location="InterpreterAnalyzer.visit_UDOCall "
+                            f"(parameter type {param['type']})",
                         )
                 elif issubclass(param["type"], ScalarType):  # Basic types
                     # For basic Scalar types (Integer, Float, String, Boolean)
@@ -2280,7 +2286,9 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
                 else:
                     raise SemanticError(
-                        "1-3-13", construct=f"user defined operator parameter {param['type']}"
+                        "1-3-14",
+                        location="InterpreterAnalyzer.visit_UDOCall "
+                        f"(parameter type {param['type']})",
                     )
 
         # We set it here to a list to start the stack of UDO params

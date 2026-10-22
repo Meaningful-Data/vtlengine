@@ -42,7 +42,7 @@ class Cast(Operator.Unary):
     def check_with_mask(
         cls, from_type: Type[ScalarType], to_type: Type[ScalarType], mask_value: str
     ) -> None:
-        raise SemanticError("1-3-13", construct="cast with mask")
+        raise SemanticError("1-3-13", construct=f'cast with the mask "{mask_value}"')
 
     @classmethod
     def check_without_mask(cls, from_type: Type[ScalarType], to_type: Type[ScalarType]) -> None:

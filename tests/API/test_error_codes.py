@@ -10,16 +10,21 @@ from typing import List
 import pandas as pd
 import pytest
 
+from vtlengine import semantic_analysis
+from vtlengine.AST.ASTConstructorModules.Expr import Expr
+from vtlengine.AST.Grammar._cpp_parser import parse, parser_lock
 from vtlengine.DataTypes import Duration, Integer
 from vtlengine.Exceptions import (
     DataLoadError,
     InputValidationException,
     RunTimeError,
+    SemanticError,
     check_key,
     transformation_output,
 )
 from vtlengine.Exceptions.messages import centralised_messages
 from vtlengine.Model import Component, DataComponent, Dataset, Role
+from vtlengine.Operators import Operator
 from vtlengine.Operators.Comparison import Between
 
 SOURCE = Path(__file__).parents[2] / "src" / "vtlengine"
@@ -177,6 +182,119 @@ def test_duration_value_is_an_input_error():
     with pytest.raises(InputValidationException) as context:
         Duration.validate_duration("X")
     assert context.value.args[1] == "0-1-1-35"
+
+
+DATA_STRUCTURES = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+REPORT = "Please report it at https://github.com/Meaningful-Data/vtlengine/issues."
+
+
+@pytest.mark.parametrize(
+    "script, construct",
+    [
+        (
+            "define operator f (x set<integer>) returns boolean is true end operator;",
+            "set type 'set<integer>' (line 1, column 22)",
+        ),
+        (
+            "define operator f (x hierarchical) returns boolean is true end operator;",
+            "ruleset type 'hierarchical' (line 1, column 22)",
+        ),
+        (
+            "define operator f (x dataset {identifier<integer> Id_1, measure<number> _+}) "
+            "returns dataset is x end operator;",
+            "multiplicity modifier in 'measure<number> _+' (line 1, column 57)",
+        ),
+        (
+            'DS_r <- eval(SQL1(DS_1) language "SQL" returns dataset '
+            "{identifier<integer> Id_1, measure<number> _*});",
+            "multiplicity modifier in 'measure<number> _*' (line 1, column 83)",
+        ),
+        (
+            "define operator f (x integer not null) returns integer is x end operator;",
+            "not null in 'integer not null' (line 1, column 22)",
+        ),
+        (
+            "define operator f (x integer null) returns integer is x end operator;",
+            "null in 'integer null' (line 1, column 22)",
+        ),
+        (
+            "define operator f (x integer [value > 0]) returns integer is x end operator;",
+            "type constraint in 'integer [value > 0]' (line 1, column 22)",
+        ),
+        (
+            "DS_r <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having true];",
+            "having condition 'true' (line 1, column 58)",
+        ),
+        (
+            "DS_r <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1\n"
+            "    having if sum(Me_1) > 0\n"
+            "        then true else false];",
+            "having condition 'if sum(Me_1) > 0 then true else false' (line 2, column 12)",
+        ),
+        (
+            "DS_r <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having if sum(Me_1) > 0 "
+            "and sum(Me_1) < 100 and avg(Me_1) > 5 then true else false];",
+            "having condition 'if sum(Me_1) > 0 and sum(Me_1) < 100 and avg(Me_1) > 5 th...' "
+            "(line 1, column 58)",
+        ),
+    ],
+)
+def test_unsupported_constructs_quote_the_script(script: str, construct: str) -> None:
+    with pytest.raises(SemanticError) as context:
+        semantic_analysis(script=script, data_structures=DATA_STRUCTURES)
+    assert context.value.args == (f"Unsupported VTL construct: {construct}.", "1-3-13")
+
+
+@pytest.mark.parametrize(
+    "script, construct",
+    [
+        (
+            'DS_r <- DS_1[calc Me_2 := cast(Me_1, string, "YYYY")];',
+            'cast with the mask "YYYY"',
+        ),
+        ("DS_r <- DS_1[pivot Id_1, Me_1];", "pivot clause"),
+    ],
+)
+def test_unsupported_operations_name_the_transformation(script: str, construct: str) -> None:
+    with pytest.raises(SemanticError) as context:
+        semantic_analysis(script=script, data_structures=DATA_STRUCTURES)
+    assert context.value.args == (
+        f"Unsupported VTL construct: {construct}. Please check transformation with output "
+        "Dataset DS_r",
+        "1-3-13",
+    )
+
+
+def test_internal_errors_ask_to_report_them():
+    with pytest.raises(SemanticError) as context:
+        Operator.validate()
+    assert context.value.args == (
+        f"Internal engine error in Operator.validate. {REPORT}",
+        "1-3-14",
+    )
+
+
+def test_internal_parser_errors_quote_the_script():
+    with parser_lock:
+        statement = parse("DS_r <- 1;").children[0]
+        with pytest.raises(SemanticError) as context:
+            Expr().visitTimeFunctions(statement)
+    assert context.value.args == (
+        f"Internal engine error in Expr.visitTimeFunctions at 'DS_r <- 1' (line 1, column 1). "
+        f"{REPORT}",
+        "1-3-14",
+    )
 
 
 def test_between_bounds_of_different_lengths_is_a_runtime_error():

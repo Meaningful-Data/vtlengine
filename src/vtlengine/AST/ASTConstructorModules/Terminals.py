@@ -10,7 +10,7 @@ from vtlengine.AST import (
     VarID,
     Windowing,
 )
-from vtlengine.AST.ASTConstructorModules import extract_token_info
+from vtlengine.AST.ASTConstructorModules import extract_token_info, script_location
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
 from vtlengine.DataTypes import (
@@ -67,7 +67,9 @@ class Terminals:
                 elif child.text == "false":
                     constant_node = Constant(type_="BOOLEAN_CONSTANT", value=False, **token_info)
                 else:
-                    raise SemanticError("1-3-13", construct="Constant")
+                    raise SemanticError(
+                        "1-3-14", location=f"Terminals.visitConstant at {script_location(ctx)}"
+                    )
 
             elif child.symbol_type == vtl_cpp_parser.STRING_CONSTANT:
                 constant_node = Constant(
@@ -78,7 +80,9 @@ class Terminals:
                 constant_node = Constant(type_="NULL_CONSTANT", value=None, **token_info)
 
             else:
-                raise SemanticError("1-3-13", construct="Constant")
+                raise SemanticError(
+                    "1-3-14", location=f"Terminals.visitConstant at {script_location(ctx)}"
+                )
 
         return constant_node
 
@@ -320,7 +324,9 @@ class Terminals:
 
         if len(component_mult) != 0:
             # AST_ASTCONSTRUCTOR.51
-            raise SemanticError("1-3-13", construct="CompConstraint")
+            raise SemanticError(
+                "1-3-13", construct=f"multiplicity modifier in {script_location(ctx)}"
+            )
 
         component_node[0].name = component_name[0]
         return component_node[0]
@@ -331,7 +337,9 @@ class Terminals:
         if not c.is_terminal and c.rule_index == RC.CONSTANT[0]:
             return self.visitConstant(c)
         else:
-            raise SemanticError("1-3-13", construct="SimpleScalar")
+            raise SemanticError(
+                "1-3-14", location=f"Terminals.visitSimpleScalar at {script_location(ctx)}"
+            )
 
     def visitScalarType(self, ctx):
         """
@@ -383,15 +391,15 @@ class Terminals:
 
         if len(scalartype_constraint) != 0:
             # AST_ASTCONSTRUCTOR.45
-            raise SemanticError("1-3-13", construct="constraint on a scalar type")
+            raise SemanticError("1-3-13", construct=f"type constraint in {script_location(ctx)}")
 
         if len(not_) != 0:
             # AST_ASTCONSTRUCTOR.46
-            raise SemanticError("1-3-13", construct="not null on a scalar type")
+            raise SemanticError("1-3-13", construct=f"not null in {script_location(ctx)}")
 
         if len(null_constant) != 0:
             # AST_ASTCONSTRUCTOR.47
-            raise SemanticError("1-3-13", construct="null on a scalar type")
+            raise SemanticError("1-3-13", construct=f"null in {script_location(ctx)}")
 
         return type_node
 
@@ -417,7 +425,7 @@ class Terminals:
                    | hrRuleset
                    ;
         """
-        raise SemanticError("1-3-13", construct="RulesetType")
+        raise SemanticError("1-3-13", construct=f"ruleset type {script_location(ctx)}")
 
     def visitDpRuleset(self, ctx):
         """
@@ -427,7 +435,9 @@ class Terminals:
         ;
         """  # noqa E501
         # AST_ASTCONSTRUCTOR.54
-        raise SemanticError("1-3-13", construct="DpRuleset")
+        raise SemanticError(
+            "1-3-14", location=f"Terminals.visitDpRuleset at {script_location(ctx)}"
+        )
 
     def visitHrRuleset(self, ctx):
         """
@@ -437,7 +447,9 @@ class Terminals:
         ;
         """  # noqa E501
         # AST_ASTCONSTRUCTOR.55
-        raise SemanticError("1-3-13", construct="HrRuleset")
+        raise SemanticError(
+            "1-3-14", location=f"Terminals.visitHrRuleset at {script_location(ctx)}"
+        )
 
     def visitComponentType(self, ctx):
         """
@@ -485,7 +497,9 @@ class Terminals:
         elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return self.visitComponentType(c)
         else:
-            raise SemanticError("1-3-13", construct="InputParameterType")
+            raise SemanticError(
+                "1-3-14", location=f"Terminals.visitInputParameterType at {script_location(ctx)}"
+            )
 
     def visitOutputParameterType(self, ctx):
         """
@@ -507,7 +521,9 @@ class Terminals:
         elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return "Component"
         else:
-            raise SemanticError("1-3-13", construct="OutputParameterType")
+            raise SemanticError(
+                "1-3-14", location=f"Terminals.visitOutputParameterType at {script_location(ctx)}"
+            )
 
     def visitDeclaredOutputType(self, ctx):
         """
@@ -545,7 +561,10 @@ class Terminals:
         elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return self.visitComponentType(c)
         else:
-            raise SemanticError("1-3-13", construct="OutputParameterTypeComponent")
+            raise SemanticError(
+                "1-3-14",
+                location=f"Terminals.visitOutputParameterTypeComponent at {script_location(ctx)}",
+            )
 
     def visitScalarItem(self, ctx):
         # ctx is a scalarItem node (either simpleScalar or scalarWithCast alternative)
@@ -554,7 +573,9 @@ class Terminals:
         elif ctx.ctx_id == RC.SCALAR_WITH_CAST:
             return self.visitScalarWithCast(ctx)
         else:
-            raise SemanticError("1-3-13", construct="ScalarItem")
+            raise SemanticError(
+                "1-3-14", location=f"Terminals.visitScalarItem at {script_location(ctx)}"
+            )
 
     def visitScalarWithCast(self, ctx):
         """
@@ -586,14 +607,16 @@ class Terminals:
 
         else:
             # AST_ASTCONSTRUCTOR.14
-            raise SemanticError("1-3-13", construct="ScalarWithCast")
+            raise SemanticError(
+                "1-3-14", location=f"Terminals.visitScalarWithCast at {script_location(ctx)}"
+            )
 
     def visitScalarSetType(self, ctx):
         """
         scalarSetType: SET ('<' scalarType '>')? ;
         """
         # AST_ASTCONSTRUCTOR.60
-        raise SemanticError("1-3-13", construct="ScalarSetType")
+        raise SemanticError("1-3-13", construct=f"set type {script_location(ctx)}")
 
     def visitRetainType(self, ctx):
         """
@@ -613,7 +636,9 @@ class Terminals:
                     type_="BOOLEAN_CONSTANT", value=False, **extract_token_info(token)
                 )
             else:
-                raise SemanticError("1-3-13", construct="RetainType")
+                raise SemanticError(
+                    "1-3-14", location=f"Terminals.visitRetainType at {script_location(ctx)}"
+                )
 
         elif token.symbol_type == vtl_cpp_parser.ALL:
             param_constant_node = ParamConstant(
@@ -621,7 +646,9 @@ class Terminals:
             )
 
         else:
-            raise SemanticError("1-3-13", construct="RetainType")
+            raise SemanticError(
+                "1-3-14", location=f"Terminals.visitRetainType at {script_location(ctx)}"
+            )
 
         return param_constant_node
 
@@ -634,7 +661,9 @@ class Terminals:
         elif not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
             return self.visitScalarType(c)
         else:
-            raise SemanticError("1-3-13", construct="EvalDatasetType")
+            raise SemanticError(
+                "1-3-14", location=f"Terminals.visitEvalDatasetType at {script_location(ctx)}"
+            )
 
     def visitAlias(self, ctx):
         return ctx.children[0].text
