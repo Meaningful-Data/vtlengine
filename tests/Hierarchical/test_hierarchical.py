@@ -3912,3 +3912,68 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1150_1(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 as A_1 rule Id_2) is
+                        when A_1 > 1995 then EU = BE + FR errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 invalid);
+
+        Description: The alias of a condition variable is used inside the ruleset, and the
+        call uses the variable name.
+
+        Git Branch: #1150.
+        Goal: Check the rule is only validated where the aliased condition is true.
+        """
+
+        code = "GH_1150_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1150_1_roundtrip(self):
+        """
+        AST round-trip for check_hierarchy with an alias on a condition variable.
+
+        Git Branch: #1150.
+        Goal: Verify that rendering the AST back to VTL keeps the alias of the condition.
+        """
+        code = "GH_1150_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        text = self.LoadVTL(code)
+        rendered = ASTString().render(create_ast(text))
+        self.BaseTest(
+            code=code, number_inputs=number_inputs, references_names=references_names, text=rendered
+        )
+
+    def test_GH_1150_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 as A_1 rule Id_2) is
+                        when A_1 > 1995 then EU = BE + FR
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
+
+        Description: The alias of a condition variable is used inside the ruleset, and the
+        call uses the variable name.
+
+        Git Branch: #1150.
+        Goal: Check the rule is only computed where the aliased condition is true.
+        """
+
+        code = "GH_1150_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
