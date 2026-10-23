@@ -14,13 +14,15 @@
 
 With ``--only`` just the named chapters run (``types`` stands for the type hubs). The other
 chapters keep their results from the ``status.json`` of the previous run: an example that is not
-run and has no result there is a problem. The folders that are missing are checked only for the
-chapters named, and the folders with no catalogue example always. Nothing is run or written with
-``--check-only``: it stops after the checks, and does not ask for previous results.
+run and has no result there is a problem. That file is read only when a chapter with examples is
+left out of ``--only``. The folders that are missing are checked only for the chapters named, and
+the folders with no catalogue example always. Nothing is run or written with ``--check-only``: it
+stops after the checks, and does not ask for previous results.
 
 The exit code is 0 for a run that wrote its files, 1 for any problem (printed one per line, and
-nothing is written), and 2 for a run that was interrupted. This process never imports vtlengine
-or pandas: the engines run in the children of ``tool.runner``.
+nothing is written), and 2 for a run that was interrupted or hit an internal error (one line: its
+type and message). Whatever the failure, the files of the previous run stay as they were. This
+process never imports vtlengine or pandas: the engines run in the children of ``tool.runner``.
 """
 
 from __future__ import annotations
@@ -62,6 +64,7 @@ REPO = ROOT.parents[1]  # the worktree: its git commit and vtlengine version are
 
 _TYPES: Final = "types"  # the group of the examples of the type hubs, as a chapter of --only
 _STATUS_FILE: Final = "status.json"
+_MAX_UNRUN: Final = 10  # the "no result" problems that are printed, one line each
 _ENGINES: Final[tuple[Engine, ...]] = ("pandas", "duckdb")
 _VERSION: Final = re.compile(r"""^__version__\s*=\s*["']([^"']+)["']""", re.MULTILINE)
 _FENCE: Final = re.compile(r"^```mermaid\n(.*?)\n```$", re.MULTILINE | re.DOTALL)
@@ -95,6 +98,17 @@ class _Item:
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the generator; see the module docstring. Returns the exit code."""
     args = _parse_args(argv)
+    try:
+        return _generate(args)
+    except Exception as exc:  # whatever it is, one line and exit 2: the files are as they were
+        print(
+            f"internal error: {type(exc).__name__}: {' '.join(str(exc).split())}", file=sys.stderr
+        )
+        return 2
+
+
+def _generate(args: argparse.Namespace) -> int:
+    """The run of ``main`` after the arguments: the exit codes 0, 1 and 2 (interrupted)."""
     cat = load_catalogue()
     only: list[str] = list(dict.fromkeys(args.only))
     known = [*(chapter.id for chapter in cat.chapters), _TYPES]
@@ -215,14 +229,15 @@ def _check(
 ) -> _Checked:
     """Check the catalogue and the example folders, and read the previous results if wanted.
 
-    The previous results are read only with ``only``, and an example that is not run and has none
-    is a problem. They are not needed to check, so ``with_previous`` leaves them out.
+    The previous results are read only when ``only`` leaves out a chapter that has examples, and
+    an example that is not run and has none is a problem. They are not needed to check, so
+    ``with_previous`` leaves them out.
     """
     problems = _catalogue_problems(cat, only)
     folder_problems, loaded = _folder_problems(items, only, root)
     problems.extend(folder_problems)
     previous: dict[str, ExampleResult] = {}
-    if only and with_previous:
+    if with_previous and _needs_previous(items, only):
         try:
             previous = _load_previous(root / _STATUS_FILE)
         except GenerateError as exc:
@@ -230,6 +245,11 @@ def _check(
         else:
             problems.extend(_unrun_problems(items, only, previous))
     return _Checked(problems, loaded, previous)
+
+
+def _needs_previous(items: Sequence[_Item], only: Sequence[str]) -> bool:
+    """Whether the run leaves out a chapter that has examples, so that it needs its results."""
+    return bool(only) and any(item.group not in only for item in items)
 
 
 def _items(cat: Catalogue) -> list[_Item]:
@@ -309,13 +329,19 @@ def _folder_problems(
 def _unrun_problems(
     items: Sequence[_Item], only: Sequence[str], previous: Mapping[str, ExampleResult]
 ) -> list[str]:
-    """The examples that are not run now and have no result from a previous run."""
-    return [
+    """The examples that are not run now and have no result from a previous run.
+
+    One problem for each of the first ``_MAX_UNRUN``, then a line that counts the rest.
+    """
+    lines = [
         f"no result for {item.key}: its chapter is not run now and {_STATUS_FILE} has none "
         "(run its chapter too)"
         for item in items
         if item.group not in only and item.key not in previous
     ]
+    if len(lines) > _MAX_UNRUN:
+        return [*lines[:_MAX_UNRUN], f"… and {len(lines) - _MAX_UNRUN} more"]
+    return lines
 
 
 # --- Running ---
@@ -468,17 +494,41 @@ def _write_all(root: Path, files: Mapping[str, str]) -> None:
 
     Everything is written before anything is replaced, so that a file that cannot be written
     leaves the old ones as they are. The folder is in ``root``: a move inside a filesystem
-    replaces a file in one step.
+    replaces a file in one step. A move that fails puts back the files that were moved before it.
     """
     staging = Path(tempfile.mkdtemp(prefix=".generate-", dir=root))
     try:
         for name, text in files.items():
             with (staging / name).open("w", encoding="utf-8", newline="\n") as handle:
                 handle.write(text)
-        for name in files:
-            os.replace(staging / name, root / name)
+        _replace_all(root, staging, list(files))
     finally:
         shutil.rmtree(staging, ignore_errors=True)
+
+
+def _replace_all(root: Path, staging: Path, names: Sequence[str]) -> None:
+    """Move ``names`` from ``staging`` over the files of ``root``, all or none.
+
+    The old bytes of a file are copied aside before it is replaced. If anything goes wrong, even
+    an interrupt, the files that were replaced get their old bytes back, or are removed if they
+    were new, and the error goes on.
+    """
+    backups = staging / "old"
+    backups.mkdir()
+    replaced: list[str] = []
+    try:
+        for name in names:
+            if (root / name).is_file():
+                shutil.copy2(root / name, backups / name)
+            os.replace(staging / name, root / name)
+            replaced.append(name)
+    except BaseException:
+        for name in replaced:
+            if (backups / name).is_file():
+                os.replace(backups / name, root / name)
+            else:
+                (root / name).unlink(missing_ok=True)
+        raise
 
 
 if __name__ == "__main__":

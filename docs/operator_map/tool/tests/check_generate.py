@@ -8,13 +8,14 @@ check gets a map of two chapters and a type, with their example folders on disk.
 
 from __future__ import annotations
 
+import errno
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -225,17 +226,34 @@ def problems(capsys: pytest.CaptureFixture[str]) -> list[str]:
     return capsys.readouterr().err.splitlines()
 
 
+# Every file that a run of the map ``CAT`` writes, in the order it writes them.
+OUTPUTS = ["README.md", "alpha.md", "beta.md", "status.json"]
+
+
+def seed_outputs(world: World) -> dict[str, bytes]:
+    """Old versions of every output file, with bytes that no run could give."""
+    old = {name: f"old {name}, not a run \u00e9\n".encode() for name in OUTPUTS}
+    for name, data in old.items():
+        (world.root / name).write_bytes(data)
+    return old
+
+
+def assert_untouched(world: World, old: dict[str, bytes]) -> None:
+    """Every old file is as it was, and nothing else (a staging folder) is left."""
+    assert {name: (world.root / name).read_bytes() for name in old} == old
+    assert world.names() == sorted([*old, "examples"])
+
+
 # --- Validation ---
 
 
 def test_failed_validation_writes_nothing(world: World, capsys: pytest.CaptureFixture[str]) -> None:
-    readme = world.root / "README.md"
-    readme.write_bytes(b"# an older README\n\xc3\xa9\n")
+    old = seed_outputs(world)
     shutil.rmtree(world.root / "examples/beta/second/ds/minimal")
     assert generate.main([]) == 1
-    assert readme.read_bytes() == b"# an older README\n\xc3\xa9\n"
-    # Nothing else was written, not even a temporary folder, and nothing was run.
-    assert world.names() == ["README.md", "examples"]
+    # Every output file is as it was, nothing else was written, not even a temporary folder,
+    # and nothing was run.
+    assert_untouched(world, old)
     assert world.calls == []
     assert "missing example folder: examples/beta/second/ds/minimal" in problems(capsys)
 
@@ -428,12 +446,11 @@ def test_current_date_is_checked_against_the_day_of_the_run(
 def test_keyboard_interrupt_exits_2_and_writes_nothing(
     world: World, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    (world.root / "README.md").write_text("older\n", encoding="utf-8")
+    old = seed_outputs(world)
     world.interrupt = True
     assert generate.main([]) == 2
     assert "interrupted" in capsys.readouterr().err
-    assert (world.root / "README.md").read_text(encoding="utf-8") == "older\n"
-    assert world.names() == ["README.md", "examples"]
+    assert_untouched(world, old)
 
 
 # --- Merging with the previous run ---
@@ -509,6 +526,62 @@ def test_only_with_an_unreadable_status_file_is_one_problem(
     assert world.calls == []
 
 
+def test_only_naming_every_example_chapter_does_not_read_the_previous_results(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # No type has an example: the chapters are all there is, and ``--only`` names both.
+    cat = Catalogue((ALPHA, BETA), (TypeDef("scalar", ()),))
+    world = build_world(tmp_path, monkeypatch, cat)
+    (world.root / "status.json").write_text("{not json", encoding="utf-8")
+    assert generate.main(["--only", "alpha", "--only", "beta"]) == 0
+    assert sorted(world.status()["examples"]) == sorted(KEYS[:4])
+
+
+def test_only_naming_every_chapter_and_the_types_does_not_read_the_previous_results(
+    world: World,
+) -> None:
+    (world.root / "status.json").write_text("{not json", encoding="utf-8")
+    assert generate.main(["--only", "alpha", "--only", "beta", "--only", "types"]) == 0
+    assert sorted(world.status()["examples"]) == sorted(KEYS)
+
+
+def test_only_reads_the_previous_results_when_a_chapter_with_examples_is_left_out(
+    world: World, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The types have examples, so naming the two chapters is not naming everything.
+    (world.root / "status.json").write_text("{not json", encoding="utf-8")
+    assert generate.main(["--only", "alpha", "--only", "beta"]) == 1
+    [line] = problems(capsys)
+    assert line.startswith("status.json: cannot read the previous results")
+
+
+@pytest.mark.parametrize(("variants", "more"), [(8, None), (9, 1), (13, 5)])
+def test_only_prints_ten_no_result_lines_at_most_and_counts_the_rest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    variants: int,
+    more: int | None,
+) -> None:
+    forms = tuple(Variant(f"v{n}", f"many(DS_{n})", (authored(),)) for n in range(variants))
+    many = make_operator("many", "Many", "Gamma operators/Many", *forms)
+    cat = Catalogue((ALPHA, BETA, Chapter("gamma", "Gamma operators", (many,))), TYPES)
+    world = build_world(tmp_path, monkeypatch, cat, (*PAGES, "Gamma operators/Many"))
+    assert generate.main(["--only", "alpha"]) == 1
+    lines = problems(capsys)
+    # Beta, the variants of gamma and the type example have no result: 2 + ``variants`` examples.
+    expected = ["beta/second/ds/minimal", *(f"gamma/many/v{n}/minimal" for n in range(variants))]
+    expected.append("types/number/identity/minimal")
+    assert [line.split(":")[0] for line in lines[:10]] == [
+        f"no result for {x}" for x in expected[:10]
+    ]
+    if more is None:
+        assert len(lines) == 10
+    else:
+        assert lines[10:] == [f"… and {more} more"]
+    assert world.calls == []
+
+
 # --- What is written ---
 
 
@@ -579,6 +652,68 @@ def test_every_block_of_the_rendered_files_is_checked_against_the_limits(
     assert line.startswith("alpha.md: ")
     assert "500 edges" in line
     assert world.names() == ["examples"]
+
+
+# --- Internal errors and failed writes ---
+
+
+def test_an_internal_error_exits_2_with_one_line(
+    world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def broken(*_args: object, **_kwargs: object) -> object:
+        raise RuntimeError("something is\nwrong inside")
+
+    old = seed_outputs(world)
+    monkeypatch.setattr(generate, "build_index", broken)
+    assert generate.main([]) == 2
+    # One line: the type and the message, with the message on one line too.
+    assert problems(capsys) == ["internal error: RuntimeError: something is wrong inside"]
+    assert_untouched(world, old)
+
+
+def break_the_staging_write(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A text that cannot be encoded: the write of the second file to be written raises."""
+    monkeypatch.setattr(generate, "chapter_markdown", lambda *_a, **_k: "lone \udc80 surrogate\n")
+
+
+def break_the_replace(nth: int) -> Callable[[World, pytest.MonkeyPatch], None]:
+    """The ``nth`` ``os.replace`` of the run raises; the others do what they are asked."""
+
+    def inject(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
+        real_replace = os.replace
+        calls: list[object] = []
+
+        def flaky(source: Any, target: Any) -> None:
+            calls.append(target)
+            if len(calls) == nth:
+                raise OSError(errno.EACCES, "cannot replace")
+            real_replace(source, target)
+
+        monkeypatch.setattr(os, "replace", flaky)
+
+    return inject
+
+
+@pytest.mark.parametrize("seeded", [True, False], ids=["old files", "no old files"])
+@pytest.mark.parametrize(
+    "inject",
+    [break_the_staging_write, break_the_replace(1), break_the_replace(3)],
+    ids=["staging write", "first replace", "third replace"],
+)
+def test_a_write_that_fails_leaves_the_old_files_and_no_staging_folder(
+    world: World,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    inject: Callable[[World, pytest.MonkeyPatch], None],
+    seeded: bool,
+) -> None:
+    old = seed_outputs(world) if seeded else {}
+    inject(world, monkeypatch)
+    assert generate.main([]) == 2
+    [line] = problems(capsys)
+    assert line.startswith("internal error: ")
+    # The files that were moved before the failure are put back, or removed when they are new.
+    assert_untouched(world, old)
 
 
 # --- The metadata of the run ---
