@@ -6,9 +6,11 @@ measure `int_var` of type integer.
   before the 6th character, so the first one found is the `o` at 8.
 - `"boot camp"` (b=1, o=2, o=3, t=4, space=5, c=6, a=7, m=8, p=9): both `o` come before the 6th
   character, so none is found and the result is 0.
-- Row 3 has a null measure. A null operand gives a null result: the User Manual says that
+- `"abcdeo"` (a=1, b=2, c=3, d=4, e=5, o=6): the `o` is exactly at the 6th character, where the
+  search starts, so it is found and the result is 6. The page says that "The search starts from
+  the *start*th character of the input string", and that with `start` omitted "the search starts
+  from the 1st position", where a pattern has to be found too, so an occurrence at the `start`
+  position counts.
+- Row 4 has a null measure. A null operand gives a null result: the User Manual says that
   "most of the scalar operations (arithmetic, logical, and others) return null when any of
   their arguments is null", and the manual's own `length` and `instr` examples show it.
-
-No value has an occurrence right at the 6th character, which would leave open whether the search
-is inclusive of `start`.

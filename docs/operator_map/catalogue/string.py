@@ -106,6 +106,7 @@ _SUBSTR = Operator(
     variants=(
         Variant("ds_start_len", "substr(DS, start, length)", (manual("ex_2"),)),
         Variant("ds_start", "substr(DS, start)", (manual("ex_1"),)),
+        Variant("ds_start_placeholder", "substr(DS, start, _)", (authored(),)),
         Variant(
             "ds_placeholder_len",
             "substr(DS, _, length)",
@@ -132,6 +133,7 @@ _REPLACE = Operator(
     variants=(
         Variant("ds_two", "replace(DS, pattern1, pattern2)", (manual("ex_1"),)),
         Variant("ds_one", "replace(DS, pattern1)", (authored(),)),
+        Variant("ds_one_placeholder", "replace(DS, pattern1, _)", (authored(),)),
         Variant("comp_two", "replace(comp, pattern1, pattern2)", (manual("ex_2"),)),
         Variant("comp_patterns", "replace(comp, comp, comp)", (authored(),)),
         Variant("sc_two", "replace(sc, pattern1, pattern2)", (authored(),)),
@@ -154,8 +156,17 @@ _INSTR = Operator(
             (authored(),),
         ),
         Variant("ds_placeholder_occ", "instr(DS, pattern, _, occurrence)", (authored(),)),
+        Variant(
+            "ds_pattern_start_placeholder",
+            "instr(DS, pattern, start, _)",
+            (authored(),),
+        ),
         Variant("comp_pattern", "instr(comp, pattern)", (manual("ex_2"), manual("ex_3"))),
-        Variant("comp_params", "instr(comp, comp, comp)", (authored(),)),
+        Variant(
+            "comp_params",
+            "instr(comp, comp, comp, comp)",
+            (authored(), authored("minimal_2")),
+        ),
         Variant("sc_pattern", "instr(sc, pattern)", (authored(),)),
     ),
 )
@@ -176,7 +187,9 @@ _LENGTH = Operator(
 
 # The manual's examples of string_distance run the distance of two datasets (levenshtein and
 # damerau_levenshtein) and of a component and a scalar (hamming), so each of those has a variant
-# of its own next to the ones that hold the scalar forms.
+# of its own next to the ones that hold the scalar forms. The operands can be a dataset, a
+# component or a scalar (string1 and string2 are typed that way), and the pairs of operand levels
+# are crossed on levenshtein only, with the component and scalar pair covered by hamming.
 _STRING_DISTANCE = Operator(
     id="string_distance",
     name="String distances",
@@ -191,8 +204,23 @@ _STRING_DISTANCE = Operator(
             (manual("ex_1"),),
         ),
         Variant(
+            "levenshtein_ds_sc",
+            "string_distance(levenshtein, DS, sc)",
+            (authored(),),
+        ),
+        Variant(
+            "levenshtein_sc_ds",
+            "string_distance(levenshtein, sc, DS)",
+            (authored(),),
+        ),
+        Variant(
             "levenshtein_comp_comp",
             "string_distance(levenshtein, comp, comp)",
+            (authored(),),
+        ),
+        Variant(
+            "levenshtein_sc_comp",
+            "string_distance(levenshtein, sc, comp)",
             (authored(),),
         ),
         Variant(
