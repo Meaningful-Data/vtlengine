@@ -382,6 +382,14 @@ centralised_messages = {
         "description": "Raised when a user defined operator declares a parameter type that is "
         "not a scalar type.",
     },
+    "0-5-1-11": {
+        "message": "Unknown AST class {name} in the JSON AST.",
+        "description": "Raised when a JSON AST names a class that the AST does not define.",
+    },
+    "0-5-1-12": {
+        "message": "Invalid fields for the AST class {name} in the JSON AST: {error}",
+        "description": "Raised when a JSON AST gives an AST class fields that it does not take.",
+    },
     # ------------Operators-------------
     # General Semantic errors
     "1-1-1-1": {
