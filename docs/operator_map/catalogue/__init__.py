@@ -4,5 +4,7 @@ from __future__ import annotations
 
 from tool.model import Chapter, TypeDef
 
-CHAPTERS: tuple[Chapter, ...] = ()
+from catalogue.comparison import CHAPTER as COMPARISON
+
+CHAPTERS: tuple[Chapter, ...] = (COMPARISON,)
 TYPES: tuple[TypeDef, ...] = ()
