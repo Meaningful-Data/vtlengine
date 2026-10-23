@@ -738,15 +738,19 @@ def dataset(
     components: dict[str, ActualComponent] | None = None,
     rows: list[dict[str, str | None]] | None = None,
 ) -> ActualDataset:
-    return ActualDataset(
-        name,
-        components
-        or {
+    if components is None:
+        components = {
             "Id_1": ActualComponent("Identifier", "Integer", False),
             "Me_1": ActualComponent("Measure", "Number", True),
-        },
-        rows or [{"Id_1": "1", "Me_1": me_1}, {"Id_1": "2", "Me_1": "7"}],
-    )
+        }
+    if rows is None:
+        rows = [{"Id_1": "1", "Me_1": me_1}, {"Id_1": "2", "Me_1": "7"}]
+    return ActualDataset(name, components, rows)
+
+
+def point(id_1: str, me_1: str | None) -> dict[str, str | None]:
+    """A data point of the default ``dataset()``."""
+    return {"Id_1": id_1, "Me_1": me_1}
 
 
 def test_outputs_equal_cross_engine() -> None:
@@ -818,11 +822,95 @@ def test_outputs_rows_are_matched_by_key() -> None:
     )
 
 
-def test_outputs_with_duplicate_identifier_keys_never_agree() -> None:
-    twice = dataset(rows=[{"Id_1": "1", "Me_1": "1.5"}, {"Id_1": "1", "Me_1": "1.5"}])
-    assert not outputs_equal([twice], [twice])
-    assert not outputs_equal([twice], [dataset(rows=[{"Id_1": "1", "Me_1": "1.5"}])])
-    assert not outputs_equal([dataset(rows=[{"Id_1": "1", "Me_1": "1.5"}])], [twice])
+def test_outputs_identifiers_are_matched_exactly() -> None:
+    components = {
+        "Id_1": ActualComponent("Identifier", "Number", False),
+        "Me_1": ActualComponent("Measure", "Integer", True),
+    }
+
+    def equal(left: str, right: str) -> bool:
+        first = dataset(components=components, rows=[{"Id_1": left, "Me_1": "1"}])
+        second = dataset(components=components, rows=[{"Id_1": right, "Me_1": "1"}])
+        return outputs_equal([first], [second])
+
+    assert equal("1.5", "1.50")  # the same number, written twice
+    assert equal("1.5", "1.5E+0")
+    # A key has no tolerance: a Number that differs by noise is another identifier, so another
+    # data point, while the same difference in a measure would be within the tolerance.
+    assert not equal("1.5", "1.5000000001")
+
+
+def test_outputs_with_the_same_duplicate_identifier_keys_agree() -> None:
+    # Two engines that return the same invalid dataset agree with each other. Against the
+    # expected output compare_dataset still reports the duplicate.
+    rows = [point("1", "1.5"), point("1", "2.5"), point("2", "7")]
+    assert outputs_equal([dataset(rows=rows)], [dataset(rows=rows)])
+    wanted = ExpectedDataset(
+        "DS_r",
+        {
+            "Id_1": ExpectedComponent("Identifier", ("Integer",), False),
+            "Me_1": ExpectedComponent("Measure", ("Number",), None),
+        },
+        [point("1", "1.5"), point("2", "7")],
+    )
+    assert compare_dataset(wanted, dataset(rows=rows)) == (
+        "duplicate identifier key Id_1=1 in actual"
+    )
+
+    # In any order, and with numbers that differ within the tolerance between engines.
+    other = [point("2", "7"), point("1", "2.5000000000001"), point("1", "1.5")]
+    assert outputs_equal([dataset(rows=rows)], [dataset(rows=other)])
+    assert outputs_equal([dataset(rows=other)], [dataset(rows=rows)])
+
+    # Nulls and text where a number is expected sort with the rest, and a data point may repeat.
+    odd = [point("1", None), point("1", "abc"), point("1", "abc"), point("1", "2")]
+    assert outputs_equal([dataset(rows=odd)], [dataset(rows=list(reversed(odd)))])
+
+    # Without identifiers there is a single key, so a second data point repeats it.
+    measure = {"Me_1": ActualComponent("Measure", "Number", True)}
+    pair: list[dict[str, str | None]] = [{"Me_1": "1.5"}, {"Me_1": "1.5"}]
+    assert outputs_equal(
+        [dataset(components=measure, rows=pair)], [dataset(components=measure, rows=list(pair))]
+    )
+
+
+def test_duplicate_key_data_points_are_sorted_so_that_number_noise_cannot_reorder_them() -> None:
+    components = {
+        "Id_1": ActualComponent("Identifier", "Integer", False),
+        "Me_1": ActualComponent("Measure", "Number", True),
+        "Me_2": ActualComponent("Measure", "String", True),
+    }
+    # The two engines differ by 1.5e-10 on the first data point, within the tolerance. By Me_1
+    # alone the data points would come in another order on each side (1.0000000001 sorts before
+    # 1.0000000002, but 1.00000000025 sorts after it), so the Numbers must sort last.
+    first = [row("1", "1.0000000001", "a"), row("1", "1.0000000002", "b")]
+    second = [row("1", "1.00000000025", "a"), row("1", "1.0000000002", "b")]
+    left = dataset(components=components, rows=first)
+    assert outputs_equal([left], [dataset(components=components, rows=second)])
+    assert outputs_equal([dataset(components=components, rows=second)], [left])
+
+    # Still a disagreement when a data point really differs.
+    third = [row("1", "1.00000000025", "a"), row("1", "1.0000000002", "c")]
+    assert not outputs_equal([left], [dataset(components=components, rows=third)])
+
+
+def test_outputs_with_different_duplicate_data_points_disagree() -> None:
+    one, two = point("1", "1.5"), point("1", "2.5")
+    # The same keys, and a duplicate data point that differs.
+    assert not outputs_equal([dataset(rows=[one, two])], [dataset(rows=[one, point("1", "2.6")])])
+    # A duplicate on one side only, which is a different number of data points as well.
+    assert not outputs_equal([dataset(rows=[one, two])], [dataset(rows=[one])])
+    assert not outputs_equal([dataset(rows=[one])], [dataset(rows=[one, two])])
+    # The same data points a different number of times.
+    assert not outputs_equal([dataset(rows=[one, one, two])], [dataset(rows=[one, two, two])])
+    assert not outputs_equal([dataset(rows=[one, one])], [dataset(rows=[one, one, one])])
+    # A duplicate on one side against two different keys on the other.
+    other_key = point("2", "1.5")
+    assert not outputs_equal([dataset(rows=[one, one])], [dataset(rows=[one, other_key])])
+    assert not outputs_equal([dataset(rows=[one, other_key])], [dataset(rows=[one, one])])
+    # An empty dataset is not a dataset of duplicates.
+    assert not outputs_equal([dataset(rows=[one, one])], [dataset(rows=[])])
+    assert outputs_equal([dataset(rows=[])], [dataset(rows=[])])
 
 
 def test_outputs_numbers_are_equal_at_relative_1e9_or_absolute_1e12() -> None:

@@ -12,9 +12,11 @@ digits written in it. Two engines are expected to agree to the last digits, so t
 tiny relative or absolute tolerance.
 
 The order of the data points of a dataset does not matter: a data point is found by the canonical
-value of its identifiers, and a key that occurs twice on either side is a problem of its own,
-never silently merged. Nothing here raises for odd values: a text that is not a number is
-compared as text.
+value of its identifiers. Against the expected output a key that occurs twice on either side is a
+problem of its own, never silently merged. Between two engines the question is whether they
+agree, not whether they are right, so two datasets with the same repeated keys still agree when
+they hold the same data points. Nothing here raises for odd values: a text that is not a number
+is compared as text.
 """
 
 from __future__ import annotations
@@ -24,7 +26,7 @@ from collections.abc import Callable, Hashable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 from itertools import islice
-from typing import Final, Union
+from typing import Any, Final, Union
 
 from tool.examples import ExpectedDataset, ExpectedScalar
 
@@ -171,9 +173,11 @@ def outputs_equal(a: Sequence[Output], b: Sequence[Output]) -> bool:
     The outputs are matched by name, in any order. Both sides need the same names, each used
     once. A scalar agrees with a scalar of the same type and value. A dataset agrees with a
     dataset that has the same components with the same roles and types (nullability is not
-    compared) and the same data points, found by the identifiers of ``a``. A Number agrees within
-    a relative 1e-9, or an absolute 1e-12 near zero; every other type is compared as in
-    ``values_equal``.
+    compared) and the same data points, found by the identifiers of ``a``. When a key occurs
+    twice on either side no key finds one data point, and the data points are compared as a
+    multiset instead: the same ones, each the same number of times, in any order. A Number
+    agrees within a relative 1e-9, or an absolute 1e-12 near zero; every other type is compared
+    as in ``values_equal``.
     """
     left = {output.name: output for output in a}
     right = {output.name: output for output in b}
@@ -202,8 +206,41 @@ def _datasets_agree(left: ActualDataset, right: ActualDataset) -> bool:
         return False
     ids = [name for name, (role, _) in structure.items() if role == _IDENTIFIER]
     types = {name: type_ for name, (_, type_) in structure.items()}
-    problems = _row_problems(ids, types, left.rows, right.rows, _matches_relative)
+    first, first_repeated = _index_rows(left.rows, ids, types)
+    second, second_repeated = _index_rows(right.rows, ids, types)
+    if first_repeated or second_repeated:
+        # No key finds one data point. Two engines that return the same invalid dataset still
+        # agree with each other, so the data points are compared as a multiset instead.
+        return _same_data_points(types, left.rows, right.rows, _matches_relative)
+    problems = _matched_row_problems(ids, types, first, second, _matches_relative)
     return next(problems, None) is None
+
+
+def _same_data_points(
+    types: Mapping[str, str],
+    left_rows: Sequence[Mapping[str, str | None]],
+    right_rows: Sequence[Mapping[str, str | None]],
+    numbers: Callable[[str, str], bool],
+) -> bool:
+    """Whether two lists hold the same data points, each the same number of times, in any order.
+
+    Each list is sorted by the canonical value of its data points and the lists are compared
+    pairwise, a Number with the tolerance of ``numbers``. The Number columns sort last: two
+    engines differ a little on a Number, and that must not put data points that differ in
+    another column in another order on each side.
+    """
+    if len(left_rows) != len(right_rows):
+        return False
+    columns = sorted(types, key=lambda name: types[name] == "Number")  # False first, stable
+
+    def order(row: Mapping[str, str | None]) -> tuple[tuple[int, Any], ...]:
+        return tuple(_order(_canonical(types[name], row.get(name))) for name in columns)
+
+    return all(
+        _same_value(types[name], left.get(name), right.get(name), numbers)
+        for left, right in zip(sorted(left_rows, key=order), sorted(right_rows, key=order))
+        for name in types
+    )
 
 
 def _structure(dataset: ActualDataset) -> dict[str, tuple[str, str]]:
@@ -280,7 +317,17 @@ def _row_problems(
         for row in got_repeated:
             yield f"duplicate identifier key {_key_text(ids, row) or '()'} in actual"
         return
+    yield from _matched_row_problems(ids, types, wanted, got, numbers)
 
+
+def _matched_row_problems(
+    ids: Sequence[str],
+    types: Mapping[str, str],
+    wanted: Mapping[tuple[Hashable, ...], Mapping[str, str | None]],
+    got: Mapping[tuple[Hashable, ...], Mapping[str, str | None]],
+    numbers: Callable[[str, str], bool],
+) -> Iterator[str]:
+    """How the data points ``got`` differ from ``wanted``, both indexed by ``_index_rows``."""
     others = [name for name in types if name not in ids]
     for key, want in wanted.items():
         have = got.get(key)
@@ -378,6 +425,20 @@ def _canonical(vtype: str, value: str | None) -> Hashable:
     if vtype == "Time":
         return "/".join(part.strip() for part in text.split("/"))
     return text
+
+
+def _order(value: Hashable) -> tuple[int, Any]:
+    """A sort key for a canonical value, which sorts a null, a number, a period and a text.
+
+    A None and a str cannot be compared, so the values of another kind are ordered by kind.
+    """
+    if value is None:
+        return 0, 0
+    if isinstance(value, Decimal):
+        return 1, value
+    if isinstance(value, tuple):
+        return 2, value
+    return 3, value
 
 
 def _decimal(text: str) -> Decimal | None:
