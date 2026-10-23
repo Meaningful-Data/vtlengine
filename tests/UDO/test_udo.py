@@ -753,3 +753,100 @@ class UdoTest(UDOHelper):
 
         with pytest.raises(Exception, match=error_message):
             self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1161_1(self):
+        """
+        Status: OK
+        Description: The body returns an integer, but the operator returns string
+        Goal: Check Exception.
+        """
+        code = "GH_1161_1"
+        number_inputs = 1
+        message = "1-3-1-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1161_2(self):
+        """
+        Status: OK
+        Description: The operator returns integer not null, which is not supported
+        Goal: Check Exception.
+        """
+        code = "GH_1161_2"
+        number_inputs = 1
+        message = "1-3-2-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1161_3(self):
+        """
+        Status: OK
+        Description: The operator returns integer [value > 0], which is not supported
+        Goal: Check Exception.
+        """
+        code = "GH_1161_3"
+        number_inputs = 1
+        message = "1-3-2-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1161_4(self):
+        """
+        Status: OK
+        Description: The body returns a dataset with another structure than the declared one
+        Goal: Check Exception.
+        """
+        code = "GH_1161_4"
+        number_inputs = 1
+        message = "1-3-1-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1161_5(self):
+        """
+        Status: OK
+        Description: The default of an integer parameter is a string
+        Goal: Check Exception.
+        """
+        code = "GH_1161_5"
+        number_inputs = 1
+        message = "1-3-1-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1161_6(self):
+        """
+        Status: OK
+        Description: The call passes more arguments than the operator has parameters
+        Goal: Check Exception.
+        """
+        code = "GH_1161_6"
+        number_inputs = 1
+        message = "1-3-1-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1161_7(self):
+        """
+        Status: OK
+        Description: The results match the declared dataset structure and component type,
+            and an integer default is accepted for a number parameter
+        Goal: Check Result.
+        """
+        code = "GH_1161_7"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

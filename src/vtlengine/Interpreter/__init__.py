@@ -8,6 +8,7 @@ import pandas as pd
 
 import vtlengine.AST as AST
 import vtlengine.Operators as Operators
+from vtlengine.AST.ASTString import _format_component_type, _format_type
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
 from vtlengine.AST.DAG._models import DatasetSchedule
@@ -127,6 +128,41 @@ def _var_id_names(node: Any) -> Iterator[str]:
     elif isinstance(node, AST.AST):
         for child in vars(node).values():
             yield from _var_id_names(child)
+
+
+def _udo_component_matches(declared: Any, found: Any) -> bool:
+    """Whether a component has the role and the type a user defined operator declares."""
+    # A component declared without a role or a type is parsed with None and a String instance,
+    # so declared is not typed as a Component
+    return (declared.role is None or found.role == declared.role) and (
+        not isinstance(declared.data_type, type)
+        or check_unary_implicit_promotion(found.data_type, declared.data_type)
+    )
+
+
+def _check_udo_return_type(op: str, declared: Any, result: Any) -> None:
+    """The result of a user defined operator must have the type it returns (issue #1161)."""
+    if isinstance(declared, Dataset):
+        found = result.components
+        matches = not declared.components or (
+            declared.components.keys() == found.keys()
+            and all(
+                _udo_component_matches(c, found[name]) for name, c in declared.components.items()
+            )
+        )
+        found_type = _format_type(result)
+    elif isinstance(declared, Component):
+        matches = _udo_component_matches(declared, result)
+        found_type = _format_component_type(result)
+    elif isinstance(declared, type):
+        matches = check_unary_implicit_promotion(result.data_type, declared)
+        found_type = _format_type(result.data_type)
+    else:
+        return
+    if not matches:
+        raise SemanticError(
+            "1-3-1-1", op=op, option="output", type_1=_format_type(declared), type_2=found_type
+        )
 
 
 # noinspection PyTypeChecker
@@ -359,6 +395,19 @@ class InterpreterAnalyzer(ASTTemplate):
                 type_ = param.type_
             param_info.append({"name": param.name, "type": type_})
             if param.default is not None:
+                default = self.visit(param.default)
+                declared: Any = param.type_
+                if not isinstance(declared, Scalar) and not (
+                    isinstance(declared, type)
+                    and check_unary_implicit_promotion(default.data_type, declared)
+                ):
+                    raise SemanticError(
+                        "1-3-1-1",
+                        op=node.op,
+                        option=f"default of parameter {param.name}",
+                        type_1=type_,
+                        type_2=default.data_type,
+                    )
                 param_info[-1]["default"] = param.default
             if len(param_info) > 1:
                 previous_default = param_info[0]
@@ -371,6 +420,7 @@ class InterpreterAnalyzer(ASTTemplate):
             "params": param_info,
             "expression": node.expression,
             "output": node.output_type,
+            "return_type": node.return_type,
         }
 
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
@@ -2168,6 +2218,10 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_regular_aggregation or self.is_from_rule
         ):
             raise SemanticError("1-2-12", op=node.op)
+        if len(node.params) > len(operator["params"]):
+            raise SemanticError(
+                "1-3-1-6", op=node.op, defined=len(operator["params"]), passed=len(node.params)
+            )
 
         for i, param in enumerate(operator["params"]):
             if i >= len(node.params):
@@ -2280,6 +2334,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 type_1=operator["output"],
                 type_2=result_type,
             )
+        _check_udo_return_type(node.op, operator["return_type"], result)
 
         # We pop the last element of the stack (current UDO params)
         # to avoid using them in the next UDO call
