@@ -1,7 +1,7 @@
 # `max` with `group by` over a String measure
 
-Authored (review fix round 1): the type axis of `max`, which takes any comparable type. The
-input has the shared identifiers and a String measure:
+Authored: this example tests `max` over a String measure (the operator takes any
+comparable type). The input has the shared identifiers and a String measure:
 
 | Id_1 | Id_2 | Me_1 |
 |---|---|---|

@@ -10,9 +10,12 @@ the grouping clause and the analytic clause (partition, order and window) once f
 
 In the Aggregate invocation, the data set form of ``count`` returns a single Integer measure
 ``int_var``, whatever the measures of the operand, and ignores the data points whose measures are
-all null: that is the team decision of #1049, so those examples carry ``decision=1049``. The
-decision does not cover the analytic invocation, whose data set form follows the single result
-type of the count page without a decision. Every ``having`` example references only aggregated
+all null: that is the team decision of #1049. ``decision=1049`` marks only the examples whose
+output follows it beyond the manual: an operand with two measures, where the decision settles the
+manual's conflict between the count page's ``int_var`` and the Aggregate invocation's "same
+Measures as the operand", and data points with null measures. The single-measure examples without
+nulls give the manual's own ``int_var`` and carry no mark, and neither does the analytic
+invocation, which the decision does not cover. Every ``having`` example references only aggregated
 expressions of the aggregated measures, where the manual and the reading of #1119 agree, so none
 of them needs ``decision=1119``.
 
@@ -51,12 +54,13 @@ def _aggregate_function(op_id: str, name: str, title: str, accepts: str, returns
     def dataset_form() -> tuple[Example, ...]:
         return (authored(decision=decision),)
 
-    # ``minimal`` has the two measures of the shared input; ``minimal_2`` the first one only.
+    # ``minimal`` has the two measures of the shared input; ``minimal_2`` the first one only,
+    # which gives the manual's own ``int_var`` for ``count``: no decision there.
     having: tuple[Variant, ...] = (
         Variant(
             "ds_having",
             f"{op_id}(DS group by Id having cond)",
-            (authored(decision=decision), authored("minimal_2", decision=decision)),
+            (authored(decision=decision), authored("minimal_2")),
         ),
     )
     if is_count:
@@ -64,10 +68,11 @@ def _aggregate_function(op_id: str, name: str, title: str, accepts: str, returns
             Variant(
                 "count_in_having",
                 "count(DS group by Id having count() > n)",
-                (manual("ex_2", decision=decision),),
+                (manual("ex_2"),),
             ),
         )
-    group_by: tuple[Example, ...] = (manual("ex_1", decision=decision),)
+    # ex_1 has a single measure and no null: the manual's own ``int_var``, no decision.
+    group_by: tuple[Example, ...] = (manual("ex_1"),)
     if op_id in _GROUP_BY_SECOND:
         group_by += (authored("minimal_2", decision=decision),)
     variants = (

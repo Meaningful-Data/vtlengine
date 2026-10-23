@@ -1,6 +1,6 @@
 # `var_samp` with `group by` and `having`, single-measure operand
 
-Authored, after the first run: the same script as `minimal`, over the shared `DS_1` without its second measure `Me_2`. The manual applies the data set form to all the measures of the operand and does not restrict `having` to single-measure operands, so `minimal` (two measures) stays the general case; this example shows the form on the simplest operand.
+Authored: this example tests the `having` form on the simplest operand, a single measure. It is the script of `minimal` over the shared `DS_1` without its second measure `Me_2`. The manual applies the data set form to all the measures of the operand and does not restrict `having` to single-measure operands, so `minimal`, with two measures, is the general case.
 
 Input `DS_1`:
 

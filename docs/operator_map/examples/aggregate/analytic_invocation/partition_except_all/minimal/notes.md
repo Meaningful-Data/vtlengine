@@ -1,6 +1,6 @@
 # Analytic invocation with `partition except all`
 
-Authored, after the first run: the manual's ex_2 writes the identifier as `id_1`, which the User Manual allows (regular names are case insensitive) but both engines reject, so it does not show whether `partition except all` itself works. This example writes the names as declared. `partition except all` leaves no identifier to partition by, so the whole data set is one partition (the rule for an omitted partition clause does not apply: the clause is given). The rank page: "If some Data Points are in the same order according to the specified orderClause, the same order number (rank) is assigned and a gap appears in the sequence of the assigned ranks".
+Authored: this example tests `partition except all` alone. The manual's ex_2 also writes the identifier `Id_1` as `id_1`, which the User Manual allows (regular names are case insensitive); this example writes the names as declared. `partition except all` leaves no identifier to partition by, so the whole data set is one partition (the rule for an omitted partition clause does not apply: the clause is given). The rank page: "If some Data Points are in the same order according to the specified orderClause, the same order number (rank) is assigned and a gap appears in the sequence of the assigned ranks".
 
 Input: the chapter's shared `DS_1` (`Id_1` String and `Id_2` Time_Period identifiers, `Me_1` and `Me_2` Number measures, no null):
 

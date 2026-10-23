@@ -4,6 +4,7 @@ The `count ( )` form without operand is the one the Aggregate invocation prescri
 havingCondition: "The count operator is used in a havingCondition without parameters". The
 expected output is the manual's: 2011 has 3 data points and passes, 2012 has 2 and is dropped.
 
-The result has the single Integer measure `int_var`, as the manual prints it and as the team
-decision [#1049](https://github.com/Meaningful-Data/vtlengine/issues/1049) (📌) fixes for
-`count` over a Data Set.
+The result has the single Integer measure `int_var`, as the manual prints it and as the count
+page's result type gives it. `DS_1` has one measure and no null, so the team decision
+[#1049](https://github.com/Meaningful-Data/vtlengine/issues/1049) gives the same output; the
+example carries no 📌.

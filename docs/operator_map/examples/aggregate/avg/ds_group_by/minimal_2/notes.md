@@ -1,7 +1,7 @@
 # `avg` with `group by` over a null value
 
-Authored (review fix round 1): the null axis of `avg`. The input is the shared `DS_1` reduced
-to its first measure, with the `Me_1` of `A, 2021Q1` null:
+Authored: this example tests that `avg` leaves a null value out of the average. The input is
+the shared `DS_1` reduced to its first measure, with the `Me_1` of `A, 2021Q1` null:
 
 | Id_1 | Id_2 | Me_1 |
 |---|---|---|

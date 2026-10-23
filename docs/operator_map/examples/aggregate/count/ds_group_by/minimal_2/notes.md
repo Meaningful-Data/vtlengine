@@ -1,7 +1,7 @@
 # `count` with `group by` over data points with null measures
 
-Authored (review fix round 1): the null axis of `count`. The input is the chapter's shared
-`DS_1` with nulls put in two data points of `A`:
+Authored: this example tests which data points `count` counts when their measures are null.
+The input is the chapter's shared `DS_1` with nulls put in two data points of `A`:
 
 | Id_1 | Id_2 | Me_1 | Me_2 |
 |---|---|---|---|
