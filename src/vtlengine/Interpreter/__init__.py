@@ -2036,6 +2036,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.visit(node.output)
 
         """
+        if not isinstance(node.output, Dataset):
+            raise SemanticError("1-3-2-1", option="dataset output")
         if node.language not in EXTERNAL:
             raise SemanticError(code="1-3-6", language=node.language)
 
