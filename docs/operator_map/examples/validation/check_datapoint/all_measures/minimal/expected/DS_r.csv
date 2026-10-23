@@ -1,9 +1,9 @@
 Id_1,Id_2,ruleid,Me_1,bool_var,errorcode,errorlevel
 1,A,R1,10,true,,
 1,A,R2,10,true,,
-2,A,R1,-5,false,E1,1
+2,A,R1,-5,false,,
 2,A,R2,-5,true,,
 3,B,R1,200,true,,
-3,B,R2,200,false,E2,2
+3,B,R2,200,false,,
 4,A,R1,,,,
 4,A,R2,,,,

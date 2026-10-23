@@ -1,10 +1,11 @@
 define hierarchical ruleset HR_1 ( variable rule Id_2 ) is
-    R1 : A = B + C errorcode "E1" errorlevel 1
-    ; R2 : C = D + E errorcode "E2" errorlevel 2
-    ; R3 : B >= D errorcode "E3" errorlevel 3
-    ; R4 : E > F errorcode "E4" errorlevel 4
-    ; R5 : G < H errorcode "E5" errorlevel 5
-    ; R6 : D <= F errorcode "E6" errorlevel 6
+    R1 : A = B + C
+    ; R2 : C = D + E
+    ; R3 : B >= D
+    ; R4 : E > X
+    ; R5 : Y < Z
+    ; R6 : D <= X
+    ; R7 : F > B
 end hierarchical ruleset;
 
 DS_r := check_hierarchy ( DS_1, HR_1 non_null dataset_priority all );

@@ -6,11 +6,16 @@ Manual page: [Check hierarchy](https://sdmx-twg.github.io/vtl/v2.2/reference_man
 value domain to the component `Id_2`. `value_domains/VD_1.json` is the `VD_1` of the manual's
 example 1 (the 26 uppercase letters). Mode, input and output are the defaults: `non_null`,
 `dataset`, `invalid`. This example isolates the `rule` parameter on a small ruleset; the
-manual's example 1 is the other example of the variant.
+manual's example 1 is the other example of the variant. The rules give no errorcode or
+errorlevel, so both are null.
 
-- R1 `A = B + C`: `10 = 3 + 6` is false, imbalance 10 - 9 = 1, errorcode E1, errorlevel 1;
+- R1 `A = B + C`: `10 = 3 + 6` is false, imbalance 10 - 9 = 1;
 - R2 `C >= B`: `6 >= 3` is true, so it is not in the `invalid` output.
 
-Types: `Me_1`, `imbalance` and `errorlevel` are Integer, as in the structure of the manual's
-example 1 (Subtraction: "If the type of both operands is *integer* then the result has type
-*integer*"; the errorlevel literal is an integer).
+`Me_1` is Number, so `imbalance` is Number. Subtraction: "If one of the operands is of type
+*number*, then the other operand is implicitly cast to *number* and therefore the result has
+type *number*".
+
+`errorlevel` is Integer even where no rule gives one: the manual's check_datapoint examples 1
+and 2 have no errorlevel in their ruleset and still type it Integer (and `check` says "or
+*integer* if the errorcode_vd Value Domain is not found").

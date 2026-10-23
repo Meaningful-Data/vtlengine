@@ -1,6 +1,6 @@
 define datapoint ruleset DPR_1 ( variable Id_2, Me_1 ) is
-    R1 : when Id_2 = "A" then Me_1 > 0 errorcode "E1" errorlevel 1
-    ; R2 : Me_1 < 100 errorcode "E2" errorlevel 2
+    R1 : when Id_2 = "A" then Me_1 > 0
+    ; R2 : Me_1 < 100
 end datapoint ruleset;
 
 DS_r := check_datapoint ( DS_1, DPR_1 invalid );

@@ -38,6 +38,8 @@ CHECK_DATAPOINT = Operator(
         Variant("all", "check_datapoint(DS, DPR all)", (manual("ex_2"),)),
         Variant("all_measures", "check_datapoint(DS, DPR all_measures)", (authored(),)),
         Variant("components", "check_datapoint(DS, DPR components C1, C2)", (authored(),)),
+        Variant("errorcode", "check_datapoint(DS, DPR all), rules with errorcode", (authored(),)),
+        Variant("errorlevel", "check_datapoint(DS, DPR all), rules with errorlevel", (authored(),)),
     ),
 )
 
@@ -64,6 +66,16 @@ CHECK_HIERARCHY = Operator(
                 ),
                 authored(),
             ),
+        ),
+        Variant(
+            "errorcode",
+            "check_hierarchy(DS, HR partial_zero dataset all), rules with errorcode",
+            (authored(),),
+        ),
+        Variant(
+            "errorlevel",
+            "check_hierarchy(DS, HR partial_zero dataset all), rules with errorlevel",
+            (authored(),),
         ),
     ),
 )
