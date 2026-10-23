@@ -8,7 +8,7 @@ from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine import DataTypes
 from vtlengine.API import run
 from vtlengine.DataTypes import Boolean, Integer, Null, Number, String
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role, Scalar
 
 
@@ -364,7 +364,7 @@ def test_numeric_operators(text, reference):
 def test_exception_numeric_op(text, exception_message):
     warnings.filterwarnings("ignore", category=FutureWarning)
     expression = f"DS_r := {text};"
-    with pytest.raises(Exception, match=exception_message):
+    with pytest.raises(RunTimeError, match=exception_message):
         _run_scalar(expression)
 
 

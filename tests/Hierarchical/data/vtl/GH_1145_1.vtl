@@ -1,0 +1,7 @@
+define hierarchical ruleset HR_1 (variable rule Id_1) is
+    G = B + C errorcode "G";
+    B = M + N errorcode "B";
+    C = P + Q errorcode "C"
+end hierarchical ruleset;
+
+DS_r <- check_hierarchy(DS_1, HR_1 rule Id_1 all);

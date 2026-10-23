@@ -38,7 +38,7 @@ from vtlengine.AST.ASTConstructorModules.Terminals import (
 from vtlengine.AST.ASTDataExchange import de_ruleset_elements
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Component, Dataset, Scalar
 
 # pylint: disable=unreachable,expression-not-assigned
@@ -63,6 +63,8 @@ class ASTVisitor:
         start:
             (statement  EOL)* EOF
         """
+        # The calls of a script only use the rulesets it defines, not those of an earlier one
+        de_ruleset_elements.clear()
         ctx_list = ctx.children
 
         statements_nodes = []
@@ -105,8 +107,6 @@ class ASTVisitor:
 
         elif ctx.ctx_id == RC.DEFINE_EXPRESSION:
             return self.visitDefineExpression(c)
-        else:
-            raise NotImplementedError
 
     # varID ASSIGN expr                # temporaryAssignment
     def visitTemporaryAssignment(self, ctx):
@@ -296,6 +296,8 @@ class ASTVisitor:
             raise SemanticError("1-3-2-2", op=operator)
         else:
             return_node, return_type = return_[0]
+        if return_type is None:
+            raise SemanticError("1-3-2-6", op=operator)
 
         token_info = extract_token_info(ctx)
 
@@ -483,7 +485,7 @@ class ASTVisitor:
         # Keep k,v for the hierarchical rulesets
         de_ruleset_elements[ruleset_name] = ruleset_elements
         if len(ruleset_rules) == 0:
-            raise Exception(f"No rules found for the ruleset {ruleset_name}")
+            raise InputValidationException(code="0-5-1-2", ruleset_name=ruleset_name)
 
         token_info = extract_token_info(ctx)
 
@@ -676,15 +678,11 @@ class ASTVisitor:
         """  # noqa E501
         ctx_list = ctx.children
 
-        expr = [expr for expr in ctx_list if not expr.is_terminal and expr.rule_index == RC.EXPR[0]]
-        if len(expr) != 0:
-            # AST_ASTCONSTRUCTOR.8
-            raise NotImplementedError
-
         right_condition = [
             ExprComp().visitExprComponent(right_condition)
             for right_condition in ctx_list
-            if not right_condition.is_terminal and right_condition.ctx_id == RC.COMPARISON_EXPR_COMP
+            if not right_condition.is_terminal
+            and right_condition.rule_index == RC.EXPR_COMPONENT[0]
         ]
 
         if ctx_list[0].is_terminal:

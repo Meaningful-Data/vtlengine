@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Set
 import pandas as pd
 
 from vtlengine.AST import BinOp
-from vtlengine.AST.Grammar.tokens import CROSS_JOIN, FULL_JOIN, INNER_JOIN, LEFT_JOIN
+from vtlengine.AST.Grammar.tokens import APPLY, CROSS_JOIN, FULL_JOIN, INNER_JOIN, LEFT_JOIN
 from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE, binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role
@@ -303,7 +303,7 @@ class Join(Operator):
             cls._validate_nvl(operands, nvl)
         dataset_name = VirtualCounter._new_ds_name()
         if len(operands) < 1 or sum([isinstance(op, Dataset) for op in operands]) < 1:
-            raise Exception("Join operator requires at least 1 dataset")
+            raise SemanticError("1-1-13-19", op=cls.op)
         if not all(isinstance(op, Dataset) for op in operands):
             raise SemanticError("1-1-13-10")
         if len(operands) == 1 and isinstance(operands[0], Dataset):
@@ -505,6 +505,7 @@ class Apply(Operator):
     @classmethod
     def evaluate(cls, dataset: Dataset, expression: Any, op_map: Dict[str, Any]) -> Dataset:
         for child in expression:
+            cls._check_operands(dataset, child)
             dataset = cls.execute(dataset, op_map[child.op], child.left.value, child.right.value)
         return dataset
 
@@ -521,6 +522,7 @@ class Apply(Operator):
             for c in child:
                 dataset = cls.validate(dataset, c, op_map)
         else:
+            cls._check_operands(dataset, child)
             cls._check_bin_expr(dataset, child, op_map)
             left_dataset = cls.create_dataset("left", child.left.value, dataset)
             right_dataset = cls.create_dataset("right", child.right.value, dataset)
@@ -528,14 +530,22 @@ class Apply(Operator):
 
         return dataset
 
+    @staticmethod
+    def _check_operands(dataset: Dataset, child: Any) -> None:
+        """Each side of the apply expression must name an operand of the join."""
+        if not isinstance(child, BinOp):
+            return
+        for side in (child.left, child.right):
+            name = getattr(side, "value", side)
+            if not isinstance(name, str) or not any(
+                comp.startswith(f"{name}#") for comp in dataset.components
+            ):
+                raise SemanticError("1-1-13-22", operand=name)
+
     @classmethod
     def _check_bin_expr(cls, dataset: Dataset, child: Any, op_map: Dict[str, Any]) -> None:
         if not isinstance(child, BinOp):
-            raise Exception(
-                f"Invalid expression {child} on apply operator. Only BinOp are accepted"
-            )
-        if child.op not in op_map:
-            raise Exception(f"Operator {child.op} not implemented")
+            raise SemanticError("1-1-13-20", op=APPLY, expression=child)
         if hasattr(child.left, "value") and hasattr(child.right, "value"):
             left_components = [
                 comp.name[len(child.left.value) + 1]
@@ -548,9 +558,8 @@ class Apply(Operator):
                 if comp.name.startswith(child.right.value)
             ]
             if len(set(left_components) & set(right_components)) == 0:
-                raise Exception(
-                    f"{child.left.value} and {child.right.value} "
-                    f"has not any match on dataset components"
+                raise SemanticError(
+                    "1-1-13-21", op=APPLY, left=child.left.value, right=child.right.value
                 )
 
     @classmethod

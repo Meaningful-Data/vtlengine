@@ -117,6 +117,10 @@ CREATE OR REPLACE MACRO vtl_dateadd(d, shift INTEGER, period_ind VARCHAR) AS (
         WHEN 'Q' THEN CAST(d AS TIMESTAMP) + INTERVAL (shift * 3) MONTH
         WHEN 'S' THEN CAST(d AS TIMESTAMP) + INTERVAL (shift * 6) MONTH
         WHEN 'A' THEN CAST(d AS TIMESTAMP) + INTERVAL (shift) YEAR
+        -- Another period, also computed from a scalar expression, mirrors VTL error 2-1-19-2
+        ELSE CASE WHEN period_ind IS NULL THEN NULL
+                  ELSE error('VTL 2-1-19-2 invalid period ' || period_ind)
+             END
     END
 );
 

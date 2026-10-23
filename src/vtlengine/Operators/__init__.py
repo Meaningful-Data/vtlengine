@@ -31,7 +31,7 @@ from vtlengine.DataTypes.TimeHandling import (
     TimeIntervalHandler,
     TimePeriodHandler,
 )
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
@@ -67,6 +67,15 @@ class Operator:
         if only_semantic:
             return cls.validate(*args, **kwargs)
         return cls.evaluate(*args, **kwargs)
+
+    # Implemented by each operator
+    @classmethod
+    def validate(cls, *args: Any, **kwargs: Any) -> Any:
+        raise NotImplementedError
+
+    @classmethod
+    def evaluate(cls, *args: Any, **kwargs: Any) -> Any:
+        raise NotImplementedError
 
     @classmethod
     def cast_time_types(cls, data_type: Any, series: Any) -> Any:
@@ -123,60 +132,20 @@ class Operator:
                     del result.data[column]
 
     @classmethod
-    def validate_dataset_type(cls, *args: Any) -> None:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
-    def validate_component_type(cls, *args: Any) -> None:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
-    def validate_scalar_type(cls, *args: Any) -> None:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
-    def validate(cls, *args: Any, **kwargs: Any) -> Any:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
-    def evaluate(cls, *args: Any, **kwargs: Any) -> Any:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
-    def scalar_validation(cls, *args: Any) -> Any:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
-    def component_validation(cls, *args: Any) -> Any:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
     def validate_type_compatibility(cls, *args: Any) -> bool:
         if len(args) == 1:
             operand = args[0]
             return check_unary_implicit_promotion(operand, cls.type_to_check, cls.return_type)
-        if len(args) == 2:
-            left, right = args
-            return check_binary_implicit_promotion(left, right, cls.type_to_check, cls.return_type)
-        raise Exception("Method should be implemented by inheritors")
+        left, right = args
+        return check_binary_implicit_promotion(left, right, cls.type_to_check, cls.return_type)
 
     @classmethod
     def type_validation(cls, *args: Any) -> Any:
         if len(args) == 1:
             operand = args[0]
             return unary_implicit_promotion(operand, cls.type_to_check, cls.return_type)
-        if len(args) == 2:
-            left, right = args
-            return binary_implicit_promotion(left, right, cls.type_to_check, cls.return_type)
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
-    def apply_return_type_dataset(cls, *args: Any) -> None:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
-    def apply_return_type(cls, *args: Any) -> None:
-        raise Exception("Method should be implemented by inheritors")
+        left, right = args
+        return binary_implicit_promotion(left, right, cls.type_to_check, cls.return_type)
 
 
 def _id_type_promotion_join_keys(
@@ -627,7 +596,7 @@ class Binary(Operator):
                     suffixes=("_x", "_y"),
                 )
         except ValueError as e:
-            raise Exception(f"Error merging datasets on Binary Operator: {str(e)}")
+            raise RunTimeError("2-1-1-17", op=cls.op, error=e) from e
 
         # Measures are the same, using left operand measures names
         for measure in left_operand.get_measures():

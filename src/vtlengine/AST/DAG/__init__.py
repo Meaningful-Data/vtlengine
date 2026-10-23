@@ -25,6 +25,7 @@ from vtlengine.AST import (
     DPRuleset,
     DPValidation,
     HROperation,
+    HRule,
     HRuleset,
     Identifier,
     JoinOp,
@@ -397,19 +398,22 @@ class HRDAGAnalyzer(DAGAnalyzer):
 
         Several rules can compute the same code item under different conditions (issue
         #1142), so a rule reading it comes after all of them, which sort_hr_rules does
-        not ensure. The rule names do not change: they follow the order sort_hr_rules gave
-        the ruleset when it was defined.
+        not ensure. Those rules keep the order they are written in: a data point that
+        several of them compute keeps the values of the last one (issue #1193). The rule
+        names do not change: they follow the order sort_hr_rules gave the ruleset when it
+        was defined.
         """
         dag = cls()
         dag.visit(node)
         dag.load_vertex()
-        dag._load_edges_from_every_definer()
+        dag._load_edges_from_every_definer(node.rules)
         if len(dag.edges) != 0:
             dag._build_and_sort_graph("hierarchy")
             node.rules = dag.sort_elements(node.rules)
 
-    def _load_edges_from_every_definer(self) -> None:
-        """Link each rule to every rule that computes one of the code items it reads."""
+    def _load_edges_from_every_definer(self, rules: List[HRule]) -> None:
+        """Link each rule to every rule that computes one of the code items it reads, and
+        each rule to the next one written that computes the same code item."""
         if len(self.vertex) == 0:
             return
         definers: Dict[str, List[int]] = defaultdict(list)
@@ -424,6 +428,14 @@ class HRDAGAnalyzer(DAGAnalyzer):
                 for key in definers.get(input_val, []):
                     self.edges[count_edges] = (key, sub_key)
                     count_edges += 1
+
+        for keys in definers.values():
+            written = sorted(
+                keys, key=lambda k: (rules[k - 1].line_start, rules[k - 1].column_start)
+            )
+            for previous, following in zip(written, written[1:]):
+                self.edges[count_edges] = (previous, following)
+                count_edges += 1
 
     def visit_HRuleset(self, node: HRuleset) -> None:
         """

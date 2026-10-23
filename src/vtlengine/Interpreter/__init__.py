@@ -1,6 +1,6 @@
 import csv
 from copy import copy, deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Type, Union, cast
 
@@ -8,6 +8,7 @@ import pandas as pd
 
 import vtlengine.AST as AST
 import vtlengine.Operators as Operators
+from vtlengine.AST.ASTString import _format_component_type, _format_type
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
 from vtlengine.AST.DAG._models import DatasetSchedule
@@ -37,8 +38,10 @@ from vtlengine.AST.Grammar.tokens import (
     INSTR,
     KEEP,
     MEMBERSHIP,
+    MINUS,
     PARTIAL_NULL,
     PARTIAL_ZERO,
+    PLUS,
     REPLACE,
     ROUND,
     RULE_PRIORITY,
@@ -51,10 +54,16 @@ from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
+    Integer,
     ScalarType,
     check_unary_implicit_promotion,
 )
-from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
+from vtlengine.Exceptions import (
+    InputValidationException,
+    RunTimeError,
+    SemanticError,
+    transformation_output,
+)
 from vtlengine.files.output import save_datapoints
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
@@ -83,6 +92,7 @@ from vtlengine.Operators.HROperators import (
     HAAssignment,
     Hierarchy,
     get_measure_from_dataset,
+    unique_data_points,
 )
 from vtlengine.Operators.Numeric import Round, Trunc
 from vtlengine.Operators.String import DISTANCE_DISPATCH, Instr, Replace, Substr
@@ -117,6 +127,11 @@ from vtlengine.ViralPropagation import (
 )
 
 
+def _is_omitted(node: AST.AST) -> bool:
+    """Whether an argument of a user defined operator call is written as _."""
+    return isinstance(node, AST.ID) and node.type_ == "OPTIONAL"
+
+
 def _var_id_names(node: Any) -> Iterator[str]:
     """Yield the names of the VarID nodes in a subtree, including the code item conditions."""
     if isinstance(node, AST.VarID):
@@ -127,6 +142,41 @@ def _var_id_names(node: Any) -> Iterator[str]:
     elif isinstance(node, AST.AST):
         for child in vars(node).values():
             yield from _var_id_names(child)
+
+
+def _udo_component_matches(declared: Any, found: Any) -> bool:
+    """Whether a component has the role and the type a user defined operator declares."""
+    # A component declared without a role or a type is parsed with None and a String instance,
+    # so declared is not typed as a Component
+    return (declared.role is None or found.role == declared.role) and (
+        not isinstance(declared.data_type, type)
+        or check_unary_implicit_promotion(found.data_type, declared.data_type)
+    )
+
+
+def _check_udo_return_type(op: str, declared: Any, result: Any) -> None:
+    """The result of a user defined operator must have the type it returns (issue #1161)."""
+    if isinstance(declared, Dataset):
+        found = result.components
+        matches = not declared.components or (
+            declared.components.keys() == found.keys()
+            and all(
+                _udo_component_matches(c, found[name]) for name, c in declared.components.items()
+            )
+        )
+        found_type = _format_type(result)
+    elif isinstance(declared, Component):
+        matches = _udo_component_matches(declared, result)
+        found_type = _format_component_type(result)
+    elif isinstance(declared, type):
+        matches = check_unary_implicit_promotion(result.data_type, declared)
+        found_type = _format_type(result.data_type)
+    else:
+        return
+    if not matches:
+        raise SemanticError(
+            "1-3-1-1", op=op, option="output", type_1=_format_type(declared), type_2=found_type
+        )
 
 
 # noinspection PyTypeChecker
@@ -171,12 +221,15 @@ class InterpreterAnalyzer(ASTTemplate):
     partial_rule_elements: Optional[Set[str]] = None
     ruleset_signature: Optional[Dict[str, str]] = None
     udo_params: Optional[List[Dict[str, Any]]] = None
+    # Names of the user defined operators being called, outermost first
+    udo_calls: List[str] = field(default_factory=list)
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
     # Names of the rules that computed each code item, in evaluation order
     hr_agg_item_rules: Optional[Dict[str, List[str]]] = None
+    # Name of the ruleset of the hierarchy being computed
+    hr_agg_ruleset: Optional[str] = None
     ruleset_mode: Optional[str] = None
     hr_input: Optional[str] = None
-    hr_name: Optional[str] = None
     # DL
     dprs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     udos: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
@@ -323,9 +376,9 @@ class InterpreterAnalyzer(ASTTemplate):
             self._save_datapoints_efficient(statement_num)
             statement_num += 1
         if invalid_dataset_outputs:
-            raise SemanticError("0-1-2-8", names=", ".join(invalid_dataset_outputs))
+            raise InputValidationException(code="0-1-2-8", names=", ".join(invalid_dataset_outputs))
         if invalid_scalar_outputs:
-            raise SemanticError("0-1-2-8", names=", ".join(invalid_scalar_outputs))
+            raise InputValidationException(code="0-1-2-8", names=", ".join(invalid_scalar_outputs))
 
         if self.output_path is not None and scalars_to_save:
             scalars_filtered = {
@@ -346,12 +399,12 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.udos is None:
             self.udos = {}
         elif node.op in self.udos:
-            raise ValueError(f"User Defined Operator {node.op} already exists")
+            raise SemanticError("1-2-24", element_type="User Defined Operator", name=node.op)
 
         param_info: List[Dict[str, Union[str, Type[ScalarType], AST.AST]]] = []
         for param in node.parameters:
             if param.name in [x["name"] for x in param_info]:
-                raise ValueError(f"Duplicated Parameter {param.name} in UDO {node.op}")
+                raise SemanticError("1-3-1-4", type="User Defined Operator", op=node.op)
             # We use a string for model types, but the data type class for basic types
             # (Integer, Number, String, Boolean, ...)
             if isinstance(param.type_, (Dataset, Component, Scalar)):
@@ -360,6 +413,19 @@ class InterpreterAnalyzer(ASTTemplate):
                 type_ = param.type_
             param_info.append({"name": param.name, "type": type_})
             if param.default is not None:
+                default = self.visit(param.default)
+                declared: Any = param.type_
+                if not isinstance(declared, Scalar) and not (
+                    isinstance(declared, type)
+                    and check_unary_implicit_promotion(default.data_type, declared)
+                ):
+                    raise SemanticError(
+                        "1-3-1-1",
+                        op=node.op,
+                        option=f"default of parameter {param.name}",
+                        type_1=type_,
+                        type_2=default.data_type,
+                    )
                 param_info[-1]["default"] = param.default
             if len(param_info) > 1:
                 previous_default = param_info[0]
@@ -372,6 +438,7 @@ class InterpreterAnalyzer(ASTTemplate):
             "params": param_info,
             "expression": node.expression,
             "output": node.output_type,
+            "return_type": node.return_type,
         }
 
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
@@ -417,7 +484,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.dprs is None:
             self.dprs = {}
         elif node.name in self.dprs:
-            raise ValueError(f"Datapoint Ruleset {node.name} already exists")
+            raise SemanticError("1-2-24", element_type="Datapoint Ruleset", name=node.name)
 
         self.dprs[node.name] = ruleset_data
 
@@ -426,14 +493,15 @@ class InterpreterAnalyzer(ASTTemplate):
             self.hrs = {}
 
         if node.name in self.hrs:
-            raise ValueError(f"Hierarchical Ruleset {node.name} already exists")
+            raise SemanticError("1-2-24", element_type="Hierarchical Ruleset", name=node.name)
 
         rule_names = [rule.name for rule in node.rules if rule.name is not None]
         if len(rule_names) != 0 and len(node.rules) != len(rule_names):
             raise SemanticError("1-3-1-7", type="Hierarchical Ruleset", name=node.name)
         if len(rule_names) == 0:
-            for i, rule in enumerate(node.rules):
-                rule.name = (i + 1).__str__()
+            written = sorted(node.rules, key=lambda rule: (rule.line_start, rule.column_start))
+            for i, rule in enumerate(written):
+                rule.name = str(i + 1)
 
         # The hierarchy operator keeps the output of each rule under its name (issue #1142)
         if len(rule_names) != len(set(rule_names)):
@@ -446,9 +514,12 @@ class InterpreterAnalyzer(ASTTemplate):
             )
 
         cond_comp: List[Any] = []
+        cond_variables: List[str] = []
         if isinstance(node.element, list):
-            # The rules name a condition by its alias, if it has one
+            # The rules name a condition by its alias, if it has one, and the call by its
+            # variable (issue #1150)
             cond_comp = [getattr(x, "alias", None) or x.value for x in node.element[:-1]]
+            cond_variables = [x.value for x in node.element[:-1]]
             node.element = cast(AST.DefIdentifier, node.element[-1])
 
         for rule in node.rules:
@@ -462,6 +533,7 @@ class InterpreterAnalyzer(ASTTemplate):
             "rules": node.rules,
             "signature": signature_actual_name,
             "condition": cond_comp,
+            "condition_variables": cond_variables,
             "node": node,
         }
 
@@ -569,8 +641,19 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> None:
         operand = self.visit(node.operand)
-        if node.op not in UNARY_MAPPING and node.op not in ROLE_SETTER_MAPPING:
-            raise NotImplementedError
+        if (
+            node.op in (PLUS, MINUS)
+            and isinstance(operand, Scalar)
+            and operand.literal
+            and isinstance(operand.value, (int, float))
+            and not isinstance(operand.value, bool)
+        ):
+            # A signed number is a literal too, also in parentheses (-(1)) or signed twice:
+            # the semantic analysis knows its value and the checks on literal parameters
+            # read it (issue #1192)
+            result = UNARY_MAPPING[node.op].evaluate(operand)
+            result.literal = True
+            return result
         if (
             self.is_from_regular_aggregation
             and self.regular_aggregation_dataset is not None
@@ -664,11 +747,11 @@ class InterpreterAnalyzer(ASTTemplate):
         operand = self._resolve_aggregation_operand(node)
 
         if not isinstance(operand, Dataset):
-            raise SemanticError("2-3-4", op=node.op, comp="dataset")
+            raise SemanticError("1-2-17", op=node.op, comp="dataset")
 
         for comp in operand.components.values():
             if isinstance(comp.data_type, ScalarType):
-                raise SemanticError("2-1-12-1", op=node.op)
+                raise SemanticError("1-1-12-1", op=node.op)
 
         if node.having_clause is not None and node.grouping is None:
             raise SemanticError("1-2-13")
@@ -819,7 +902,7 @@ class InterpreterAnalyzer(ASTTemplate):
                         partitioning.append(comp_name)
                     else:
                         raise SemanticError(
-                            "2-3-9",
+                            "1-2-21",
                             comp_type="Component",
                             comp_name=comp_name,
                             param="UDO parameters",
@@ -830,7 +913,7 @@ class InterpreterAnalyzer(ASTTemplate):
                         o.component = self.udo_params[-1][o.component]
                     elif o.component not in operand.get_identifiers_names():
                         raise SemanticError(
-                            "2-3-9",
+                            "1-2-21",
                             comp_type="Component",
                             comp_name=o.component,
                             param="UDO parameters",
@@ -841,7 +924,7 @@ class InterpreterAnalyzer(ASTTemplate):
             partitioning = node.partition_by
             ordering = node.order_by if node.order_by is not None else []
         if not isinstance(operand, Dataset):
-            raise SemanticError("2-3-4", op=node.op, comp="dataset")
+            raise SemanticError("1-2-17", op=node.op, comp="dataset")
         if node.partition_by is None:
             if node.order_by is None:
                 partitioning = []
@@ -975,10 +1058,10 @@ class InterpreterAnalyzer(ASTTemplate):
         elif node.op == EXISTS_IN:
             dataset_1 = self.visit(node.children[0])
             if not isinstance(dataset_1, Dataset):
-                raise SemanticError("2-3-11", pos="First")
+                raise SemanticError("1-2-23", pos="First")
             dataset_2 = self.visit(node.children[1])
             if not isinstance(dataset_2, Dataset):
-                raise SemanticError("2-3-11", pos="Second")
+                raise SemanticError("1-2-23", pos="Second")
 
             retain_element = None
             if len(node.children) == 3:
@@ -998,7 +1081,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
             for ds in datasets:
                 if not isinstance(ds, Dataset):
-                    raise ValueError(f"Expected dataset, got {type(ds).__name__}")
+                    raise SemanticError("1-2-23", pos=f"Each {node.op}")
 
             return SET_MAPPING[node.op].analyze(datasets)
 
@@ -1111,7 +1194,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.scalars and node.value in self.scalars:
             return copy(self.scalars[node.value])
         if node.value not in self.datasets:
-            raise SemanticError("2-3-6", dataset_name=node.value)
+            raise SemanticError("1-2-19", dataset_name=node.value)
 
         return copy(self.datasets[node.value])
 
@@ -1129,19 +1212,20 @@ class InterpreterAnalyzer(ASTTemplate):
                 if scalar_data_type is None:
                     scalar_data_type = scalar.data_type
             if len(duplicates) > 0:
-                raise SemanticError("1-2-5", duplicates=duplicates)
+                raise SemanticError("1-2-27", duplicates=duplicates)
             for element in elements:
                 if type(element) is not type(elements[0]):
-                    raise Exception("All elements in a set must be of the same type")
+                    raise SemanticError("1-2-25")
             if len(elements) == 0:
-                raise Exception("A set must contain at least one element")
+                raise SemanticError("1-2-26")
             if not any(e is None for e in elements) and len(elements) != len(set(elements)):
-                raise Exception("A set must not contain duplicates")
+                repeated = sorted({e for e in elements if elements.count(e) > 1}, key=str)
+                raise SemanticError("1-2-27", duplicates=repeated)
             set_type = scalar_data_type or BASIC_TYPES[type(elements[0])]
             return ScalarSet(data_type=set_type, values=elements)
         elif node.kind == "ValueDomain":
             if self.value_domains is None:
-                raise SemanticError("2-3-10", comp_type="Value Domains")
+                raise SemanticError("1-2-22", comp_type="Value Domains")
             if node.name not in self.value_domains:
                 raise SemanticError("1-2-8", name=node.name)
             vd = self.value_domains[node.name]
@@ -1324,11 +1408,11 @@ class InterpreterAnalyzer(ASTTemplate):
             if len(measures) != 1:
                 raise SemanticError("1-1-1-4", op="condition")
             elif measures[0].data_type != BASIC_TYPES[bool]:
-                raise SemanticError("2-1-9-5", op="condition", name=condition.name)
+                raise SemanticError("1-1-9-18", op="condition", name=condition.name)
             cond = condition.data[measures[0].name] if condition.data is not None else None
         else:
             if condition.data_type != BASIC_TYPES[bool]:
-                raise SemanticError("2-1-9-4", op="condition", name=condition.name)
+                raise SemanticError("1-1-9-17", op="condition", name=condition.name)
             cond = condition.data
 
         components = getattr(condition, "components", {})
@@ -1398,6 +1482,7 @@ class InterpreterAnalyzer(ASTTemplate):
             value=node.value,
             data_type=BASIC_TYPES[type(node.value)],
             nullable=node.value is None,
+            literal=True,
         )
 
     def _strip_join_prefixes(self, result: Dataset) -> None:
@@ -1472,15 +1557,17 @@ class InterpreterAnalyzer(ASTTemplate):
                 return Replace.analyze(op_element, param1, param2)
             elif node.op == INSTR:
                 return Instr.analyze(op_element, param1, param2, param3)
-            else:
-                raise NotImplementedError
         elif node.op == HAVING:
             if self.aggregation_dataset is not None and self.aggregation_grouping is not None:
                 for id_name in self.aggregation_grouping:
                     if id_name not in self.aggregation_dataset.components:
-                        raise SemanticError("1-1-2-4", op=node.op, id_name=id_name)
+                        raise SemanticError(
+                            "1-1-1-10",
+                            comp_name=id_name,
+                            dataset_name=self.aggregation_dataset.name,
+                        )
                 if len(self.aggregation_dataset.get_measures()) != 1:
-                    raise ValueError("Only one measure is allowed")
+                    raise SemanticError("1-1-1-4", op=node.op)
                 # Deepcopy is necessary for components to avoid changing the original dataset
                 self.aggregation_dataset.components = {
                     comp_name: deepcopy(comp)
@@ -1608,19 +1695,18 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
             elif hr_info["node"].signature_type == "valuedomain" and component is None:
                 raise SemanticError("1-1-10-4", op=node.op)
-            elif component is None:
-                raise NotImplementedError(
-                    "Hierarchical Ruleset handling without component "
-                    "and signature type variable is not implemented yet."
-                )
 
             cond_info = {}
             for i, cond_comp in enumerate(hr_info["condition"]):
-                if hr_info["node"].signature_type == "variable" and cond_components[i] != cond_comp:
+                cond_variable = hr_info["condition_variables"][i]
+                if (
+                    hr_info["node"].signature_type == "variable"
+                    and cond_components[i] != cond_variable
+                ):
                     raise SemanticError(
                         "1-1-10-6",
                         op=node.op,
-                        expected=cond_comp,
+                        expected=cond_variable,
                         found=cond_components[i],
                     )
                 cond_info[cond_comp] = cond_components[i]
@@ -1673,6 +1759,8 @@ class InterpreterAnalyzer(ASTTemplate):
                     dataset.get_identifiers_names() + [c.name for c in hr_viral_components]
                 ].copy()
 
+            # A ruleset with a signature or a rule clause gives the component
+            component = cast(str, component)
             Check_Hierarchy.validate_hr_dataset(dataset, component)
 
             # Set up interpreter state for rule processing
@@ -1680,27 +1768,28 @@ class InterpreterAnalyzer(ASTTemplate):
             self.ruleset_signature = {**{"RULE_COMPONENT": component}, **cond_info}
             self.ruleset_mode = mode
             self.hr_input = input_
-            self.hr_name = hr_name
             rule_output_values = {}
 
             if node.op == HIERARCHY:
                 self.is_from_hr_agg = True
                 self.hr_agg_rules_computed = {}
                 self.hr_agg_item_rules = {}
+                self.hr_agg_ruleset = hr_name
                 for rule in rules:
                     self.visit(rule)
                 self.is_from_hr_agg = False
-                other_ids = [i for i in dataset.get_identifiers_names() if i != component]
-                self._check_hr_overlaps(hr_name, other_ids)
                 self.hr_agg_item_rules = None
+                self.hr_agg_ruleset = None
             else:
                 if input_ == DATASET_PRIORITY:
                     self.is_from_hr_agg = True
                     self.hr_agg_rules_computed = {}
                     self.hr_agg_item_rules = {}
+                    self.hr_agg_ruleset = hr_name
                     for rule in self._sort_hr_rules(node, hr_info, self._hr_eq_rules(rules)):
                         self.visit(rule)
                     self.is_from_hr_agg = False
+                    self.hr_agg_ruleset = None
                 self.is_from_hr_val = True
                 for rule in rules:
                     rule_output_values[rule.name] = {
@@ -1717,7 +1806,6 @@ class InterpreterAnalyzer(ASTTemplate):
             self.ruleset_dataset = None
             self.ruleset_mode = None
             self.hr_input = None
-            self.hr_name = None
 
             # Final evaluation
             if node.op == CHECK_HIERARCHY:
@@ -1738,6 +1826,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     viral_values=hr_viral_values,
                     node_children=node_children,
                     rule_component=component,
+                    ruleset=hr_name,
                 )
                 self.hr_agg_rules_computed = None
             return result
@@ -1972,13 +2061,13 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Validation(self, node: AST.Validation) -> Dataset:
         validation_element = self.visit(node.validation)
         if not isinstance(validation_element, Dataset):
-            raise ValueError(f"Expected dataset, got {type(validation_element).__name__}")
+            raise SemanticError("1-2-23", pos="Validation")
 
         imbalance_element = None
         if node.imbalance is not None:
             imbalance_element = self.visit(node.imbalance)
             if not isinstance(imbalance_element, Dataset):
-                raise ValueError(f"Expected dataset, got {type(validation_element).__name__}")
+                raise SemanticError("1-2-23", pos="Imbalance")
 
         return Check.analyze(
             validation_element=validation_element,
@@ -2000,11 +2089,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.visit(node.output)
 
         """
+        if not isinstance(node.output, Dataset):
+            raise SemanticError("1-3-2-1", option="dataset output")
         if node.language not in EXTERNAL:
             raise SemanticError(code="1-3-6", language=node.language)
 
         if self.external_routines is None:
-            raise SemanticError("2-3-10", comp_type="External Routines")
+            raise SemanticError("1-2-22", comp_type="External Routines")
 
         if node.name not in self.external_routines:
             raise SemanticError("1-3-5", op_type="External Routine", node_op=node.name)
@@ -2013,7 +2104,7 @@ class InterpreterAnalyzer(ASTTemplate):
         for operand in node.operands:
             element = self.visit(operand)
             if not isinstance(element, Dataset):
-                raise ValueError(f"Expected dataset, got {type(element).__name__} as Eval Operand")
+                raise SemanticError("1-2-23", pos="Eval")
             operands[element.name.split(".")[1] if "." in element.name else element.name] = element
         output_to_check = node.output
         return Eval.analyze(operands, external_routine, output_to_check)
@@ -2049,7 +2140,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         ruleset_ds = self.ruleset_dataset
         if ruleset_ds is None:
-            raise SemanticError("2-3-7")
+            raise SemanticError("1-2-20")
         rule_data = self.rule_data
         signature = self.ruleset_signature
 
@@ -2058,6 +2149,11 @@ class InterpreterAnalyzer(ASTTemplate):
         me_name = ruleset_ds.get_measures_names()[0]
         other_ids = list(set(ruleset_ds.get_identifiers_names()) - {hr_component})
 
+        # The code item condition is visited without data too, so that the semantic
+        # analysis checks it against the structures (issue #1192)
+        condition = getattr(node, "_right_condition", None)
+        if condition is not None:
+            condition = self.visit(condition)
         if rule_data is None:
             return Dataset(name=node.value, components=result_components, data=None)
 
@@ -2070,16 +2166,13 @@ class InterpreterAnalyzer(ASTTemplate):
         # Groups where the code item condition is not TRUE leave the code item out of the
         # rule: it is excluded, not a missing data point (issue #1168)
         excluded = pd.Series(False, index=code_data.index)
-        condition = getattr(node, "_right_condition", None)
-        if condition is not None:
-            condition = self.visit(condition)
-            if condition is not None and condition.data is not None:
-                df = df.loc[condition.data.fillna(False).astype(bool)]
-                if other_ids:
-                    keys = pd.MultiIndex.from_frame(df[other_ids].drop_duplicates())
-                    excluded[:] = ~pd.MultiIndex.from_frame(code_data[other_ids]).isin(keys)
-                else:
-                    excluded[:] = len(df) == 0
+        if condition is not None and condition.data is not None:
+            df = df.loc[condition.data.fillna(False).astype(bool)]
+            if other_ids:
+                keys = pd.MultiIndex.from_frame(df[other_ids].drop_duplicates())
+                excluded[:] = ~pd.MultiIndex.from_frame(code_data[other_ids]).isin(keys)
+            else:
+                excluded[:] = len(df) == 0
 
         if node.value in df[hr_component].values:
             value_data = df[df[hr_component] == node.value]
@@ -2108,12 +2201,16 @@ class InterpreterAnalyzer(ASTTemplate):
             else self.hr_agg_item_rules.get(node.value)
         )
         if computed_by:
-            computed = self._hr_computed_item(computed_by, rule_data, other_ids)
+            # With input dataset_priority, the data points the operand has win (issue #1173)
+            operand = (
+                df[~df[me_name].isin([REMOVE]) & df[me_name].notna()]
+                if self.hr_input == DATASET_PRIORITY
+                else None
+            )
+            computed = self._hr_computed_item(
+                computed_by, rule_data, other_ids, hr_component, operand
+            )
             if self.hr_input == DATASET_PRIORITY:
-                in_operand = df.index[~df[me_name].isin([REMOVE]) & df[me_name].notna()]
-                computed = computed.drop(index=in_operand, errors="ignore")
-                if computed.index.has_duplicates:
-                    raise RunTimeError("2-1-10-1", ruleset=self.hr_name, code_item=node.value)
                 computed = pd.concat([computed, df.drop(index=computed.index, errors="ignore")])
             elif self.hr_input == RULE_PRIORITY:
                 # The operand's data point where no rule computed a non-null one; a null
@@ -2142,17 +2239,34 @@ class InterpreterAnalyzer(ASTTemplate):
             self.partial_rule_elements.add(name)  # type: ignore[union-attr]
 
     def _hr_computed_item(
-        self, rule_names: List[str], rule_data: pd.DataFrame, other_ids: List[str]
+        self,
+        rule_names: List[str],
+        rule_data: pd.DataFrame,
+        other_ids: List[str],
+        rule_component: str,
+        operand: Optional[pd.DataFrame] = None,
     ) -> pd.DataFrame:
         """Data points that earlier rules computed for a code item, on this rule's groups.
 
-        Every rule that computed the code item contributes its data points (issue #1142).
-        They take the labels of the matching groups of the current rule: a rule with a
-        condition numbers the groups of its own rows only, so the labels of its output do
-        not match the ones of another rule.
+        Every rule that computed the code item contributes its data points (issue #1142),
+        once when several of them computed the same one (issue #1193), except the ones of
+        operand, which win over them (input dataset_priority, issue #1173). They take the
+        labels of the matching groups of the current rule: a rule with a condition numbers
+        the groups of its own rows only, so the labels of its output do not match the ones
+        of another rule.
         """
         computed = cast(Dict[str, pd.DataFrame], self.hr_agg_rules_computed)
         df = pd.concat([computed[name] for name in rule_names], ignore_index=True)
+        if operand is not None and len(operand) > 0:
+            if other_ids:
+                in_operand = pd.MultiIndex.from_frame(operand[other_ids].astype(object))
+                df = df[~pd.MultiIndex.from_frame(df[other_ids].astype(object)).isin(in_operand)]
+            else:
+                # The single (global) data point is the operand's
+                df = df.iloc[0:0]
+        if len(rule_names) > 1:
+            components = cast(Dataset, self.ruleset_dataset).components
+            df = unique_data_points(df, components, cast(str, self.hr_agg_ruleset), rule_component)
         if not other_ids:
             # A single (global) group, labelled 0 like the code items of the rule
             return df
@@ -2161,29 +2275,9 @@ class InterpreterAnalyzer(ASTTemplate):
         labelled = merge_frames(df, groups, on=other_ids, how="inner")
         return labelled.set_index("__group__").rename_axis(None)
 
-    def _check_hr_overlaps(self, ruleset: str, other_ids: List[str]) -> None:
-        """Raise when two rules computed the same code item for the same data point."""
-        if self.hr_agg_rules_computed is None or self.hr_agg_item_rules is None:
-            return
-        for code_item, rule_names in self.hr_agg_item_rules.items():
-            if len(rule_names) < 2:
-                continue
-            if other_ids:
-                keys = pd.concat(
-                    [self.hr_agg_rules_computed[name][other_ids] for name in rule_names],
-                    ignore_index=True,
-                )
-                overlap = bool(keys.duplicated().any())
-            else:
-                # A single (global) data point, which a rule that computed nothing lacks
-                computing = [n for n in rule_names if len(self.hr_agg_rules_computed[n]) > 0]
-                overlap = len(computing) > 1
-            if overlap:
-                raise RunTimeError("2-1-10-1", ruleset=ruleset, code_item=code_item)
-
     def visit_UDOCall(self, node: AST.UDOCall) -> None:  # noqa: C901
         if self.udos is None:
-            raise SemanticError("2-3-10", comp_type="User Defined Operators")
+            raise SemanticError("1-2-22", comp_type="User Defined Operators")
         elif node.op not in self.udos:
             raise SemanticError("1-2-3", node_op=node.op, op_type="User Defined Operator")
         if self.signature_values is None:
@@ -2198,22 +2292,29 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_regular_aggregation or self.is_from_rule
         ):
             raise SemanticError("1-2-12", op=node.op)
+        if len(node.params) > len(operator["params"]):
+            raise SemanticError(
+                "1-3-1-6", op=node.op, defined=len(operator["params"]), passed=len(node.params)
+            )
 
         for i, param in enumerate(operator["params"]):
-            if i >= len(node.params):
+            # An argument written as _ is omitted, as one left out at the end is (issue #1162)
+            if i >= len(node.params) or _is_omitted(node.params[i]):
                 if "default" in param:
-                    value = self.visit(param["default"]).value
+                    default = self.visit(param["default"])
+                    value = default.value
                     signature_values[param["name"]] = Scalar(
                         name=str(value),
                         value=value,
                         data_type=BASIC_TYPES[type(value)],
                         nullable=value is None,
+                        literal=default.literal,
                     )
                 else:
                     raise SemanticError(
                         "1-2-11",
                         op=node.op,
-                        received=len(node.params),
+                        received=len([p for p in node.params if not _is_omitted(p)]),
                         expected=len(operator["params"]),
                     )
             else:
@@ -2247,8 +2348,6 @@ class InterpreterAnalyzer(ASTTemplate):
                                 )
                             signature_values[param["name"]] = param_element
 
-                    else:
-                        raise NotImplementedError
                 elif issubclass(param["type"], ScalarType):  # Basic types
                     # For basic Scalar types (Integer, Float, String, Boolean)
                     # We validate the type is correct and cast the value
@@ -2263,9 +2362,14 @@ class InterpreterAnalyzer(ASTTemplate):
                             type_2=type_2,
                         )
                     scalar_type = param["type"]
-                    if not check_unary_implicit_promotion(param_element.data_type, scalar_type):
+                    value = param_element.value
+                    if not check_unary_implicit_promotion(param_element.data_type, scalar_type) or (
+                        scalar_type == Integer
+                        and isinstance(value, float)
+                        and not value.is_integer()
+                    ):
                         raise SemanticError(
-                            "2-3-5",
+                            "1-2-18",
                             param_type=scalar_type,
                             type_name=param_element.data_type,
                             op=node.op,
@@ -2276,9 +2380,9 @@ class InterpreterAnalyzer(ASTTemplate):
                         value=scalar_type.cast(param_element.value),
                         data_type=scalar_type,
                         nullable=param_element.nullable,
+                        # A literal argument stays a literal inside the operator (issue #1192)
+                        literal=param_element.literal,
                     )
-                else:
-                    raise NotImplementedError
 
         # We set it here to a list to start the stack of UDO params
         if self.udo_params is None:
@@ -2293,9 +2397,16 @@ class InterpreterAnalyzer(ASTTemplate):
         self.signature_values.update(signature_values)
         self.udo_params.append(signature_values)
 
+        if node.op in self.udo_calls:
+            raise SemanticError(
+                "1-3-2-7", op=node.op, calls=" -> ".join([*self.udo_calls, node.op])
+            )
+        self.udo_calls.append(node.op)
+
         # Calling the UDO AST, we use deepcopy to avoid changing the original UDO AST
         if operator is not None:
             result = self.visit(deepcopy(operator["expression"]))
+        self.udo_calls.pop()
 
         if self.is_from_regular_aggregation or self.is_from_rule:
             result_type = "Component" if isinstance(result, DataComponent) else "Scalar"
@@ -2310,6 +2421,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 type_1=operator["output"],
                 type_2=result_type,
             )
+        _check_udo_return_type(node.op, operator["return_type"], result)
 
         # We pop the last element of the stack (current UDO params)
         # to avoid using them in the next UDO call
@@ -2336,8 +2448,19 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.is_from_having = saved_having
                 self.is_from_regular_aggregation = saved_regular
             period_to = resolved.value if hasattr(resolved, "value") else resolved
+        if node.period_to_ref is not None and period_to is not None:
+            # A period read from a scalar is data, so a wrong one is a runtime error
+            Time_Aggregation.check_period_value(node.period_from, period_to)
+        # The reference gave no period indicator: its scalar holds no value (issue #1192)
+        missing_period = (
+            node.period_to_ref is not None and period_to is None and not self.only_semantic
+        )
         if node.operand is not None:
             operand = self.visit(node.operand)
+            if missing_period:
+                # The structures are checked first, as the semantic pass of DuckDB does
+                Time_Aggregation.validate(operand, node.period_from, period_to, node.conf)
+                raise RunTimeError("2-1-19-24", name=cast(AST.VarID, node.period_to_ref).value)
             return Time_Aggregation.analyze(
                 operand=operand,
                 period_from=node.period_from,
@@ -2348,8 +2471,8 @@ class InterpreterAnalyzer(ASTTemplate):
         # If not, a 1-3-2-4 error is raised in AST creation
         if self.aggregation_dataset is None:
             raise SemanticError("1-3-2-4")
-        if period_to is None and not self.only_semantic:
-            raise SemanticError("1-3-2-4")
+        if missing_period:
+            raise RunTimeError("2-1-19-24", name=cast(AST.VarID, node.period_to_ref).value)
         return Time_Aggregation._execute_without_operand(
             aggregation_dataset=self.aggregation_dataset,
             period_from=node.period_from,
