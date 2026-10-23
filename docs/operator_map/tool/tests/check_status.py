@@ -45,13 +45,13 @@ def row(id_1: str, me_1: str | None) -> dict[str, str | None]:
 
 
 def expected_dataset(
-    rows: list[dict[str, str | None]] | None = None, name: str = "DS_r"
+    rows: list[dict[str, str | None]] | None = None, name: str = "DS_r", measure: str = "Number"
 ) -> ExpectedDataset:
     return ExpectedDataset(
         name,
         {
             "Id_1": ExpectedComponent("Identifier", ("Integer",), False),
-            "Me_1": ExpectedComponent("Measure", ("Number",), None),
+            "Me_1": ExpectedComponent("Measure", (measure,), None),
         },
         [row("1", "3.5"), row("2", None)] if rows is None else rows,
     )
@@ -122,6 +122,11 @@ def date_scalar(value: str | None, name: str = "sc_r") -> ActualScalar:
 def date_files() -> ExampleFiles:
     """A ``current_date`` example expects a Date scalar but not its value."""
     return files(datasets=[], scalars=[ExpectedScalar("sc_r", "Date", None)])
+
+
+def date_dataset_files() -> ExampleFiles:
+    """A ``current_date`` example that expects a dataset with a Date measure, without values."""
+    return files(datasets=[expected_dataset(rows=[], measure="Date")])
 
 
 def dates(*values: str | None) -> ActualDataset:
@@ -366,9 +371,9 @@ def test_current_date_scalar_that_is_today_matches() -> None:
 
 
 def test_current_date_in_a_dataset_matches_and_nulls_are_skipped() -> None:
-    wanted = files(datasets=[expected_dataset(rows=[])])
     out = run(dates(TODAY, None, TODAY))
-    assert verdict(authored(check="current_date"), wanted, out, TODAY).outcome == "match"
+    got = verdict(authored(check="current_date"), date_dataset_files(), out, TODAY)
+    assert got.outcome == "match"
 
 
 def test_current_date_that_is_another_day_is_a_mismatch() -> None:
@@ -376,25 +381,91 @@ def test_current_date_that_is_another_day_is_a_mismatch() -> None:
     got = verdict(authored(check="current_date"), date_files(), other, TODAY)
     assert got.outcome == "mismatch"
     assert "2026-10-22" in got.detail
-    wanted = files(datasets=[expected_dataset(rows=[])])
     one_bad = run(dates(TODAY, "2020-01-31"))
-    assert verdict(authored(check="current_date"), wanted, one_bad, TODAY).outcome == "mismatch"
+    got = verdict(authored(check="current_date"), date_dataset_files(), one_bad, TODAY)
+    assert got.outcome == "mismatch"
+    assert "2020-01-31" in got.detail
 
 
 def test_current_date_needs_at_least_one_date_value() -> None:
-    # The outputs are there: the lack of a Date value is the only problem.
+    # The structure is the expected one and the outputs are there: the lack of a Date value is
+    # the only problem. A value that is not of the type Date does not count.
     check = authored(check="current_date")
     assert verdict(check, date_files(), run(date_scalar(None)), TODAY).outcome == "mismatch"
-    not_a_date = run(ActualScalar("sc_r", "String", TODAY))  # only a Date-typed value counts
-    assert verdict(check, date_files(), not_a_date, TODAY).outcome == "mismatch"
-    wanted = files(datasets=[expected_dataset(rows=[])])
-    assert verdict(check, wanted, run(dates(None, None)), TODAY).outcome == "mismatch"
-    assert verdict(check, wanted, run(numbers("0.5")), TODAY).outcome == "mismatch"
+    string_files = files(datasets=[], scalars=[ExpectedScalar("sc_r", "String", None)])
+    not_a_date = run(ActualScalar("sc_r", "String", TODAY))
+    assert verdict(check, string_files, not_a_date, TODAY).outcome == "mismatch"
+    assert verdict(check, date_dataset_files(), run(dates(None, None)), TODAY).outcome == (
+        "mismatch"
+    )
+    number_files = files(datasets=[expected_dataset(rows=[])])
+    assert verdict(check, number_files, run(numbers("0.5")), TODAY).outcome == "mismatch"
 
 
 def test_current_date_ignores_outputs_that_are_not_expected() -> None:
     out = run(date_scalar(TODAY), date_scalar("1999-12-31", name="sc_old"))
     assert verdict(authored(check="current_date"), date_files(), out, TODAY).outcome == "match"
+
+
+# --- Verdicts: the structure of the property checks ---
+
+IDENTIFIER = ActualComponent("Identifier", "Integer", False)
+
+
+@pytest.mark.parametrize(
+    ("components", "problem"),
+    [
+        (
+            {"Id_1": IDENTIFIER, "Me_1": ActualComponent("Measure", "String", True)},
+            "type of Me_1 expected Number got String",
+        ),
+        (
+            {"Id_1": IDENTIFIER, "Me_1": ActualComponent("Attribute", "Number", True)},
+            "role of Me_1 expected Measure got Attribute",
+        ),
+        ({"Id_1": IDENTIFIER}, "missing components: Me_1"),
+        (
+            {
+                "Id_1": IDENTIFIER,
+                "Me_1": ActualComponent("Measure", "Number", True),
+                "Me_2": ActualComponent("Measure", "Number", True),
+            },
+            "unexpected components: Me_2",
+        ),
+    ],
+    ids=["type", "role", "missing", "unexpected"],
+)
+def test_random_needs_the_expected_structure(
+    components: dict[str, ActualComponent], problem: str
+) -> None:
+    # The run is stable and the values are numbers in [0, 1), but for a missing Me_1, which
+    # leaves no value at all. The structure is judged first, with the rules of compare_dataset.
+    wrong = ActualDataset("DS_r", components, [row("1", "0.25"), row("2", "0.5")])
+    got = verdict(authored(check="random"), random_files(), run(wrong, stable=True), TODAY)
+    assert got == EngineVerdict("mismatch", problem)
+
+
+def test_random_needs_the_expected_type_of_a_scalar() -> None:
+    wanted = files(datasets=[], scalars=[ExpectedScalar("sc_r", "Number", None)])
+    out = run(ActualScalar("sc_r", "Integer", "0.5"), stable=True)
+    assert verdict(authored(check="random"), wanted, out, TODAY) == (
+        EngineVerdict("mismatch", "type expected Number got Integer")
+    )
+
+
+def test_current_date_needs_the_expected_structure() -> None:
+    check = authored(check="current_date")
+    # A String that is today is not the Date that the example expects.
+    out = run(ActualScalar("sc_r", "String", TODAY))
+    assert verdict(check, date_files(), out, TODAY) == (
+        EngineVerdict("mismatch", "type expected Date got String")
+    )
+    # Dates that are today, in a dataset that lacks its identifier.
+    components = {"Me_1": ActualComponent("Measure", "Date", True)}
+    dated = ActualDataset("DS_r", components, [{"Me_1": TODAY}])
+    assert verdict(check, date_dataset_files(), run(dated), TODAY) == (
+        EngineVerdict("mismatch", "missing components: Id_1")
+    )
 
 
 def test_an_unknown_check_is_an_error_of_the_catalogue() -> None:

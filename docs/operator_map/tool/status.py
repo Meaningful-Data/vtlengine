@@ -13,8 +13,9 @@ outputs, ``mismatch`` when it ran but gave something else, ``error`` when it did
 Only the outputs that the expected files of the example name are looked at, on both sides. A
 script may return more, such as intermediate datasets: those are ignored. An expected output that
 a run does not have is a mismatch. The examples that are checked by property (``random`` and
-``current_date``) are judged by their values, not by expected values; the engines still have to
-give the same values, so ``random`` diverges while the engines use different generators.
+``current_date``) are judged by a property of their values, not by expected values, but their
+outputs still have to have the expected structure. The engines still have to give the same
+values, so ``random`` diverges while the engines use different generators.
 
 ``rollup`` carries the statuses up from examples to variants, operators and chapters, and
 ``build_index`` does it for a whole catalogue.
@@ -24,11 +25,12 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from collections.abc import Iterable, Iterator, Mapping, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from dataclasses import dataclass, replace
 from typing import Final, Literal
 
 from tool.compare import (
+    ActualDataset,
     ActualScalar,
     Output,
     compare_dataset,
@@ -37,7 +39,7 @@ from tool.compare import (
     outputs_equal,
     values_equal,
 )
-from tool.examples import ExampleFiles
+from tool.examples import ExampleFiles, ExpectedDataset, ExpectedScalar
 from tool.model import Catalogue, Example, Status, Variant
 from tool.runner import RunOutput
 
@@ -104,6 +106,11 @@ def verdict(example: Example, files: ExampleFiles, out: RunOutput, today: str) -
       be a number from 0 up to, but not including, 1;
     * ``current_date``: there must be at least one Date value, and every non-null Date value,
       of a dataset or a scalar, must be ``today``.
+
+    ``random`` and ``current_date`` look at the structure first. The expected datasets must have
+    the components, roles and types that ``compare_dataset`` asks for (their data points are not
+    compared) and the expected scalars their type (not their value), or the verdict is a
+    ``mismatch`` with the first difference as detail.
     """
     if not out.ok:
         return EngineVerdict("error", _error_detail(out))
@@ -156,26 +163,66 @@ def _check_problem(example: Example, files: ExampleFiles, out: RunOutput, today:
     """The problem that the ``check`` of the example finds in the run, or None."""
     if example.check == "exact":
         return _exact_problem(files, out)
+    if example.check not in ("random", "current_date"):
+        raise ValueError(f"unknown check '{example.check}'")
+    # A property is about the values, but the expected files still say what the outputs are.
+    problem = _structure_problem(files, out)
+    if problem is not None:
+        return problem
     if example.check == "random":
         return _random_problem(files, out)
-    if example.check == "current_date":
-        return _current_date_problem(files, out, today)
-    raise ValueError(f"unknown check '{example.check}'")
+    return _current_date_problem(files, out, today)
 
 
 def _exact_problem(files: ExampleFiles, out: RunOutput) -> str | None:
-    """The first difference between the expected outputs and those of the run, or None.
+    """The first difference between the expected outputs and those of the run, or None."""
+    return _first_problem(files, out, compare_dataset, compare_scalar)
 
-    Every expected output is in the run: ``_missing_output`` has checked it.
+
+def _structure_problem(files: ExampleFiles, out: RunOutput) -> str | None:
+    """The first difference in structure between the expected outputs and those of the run.
+
+    A dataset must have the expected components, roles and types, by the rules of
+    ``compare_dataset``, and a scalar its expected type. The values are left out.
+    """
+    return _first_problem(files, out, _dataset_structure, _scalar_type)
+
+
+def _dataset_structure(expected: ExpectedDataset, actual: ActualDataset) -> str | None:
+    """``compare_dataset`` without data points.
+
+    With no data points on either side, only the structure is compared.
+    """
+    return compare_dataset(replace(expected, rows=[]), replace(actual, rows=[]))
+
+
+def _scalar_type(expected: ExpectedScalar, actual: ActualScalar) -> str | None:
+    """``compare_scalar`` without the value.
+
+    The expected value is set to the one of the run, so that only the type can differ.
+    """
+    return compare_scalar(replace(expected, value=actual.value), actual)
+
+
+def _first_problem(
+    files: ExampleFiles,
+    out: RunOutput,
+    dataset_rule: Callable[[ExpectedDataset, ActualDataset], str | None],
+    scalar_rule: Callable[[ExpectedScalar, ActualScalar], str | None],
+) -> str | None:
+    """The first problem that a rule finds between an expected output and the one of the run.
+
+    The datasets come first, then the scalars, each in the order of the expected files. Every
+    expected output is in the run: ``_missing_output`` has checked it.
     """
     datasets = {dataset.name: dataset for dataset in out.datasets}
     scalars = {scalar.name: scalar for scalar in out.scalars}
     for wanted_dataset in files.expected_datasets:
-        problem = compare_dataset(wanted_dataset, datasets[wanted_dataset.name])
+        problem = dataset_rule(wanted_dataset, datasets[wanted_dataset.name])
         if problem is not None:
             return problem
     for wanted_scalar in files.expected_scalars:
-        problem = compare_scalar(wanted_scalar, scalars[wanted_scalar.name])
+        problem = scalar_rule(wanted_scalar, scalars[wanted_scalar.name])
         if problem is not None:
             return problem
     return None
