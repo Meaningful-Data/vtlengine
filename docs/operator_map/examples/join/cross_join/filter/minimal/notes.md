@@ -15,7 +15,7 @@ Inputs (shared by the `cross_join` minimal examples): `DS_1` has the identifier 
 
 The operator performs "a *cartesian product* of the input operands", and "the final result has a size equal to the product of the sizes of each input data set": 2 x 2 = 4 data points, each component appearing once with its name and role.
 
-The filter "is applied on VDS₁ ... when the expression is **true** the Data Point is kept in the result, otherwise it is discarded". A comparison with a null is null (User Manual: "Whenever a **null** value is involved in a comparison ... the result of the comparison is **null**"), and in a filter "the Data Points for which *p* is **false** or **null** are discarded".
+The filter "is applied on VDS₁ ... when the expression is **true** the Data Point is kept in the result, otherwise it is discarded".
 
 | Id_1 | Id_2 | Me_1 | Me_2 |
 |---|---|---|---|

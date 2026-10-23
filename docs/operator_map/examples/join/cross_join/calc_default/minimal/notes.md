@@ -15,7 +15,7 @@ Inputs (shared by the `cross_join` minimal examples): `DS_1` has the identifier 
 
 The operator performs "a *cartesian product* of the input operands", and "the final result has a size equal to the product of the sizes of each input data set": 2 x 2 = 4 data points, each component appearing once with its name and role.
 
-In a join, "The role of the new components can be specified ...; if the role is not specified, it will be **measure**", so `Me_3` is a Measure: the same result as `calc_measure`, which writes the keyword. A sum with a null is null (User Manual, arithmetic operations).
+In a join, "The role of the new components can be specified ...; if the role is not specified, it will be **measure**", so `Me_3` is a Measure: the same result as `calc_measure`, which writes the keyword.
 
 | Id_1 | Id_2 | Me_1 | Me_2 | Me_3 |
 |---|---|---|---|---|

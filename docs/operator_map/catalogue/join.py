@@ -17,9 +17,10 @@ its own when it needs them:
 * ``group all``: a time_period identifier;
 * ``nary``: a third operand.
 
-A ``minimal_2`` adds a probe whose result depends on the form, such as ``using`` on a subset of
-the common identifiers. The manual's examples are added to the variant whose clause they
-exercise.
+A ``minimal_2`` adds a probe whose result depends on the form. Examples are ``using`` on a
+subset of the common identifiers, and a ``calc`` or ``aggr`` that leaves out the role of an
+existing attribute: in a join that role is measure. The manual's examples are added to the
+variant whose clause they exercise.
 """
 
 from __future__ import annotations
@@ -61,13 +62,19 @@ CHAPTER = Chapter(
                     "inner_join(DS, DS calc C := expr)",
                     manual("ex_3"),
                     authored(),
+                    authored("minimal_2"),
                 ),
                 _form("calc_measure", "inner_join(DS, DS calc measure C := expr)"),
                 _form("calc_identifier", "inner_join(DS, DS calc identifier C := expr)"),
                 _form("calc_attribute", "inner_join(DS, DS calc attribute C := expr)"),
                 _form("calc_viral_attribute", "inner_join(DS, DS calc viral attribute C := expr)"),
                 _form("aggr_no_group", "inner_join(DS, DS aggr C := agg)"),
-                _form("aggr_group_by", "inner_join(DS, DS aggr C := agg group by Id)"),
+                _form(
+                    "aggr_group_by",
+                    "inner_join(DS, DS aggr C := agg group by Id)",
+                    authored(),
+                    authored("minimal_2"),
+                ),
                 _form("aggr_group_except", "inner_join(DS, DS aggr C := agg group except Id)"),
                 _form("aggr_group_all", "inner_join(DS, DS aggr C := agg group all time_agg(p))"),
                 _form("aggr_having", "inner_join(DS, DS aggr C := agg group by Id having cond)"),
@@ -110,13 +117,23 @@ CHAPTER = Chapter(
                 ),
                 _form("filter", "left_join(DS, DS filter cond)"),
                 _form("apply", "left_join(DS, DS apply expr)"),
-                _form("calc_default", "left_join(DS, DS calc C := expr)"),
+                _form(
+                    "calc_default",
+                    "left_join(DS, DS calc C := expr)",
+                    authored(),
+                    authored("minimal_2"),
+                ),
                 _form("calc_measure", "left_join(DS, DS calc measure C := expr)"),
                 _form("calc_identifier", "left_join(DS, DS calc identifier C := expr)"),
                 _form("calc_attribute", "left_join(DS, DS calc attribute C := expr)"),
                 _form("calc_viral_attribute", "left_join(DS, DS calc viral attribute C := expr)"),
                 _form("aggr_no_group", "left_join(DS, DS aggr C := agg)"),
-                _form("aggr_group_by", "left_join(DS, DS aggr C := agg group by Id)"),
+                _form(
+                    "aggr_group_by",
+                    "left_join(DS, DS aggr C := agg group by Id)",
+                    authored(),
+                    authored("minimal_2"),
+                ),
                 _form("aggr_group_except", "left_join(DS, DS aggr C := agg group except Id)"),
                 _form("aggr_group_all", "left_join(DS, DS aggr C := agg group all time_agg(p))"),
                 _form("aggr_having", "left_join(DS, DS aggr C := agg group by Id having cond)"),
@@ -154,13 +171,23 @@ CHAPTER = Chapter(
                 ),
                 _form("filter", "full_join(DS, DS filter cond)"),
                 _form("apply", "full_join(DS, DS apply expr)"),
-                _form("calc_default", "full_join(DS, DS calc C := expr)"),
+                _form(
+                    "calc_default",
+                    "full_join(DS, DS calc C := expr)",
+                    authored(),
+                    authored("minimal_2"),
+                ),
                 _form("calc_measure", "full_join(DS, DS calc measure C := expr)"),
                 _form("calc_identifier", "full_join(DS, DS calc identifier C := expr)"),
                 _form("calc_attribute", "full_join(DS, DS calc attribute C := expr)"),
                 _form("calc_viral_attribute", "full_join(DS, DS calc viral attribute C := expr)"),
                 _form("aggr_no_group", "full_join(DS, DS aggr C := agg)"),
-                _form("aggr_group_by", "full_join(DS, DS aggr C := agg group by Id)"),
+                _form(
+                    "aggr_group_by",
+                    "full_join(DS, DS aggr C := agg group by Id)",
+                    authored(),
+                    authored("minimal_2"),
+                ),
                 _form("aggr_group_except", "full_join(DS, DS aggr C := agg group except Id)"),
                 _form("aggr_group_all", "full_join(DS, DS aggr C := agg group all time_agg(p))"),
                 _form("aggr_having", "full_join(DS, DS aggr C := agg group by Id having cond)"),
@@ -191,13 +218,23 @@ CHAPTER = Chapter(
                 _form("aliases", "cross_join(DS as a, DS as b)", authored(), authored("minimal_2")),
                 _form("filter", "cross_join(DS, DS filter cond)"),
                 _form("apply", "cross_join(DS, DS apply expr)"),
-                _form("calc_default", "cross_join(DS, DS calc C := expr)"),
+                _form(
+                    "calc_default",
+                    "cross_join(DS, DS calc C := expr)",
+                    authored(),
+                    authored("minimal_2"),
+                ),
                 _form("calc_measure", "cross_join(DS, DS calc measure C := expr)"),
                 _form("calc_identifier", "cross_join(DS, DS calc identifier C := expr)"),
                 _form("calc_attribute", "cross_join(DS, DS calc attribute C := expr)"),
                 _form("calc_viral_attribute", "cross_join(DS, DS calc viral attribute C := expr)"),
                 _form("aggr_no_group", "cross_join(DS, DS aggr C := agg)"),
-                _form("aggr_group_by", "cross_join(DS, DS aggr C := agg group by Id)"),
+                _form(
+                    "aggr_group_by",
+                    "cross_join(DS, DS aggr C := agg group by Id)",
+                    authored(),
+                    authored("minimal_2"),
+                ),
                 _form("aggr_group_except", "cross_join(DS, DS aggr C := agg group except Id)"),
                 _form("aggr_group_all", "cross_join(DS, DS aggr C := agg group all time_agg(p))"),
                 _form("aggr_having", "cross_join(DS, DS aggr C := agg group by Id having cond)"),

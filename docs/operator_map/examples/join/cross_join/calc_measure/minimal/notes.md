@@ -15,7 +15,7 @@ Inputs (shared by the `cross_join` minimal examples): `DS_1` has the identifier 
 
 The operator performs "a *cartesian product* of the input operands", and "the final result has a size equal to the product of the sizes of each input data set": 2 x 2 = 4 data points, each component appearing once with its name and role.
 
-"**calc** calculates new components by independent sub-expressions evaluated at component level. The role of the new components can be specified". The input components stay, and `Me_3` is added to each data point. A sum with a null is null (User Manual, arithmetic operations).
+"**calc** calculates new components by independent sub-expressions evaluated at component level. The role of the new components can be specified". The input components stay, and `Me_3` is added to each data point.
 
 | Id_1 | Id_2 | Me_1 | Me_2 | Me_3 |
 |---|---|---|---|---|

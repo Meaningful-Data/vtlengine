@@ -1,6 +1,6 @@
 # full_join: aggr_viral_attribute
 
-Authored. The `aggr` clause sums `Me_1` by `Id_1` into the measure `Me_3` and takes the largest `Me_1` into `At_1`, with the role `viral attribute`, as in the page's syntax example `aggr Me1 := sum(Me1), attribute At20 := avg(Me2) group by Id1, Id2`.
+Authored. The `aggr` clause sums `Me_1` by `Id_1` into the measure `Me_3` and takes the largest `Me_1` into `At_1`, with the role `viral attribute`. The page gives the role of an aggregated component as `aggrRole ::= { measure | attribute | viral attribute }`, and "if omitted, the Measure role is assumed"; its syntax example `aggr Me1 := sum(Me1), attribute At20 := avg(Me2) group by Id1, Id2` has the same shape, with `attribute`.
 
 Manual page: [Full Join](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Full%20Join/index.html).
 

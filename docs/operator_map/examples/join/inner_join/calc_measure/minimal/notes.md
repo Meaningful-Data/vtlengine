@@ -19,7 +19,7 @@ Inputs (shared by the `inner_join`, `left_join` and `full_join` minimal examples
 
 The join keys are the identifiers in both operands, `Id_1` and `Id_2` (natural join: "if `using` is not specified, **inner_join** performs a *natural join*, that is, it uses all the identifiers appearing in more than one dataset as join keys"). The data points are matched "according to SQL inner join", so VDS₁ holds the keys found in both operands: `(1,A)`, `(2,A)`, `(2,B)`.
 
-"**calc** calculates new components by independent sub-expressions evaluated at component level. The role of the new components can be specified". The input components stay, and `Me_3` is added to each data point. A sum with a null is null (User Manual, arithmetic operations).
+"**calc** calculates new components by independent sub-expressions evaluated at component level. The role of the new components can be specified". The input components stay, and `Me_3` is added to each data point.
 
 | Id_1 | Id_2 | Me_1 | Me_2 | Me_3 |
 |---|---|---|---|---|
