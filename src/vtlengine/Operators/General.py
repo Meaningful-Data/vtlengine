@@ -6,6 +6,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
 
+from vtlengine.AST.Grammar.tokens import AS
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Date
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, ExternalRoutine, Role, Scalar
@@ -110,7 +111,7 @@ class Alias(Binary):
     def validate(cls, left_operand: Dataset, right_operand: Union[str, Dataset]) -> Dataset:
         new_name = right_operand if isinstance(right_operand, str) else right_operand.name
         if new_name != left_operand.name and new_name in left_operand.get_components_names():
-            raise SemanticError("1-3-1", alias=new_name)
+            raise SemanticError("1-1-6-4", op=AS, symbol_name=new_name, comp_name=new_name)
         return Dataset(name=new_name, components=left_operand.components, data=None)
 
     @classmethod
@@ -133,8 +134,18 @@ class Eval(Unary):
 
     @staticmethod
     def _execute_query(
-        query: str, dataset_names: List[str], data: Dict[str, pd.DataFrame]
+        query: str,
+        dataset_names: List[str],
+        data: Dict[str, pd.DataFrame],
+        on_structures: bool = False,
     ) -> pd.DataFrame:
+        def query_error(error: Exception) -> Exception:
+            # Run on the empty operands of the validation, the query only meets the
+            # structures, so its failure is a structure error (issue #1192)
+            if on_structures:
+                return SemanticError("1-1-1-23", op="eval", error=error)
+            return RunTimeError("2-1-1-1", op="eval", error=error)
+
         query = re.sub(r'"([^"]*)"', r"'\1'", query)
         for forbidden in ["INSTALL", "LOAD"]:
             if re.search(rf"\b{forbidden}\b", query, re.IGNORECASE):
@@ -155,19 +166,19 @@ class Eval(Unary):
                     df = data[ds_name]
                     conn.register(ds_name, df)
                 df_result = conn.execute(query).fetchdf()
-                for col_name in df_result.columns:
-                    arr = pa.array(df_result[col_name])
-                    if pa.types.is_floating(arr.type) and pc.any(pc.is_inf(arr)).as_py():
-                        conn.close()
-                        raise RunTimeError("2-1-3-1", op="eval")
-                conn.close()
             except Exception as e:
+                raise query_error(e)
+            finally:
                 conn.close()
-                raise RunTimeError("2-1-1-1", op="eval", error=e)
-        except RunTimeError:
+            # Checked out of the query handling, which would report it as a query error
+            for col_name in df_result.columns:
+                arr = pa.array(df_result[col_name])
+                if pa.types.is_floating(arr.type) and pc.any(pc.is_inf(arr)).as_py():
+                    raise RunTimeError("2-1-3-1", op="eval")
+        except (RunTimeError, SemanticError):
             raise
         except Exception as e:
-            raise RunTimeError("2-1-1-1", op="eval", error=e)
+            raise query_error(e)
         return df_result
 
     @classmethod
@@ -180,16 +191,17 @@ class Eval(Unary):
         empty_data_dict = {}
         for ds_name in external_routine.dataset_names:
             if ds_name not in operands:
-                raise ValueError(
-                    f"External Routine dataset {ds_name} is not present in Eval operands"
-                )
+                raise SemanticError("1-1-1-24", op="eval", ds_name=ds_name)
             empty_data = pd.DataFrame(
                 columns=[comp.name for comp in operands[ds_name].components.values()]
             )
             empty_data_dict[ds_name] = empty_data
 
         df = cls._execute_query(
-            external_routine.query, external_routine.dataset_names, empty_data_dict
+            external_routine.query,
+            external_routine.dataset_names,
+            empty_data_dict,
+            on_structures=True,
         )
         component_names = df.columns.tolist()
         for comp_name in component_names:
@@ -200,7 +212,9 @@ class Eval(Unary):
 
         for comp_name in output.components:
             if comp_name not in component_names:
-                raise ValueError(f"Component {comp_name} not found in External Routine result")
+                raise SemanticError(
+                    "1-1-1-10", comp_name=comp_name, dataset_name=external_routine.name
+                )
 
         output.name = external_routine.name
 

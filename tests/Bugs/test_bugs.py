@@ -774,6 +774,23 @@ class JoinBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1192_23(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join(DS_1 as Me_1, DS_2 as d2);
+        Description: An alias named as a Component of its Data Set is rejected with a VTL
+                     error, where the engine raised a KeyError on a missing message code.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_23"
+        number_inputs = 2
+        message = "1-1-6-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class NumericBugs(BugHelper):
     """ """
@@ -1117,6 +1134,38 @@ class NumericBugs(BugHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1192_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := random(Id_1, -1)];
+        Description: A negative literal index is rejected by the semantic analysis.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_5"
+        number_inputs = 1
+        message = "1-1-15-9"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := random(Id_1, sc_1)];
+        Description: A negative index given as a scalar value is a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_6"
+        number_inputs = 1
+        message = "2-1-15-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": -1}
+        )
 
 
 class ComparisonBugs(BugHelper):
@@ -1663,6 +1712,57 @@ class ComparisonBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1192_20(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 > DS_1;
+        Description: Time values cannot be ordered, so the semantic analysis rejects the comparison
+                     even when the Data Set holds no data point.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_20"
+        number_inputs = 1
+        message = "1-1-19-18"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_33(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[filter Me_1 in {1, "a"}];
+        Description: A set literal that mixes types is a structure error, where a plain Exception
+                     was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_33"
+        number_inputs = 1
+        message = "1-2-25"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_34(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[filter Me_1 in {1, 1}];
+        Description: A set literal that repeats a value is a structure error, where a plain
+                     Exception was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_34"
+        number_inputs = 1
+        message = "1-2-27"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class TimeBugs(BugHelper):
     """ """
@@ -1995,7 +2095,7 @@ class TimeBugs(BugHelper):
         Goal: Check Exception.
         """
         code = "GH_960_2"
-        with pytest.raises(SemanticError, match="1-1-19-9"):
+        with pytest.raises(RunTimeError, match="2-1-19-23"):
             run(
                 script=self.LoadVTL(code),
                 data_structures=self.filepath_json / f"{code}-1.json",
@@ -2039,6 +2139,129 @@ class TimeBugs(BugHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1192_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := dateadd(Me_1, 1, "X")];
+        Description: An invalid literal period indicator is rejected by the semantic analysis.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_10"
+        number_inputs = 1
+        message = "1-1-19-17"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_11(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := dateadd(Me_1, 1, sc_1)];
+        Description: An invalid period indicator given as a scalar value is a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_11"
+        number_inputs = 1
+        message = "2-1-19-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": "X"}
+        )
+
+    def test_GH_1192_18(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[aggr Me_2 := sum(Me_1) group all time_agg(sc_1)];
+        Description: The scalar that gives time_agg its period holds no value: a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_18"
+        number_inputs = 1
+        message = "2-1-19-24"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": None}
+        )
+
+    def test_GH_1192_21(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := datediff(Me_1, Me_1)];
+        Description: datediff reads dates and time periods, so a Time value is a runtime error on
+                     both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_21"
+        number_inputs = 1
+        message = "2-1-19-25"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_24(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := datediff(Me_1, sc_1)];
+        Description: A Time value given as a scalar is a runtime error on both engines, where
+                     DuckDB read the first date of the interval.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_24"
+        number_inputs = 1
+        message = "2-1-19-25"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            scalars={"sc_1": "2020-01-01/2020-12-31"},
+        )
+
+    def test_GH_1192_25(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join(DS_1 as d1, DS_2 as d2
+                        calc Me_3 := datediff(d1#Me_1, d2#Me_2));
+        Description: A Time value read through a join alias is a runtime error on both
+                     engines, where DuckDB failed to bind the SQL.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_25"
+        number_inputs = 2
+        message = "2-1-19-25"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_26(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := datediff(Me_1, sc_1)];
+        Description: A Time scalar without value gives a null on both engines, where DuckDB
+                     failed to bind the SQL.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_26"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": None},
+        )
 
 
 class SetBugs(BugHelper):
@@ -2282,6 +2505,23 @@ class SetBugs(BugHelper):
         code = "GH_1057_5"
         number_inputs = 2
         message = "1-1-17-3"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_35(self):
+        """
+        Status: OK
+        Expression: DS_r <- union(DS_1, 1);
+        Description: A set operator over a Scalar is a structure error, where a ValueError was
+                     raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_35"
+        number_inputs = 1
+        message = "1-2-23"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
@@ -2878,6 +3118,39 @@ class DataValidationBugs(BugHelper):
             number_inputs=number_inputs,
             exception_code=message,
             vd_names=vd_names,
+        )
+
+    def test_GH_1192_32(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset dpr1 ... (twice); DS_r <- check_datapoint(DS_1, dpr1);
+        Description: A datapoint ruleset defined twice is a structure error, where a ValueError
+                     was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_32"
+        number_inputs = 1
+        message = "1-2-24"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_36(self):
+        """
+        Status: OK
+        Expression: DS_r <- check(1 > 0);
+        Description: check over a Scalar is a structure error, where a ValueError was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_36"
+        number_inputs = 1
+        message = "1-2-23"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
         )
 
 
@@ -3783,6 +4056,71 @@ class ClauseBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
 
+    def test_GH_1192_16(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc identifier Id_2 := null];
+        Description: A null literal cannot be an Identifier: the semantic analysis rejects it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_16"
+        number_inputs = 1
+        message = "1-1-1-16"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_17(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc identifier Id_2 := sc_1];
+        Description: A scalar without value is a null read from the data: a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_17"
+        number_inputs = 1
+        message = "2-1-1-16"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": None}
+        )
+
+    def test_GH_1192_37(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[filter Me_1];
+        Description: A filter condition that is not Boolean is a structure error, where a
+                     ValueError was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_37"
+        number_inputs = 1
+        message = "1-1-9-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_38(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[pivot Id_1, Me_1];
+        Description: pivot is not supported: a SemanticError instead of a NotImplementedError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_38"
+        number_inputs = 1
+        message = "1-3-13"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class DefinedBugs(BugHelper):
     """ """
@@ -3915,6 +4253,520 @@ class DefinedBugs(BugHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1192_30(self):
+        """
+        Status: OK
+        Expression: define operator f ... (twice); DS_r <- f(DS_1);
+        Description: A user defined operator defined twice is a structure error, where a
+                     ValueError was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_30"
+        number_inputs = 1
+        message = "1-2-24"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_31(self):
+        """
+        Status: OK
+        Expression: define operator f (x dataset, x dataset) ...; DS_r <- f(DS_1, DS_1);
+        Description: A user defined operator with a repeated parameter is a structure error,
+                     where a ValueError was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_31"
+        number_inputs = 1
+        message = "1-3-1-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_39(self):
+        """
+        Status: OK
+        Expression: define operator f (x VD_1) returns number is x end operator; DS_r <- DS_1[calc Me_2 := f(Me_1)];
+        Description: A value domain is no parameter type of a user defined operator: a script
+                     error, where a SyntaxError was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_39"
+        number_inputs = 1
+        message = "0-5-1-10"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_40(self):
+        """
+        Status: OK
+        Expression: DS_r <- eval(GH_1192_40(DS_1) language "SQL" returns dataset {...});
+        Description: An External Routine whose result holds infinite values raises 2-1-3-1 on
+                     both engines: pandas reported it as 2-1-1-1 and DuckDB returned the
+                     infinite values.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_40"
+        number_inputs = 1
+        message = "2-1-3-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, sql_names=[code]
+        )
+
+    def test_GH_1192_41(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := nvl(Me_1, -(1))];
+        Description: A sign over a parenthesised number is a literal too, so Me_2 is not
+                     nullable, as with -1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_41"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1192_41_semantic(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := nvl(Me_1, -(1))];
+        Description: The semantic analysis gives the structure of GH_1192_41, without data.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_41"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            only_semantic=True,
+        )
+
+    def test_GH_1192_42(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := substr(Me_1, 1, -(2))];
+        Description: A sign over a parenthesised number is a literal, so its negative length
+                     is rejected by the semantic analysis, as -2 is.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_42"
+        number_inputs = 1
+        message = "1-1-18-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_43(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := - -Me_1, Me_3 := -(-1), Me_4 := - - 1.5];
+        Description: A sign before a signed operand keeps them apart on DuckDB, where -- starts
+                     an SQL comment (it raised a ParserException or a BinderException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_43"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1192_44(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_3 := between(Me_1, Me_2, Me_2)];
+        Description: between orders its operands, so it rejects Time values as < and > do,
+                     instead of comparing their text.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_44"
+        number_inputs = 1
+        message = "1-1-19-18"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_45(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := time_agg(sc_1, _, Me_1, first)];
+        Description: The scalar that gives time_agg its period holds no value: a runtime error
+                     with an operand too, where the pandas engine raised an AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_45"
+        number_inputs = 1
+        message = "2-1-19-24"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": None}
+        )
+
+    def test_GH_1192_46(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := time_agg(sc_1, "D", Me_1, first)];
+        Description: With a period to aggregate from, the period of the reference is only known
+                     at run time: semantic_analysis() raised a KeyError, and the null value is
+                     a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_46"
+        number_inputs = 1
+        message = "2-1-19-24"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": None}
+        )
+
+    def test_GH_1192_47(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := random(Id_1, 0 - 1)];
+        Description: A computed negative random index is a runtime error on both engines: the
+                     DuckDB engine did not check it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_47"
+        number_inputs = 1
+        message = "2-1-15-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_48(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := dateadd(Me_1, 1, substr("XD", 1, 1))];
+        Description: A computed invalid dateadd period is a runtime error on both engines: the
+                     DuckDB engine returned nulls.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_48"
+        number_inputs = 1
+        message = "2-1-19-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_49(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, integer)];
+        Description: Text that is no integer is a runtime error on both engines: DuckDB raised a raw
+                     ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_49"
+        number_inputs = 1
+        message = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_50(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, number)];
+        Description: Text that is no number is a runtime error on both engines: DuckDB raised a raw
+                     ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_50"
+        number_inputs = 1
+        message = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_51(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast("abc", integer)];
+        Description: A literal that is no integer is rejected by the semantic analysis, as a literal
+                     that is no date is.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_51"
+        number_inputs = 1
+        message = "1-1-5-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_52(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(sc_1, number)];
+        Description: A scalar value that is no number is a runtime error on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_52"
+        number_inputs = 1
+        message = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": "abc"}
+        )
+
+    def test_GH_1192_53(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, date)]; (Me_1 = "2022-1-5")
+        Description: A date that is not written YYYY-MM-DD is a runtime error on both engines:
+                     DuckDB read it as 2022-01-05.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_53"
+        number_inputs = 1
+        message = "2-1-19-8"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_54(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, date)]; (Me_1 = "2022-02-30")
+        Description: A day that does not exist is a runtime error on both engines: the pandas
+                     engine raised a ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_54"
+        number_inputs = 1
+        message = "2-1-19-8"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_55(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, time_period)]; (Me_1 = "2020X1")
+        Description: Text that is no time period is a runtime error of the cast on both
+                     engines: DuckDB read it as 2020D1, and pandas only failed when writing the
+                     result.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_55"
+        number_inputs = 1
+        message = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_56(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast("2020X1", time_period)];
+        Description: A literal that is no time period is rejected by the semantic analysis on
+                     both engines: pandas raised the input error 0-1-2-7 at run time and DuckDB
+                     read it as 2020D1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_56"
+        number_inputs = 1
+        message = "1-1-5-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_57(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(sc_1, time_period)]; (sc_1 = "2020X1")
+        Description: A scalar value that is no time period is a runtime error on both engines:
+                     pandas raised the input error 0-1-2-7.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_57"
+        number_inputs = 1
+        message = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            scalars={"sc_1": "2020X1"},
+        )
+
+    def test_GH_1192_58(self):
+        """
+        Status: OK
+        Description: A null dateadd period or shift, or a null random index or seed, gives null:
+                     the pandas engine raised a KeyError or a TypeError, and DuckDB returned a
+                     number for random.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_58"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": None, "sc_2": None},
+        )
+
+    def test_GH_1192_59(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_3 := random(Me_1, Me_2)];
+        Description: A negative random index read from a Component is a runtime error on both
+                     engines, as a negative scalar value is: both engines accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_59"
+        number_inputs = 1
+        message = "2-1-15-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_60(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, duration)];
+        Description: Text cast to a duration gives the same code on both engines (an ISO
+                     duration or a code in any case): DuckDB kept the text.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_60"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1192_61(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, duration)]; (Me_1 = "X")
+        Description: Text that is no duration is a runtime error on both engines: pandas raised
+                     the input error 0-1-1-35 and DuckDB kept the text.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_61"
+        number_inputs = 1
+        message = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_62(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, time)]; (Me_1 = "2020X1")
+        Description: Text that is no time is a runtime error on both engines, which kept it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_62"
+        number_inputs = 1
+        message = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_63(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, time)]; (Me_1 = "2020-12-31/2020-01-01")
+        Description: A time interval ending before it starts is a runtime error on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_63"
+        number_inputs = 1
+        message = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_64(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := time_agg(sc_1, _, Me_1, first)]; (sc_1 = "X")
+        Description: A period read from a scalar that is no period indicator is a runtime error
+                     on both engines, where the structure error 1-1-19-3 was raised at run time.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_64"
+        number_inputs = 1
+        message = "2-1-19-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": "X"}
+        )
+
+    def test_GH_1192_65(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := time_agg(sc_1, "M", Me_1, first)]; (sc_1 = "D")
+        Description: A period read from a scalar that is not coarser than the period to
+                     aggregate from is a runtime error on both engines, where the structure
+                     error 1-1-19-4 was raised at run time.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_65"
+        number_inputs = 1
+        message = "2-1-19-26"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": "D"}
+        )
 
 
 class OtherBugs(BugHelper):
@@ -4320,6 +5172,152 @@ class OtherBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1192_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := nvl(Me_1, -1)];
+        Description: A negative literal is a literal, so nvl replaces every null of Me_1 and
+                     Me_2 is not nullable, as with a positive literal.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1192_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := nvl(Me_1, -1)];
+        Description: The semantic analysis gives the structure of GH_1192_1, without data.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            only_semantic=True,
+        )
+
+    def test_GH_1192_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := substr(Me_1, 1, -9)];
+        Description: A negative literal length is rejected by the semantic analysis, as a
+                     literal length of 0 is.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_3"
+        number_inputs = 1
+        message = "1-1-18-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := -1, Me_3 := +1.5, Me_4 := Me_1 * -2];
+        Description: Signed literals keep their values and types.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1192_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_3 := substr(Me_1, 1, Me_2)];
+        Description: A negative length read from a Component is a runtime error on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_7"
+        number_inputs = 1
+        message = "2-1-18-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_3 := instr(Me_1, "l", Me_2)];
+        Description: A start of 0 read from a Component is a runtime error on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_8"
+        number_inputs = 1
+        message = "2-1-18-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := substr(Me_1, 1, sc_1)];
+        Description: A negative length given as a scalar value is a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_9"
+        number_inputs = 1
+        message = "2-1-18-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": -3}
+        )
+
+    def test_GH_1192_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := f(Me_1, -2)]; (f calls substr(x, 1, n))
+        Description: A negative literal passed to a user defined operator is rejected by the
+                     semantic analysis, as when it is written in place.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_14"
+        number_inputs = 1
+        message = "1-1-18-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := string_distance(hamming, Me_1, "fooo")];
+        Description: Strings of different lengths read from the data are a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_15"
+        number_inputs = 1
+        message = "2-1-18-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class ExternalRoutineBugs(BugHelper):
     """ """
@@ -4365,6 +5363,26 @@ class ExternalRoutineBugs(BugHelper):
             number_inputs=number_inputs,
             references_names=references_names,
             sql_names=sql_names,
+        )
+
+    def test_GH_1192_22(self):
+        """
+        Status: OK
+        Expression: DS_r <- eval(SQL_GH_1192_22(DS_1) language "SQL" returns dataset {...});
+        Description: A query that reads a Component the operand does not have fails on the
+                     structures, so the semantic analysis rejects it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_22"
+        number_inputs = 1
+        message = "1-1-1-23"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            sql_names=["SQL_GH_1192_22"],
         )
 
 
@@ -5097,6 +6115,58 @@ class CastBugs(BugHelper):
         )
         assert list(result["DS_r"].data["m"]) == [10, 10, 10]
 
+    def test_GH_1192_12(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast("2022Q1", date)];
+        Description: A literal that cannot be cast to a date is rejected by the semantic analysis.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_12"
+        number_inputs = 1
+        message = "1-1-5-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_13(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(sc_1, date)];
+        Description: A scalar value that cannot be cast to a date is a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_13"
+        number_inputs = 1
+        message = "2-1-19-8"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            scalars={"sc_1": "2022Q1"},
+        )
+
+    def test_GH_1192_29(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, VD_1)];
+        Description: A value domain is no scalar type for cast: a script error, where a
+                     NotImplementedError was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_29"
+        number_inputs = 1
+        message = "0-5-1-8"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class AnalyticBugs(BugHelper):
     """Bugs on analytic (window) operators."""
@@ -5421,11 +6491,44 @@ class AnalyticBugs(BugHelper):
         """
         code = "GH_1191_2"
         number_inputs = 1
-        message = "2-1-15-2"
+        message = "1-1-15-9"
 
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
             exception_code=message,
             exception_message="Please check transformation with output Dataset DS_r",
+        )
+
+    def test_GH_1192_27(self):
+        """
+        Status: OK
+        Expression: DS_r <- lag(DS_1 over (order by Id_1));
+        Description: lag without its offset is a script error, where a TypeError was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_27"
+        number_inputs = 1
+        message = "0-5-1-3"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_28(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum(DS_1 over (order by Id_1 data points between unbounded preceding and unbounded preceding));
+        Description: An analytic window bounded by two unbounded preceding is a script error,
+                     where a plain Exception was raised.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_28"
+        number_inputs = 1
+        message = "0-5-1-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
         )

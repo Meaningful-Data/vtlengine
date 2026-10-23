@@ -1,0 +1,2 @@
+DS_r1 <- DS_1[calc Me_3 := dateadd(Me_1, 1, sc_1), Me_4 := dateadd(Me_1, sc_2, "D"), Me_5 := random(Me_2, sc_2)];
+DS_r2 <- DS_1[filter isnull(Me_2)][calc Me_6 := random(Me_2, 1)];

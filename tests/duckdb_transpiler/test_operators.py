@@ -208,6 +208,20 @@ class TestGlobalRegistry:
         assert result == expected_output
 
     @pytest.mark.parametrize(
+        "token,operand,expected_output",
+        [
+            (MINUS, '"x"', '-"x"'),
+            (MINUS, "-1", "-(-1)"),
+            (MINUS, '-"x"', '-(-"x")'),
+            (MINUS, "+1", "-(+1)"),
+            (PLUS, "-1", "+(-1)"),
+        ],
+    )
+    def test_sign_of_a_signed_operand(self, token, operand, expected_output):
+        """A sign before a signed operand keeps them apart, since -- starts an SQL comment."""
+        assert registry.sql(token, operand) == expected_output
+
+    @pytest.mark.parametrize(
         "token,expected_output",
         [
             (SUM, 'SUM("Me_1")'),
@@ -245,7 +259,8 @@ class TestGlobalRegistry:
             (
                 SUBSTR,
                 ('"str"', "1", "5"),
-                'SUBSTR("str", COALESCE(1, 1), COALESCE(5, LENGTH("str")))',
+                "SUBSTR(\"str\", COALESCE(vtl_param_min(1, 1, 'substr', 'Start'), 1), "
+                "COALESCE(vtl_param_min(5, 0, 'substr', 'Length'), LENGTH(\"str\")))",
             ),
             (REPLACE, ('"str"', "'a'", "'b'"), "REPLACE(\"str\", 'a', 'b')"),
         ],

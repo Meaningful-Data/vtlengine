@@ -27,7 +27,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
 )
 from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE, Integer, Number
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
 from vtlengine.Operators import ALL_MODEL_DATA_TYPES
 from vtlengine.Utils._number_config import get_effective_numeric_digits
@@ -92,7 +92,7 @@ class Binary(Operator.Binary):
         """
         if isinstance(x, int) and isinstance(y, int):
             if cls.op == DIV and y == 0:
-                raise SemanticError("2-1-15-6", op=cls.op, value=y)
+                raise RunTimeError("2-1-15-6", op=cls.op, value=y)
             if cls.op == RANDOM:
                 return cls.py_op(x, y)
             if cls.op in (PLUS, MINUS, MULT):
@@ -101,18 +101,18 @@ class Binary(Operator.Binary):
         x = float(x)
         y = float(y)
         if cls.op == DIV and y == 0:
-            raise SemanticError("2-1-15-6", op=cls.op, value=y)
+            raise RunTimeError("2-1-15-6", op=cls.op, value=y)
         if cls.op == MOD:
             if y == 0:
-                raise SemanticError("2-1-15-6", op=cls.op, value=y)
+                raise RunTimeError("2-1-15-6", op=cls.op, value=y)
             # fmod keeps the dividend's sign, like DuckDB ``%`` (and the former
             # Decimal remainder): -5 mod 3 is -2, not Python's 1.
             result = math.fmod(x, y)
         elif cls.op == POWER:
             if x < 0 and not y.is_integer():
-                raise SemanticError("2-1-15-2", op=cls.op, value=x)
+                raise RunTimeError("2-1-15-2", op=cls.op, value=x)
             if x == 0 and y < 0:
-                raise SemanticError("2-1-15-6", op=cls.op, value=x)
+                raise RunTimeError("2-1-15-6", op=cls.op, value=x)
             result = cls.py_op(x, y)
         else:
             result = cls.py_op(x, y)
@@ -232,7 +232,7 @@ class NaturalLogarithm(Unary):
     @classmethod
     def py_op(cls, x: Any) -> Any:
         if x <= 0:
-            raise SemanticError("2-1-15-8", op=cls.op, value=x)
+            raise RunTimeError("2-1-15-8", op=cls.op, value=x)
         return math.log(x)
 
     @classmethod
@@ -240,7 +240,7 @@ class NaturalLogarithm(Unary):
         bad = series.dropna()
         bad = bad[bad <= 0]
         if len(bad):
-            raise SemanticError("2-1-15-8", op=cls.op, value=bad.iloc[0])
+            raise RunTimeError("2-1-15-8", op=cls.op, value=bad.iloc[0])
 
 
 class SquareRoot(Unary):
@@ -256,7 +256,7 @@ class SquareRoot(Unary):
     @classmethod
     def py_op(cls, x: Any) -> Any:
         if x < 0:
-            raise SemanticError("2-1-15-2", op=cls.op, value=x)
+            raise RunTimeError("2-1-15-2", op=cls.op, value=x)
         return math.sqrt(x)
 
     @classmethod
@@ -264,7 +264,7 @@ class SquareRoot(Unary):
         bad = series.dropna()
         bad = bad[bad < 0]
         if len(bad):
-            raise SemanticError("2-1-15-2", op=cls.op, value=bad.iloc[0])
+            raise RunTimeError("2-1-15-2", op=cls.op, value=bad.iloc[0])
 
 
 class Ceil(Unary):
@@ -343,11 +343,11 @@ class Logarithm(Binary):
         if pd.isnull(param):
             return None
         if param <= 0:
-            raise SemanticError("2-1-15-3", op=cls.op, value=param)
+            raise RunTimeError("2-1-15-3", op=cls.op, value=param)
         if pd.isnull(x):
             return None
         if x <= 0:
-            raise SemanticError("2-1-15-8", op=cls.op, value=x)
+            raise RunTimeError("2-1-15-8", op=cls.op, value=x)
 
         return math.log(x, param)
 
@@ -438,7 +438,7 @@ class Parameterized(Unary):
                         result.data[measure_name], param_value
                     )
             except ValueError:
-                raise SemanticError(
+                raise RunTimeError(
                     "2-1-15-1",
                     op=cls.op,
                     comp_name=measure_name,
@@ -561,7 +561,10 @@ class Random(Parameterized):
         # A Component carries its values in its data, so only a Scalar can be read here.
         value = index.value if isinstance(index, Scalar) else None
         if value is not None and value < 0:
-            raise SemanticError("2-1-15-2", op=cls.op, value=value)
+            # A literal is part of the script, a scalar value is data (issue #1192)
+            if index.literal:
+                raise SemanticError("1-1-15-9", op=cls.op, value=value)
+            raise RunTimeError("2-1-15-2", op=cls.op, value=value)
         if value is not None and value > 10000:
             warnings.warn(
                 "Random: The value of 'index' is very big. This can affect performance.",
@@ -570,7 +573,13 @@ class Random(Parameterized):
         return super().validate(seed, index)
 
     @classmethod
-    def py_op(cls, seed: Union[int, float], index: int) -> float:
+    def py_op(cls, seed: Union[int, float], index: Optional[int]) -> Optional[float]:
+        if pd.isnull(index):
+            # A null index gives null, as a null seed does (issue #1192)
+            return None
+        if index < 0:
+            # An index read from a Component (a scalar one is checked by the validation)
+            raise RunTimeError("2-1-15-2", op=cls.op, value=index)
         instance: PseudoRandom = PseudoRandom(seed)
         for _ in range(index):
             instance.random()

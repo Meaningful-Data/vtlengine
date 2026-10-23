@@ -1,0 +1,6 @@
+define operator f (x component, n integer)
+  returns component is
+    substr(x, 1, n)
+end operator;
+
+DS_r <- DS_1[calc Me_2 := f(Me_1, -2)];

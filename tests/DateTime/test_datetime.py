@@ -13,7 +13,6 @@ from vtlengine.Exceptions import (
     DataLoadError,
     InputValidationException,
     RunTimeError,
-    SemanticError,
 )
 
 
@@ -121,7 +120,7 @@ check_time_valid_params = [
 check_time_invalid_params = [
     pytest.param("2021-01-01/2020-01-01", "Start date is greater", id="start_after_end"),
     # The month pattern reads 13 and the conversion then refuses it, on either engine
-    pytest.param("2020-13", "unconverted data remains", id="month_past_december"),
+    pytest.param("2020-13", "not in the correct format", id="month_past_december"),
     pytest.param("abc", "not in the correct format", id="no_interval_at_all"),
 ]
 
@@ -969,7 +968,7 @@ def test_timeshift_interval(intervals, shift, expected):
 
 
 def test_fill_time_series_interval_mixed_frequency():
-    """Intervals of more than one frequency cannot define a grid (1-1-19-9)."""
+    """Intervals of more than one frequency cannot define a grid (2-1-19-23)."""
     structure = {
         "datasets": [
             {
@@ -993,7 +992,7 @@ def test_fill_time_series_interval_mixed_frequency():
             "Me_1": [1, 2, 3],
         }
     )
-    with pytest.raises(SemanticError, match="1-1-19-9"):
+    with pytest.raises(RunTimeError, match="2-1-19-23"):
         run(
             script="DS_r <- fill_time_series(DS_1, single);",
             data_structures=structure,
@@ -1267,7 +1266,7 @@ def test_check_time_valid(input_value, expected):
 
 @pytest.mark.parametrize("input_value, message", check_time_invalid_params)
 def test_check_time_invalid(input_value, message):
-    with pytest.raises(ValueError, match=message):
+    with pytest.raises(InputValidationException, match=message):
         check_time(input_value)
 
 
