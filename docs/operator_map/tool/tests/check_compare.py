@@ -114,6 +114,43 @@ def test_number_precision_is_less_than_one_unit_of_the_last_printed_digit() -> N
     assert values_equal("Number", ".5", "0.54")
 
 
+def test_number_precision_never_asks_for_more_than_a_double_holds() -> None:
+    # The manual prints the 16 decimals of a double, and the engines differ in the last digit:
+    # digits past the precision of a double carry no information.
+    assert values_equal("Number", "-0.4064071941354039", "-0.4064071941354038")
+    assert values_equal("Number", "-0.4064071941354039", "-0.4064071941354040")
+    # The floor is 1e-15 relative to the expected value (from 1 up), and a distance has to be
+    # less than it, as it has to be less than a unit of the last digit written.
+    assert values_equal("Number", "0.4064071941354039", "0.4064071941354048")  # 9e-16 apart
+    assert not values_equal("Number", "0.4064071941354039", "0.4064071941354049")  # 1e-15 apart
+    big = "12345.678901234567"  # the floor is 1.2e-11 here: 1e-15 of the value
+    assert values_equal("Number", big, "12345.678901234578")  # 1.1e-11 apart
+    assert not values_equal("Number", big, "12345.678901234600")  # 3.3e-11 apart
+    # A value written with fewer digits keeps its unit of the last digit: the floor only widens.
+    assert not values_equal("Number", "1.63", "1.65")
+    assert values_equal("Number", "1.63", "1.6399")
+    assert not values_equal("Number", "1.63", "1.64")
+    # Without decimals or with an exponent the tolerances were wider than the floor already.
+    assert not values_equal("Number", "10", "10.00001")
+    assert not values_equal("Number", "1E-7", "1.00002E-7")
+
+
+def test_the_floor_at_double_precision_reaches_datasets_and_scalars() -> None:
+    printed = ExpectedScalar("sc_r", "Number", "-0.4064071941354039")
+    assert compare_scalar(printed, scalar("-0.4064071941354038", "Number")) is None
+    assert compare_scalar(ExpectedScalar("sc_r", "Number", "1.63"), scalar("1.65", "Number")) == (
+        "value expected 1.63 got 1.65"
+    )
+    wanted_components = {
+        **EXPECTED_COMPONENTS,
+        "Me_1": ExpectedComponent("Measure", ("Number",), None),
+    }
+    got_components = {**ACTUAL_COMPONENTS, "Me_1": ActualComponent("Measure", "Number", True)}
+    wanted = expected_dataset(rows=[row("1", "-0.4064071941354039")], components=wanted_components)
+    got = actual_dataset(rows=[row("1", "-0.4064071941354038")], components=got_components)
+    assert compare_dataset(wanted, got) is None
+
+
 def test_number_written_with_an_exponent_uses_a_relative_tolerance() -> None:
     assert values_equal("Number", "1E-7", "1.0000005E-7")  # 5e-14 apart, tolerance 1e-13
     assert values_equal("Number", "1E-7", "0.0000001")
@@ -451,6 +488,122 @@ def test_rows_are_not_compared_when_the_structure_differs() -> None:
         expected_dataset(), actual_dataset(rows=rows, components=without_me_2)
     )
     assert message == "missing components: Me_2"
+
+
+LEVEL_EXPECTED = {
+    "Id_1": ExpectedComponent("Identifier", ("Integer",), False),
+    "errorlevel": ExpectedComponent("Measure", ("Integer",), None),
+}
+LEVEL_ACTUAL = {
+    "Id_1": ActualComponent("Identifier", "Integer", False),
+    "errorlevel": ActualComponent("Measure", "Number", True),
+}
+LEVEL_TYPE = "type of errorlevel expected Integer got Number"
+
+
+def level(id_1: str, value: str | None) -> dict[str, str | None]:
+    return {"Id_1": id_1, "errorlevel": value}
+
+
+def levels(wanted: list[dict[str, str | None]], got: list[dict[str, str | None]]) -> str | None:
+    """compare_dataset of an errorlevel that the manual types Integer and an engine Number."""
+    return compare_dataset(
+        ExpectedDataset("DS_r", LEVEL_EXPECTED, wanted), ActualDataset("DS_r", LEVEL_ACTUAL, got)
+    )
+
+
+def test_the_data_points_are_compared_despite_a_type_difference() -> None:
+    wanted = [level("1", "5"), level("2", None)]
+    # The type is the only problem: the data points agree (5 is 5.0 as an Integer).
+    assert levels(wanted, [level("1", "5.0"), level("2", None)]) == LEVEL_TYPE
+    # The type comes first, then what is wrong with the data points.
+    assert levels(wanted, [level("1", "5.0")]) == f"{LEVEL_TYPE}; missing row Id_1=2"
+    assert levels(wanted, [level("1", "6"), level("2", None), level("3", "1")]) == (
+        f"{LEVEL_TYPE}; row Id_1=1: errorlevel expected 5 got 6; unexpected row Id_1=3"
+    )
+
+
+def test_a_type_difference_and_data_problems_make_at_most_three_problems() -> None:
+    wanted = [level(str(n), "1") for n in range(1, 6)]
+    got = [level(str(n), "2") for n in range(1, 6)]
+    assert levels(wanted, got) == (
+        f"{LEVEL_TYPE}; row Id_1=1: errorlevel expected 1 got 2; "
+        "row Id_1=2: errorlevel expected 1 got 2"
+    )
+    # Two type problems leave room for one data problem.
+    two = {
+        "Id_1": ExpectedComponent("Identifier", ("Integer",), False),
+        "Me_1": ExpectedComponent("Measure", ("Integer",), None),
+        "Me_2": ExpectedComponent("Measure", ("Integer",), None),
+    }
+    numbers = {
+        "Id_1": ActualComponent("Identifier", "Integer", False),
+        "Me_1": ActualComponent("Measure", "Number", True),
+        "Me_2": ActualComponent("Measure", "Number", True),
+    }
+    rows_wanted = [row("1", "1", "1"), row("2", "1", "1")]
+    rows_got = [row("1", "2", "2"), row("2", "2", "2")]
+    assert compare_dataset(
+        ExpectedDataset("DS_r", two, rows_wanted), ActualDataset("DS_r", numbers, rows_got)
+    ) == (
+        "type of Me_1 expected Integer got Number; type of Me_2 expected Integer got Number; "
+        "row Id_1=1: Me_1 expected 1 got 2"
+    )
+
+
+def test_a_type_difference_is_compared_with_the_value_rule_of_the_expected_type() -> None:
+    # As an Integer 5.0000000001 is not the whole number 5; as the Number the engine returned,
+    # it would be within the tolerance of the printed 5.
+    assert levels([level("1", "5")], [level("1", "5.0000000001")]) == (
+        f"{LEVEL_TYPE}; row Id_1=1: errorlevel expected 5 got 5.0000000001"
+    )
+    # A String is exact: 05 is not 5, although they are the same Integer.
+    as_integer = {**ACTUAL_COMPONENTS, "Me_2": ActualComponent("Measure", "Integer", True)}
+    rows_wanted, rows_got = [row("1", "3", "05")], [row("1", "3", "5")]
+    assert (
+        compare_dataset(
+            expected_dataset(rows=rows_wanted), actual_dataset(rows=rows_got, components=as_integer)
+        )
+        == "type of Me_2 expected String got Integer; row Id_1=1: Me_2 expected 05 got 5"
+    )
+    # Where several types are allowed, the first one is the expected type.
+    as_text = {**ACTUAL_COMPONENTS, "Me_1": ActualComponent("Measure", "String", True)}
+    rows_wanted, rows_got = [row("1", "5")], [row("1", "5.0000000001")]
+    assert compare_dataset(
+        expected_dataset(rows=rows_wanted), actual_dataset(rows=rows_got, components=as_text)
+    ) == (
+        "type of Me_1 expected Integer or Number got String; "
+        "row Id_1=1: Me_1 expected 5 got 5.0000000001"
+    )
+
+
+def test_identifiers_of_a_different_type_are_still_matched_by_value() -> None:
+    wanted = {**LEVEL_EXPECTED, "errorlevel": ExpectedComponent("Measure", ("Integer",), None)}
+    got = {
+        "Id_1": ActualComponent("Identifier", "Number", False),
+        "errorlevel": ActualComponent("Measure", "Integer", True),
+    }
+    rows_wanted, rows_got = [level("1", "5")], [level("1.0", "5")]
+    message = compare_dataset(
+        ExpectedDataset("DS_r", wanted, rows_wanted), ActualDataset("DS_r", got, rows_got)
+    )
+    assert message == "type of Id_1 expected Integer got Number"
+
+
+def test_a_type_difference_does_not_unlock_the_rows_of_another_structure_problem() -> None:
+    # A role, a name or the nullability that differs is not a type: the rows stay unread.
+    nullable = {**LEVEL_ACTUAL, "Id_1": ActualComponent("Identifier", "Integer", True)}
+    message = compare_dataset(
+        ExpectedDataset("DS_r", LEVEL_EXPECTED, [level("1", "5")]),
+        ActualDataset("DS_r", nullable, [level("1", "6")]),
+    )
+    assert message == f"{LEVEL_TYPE}; nullable of Id_1 expected false got true"
+    attribute = {**LEVEL_ACTUAL, "errorlevel": ActualComponent("Attribute", "Number", True)}
+    message = compare_dataset(
+        ExpectedDataset("DS_r", LEVEL_EXPECTED, [level("1", "5")]),
+        ActualDataset("DS_r", attribute, [level("1", "6")]),
+    )
+    assert message == f"role of errorlevel expected Measure got Attribute; {LEVEL_TYPE}"
 
 
 def test_at_most_three_problems_are_reported() -> None:

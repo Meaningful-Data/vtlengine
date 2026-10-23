@@ -8,8 +8,9 @@ it. Different spellings of one value, such as ``2013-Q1`` and ``2013Q1``, are th
 
 They differ in how a Number is matched. The manual prints shortened results, rounded
 (``1.632993``) or truncated (``2980.95``), so an expected Number takes its tolerance from the
-digits written in it. Two engines are expected to agree to the last digits, so they only get a
-tiny relative or absolute tolerance.
+digits written in it, but never a finer one than a double holds: the digits that a value prints
+past that precision (``-0.4064071941354039``) carry no information. Two engines are expected to
+agree to the last digits, so they only get a tiny relative or absolute tolerance.
 
 The order of the data points of a dataset does not matter: a data point is found by the canonical
 value of its identifiers. Against the expected output a key that occurs twice on either side is a
@@ -28,7 +29,7 @@ from decimal import Decimal
 from itertools import islice
 from typing import Any, Final, Union
 
-from tool.examples import ExpectedDataset, ExpectedScalar
+from tool.examples import ExpectedComponent, ExpectedDataset, ExpectedScalar
 
 _MAX_PROBLEMS: Final = 3
 _IDENTIFIER: Final = "Identifier"
@@ -62,10 +63,18 @@ _YEAR: Final = re.compile(r"\d{4}", re.ASCII)
 _PERIOD: Final = re.compile(r"(\d{4})-?([ASQMWD])-?(\d{1,3})?", re.ASCII)
 _YEAR_MONTH: Final = re.compile(r"(\d{4})-(\d{2})", re.ASCII)
 
+# The kinds of problem that the structure of a dataset can have, in the order they are reported.
+_NAMES: Final = "names"
+_ROLES: Final = "roles"
+_TYPES: Final = "types"
+_NULLABILITY: Final = "nullability"
+
 _ONE: Final = Decimal(1)
 # Against an expected Number, relative to it: with no decimals written, or with an exponent.
 _NO_DECIMALS_TOLERANCE: Final = Decimal("1e-9")
 _EXPONENT_TOLERANCE: Final = Decimal("1e-6")
+# The finest distance that an expected Number with decimals asks for, relative to it, from 1 up.
+_DOUBLE_PRECISION: Final = Decimal("1e-15")
 # Between two engines: relative, and absolute for numbers close to zero.
 _RELATIVE: Final = Decimal("1e-9")
 _ABSOLUTE: Final = Decimal("1e-12")
@@ -124,10 +133,12 @@ def values_equal(vtype: str, expected: str | None, actual: str | None) -> bool:
     null (so is a blank text, except for a String), and a null equals only a null. Then, by type:
 
     * **Number:** with ``d`` digits after the ``.`` of the expected value, ``d >= 1`` matches
-      when ``|actual - expected| < 10**-d``, one unit of the last digit written. Without
-      decimals it matches when ``|actual - expected| <= 1e-9 * max(1, |expected|)``. An expected
-      value written with an exponent matches within a relative 1e-6. A text that is not a finite
-      number is compared as text;
+      when ``|actual - expected| < max(10**-d, 1e-15 * max(1, |expected|))``: one unit of the
+      last digit written, but not finer than a double, since the digits written past its
+      precision carry no information. Without decimals it matches when
+      ``|actual - expected| <= 1e-9 * max(1, |expected|)``. An expected value written with an
+      exponent matches within a relative 1e-6. A text that is not a finite number is compared as
+      text;
     * **Integer:** the same whole number, so ``10`` and ``10.0`` agree but ``10.5`` is never ten;
     * **Boolean** and **Duration:** ignoring case;
     * **Time_Period:** by ``(year, indicator, number)``, so ``2013-Q1`` is ``2013Q1`` and ``2010``
@@ -144,10 +155,13 @@ def compare_dataset(expected: ExpectedDataset, actual: ActualDataset) -> str | N
     The structure is compared first: the component names, then the roles (after
     ``normalize_role``), then the types (the actual type must be one of the expected ones, after
     ``normalize_type``), then the nullability (only where the expected structure states it).
-    The data points are compared only when the structure agrees. They are found by the identifier
-    values, and every other column is compared with ``values_equal``, as the type that the engine
-    returned. At most three problems are reported, joined with ``"; "``. The names of the
-    datasets are not compared: the caller pairs the outputs by name.
+    The data points are compared only when the names, the roles and the nullability agree. A
+    type that differs does not stop it, so that a type problem does not hide what is wrong with
+    the data points. They are found by the identifier values, and every other column is compared
+    with ``values_equal``, as the type that the engine returned, or, in a column whose type is
+    not an allowed one, as the first type that is. At most three problems are reported, joined
+    with ``"; "``: the problems of the structure first, then those of the data points. The names
+    of the datasets are not compared: the caller pairs the outputs by name.
     """
     return "; ".join(islice(_dataset_problems(expected, actual), _MAX_PROBLEMS)) or None
 
@@ -256,44 +270,62 @@ def _structure(dataset: ActualDataset) -> dict[str, tuple[str, str]]:
 
 def _dataset_problems(expected: ExpectedDataset, actual: ActualDataset) -> Iterator[str]:
     structure = list(_structure_problems(expected, actual))
-    if structure:
-        yield from structure
+    yield from (problem for _, problem in structure)
+    # A type that differs leaves the data points comparable; any other problem does not.
+    if any(kind != _TYPES for kind, _ in structure):
         return
     ids = [
         name
         for name, component in expected.components.items()
         if normalize_role(component.role) == _IDENTIFIER
     ]
-    types = {name: normalize_type(actual.components[name].type) for name in expected.components}
+    types = {
+        name: _value_type(component, actual.components[name])
+        for name, component in expected.components.items()
+    }
     yield from _row_problems(ids, types, expected.rows, actual.rows, _matches_printed_precision)
 
 
-def _structure_problems(expected: ExpectedDataset, actual: ActualDataset) -> Iterator[str]:
+def _value_type(expected: ExpectedComponent, actual: ActualComponent) -> str:
+    """The canonical type whose rules compare the values of a component.
+
+    It is the type that the engine returned, when the expected structure allows it. When it does
+    not, the type is a problem of its own, and the values follow the expected type: the first
+    one that is allowed.
+    """
+    returned = normalize_type(actual.type)
+    allowed = [normalize_type(name) for name in expected.types]
+    return returned if returned in allowed or not allowed else allowed[0]
+
+
+def _structure_problems(
+    expected: ExpectedDataset, actual: ActualDataset
+) -> Iterator[tuple[str, str]]:
+    """The problems of the structure as ``(kind, text)``, in the order they are reported."""
     missing = [name for name in expected.components if name not in actual.components]
     if missing:
-        yield f"missing components: {', '.join(missing)}"
+        yield _NAMES, f"missing components: {', '.join(missing)}"
     unexpected = [name for name in actual.components if name not in expected.components]
     if unexpected:
-        yield f"unexpected components: {', '.join(unexpected)}"
+        yield _NAMES, f"unexpected components: {', '.join(unexpected)}"
 
     shared = [name for name in expected.components if name in actual.components]
     for name in shared:
         want = normalize_role(expected.components[name].role)
         got = normalize_role(actual.components[name].role)
         if want != got:
-            yield f"role of {name} expected {want} got {got}"
+            yield _ROLES, f"role of {name} expected {want} got {got}"
     for name in shared:
         allowed = list(dict.fromkeys(normalize_type(t) for t in expected.components[name].types))
         got = normalize_type(actual.components[name].type)
         if got not in allowed:
-            yield f"type of {name} expected {' or '.join(allowed)} got {got}"
+            yield _TYPES, f"type of {name} expected {' or '.join(allowed)} got {got}"
     for name in shared:
-        nullable = expected.components[name].nullable
-        if nullable is not None and nullable != actual.components[name].nullable:
-            yield (
-                f"nullable of {name} expected {str(nullable).lower()} "
-                f"got {str(actual.components[name].nullable).lower()}"
-            )
+        want_nullable = expected.components[name].nullable
+        got_nullable = actual.components[name].nullable
+        if want_nullable is not None and want_nullable != got_nullable:
+            text = f"nullable of {name} expected {str(want_nullable).lower()}"
+            yield _NULLABILITY, f"{text} got {str(got_nullable).lower()}"
 
 
 def _row_problems(
@@ -471,7 +503,9 @@ def _matches_printed_precision(expected: str, actual: str) -> bool:
     if decimals:
         # Less than one unit of the last digit written, so that a rounded print matches as well
         # as a truncated one. ``Decimal`` keeps this exact: 0.7 and 0.6 are 0.1 apart, no less.
-        return distance < _ONE.scaleb(-decimals)
+        # Never less than a double can tell apart: a longer print adds no information.
+        unit = _ONE.scaleb(-decimals)
+        return distance < max(unit, _DOUBLE_PRECISION * max(_ONE, abs(want)))
     return distance <= _NO_DECIMALS_TOLERANCE * max(_ONE, abs(want))
 
 
