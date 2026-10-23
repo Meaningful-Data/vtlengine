@@ -15,6 +15,7 @@ from catalogue.set import CHAPTER as SET_CHAPTER
 from catalogue.string import CHAPTER as STRING_CHAPTER
 from catalogue.time import CHAPTER as TIME_CHAPTER
 from catalogue.types import TYPES as _TYPES
+from catalogue.validation import CHAPTER as VALIDATION_CHAPTER
 
 CHAPTERS: tuple[Chapter, ...] = (
     GENERAL_CHAPTER,
@@ -25,6 +26,7 @@ CHAPTERS: tuple[Chapter, ...] = (
     TIME_CHAPTER,
     SET_CHAPTER,
     AGGREGATE_CHAPTER,
+    VALIDATION_CHAPTER,
     CONDITIONAL_CHAPTER,
     CLAUSE_CHAPTER,
 )

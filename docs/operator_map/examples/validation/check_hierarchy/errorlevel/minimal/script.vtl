@@ -1,0 +1,11 @@
+define hierarchical ruleset HR_1 ( variable rule Id_2 ) is
+    R1 : A = B + C errorlevel 1
+    ; R2 : C = D + E errorlevel 2
+    ; R3 : B >= D errorlevel 3
+    ; R4 : E > X errorlevel 4
+    ; R5 : Y < Z errorlevel 5
+    ; R6 : D <= X errorlevel 6
+    ; R7 : F > B errorlevel 7
+end hierarchical ruleset;
+
+DS_r := check_hierarchy ( DS_1, HR_1 partial_zero dataset all );

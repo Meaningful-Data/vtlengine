@@ -1,0 +1,6 @@
+Id_1,Id_2,ruleid,Me_1,imbalance,errorcode,errorlevel
+1,A,R1,10,1,,
+1,B,R3,3,-3,,
+1,E,R4,0,0,,
+1,Y,R5,0,0,,
+1,D,R6,6,6,,
