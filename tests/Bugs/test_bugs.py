@@ -4541,6 +4541,26 @@ class DefinedBugs(BugHelper):
             scalars={"sc_1": "2020X1"},
         )
 
+    def test_GH_1192_58(self):
+        """
+        Status: OK
+        Description: A null dateadd period or shift, or a null random index or seed, gives null:
+                     the pandas engine raised a KeyError or a TypeError, and DuckDB returned a
+                     number for random.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_58"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": None, "sc_2": None},
+        )
+
 
 class OtherBugs(BugHelper):
     """ """

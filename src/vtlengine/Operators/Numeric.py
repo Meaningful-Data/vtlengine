@@ -573,7 +573,10 @@ class Random(Parameterized):
         return super().validate(seed, index)
 
     @classmethod
-    def py_op(cls, seed: Union[int, float], index: int) -> float:
+    def py_op(cls, seed: Union[int, float], index: Optional[int]) -> Optional[float]:
+        if pd.isnull(index):
+            # A null index gives null, as a null seed does (issue #1192)
+            return None
         instance: PseudoRandom = PseudoRandom(seed)
         for _ in range(index):
             instance.random()

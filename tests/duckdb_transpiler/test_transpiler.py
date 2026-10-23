@@ -1314,11 +1314,12 @@ class TestRandomOperator:
 
         result = transpiler.visit(random_op)
 
-        # Full SQL: applies random to each measure
+        # Full SQL: applies random to each measure, which gives null for a null value
         expected_sql = (
             'SELECT "Id_1", '
+            'CASE WHEN "Me_1" IS NULL THEN NULL ELSE '
             "(ABS(hash(CAST(\"Me_1\" AS VARCHAR) || '_' || CAST(3 AS VARCHAR))) % 1000000) "
-            '/ 1000000.0 AS "Me_1" '
+            '/ 1000000.0 END AS "Me_1" '
             'FROM "DS_1"'
         )
         assert_sql_equal(result, expected_sql)

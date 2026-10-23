@@ -1229,7 +1229,12 @@ class Date_Add(Parametrized):
         return result
 
     @classmethod
-    def py_op(cls, date_str: str, shift: int, period: str, is_tp: bool = False) -> str:
+    def py_op(
+        cls, date_str: str, shift: Optional[int], period: Optional[str], is_tp: bool = False
+    ) -> Optional[str]:
+        if shift is None or period is None:
+            # A null shift or period gives null, as any null operand (issue #1192)
+            return None
         has_time = _has_time_component(date_str)
         if is_tp:
             tp_value = TimePeriodHandler(date_str)
