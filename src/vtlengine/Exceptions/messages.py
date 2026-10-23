@@ -1081,6 +1081,12 @@ centralised_messages = {
         "description": "Raised when cyclic dependencies are detected in a VTL script, "
         "preventing DAG creation.",
     },
+    "1-3-2-7": {
+        "message": "At op {op}: recursive user defined operators are not supported, found the "
+        "calls {calls}.",
+        "description": "Raised when a user defined operator calls itself, directly or through "
+        "other user defined operators.",
+    },
     "1-3-2-4": {
         "message": "The Time aggregation operand has to be defined if not used inside an "
         "aggregation.",
