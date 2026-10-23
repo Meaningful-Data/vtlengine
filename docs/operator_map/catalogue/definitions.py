@@ -22,7 +22,14 @@ DEFINE_OPERATOR = Operator(
     name="define operator",
     symbol="",  # the name is the keyword
     page="dl/udo",
-    accepts=("scalar", "dataset", "set", "datapoint_ruleset", "hierarchical_ruleset"),
+    accepts=(
+        "scalar",
+        "dataset",
+        "set",
+        "value_domain",
+        "datapoint_ruleset",
+        "hierarchical_ruleset",
+    ),
     returns=("operator",),
     variants=(
         _variant("param_integer", "x integer"),

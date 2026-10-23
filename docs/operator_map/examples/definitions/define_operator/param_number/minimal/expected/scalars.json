@@ -1,7 +1,7 @@
 {
   "scalars": [
     {
-      "name": "sc_r",
+      "name": "SC_r",
       "type": "Number",
       "value": 2.5
     }

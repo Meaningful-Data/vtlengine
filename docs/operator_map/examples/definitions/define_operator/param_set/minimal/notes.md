@@ -8,6 +8,6 @@ or the Value Domain which contains the values"; a set literal cannot be the argu
 since the VTL grammar takes set literals only after `in` and `not_in`. The body tests
 membership with `in`.
 
-Expected: `sc_r` = true (Boolean), because `"B"` is one of the values of `VD_AB`.
+Expected: `SC_r` = true (Boolean), because `"B"` is one of the values of `VD_AB`.
 
 The script closes the definition with `end operator`, as the two examples of the [define operator](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html) section and the VTL grammar do. The syntax line of the same section writes `end define operator`; the manual is not consistent on this keyword.

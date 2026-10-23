@@ -12,7 +12,11 @@ the order of execution (precedence, associativity and parentheses), so the resul
 how the operations are grouped."
 
 `(DS_1 + DS_2) + DS_3` has two operators, so `At_1` follows their order of execution: first the
-pair of `DS_1` and `DS_2`, then that result with `DS_3`. The Measures are summed (Typical
+pair of `DS_1` and `DS_2`, then that result with `DS_3`. The User Manual (Properties of the
+Attribute propagation algorithm) says the same: "In an expression, the default propagation of
+the Attributes is performed always in the same order of execution of the Operators of the
+expression, which is determined by their precedence and associativity rules, as already
+explained in the relevant section." The Measures are summed (Typical
 behaviours, operators on two Data Sets).
 
 | Id_1 | DS_1 At_1 | DS_2 At_1 | DS_3 At_1 | `DS_1 + DS_2` | `+ DS_3` | whole set (not this reading) |

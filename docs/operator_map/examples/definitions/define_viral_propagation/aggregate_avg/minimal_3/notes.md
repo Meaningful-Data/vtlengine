@@ -13,6 +13,8 @@ how the operations are grouped."
 
 `sum(DS_1 group by Id_1)` is one operator over a group of three data points, so `avg` takes the
 whole set of their `At_1` values: avg(1, 2, 6) = 3, whatever the order of the data points
-(taken pair by pair it would give 3.75, 2.5 or 2.75). The aggregation keeps `Id_1` ("For
+(taken pair by pair it would give 3.75, 2.5 or 2.75). This is the User Manual's associative law
+(Properties of the Attribute propagation algorithm): "Within one operator, the result of *A* (in
+term of Attributes) is independent of the sequence of processing." The aggregation keeps `Id_1` ("For
 invocation at Data Set level, the Attribute propagation rule is applied", [the aggregate
 invocation](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Aggregate%20invocation/index.html)), and `Me_1` = 10 + 20 + 30 = 60.
