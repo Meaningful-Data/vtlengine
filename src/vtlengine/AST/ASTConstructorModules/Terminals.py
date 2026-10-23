@@ -659,7 +659,7 @@ class Terminals:
         try:
             return str(self.visitConstant(ctx_list[1]).value)
         except Exception:
-            raise InputValidationException(code="0-5-1-5", line=ctx_list[1].start_line)
+            raise InputValidationException(code="0-5-1-5", definition=script_location(ctx_list[1]))
 
     def visitErLevel(self, ctx):
         """
@@ -781,12 +781,12 @@ class Terminals:
             and num_rows_1 == -1
             and num_rows_2 == -1
         ):  # preceding and preceding (error)
-            raise InputValidationException(code="0-5-1-6", line=ctx_list[3].start_line)
+            raise InputValidationException(code="0-5-1-6", window=script_location(ctx))
 
         if (
             mode_1 == "following" and num_rows_1 == -1 and num_rows_2 == -1
         ):  # following and following (error)
-            raise InputValidationException(code="0-5-1-7", line=ctx_list[3].start_line)
+            raise InputValidationException(code="0-5-1-7", window=script_location(ctx))
 
         if mode_1 == mode_2:
             if mode_1 == "preceding" and first != -1 and second > first:  # 3 and 1: must be [-3:-1]

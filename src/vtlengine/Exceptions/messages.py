@@ -356,15 +356,15 @@ centralised_messages = {
         "description": "Raised when lag or lead is called without its offset.",
     },
     "0-5-1-5": {
-        "message": "Error code must be a string, line {line}",
+        "message": "Error code must be a string: {definition}.",
         "description": "Raised when the errorcode of a rule is not a string.",
     },
     "0-5-1-6": {
-        "message": "Cannot have 2 preceding clauses with unbounded in analytic clause, line {line}",
+        "message": "Cannot have 2 preceding clauses with unbounded in analytic clause {window}.",
         "description": "Raised when both bounds of an analytic window are unbounded preceding.",
     },
     "0-5-1-7": {
-        "message": "Cannot have 2 following clauses with unbounded in analytic clause, line {line}",
+        "message": "Cannot have 2 following clauses with unbounded in analytic clause {window}.",
         "description": "Raised when both bounds of an analytic window are unbounded following.",
     },
     "0-5-1-8": {

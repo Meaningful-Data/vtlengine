@@ -6,12 +6,14 @@ carries a 1-* code and a RunTimeError a 2-* code.
 import ast
 from pathlib import Path
 from typing import List
+from unittest import mock
 
 import pandas as pd
 import pytest
 
 from vtlengine import semantic_analysis
 from vtlengine.AST.ASTConstructorModules.Expr import Expr
+from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
 from vtlengine.AST.Grammar._cpp_parser import parse, parser_lock
 from vtlengine.DataTypes import Duration, Integer
 from vtlengine.Exceptions import (
@@ -283,6 +285,53 @@ def test_invalid_parameter_type_quotes_the_script():
     assert context.value.args == (
         "Invalid parameter type definition 'my_vd' (line 1, column 22).",
         "0-5-1-10",
+    )
+
+
+@pytest.mark.parametrize(
+    "window, message",
+    [
+        (
+            "data points between unbounded preceding and unbounded preceding",
+            "Cannot have 2 preceding clauses with unbounded in analytic clause "
+            "'data points between unbounded preceding and unbounded pre...' (line 1, column 56).",
+        ),
+        (
+            "range between unbounded preceding and unbounded preceding",
+            "Cannot have 2 preceding clauses with unbounded in analytic clause "
+            "'range between unbounded preceding and unbounded preceding' (line 1, column 56).",
+        ),
+        (
+            "data points between unbounded following and unbounded following",
+            "Cannot have 2 following clauses with unbounded in analytic clause "
+            "'data points between unbounded following and unbounded fol...' (line 1, column 56).",
+        ),
+        (
+            "range between unbounded following and unbounded following",
+            "Cannot have 2 following clauses with unbounded in analytic clause "
+            "'range between unbounded following and unbounded following' (line 1, column 56).",
+        ),
+    ],
+)
+def test_unbounded_windows_quote_the_script(window: str, message: str) -> None:
+    script = f"DS_r <- DS_1[calc Me_2 := sum(Me_1 over (order by Id_1 {window}))];"
+    with pytest.raises(InputValidationException) as context:
+        semantic_analysis(script=script, data_structures=DATA_STRUCTURES)
+    assert context.value.args[0] == message
+
+
+def test_error_code_errors_quote_the_script(monkeypatch: pytest.MonkeyPatch) -> None:
+    script = (
+        'define datapoint ruleset dpr (variable Me_1) is r1: isnull(Me_1) errorcode "E1" '
+        "end datapoint ruleset;"
+    )
+    unreadable = SemanticError("1-3-14", location="Terminals.visitConstant")
+    monkeypatch.setattr(Terminals, "visitConstant", mock.Mock(side_effect=unreadable))
+    with pytest.raises(InputValidationException) as context:
+        semantic_analysis(script=script, data_structures=DATA_STRUCTURES)
+    assert context.value.args == (
+        "Error code must be a string: '\"E1\"' (line 1, column 76).",
+        "0-5-1-5",
     )
 
 
