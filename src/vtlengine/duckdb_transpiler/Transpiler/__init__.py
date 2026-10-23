@@ -4020,6 +4020,11 @@ FROM (
                 cond_mapping=cond_mapping,
                 ruleset_name=node.ruleset_name,
             )
+        priority_rules = None
+        if node.input_mode is not None and node.input_mode.value == "dataset_priority":
+            priority_rules = self._sort_hierarchy_rules(
+                node, [p for p in parsed_rules if p.comparison_node.op == tokens.EQ]
+            )
         return self._build_check_hierarchy_sql(
             table_src=table_src,
             ds=ds,
@@ -4028,6 +4033,8 @@ FROM (
             mode=mode,
             output=node.output.value if node.output else "invalid",
             cond_mapping=cond_mapping,
+            priority_rules=priority_rules,
+            ruleset_name=node.ruleset_name,
         )
 
     @staticmethod
@@ -4138,20 +4145,38 @@ FROM (
         mode: str,
         output: str,
         cond_mapping: Dict[str, str],
+        priority_rules: Optional[List[_ParsedHRRule]] = None,
+        ruleset_name: str = "",
     ) -> str:
-        """Generate SQL for check_hierarchy using pivot CTE."""
+        """Generate SQL for check_hierarchy using pivot CTE.
+
+        With input dataset_priority, ``priority_rules`` are the '=' rules in dependency
+        order: they compute the code items that the operand lacks.
+        """
         if not parsed_rules:
             out_ds = self._get_output_dataset()
             cols = [quote_name(c) for c in (out_ds.components if out_ds else ds.components)]
             return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
 
-        pivot_sql, measure_name, other_ids, _ = self._build_hr_pivot(
+        pivot_sql, measure_name, other_ids, unique_items = self._build_hr_pivot(
             table_src, ds, parsed_rules, rule_comp, cond_mapping
         )
         cte = CTEBuilder()
         # MATERIALIZED so the pivot aggregation is computed once, not once per
         # rule branch in the UNION ALL below.
         cte.cte("_pivot", pivot_sql, materialized=True)
+        right_pivot = "_pivot"
+        if priority_rules:
+            right_pivot = self._build_priority_pivot(
+                cte,
+                parsed_rules,
+                priority_rules,
+                other_ids,
+                unique_items,
+                mode,
+                cond_mapping,
+                ruleset_name,
+            )
         measure_comp = ds.components.get(measure_name)
         rule_queries = [
             self._build_check_hr_rule_select(
@@ -4163,6 +4188,7 @@ FROM (
                 mode=mode,
                 output=output,
                 cond_mapping=cond_mapping,
+                pivot_ref=self._hr_left_from_operand(right_pivot, p, other_ids, cond_mapping),
             )
             for p in parsed_rules
         ]
@@ -4254,6 +4280,95 @@ FROM (
         operand_sql = self._build_hr_expr_sql(node.operand, mode, parsed)  # type: ignore[attr-defined]
         return f"({node.op}{operand_sql})"  # type: ignore[attr-defined]
 
+    def _build_priority_pivot(
+        self,
+        cte: CTEBuilder,
+        parsed_rules: List[_ParsedHRRule],
+        priority_rules: List[_ParsedHRRule],
+        other_ids: List[str],
+        unique_items: List[str],
+        mode: str,
+        cond_mapping: Dict[str, str],
+        ruleset_name: str,
+    ) -> str:
+        """Build the pivot that input dataset_priority reads the right side of the rules from.
+
+        The '=' rules are computed in dependency order, as hierarchy does: the pivot keeps the
+        operand's non-null data points and takes the computed ones where the operand has none
+        (issue #1173). Where another rule reads a code item that the operand lacks, two rules
+        must not both compute it. Returns the name of the pivot.
+        """
+        join_keys = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
+        current = "_pivot"
+        item_rule_ctes: Dict[str, List[str]] = defaultdict(list)
+        for i, parsed in enumerate(priority_rules):
+            rule_cte = f"_dp_rule_{i}"
+            rule_sql = self._build_hierarchy_rule_cte(
+                parsed=parsed,
+                pivot_ref=current,
+                other_ids=other_ids,
+                mode=mode,
+                cond_mapping=cond_mapping,
+            )
+            cte.cte(rule_cte, rule_sql, materialized=True)
+            next_pivot = f"_dp_pivot_{i}"
+            update_sql = self._build_hierarchy_pivot_update(
+                prev_pivot=current,
+                rule_cte=rule_cte,
+                left_code_item=parsed.left_code_item,
+                join_keys=join_keys,
+                input_mode="dataset_priority",
+                unique_items=unique_items,
+                first_for_item=True,
+            )
+            cte.cte(next_pivot, update_sql, materialized=True)
+            item_rule_ctes[parsed.left_code_item].append(rule_cte)
+            current = next_pivot
+
+        read_items = {ci for parsed in parsed_rules for ci in parsed.right_code_items}
+        keys = ", ".join(f"r.{quote_name(c)}" for c in other_ids)
+        join_sql = f"USING ({', '.join(join_keys)})" if join_keys else "ON TRUE"
+        guards = []
+        for item, rule_ctes in item_rule_ctes.items():
+            if len(rule_ctes) < 2 or item not in read_items:
+                continue
+            # Only where the operand has no non-null data point for the code item
+            lacking = f"NOT (o.{_has_col(item)} = 1 AND o.{_val_col(item)} IS NOT NULL)"
+            union = " UNION ALL ".join(
+                f"SELECT {keys or '1 AS _one'} FROM {c} r JOIN _pivot o {join_sql} WHERE {lacking}"
+                for c in rule_ctes
+            )
+            group_by = f" GROUP BY {', '.join(quote_name(c) for c in other_ids)}" if keys else ""
+            message = self._to_sql_literal(
+                f"VTL 2-1-10-1: ruleset {ruleset_name}, code item {item}"
+            )
+            guards.append(
+                f"CASE WHEN EXISTS (SELECT 1 FROM ({union}) AS _dpu{group_by} "
+                f"HAVING COUNT(*) > 1) THEN error({message}) ELSE TRUE END"
+            )
+        if guards:
+            cte.cte("_dp_pivot", f"SELECT * FROM {current} WHERE {' AND '.join(guards)}")
+            current = "_dp_pivot"
+        return current
+
+    @staticmethod
+    def _hr_left_from_operand(
+        pivot: str, parsed: _ParsedHRRule, other_ids: List[str], cond_mapping: Dict[str, str]
+    ) -> str:
+        """The relation a check rule reads: the code item it validates comes from the operand.
+
+        ``pivot`` holds the right side of the rules; with input dataset it is the operand pivot.
+        """
+        if pivot == "_pivot":
+            return pivot
+        val, has = _val_col(parsed.left_code_item), _has_col(parsed.left_code_item)
+        join_keys = [quote_name(c) for c in (*other_ids, *cond_mapping.values())]
+        join_sql = f"USING ({', '.join(join_keys)})" if join_keys else "ON TRUE"
+        return (
+            f"(SELECT f.* REPLACE (o.{val} AS {val}, o.{has} AS {has}) "
+            f"FROM {pivot} f JOIN _pivot o {join_sql}) AS _chk"
+        )
+
     def _build_check_hr_rule_select(
         self,
         parsed: _ParsedHRRule,
@@ -4264,6 +4379,7 @@ FROM (
         mode: str,
         output: str,
         cond_mapping: Dict[str, str],
+        pivot_ref: str = "_pivot",
     ) -> str:
         """Generate a SELECT for a single check_hierarchy rule from the pivot CTE."""
         rule = parsed.rule
@@ -4295,7 +4411,7 @@ FROM (
         if when_sql is not None:
             val_where.append(f"({when_sql})")
         val_where_clause = f" WHERE {' AND '.join(val_where)}" if val_where else ""
-        val_sql = f"SELECT {', '.join(val_cols)} FROM _pivot{val_where_clause}"
+        val_sql = f"SELECT {', '.join(val_cols)} FROM {pivot_ref}{val_where_clause}"
 
         rule_op = parsed.comparison_node.op
         bool_expr = None
@@ -4724,6 +4840,13 @@ FROM (
             else (f"p.{val_col}", f"p.{has_col}")
         )
         val_expr = f"CASE WHEN {guard} THEN r._computed ELSE {fallback_val} END AS {val_col}"
+        if input_mode == "dataset_priority":
+            # The operand's non-null data point, otherwise the computed one (issue #1173)
+            val_expr = (
+                f"CASE WHEN p.{has_col} = 1 AND p.{val_col} IS NOT NULL THEN p.{val_col} "
+                f"WHEN r.{first_key} IS NOT NULL THEN r._computed ELSE p.{val_col} END "
+                f"AS {val_col}"
+            )
         has_expr = (
             f"CASE WHEN r.{first_key} IS NOT NULL THEN 1 ELSE {fallback_has} END AS {has_col}"
         )
