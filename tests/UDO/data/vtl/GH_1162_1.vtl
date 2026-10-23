@@ -1,0 +1,17 @@
+define operator f (x integer, y integer default 10)
+    returns integer is
+        x + y
+end operator;
+
+define operator g (x integer default 5, y integer default 10)
+    returns integer is
+        x - y
+end operator;
+
+define operator h (d dataset, y integer default 10)
+    returns dataset is
+        d + y
+end operator;
+
+DS_r1 <- DS_1[calc Me_2 := f(1, _), Me_3 := g(_, 1)];
+DS_r2 <- h(DS_1, _);

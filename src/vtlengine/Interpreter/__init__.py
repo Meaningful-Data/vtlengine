@@ -1,6 +1,6 @@
 import csv
 from copy import copy, deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Type, Union, cast
 
@@ -8,6 +8,7 @@ import pandas as pd
 
 import vtlengine.AST as AST
 import vtlengine.Operators as Operators
+from vtlengine.AST.ASTString import _format_component_type, _format_type
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
 from vtlengine.AST.DAG._models import DatasetSchedule
@@ -51,6 +52,7 @@ from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
+    Integer,
     ScalarType,
     check_unary_implicit_promotion,
 )
@@ -117,6 +119,11 @@ from vtlengine.ViralPropagation import (
 )
 
 
+def _is_omitted(node: AST.AST) -> bool:
+    """Whether an argument of a user defined operator call is written as _."""
+    return isinstance(node, AST.ID) and node.type_ == "OPTIONAL"
+
+
 def _var_id_names(node: Any) -> Iterator[str]:
     """Yield the names of the VarID nodes in a subtree, including the code item conditions."""
     if isinstance(node, AST.VarID):
@@ -127,6 +134,41 @@ def _var_id_names(node: Any) -> Iterator[str]:
     elif isinstance(node, AST.AST):
         for child in vars(node).values():
             yield from _var_id_names(child)
+
+
+def _udo_component_matches(declared: Any, found: Any) -> bool:
+    """Whether a component has the role and the type a user defined operator declares."""
+    # A component declared without a role or a type is parsed with None and a String instance,
+    # so declared is not typed as a Component
+    return (declared.role is None or found.role == declared.role) and (
+        not isinstance(declared.data_type, type)
+        or check_unary_implicit_promotion(found.data_type, declared.data_type)
+    )
+
+
+def _check_udo_return_type(op: str, declared: Any, result: Any) -> None:
+    """The result of a user defined operator must have the type it returns (issue #1161)."""
+    if isinstance(declared, Dataset):
+        found = result.components
+        matches = not declared.components or (
+            declared.components.keys() == found.keys()
+            and all(
+                _udo_component_matches(c, found[name]) for name, c in declared.components.items()
+            )
+        )
+        found_type = _format_type(result)
+    elif isinstance(declared, Component):
+        matches = _udo_component_matches(declared, result)
+        found_type = _format_component_type(result)
+    elif isinstance(declared, type):
+        matches = check_unary_implicit_promotion(result.data_type, declared)
+        found_type = _format_type(result.data_type)
+    else:
+        return
+    if not matches:
+        raise SemanticError(
+            "1-3-1-1", op=op, option="output", type_1=_format_type(declared), type_2=found_type
+        )
 
 
 # noinspection PyTypeChecker
@@ -171,6 +213,8 @@ class InterpreterAnalyzer(ASTTemplate):
     partial_rule_elements: Optional[Set[str]] = None
     ruleset_signature: Optional[Dict[str, str]] = None
     udo_params: Optional[List[Dict[str, Any]]] = None
+    # Names of the user defined operators being called, outermost first
+    udo_calls: List[str] = field(default_factory=list)
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
     # Names of the rules that computed each code item, in evaluation order
     hr_agg_item_rules: Optional[Dict[str, List[str]]] = None
@@ -359,6 +403,19 @@ class InterpreterAnalyzer(ASTTemplate):
                 type_ = param.type_
             param_info.append({"name": param.name, "type": type_})
             if param.default is not None:
+                default = self.visit(param.default)
+                declared: Any = param.type_
+                if not isinstance(declared, Scalar) and not (
+                    isinstance(declared, type)
+                    and check_unary_implicit_promotion(default.data_type, declared)
+                ):
+                    raise SemanticError(
+                        "1-3-1-1",
+                        op=node.op,
+                        option=f"default of parameter {param.name}",
+                        type_1=type_,
+                        type_2=default.data_type,
+                    )
                 param_info[-1]["default"] = param.default
             if len(param_info) > 1:
                 previous_default = param_info[0]
@@ -371,6 +428,7 @@ class InterpreterAnalyzer(ASTTemplate):
             "params": param_info,
             "expression": node.expression,
             "output": node.output_type,
+            "return_type": node.return_type,
         }
 
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
@@ -2170,9 +2228,14 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_regular_aggregation or self.is_from_rule
         ):
             raise SemanticError("1-2-12", op=node.op)
+        if len(node.params) > len(operator["params"]):
+            raise SemanticError(
+                "1-3-1-6", op=node.op, defined=len(operator["params"]), passed=len(node.params)
+            )
 
         for i, param in enumerate(operator["params"]):
-            if i >= len(node.params):
+            # An argument written as _ is omitted, as one left out at the end is (issue #1162)
+            if i >= len(node.params) or _is_omitted(node.params[i]):
                 if "default" in param:
                     value = self.visit(param["default"]).value
                     signature_values[param["name"]] = Scalar(
@@ -2185,7 +2248,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     raise SemanticError(
                         "1-2-11",
                         op=node.op,
-                        received=len(node.params),
+                        received=len([p for p in node.params if not _is_omitted(p)]),
                         expected=len(operator["params"]),
                     )
             else:
@@ -2235,7 +2298,12 @@ class InterpreterAnalyzer(ASTTemplate):
                             type_2=type_2,
                         )
                     scalar_type = param["type"]
-                    if not check_unary_implicit_promotion(param_element.data_type, scalar_type):
+                    value = param_element.value
+                    if not check_unary_implicit_promotion(param_element.data_type, scalar_type) or (
+                        scalar_type == Integer
+                        and isinstance(value, float)
+                        and not value.is_integer()
+                    ):
                         raise SemanticError(
                             "2-3-5",
                             param_type=scalar_type,
@@ -2265,9 +2333,16 @@ class InterpreterAnalyzer(ASTTemplate):
         self.signature_values.update(signature_values)
         self.udo_params.append(signature_values)
 
+        if node.op in self.udo_calls:
+            raise SemanticError(
+                "1-3-2-7", op=node.op, calls=" -> ".join([*self.udo_calls, node.op])
+            )
+        self.udo_calls.append(node.op)
+
         # Calling the UDO AST, we use deepcopy to avoid changing the original UDO AST
         if operator is not None:
             result = self.visit(deepcopy(operator["expression"]))
+        self.udo_calls.pop()
 
         if self.is_from_regular_aggregation or self.is_from_rule:
             result_type = "Component" if isinstance(result, DataComponent) else "Scalar"
@@ -2282,6 +2357,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 type_1=operator["output"],
                 type_2=result_type,
             )
+        _check_udo_return_type(node.op, operator["return_type"], result)
 
         # We pop the last element of the stack (current UDO params)
         # to avoid using them in the next UDO call

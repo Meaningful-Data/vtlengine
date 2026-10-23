@@ -1,0 +1,12 @@
+define operator g (d dataset)
+    returns dataset {identifier<integer> Id_1, measure<number> Me_1} is
+        d * 2
+end operator;
+
+define operator h (c component, x number default 1)
+    returns component<number> is
+        c + x
+end operator;
+
+DS_r1 <- g(DS_1);
+DS_r2 <- DS_1[calc Me_2 := h(Me_1)];

@@ -1,0 +1,11 @@
+define operator g (x integer)
+    returns integer is
+        f(x)
+end operator;
+
+define operator f (x integer)
+    returns integer is
+        g(x)
+end operator;
+
+DS_r <- DS_1[calc Me_2 := f(3)];
