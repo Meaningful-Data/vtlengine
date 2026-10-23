@@ -60,6 +60,7 @@ CHAPTER = Chapter(
             accepts=("dataset", "boolean"),
             returns=("dataset",),
             variants=(
+                Variant("no_group", "DS[aggr Me := agg(Me)]", (authored(),)),
                 Variant("group_by", "DS[aggr Me := agg(Me) group by Id]", (manual("ex_1"),)),
                 Variant(
                     "group_except",
