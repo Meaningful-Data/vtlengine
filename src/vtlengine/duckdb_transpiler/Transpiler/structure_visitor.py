@@ -643,7 +643,12 @@ class StructureVisitor(ASTTemplate):
         bindings: Dict[str, Any] = {}
         for i, param_info in enumerate(udo_def["params"]):
             param_name = param_info["name"]
-            if i < len(call_params):
+            omitted = (
+                i >= len(call_params)
+                or isinstance(call_params[i], AST.ID)
+                and call_params[i].type_ == "OPTIONAL"
+            )
+            if not omitted:
                 bindings[param_name] = call_params[i]
             elif param_info.get("default") is not None:
                 bindings[param_name] = param_info["default"]

@@ -300,6 +300,8 @@ class ASTVisitor:
             raise SemanticError("1-3-2-2", op=operator)
         else:
             return_node, return_type = return_[0]
+        if return_type is None:
+            raise SemanticError("1-3-2-6", op=operator)
 
         token_info = extract_token_info(ctx)
 
