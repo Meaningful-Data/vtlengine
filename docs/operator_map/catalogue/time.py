@@ -153,14 +153,7 @@ CHAPTER = Chapter(
             "Flow to stock",
             ("dataset", "time", "number"),
             "flow_to_stock(DS)",
-            manual(
-                "ex_2",
-                erratum=(
-                    "DS_2 and the expected output date the fourth annual period 9999-12-31, "
-                    "where the page says DS_2 holds annual series identified by their last day "
-                    "(the DS_2 of Stock to flow and Time shift has 2013-12-31)"
-                ),
-            ),
+            manual("ex_2"),
             manual(
                 "ex_1",
                 adaptation=_TIME_ADAPTATION,
@@ -244,7 +237,21 @@ CHAPTER = Chapter(
             variants=(
                 Variant("ds", "dateadd(DS, n, p)", (authored(),)),
                 Variant("comp", "calc dateadd(comp, n, p)", (manual("ex_1"),)),
-                Variant("sc_date", "dateadd(date, n, p)", (authored(), authored("minimal_2"))),
+                Variant(
+                    "sc_date",
+                    "dateadd(date, n, p)",
+                    (
+                        authored(),
+                        authored(
+                            "minimal_2",
+                            adaptation=(
+                                "the page writes the year period indicator “Y” (“for years the "
+                                "“Y” is used”); the example writes it A, the year duration of "
+                                "vtlengine and of the chapter's duration codes"
+                            ),
+                        ),
+                    ),
+                ),
                 Variant("sc_time_period", "dateadd(time_period, n, p)", (authored(),)),
             ),
         ),
