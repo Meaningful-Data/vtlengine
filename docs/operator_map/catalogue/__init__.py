@@ -9,9 +9,11 @@ from catalogue.clause import CHAPTER as CLAUSE_CHAPTER
 from catalogue.comparison import CHAPTER as COMPARISON_CHAPTER
 from catalogue.conditional import CHAPTER as CONDITIONAL_CHAPTER
 from catalogue.set import CHAPTER as SET_CHAPTER
+from catalogue.string import CHAPTER as STRING_CHAPTER
 from catalogue.types import TYPES as _TYPES
 
 CHAPTERS: tuple[Chapter, ...] = (
+    STRING_CHAPTER,
     COMPARISON_CHAPTER,
     BOOLEAN_CHAPTER,
     SET_CHAPTER,
