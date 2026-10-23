@@ -10,9 +10,3 @@ So the default string of a period is its interval, not a period code such as `20
 |---|---|---|
 | `2020Q1` | `2020-01-01/2020-03-31` | the first quarter of 2020 |
 | `2021M02` | `2021-02-01/2021-02-28` | February 2021 |
-
-## Triage (both engines give `2020Q1` and `2021M2`)
-
-Re-derived from the rule above: without a mask the manual prints a `time_period` as its
-interval, "in the form start/end", so the expected file stays. The engines print the period
-code instead.

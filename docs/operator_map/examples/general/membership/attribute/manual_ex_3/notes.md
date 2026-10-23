@@ -18,6 +18,6 @@ The page says "A default conventional name is assigned to the new Measure depend
 for example `num_var` if the Measure is `numeric`, `string_var` if it is `string`", and the
 typical behaviour's table of default names adds: "These are only the names used in this manual for
 explanatory purposes and can be personalised in the implementations. If VTL rules are exchanged,
-the personalised names need to be shared with the partners of the exchange." vtlengine uses
-`str_var`, and documents it in `docs/data_types.rst`. By the controller's ruling on default names,
-the expected output names the measure `str_var`. The values are the manual's.
+the personalised names need to be shared with the partners of the exchange." The expected output
+names the measure `str_var`, vtlengine's default name for a string measure, which it documents in
+`docs/data_types.rst`. The values are the manual's.

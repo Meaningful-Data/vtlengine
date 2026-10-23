@@ -1,7 +1,7 @@
 # `(DS_1 + DS_2) * DS_2`
 
 Manual example 1 of [Parentheses](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Parentheses/index.html).
-The manual's expected output was re-derived and agrees.
+The manual's expected output follows from the page:
 
 The sum in the parentheses comes first. A binary operation on datasets pairs the data points with
 the same identifier values, so only `(10, A)` and `(11, B)` are in both operands (`(10, B)` and

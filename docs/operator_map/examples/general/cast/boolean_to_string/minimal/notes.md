@@ -11,8 +11,8 @@ The conversion is implicit, and the example writes it as an explicit cast: "An *
 | `true` | `true` | the input is true |
 | `false` | `false` | the input is false |
 
-## Triage (both engines give `True` and `False`)
+## Spelling
 
-Re-derived from the rule above: the manual names the strings `"true"` and `"false"`, in lower
-case, so the expected file stays. vtlengine documents its own spelling (`docs/data_types.rst`,
-"Boolean to String: `true` becomes `"True"`"), which differs from the manual's.
+The rule above names the strings `"true"` and `"false"`, in lower case, and the expected output
+writes them so. vtlengine documents another spelling (`docs/data_types.rst`: "Boolean to String:
+`true` becomes `"True"`").

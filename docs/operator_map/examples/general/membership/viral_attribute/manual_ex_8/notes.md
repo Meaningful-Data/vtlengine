@@ -48,9 +48,9 @@ The manual's own name for the measure (in example 6, which has the same expressi
 on its type: for example `num_var` if the Measure is `numeric`, `string_var` if it is `string`",
 and the typical behaviour's table of default names adds: "These are only the names used in this
 manual for explanatory purposes and can be personalised in the implementations. If VTL rules are
-exchanged, the personalised names need to be shared with the partners of the exchange."
-vtlengine uses `str_var`, and documents it in `docs/data_types.rst`. By the controller's ruling on
-default names, the corrected output names the measure `str_var`.
+exchanged, the personalised names need to be shared with the partners of the exchange." The
+corrected output names the measure `str_var`, vtlengine's default name for a string measure, which
+it documents in `docs/data_types.rst`.
 
 ## Input
 
@@ -59,7 +59,7 @@ operand datasets DS_1 and DS_2, where the attribute component At_1 is viral for 
 `ds_2.json` has `At_1` as a `ViralAttribute`. The example loads that file as `DS_2`, the name the
 script uses.
 
-## Triage (both engines return a dataset with no measure)
+## The result keeps a measure
 
-Both engines return a dataset, as the correction says, but with `Id_1`, `Id_2` and the viral
-`At_1` only, as in example 6. The expected file keeps the measure (see example 6).
+As in example 6, the result has one measure next to the viral `At_1`: "a new Measure is added",
+and the result has "a single Measure".

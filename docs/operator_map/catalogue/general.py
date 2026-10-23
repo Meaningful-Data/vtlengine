@@ -217,7 +217,7 @@ CHAPTER = Chapter(
                 ),
                 Variant(
                     "comp",
-                    "DS[calc C := eval(R(comp))]",
+                    "DS[calc Me := eval(R(comp))]",
                     (authored(),),
                     returns=("integer",),
                 ),
