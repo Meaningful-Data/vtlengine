@@ -1,7 +1,7 @@
 import inspect
 import json
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
 
@@ -29,7 +29,7 @@ class Scalar:
     nullable: bool = True
     persistent: bool = False
     # A literal written in the script, whose value the semantic analysis already knows
-    literal: bool = False
+    literal: bool = field(default=False, repr=False)
 
     def __init__(
         self,
