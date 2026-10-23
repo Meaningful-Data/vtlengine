@@ -34,11 +34,7 @@ CHAPTER = Chapter(
                     "DS[calc measure Me := expr]",
                     (authored(), authored("minimal_2")),
                 ),
-                Variant(
-                    "identifier",
-                    "DS[calc identifier Id := expr]",
-                    (authored(decision=1010),),
-                ),
+                Variant("identifier", "DS[calc identifier Id := expr]", (authored(),)),
                 Variant("attribute", "DS[calc attribute At := expr]", (manual("ex_2"),)),
                 Variant(
                     "viral_attribute",
@@ -78,13 +74,23 @@ CHAPTER = Chapter(
                     (manual("ex_3"),),
                 ),
                 Variant(
+                    "measure_role",
+                    "DS[aggr measure Me := agg(Me) group by Id]",
+                    (authored(),),
+                ),
+                Variant(
                     "attribute_role",
                     "DS[aggr attribute At := agg(Me) group by Id]",
-                    (authored(),),
+                    (authored(), authored("minimal_2")),
                 ),
                 Variant(
                     "viral_attribute_role",
                     "DS[aggr viral attribute At := agg(Me) group by Id]",
+                    (authored(), authored("minimal_2")),
+                ),
+                Variant(
+                    "role_omitted_attribute",
+                    "DS[aggr At := agg(At) group by Id]",
                     (authored(),),
                 ),
             ),

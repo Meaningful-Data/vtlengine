@@ -3,7 +3,7 @@
     {
       "name": "DS_r",
       "DataStructure": [
-        {"name": "Me_1", "type": "Integer", "role": "Measure"}
+        {"name": "Me_1", "type": ["Integer", "Number"], "role": "Measure"}
       ]
     }
   ]

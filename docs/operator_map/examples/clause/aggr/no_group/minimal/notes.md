@@ -9,4 +9,6 @@ the Aggregation page says what happens without it:
 
 So the three data points of `DS_1` form one group, `Id_1` and `Id_2` are not in the result, and
 the only component is the aggregated Measure `Me_1` (no role written, and `Me_1` is a Measure of
-`DS_1`): `sum(Me_1) = 2 + 5 + 3 = 10`, an Integer, in a single data point.
+`DS_1`): `sum(Me_1) = 2 + 5 + 3 = 10`, in a single data point.
+
+Type of the `sum`: the Sum page declares the result **number** and adds "Since **integer** is a subtype of **number**, implementations may preserve the **integer** type for the resulting measure or component when all operand values are **integer**", so the expected `Me_1` may be Integer or Number.

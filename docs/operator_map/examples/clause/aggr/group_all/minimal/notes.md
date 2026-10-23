@@ -16,3 +16,5 @@ So `Id_1` becomes annual and the data points are grouped by the converted `Id_1`
 
 The Aggregate invocation page marks `group all` as deprecated for the aggregate operators; the
 Aggregation page of the clause does not.
+
+Type of the `sum`: the Sum page declares the result **number** and adds "Since **integer** is a subtype of **number**, implementations may preserve the **integer** type for the resulting measure or component when all operand values are **integer**", so the expected `Me_1` may be Integer or Number.
