@@ -13,11 +13,13 @@ Expected result, derived by hand for each identifier value:
 
 | Id_1 | Found in | In all three? | Me_1 |
 |---|---|---|---|
-| 1 | `DS_1` | no | |
+| 1 | `DS_1`, `DS_3` | no, `DS_2` lacks it | |
 | 2 | `DS_1`, `DS_2` | no, `DS_3` lacks it | |
 | 3 | `DS_1`, `DS_2`, `DS_3` | yes, the leftmost operand is `DS_1` | 30 |
 | 4 | `DS_1`, `DS_2`, `DS_3` | yes, the leftmost operand is `DS_1` | 40 |
 | 5 | `DS_2`, `DS_3` | no, `DS_1` lacks it | |
 
-Ids 2 and 5 are in two of the three operands: they stay out of the result, and so show whether
-the third operand takes part in the intersection.
+Ids 1, 2 and 5 are each in two of the three operands, and each lacks a different one (`DS_2`,
+`DS_3` and `DS_1`). They stay out of the result, so leaving out any one operand would change it:
+`intersect(DS_2, DS_3)` would add id 5, `intersect(DS_1, DS_3)` id 1 and `intersect(DS_1, DS_2)`
+id 2. The example therefore shows that every operand takes part in the intersection.
