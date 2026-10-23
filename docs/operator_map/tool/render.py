@@ -1,14 +1,21 @@
-"""Markdown of the operator map: one file per chapter, and the README.
+"""reStructuredText of the operator map: one Sphinx page per chapter, and the index page.
 
-``chapter_markdown`` and ``readme_markdown`` take the catalogue and the ``StatusIndex`` of a run
-and return the text of a file. The diagrams come from ``tool.mermaid``; every example has a row
-in a table, since GitHub may ignore the links of a diagram. Nothing here runs an engine. The only
-thing read from disk is whether the folder of an example has an ``input/`` folder and a
-``notes.md`` to link, in ``examples_root`` (``docs/operator_map/examples`` unless it is given).
-The links of the text are relative to ``docs/operator_map``, where the files are written.
+``chapter_rst`` and ``index_rst`` take the catalogue and the ``StatusIndex`` of a run and return
+the text of a page. The diagrams come from ``tool.mermaid`` and sit in ``.. mermaid::``
+directives; every example has a row in a table, since a viewer may ignore the links of a
+diagram. Nothing here runs an engine. The only thing read from disk is whether the folder of an
+example has an ``input/`` folder and a ``notes.md`` to link, in ``examples_root``
+(``docs/operator_map/examples`` unless it is given).
 
-A cell of a table is one line: a newline is a space and a pipe is escaped. The Detail of a row
-is what the engines said went wrong, cut at 200 characters.
+The links to the files of the examples are relative to ``docs/operator_map``, where the pages are
+written: the docs build copies the examples next to the pages of the built site. The pages are
+documents of Sphinx, so the links between them are ``:doc:`` roles, and in the diagrams the
+clicks and labels that name a chapter file name its page instead, ``<chapter>.html``.
+
+The text that comes from the catalogue or from the engines is free text: ``_inline`` and
+``_text`` escape what RST would read as markup, ``_literal`` puts a piece of VTL in an inline
+literal. A cell of a table is one line, and the Detail of a row is what the engines said went
+wrong, cut at 200 characters.
 """
 
 from __future__ import annotations
@@ -39,7 +46,7 @@ _DEFINITION_PAGES: Final = {
     "dl/viral": "vtl_dl_rulesets/viral_attributes.html",
 }
 
-# The types that get a flow diagram in the README: the basic ones, and the dataset.
+# The types that get a flow diagram in the index: the basic ones, and the dataset.
 FLOW_TYPES: Final = (
     "scalar",
     "number",
@@ -53,12 +60,12 @@ FLOW_TYPES: Final = (
     "dataset",
 )
 
-_README: Final = "README.md"
+_INDEX_DOC: Final = "index"  # the page that the chapters link back to
 _EXAMPLES: Final = Path("examples")  # relative to ``docs/operator_map``
 _TYPES: Final = "types"  # the group, in the index, of the type hubs
 _TYPES_TITLE: Final = "Data types"
 _ORDER: Final[tuple[Status, ...]] = ("ok", "partial", "missing", "diverge")
-# The statuses that are not green, worst first, with the title of their group in the README.
+# The statuses that are not green, worst first, with the title of their group in the index.
 _GROUPS: Final[tuple[tuple[Status, str], ...]] = (
     ("diverge", "Engines diverge"),
     ("missing", "Not implemented"),
@@ -66,9 +73,25 @@ _GROUPS: Final[tuple[tuple[Status, str], ...]] = (
 )
 _MARKS: Final = {"match": "✅", "mismatch": "❌", "error": "💥"}
 _NEWLINE: Final = re.compile(r"\r\n|\r|\n")
-_TABLE_HEAD: Final = (
-    "| Variant | Status | pandas | DuckDB | Detail | Example |\n|---|---|---|---|---|---|"
-)
+_TABLE_HEAD: Final = ("Variant", "Status", "pandas", "DuckDB", "Detail", "Example")
+
+# The adornments of the titles: a page, a section, and a section of a section.
+_PAGE: Final = "="
+_SECTION: Final = "-"
+_SUBSECTION: Final = "~"
+_INDENT: Final = "   "  # the content of a directive, and the options of a table
+
+# What RST reads as markup in a line of text: emphasis and strong, literals and roles, a
+# substitution, the end of a reference or a target, and the escape itself.
+_MARKUP: Final = re.compile(r"([\\*`|_])")
+# A paragraph that starts with one of these is a list, a field, a table, a comment... unless it
+# is escaped. The first characters that ``_MARKUP`` escapes already protect the paragraph.
+_ESCAPED_START: Final = frozenset("\\*`|_")
+_ENUMERATOR: Final = re.compile(r"\(?(?:#|\d+|[A-Za-z]|[ivxlcdmIVXLCDM]+)[.)](?: |$)")
+# The clicks of a diagram to a chapter and the labels of the stubs that name it, as the diagram
+# builder writes them (``<chapter>.md``).
+_CHAPTER_CLICK: Final = re.compile(r'^(\s*click \S+ ")([a-z0-9_]+)\.md"$', re.MULTILINE)
+_CHAPTER_STUB: Final = re.compile(r'\(([a-z0-9_]+)\.md\)"\]')
 
 
 @dataclass(frozen=True)
@@ -95,7 +118,7 @@ def manual_url(page: str) -> str:
 # --- Chapters ---
 
 
-def chapter_markdown(
+def chapter_rst(
     chapter: Chapter,
     cat: Catalogue,
     index: StatusIndex,
@@ -103,16 +126,17 @@ def chapter_markdown(
     *,
     examples_root: Path = DEFAULT_EXAMPLES_ROOT,
 ) -> str:
-    """The md file of ``chapter``: its diagrams, then a table of examples per operator.
+    """The page of ``chapter``: its diagrams, then a table of examples per operator.
 
     It raises ``MermaidLimitError`` when a diagram cannot fit the limits of Mermaid.
     """
+    title = _titled(index.chapters.get(chapter.id), _text(chapter.title))
+    version, commit = _inline(meta.vtlengine_version), _inline(meta.vtlengine_commit)
     parts = [
-        f"# {_titled(index.chapters.get(chapter.id), chapter.title)}",
+        _title(title, _PAGE, overline=True),
         _counts_line(_chapter_statuses(chapter, index)),
-        f"[← Back to the operator map]({_README}) · "
-        f"vtlengine {meta.vtlengine_version} ({meta.vtlengine_commit})",
-        *(_fence(block) for block in chapter_blocks(chapter, cat, index)),
+        f"← Back to :doc:`{_INDEX_DOC}` · vtlengine {version} ({commit})",
+        *(_mermaid(block) for block in chapter_blocks(chapter, cat, index)),
         *(_operator_section(chapter, op, index, examples_root) for op in chapter.operators),
     ]
     return "\n\n".join(parts) + "\n"
@@ -121,17 +145,20 @@ def chapter_markdown(
 def _operator_section(chapter: Chapter, operator: Operator, index: StatusIndex, root: Path) -> str:
     """The heading, the manual link and the table of the examples of an operator."""
     status = index.operators.get(f"{chapter.id}/{operator.id}")
-    heading = f"## {_titled(status, operator.name)}"
+    heading = _titled(status, _text(operator.name))
     if operator.symbol:
-        heading += f" `{operator.symbol}`"
-    parts = [heading, f"[VTL 2.2 Reference Manual]({manual_url(operator.page)})"]
+        heading += f" {_literal(operator.symbol)}"
+    parts = [
+        _title(heading, _SECTION),
+        _link("VTL 2.2 Reference Manual", manual_url(operator.page)),
+    ]
     rows = [
         _example_row(chapter.id, operator.id, variant, example, index, root)
         for variant in operator.variants
         for example in variant.examples
     ]
     if rows:
-        parts.append("\n".join([_TABLE_HEAD, *rows]))
+        parts.append(_table(_TABLE_HEAD, rows))
     return "\n\n".join(parts)
 
 
@@ -142,15 +169,17 @@ def _example_row(
     example: Example,
     index: StatusIndex,
     root: Path,
-) -> str:
+) -> list[str]:
     """The row of an example: its variant, its status, what each engine gave, and its files."""
     result = index.examples.get(f"{chapter_id}/{operator_id}/{variant.id}/{example.name}")
-    label = _cell(f"`{variant.label}`") + f"<br><sub>{example.name}</sub>"
+    # A line block: the variant, and under it the name of the example, as two lines of a cell.
+    lines = [_literal(variant.label), _inline(example.name)]
+    label = "\n".join(f"| {line}" for line in lines if line)
     files = _example_links(chapter_id, operator_id, variant.id, example, root)
     if result is None:  # the index of a run that did not cover it
-        return _row([label, "", "", "", "not run", files])
+        return [label, "", "", "", "not run", files]
     verdicts = [_MARKS[result.pandas.outcome], _MARKS[result.duckdb.outcome]]
-    return _row([label, EMOJI[result.status], *verdicts, _detail_cell(result), files])
+    return [label, EMOJI[result.status], *verdicts, _detail_cell(result), files]
 
 
 def _example_links(
@@ -163,12 +192,12 @@ def _example_links(
     names = (chapter_id, operator_id, variant_id, example.name)
     folder = quote(example_dir(_EXAMPLES, *names).as_posix())
     on_disk = example_dir(root, *names)
-    links = [f"[script]({folder}/script.vtl)"]
+    links = [_link("script", f"{folder}/script.vtl")]
     if (on_disk / "input").is_dir():
-        links.append(f"[input]({folder}/input/)")
-    links.append(f"[expected]({folder}/expected/)")
+        links.append(_link("input", f"{folder}/input/"))
+    links.append(_link("expected", f"{folder}/expected/"))
     if (on_disk / "notes.md").is_file():
-        links.append(f"[notes]({folder}/notes.md)")
+        links.append(_link("notes", f"{folder}/notes.md"))
     if example.source == "manual":
         links.append("*manual*")
     if example.decision is not None:
@@ -181,7 +210,7 @@ def _example_links(
 
 
 def _decision_link(issue: int) -> str:
-    return f"[📌 #{issue}]({ISSUES}/{issue})"
+    return _link(f"📌 #{issue}", f"{ISSUES}/{issue}")
 
 
 def _detail(result: ExampleResult) -> str:
@@ -205,13 +234,14 @@ def _detail(result: ExampleResult) -> str:
 
 
 def _detail_cell(result: ExampleResult) -> str:
+    """The Detail of a row: one line, cut at ``MAX_DETAIL`` characters, then escaped."""
     text = _NEWLINE.sub(" ", _detail(result))
     if len(text) > MAX_DETAIL:
         text = text[: MAX_DETAIL - 1] + "…"
-    return _escape_pipes(text)
+    return _text(text)
 
 
-# --- README ---
+# --- Index ---
 
 
 _INTRO: Final = (
@@ -219,31 +249,35 @@ _INTRO: Final = (
     "implements, on both of its engines, pandas and DuckDB. Every node of the diagrams is backed "
     "by a runnable example: a VTL script, its input data and the expected output.\n"
     "\n"
-    "This page and the chapter pages are generated by `docs/operator_map/generate.py`. "
+    "This page and the chapter pages are generated by ``docs/operator_map/generate.py``. "
     "Do not edit them by hand."
 )
 
-_LEGEND: Final = """## Legend
+_STATUS_LEGEND: Final = (
+    ("🟢 ok", "Both engines give the expected output on every example."),
+    (
+        "🟡 partial",
+        "The engines agree with each other, but not every example gives the expected output: "
+        "a wrong or incomplete result, or a mix of matching and failing examples.",
+    ),
+    ("🔴 missing", "Both engines fail on every example."),
+    (
+        "🔵 diverge",
+        "On some example the two engines differ: one matches and the other does not, one fails "
+        "and the other runs, or both run and give different outputs.",
+    ),
+)
+_MARK_LEGEND: Final = (
+    (
+        "📌 #n",
+        "The expected output follows a recorded team decision, in the issue n, and not the manual.",
+    ),
+    ("✅", "The engine gave the expected output."),
+    ("❌", "The engine ran, but gave another output."),
+    ("💥", "The engine failed: an error, a timeout or a crash."),
+)
 
-| Status | Meaning |
-|---|---|
-| 🟢 ok | Both engines give the expected output on every example. |
-| 🟡 partial | The engines agree with each other, but not every example gives the expected output: \
-a wrong or incomplete result, or a mix of matching and failing examples. |
-| 🔴 missing | Both engines fail on every example. |
-| 🔵 diverge | On some example the two engines differ: one matches and the other does not, one \
-fails and the other runs, or both run and give different outputs. |
-
-| Mark | Meaning |
-|---|---|
-| 📌 #n | The expected output follows a recorded team decision, in the issue n, and not the \
-manual. |
-| ✅ | The engine gave the expected output. |
-| ❌ | The engine ran, but gave another output. |
-| 💥 | The engine failed: an error, a timeout or a crash. |"""
-
-_HOW_TO_READ: Final = """## How to read
-
+_HOW_TO_READ: Final = """\
 - **Chapter pages.** One page per chapter of the manual, and one for its definitions. Each \
 starts with diagrams, and has a table per operator with a row for every example.
 - **Diagrams.** An operator shows its status, its name and its symbol, and a plain line joins \
@@ -255,18 +289,20 @@ operator of another chapter. Grey circles are data types.
 give the expected output on all of its examples, 🔵 when the engines differ on any of them, 🔴 \
 when both engines fail on all of them, and 🟡 otherwise. An operator and a chapter take the \
 status of their variants by the same rule, and the counts are over variants.
-- **Examples.** An example is a folder with a `script.vtl`, its `input/` data and its \
-`expected/` output. The expected outputs come from the manual, or are derived by hand from its \
-semantics, and never from the output of an engine. GitHub may ignore the links of the \
+- **Examples.** An example is a folder with a ``script.vtl``, its ``input/`` data and its \
+``expected/`` output. The expected outputs come from the manual, or are derived by hand from its \
+semantics, and never from the output of an engine. A viewer may ignore the links of the \
 diagrams: the tables are the reliable way to the files.
 - **Comparison.** Only the outputs that the example expects are compared: the components, \
 their roles and types, and the data points, in any order. A number is compared to the digits \
-written in the expected file. `random` and `current_date` are checked by a property of their \
+written in the expected file. ``random`` and ``current_date`` are checked by a property of their \
 values, and the two engines must still return the same values."""
 
 _OVERVIEW: Final = (
     "One node per chapter, with how many of its variants are in each status, and an arrow to "
-    "each type that its operators return. Click a chapter to open its page."
+    "each type that its operators return. Where the viewer supports links in diagrams, a "
+    "chapter node opens the page of the chapter. The table of chapters below is the reliable "
+    "way to every chapter page."
 )
 _CHAPTERS: Final = "The counts are over syntax variants."
 _LATTICE: Final = (
@@ -280,28 +316,30 @@ _FLOWS: Final = (
 )
 
 
-def readme_markdown(
+def index_rst(
     cat: Catalogue,
     index: StatusIndex,
     meta: RunMeta,
     *,
     examples_root: Path = DEFAULT_EXAMPLES_ROOT,
 ) -> str:
-    """The README: legend, diagrams, chapter index and the lists of what needs attention.
+    """The index page: legend, diagrams, chapter table and the lists of what needs attention.
 
-    It raises ``MermaidLimitError`` when a diagram cannot fit the limits of Mermaid.
+    It starts with a hidden ``toctree`` of the chapter pages. It raises ``MermaidLimitError``
+    when a diagram cannot fit the limits of Mermaid.
     """
     entries = list(_entries(cat))
     parts = [
-        "# VTL 2.2 operator map for vtlengine",
+        _title("VTL 2.2 operator map", _PAGE, overline=True),
         _INTRO,
+        *([_toctree(cat)] if cat.chapters else []),
         _generation(meta),
-        _LEGEND,
-        _HOW_TO_READ,
-        f"## Overview\n\n{_OVERVIEW}\n\n{_fence(overview_block(cat, index))}",
-        f"## Chapters\n\n{_CHAPTERS}\n\n{_chapter_table(cat, index)}",
-        f"## Type lattice\n\n{_LATTICE}\n\n{_fence(lattice_block(cat, index))}",
-        f"## Type flows\n\n{_FLOWS}\n\n{_flow_blocks(cat, index)}",
+        _legend(),
+        _section("How to read", _HOW_TO_READ),
+        _section("Overview", _OVERVIEW, _mermaid(overview_block(cat, index))),
+        _section("Chapters", _CHAPTERS, _chapter_table(cat, index)),
+        _section("Type lattice", _LATTICE, _mermaid(lattice_block(cat, index))),
+        _section("Type flows", _FLOWS, _flow_blocks(cat, index)),
         _decisions(entries, examples_root),
         _errata(entries, examples_root),
         _adaptations(entries, examples_root),
@@ -311,20 +349,36 @@ def readme_markdown(
     return "\n\n".join(parts) + "\n"
 
 
+def _toctree(cat: Catalogue) -> str:
+    """The hidden table of contents of Sphinx: the chapter pages, in the order of the catalogue."""
+    pages = "\n".join(f"{_INDENT}{chapter.id}" for chapter in cat.chapters)
+    return f".. toctree::\n{_INDENT}:maxdepth: 1\n{_INDENT}:hidden:\n\n{pages}"
+
+
 def _generation(meta: RunMeta) -> str:
     spec = meta.spec_commit[:12] or "unknown"
     if meta.spec_commit:
-        spec = f"[sdmx-twg/vtl @ `{spec}`]({SPEC_REPO}/tree/{meta.spec_commit})"
-    return "\n".join(
-        [
-            "## Generation",
-            "",
-            f"- Generated on {meta.date}.",
-            f"- Engine: vtlengine {meta.vtlengine_version}, commit `{meta.vtlengine_commit}`.",
-            f"- Manual: VTL 2.2 Reference Manual, {spec}.",
-            "- To regenerate, run `docs/operator_map/generate.py` under "
-            "`systemd-run --user --scope -p MemoryMax=6G -p MemorySwapMax=0`.",
-        ]
+        spec = _link(f"sdmx-twg/vtl @ {spec}", f"{SPEC_REPO}/tree/{meta.spec_commit}")
+    return _section(
+        "Generation",
+        "\n".join(
+            [
+                f"- Generated on {_inline(meta.date)}.",
+                f"- Engine: vtlengine {_inline(meta.vtlengine_version)}, "
+                f"commit {_literal(meta.vtlengine_commit)}.",
+                f"- Manual: VTL 2.2 Reference Manual, {spec}.",
+                "- To regenerate, run ``docs/operator_map/generate.py`` under "
+                "``systemd-run --user --scope -p MemoryMax=6G -p MemorySwapMax=0``.",
+            ]
+        ),
+    )
+
+
+def _legend() -> str:
+    return _section(
+        "Legend",
+        _table(("Status", "Meaning"), _STATUS_LEGEND),
+        _table(("Mark", "Meaning"), _MARK_LEGEND),
     )
 
 
@@ -332,7 +386,7 @@ def _chapter_table(cat: Catalogue, index: StatusIndex) -> str:
     """One row per chapter, a row for the type hubs when they have examples, and the total."""
     rows = [
         _count_row(
-            f"[{chapter.title}]({chapter.id}.md)",
+            _doc(chapter.title, chapter.id),
             index.chapters.get(chapter.id),
             _chapter_statuses(chapter, index),
         )
@@ -345,23 +399,24 @@ def _chapter_table(cat: Catalogue, index: StatusIndex) -> str:
     group_statuses = [index.chapters[key] for key in _index_chapters(cat) if key in index.chapters]
     total = rollup(group_statuses) if group_statuses else None
     rows.append(_count_row("**Total**", total, [*every, *type_statuses]))
-    head = f"| Chapter | Status | Variants | {' | '.join(EMOJI[status] for status in _ORDER)} |"
-    return "\n".join([head, "|---|---|---|---|---|---|---|", *rows])
+    head = ("Chapter", "Status", "Variants", *(EMOJI[status] for status in _ORDER))
+    return _table(head, rows)
 
 
-def _count_row(first: str, status: Status | None, statuses: Sequence[Status]) -> str:
+def _count_row(first: str, status: Status | None, statuses: Sequence[Status]) -> list[str]:
     tally = counts(statuses)
     emoji = EMOJI[status] if status is not None else ""
-    return _row([first, emoji, str(len(statuses)), *(str(tally[each]) for each in _ORDER)])
+    return [first, emoji, str(len(statuses)), *(str(tally[each]) for each in _ORDER)]
 
 
 def _flow_blocks(cat: Catalogue, index: StatusIndex) -> str:
     return "\n\n".join(
-        f"### {type_id}\n\n{_fence(type_flow_block(type_id, cat, index))}" for type_id in FLOW_TYPES
+        f"{_title(type_id, _SUBSECTION)}\n\n{_mermaid(type_flow_block(type_id, cat, index))}"
+        for type_id in FLOW_TYPES
     )
 
 
-# --- The lists of the README ---
+# --- The lists of the index ---
 
 
 @dataclass(frozen=True)
@@ -386,12 +441,12 @@ class _Entry:
 
     def chapter(self) -> str:
         """The title of the chapter, linking to its page; the types have no page."""
-        return self.title if self.group == _TYPES else f"[{self.title}]({self.group}.md)"
+        return self.title if self.group == _TYPES else _doc(self.title, self.group)
 
     def where(self) -> str:
-        """``Chapter › Operator › `variant` (example)``."""
-        label = _NEWLINE.sub(" ", self.variant.label)
-        return f"{self.chapter()} › {self.operator_name} › `{label}` ({self.example.name})"
+        """``Chapter › Operator › ``variant`` (example)``."""
+        label, name = _literal(self.variant.label), _inline(self.example.name)
+        return f"{self.chapter()} › {_inline(self.operator_name)} › {label} ({name})"
 
     def folder(self) -> str:
         names = (self.group, self.operator_id, self.variant.id, self.example.name)
@@ -426,18 +481,17 @@ def _item(entry: _Entry, head: str, text: str, root: Path) -> str:
     """A list item: ``head``, where the example is, ``text``, and the links of the example."""
     links = []
     if entry.page is not None:
-        links.append(f"[manual]({manual_url(entry.page)})")
+        links.append(_link("manual", manual_url(entry.page)))
     if (entry.on_disk(root) / "notes.md").is_file():
-        links.append(f"[notes]({entry.folder()}/notes.md)")
+        links.append(_link("notes", f"{entry.folder()}/notes.md"))
     line = f"{head}{entry.where()}"
     if text:
-        line += f": {_NEWLINE.sub(' ', text)}"
+        line += f": {_inline(text)}"
     return "- " + " · ".join([line, *links])
 
 
 def _list_section(title: str, intro: str, none: str, items: Sequence[str]) -> str:
-    body = "\n".join(items) if items else none
-    return f"## {title}\n\n{intro}\n\n{body}"
+    return _section(title, intro, "\n".join(items) if items else none)
 
 
 def _decisions(entries: Sequence[_Entry], root: Path) -> str:
@@ -478,8 +532,8 @@ def _adaptations(entries: Sequence[_Entry], root: Path) -> str:
     ]
     return _list_section(
         "Input adaptations",
-        "Manual inputs that vtlengine cannot load as they are written, such as the `time` "
-        "values `2010M1/2010M12`. The example uses the equivalent representation that "
+        "Manual inputs that vtlengine cannot load as they are written, such as the ``time`` "
+        "values ``2010M1/2010M12``. The example uses the equivalent representation that "
         "vtlengine documents, and its notes keep the original. These are not errata.",
         "None: every manual input loads as written.",
         items,
@@ -491,7 +545,7 @@ def _not_green(entries: Sequence[_Entry], index: StatusIndex) -> str:
 
     That is the first example that is not green, or for a 🔵 variant the first that diverges.
     """
-    groups: dict[Status, list[str]] = {status: [] for status, _ in _GROUPS}
+    groups: dict[Status, list[list[str]]] = {status: [] for status, _ in _GROUPS}
     listed: set[str] = set()
     for entry in entries:
         status = index.variants.get(entry.variant_key)
@@ -501,15 +555,16 @@ def _not_green(entries: Sequence[_Entry], index: StatusIndex) -> str:
         if not _shows(status, result):
             continue
         listed.add(entry.variant_key)
-        row = [
-            entry.chapter(),
-            _cell(entry.operator_name),
-            _cell(f"`{entry.variant.label}`"),
-            f"[{entry.example.name}]({entry.folder()}/)",
-            _detail_cell(result),
-        ]
-        groups[status].append(_row(row))
-    parts = ["## Variants that are not green"]
+        groups[status].append(
+            [
+                entry.chapter(),
+                _text(entry.operator_name),
+                _literal(entry.variant.label),
+                _link(entry.example.name, f"{entry.folder()}/"),
+                _detail_cell(result),
+            ]
+        )
+    parts = []
     if listed:
         parts.append(
             "Every variant that is not 🟢, by status. A row names the first example that is not "
@@ -517,12 +572,12 @@ def _not_green(entries: Sequence[_Entry], index: StatusIndex) -> str:
         )
     else:
         parts.append("Every variant is green.")
+    head = ("Chapter", "Operator", "Variant", "Example", "Detail")
     for status, title in _GROUPS:
         if groups[status]:
-            head = "| Chapter | Operator | Variant | Example | Detail |\n|---|---|---|---|---|"
-            parts.append(f"### {EMOJI[status]} {title} ({len(groups[status])})")
-            parts.append("\n".join([head, *groups[status]]))
-    return "\n\n".join(parts)
+            parts.append(_title(f"{EMOJI[status]} {title} ({len(groups[status])})", _SUBSECTION))
+            parts.append(_table(head, groups[status]))
+    return _section("Variants that are not green", *parts)
 
 
 def _shows(status: Status, result: ExampleResult) -> bool:
@@ -533,12 +588,13 @@ def _shows(status: Status, result: ExampleResult) -> bool:
 
 
 def _attribution(meta: RunMeta) -> str:
-    return (
-        "## Attribution\n\n"
+    manual = _link("sdmx-twg.github.io/vtl/v2.2", f"{MANUAL_BASE}/index.html")
+    source = _link("sdmx-twg/vtl", SPEC_REPO)
+    return _section(
+        "Attribution",
         "Examples marked *manual* are taken from the VTL 2.2 Reference Manual "
-        f"(sdmx-twg/vtl @ {meta.spec_commit}), converted to the vtlengine format.\n\n"
-        f"The manual is published at [sdmx-twg.github.io/vtl/v2.2]({MANUAL_BASE}/index.html), "
-        f"and its source is the repository [sdmx-twg/vtl]({SPEC_REPO})."
+        f"(sdmx-twg/vtl @ {meta.spec_commit}), converted to the vtlengine format.",
+        f"The manual is published at {manual}, and its source is the repository {source}.",
     )
 
 
@@ -584,22 +640,119 @@ def _index_chapters(cat: Catalogue) -> list[str]:
     return [*(chapter.id for chapter in cat.chapters), _TYPES]
 
 
+# --- Mermaid ---
+
+
+def mermaid_blocks(text: str) -> list[str]:
+    """The Mermaid blocks of a page, in order: what the ``.. mermaid::`` directives hold.
+
+    The reverse of what ``chapter_rst`` and ``index_rst`` write, for the checks on the files.
+    """
+    lines = text.split("\n")
+    blocks: list[str] = []
+    n = 0
+    while n < len(lines):
+        if lines[n] != ".. mermaid::":
+            n += 1
+            continue
+        body: list[str] = []
+        n += 2  # the directive and the blank line after it
+        while n < len(lines) and (not lines[n] or lines[n].startswith(_INDENT)):
+            body.append(lines[n][len(_INDENT) :])
+            n += 1
+        blocks.append("\n".join(body).rstrip("\n"))
+    return blocks
+
+
+def _mermaid(block: str) -> str:
+    """A ``.. mermaid::`` directive of ``block``, with its content indented by three spaces."""
+    lines = _site_links(block).split("\n")
+    return ".. mermaid::\n\n" + "\n".join(f"{_INDENT}{line}" if line else "" for line in lines)
+
+
+def _site_links(block: str) -> str:
+    """``block`` with the chapters named by their page in the site, ``<chapter>.html``.
+
+    The diagram builder names the file of a chapter, ``<chapter>.md``, in the clicks to a chapter
+    and in the labels of the stubs of the operators of other chapters. The site has no such file:
+    a chapter is a page of Sphinx. The rest of the block is as the builder wrote it.
+    """
+    block = _CHAPTER_CLICK.sub(r'\1\2.html"', block)
+    return _CHAPTER_STUB.sub(r'(\1.html)"]', block)
+
+
 # --- Text ---
 
 
-def _fence(block: str) -> str:
-    return f"```mermaid\n{block}\n```"
+def _title(text: str, char: str, *, overline: bool = False) -> str:
+    """``text`` as a title, ruled with ``char`` (and above too, for the title of a page).
+
+    The rule has to be as wide as the title in columns, and an emoji is two columns wide: twice
+    its length in characters is always enough.
+    """
+    rule = char * (2 * len(text))
+    return f"{rule}\n{text}\n{rule}" if overline else f"{text}\n{rule}"
 
 
-def _escape_pipes(text: str) -> str:
-    return text.replace("|", "\\|")
+def _section(title: str, *parts: str) -> str:
+    """A section of a page: its title, then ``parts``, with a blank line between all."""
+    return "\n\n".join([_title(title, _SECTION), *parts])
 
 
-def _cell(text: str) -> str:
-    """``text`` as the content of a table cell: on one line, with its pipes escaped."""
-    return _escape_pipes(_NEWLINE.sub(" ", text))
+def _inline(text: str) -> str:
+    """``text`` as a piece of a line of RST: on one line, with the markup characters escaped.
+
+    A text that ends with two colons would make the next lines a literal block: the last colon
+    is escaped.
+    """
+    escaped = _MARKUP.sub(r"\\\1", _NEWLINE.sub(" ", text).strip())
+    return escaped[:-1] + "\\:" if escaped.endswith("::") else escaped
 
 
-def _row(cells: Sequence[str]) -> str:
-    """A table row of cells that are already escaped."""
-    return "| " + " | ".join(cells) + " |"
+def _text(text: str) -> str:
+    """``text`` as RST that starts a paragraph, a cell or a title: ``_inline``, and guarded.
+
+    A text that starts like a list, a field, a doctest, a comment or a table would be read as
+    one of them, so it gets an escaped space in front, which RST drops.
+    """
+    one_line = _NEWLINE.sub(" ", text).strip()
+    escaped = _inline(one_line)
+    first = one_line[:1]
+    if not first or first in _ESCAPED_START:
+        return escaped
+    if first.isalnum() and not _ENUMERATOR.match(one_line):
+        return escaped
+    return f"\\ {escaped}"
+
+
+def _literal(text: str) -> str:
+    """``text`` as an inline literal, as it is. A backtick cannot be in one: escaped text then."""
+    one_line = _NEWLINE.sub(" ", text).strip()
+    if not one_line:
+        return ""
+    return _inline(one_line) if "`" in one_line else f"``{one_line}``"
+
+
+def _link(text: str, url: str) -> str:
+    """An anonymous hyperlink with its address inside, so that no two of them can clash."""
+    return f"`{_inline(text)} <{url}>`__"
+
+
+def _doc(title: str, target: str) -> str:
+    """A link to another page of the docs, by its name relative to this one."""
+    return f":doc:`{title} <{target}>`"
+
+
+def _table(header: Sequence[str], rows: Sequence[Sequence[str]]) -> str:
+    """A ``list-table`` with a header row, columns that fit their content, and ``rows``.
+
+    A cell is RST that is already escaped. One of several lines goes on under its first line.
+    """
+    lines = [".. list-table::", f"{_INDENT}:header-rows: 1", f"{_INDENT}:widths: auto", ""]
+    for row in (header, *rows):
+        for position, cell in enumerate(row):
+            marker = f"{_INDENT}* -" if position == 0 else f"{_INDENT}  -"
+            first, *rest = cell.split("\n")
+            lines.append(f"{marker} {first}".rstrip())
+            lines.extend(f"{_INDENT}    {line}".rstrip() for line in rest)
+    return "\n".join(lines)

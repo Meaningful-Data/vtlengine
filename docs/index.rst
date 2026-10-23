@@ -86,4 +86,9 @@ S3 URI support is provided by the DuckDB execution engine; see :doc:`duckdb_engi
 
     error_messages
 
+.. toctree::
+    :caption: Operator coverage
+
+    operator_map/index
+
 

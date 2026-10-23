@@ -179,13 +179,21 @@ class World:
         """The document of ``status.json``."""
         return json.loads((self.root / "status.json").read_text(encoding="utf-8"))
 
-    def readme_row(self, text: str) -> list[str]:
-        """The cells of the row of the chapter index of the README that holds ``text``."""
-        readme = (self.root / "README.md").read_text(encoding="utf-8")
-        index = readme.split("\n## Chapters\n", 1)[1].split("\n## ", 1)[0]
-        rows = [line for line in index.splitlines() if line.startswith("| ") and text in line]
-        assert len(rows) == 1, f"{len(rows)} rows have {text}"
-        return [cell.strip() for cell in re.split(r"(?<!\\)\|", rows[0])[1:-1]]
+    def index_row(self, text: str) -> list[str]:
+        """The cells of the row of the chapter table of ``index.rst`` that holds ``text``."""
+        page = (self.root / "index.rst").read_text(encoding="utf-8")
+        chapters = re.split(r"\nChapters\n-+\n", page, maxsplit=1)[1].split("\nType lattice\n", 1)[
+            0
+        ]
+        rows: list[list[str]] = []
+        for line in chapters.splitlines():
+            if line.startswith("   * -"):
+                rows.append([line[7:]])
+            elif line.startswith("     -") and rows:
+                rows[-1].append(line[7:])
+        found = [row for row in rows if any(text in cell for cell in row)]
+        assert len(found) == 1, f"{len(found)} rows have {text}"
+        return found[0]
 
 
 def build_world(
@@ -227,7 +235,7 @@ def problems(capsys: pytest.CaptureFixture[str]) -> list[str]:
 
 
 # Every file that a run of the map ``CAT`` writes, in the order it writes them.
-OUTPUTS = ["README.md", "alpha.md", "beta.md", "status.json"]
+OUTPUTS = ["index.rst", "alpha.rst", "beta.rst", "status.json"]
 
 
 def seed_outputs(world: World) -> dict[str, bytes]:
@@ -459,10 +467,10 @@ def test_keyboard_interrupt_exits_2_and_writes_nothing(
 def test_only_merges_previous_status(world: World) -> None:
     world.modes = {"beta": "wrong"}
     assert generate.main([]) == 0
-    beta = ["[Beta operators](beta.md)", "🟡", "1", "0", "1", "0", "0"]
-    assert world.readme_row("(beta.md)") == beta
-    assert world.readme_row("(alpha.md)") == [
-        "[Alpha operators](alpha.md)",
+    beta = [":doc:`Beta operators <beta>`", "🟡", "1", "0", "1", "0", "0"]
+    assert world.index_row("<beta>") == beta
+    assert world.index_row("<alpha>") == [
+        ":doc:`Alpha operators <alpha>`",
         "🟢",
         "2",
         "2",
@@ -475,8 +483,8 @@ def test_only_merges_previous_status(world: World) -> None:
     world.calls.clear()
     assert generate.main(["--only", "alpha"]) == 0
     assert world.run_chapters() == {"alpha"}
-    assert world.readme_row("(alpha.md)") == [
-        "[Alpha operators](alpha.md)",
+    assert world.index_row("<alpha>") == [
+        ":doc:`Alpha operators <alpha>`",
         "🔴",
         "2",
         "0",
@@ -484,13 +492,13 @@ def test_only_merges_previous_status(world: World) -> None:
         "2",
         "0",
     ]
-    assert world.readme_row("(beta.md)") == beta
-    assert world.readme_row("Data types") == ["Data types", "🟢", "1", "1", "0", "0", "0"]
+    assert world.index_row("<beta>") == beta
+    assert world.index_row("Data types") == ["Data types", "🟢", "1", "1", "0", "0", "0"]
     examples = world.status()["examples"]
     assert examples["beta/second/ds/minimal"]["status"] == "partial"
     assert examples["alpha/first/sc/minimal"]["status"] == "missing"
     assert sorted(examples) == sorted(KEYS)
-    assert (world.root / "beta.md").is_file()
+    assert (world.root / "beta.rst").is_file()
 
 
 def test_only_drops_the_results_of_examples_that_left_the_catalogue(world: World) -> None:
@@ -587,15 +595,20 @@ def test_only_prints_ten_no_result_lines_at_most_and_counts_the_rest(
 
 def test_the_run_writes_every_file_and_leaves_nothing_else(world: World) -> None:
     assert generate.main([]) == 0
-    assert world.names() == ["README.md", "alpha.md", "beta.md", "examples", "status.json"]
-    readme = (world.root / "README.md").read_text(encoding="utf-8")
-    assert readme.startswith("# VTL 2.2 operator map")
-    assert "9.9.9" in readme
-    assert "abc1234" in readme
-    assert f"(sdmx-twg/vtl @ {SPEC_COMMIT})" in readme
-    alpha = (world.root / "alpha.md").read_text(encoding="utf-8")
-    assert alpha.startswith("# 🟢 Alpha operators\n")
-    assert alpha.count("/script.vtl)") == 3
+    # Sphinx pages and the results, and no Markdown file.
+    assert world.names() == ["alpha.rst", "beta.rst", "examples", "index.rst", "status.json"]
+    index = (world.root / "index.rst").read_text(encoding="utf-8")
+    rule = "=" * 40
+    assert index.startswith(f"{rule}\nVTL 2.2 operator map\n{rule}\n")
+    assert ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   alpha\n   beta\n" in index
+    assert "9.9.9" in index
+    assert "abc1234" in index
+    assert f"(sdmx-twg/vtl @ {SPEC_COMMIT})" in index
+    alpha = (world.root / "alpha.rst").read_text(encoding="utf-8")
+    rule = "=" * 34  # twice the 17 characters of "🟢 Alpha operators"
+    assert alpha.startswith(f"{rule}\n🟢 Alpha operators\n{rule}\n")
+    assert alpha.count("/script.vtl>`__") == 3
+    assert ".. mermaid::\n\n   flowchart LR\n" in alpha
 
 
 def test_status_json_has_sorted_keys_the_meta_and_every_verdict(world: World) -> None:
@@ -633,25 +646,25 @@ def test_a_block_over_a_limit_exits_1_and_writes_nothing(
     def too_big(*_args: object, **_kwargs: object) -> str:
         raise MermaidLimitError("type flow of dataset: 501 edges, and a block needs fewer than 500")
 
-    monkeypatch.setattr(generate, "readme_markdown", too_big)
-    (world.root / "README.md").write_text("older\n", encoding="utf-8")
+    monkeypatch.setattr(generate, "index_rst", too_big)
+    old = seed_outputs(world)
     assert generate.main([]) == 1
     assert problems(capsys) == ["type flow of dataset: 501 edges, and a block needs fewer than 500"]
-    assert world.names() == ["README.md", "examples"]
-    assert (world.root / "README.md").read_text(encoding="utf-8") == "older\n"
+    assert_untouched(world, old)
 
 
 def test_every_block_of_the_rendered_files_is_checked_against_the_limits(
     world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    edges = "\n".join(f"    a{n} --> b{n}" for n in range(500))
-    big = f"# Chapter\n\n```mermaid\nflowchart LR\n{edges}\n```\n"
-    monkeypatch.setattr(generate, "chapter_markdown", lambda *_args, **_kwargs: big)
+    edges = "\n".join(f"       a{n} --> b{n}" for n in range(500))
+    big = f"Chapter\n=======\n\n.. mermaid::\n\n   flowchart LR\n{edges}\n\ntext\n"
+    monkeypatch.setattr(generate, "chapter_rst", lambda *_args, **_kwargs: big)
+    old = seed_outputs(world)
     assert generate.main([]) == 1
     [line] = problems(capsys)
-    assert line.startswith("alpha.md: ")
+    assert line.startswith("alpha.rst: ")
     assert "500 edges" in line
-    assert world.names() == ["examples"]
+    assert_untouched(world, old)
 
 
 # --- Internal errors and failed writes ---
@@ -673,7 +686,7 @@ def test_an_internal_error_exits_2_with_one_line(
 
 def break_the_staging_write(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
     """A text that cannot be encoded: the write of the second file to be written raises."""
-    monkeypatch.setattr(generate, "chapter_markdown", lambda *_a, **_k: "lone \udc80 surrogate\n")
+    monkeypatch.setattr(generate, "chapter_rst", lambda *_a, **_k: "lone \udc80 surrogate\n")
 
 
 def break_the_replace(nth: int) -> Callable[[World, pytest.MonkeyPatch], None]:

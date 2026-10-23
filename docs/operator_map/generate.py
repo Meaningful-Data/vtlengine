@@ -8,7 +8,9 @@
 2. Every example runs on the pandas and the DuckDB engine, each in a process of its own (see
    ``tool.runner``). A ``random`` example runs twice, to see whether its values are stable.
 3. The status of each example comes from the two runs (``tool.status``), the statuses are rolled
-   up, and ``README.md``, one md file per chapter and ``status.json`` are rendered.
+   up, and ``index.rst``, one rst page per chapter and ``status.json`` are rendered. The pages are
+   documents of the Sphinx docs of the repository (``docs/``), which copies the examples next to
+   them when it builds the site.
 4. Only when every file has been rendered, and every diagram is within the limits of Mermaid, are
    the files written: first to a folder of their own, then moved over the old ones.
 
@@ -46,7 +48,7 @@ from catalogue import manual_index
 from tool.examples import ExampleError, ExampleFiles, example_dir, load_example, scan_example_dirs
 from tool.mermaid import MermaidLimitError, check_limits
 from tool.model import Catalogue, Example, Status, load_catalogue, validate_catalogue
-from tool.render import RunMeta, chapter_markdown, readme_markdown
+from tool.render import RunMeta, chapter_rst, index_rst, mermaid_blocks
 from tool.runner import Engine, RunOutput, run_all
 from tool.status import (
     EMOJI,
@@ -67,7 +69,7 @@ _STATUS_FILE: Final = "status.json"
 _MAX_UNRUN: Final = 10  # the "no result" problems that are printed, one line each
 _ENGINES: Final[tuple[Engine, ...]] = ("pandas", "duckdb")
 _VERSION: Final = re.compile(r"""^__version__\s*=\s*["']([^"']+)["']""", re.MULTILINE)
-_FENCE: Final = re.compile(r"^```mermaid\n(.*?)\n```$", re.MULTILINE | re.DOTALL)
+_INDEX_FILE: Final = "index.rst"
 
 
 class GenerateError(Exception):
@@ -160,7 +162,7 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="generate.py",
         description="Generate the VTL operator map: run every example on both engines, "
-        "judge the results and write the md files and status.json.",
+        "judge the results and write the Sphinx pages (rst) and status.json.",
     )
     parser.add_argument(
         "--only",
@@ -459,13 +461,13 @@ def _render(
     cat: Catalogue, index: StatusIndex, meta: RunMeta, examples_root: Path
 ) -> dict[str, str]:
     """The text of every file, with each diagram checked against the limits of Mermaid."""
-    files = {"README.md": readme_markdown(cat, index, meta, examples_root=examples_root)}
+    files = {_INDEX_FILE: index_rst(cat, index, meta, examples_root=examples_root)}
     for chapter in cat.chapters:
-        files[f"{chapter.id}.md"] = chapter_markdown(
+        files[f"{chapter.id}.rst"] = chapter_rst(
             chapter, cat, index, meta, examples_root=examples_root
         )
     for name, text in files.items():
-        for block in _FENCE.findall(text):
+        for block in mermaid_blocks(text):
             try:
                 check_limits(block)
             except MermaidLimitError as exc:

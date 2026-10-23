@@ -17,6 +17,7 @@ from vtlengine.Exceptions.messages import centralised_messages
 # Import utilities from scripts folder
 sys.path.insert(0, str(Path(__file__).parent / "scripts"))
 from generate_error_docs import generate_errors_rst
+from operator_map_site import copy_examples
 from version_utils import is_stable_version
 
 if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith("win"):
@@ -47,10 +48,31 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx_rtd_theme",
+    "sphinxcontrib.mermaid",
 ]
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    # The operator map: its pages are generated, and the examples they link to are files that
+    # the build copies (see ``setup``), not sources. The tool that generates them is Python.
+    "operator_map/examples/**",
+    "operator_map/tool/**",
+]
+
+# -- Options for the Mermaid diagrams (sphinxcontrib-mermaid) ----------------
+# The diagrams of the operator map link to the pages and the examples with ``click``. Mermaid
+# disables clicks at its default security level, "strict". The text of the diagrams is generated
+# by the repository, so "loose" is safe. ``startOnLoad`` stays off: the extension renders them.
+mermaid_init_config = {"startOnLoad": False, "securityLevel": "loose"}
+# The extension draws a diagram in a box of the width of the page and 500 px high. A diagram of a
+# chapter is tall (a row for each operator and each variant), and squeezed into 500 px it cannot
+# be read. Here a diagram is as high as its proportions make it, and as wide as the page, up to
+# 700 px, which is about the size that Mermaid draws it.
+mermaid_width = "min(100%, 700px)"
+mermaid_height = "auto"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -182,5 +204,16 @@ def _validate_error_messages_rst(filepath: Path) -> None:
         raise ValueError(f"Expected at least 10 error codes, found {len(error_codes)}")
 
 
+def copy_operator_map_examples(app, exception):
+    """Serve the examples of the operator map next to its pages in the HTML output.
+
+    The pages link to ``examples/...`` relative to themselves. Versions of the docs that have no
+    operator map have no such folder: nothing is copied, and nothing is said.
+    """
+    if exception is None and app.builder.format == "html":
+        copy_examples(Path(app.srcdir), Path(app.outdir))
+
+
 def setup(app):
     app.connect("builder-inited", setup_error_docs)
+    app.connect("build-finished", copy_operator_map_examples)
