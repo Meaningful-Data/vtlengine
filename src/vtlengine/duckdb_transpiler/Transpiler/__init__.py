@@ -4336,10 +4336,14 @@ FROM (
             child_selects = []
             for child in parsed.right_code_items:
                 proj = ", ".join(other_q + raw_cols)
-                if child in node_cte:
-                    child_selects.append(
-                        " UNION ALL ".join(f"SELECT {proj} FROM {name}" for name in node_cte[child])
-                    )
+                child_ctes = node_cte.get(child, [])
+                if len(child_ctes) > 1:
+                    # Rules computing the child for the same group give it the same values:
+                    # it is combined once (issue #1193)
+                    union = " UNION ".join(f"SELECT {proj} FROM {name}" for name in child_ctes)
+                    child_selects.append(f"SELECT {proj} FROM ({union}) AS _vpc_{i}")
+                elif child_ctes:
+                    child_selects.append(f"SELECT {proj} FROM {child_ctes[0]}")
                 else:
                     child_selects.append(
                         f"SELECT {proj} FROM {table_src} WHERE {quote_name(rule_comp)} = '{child}'"
@@ -4503,21 +4507,6 @@ FROM (
 
         computed_sql = " UNION ALL ".join(final_selects)
 
-        left_items = [parsed.left_code_item for parsed in parsed_rules]
-        if len(set(left_items)) < len(left_items):
-            # Several rules compute the same code item under different conditions
-            # (issue #1142): two of them must not hold on the same data point.
-            keys = ", ".join([*(quote_name(c) for c in other_ids), q_rc])
-            ruleset_sql = ruleset_name.replace("'", "''")
-            message = (
-                f"'VTL 2-1-10-1: ruleset {ruleset_sql}, code item ' || CAST({q_rc} AS VARCHAR)"
-            )
-            computed_sql = (
-                f"SELECT * FROM ({computed_sql}) AS _hr_rules QUALIFY "
-                f"CASE WHEN COUNT(*) OVER (PARTITION BY {keys}) > 1 "
-                f"THEN error({message}) ELSE TRUE END"
-            )
-
         # Combine child viral values into each computed node (issue #877).
         vp_info = self._build_hierarchy_viral_ctes(
             cte, ds, parsed_rules, rule_comp, other_ids, table_src, rule_groups
@@ -4532,6 +4521,22 @@ FROM (
             computed_sql = (
                 f"SELECT c.*, {viral_sel} FROM ({computed_sql}) AS c "
                 f"LEFT JOIN {vp_name} AS v ON {' AND '.join(conds)}"
+            )
+
+        left_items = [parsed.left_code_item for parsed in parsed_rules]
+        if len(set(left_items)) < len(left_items):
+            # Several rules compute the same code item under different conditions (issue
+            # #1142). A data point several of them compute is kept once when they give it
+            # the same values, measure and viral attributes included (issue #1193).
+            keys = ", ".join([*(quote_name(c) for c in other_ids), q_rc])
+            ruleset_sql = ruleset_name.replace("'", "''")
+            message = (
+                f"'VTL 2-1-10-1: ruleset {ruleset_sql}, code item ' || CAST({q_rc} AS VARCHAR)"
+            )
+            computed_sql = (
+                f"SELECT * FROM (SELECT DISTINCT * FROM ({computed_sql}) AS _hr_rules) "
+                f"AS _hr_points QUALIFY CASE WHEN COUNT(*) OVER (PARTITION BY {keys}) > 1 "
+                f"THEN error({message}) ELSE TRUE END"
             )
 
         if output == "computed":

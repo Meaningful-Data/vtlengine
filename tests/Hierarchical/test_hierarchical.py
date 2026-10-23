@@ -3320,10 +3320,10 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
                     DS_r <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
 
-        Description: Both conditions hold on Y, so two rules compute TOTAL for it.
+        Description: Both conditions hold on Y, so two rules compute TOTAL for it: 30 and 10.
 
-        Git Branch: #1142.
-        Goal: Check the overlap raises a runtime error.
+        Git Branch: #1142, #1193.
+        Goal: Check rules that compute different values raise a runtime error.
         """
 
         code = "GH_1142_5"
@@ -4109,3 +4109,172 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1193_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        when Id_1 in {"X", "Y"} then TOTAL = B + C;
+                        when Id_1 in {"Y", "Z"} then TOTAL = B + C
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
+                    DS_n <- count(DS_r group by Id_2);
+
+        Description: Both rules apply to Y and compute the same value for it. DS_n counts
+        the TOTAL data points, so a repeated one shows there.
+
+        Git Branch: #1193.
+        Goal: Check TOTAL is computed once for Y.
+        """
+
+        code = "GH_1193_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1193_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        when Id_1 in {"W", "X", "Y"} then TOTAL = B + C;
+                        when Id_1 in {"W", "Y", "Z"} then TOTAL = B + D
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
+                    DS_r2 <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 partial_null);
+
+        Description: Both rules apply to W and Y. C and D are equal on Y and null on W, so
+        the rules compute 30 for Y and, in partial_null, null for W.
+
+        Git Branch: #1193.
+        Goal: Check rules with different formulas that compute the same value, null
+        included, give the data point once.
+        """
+
+        code = "GH_1193_2"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1193_3(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        when Id_1 in {"W", "X", "Y"} then TOTAL = B + C;
+                        when Id_1 in {"W", "Y", "Z"} then TOTAL = B + D
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 partial_null);
+
+        Description: Both rules apply to W: the first one computes null, as C is null, and
+        the second one 12.
+
+        Git Branch: #1193.
+        Goal: Check a null and a number are different values, so the runtime error is raised.
+        """
+
+        code = "GH_1193_3"
+        number_inputs = 1
+        exception_code = "2-1-10-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_1193_4(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        when Id_1 in {"X", "Y"} then TOTAL = B + C;
+                        when Id_1 in {"Y", "Z"} then TOTAL = B + C;
+                        G = TOTAL + A
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
+                    DS_n <- count(DS_r group by Id_2);
+
+        Description: G reads TOTAL, which both rules compute for Y. DS_n counts the data
+        points of each code item, so a repeated one shows there.
+
+        Git Branch: #1193.
+        Goal: Check G reads the TOTAL of Y once.
+        """
+
+        code = "GH_1193_4"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1193_5(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        when Id_1 in {"X", "Y"} then TOTAL = B + C;
+                        when Id_1 in {"Y", "Z"} then TOTAL = B + C;
+                        G = TOTAL + A
+                    end hierarchical ruleset;
+
+                    define viral propagation VP_1 (variable At_1) is
+                        aggregate sum
+                    end viral propagation;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
+                    DS_n <- count(DS_r group by Id_2);
+
+        Description: At_1 is viral and both rules compute TOTAL for Y. DS_n counts the data
+        points of each code item, so a repeated one shows there.
+
+        Git Branch: #1193.
+        Goal: Check At_1 of TOTAL is computed once for Y and At_1 of G adds it once.
+        """
+
+        code = "GH_1193_5"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1193_6(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        when Id_1 in {"X", "Y"} then TOTAL = B + C;
+                        when Id_1 in {"Y", "Z"} then TOTAL = B + D
+                    end hierarchical ruleset;
+
+                    define viral propagation VP_1 (variable At_1) is
+                        aggregate sum
+                    end viral propagation;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
+
+        Description: Both rules compute 30 for TOTAL of Y, but At_1 is 3 for the first one
+        and 6 for the second one.
+
+        Git Branch: #1193.
+        Goal: Check different viral attribute values raise the runtime error.
+        """
+
+        code = "GH_1193_6"
+        number_inputs = 1
+        exception_code = "2-1-10-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
