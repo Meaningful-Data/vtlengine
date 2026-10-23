@@ -422,30 +422,6 @@ class Terminals:
         """
         raise SemanticError("1-3-13", construct=f"ruleset type {script_location(ctx)}")
 
-    def visitDpRuleset(self, ctx):
-        """
-        DATAPOINT                                                                               # dataPoint
-            | DATAPOINT_ON_VD  (GLPAREN  valueDomainName (MUL valueDomainName)*  GRPAREN )?         # dataPointVd
-            | DATAPOINT_ON_VAR  (GLPAREN  varID (MUL varID)*  GRPAREN )?                            # dataPointVar
-        ;
-        """  # noqa E501
-        # AST_ASTCONSTRUCTOR.54
-        raise SemanticError(
-            "1-3-14", location=f"Terminals.visitDpRuleset at {script_location(ctx)}"
-        )
-
-    def visitHrRuleset(self, ctx):
-        """
-        hrRuleset: HIERARCHICAL                                                                                                            # hrRulesetType
-            | HIERARCHICAL_ON_VD ( GLPAREN  vdName=IDENTIFIER (LPAREN valueDomainName (MUL valueDomainName)* RPAREN)?  GRPAREN )?   # hrRulesetVdType
-            | HIERARCHICAL_ON_VAR ( GLPAREN  varName=varID (LPAREN  varID (MUL varID)* RPAREN)?  GRPAREN )?                         # hrRulesetVarType
-        ;
-        """  # noqa E501
-        # AST_ASTCONSTRUCTOR.55
-        raise SemanticError(
-            "1-3-14", location=f"Terminals.visitHrRuleset at {script_location(ctx)}"
-        )
-
     def visitComponentType(self, ctx):
         """
         componentType:  componentRole ( LT   scalarType  MT  )?
