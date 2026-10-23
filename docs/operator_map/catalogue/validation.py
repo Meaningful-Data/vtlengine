@@ -37,7 +37,11 @@ CHECK_DATAPOINT = Operator(
         Variant("invalid", "check_datapoint(DS, DPR invalid)", (authored(),)),
         Variant("all", "check_datapoint(DS, DPR all)", (manual("ex_2"),)),
         Variant("all_measures", "check_datapoint(DS, DPR all_measures)", (authored(),)),
-        Variant("components", "check_datapoint(DS, DPR components C1, C2)", (authored(),)),
+        Variant(
+            "components",
+            "check_datapoint(DS, DPR components C1, C2)",
+            (authored(), authored("minimal_2")),
+        ),
         Variant("errorcode", "check_datapoint(DS, DPR all), rules with errorcode", (authored(),)),
         Variant("errorlevel", "check_datapoint(DS, DPR all), rules with errorlevel", (authored(),)),
     ),
@@ -52,7 +56,11 @@ CHECK_HIERARCHY = Operator(
     returns=("dataset",),
     variants=(
         *_hierarchy_grid(),
-        Variant("condition", "check_hierarchy(DS, HR condition C)", (authored(),)),
+        Variant(
+            "condition",
+            "check_hierarchy(DS, HR condition C)",
+            (authored(), authored("minimal_2")),
+        ),
         Variant(
             "rule",
             "check_hierarchy(DS, HR rule C)",

@@ -11,8 +11,9 @@ errorcode and no errorlevel, so both are null on every data point (the `errorcod
 
 Mode `partial_null`: a data point is produced when at least one item of the rule is found; a
 missing item counts as null.
-A null data point stays null in every mode (mode table, "Null Data Points are considered:
-null"). A comparison or an imbalance with a null item is null.
+A null data point stays null (mode table, "Null Data Points are considered:
+null").
+A comparison or an imbalance with a null item is null.
 
 Input `dataset`: every item is taken from `DS_1` only, so `C` stays null.
 

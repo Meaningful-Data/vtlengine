@@ -11,8 +11,12 @@ errorcode and no errorlevel, so both are null on every data point (the `errorcod
 
 Mode `non_zero`: a data point is produced when at least one item exists with a measure other than
 0; a missing item counts as 0.
-A null data point stays null in every mode (mode table, "Null Data Points are considered:
-null"). A comparison or an imbalance with a null item is null.
+A null data point stays null: the text sets only the missing ones to 0 ("the
+possible missing Data Points corresponding to the Code Items of the left and right sides of the
+rule are considered existing and having a Measure value equal to 0"). The Non_zero row of this
+page's mode table has no "Null Data Points are considered" cell; the same table on the
+Hierarchical roll-up page (`modeTable.csv` line 3) has it: `Non_zero,Zero,null,…`.
+A comparison or an imbalance with a null item is null.
 
 Input `dataset`: every item is taken from `DS_1` only, so `C` stays null.
 

@@ -11,8 +11,9 @@ errorcode and no errorlevel, so both are null on every data point (the `errorcod
 
 Mode `partial_zero`: a data point is produced when at least one item of the rule is found; a
 missing item counts as 0.
-A null data point stays null in every mode (mode table, "Null Data Points are considered:
-null"). A comparison or an imbalance with a null item is null.
+A null data point stays null (mode table, "Null Data Points are considered:
+null").
+A comparison or an imbalance with a null item is null.
 
 Input `dataset_priority`: `C` is null in `DS_1` and is the left side of the `=` rule
 R2, so R1 takes `C` from the computed output of R2 (`D + E` = 6 + 0 = 6, produced in every
