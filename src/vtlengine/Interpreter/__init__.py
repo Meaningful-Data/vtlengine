@@ -1,6 +1,6 @@
 import csv
 from copy import copy, deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Type, Union, cast
 
@@ -52,6 +52,7 @@ from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
+    Integer,
     ScalarType,
     check_unary_implicit_promotion,
 )
@@ -116,6 +117,11 @@ from vtlengine.ViralPropagation import (
     get_current_registry,
     set_current_registry,
 )
+
+
+def _is_omitted(node: AST.AST) -> bool:
+    """Whether an argument of a user defined operator call is written as _."""
+    return isinstance(node, AST.ID) and node.type_ == "OPTIONAL"
 
 
 def _var_id_names(node: Any) -> Iterator[str]:
@@ -207,6 +213,8 @@ class InterpreterAnalyzer(ASTTemplate):
     partial_rule_elements: Optional[Set[str]] = None
     ruleset_signature: Optional[Dict[str, str]] = None
     udo_params: Optional[List[Dict[str, Any]]] = None
+    # Names of the user defined operators being called, outermost first
+    udo_calls: List[str] = field(default_factory=list)
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
     # Names of the rules that computed each code item, in evaluation order
     hr_agg_item_rules: Optional[Dict[str, List[str]]] = None
@@ -2226,7 +2234,8 @@ class InterpreterAnalyzer(ASTTemplate):
             )
 
         for i, param in enumerate(operator["params"]):
-            if i >= len(node.params):
+            # An argument written as _ is omitted, as one left out at the end is (issue #1162)
+            if i >= len(node.params) or _is_omitted(node.params[i]):
                 if "default" in param:
                     value = self.visit(param["default"]).value
                     signature_values[param["name"]] = Scalar(
@@ -2239,7 +2248,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     raise SemanticError(
                         "1-2-11",
                         op=node.op,
-                        received=len(node.params),
+                        received=len([p for p in node.params if not _is_omitted(p)]),
                         expected=len(operator["params"]),
                     )
             else:
@@ -2289,7 +2298,12 @@ class InterpreterAnalyzer(ASTTemplate):
                             type_2=type_2,
                         )
                     scalar_type = param["type"]
-                    if not check_unary_implicit_promotion(param_element.data_type, scalar_type):
+                    value = param_element.value
+                    if not check_unary_implicit_promotion(param_element.data_type, scalar_type) or (
+                        scalar_type == Integer
+                        and isinstance(value, float)
+                        and not value.is_integer()
+                    ):
                         raise SemanticError(
                             "2-3-5",
                             param_type=scalar_type,
@@ -2319,9 +2333,16 @@ class InterpreterAnalyzer(ASTTemplate):
         self.signature_values.update(signature_values)
         self.udo_params.append(signature_values)
 
+        if node.op in self.udo_calls:
+            raise SemanticError(
+                "1-3-2-7", op=node.op, calls=" -> ".join([*self.udo_calls, node.op])
+            )
+        self.udo_calls.append(node.op)
+
         # Calling the UDO AST, we use deepcopy to avoid changing the original UDO AST
         if operator is not None:
             result = self.visit(deepcopy(operator["expression"]))
+        self.udo_calls.pop()
 
         if self.is_from_regular_aggregation or self.is_from_rule:
             result_type = "Component" if isinstance(result, DataComponent) else "Scalar"
