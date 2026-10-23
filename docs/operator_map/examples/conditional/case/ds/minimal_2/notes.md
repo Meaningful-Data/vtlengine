@@ -1,16 +1,15 @@
-Authored. Dataset-level `case` with two `when` clauses whose conditions overlap, to check that the
-first true condition wins (the catalogue lists the multi-`when` form only at component level, as
-`comp_multi_when`).
+Authored. Dataset-level `case` with one `when` whose condition is a named Data Set (`DS_c`), and
+an elseOperand (DS_3) that lacks one identifier of the condition (Id_1 = 1). The condition is
+named so that the example does not depend on how an engine handles the inline condition of
+`minimal`, and shows only how the branches are joined.
 
-Derivation (Case page, Behaviour at Data Set level: the result takes the data point of the
-thenOperand of the first `when` whose condition is true for that identifier, and the data point
-of elseOperand when none is true):
+Derivation (Case `content.rst` l. 97-99: "its true Data Points are inner joined with thenOperand
+and its false Data Points are inner joined with elseOperand, finally the union is made of these
+two partial results"; typical behaviour page: "Data Points that are not coupled are left out"):
 
-- Id_1 = 1, DS_1 = 5: `DS_1 > 20` false, `DS_1 > 10` false -> elseOperand DS_1: (1, 5).
-- Id_1 = 2, DS_1 = 15: `DS_1 > 20` false, `DS_1 > 10` true -> DS_3: (2, 2).
-- Id_1 = 3, DS_1 = 25: `DS_1 > 20` true -> DS_2: (3, 300). `DS_1 > 10` is true as well, but the
-  first true condition wins, so the result is not DS_3's 3.
-
-No recorded team decision applies, so the expected output follows the manual's "first". The
-engines implement the opposite for overlapping conditions: "last-match-wins", as the comment of
-`visit_Case` in the DuckDB transpiler says.
+- DS_c = `DS_1 > 10`: Id_1 = 1 -> false (5), 2 -> true (15), 3 -> true (25), 4 -> false (8).
+- True data points (2, 3) with thenOperand DS_2: (2, 200) and (3, 300).
+- False data points (1, 4) with elseOperand DS_3, which has Id_1 = 2, 3 and 4 but not 1: (4, 44).
+  Id_1 = 1 has no partner in DS_3, so it is left out.
+- The union is (2, 200), (3, 300), (4, 44). DS_3's values for Id_1 = 2 and 3 are not used, as
+  those data points are true.

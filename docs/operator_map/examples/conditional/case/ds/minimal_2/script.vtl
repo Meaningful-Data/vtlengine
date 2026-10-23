@@ -1,1 +1,2 @@
-DS_r := case when DS_1 > 20 then DS_2 when DS_1 > 10 then DS_3 else DS_1;
+DS_c := DS_1 > 10;
+DS_r := case when DS_c then DS_2 else DS_3;

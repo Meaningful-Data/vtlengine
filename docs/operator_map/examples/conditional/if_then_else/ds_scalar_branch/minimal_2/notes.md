@@ -1,8 +1,8 @@
 Authored. Same as `minimal`, with the scalar in thenOperand and the Data Set in elseOperand
-(the page allows either: "at least one of thenOperand and elseOperand is a Data Set (the other
-one can be scalar)").
+(l. 78-79: "at least one of thenOperand and elseOperand is a Data Set (the other one can be
+scalar)").
 
-Derivation (if-then-else page, Behaviour):
+Derivation (if-then-else `content.rst`, Behaviour at Data Set level l. 95-99):
 
 - Condition Data Set, as in `minimal`: Id_1 = 1 -> false, 2 -> true, 3 -> true.
 - A true data point returns the scalar thenOperand for all the measures: (2, 0, 0) and (3, 0, 0).

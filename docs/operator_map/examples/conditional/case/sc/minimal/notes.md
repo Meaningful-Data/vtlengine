@@ -1,3 +1,4 @@
-Authored from the page's scalar semantics: "case when x1 > x2 then 2 when x1 = x2 then 0 else 5;
-for x1 = 3, x2 = 0 it returns 2" (the literals 3 and 0 stand for x1 and x2). The first condition
-is true, so the result is its thenOperand, 2.
+Authored. Scalar `case` with one `when` (Case `content.rst` l. 31-32): "The case operator returns
+the first thenOperand whose corresponding condition evaluates to true, elseOperand if none of the
+when conditions evaluates to true". The condition 3 > 0 is true, so the result is its
+thenOperand, 2.

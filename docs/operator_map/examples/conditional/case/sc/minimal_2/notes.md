@@ -1,3 +1,2 @@
-Authored from the page's scalar semantics: "for x1 = x2 = 3 it returns 0" (the literal 3 stands
-for x1 and x2). The first condition (3 > 3) is false and the second (3 = 3) is true, so the result
-is the thenOperand of the second `when`, 0.
+Authored. Scalar `case` with one `when` (Case `content.rst` l. 31-32). The condition 0 > 3 is
+false and there is no other `when`, so the result is elseOperand, 5.
