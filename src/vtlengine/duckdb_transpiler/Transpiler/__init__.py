@@ -474,10 +474,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     @staticmethod
     def _ensure_rule_names(rules: List[Any]) -> None:
-        """Assign ``str(i+1)`` to rules that have no explicit name."""
+        """Number rules that have no explicit name in the order they are written, which the
+        dependency sort of a hierarchical ruleset may have changed."""
         if any(r.name is not None for r in rules):
             return
-        for i, rule in enumerate(rules):
+        for i, rule in enumerate(sorted(rules, key=lambda r: (r.line_start, r.column_start))):
             rule.name = str(i + 1)
 
     def _resolve_clause_dataset(self, node: AST.RegularAggregation) -> Any:
