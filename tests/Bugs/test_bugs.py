@@ -4315,6 +4315,41 @@ class DefinedBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1192_45(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := time_agg(sc_1, _, Me_1, first)];
+        Description: The scalar that gives time_agg its period holds no value: a runtime error
+                     with an operand too, where the pandas engine raised an AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_45"
+        number_inputs = 1
+        message = "2-1-19-24"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": None}
+        )
+
+    def test_GH_1192_46(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := time_agg(sc_1, "D", Me_1, first)];
+        Description: With a period to aggregate from, the period of the reference is only known
+                     at run time: semantic_analysis() raised a KeyError, and the null value is
+                     a runtime error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_46"
+        number_inputs = 1
+        message = "2-1-19-24"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": None}
+        )
+
 
 class OtherBugs(BugHelper):
     """ """

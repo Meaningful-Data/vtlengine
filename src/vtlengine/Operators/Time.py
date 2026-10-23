@@ -845,17 +845,25 @@ class Time_Aggregation(Time):
             raise SemanticError("1-1-19-3", op=cls.op, param="duration")
 
     @classmethod
-    def _check_params(cls, period_from: Optional[str], period_to: str) -> None:
+    def _check_params(cls, period_from: Optional[str], period_to: Optional[str]) -> None:
         cls._check_duration(period_to)
         if period_from is not None:
             cls._check_duration(period_from)
-            if PERIOD_IND_MAPPING[period_to] <= PERIOD_IND_MAPPING[period_from]:
+            # A period read from a scalar is only known at run time (issue #1192)
+            if (
+                period_to is not None
+                and PERIOD_IND_MAPPING[period_to] <= PERIOD_IND_MAPPING[period_from]
+            ):
                 # OPERATORS_TIMEOPERATORS.19
                 raise SemanticError("1-1-19-4", op=cls.op, value_1=period_from, value_2=period_to)
 
     @classmethod
     def dataset_validation(
-        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: Optional[str]
+        cls,
+        operand: Dataset,
+        period_from: Optional[str],
+        period_to: Optional[str],
+        conf: Optional[str],
     ) -> Dataset:
         # TODO: Review with VTL TF as this makes no sense
 
@@ -888,7 +896,7 @@ class Time_Aggregation(Time):
         cls,
         operand: DataComponent,
         period_from: Optional[str],
-        period_to: str,
+        period_to: Optional[str],
         conf: Optional[str],
     ) -> DataComponent:
         if operand.data_type not in cls.TIME_DATA_TYPES:
@@ -906,7 +914,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def scalar_validation(
-        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: Optional[str]
+        cls,
+        operand: Scalar,
+        period_from: Optional[str],
+        period_to: Optional[str],
+        conf: Optional[str],
     ) -> Scalar:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time scalar")
@@ -997,7 +1009,7 @@ class Time_Aggregation(Time):
         cls,
         operand: Union[Dataset, DataComponent, Scalar],
         period_from: Optional[str],
-        period_to: str,
+        period_to: Optional[str],
         conf: Optional[str],
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
