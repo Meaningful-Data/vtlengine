@@ -1,0 +1,5 @@
+define hierarchical ruleset HR_2 ( variable condition Id_1 rule Id_2 ) is
+    R1 : when Id_1 = 2 then A = B errorcode "E1" errorlevel 1
+end hierarchical ruleset;
+
+DS_r := check_hierarchy ( DS_1, HR_2 condition Id_1 );

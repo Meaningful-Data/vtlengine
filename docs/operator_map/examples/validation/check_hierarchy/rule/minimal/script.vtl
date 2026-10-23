@@ -1,0 +1,6 @@
+define hierarchical ruleset HR_2 ( valuedomain rule VD_1 ) is
+    R1 : A = B + C errorcode "E1" errorlevel 1
+    ; R2 : C >= B errorcode "E2" errorlevel 2
+end hierarchical ruleset;
+
+DS_r := check_hierarchy ( DS_1, HR_2 rule Id_2 );
