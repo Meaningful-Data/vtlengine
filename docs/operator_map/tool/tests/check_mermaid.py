@@ -223,13 +223,16 @@ def test_every_block_starts_with_the_class_definitions() -> None:
 def test_chapter_block_layout() -> None:
     assert chapter_blocks(STRING, CAT, INDEX) == [
         block_of(
-            # Hubs and stubs, once per block, as they are met.
+            # Hubs and stubs, once per block, as they are met. A hub links to the example of its
+            # type; this map has no ``string`` type, so those hubs have no click.
             'in_string(("string")):::type',
             'out_string(("string")):::type',
             'ext_clause__calc["↗ Calculation (clause.md)"]:::ext',
             'click ext_clause__calc "clause.md"',
             'out_integer(("integer")):::type',
+            'click out_integer "examples/types/integer/identity/minimal/"',
             'out_number(("number")):::type',
+            'click out_number "examples/types/number/identity/minimal/"',
             # Concatenation: a decision of its second variant pins it and that variant.
             'string__concat["🔵 Concatenation #124;#124; 📌"]:::diverge',
             'string__concat__ds_ds["🟢 DS_1 #124;#124; DS_2"]:::ok',
@@ -256,6 +259,26 @@ def test_chapter_block_layout() -> None:
             'click string__length__sc_null "examples/string/length/sc_null/minimal/"',
         )
     ]
+
+
+def test_chapter_block_hubs_link_to_the_example_of_their_type() -> None:
+    first = make_operator(
+        "a", "A", "a", ("scalar", "number"), ("dataset",), (make_variant("v", "a"),)
+    )
+    second = make_operator("b", "B", "b", ("number",), ("dataset",), (make_variant("v", "b"),))
+    chapter = Chapter("numeric", "Numeric operators", (first, second))
+    (block,) = chapter_blocks(chapter, Catalogue((chapter, STRING), TYPES), NOTHING_RUN)
+    lines = [line.strip() for line in block.splitlines()]
+    # ``number`` has a variant of its own, ``dataset`` only ``see`` (the first example of that
+    # operator), and ``scalar`` has neither: no click.
+    number = 'click in_number "examples/types/number/identity/minimal/"'
+    dataset = 'click out_dataset "examples/string/length/comp/minimal/"'
+    assert lines.count(number) == 1  # once per block, right after its hub
+    assert lines.index(number) == lines.index('in_number(("number")):::type') + 1
+    assert lines.count(dataset) == 1
+    assert lines.index(dataset) == lines.index('out_dataset(("dataset")):::type') + 1
+    assert 'in_scalar(("scalar")):::type' in lines
+    assert not any(line.startswith("click in_scalar") for line in lines)
 
 
 def test_chapter_without_operators_has_no_blocks() -> None:
@@ -447,6 +470,30 @@ def test_the_same_operator_id_in_two_chapters_has_two_nodes() -> None:
     assert "t --> definitions__sum" in flow
 
 
+def test_type_flow_type_nodes_link_to_the_example_of_their_type() -> None:
+    # ``number`` and its subtype ``integer`` have a variant of their own.
+    assert type_flow_block("number", CAT, NOTHING_RUN) == block_of(
+        't(("number")):::type',
+        'sub_integer(("integer")):::type',
+        'string__length["String length"]',
+        'sub_integer -. "subtype of" .-> t',
+        "string__length --> t",
+        'click t "examples/types/number/identity/minimal/"',
+        'click sub_integer "examples/types/integer/identity/minimal/"',
+        'click string__length "examples/string/length/comp/minimal/"',
+    )
+    # ``dataset`` has only ``see``: the first example of that operator.
+    dataset = type_flow_block("dataset", CAT, NOTHING_RUN).splitlines()
+    assert '    click t "examples/string/length/comp/minimal/"' in dataset
+    # ``scalar`` has neither a variant nor ``see``: no click, but its subtype ``number`` has one.
+    assert type_flow_block("scalar", CAT, NOTHING_RUN) == block_of(
+        't(("scalar")):::type',
+        'sub_number(("number")):::type',
+        'sub_number -. "subtype of" .-> t',
+        'click sub_number "examples/types/number/identity/minimal/"',
+    )
+
+
 def test_type_flow_of_a_type_nobody_uses_is_its_hub() -> None:
     assert type_flow_block("duration", CAT, INDEX) == block_of('t(("duration")):::type')
 
@@ -521,7 +568,23 @@ def test_overview_layout() -> None:
         "chapter__clause --> type_dataset",
         'click chapter__string "string.md"',
         'click chapter__clause "clause.md"',
+        'click type_integer "examples/types/integer/identity/minimal/"',
+        'click type_number "examples/types/number/identity/minimal/"',
+        'click type_dataset "examples/string/length/comp/minimal/"',
     )
+
+
+def test_overview_type_nodes_link_to_the_example_of_their_type() -> None:
+    lines = [line.strip() for line in overview_block(CAT, INDEX).splitlines()]
+    clicks = [line for line in lines if line.startswith("click type_")]
+    # ``integer`` and ``number`` have a variant of their own, ``dataset`` only ``see``, and
+    # ``string`` is not a type of this map: no click.
+    assert clicks == [
+        'click type_integer "examples/types/integer/identity/minimal/"',
+        'click type_number "examples/types/number/identity/minimal/"',
+        'click type_dataset "examples/string/length/comp/minimal/"',
+    ]
+    assert 'type_string(("string")):::type' in lines
 
 
 # --- Statuses that are not there yet ---
