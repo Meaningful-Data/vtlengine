@@ -311,7 +311,11 @@ _LOG = Operator(
 
 # --- Random ---
 # The values are not fixed: an example is checked by the property that they are in [0, 1) and
-# the same on every run, and the two engines must give the same ones.
+# the same on every run, and the two engines must give the same ones. The property is checked
+# on every value that is not an identifier, so it fits an example only when all of them are
+# draws. The manual's ``ex_2`` of the component form keeps the seed column ``Me_1`` next to the
+# new measure, so it is not checked by property (its values are the manual's illustration, and
+# no engine can match them); ``minimal`` overwrites the seed measure and is.
 
 _RANDOM = Operator(
     id="random",
@@ -322,7 +326,7 @@ _RANDOM = Operator(
     returns=_NUMBER,
     variants=(
         Variant("ds", "random(DS, n)", (manual("ex_1", check="random"),)),
-        Variant("comp", "random(comp, n)", (manual("ex_2", check="random"),)),
+        Variant("comp", "random(comp, n)", (manual("ex_2"), authored(check="random"))),
         Variant("sc", "random(sc, n)", (authored(check="random"),)),
     ),
 )
