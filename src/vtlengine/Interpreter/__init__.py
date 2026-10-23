@@ -481,8 +481,9 @@ class InterpreterAnalyzer(ASTTemplate):
         if len(rule_names) != 0 and len(node.rules) != len(rule_names):
             raise SemanticError("1-3-1-7", type="Hierarchical Ruleset", name=node.name)
         if len(rule_names) == 0:
-            for i, rule in enumerate(node.rules):
-                rule.name = (i + 1).__str__()
+            written = sorted(node.rules, key=lambda rule: (rule.line_start, rule.column_start))
+            for i, rule in enumerate(written):
+                rule.name = str(i + 1)
 
         # The hierarchy operator keeps the output of each rule under its name (issue #1142)
         if len(rule_names) != len(set(rule_names)):
