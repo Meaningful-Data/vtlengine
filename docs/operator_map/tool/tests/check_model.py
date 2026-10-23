@@ -116,6 +116,19 @@ def test_page_not_covered() -> None:
     assert problems == ["page not covered: Numeric operators/Floor"]
 
 
+def test_unknown_page() -> None:
+    minimal = (Variant("ds_ds", "DS + DS", (authored(),)),)
+    cat = make_catalogue(make_operator(page="Numeric operators/Addtion", variants=minimal))
+    assert validate_catalogue(cat, {ADD_PAGE}, set()) == [
+        "numeric.addition: unknown page 'Numeric operators/Addtion'",
+        f"page not covered: {ADD_PAGE}",
+    ]
+    # The whole catalogue is checked against all the pages, whatever the scope.
+    assert validate_catalogue(cat, {ADD_PAGE}, set(), scope=("string",)) == [
+        "numeric.addition: unknown page 'Numeric operators/Addtion'"
+    ]
+
+
 def test_manual_example_mapped_twice_or_never() -> None:
     twice = make_operator(
         variants=(
@@ -129,6 +142,16 @@ def test_manual_example_mapped_twice_or_never() -> None:
     both = {ADD_EX_1, f"{ADD_PAGE}/ex_2"}
     problems = validate_catalogue(make_catalogue(make_operator()), {ADD_PAGE}, both)
     assert problems == [f"manual example not mapped: {ADD_PAGE}/ex_2"]
+
+
+def test_unknown_manual_example() -> None:
+    variant = Variant("ds_ds", "DS + DS", (manual("ex_1"), manual("ex_9")))
+    cat = make_catalogue(make_operator(variants=(variant,)))
+    unknown = [f"numeric.addition: unknown manual example '{ADD_PAGE}/ex_9'"]
+    assert problems_for(cat) == unknown
+    # The whole catalogue is checked against all the manual examples, whatever the scope.
+    assert validate_catalogue(cat, {ADD_PAGE}, {ADD_EX_1}, scope=("string",)) == unknown
+    assert validate_catalogue(cat, {ADD_PAGE}, {ADD_EX_1}, scope=()) == unknown
 
 
 def test_duplicate_and_malformed_ids() -> None:
@@ -146,6 +169,23 @@ def test_duplicate_and_malformed_ids() -> None:
     assert problems_for(make_catalogue(malformed)) == ["numeric: bad id 'Add'"]
 
 
+def test_duplicate_example_in_one_variant() -> None:
+    twice = Variant("ds_ds", "DS + DS", (manual("ex_1"), authored(), authored()))
+    cat = make_catalogue(make_operator(variants=(twice,)))
+    assert problems_for(cat) == ["numeric.addition.ds_ds: duplicate example 'minimal'"]
+
+    # Every variant has its own ``minimal``: the same name in two variants is not a duplicate.
+    first = Variant("ds_ds", "DS + DS", (manual("ex_1"), authored()))
+    second = Variant("sc_sc", "sc + sc", (authored(),))
+    assert problems_for(make_catalogue(make_operator(variants=(first, second)))) == []
+
+    # The variants of a type definition are checked the same way.
+    identity = Variant("identity", "DS_r := DS_1", (authored(), authored()))
+    types = (TypeDef("number", ("scalar",), variants=(identity,)),)
+    cat = make_catalogue(make_operator(), types=types)
+    assert problems_for(cat) == ["types.number.identity: duplicate example 'minimal'"]
+
+
 def test_bad_and_duplicate_ids_at_every_level() -> None:
     def variant(variant_id: str) -> Variant:
         return Variant(variant_id, "x", (authored(),))
@@ -155,7 +195,7 @@ def test_bad_and_duplicate_ids_at_every_level() -> None:
     numeric = Chapter("numeric", "Numeric operators", (first, second, make_operator(id="")))
     duplicate = Chapter("numeric", "Numeric operators", ())
     cat = Catalogue(chapters=(numeric, duplicate, Chapter("Num-eric", "Bad", ())), types=())
-    assert validate_catalogue(cat, set(), set()) == [
+    assert problems_for(cat) == [
         "numeric.addition: bad id 'DS_DS'",
         "numeric.addition: duplicate variant 'a'",
         "numeric: duplicate operator 'addition'",
@@ -167,7 +207,10 @@ def test_bad_and_duplicate_ids_at_every_level() -> None:
 
 
 def test_problems_follow_catalogue_order_then_sorted() -> None:
-    second = make_operator(id="subtraction", page="Numeric operators/Subtraction", accepts=("x",))
+    minimal = (Variant("ds_ds", "DS - DS", (authored(),)),)
+    second = make_operator(
+        id="subtraction", page="Numeric operators/Subtraction", accepts=("x",), variants=minimal
+    )
     first = make_operator(accepts=("y",))
     cat = make_catalogue(first, second)
     pages = {ADD_PAGE, "Numeric operators/Subtraction", "Numeric operators/Floor", "A/B"}

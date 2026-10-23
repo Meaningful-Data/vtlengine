@@ -146,26 +146,52 @@ def _unknown_types(owner: str, type_ids: Iterable[str]) -> Iterator[str]:
             yield f"{owner}: unknown type '{type_id}'"
 
 
+def _manual_keys(operator: Operator) -> Iterator[str]:
+    """The ``<page>/<ref>`` key of each example of ``operator`` that has a ``manual_ref``."""
+    for variant in operator.variants:
+        for example in variant.examples:
+            if example.manual_ref is not None:
+                yield f"{operator.page}/{example.manual_ref}"
+
+
 def _variant_problems(owner: str, variants: Iterable[Variant]) -> Iterator[str]:
     seen: dict[str, int] = {}
     for variant in variants:
         yield from _bad_id(owner, variant.id)
         yield from _duplicate(owner, "variant", variant.id, seen)
-        yield from _unknown_types(f"{owner}.{variant.id}", variant.returns)
+        variant_owner = f"{owner}.{variant.id}"
+        yield from _unknown_types(variant_owner, variant.returns)
+        seen_examples: dict[str, int] = {}
+        for example in variant.examples:
+            yield from _duplicate(variant_owner, "example", example.name, seen_examples)
 
 
 def _operator_problems(
-    chapter: Chapter, operator: Operator, targets: Collection[str]
+    chapter: Chapter,
+    operator: Operator,
+    targets: Collection[str],
+    pages: frozenset[str],
+    manual_examples: frozenset[str],
 ) -> Iterator[str]:
     owner = f"{chapter.id}.{operator.id}"
+    if operator.page not in pages:
+        yield f"{owner}: unknown page '{operator.page}'"
     yield from _unknown_types(owner, (*operator.accepts, *operator.returns))
     for link in operator.links:
         if link.target not in targets:
             yield f"{owner}: link target '{link.target}' not found"
+    for key in _manual_keys(operator):
+        if key not in manual_examples:
+            yield f"{owner}: unknown manual example '{key}'"
     yield from _variant_problems(owner, operator.variants)
 
 
-def _chapter_problems(cat: Catalogue, targets: Collection[str]) -> Iterator[str]:
+def _chapter_problems(
+    cat: Catalogue,
+    targets: Collection[str],
+    pages: frozenset[str],
+    manual_examples: frozenset[str],
+) -> Iterator[str]:
     seen_chapters: dict[str, int] = {}
     for chapter in cat.chapters:
         yield from _bad_id("catalogue", chapter.id)
@@ -174,7 +200,7 @@ def _chapter_problems(cat: Catalogue, targets: Collection[str]) -> Iterator[str]
         for operator in chapter.operators:
             yield from _bad_id(chapter.id, operator.id)
             yield from _duplicate(chapter.id, "operator", operator.id, seen_operators)
-            yield from _operator_problems(chapter, operator, targets)
+            yield from _operator_problems(chapter, operator, targets, pages, manual_examples)
 
 
 def _typedef_problems(cat: Catalogue, targets: Collection[str]) -> Iterator[str]:
@@ -214,24 +240,18 @@ def _in_scope(cat: Catalogue, scope: Collection[str] | None) -> Callable[[str], 
 
 def _coverage_problems(
     cat: Catalogue,
-    pages: Collection[str],
-    manual_examples: Collection[str],
+    pages: frozenset[str],
+    manual_examples: frozenset[str],
     scope: Collection[str] | None,
 ) -> Iterator[str]:
     in_scope = _in_scope(cat, scope)
     operators = [operator for chapter in cat.chapters for operator in chapter.operators]
     covered = {operator.page for operator in operators}
-    for page in sorted(set(pages) - covered):
+    for page in sorted(pages - covered):
         if in_scope(page):
             yield f"page not covered: {page}"
-    mapped = Counter(
-        f"{operator.page}/{example.manual_ref}"
-        for operator in operators
-        for variant in operator.variants
-        for example in variant.examples
-        if example.source == "manual" and example.manual_ref is not None
-    )
-    for key in sorted(set(manual_examples)):
+    mapped = Counter(key for operator in operators for key in _manual_keys(operator))
+    for key in sorted(manual_examples):
         if not in_scope(key):
             continue
         if mapped[key] == 0:
@@ -247,19 +267,23 @@ def validate_catalogue(
     *,
     scope: Collection[str] | None = None,
 ) -> list[str]:
-    """Return the problems of ``cat``: unknown types, bad targets, bad ids, coverage gaps.
+    """Return the problems of ``cat``, such as unknown types, pages or manual examples.
 
     Problems come in catalogue order (chapters, then types), followed by the page and manual
     example coverage problems, each sorted. ``pages`` are all the manual pages and
     ``manual_examples`` all its ``<page>/<example>`` keys.
 
     ``scope`` is a collection of chapter ids. When given, the page coverage and the manual
-    example mapping are checked only for the pages of those chapters. The type, link, ``see``
-    and id checks always cover the whole catalogue.
+    example mapping are checked only for the pages of those chapters. All the other checks
+    (types, links, ``see`` targets, ids, duplicates, and the pages and manual examples the
+    catalogue refers to) always cover the whole catalogue, against all of ``pages`` and
+    ``manual_examples``.
     """
     targets = {f"{chapter.id}.{op.id}" for chapter in cat.chapters for op in chapter.operators}
+    known_pages = frozenset(pages)
+    known_examples = frozenset(manual_examples)
     return [
-        *_chapter_problems(cat, targets),
+        *_chapter_problems(cat, targets, known_pages, known_examples),
         *_typedef_problems(cat, targets),
-        *_coverage_problems(cat, pages, manual_examples, scope),
+        *_coverage_problems(cat, known_pages, known_examples, scope),
     ]
