@@ -383,6 +383,143 @@ def test_random_needs_at_least_one_value() -> None:
         assert verdict(authored(check="random"), wanted, out, TODAY).outcome == "mismatch"
 
 
+SEED = {
+    "Id_1": ExpectedComponent("Identifier", ("Integer",), False),
+    "Me_1": ExpectedComponent("Measure", ("Number",), None),
+    "Me_2": ExpectedComponent("Measure", ("Number",), None),
+}
+SEED_RUN = {
+    "Id_1": ActualComponent("Identifier", "Integer", False),
+    "Me_1": ActualComponent("Measure", "Number", True),
+    "Me_2": ActualComponent("Measure", "Number", True),
+}
+
+
+def seeded(id_1: str, me_1: str | None, me_2: str | None) -> dict[str, str | None]:
+    return {"Id_1": id_1, "Me_1": me_1, "Me_2": me_2}
+
+
+def seed_files(rows: list[dict[str, str | None]] | None = None, name: str = "DS_r") -> ExampleFiles:
+    """A ``random`` example that keeps the seed ``Me_1`` and draws ``Me_2``, blank in the file."""
+    kept = [seeded("1", "16.0", None), seeded("2", "4.0", None)] if rows is None else rows
+    return files(datasets=[ExpectedDataset(name, SEED, kept)])
+
+
+def seed_run(
+    *rows: dict[str, str | None], name: str = "DS_r", stable: bool | None = True
+) -> RunOutput:
+    return run(ActualDataset(name, SEED_RUN, list(rows)), stable=stable)
+
+
+def test_random_compares_the_columns_that_hold_values_and_checks_the_empty_ones() -> None:
+    # The manual's component form keeps the seed (Me_1) and draws a new measure (Me_2): the file
+    # has the seed and leaves the draws blank.
+    out = seed_run(seeded("1", "16.0", "0.7545341"), seeded("2", "4.000000001", "0.3457166"))
+    assert verdict(authored(check="random"), seed_files(), out, TODAY) == EngineVerdict("match", "")
+    # The order of the data points does not matter, as in an exact example.
+    out = seed_run(seeded("2", "4.0", "0.25"), seeded("1", "16.0", "0.5"))
+    assert verdict(authored(check="random"), seed_files(), out, TODAY).outcome == "match"
+
+
+def test_random_names_the_kept_column_whose_value_is_wrong() -> None:
+    out = seed_run(seeded("1", "16.0", "0.7545341"), seeded("2", "5.0", "0.3457166"))
+    assert verdict(authored(check="random"), seed_files(), out, TODAY) == EngineVerdict(
+        "mismatch", "row Id_1=2: Me_1 expected 4.0 got 5.0"
+    )
+
+
+def test_random_reads_the_data_points_of_the_kept_columns_by_their_identifiers() -> None:
+    wanted = seed_files()
+    short = seed_run(seeded("1", "16.0", "0.5"))
+    assert verdict(authored(check="random"), wanted, short, TODAY) == EngineVerdict(
+        "mismatch", "missing row Id_1=2"
+    )
+    more = seed_run(seeded("1", "16.0", "0.5"), seeded("2", "4.0", "0.25"), seeded("3", "1", "0.1"))
+    assert verdict(authored(check="random"), wanted, more, TODAY) == EngineVerdict(
+        "mismatch", "unexpected row Id_1=3"
+    )
+
+
+def test_random_checks_the_empty_columns_even_when_the_kept_ones_agree() -> None:
+    wanted = seed_files()
+    for value in ("1", "1.5", "-0.1", "abc"):
+        out = seed_run(seeded("1", "16.0", "0.5"), seeded("2", "4.0", value))
+        got = verdict(authored(check="random"), wanted, out, TODAY)
+        assert got == EngineVerdict("mismatch", f"{value!r} is not a number in [0, 1)")
+    # The seed is not in [0, 1) and does not have to be: it is not a draw.
+    out = seed_run(seeded("1", "16.0", "0.5"), seeded("2", "4.0", None))
+    assert verdict(authored(check="random"), wanted, out, TODAY).outcome == "match"
+
+
+def test_random_needs_a_draw_even_when_the_kept_columns_agree() -> None:
+    out = seed_run(seeded("1", "16.0", None), seeded("2", "4.0", None))
+    got = verdict(authored(check="random"), seed_files(), out, TODAY)
+    assert got == EngineVerdict("mismatch", "no value to check")
+
+
+def test_random_compares_a_column_that_has_a_value_in_only_some_data_points() -> None:
+    # Me_2 is not entirely empty in the file, so it is not a draw: a blank is a null to be found.
+    wanted = seed_files([seeded("1", "16.0", "0.75"), seeded("2", "4.0", None)])
+    out = seed_run(seeded("1", "16.0", "0.75"), seeded("2", "4.0", "0.5"))
+    assert verdict(authored(check="random"), wanted, out, TODAY) == EngineVerdict(
+        "mismatch", "row Id_1=2: Me_2 expected null got 0.5"
+    )
+    # Found, the column is compared and nothing is left that could be a draw.
+    out = seed_run(seeded("1", "16.0", "0.75"), seeded("2", "4.0", None))
+    assert verdict(authored(check="random"), wanted, out, TODAY) == EngineVerdict(
+        "mismatch", "no value to check"
+    )
+
+
+def test_random_reads_only_the_identifiers_when_every_other_column_is_empty() -> None:
+    # The manual's own draws, blanked: its data points are what the identifiers say.
+    wanted = seed_files([seeded("1", None, None), seeded("2", None, None)])
+    out = seed_run(seeded("1", "0.2", "0.4"), seeded("2", "0.6", "0.8"))
+    assert verdict(authored(check="random"), wanted, out, TODAY).outcome == "match"
+    short = seed_run(seeded("1", "0.2", "0.4"))
+    assert verdict(authored(check="random"), wanted, short, TODAY) == EngineVerdict(
+        "mismatch", "missing row Id_1=2"
+    )
+    # A file with no data points says nothing about the identifiers: it is the structure only.
+    bare = seed_files([])
+    assert verdict(authored(check="random"), bare, out, TODAY).outcome == "match"
+
+
+def test_the_detail_of_a_property_check_names_the_output_when_there_are_several() -> None:
+    both = files(
+        datasets=[
+            ExpectedDataset("DS_r", SEED, [seeded("1", "16.0", None)]),
+            ExpectedDataset("DS_s", SEED, []),
+        ],
+        scalars=[ExpectedScalar("sc_r", "Number", None)],
+    )
+    good = [
+        ActualDataset("DS_r", SEED_RUN, [seeded("1", "16.0", "0.5")]),
+        ActualDataset("DS_s", SEED_RUN, [seeded("1", "0.2", "0.4")]),
+    ]
+    scalar = ActualScalar("sc_r", "Number", "0.5")
+    assert verdict(authored(check="random"), both, run(*good, scalar, stable=True), TODAY) == (
+        EngineVerdict("match", "")
+    )
+    wrong_seed = [ActualDataset("DS_r", SEED_RUN, [seeded("1", "99", "0.5")]), good[1]]
+    assert verdict(
+        authored(check="random"), both, run(*wrong_seed, scalar, stable=True), TODAY
+    ) == (EngineVerdict("mismatch", "DS_r: row Id_1=1: Me_1 expected 16.0 got 99"))
+    big_draw = [good[0], ActualDataset("DS_s", SEED_RUN, [seeded("1", "0.2", "7")])]
+    assert verdict(authored(check="random"), both, run(*big_draw, scalar, stable=True), TODAY) == (
+        EngineVerdict("mismatch", "DS_s: '7' is not a number in [0, 1)")
+    )
+    big_scalar = ActualScalar("sc_r", "Number", "1.5")
+    assert verdict(authored(check="random"), both, run(*good, big_scalar, stable=True), TODAY) == (
+        EngineVerdict("mismatch", "sc_r: '1.5' is not a number in [0, 1)")
+    )
+    # One expected output needs no name.
+    single = run(numbers("0.5", "1.5"), stable=True)
+    assert verdict(authored(check="random"), random_files(), single, TODAY) == (
+        EngineVerdict("mismatch", "'1.5' is not a number in [0, 1)")
+    )
+
+
 # --- Verdicts: current_date ---
 
 

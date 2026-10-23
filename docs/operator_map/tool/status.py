@@ -14,8 +14,10 @@ Only the outputs that the expected files of the example name are looked at, on b
 script may return more, such as intermediate datasets: those are ignored. An expected output that
 a run does not have is a mismatch. The examples that are checked by property (``random`` and
 ``current_date``) are judged by a property of their values, not by expected values, but their
-outputs still have to have the expected structure. The engines still have to give the same
-values, so ``random`` diverges while the engines use different generators.
+outputs still have to have the expected structure. A ``random`` example may also expect values,
+for the columns that are not draws, such as a seed that is kept: those are compared as in an
+exact example, and the property is checked on the empty columns only. The engines still have to
+give the same values, so ``random`` diverges while the engines use different generators.
 
 ``rollup`` carries the statuses up from examples to variants, operators and chapters, and
 ``build_index`` does it for a whole catalogue.
@@ -35,6 +37,7 @@ from tool.compare import (
     Output,
     compare_dataset,
     compare_scalar,
+    normalize_role,
     normalize_type,
     outputs_equal,
     values_equal,
@@ -102,9 +105,12 @@ def verdict(example: Example, files: ExampleFiles, out: RunOutput, today: str) -
     * ``exact``: every expected dataset and scalar must compare as equal, or the verdict is a
       ``mismatch`` and the detail is the first problem found, with the name of the output in
       front (``DS_s: ...``) when the example expects more than one;
-    * ``random``: the run must be ``stable`` (the same on every run) and have at least one value,
-      and every non-null value of a component that is not an identifier, and of a scalar, must
-      be a number from 0 up to, but not including, 1;
+    * ``random``: the run must be ``stable`` (the same on every run). A column of an expected
+      dataset that has a value in its file is compared as in ``exact``, with the data points
+      found by the identifiers (a file with no data point has no value to compare, and does not
+      look at the identifiers). Every other column that is not an identifier, and every scalar, is
+      a draw: its non-null values must be numbers from 0 up to, but not including, 1, and the run
+      must have at least one. A problem names its output, as in ``exact``;
     * ``current_date``: there must be at least one Date value, and every non-null Date value,
       of a dataset or a scalar, must be ``today``.
 
@@ -232,18 +238,88 @@ def _first_problem(
 
 
 def _random_problem(files: ExampleFiles, out: RunOutput) -> str | None:
-    """Why the run of a ``random`` example is not a stable run of numbers in [0, 1), or None.
+    """Why the run of a ``random`` example is not a stable run with draws in [0, 1), or None.
 
-    The values are the non-null ones of the components that are not identifiers (identifiers
-    are keys) and of the scalars. A run with no value does not show that anything is random.
+    The columns of an expected dataset that have a value in the file are compared, and the
+    others (the draws) are checked for numbers in [0, 1), as are the values of the scalars. A run
+    with no draw does not show that anything is random.
     """
     if out.stable is None:
         return "not run twice, so not known to be stable"
     if not out.stable:
         return "the values change between runs"
-    values = [value for role, _, value in _values(files, out) if role != _IDENTIFIER]
-    if not values:
+    problem = _first_problem(files, out, _random_dataset, _random_scalar)
+    if problem is not None:
+        return problem
+    if next(_draws(files, out), None) is None:
         return "no value to check"
+    return None
+
+
+def _random_dataset(expected: ExpectedDataset, actual: ActualDataset) -> str | None:
+    """The first problem of a dataset of a ``random`` example: its values, then its draws.
+
+    A file with no data point holds no value: only the draws are checked then, as they all are.
+    """
+    draws = _draw_columns(expected)
+    if expected.rows:
+        kept = {name: each for name, each in expected.components.items() if name not in draws}
+        problem = compare_dataset(
+            replace(expected, components=kept),
+            replace(actual, components={name: actual.components[name] for name in kept}),
+        )
+        if problem is not None:
+            return problem
+    return _bad_draw(_dataset_draws(draws, actual))
+
+
+def _random_scalar(expected: ExpectedScalar, actual: ActualScalar) -> str | None:
+    """The problem of a scalar of a ``random`` example: it is a draw, whatever the file says."""
+    return _bad_draw(_scalar_draws(actual))
+
+
+def _draw_columns(expected: ExpectedDataset) -> list[str]:
+    """The columns of an expected dataset that are draws: not identifiers, and empty in the file.
+
+    Empty is no value in any data point, so every column that is not an identifier is a draw when
+    the file has no data point at all.
+    """
+    return [
+        name
+        for name, component in expected.components.items()
+        if normalize_role(component.role) != _IDENTIFIER
+        and all(not (data_point.get(name) or "").strip() for data_point in expected.rows)
+    ]
+
+
+def _dataset_draws(columns: Sequence[str], actual: ActualDataset) -> Iterator[str]:
+    """The non-null values that the dataset the run gave has in the draw ``columns``."""
+    for name in columns:
+        for data_point in actual.rows:
+            value = data_point.get(name)
+            if value is not None:
+                yield value
+
+
+def _scalar_draws(actual: ActualScalar) -> Iterator[str]:
+    """The value of a scalar the run gave, if it is not null."""
+    if actual.value is not None:
+        yield actual.value
+
+
+def _draws(files: ExampleFiles, out: RunOutput) -> Iterator[str]:
+    """Every non-null draw of the expected outputs of the run."""
+    datasets = {dataset.name: dataset for dataset in out.datasets}
+    scalars = {scalar.name: scalar for scalar in out.scalars}
+    for wanted_dataset in files.expected_datasets:
+        columns = _draw_columns(wanted_dataset)
+        yield from _dataset_draws(columns, datasets[wanted_dataset.name])
+    for wanted_scalar in files.expected_scalars:
+        yield from _scalar_draws(scalars[wanted_scalar.name])
+
+
+def _bad_draw(values: Iterable[str]) -> str | None:
+    """The problem of the first of ``values`` that is not a number in [0, 1), or None."""
     for value in values:
         if not _in_unit_interval(value):
             return f"{value!r} is not a number in [0, 1)"
