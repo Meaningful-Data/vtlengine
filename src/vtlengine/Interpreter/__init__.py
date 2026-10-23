@@ -585,12 +585,14 @@ class InterpreterAnalyzer(ASTTemplate):
             )
         if (
             node.op in (PLUS, MINUS)
-            and isinstance(node.operand, AST.Constant)
-            and isinstance(node.operand.value, (int, float))
-            and not isinstance(node.operand.value, bool)
+            and isinstance(operand, Scalar)
+            and operand.literal
+            and isinstance(operand.value, (int, float))
+            and not isinstance(operand.value, bool)
         ):
-            # A signed number is a literal too: the semantic analysis knows its value and
-            # the checks on literal parameters read it (issue #1192)
+            # A signed number is a literal too, also in parentheses (-(1)) or signed twice:
+            # the semantic analysis knows its value and the checks on literal parameters
+            # read it (issue #1192)
             result = UNARY_MAPPING[node.op].evaluate(operand)
             result.literal = True
             return result

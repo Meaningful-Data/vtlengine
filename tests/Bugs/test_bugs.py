@@ -4232,6 +4232,57 @@ class DefinedBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message, sql_names=[code]
         )
 
+    def test_GH_1192_41(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := nvl(Me_1, -(1))];
+        Description: A sign over a parenthesised number is a literal too, so Me_2 is not
+                     nullable, as with -1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_41"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1192_41_semantic(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := nvl(Me_1, -(1))];
+        Description: The semantic analysis gives the structure of GH_1192_41, without data.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_41"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            only_semantic=True,
+        )
+
+    def test_GH_1192_42(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := substr(Me_1, 1, -(2))];
+        Description: A sign over a parenthesised number is a literal, so its negative length
+                     is rejected by the semantic analysis, as -2 is.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_42"
+        number_inputs = 1
+        message = "1-1-18-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class OtherBugs(BugHelper):
     """ """
