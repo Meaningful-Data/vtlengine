@@ -9,6 +9,7 @@ from catalogue.boolean import CHAPTER as BOOLEAN_CHAPTER
 from catalogue.clause import CHAPTER as CLAUSE_CHAPTER
 from catalogue.comparison import CHAPTER as COMPARISON_CHAPTER
 from catalogue.conditional import CHAPTER as CONDITIONAL_CHAPTER
+from catalogue.general import CHAPTER as GENERAL_CHAPTER
 from catalogue.numeric import CHAPTER as NUMERIC_CHAPTER
 from catalogue.set import CHAPTER as SET_CHAPTER
 from catalogue.string import CHAPTER as STRING_CHAPTER
@@ -16,6 +17,7 @@ from catalogue.time import CHAPTER as TIME_CHAPTER
 from catalogue.types import TYPES as _TYPES
 
 CHAPTERS: tuple[Chapter, ...] = (
+    GENERAL_CHAPTER,
     STRING_CHAPTER,
     NUMERIC_CHAPTER,
     COMPARISON_CHAPTER,

@@ -1,0 +1,6 @@
+define operator diff3 (x integer, y integer default 1, z integer default 100)
+  returns integer is
+    x - y - z
+end operator;
+
+SC_r := diff3(10, _, 5);
