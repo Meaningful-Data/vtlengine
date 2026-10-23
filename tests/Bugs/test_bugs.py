@@ -4350,6 +4350,40 @@ class DefinedBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": None}
         )
 
+    def test_GH_1192_47(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := random(Id_1, 0 - 1)];
+        Description: A computed negative random index is a runtime error on both engines: the
+                     DuckDB engine did not check it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_47"
+        number_inputs = 1
+        message = "2-1-15-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_48(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := dateadd(Me_1, 1, substr("XD", 1, 1))];
+        Description: A computed invalid dateadd period is a runtime error on both engines: the
+                     DuckDB engine returned nulls.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_48"
+        number_inputs = 1
+        message = "2-1-19-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class OtherBugs(BugHelper):
     """ """

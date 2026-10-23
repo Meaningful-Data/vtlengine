@@ -466,6 +466,14 @@ CREATE OR REPLACE MACRO vtl_power(a, b) AS (
     END
 );
 
+-- Random index computed from a scalar expression, which mirrors VTL error 2-1-15-2
+-- when negative (a literal or a scalar value is checked before any SQL runs).
+CREATE OR REPLACE MACRO vtl_random_index(x) AS (
+    CASE WHEN x < 0 THEN error('VTL 2-1-15-2 random: negative index ' || CAST(x AS VARCHAR))
+         ELSE x
+    END
+);
+
 -- Square root that mirrors VTL error 2-1-15-2 on negative values.
 CREATE OR REPLACE MACRO vtl_sqrt(x) AS (
     CASE WHEN x IS NULL OR isnan(CAST(x AS DOUBLE)) THEN NULL

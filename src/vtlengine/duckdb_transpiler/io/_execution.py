@@ -120,10 +120,17 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
                 op = macro_op
         return RunTimeError("2-1-15-6", op=op)
 
-    # VTL macros vtl_power / vtl_sqrt: negative operand (mirrors 2-1-15-2)
+    # VTL macros vtl_power / vtl_sqrt / vtl_random_index: negative operand (mirrors 2-1-15-2)
     if "vtl 2-1-15-2" in msg_lower:
-        op = "power" if "2-1-15-2 power:" in msg_lower else "sqrt"
+        op = "sqrt"
+        for macro_op in ("power", "random"):
+            if f"2-1-15-2 {macro_op}:" in msg_lower:
+                op = macro_op
         return RunTimeError("2-1-15-2", op=op, value=msg.rsplit(" ", 1)[-1])
+
+    # VTL macro vtl_dateadd: a period indicator that is not one (mirrors 2-1-19-2)
+    if "vtl 2-1-19-2 invalid period" in msg_lower:
+        return RunTimeError("2-1-19-2", period=msg.rsplit(" ", 1)[-1])
 
     # datediff: a Time value, which holds two dates
     if "vtl 2-1-19-25" in msg_lower:
