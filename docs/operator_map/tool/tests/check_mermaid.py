@@ -281,6 +281,19 @@ def test_link_stub_is_defined_once_for_several_operators() -> None:
     assert block.count(".-> ext_clause__calc") == 2
 
 
+def test_link_labels_stub_names_and_chapter_titles_are_escaped() -> None:
+    target = make_operator("calc", 'Calc "x" [y]', "calc", (), (), (make_variant("v", "calc"),))
+    clause = Chapter("clause", "Clause # operators", (target,))
+    link = Link("clause.calc", "a|b")
+    source = make_operator("a", "A", "a", (), (), (make_variant("v", "a"),), (link,))
+    chapter = Chapter("numeric", "Numeric operators", (source,))
+    cat = Catalogue((chapter, clause), ())
+    (block,) = chapter_blocks(chapter, cat, NOTHING_RUN)
+    assert 'numeric__a -. "a#124;b" .-> ext_clause__calc' in block
+    assert 'ext_clause__calc["↗ Calc #quot;x#quot; #91;y#93; (clause.md)"]:::ext' in block
+    assert 'chapter__clause["Clause #35; operators<br/>' in overview_block(cat, NOTHING_RUN)
+
+
 def test_link_to_an_unknown_target_raises() -> None:
     lost = make_operator("lost", "Lost", "lost", (), (), (), (Link("clause.nope", "used in"),))
     chapter = Chapter("numeric", "Numeric operators", (lost,))
@@ -358,10 +371,14 @@ def test_type_flow_links_producers_to_consumers() -> None:
     assert node_id("numeric", "addition") in number_flow
     assert f"t --> {node_id('numeric', 'addition')}" in number_flow
     assert node_id("string", "length") not in number_flow
+    # The operators link to their first example, as in a chapter block.
+    assert 'click string__length "examples/string/length/c/minimal/"' in integer_flow
+    assert 'click numeric__addition "examples/numeric/addition/ds/minimal/"' in number_flow
 
 
 def test_type_flow_layout() -> None:
-    # Concatenation both makes and takes strings: one node, an edge each way.
+    # Concatenation both makes and takes strings: one node, an edge each way. Each operator
+    # links to the folder of its first example, as in a chapter block, after all the nodes.
     assert type_flow_block("string", CAT, INDEX) == block_of(
         't(("string")):::type',
         'string__concat["🔵 Concatenation"]:::diverge',
@@ -369,7 +386,16 @@ def test_type_flow_layout() -> None:
         "string__concat --> t",
         "t --> string__concat",
         "t --> string__length",
+        'click string__concat "examples/string/concat/ds_ds/manual_ex_1/"',
+        'click string__length "examples/string/length/comp/minimal/"',
     )
+
+
+def test_type_flow_operator_without_examples_has_no_click() -> None:
+    bare = make_operator("bare", "Bare", "bare", ("number",), (), ())
+    chapter = Chapter("numeric", "Numeric operators", (bare,))
+    flow = type_flow_block("number", Catalogue((chapter,), ()), NOTHING_RUN)
+    assert flow == block_of('t(("number")):::type', 'numeric__bare["Bare"]', "t --> numeric__bare")
 
 
 def test_type_flow_producers_include_variant_returns_once() -> None:
@@ -387,7 +413,10 @@ def test_type_flow_producers_include_variant_returns_once() -> None:
     chapter = Chapter("numeric", "Numeric operators", (both,))
     cat = Catalogue((chapter,), ())
     assert type_flow_block("integer", cat, NOTHING_RUN) == block_of(
-        't(("integer")):::type', 'numeric__both["Both"]', "numeric__both --> t"
+        't(("integer")):::type',
+        'numeric__both["Both"]',
+        "numeric__both --> t",
+        'click numeric__both "examples/numeric/both/a/minimal/"',
     )
     # Only a variant gives numbers: still a producer.
     assert "numeric__both --> t" in type_flow_block("number", cat, NOTHING_RUN)
@@ -420,6 +449,25 @@ def test_the_same_operator_id_in_two_chapters_has_two_nodes() -> None:
 
 def test_type_flow_of_a_type_nobody_uses_is_its_hub() -> None:
     assert type_flow_block("duration", CAT, INDEX) == block_of('t(("duration")):::type')
+
+
+def test_type_flow_of_the_big_chapter_fits_one_block_with_its_clicks() -> None:
+    chapter = synthetic_chapter(300)
+    flow = type_flow_block("number", Catalogue((chapter,), ()), NOTHING_RUN)
+    check_limits(flow)
+    assert sum(1 for line in flow.splitlines() if line.strip().startswith("click ")) == 300
+
+
+def test_a_type_flow_over_the_limit_raises() -> None:
+    # A flow is a single block, so it cannot be split: 300 operators that take and give the
+    # type are 600 edges.
+    operators = tuple(
+        make_operator(f"op_{n}", f"Operator {n}", f"op{n}", ("number",), ("number",), ())
+        for n in range(300)
+    )
+    chapter = Chapter("numeric", "Numeric operators", operators)
+    with pytest.raises(MermaidLimitError, match="type flow of number: 600 edges"):
+        type_flow_block("number", Catalogue((chapter,), ()), NOTHING_RUN)
 
 
 # --- Lattice ---

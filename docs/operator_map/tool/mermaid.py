@@ -199,6 +199,12 @@ def _folder(chapter_id: str, operator_id: str, variant_id: str, example_name: st
     return f"{folder.as_posix()}/"
 
 
+def _operator_folder(chapter_id: str, operator: Operator) -> str | None:
+    """The folder of the first example of ``operator``, if it has one."""
+    first = _first_example(operator.variants)
+    return None if first is None else _folder(chapter_id, operator.id, *first)
+
+
 def _targets(cat: Catalogue) -> dict[str, tuple[Chapter, Operator]]:
     """Every operator of ``cat`` by its ``<chapter>.<operator>`` address."""
     return {
@@ -287,9 +293,9 @@ def _unit_clicks(
 ) -> list[str]:
     """The ``click`` lines of an operator and its variants: the first example of each."""
     clicks: list[str] = []
-    first = _first_example(operator.variants)
-    if first is not None:
-        clicks.append(_click(op_node, _folder(chapter.id, operator.id, *first)))
+    operator_folder = _operator_folder(chapter.id, operator)
+    if operator_folder is not None:
+        clicks.append(_click(op_node, operator_folder))
     for variant, form_node in forms:
         if variant.examples:
             folder = _folder(chapter.id, operator.id, variant.id, variant.examples[0].name)
@@ -334,8 +340,9 @@ def type_flow_block(type_id: str, cat: Catalogue, index: StatusIndex) -> str:
 
     A producer is an operator whose ``returns``, or those of any of its variants, hold the type,
     and a consumer one whose ``accepts`` do. An operator is a node once, with an edge for each
-    way it uses the type. The nodes are the names of the operators, coloured by their status.
-    Raises ``MermaidLimitError`` if the flow is over a limit.
+    way it uses the type. The nodes are the names of the operators, coloured by their status,
+    and each links to the folder of its first example, as in a chapter block. Raises
+    ``MermaidLimitError`` if the flow is over a limit: a flow is a single block.
     """
     children = [typedef.id for typedef in cat.types if type_id in typedef.parents]
     nodes = [_circle("t", escape_label(type_id), "type")]
@@ -343,6 +350,7 @@ def type_flow_block(type_id: str, cat: Catalogue, index: StatusIndex) -> str:
     nodes.extend(_circle(sub, escape_label(child), "type") for child, sub in subs.items())
     edges = [f'{sub} -. "subtype of" .-> t' for sub in subs.values()]
     consumers: list[str] = []
+    clicks: list[str] = []
     for chapter in cat.chapters:
         for operator in chapter.operators:
             makes = type_id in _returned(operator)
@@ -352,11 +360,15 @@ def type_flow_block(type_id: str, cat: Catalogue, index: StatusIndex) -> str:
             node = node_id(chapter.id, operator.id)
             status = index.operators.get(f"{chapter.id}/{operator.id}")
             nodes.append(_box(node, _label(status, operator.name), status))
+            folder = _operator_folder(chapter.id, operator)
+            if folder is not None:
+                clicks.append(_click(node, folder))
             if makes:
                 edges.append(f"{node} --> t")
             if takes:
                 consumers.append(f"t --> {node}")
-    return _checked(_assemble([*nodes, *edges, *consumers]), f"type flow of {type_id}")
+    block = _assemble([*nodes, *edges, *consumers, *clicks])
+    return _checked(block, f"type flow of {type_id}")
 
 
 def lattice_block(cat: Catalogue, index: StatusIndex) -> str:
@@ -397,8 +409,7 @@ def _type_folder(
     if typedef.see is None:
         return None
     chapter, operator = _resolve(targets, typedef.see, f"types.{typedef.id}")
-    seen = _first_example(operator.variants)
-    return None if seen is None else _folder(chapter.id, operator.id, *seen)
+    return _operator_folder(chapter.id, operator)
 
 
 def overview_block(cat: Catalogue, index: StatusIndex) -> str:
