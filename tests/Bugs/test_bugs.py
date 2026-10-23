@@ -4642,6 +4642,41 @@ class DefinedBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1192_64(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := time_agg(sc_1, _, Me_1, first)]; (sc_1 = "X")
+        Description: A period read from a scalar that is no period indicator is a runtime error
+                     on both engines, where the structure error 1-1-19-3 was raised at run time.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_64"
+        number_inputs = 1
+        message = "2-1-19-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": "X"}
+        )
+
+    def test_GH_1192_65(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := time_agg(sc_1, "M", Me_1, first)]; (sc_1 = "D")
+        Description: A period read from a scalar that is not coarser than the period to
+                     aggregate from is a runtime error on both engines, where the structure
+                     error 1-1-19-4 was raised at run time.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_65"
+        number_inputs = 1
+        message = "2-1-19-26"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": "D"}
+        )
+
 
 class OtherBugs(BugHelper):
     """ """

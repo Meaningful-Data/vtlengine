@@ -1546,6 +1546,12 @@ centralised_messages = {
         "message": "At op {op}: {op} can only be applied to a {comp_type}",
         "description": "Raised when datediff reads a Time value, which holds two dates.",
     },
+    "2-1-19-26": {
+        "message": "At op time_agg: Invalid values {value_1} and {value_2}, the period read from "
+        "a scalar must be a larger Duration value than periodIndFrom.",
+        "description": "Raised when the period a scalar gives time_agg to aggregate to is not "
+        "coarser than the period to aggregate from.",
+    },
     # ----------- Interpreter Common ------
     "2-3-8": {
         "message": "At op {op}: Data conversion error: {msg}.",

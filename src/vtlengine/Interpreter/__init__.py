@@ -2403,6 +2403,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.is_from_having = saved_having
                 self.is_from_regular_aggregation = saved_regular
             period_to = resolved.value if hasattr(resolved, "value") else resolved
+        if node.period_to_ref is not None and period_to is not None:
+            # A period read from a scalar is data, so a wrong one is a runtime error
+            Time_Aggregation.check_period_value(node.period_from, period_to)
         # The reference gave no period indicator: its scalar holds no value (issue #1192)
         missing_period = (
             node.period_to_ref is not None and period_to is None and not self.only_semantic

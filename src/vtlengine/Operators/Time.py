@@ -845,6 +845,18 @@ class Time_Aggregation(Time):
             raise SemanticError("1-1-19-3", op=cls.op, param="duration")
 
     @classmethod
+    def check_period_value(cls, period_from: Optional[str], period_to: str) -> None:
+        """Check a period to aggregate to read from a scalar, which is data (issue #1192)."""
+        if period_to not in PERIOD_IND_MAPPING:
+            raise RunTimeError("2-1-19-2", period=period_to)
+        if (
+            period_from is not None
+            and period_from in PERIOD_IND_MAPPING
+            and PERIOD_IND_MAPPING[period_to] <= PERIOD_IND_MAPPING[period_from]
+        ):
+            raise RunTimeError("2-1-19-26", value_1=period_from, value_2=period_to)
+
+    @classmethod
     def _check_params(cls, period_from: Optional[str], period_to: Optional[str]) -> None:
         cls._check_duration(period_to)
         if period_from is not None:
