@@ -32,7 +32,7 @@ import duckdb
 
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     register_regex_functions,
-    register_time_period_functions,
+    register_time_functions,
 )
 
 # =============================================================================
@@ -128,9 +128,9 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
 
     conn.execute(";\n".join(statements))
 
-    # Register Python UDFs (regex fallback for patterns RE2 cannot compile, time period check).
+    # Register Python UDFs (regex fallback for patterns RE2 cannot compile, time checks).
     register_regex_functions(conn)
-    register_time_period_functions(conn)
+    register_time_functions(conn)
 
 
 def create_configured_connection(database: str = ":memory:") -> duckdb.DuckDBPyConnection:

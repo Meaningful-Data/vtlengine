@@ -46,6 +46,7 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     NATIVE_MATCH_FUNCTION,
     NUMBER_TOLERANCE_OPS,
     ROUNDED_NUMERIC_OPS,
+    TIME_CHECK_FUNCTION,
     TIME_PERIOD_CHECK_FUNCTION,
     get_duckdb_type,
     is_number_comparison,
@@ -254,13 +255,19 @@ def _rename_var_ids(node: AST.AST, names: Dict[str, str]) -> AST.AST:
     return node
 
 
-# Text casts that check the text as the pandas engine does ({0}: the text, {1}: the SQL type)
+# Text casts that check the text as the pandas engine does, by the lower case name of the
+# target type ({0}: the text, {1}: the SQL type)
 _TEXT_CASTS = {
-    "Integer": "vtl_text_to_integer({0})",
-    "Number": "vtl_text_to_double({0})",
-    "Duration": "vtl_text_to_duration({0})",
-    "Date": "CAST(vtl_text_to_date({0}) AS {1})",
+    "integer": "vtl_text_to_integer({0})",
+    "number": "vtl_text_to_double({0})",
+    "duration": "vtl_text_to_duration({0})",
+    "date": "CAST(vtl_text_to_date({0}) AS {1})",
+    "time": (
+        f"CASE WHEN NOT {TIME_CHECK_FUNCTION}({{0}}) "
+        "THEN error('VTL 2-1-5-1 Time ' || {0}) ELSE {0} END"
+    ),
 }
+_TEXT_CASTS["timeinterval"] = _TEXT_CASTS["time"]
 
 
 def _contains_analytic(node: Any) -> bool:
@@ -2351,9 +2358,9 @@ FROM (
         if target_type_str == "Boolean" and source_lower == "string":
             return f"(LOWER(TRIM(CAST({expr} AS VARCHAR))) = 'true')"
 
-        if source_lower == "string" and target_type_str in _TEXT_CASTS:
+        if source_lower == "string" and target_lower in _TEXT_CASTS:
             # Text the pandas engine does not cast raises its error (issue #1192)
-            return _TEXT_CASTS[target_type_str].format(expr, duckdb_type)
+            return _TEXT_CASTS[target_lower].format(expr, duckdb_type)
 
         if target_type_str == "Integer":
             if source_lower == "boolean":

@@ -363,7 +363,8 @@ class TimeInterval(ScalarType):
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
-        if from_type == String:
+        # Text that is no time, such as 2020X1, is a cast error (issue #1192)
+        if from_type == String and cls.check(value):
             return value
         raise RunTimeError(
             "2-1-5-1",

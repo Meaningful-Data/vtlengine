@@ -4610,6 +4610,38 @@ class DefinedBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1192_62(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, time)]; (Me_1 = "2020X1")
+        Description: Text that is no time is a runtime error on both engines, which kept it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_62"
+        number_inputs = 1
+        message = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_63(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, time)]; (Me_1 = "2020-12-31/2020-01-01")
+        Description: A time interval ending before it starts is a runtime error on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_63"
+        number_inputs = 1
+        message = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class OtherBugs(BugHelper):
     """ """
