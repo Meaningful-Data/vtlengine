@@ -5,7 +5,8 @@ An example lives in ``examples/<chapter>/<operator>/<variant>/<example>/`` and h
 * ``script.vtl``: the VTL script (required);
 * ``input/<NAME>.json``: the structure of an input dataset, in the vtlengine format
   ``{"datasets": [{"name": ..., "DataStructure": [...]}]}``, and ``input/<NAME>.csv``: its data
-  points (optional: without it the dataset is empty);
+  points (optional: without it the dataset is empty). The CSV of a dataset needs some structure
+  file that declares a dataset ``NAME``, not necessarily ``input/<NAME>.json``;
 * ``value_domains/*.json`` and ``external_routines/*.json``: optional files for ``run``;
 * ``expected/<NAME>.json`` and ``expected/<NAME>.csv``: an expected result dataset. The JSON has
   the same format, but a component ``type`` may also be a list of the allowed types. An empty
@@ -137,11 +138,14 @@ def load_example(path: Path) -> ExampleFiles:
             raise ExampleError(f"{path}: expected output '{name}' is defined twice")
 
     input_dir = path / _INPUT
+    structures = _files(input_dir, ".json")
+    datapoints = {csv_file.stem: csv_file for csv_file in _files(input_dir, ".csv")}
+    _check_datapoints(structures, datapoints)
     return ExampleFiles(
         path=path,
         script=script,
-        structures=_files(input_dir, ".json"),
-        datapoints={csv_file.stem: csv_file for csv_file in _files(input_dir, ".csv")},
+        structures=structures,
+        datapoints=datapoints,
         value_domains=_files(path / _VALUE_DOMAINS, ".json"),
         external_routines=_files(path / _EXTERNAL_ROUTINES, ".json"),
         expected_datasets=datasets,
@@ -310,3 +314,33 @@ def _scalar_value(raw: Any, file: Path, name: str) -> str | None:
     if isinstance(raw, bool):
         return "true" if raw else "false"
     raise ExampleError(f"{file}: the value of {name} must be a string, a number, a boolean or null")
+
+
+# --- Input datasets ---
+
+
+def _check_datapoints(structures: list[Path], datapoints: dict[str, Path]) -> None:
+    """Every ``input/<NAME>.csv`` is the data of a dataset that some structure file declares.
+
+    ``run`` refuses any other CSV (``Not found dataset NAME in datastructures``) on both engines,
+    so a typo in a file name would look like an engine defect instead of an authoring error.
+    """
+    declared = _declared_datasets(structures)
+    for name, csv_file in datapoints.items():
+        if name not in declared:
+            known = ", ".join(sorted(declared)) or "none"
+            raise ExampleError(
+                f"{csv_file}: no structure declares the dataset '{name}' "
+                f"(declared in {_INPUT}/*.json: {known})"
+            )
+
+
+def _declared_datasets(structures: list[Path]) -> set[str]:
+    """The names of the ``datasets`` of the structure files, as the engine reads them."""
+    names: set[str] = set()
+    for file in structures:
+        document = _expect(_read_json(file), dict, file, "the document")
+        for entry in _expect(document.get("datasets", []), list, file, "'datasets'"):
+            dataset = _expect(entry, dict, file, "a dataset")
+            names.add(_expect(dataset.get("name"), str, file, "the dataset name"))
+    return names

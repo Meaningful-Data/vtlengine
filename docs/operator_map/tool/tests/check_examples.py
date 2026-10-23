@@ -146,6 +146,38 @@ def test_input_files_are_listed_by_name_and_only_csvs_become_datapoints(tmp_path
     assert files.external_routines == [path / "external_routines/r.json"]
 
 
+def test_input_csv_needs_a_structure_that_declares_its_dataset(tmp_path: Path) -> None:
+    path = build_example(tmp_path / "ex")
+    ids = [component("Id_1", "Identifier", "Integer")]
+
+    def declare(file: str, *names: str) -> None:
+        datasets = [{"name": name, "DataStructure": ids} for name in names]
+        write(path / f"input/{file}.json", json.dumps({"datasets": datasets}))
+
+    # A structure file may declare several datasets, in any order, so DS_4 and DS_3 need no file
+    # of their own. A structure file that declares scalars only, no dataset, is accepted too.
+    declare("DS_1", "DS_4", "DS_1")
+    declare("DS_2", "DS_3", "DS_2")
+    write(path / "input/sc.json", '{"scalars": [{"name": "sc_1", "type": "Integer"}]}')
+    for name in ("DS_2", "DS_3", "DS_4"):
+        write(path / f"input/{name}.csv", "Id_1\n1\n")
+    assert list(load_example(path).datapoints) == ["DS_1", "DS_2", "DS_3", "DS_4"]
+
+    # A typo in a file name: no structure declares DS_l, and run() would refuse the file.
+    write(path / "input/DS_l.csv", "Id_1\n1\n")
+    message = r"input/DS_l\.csv: no structure declares the dataset 'DS_l' "
+    declared = r"\(declared in input/\*\.json: DS_1, DS_2, DS_3, DS_4\)"
+    with pytest.raises(ExampleError, match=message + declared):
+        load_example(path)
+
+    # Without any structure file nothing is declared.
+    for file in list((path / "input").glob("*.json")):
+        file.unlink()
+    message = r"input/DS_1\.csv: no structure declares the dataset 'DS_1' "
+    with pytest.raises(ExampleError, match=message + r"\(declared in input/\*\.json: none\)"):
+        load_example(path)
+
+
 def test_expected_datasets_are_sorted_by_file_name(tmp_path: Path) -> None:
     path = build_example(tmp_path / "ex")
     write(path / "expected/DS_s.json", structure("DS_s", component("Id_1", "Identifier", "String")))
@@ -441,6 +473,12 @@ MALFORMED_FILES = [
     ),
     ("expected/scalars.json", scalars(scalar("sc", "Integer", [1])), SCALAR_MESSAGE),
     ("expected/scalars.json", scalars(scalar("sc", "Integer", {"a": 1})), SCALAR_MESSAGE),
+    # The datasets that the input structures declare are read to match the input CSVs.
+    ("input/DS_1.json", "{not json", "invalid JSON"),
+    ("input/DS_1.json", "[]", "the document must be an object"),
+    ("input/DS_1.json", '{"datasets": 3}', "'datasets' must be an array"),
+    ("input/DS_1.json", '{"datasets": [3]}', "a dataset must be an object"),
+    ("input/DS_1.json", '{"datasets": [{}]}', "the dataset name must be a string"),
 ]
 
 
