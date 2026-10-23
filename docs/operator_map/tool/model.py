@@ -41,8 +41,11 @@ class Example:
     name: str  # folder name: ``manual_ex_1``, ``minimal``, ``minimal_2``...
     source: Source
     manual_ref: str | None = None  # manual example on the operator's page, e.g. ``ex_1``
-    erratum: str | None = None  # the manual's expected output was wrong and is corrected
-    adaptation: str | None = None  # the manual's input was rewritten so vtlengine can load it
+    # A slip of the manual that is corrected: in its script, its input or its expected output.
+    erratum: str | None = None
+    # The manual's representation of an input, or of the name of an output, rewritten to the
+    # equivalent representation that vtlengine documents.
+    adaptation: str | None = None
     decision: int | None = None  # issue of a team decision the expected output follows
     check: Check = "exact"  # ``random`` and ``current_date`` are checked by property
 

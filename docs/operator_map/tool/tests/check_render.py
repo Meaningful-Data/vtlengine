@@ -162,11 +162,6 @@ def blocks(text: str) -> list[str]:
     return ["\n".join(line[3:] for line in body.splitlines()) for body in bodies]
 
 
-def site(block: str) -> str:
-    """A block of ``tool.mermaid`` as the pages hold it: the chapter files are ``.html`` pages."""
-    return block.replace(".md", ".html")
-
-
 def headings(text: str) -> list[tuple[str | None, str, str]]:
     """The ``(overline, title, underline)`` of every title of a page, in order."""
     lines = text.split("\n")
@@ -267,7 +262,7 @@ def test_manual_url_of_the_definitions() -> None:
 def test_chapter_rst_layout(tmp_path: Path) -> None:
     folder = "examples/string/length/comp/minimal"
     make_tree(tmp_path, "string/length/comp/minimal", notes=True)
-    block = site(chapter_blocks(MINI_CHAPTER, MINI_CAT, MINI_INDEX)[0])
+    block = chapter_blocks(MINI_CHAPTER, MINI_CAT, MINI_INDEX)[0]
     body = "\n".join(f"   {line}" for line in block.split("\n"))
     page_rule = "=" * 36  # twice the 18 characters of the title
     operator_rule = "-" * 52  # twice the 26 characters of the heading
@@ -325,7 +320,7 @@ def test_chapter_rst_title_counts_and_operator_headings(tmp_path: Path) -> None:
 
 def test_chapter_rst_has_directive_and_table_row_per_example(tmp_path: Path) -> None:
     text = chapter_rst(STRING, CAT, INDEX, META, examples_root=tmp_path)
-    assert blocks(text) == [site(block) for block in chapter_blocks(STRING, CAT, INDEX)]
+    assert blocks(text) == chapter_blocks(STRING, CAT, INDEX)
     rows = [row for row in table_rows(text) if "/script.vtl>" in row[5]]
     assert len(rows) == 4  # manual_ex_1 and minimal, comp_sc, comp
     for variant, example in (
@@ -348,7 +343,8 @@ def test_the_row_of_an_example_shows_its_verdicts(tmp_path: Path) -> None:
     diverging = row_with(text, "concat/ds_ds/minimal/script.vtl>")
     assert diverging[1:5] == ["🔵", "✅", "💥", "DuckDB: SemanticError 1-1-1-1: boom"]
     wrong = row_with(text, "concat/comp_sc/minimal/script.vtl>")
-    assert wrong[1:5] == ["🟡", "❌", "❌", "row Id\\_1=1: Me\\_1 expected 'a' got 'b'"]
+    # The quotes of the message are escaped: Sphinx would typeset them otherwise.
+    assert wrong[1:5] == ["🟡", "❌", "❌", "row Id\\_1=1: Me\\_1 expected \\'a\\' got \\'b\\'"]
 
 
 def test_a_label_that_a_literal_cannot_hold_is_escaped_text(tmp_path: Path) -> None:
@@ -390,6 +386,11 @@ def test_detail_is_one_line_escaped_and_cut_at_200_characters(tmp_path: Path) ->
         ("a :role:`x` b", "a :role:\\`x\\` b"),
         ("[1]_ and name_ and _`target`", "\\ [1]\\_ and name\\_ and \\_\\`target\\`"),
         ("|sub| ref", "\\|sub\\| ref"),
+        # What Sphinx would typeset as it reads the text: quotes, runs of hyphens and ellipses.
+        ('Parser Error at or near "SELECT"', 'Parser Error at or near \\"SELECT\\"'),
+        ("it's a -- b --- c - d -> e", "it\\'s a \\-\\- b \\-\\-\\- c - d -> e"),
+        ("wait... then . . . and .. no", "wait\\.\\.\\. then \\. \\. \\. and .. no"),
+        ("2.5 and a.b and 1-1-1-1", "2.5 and a.b and 1-1-1-1"),
     ],
 )
 def test_detail_escapes_what_rst_reads_as_markup(detail: str, cell: str, tmp_path: Path) -> None:
@@ -409,9 +410,12 @@ def test_detail_escapes_what_rst_reads_as_markup(detail: str, cell: str, tmp_pat
         (":field: item", "\\ :field: item"),
         (">>> item", "\\ >>> item"),
         (".. comment", "\\ .. comment"),
-        ("----", "\\ ----"),
+        ("----", "\\-\\-\\-\\-"),
         ("==== ====", "\\ ==== ===="),
-        ("'quoted' text", "\\ 'quoted' text"),
+        ("'quoted' text", "\\'quoted\\' text"),
+        ('"quoted" text', '\\"quoted\\" text'),
+        ("-- option", "\\-\\- option"),
+        (". . . dots", "\\. \\. \\. dots"),
         ("* item", "\\* item"),
         ("__ item", "\\_\\_ item"),
         ("| item", "\\| item"),
@@ -451,7 +455,7 @@ def test_engines_that_differ_with_the_same_verdict_say_so(tmp_path: Path) -> Non
         "the engines give different outputs"
     )
     assert detail_of(ExampleResult(WRONG, WRONG, False, "diverge"), tmp_path) == (
-        "row Id\\_1=1: Me\\_1 expected 'a' got 'b'; the engines give different outputs"
+        "row Id\\_1=1: Me\\_1 expected \\'a\\' got \\'b\\'; the engines give different outputs"
     )
 
 
@@ -591,8 +595,8 @@ def test_index_sections_come_in_the_order_of_the_design(tmp_path: Path) -> None:
         "Type lattice",
         "Type flows",
         "📌 Team decisions",
-        "Manual errata",
-        "Input adaptations",
+        "Manual errata (corrected expected outputs, scripts or inputs)",
+        "Adaptations",
         "Variants that are not green",
         "Attribution",
     ]
@@ -610,14 +614,44 @@ def test_index_metadata_and_legend(tmp_path: Path) -> None:
     assert len(table_rows(legend)) == 5 + 5  # two tables, each with a header row
 
 
+def test_the_pin_legend_says_a_decision_is_recorded_not_that_the_manual_disagrees(
+    tmp_path: Path,
+) -> None:
+    text = index_rst(CAT, INDEX, META, examples_root=tmp_path)
+    legend = section(text, "Legend")
+    # A decision and the manual can agree: the mark says only that a decision is behind the output.
+    assert row_with(legend, "📌 #n") == [
+        "📌 #n",
+        "The expected output follows a recorded team decision, in the issue n.",
+    ]
+    assert "not the manual" not in legend
+    decisions = section(text, "📌 Team decisions")
+    assert "Expected outputs that follow a recorded team decision." in decisions
+    assert "not the text of the manual" not in decisions
+
+
+def test_the_lists_of_the_index_say_what_they_list(tmp_path: Path) -> None:
+    text = index_rst(CAT, INDEX, META, examples_root=tmp_path)
+    errata = section(text, "Manual errata (corrected expected outputs, scripts or inputs)")
+    assert "an expected output, a script or an input" in errata
+    adaptations = section(text, "Adaptations")
+    assert (
+        "Examples where the manual's representation of an input, or of the name of an output, "
+        "was rewritten"
+    ) in adaptations
+    assert "equivalent representation that vtlengine documents" in adaptations
+    assert "These are not errata." in adaptations
+    assert "Manual inputs that vtlengine cannot load" not in adaptations
+
+
 def test_index_blocks_are_the_overview_the_lattice_and_a_flow_per_basic_type(
     tmp_path: Path,
 ) -> None:
     text = index_rst(CAT, INDEX, META, examples_root=tmp_path)
-    assert blocks(section(text, "Overview")) == [site(overview_block(CAT, INDEX))]
-    assert blocks(section(text, "Type lattice")) == [site(lattice_block(CAT, INDEX))]
+    assert blocks(section(text, "Overview")) == [overview_block(CAT, INDEX)]
+    assert blocks(section(text, "Type lattice")) == [lattice_block(CAT, INDEX)]
     flows = section(text, "Type flows")
-    assert blocks(flows) == [site(type_flow_block(type_id, CAT, INDEX)) for type_id in FLOW_TYPES]
+    assert blocks(flows) == [type_flow_block(type_id, CAT, INDEX) for type_id in FLOW_TYPES]
     assert titles(flows, "~") == list(FLOW_TYPES)
     assert len(blocks(text)) == 12
 
@@ -673,11 +707,12 @@ def test_index_lists_errata_adaptations_and_decisions(tmp_path: Path) -> None:
     decisions = section(text, "📌 Team decisions")
     assert f"`📌 #1049 <{ISSUES}/1049>`__" in decisions
     assert f'{where} › ``Me_1 || "x"`` (minimal)' in decisions
-    errata = section(text, "Manual errata")
-    assert "the manual shows 'ba' where 'ab' is meant" in errata
+    errata = section(text, "Manual errata (corrected expected outputs, scripts or inputs)")
+    # The quotes are escaped, so that Sphinx does not turn them into typographic ones.
+    assert "the manual shows \\'ba\\' where \\'ab\\' is meant" in errata
     assert f"{where} › ``DS_1 || DS_2`` (manual\\_ex\\_1)" in errata
     assert f"`manual <{manual_url(CONCAT.page)}>`__" in errata
-    adaptations = section(text, "Input adaptations")
+    adaptations = section(text, "Adaptations")
     assert "the time values were rewritten" in adaptations
     assert (
         ":doc:`String operators <string>` › String length › ``length(Me_1)`` (minimal)"
@@ -696,10 +731,26 @@ def test_index_escapes_the_free_text_of_the_lists(tmp_path: Path) -> None:
     variant = Variant("v", "f(x)", (authored(erratum=erratum),))
     cat = Catalogue((Chapter("c", "C", (make_operator("o", "Some_op", "f", (variant,)),)),), ())
     index = build_index(cat, {"c/o/v/minimal": OK})
-    errata = section(index_rst(cat, index, META, examples_root=tmp_path), "Manual errata")
+    errata = section(
+        index_rst(cat, index, META, examples_root=tmp_path),
+        "Manual errata (corrected expected outputs, scripts or inputs)",
+    )
     assert (
         "- :doc:`C <c>` › Some\\_op › ``f(x)`` (minimal): the \\*manual\\* prints a\\_b \\| c, "
         "\\`x\\` and \\\\ and ends with :\\: · `manual <" in errata
+    )
+    # Quotes, runs of hyphens and ellipses are what Sphinx would typeset: each one is escaped.
+    typeset = 'it\'s "a" -- b --- c - d... e. . . f'
+    variant = Variant("v", "f(x)", (authored(erratum=typeset),))
+    cat = Catalogue((Chapter("c", "C", (make_operator("o", "Some_op", "f", (variant,)),)),), ())
+    index = build_index(cat, {"c/o/v/minimal": OK})
+    errata = section(
+        index_rst(cat, index, META, examples_root=tmp_path),
+        "Manual errata (corrected expected outputs, scripts or inputs)",
+    )
+    assert (
+        '(minimal): it\\\'s \\"a\\" \\-\\- b \\-\\-\\- c - d\\.\\.\\. e\\. \\. \\. f · `manual <'
+        in errata
     )
 
 
@@ -708,7 +759,9 @@ def test_index_lists_the_notes_that_exist(tmp_path: Path) -> None:
     text = index_rst(CAT, INDEX, META, examples_root=tmp_path)
     decisions = section(text, "📌 Team decisions")
     assert "`notes <examples/string/concat/comp_sc/minimal/notes.md>`__" in decisions
-    assert "`notes <" not in section(text, "Manual errata")
+    assert "`notes <" not in section(
+        text, "Manual errata (corrected expected outputs, scripts or inputs)"
+    )
 
 
 def test_index_lists_variants_that_are_not_green_by_status(tmp_path: Path) -> None:
@@ -773,8 +826,8 @@ def test_index_empty_lists_say_so(tmp_path: Path) -> None:
     cat = Catalogue((MINI_CHAPTER,), ())
     text = index_rst(cat, MINI_INDEX, META, examples_root=tmp_path)
     assert "None: no expected output follows a recorded team decision." in text
-    assert "None: no expected output of the manual had to be corrected." in text
-    assert "None: every manual input loads as written." in text
+    assert "None: nothing in the manual's examples had to be corrected." in text
+    assert "None: no input or output name of the manual was rewritten." in text
     assert "Every variant is green." in text
     # No type has a variant, so there is no row for the types, and the blocks still render.
     assert "Data types" not in text
@@ -795,7 +848,9 @@ def test_a_page_asks_the_examples_folder_it_is_given(tmp_path: Path) -> None:
 def read_rst(text: str) -> Any:
     """The docutils tree of a page. The directives and the role of Sphinx that it uses are stubs.
 
-    Every message of docutils of level 2 (a warning) or above fails the check.
+    Every message of docutils of level 2 (a warning) or above fails the check. The smart quotes
+    are on, as they are in Sphinx: they turn quotes, runs of hyphens and ellipses into
+    typographic characters, in every text that is not a literal.
     """
     core = pytest.importorskip("docutils.core")
     nodes = pytest.importorskip("docutils.nodes")
@@ -826,7 +881,12 @@ def read_rst(text: str) -> Any:
 
     tree = core.publish_doctree(
         text,
-        settings_overrides={"report_level": 2, "halt_level": 5, "warning_stream": Collector()},
+        settings_overrides={
+            "report_level": 2,
+            "halt_level": 5,
+            "warning_stream": Collector(),
+            "smart_quotes": True,
+        },
     )
     assert not messages, "".join(messages)
     return tree
@@ -845,6 +905,8 @@ HOSTILE = [
     "ends with a literal block mark::",
     "name_ ref_ [1]_ |sub| _`target` **strong** ``literal``",
     "'quoted' \"text\" --dash... end\\",
+    'Parser Error: syntax error at or near "SELECT" -- it\'s a query... ---. . .',
+    "DuckDB: Binder Error: column \"Me_1\" not found, candidates: 'Me_2' -- didn't match...",
 ]
 HOSTILE_LABELS = ["f(x) || *y* _z_", "f(`n`) || *y* _z_", "f(x) \\"]
 
@@ -883,6 +945,10 @@ def test_the_pages_are_read_as_written_by_docutils(tmp_path: Path) -> None:
     ]
 
     # The index lists the same details as errata and adaptations, and every page reads cleanly.
-    read_rst(index_rst(cat, index, META, examples_root=tmp_path))
+    listing = read_rst(index_rst(cat, index, META, examples_root=tmp_path))
+    items = [item.astext() for item in listing.findall(nodes.list_item)]
+    for detail in HOSTILE:
+        # Once as the erratum and once as the adaptation of its variant, as typed.
+        assert sum(f": {detail} ·" in item for item in items) == 2, detail
     read_rst(index_rst(CAT, INDEX, META, examples_root=tmp_path))
     read_rst(chapter_rst(STRING, CAT, INDEX, META, examples_root=tmp_path))

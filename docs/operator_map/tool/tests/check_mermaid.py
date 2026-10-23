@@ -10,9 +10,11 @@ import re
 
 import pytest
 
+import tool.mermaid
 from tool.mermaid import (
     MAX_CHARS,
     MAX_EDGES,
+    PAGE_SUFFIX,
     MermaidLimitError,
     chapter_blocks,
     check_limits,
@@ -155,7 +157,7 @@ def test_escape_label_vtl_symbols() -> None:
 def test_escape_label_assignment_and_plain_text() -> None:
     assert escape_label("DS_r := DS_1") == "DS_r #58;#61; DS_1"
     # Only the symbol ``:=`` is escaped: a lone ``:`` or ``=``, parentheses and arrows are not.
-    assert escape_label("↗ Calc (clause.md): a = b") == "↗ Calc (clause.md): a = b"
+    assert escape_label("↗ Calc (clause.html): a = b") == "↗ Calc (clause.html): a = b"
 
 
 def test_node_ids_are_chapter_qualified() -> None:
@@ -227,8 +229,8 @@ def test_chapter_block_layout() -> None:
             # type; this map has no ``string`` type, so those hubs have no click.
             'in_string(("string")):::type',
             'out_string(("string")):::type',
-            'ext_clause__calc["↗ Calculation (clause.md)"]:::ext',
-            'click ext_clause__calc "clause.md"',
+            'ext_clause__calc["↗ Calculation (clause.html)"]:::ext',
+            'click ext_clause__calc "clause.html"',
             'out_integer(("integer")):::type',
             'click out_integer "examples/types/integer/identity/minimal/"',
             'out_number(("number")):::type',
@@ -300,8 +302,53 @@ def test_link_stub_is_defined_once_for_several_operators() -> None:
     chapter = Chapter("numeric", "Numeric operators", (first, second))
     (block,) = chapter_blocks(chapter, Catalogue((chapter, CLAUSE), ()), NOTHING_RUN)
     assert block.count('ext_clause__calc["') == 1
-    assert block.count('click ext_clause__calc "clause.md"') == 1
+    assert block.count('click ext_clause__calc "clause.html"') == 1
     assert block.count(".-> ext_clause__calc") == 2
+
+
+def test_the_pages_of_the_chapters_are_html_pages_of_the_site() -> None:
+    # The map is a part of the Sphinx docs: a chapter is the page ``<chapter>.html``, never a
+    # file of Markdown. The diagrams name it so, in the clicks and in the labels of the stubs.
+    assert PAGE_SUFFIX == ".html"
+    (block,) = chapter_blocks(STRING, CAT, INDEX)
+    overview = overview_block(CAT, INDEX)
+    for text in (block, overview):
+        assert ".md" not in text
+    assert f'click ext_clause__calc "clause{PAGE_SUFFIX}"' in block
+    assert f"(clause{PAGE_SUFFIX})" in block
+    assert f'click chapter__string "string{PAGE_SUFFIX}"' in overview
+
+
+def test_the_size_limits_are_checked_on_the_text_with_the_page_suffix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    targets = [
+        make_operator(f"t{n}", f"T{n}", "t", (), (), (make_variant("v", "t"),)) for n in "123"
+    ]
+    other = Chapter("other", "Other operators", tuple(targets))
+    links = tuple(Link(f"other.t{n}", "uses") for n in "123")
+
+    def chapter(padding: int) -> Chapter:
+        name = "x" * padding
+        pad = make_operator("pad", name, "p", (), (), (make_variant("v", "p"),), links)
+        return Chapter("numeric", "Numeric operators", (pad,))
+
+    def size(padding: int) -> int:
+        (block,) = chapter_blocks(
+            chapter(padding), Catalogue((chapter(padding), other), ()), NOTHING_RUN
+        )
+        return len(block.encode("utf-16-le")) // 2
+
+    # With the suffix ``.md`` the block would be one character under the limit (the name of the
+    # operator is one character long to begin with, and adds a character for each other one)...
+    monkeypatch.setattr(tool.mermaid, "PAGE_SUFFIX", ".md")
+    padding = MAX_CHARS - size(1)
+    assert size(padding) == MAX_CHARS - 1
+    # ...and the name of each page is written twice for each of the three stubs: with the real
+    # suffix it is over, and the check says so.
+    monkeypatch.setattr(tool.mermaid, "PAGE_SUFFIX", PAGE_SUFFIX)
+    with pytest.raises(MermaidLimitError, match="characters"):
+        size(padding)
 
 
 def test_link_labels_stub_names_and_chapter_titles_are_escaped() -> None:
@@ -313,7 +360,7 @@ def test_link_labels_stub_names_and_chapter_titles_are_escaped() -> None:
     cat = Catalogue((chapter, clause), ())
     (block,) = chapter_blocks(chapter, cat, NOTHING_RUN)
     assert 'numeric__a -. "a#124;b" .-> ext_clause__calc' in block
-    assert 'ext_clause__calc["↗ Calc #quot;x#quot; #91;y#93; (clause.md)"]:::ext' in block
+    assert 'ext_clause__calc["↗ Calc #quot;x#quot; #91;y#93; (clause.html)"]:::ext' in block
     assert 'chapter__clause["Clause #35; operators<br/>' in overview_block(cat, NOTHING_RUN)
 
 
@@ -566,8 +613,8 @@ def test_overview_layout() -> None:
         "chapter__string --> type_integer",
         "chapter__string --> type_number",
         "chapter__clause --> type_dataset",
-        'click chapter__string "string.md"',
-        'click chapter__clause "clause.md"',
+        'click chapter__string "string.html"',
+        'click chapter__clause "clause.html"',
         'click type_integer "examples/types/integer/identity/minimal/"',
         'click type_number "examples/types/number/identity/minimal/"',
         'click type_dataset "examples/string/length/comp/minimal/"',

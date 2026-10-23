@@ -9,13 +9,14 @@ example has an ``input/`` folder and a ``notes.md`` to link, in ``examples_root`
 
 The links to the files of the examples are relative to ``docs/operator_map``, where the pages are
 written: the docs build copies the examples next to the pages of the built site. The pages are
-documents of Sphinx, so the links between them are ``:doc:`` roles, and in the diagrams the
-clicks and labels that name a chapter file name its page instead, ``<chapter>.html``.
+documents of Sphinx, so the links between them are ``:doc:`` roles. The diagrams come as
+``tool.mermaid`` writes them, and its clicks to a chapter already name the page of the site.
 
 The text that comes from the catalogue or from the engines is free text: ``_inline`` and
-``_text`` escape what RST would read as markup, ``_literal`` puts a piece of VTL in an inline
-literal. A cell of a table is one line, and the Detail of a row is what the engines said went
-wrong, cut at 200 characters.
+``_text`` escape what RST would read as markup, and what Sphinx would typeset (see
+``_TYPESET``), so that a message of an engine reads as it was written. ``_literal`` puts a piece
+of VTL in an inline literal. A cell of a table is one line, and the Detail of a row is what the
+engines said went wrong, cut at 200 characters.
 """
 
 from __future__ import annotations
@@ -84,14 +85,14 @@ _INDENT: Final = "   "  # the content of a directive, and the options of a table
 # What RST reads as markup in a line of text: emphasis and strong, literals and roles, a
 # substitution, the end of a reference or a target, and the escape itself.
 _MARKUP: Final = re.compile(r"([\\*`|_])")
-# A paragraph that starts with one of these is a list, a field, a table, a comment... unless it
-# is escaped. The first characters that ``_MARKUP`` escapes already protect the paragraph.
-_ESCAPED_START: Final = frozenset("\\*`|_")
+# What the smart quotes of Sphinx would change in a text that is not a literal: the straight
+# quotes, a run of hyphens (a dash) and an ellipsis, ``...`` or ``. . .``. Every character of such
+# a sequence is escaped, which keeps it as it was written and leaves the rest of the text alone.
+_TYPESET: Final = re.compile(r"""['"]|-{2,}|\.{3,}|\.(?: \.){2}""")
+_TYPESET_CHARACTER: Final = re.compile(r"""['".-]""")
+# A paragraph that starts like a list, a field, a table, a comment... is read as one, unless its
+# first character is escaped.
 _ENUMERATOR: Final = re.compile(r"\(?(?:#|\d+|[A-Za-z]|[ivxlcdmIVXLCDM]+)[.)](?: |$)")
-# The clicks of a diagram to a chapter and the labels of the stubs that name it, as the diagram
-# builder writes them (``<chapter>.md``).
-_CHAPTER_CLICK: Final = re.compile(r'^(\s*click \S+ ")([a-z0-9_]+)\.md"$', re.MULTILINE)
-_CHAPTER_STUB: Final = re.compile(r'\(([a-z0-9_]+)\.md\)"\]')
 
 
 @dataclass(frozen=True)
@@ -268,10 +269,7 @@ _STATUS_LEGEND: Final = (
     ),
 )
 _MARK_LEGEND: Final = (
-    (
-        "📌 #n",
-        "The expected output follows a recorded team decision, in the issue n, and not the manual.",
-    ),
+    ("📌 #n", "The expected output follows a recorded team decision, in the issue n."),
     ("✅", "The engine gave the expected output."),
     ("❌", "The engine ran, but gave another output."),
     ("💥", "The engine failed: an error, a timeout or a crash."),
@@ -502,8 +500,8 @@ def _decisions(entries: Sequence[_Entry], root: Path) -> str:
     ]
     return _list_section(
         "📌 Team decisions",
-        "Expected outputs that follow a recorded team decision, and not the text of the manual. "
-        "The notes of an example say what the manual says and how its output was derived.",
+        "Expected outputs that follow a recorded team decision. The notes of an example say what "
+        "the manual says and how its output was derived.",
         "None: no expected output follows a recorded team decision.",
         items,
     )
@@ -516,10 +514,11 @@ def _errata(entries: Sequence[_Entry], root: Path) -> str:
         if entry.example.erratum is not None
     ]
     return _list_section(
-        "Manual errata",
-        "Expected outputs that the manual gets wrong. The example holds the corrected output, "
-        "and its notes quote the manual's version. These are the ones to report upstream.",
-        "None: no expected output of the manual had to be corrected.",
+        "Manual errata (corrected expected outputs, scripts or inputs)",
+        "Examples where the manual gets an expected output, a script or an input wrong. The "
+        "example holds the corrected version, and its notes quote the manual's. These are the "
+        "ones to report upstream.",
+        "None: nothing in the manual's examples had to be corrected.",
         items,
     )
 
@@ -531,11 +530,14 @@ def _adaptations(entries: Sequence[_Entry], root: Path) -> str:
         if entry.example.adaptation is not None
     ]
     return _list_section(
-        "Input adaptations",
-        "Manual inputs that vtlengine cannot load as they are written, such as the ``time`` "
-        "values ``2010M1/2010M12``. The example uses the equivalent representation that "
-        "vtlengine documents, and its notes keep the original. These are not errata.",
-        "None: every manual input loads as written.",
+        "Adaptations",
+        "Examples where the manual's representation of an input, or of the name of an output, "
+        "was rewritten to the equivalent representation that vtlengine documents, such as the "
+        "``time`` values ``2010M1/2010M12`` of an input, or the default measure name "
+        "``string_var`` of an output, which vtlengine writes ``str_var``. The text of each item "
+        "says what was rewritten, and the notes of the example keep the original. These are not "
+        "errata.",
+        "None: no input or output name of the manual was rewritten.",
         items,
     )
 
@@ -666,19 +668,8 @@ def mermaid_blocks(text: str) -> list[str]:
 
 def _mermaid(block: str) -> str:
     """A ``.. mermaid::`` directive of ``block``, with its content indented by three spaces."""
-    lines = _site_links(block).split("\n")
+    lines = block.split("\n")
     return ".. mermaid::\n\n" + "\n".join(f"{_INDENT}{line}" if line else "" for line in lines)
-
-
-def _site_links(block: str) -> str:
-    """``block`` with the chapters named by their page in the site, ``<chapter>.html``.
-
-    The diagram builder names the file of a chapter, ``<chapter>.md``, in the clicks to a chapter
-    and in the labels of the stubs of the operators of other chapters. The site has no such file:
-    a chapter is a page of Sphinx. The rest of the block is as the builder wrote it.
-    """
-    block = _CHAPTER_CLICK.sub(r'\1\2.html"', block)
-    return _CHAPTER_STUB.sub(r'(\1.html)"]', block)
 
 
 # --- Text ---
@@ -702,10 +693,12 @@ def _section(title: str, *parts: str) -> str:
 def _inline(text: str) -> str:
     """``text`` as a piece of a line of RST: on one line, with the markup characters escaped.
 
-    A text that ends with two colons would make the next lines a literal block: the last colon
-    is escaped.
+    The quotes, the dashes and the ellipses that Sphinx would typeset are escaped too: the text
+    reads as it was written, in the message of an engine too. A text that ends with two colons
+    would make the next lines a literal block: the last colon is escaped.
     """
     escaped = _MARKUP.sub(r"\\\1", _NEWLINE.sub(" ", text).strip())
+    escaped = _TYPESET.sub(lambda found: _TYPESET_CHARACTER.sub(r"\\\g<0>", found[0]), escaped)
     return escaped[:-1] + "\\:" if escaped.endswith("::") else escaped
 
 
@@ -717,10 +710,9 @@ def _text(text: str) -> str:
     """
     one_line = _NEWLINE.sub(" ", text).strip()
     escaped = _inline(one_line)
-    first = one_line[:1]
-    if not first or first in _ESCAPED_START:
+    if not escaped or escaped.startswith("\\"):  # an escaped first character protects it
         return escaped
-    if first.isalnum() and not _ENUMERATOR.match(one_line):
+    if one_line[0].isalnum() and not _ENUMERATOR.match(one_line):
         return escaped
     return f"\\ {escaped}"
 

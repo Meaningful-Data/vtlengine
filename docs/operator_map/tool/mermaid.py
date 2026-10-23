@@ -13,11 +13,12 @@ does not have is a node with no emoji and no status class, never an error.
   its subtypes.
 * ``lattice_block`` and ``overview_block``: the types, and the chapters with their types.
 
-The ``click`` targets are relative to ``docs/operator_map``, where the md files are. An
+The ``click`` targets are relative to ``docs/operator_map``, where the pages of the map are. An
 operator or a variant links to the folder of its first example, a chapter or a link stub to
-the md file of the chapter. A type, wherever it is drawn (a hub, a subtype, a node of the
-lattice or of the overview), links to its first example, or to the first example of the
-operator it ``see``s, and has no link if it has neither.
+the page of the chapter, ``<chapter>`` and ``PAGE_SUFFIX``: the pages are part of the Sphinx
+docs, so that is the page of the built site. A type, wherever it is drawn (a hub, a subtype, a
+node of the lattice or of the overview), links to its first example, or to the first example of
+the operator it ``see``s, and has no link if it has neither.
 
 The output follows the order of the catalogue, so a rerun gives the same text.
 """
@@ -38,6 +39,10 @@ from tool.status import EMOJI, StatusIndex, counts
 # as the design asks, so a block never sits on a limit.
 MAX_EDGES: Final = 500
 MAX_CHARS: Final = 50_000
+
+# What follows the id of a chapter in the target of a click, and in the label of a link stub:
+# its page in the built site. The limits above count it, as it is part of the text of a block.
+PAGE_SUFFIX: Final = ".html"
 
 _PIN: Final = "📌"  # a node whose expected output follows a recorded team decision
 _INDENT: Final = "    "
@@ -298,7 +303,7 @@ def _unit(
     for link in operator.links:
         target_chapter, target = _resolve(targets, link.target, owner)
         stub = node_id(f"ext_{target_chapter.id}", target.id)
-        page = f"{target_chapter.id}.md"
+        page = f"{target_chapter.id}{PAGE_SUFFIX}"
         shared.setdefault(stub, _box(stub, escape_label(f"↗ {target.name} ({page})"), "ext"))
         shared.setdefault(f"click {stub}", _click(stub, page))
         edges.append(f'{op_node} -. "{escape_label(link.label)}" .-> {stub}')
@@ -458,7 +463,7 @@ def overview_block(cat: Catalogue, index: StatusIndex) -> str:
     """One node per chapter, with how many of its variants are in each status.
 
     Each chapter has an edge to every type that its operators, or their variants, return. A
-    chapter links to its md file and a type to the example of the type. Raises
+    chapter links to its page and a type to the example of the type. Raises
     ``MermaidLimitError`` if the overview is over a limit.
     """
     nodes: list[str] = []
@@ -470,7 +475,7 @@ def overview_block(cat: Catalogue, index: StatusIndex) -> str:
         status = index.chapters.get(chapter.id)
         label = f"{_label(status, chapter.title)}<br/>{_tally(chapter, index)}"
         nodes.append(_box(node, label, status))
-        clicks.append(_click(node, f"{chapter.id}.md"))
+        clicks.append(_click(node, f"{chapter.id}{PAGE_SUFFIX}"))
         for type_id in dict.fromkeys(
             t for operator in chapter.operators for t in _returned(operator)
         ):
