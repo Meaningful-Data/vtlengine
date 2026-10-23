@@ -505,6 +505,7 @@ class Apply(Operator):
     @classmethod
     def evaluate(cls, dataset: Dataset, expression: Any, op_map: Dict[str, Any]) -> Dataset:
         for child in expression:
+            cls._check_operands(dataset, child)
             dataset = cls.execute(dataset, op_map[child.op], child.left.value, child.right.value)
         return dataset
 
@@ -521,12 +522,25 @@ class Apply(Operator):
             for c in child:
                 dataset = cls.validate(dataset, c, op_map)
         else:
+            cls._check_operands(dataset, child)
             cls._check_bin_expr(dataset, child, op_map)
             left_dataset = cls.create_dataset("left", child.left.value, dataset)
             right_dataset = cls.create_dataset("right", child.right.value, dataset)
             dataset, _ = cls.get_common_components(left_dataset, right_dataset)
 
         return dataset
+
+    @staticmethod
+    def _check_operands(dataset: Dataset, child: Any) -> None:
+        """Each side of the apply expression must name an operand of the join."""
+        if not isinstance(child, BinOp):
+            return
+        for side in (child.left, child.right):
+            name = getattr(side, "value", side)
+            if not isinstance(name, str) or not any(
+                comp.startswith(f"{name}#") for comp in dataset.components
+            ):
+                raise SemanticError("1-1-13-22", operand=name)
 
     @classmethod
     def _check_bin_expr(cls, dataset: Dataset, child: Any, op_map: Dict[str, Any]) -> None:
