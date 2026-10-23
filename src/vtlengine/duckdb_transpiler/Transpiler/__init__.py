@@ -2414,13 +2414,9 @@ FROM (
         """Generate SQL for RANDOM (shared by ParamOp and BinOp forms)."""
         seed_type = self._get_node_type(seed_node) if seed_node else _SCALAR
         index_sql = self.visit(index_node) if index_node else "0"
-        if (
-            index_node is not None
-            and not isinstance(index_node, AST.Constant)
-            and self._is_scalar_expression(index_node)
-        ):
-            # A scalar index computed in the script has no value in the semantic analysis,
-            # so the query checks it (issue #1192)
+        if index_node is not None and not isinstance(index_node, AST.Constant):
+            # An index computed in the script or read from a Component has no value in the
+            # semantic analysis, so the query checks it (issue #1192)
             index_sql = f"vtl_random_index({index_sql})"
 
         index_nullable = index_node is not None and not isinstance(index_node, AST.Constant)
@@ -2444,26 +2440,6 @@ FROM (
     def visit_BinOp_random(self, node: AST.BinOp) -> str:
         """Visit RANDOM operator (BinOp form, e.g. inside calc)."""
         return self._visit_random_impl(node.left, node.right)
-
-    def _is_scalar_expression(self, node: AST.AST) -> bool:
-        """Whether a node computes a scalar: it refers to no Component or Data Set.
-
-        Inside a clause the node type of any binary operation is a Component, so the
-        references are read instead.
-        """
-        pending: List[Any] = [node]
-        while pending:
-            item = pending.pop()
-            if isinstance(item, (AST.Identifier, AST.Analytic)):
-                return False
-            if isinstance(item, AST.VarID):
-                if self._get_varid_type(item) != _SCALAR:
-                    return False
-            elif isinstance(item, list):
-                pending.extend(item)
-            elif isinstance(item, AST.AST):
-                pending.extend(vars(item).values())
-        return True
 
     @staticmethod
     def _random_hash_expr(

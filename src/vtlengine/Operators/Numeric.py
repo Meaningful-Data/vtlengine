@@ -577,6 +577,9 @@ class Random(Parameterized):
         if pd.isnull(index):
             # A null index gives null, as a null seed does (issue #1192)
             return None
+        if index < 0:
+            # An index read from a Component (a scalar one is checked by the validation)
+            raise RunTimeError("2-1-15-2", op=cls.op, value=index)
         instance: PseudoRandom = PseudoRandom(seed)
         for _ in range(index):
             instance.random()

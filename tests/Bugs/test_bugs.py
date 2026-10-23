@@ -4561,6 +4561,23 @@ class DefinedBugs(BugHelper):
             scalars={"sc_1": None, "sc_2": None},
         )
 
+    def test_GH_1192_59(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_3 := random(Me_1, Me_2)];
+        Description: A negative random index read from a Component is a runtime error on both
+                     engines, as a negative scalar value is: both engines accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_59"
+        number_inputs = 1
+        message = "2-1-15-2"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class OtherBugs(BugHelper):
     """ """
