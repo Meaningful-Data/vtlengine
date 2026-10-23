@@ -427,6 +427,15 @@ class Between(Operator.Operator):
                 role=Role.MEASURE,
             )
 
+        operand_types = (
+            [measure.data_type for measure in operand.get_measures()]
+            if isinstance(operand, Dataset)
+            else [operand.data_type]
+        )
+        if TimeInterval in (*operand_types, from_.data_type, to.data_type):
+            # between orders its operands, which Time values do not support (issue #1192)
+            raise SemanticError("1-1-19-18", op=cls.op)
+
         if isinstance(operand, Dataset):
             for measure in operand.get_measures():
                 cls.validate_type_compatibility(measure.data_type, from_.data_type)

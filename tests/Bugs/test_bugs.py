@@ -4298,6 +4298,23 @@ class DefinedBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1192_44(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_3 := between(Me_1, Me_2, Me_2)];
+        Description: between orders its operands, so it rejects Time values as < and > do,
+                     instead of comparing their text.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_44"
+        number_inputs = 1
+        message = "1-1-19-18"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class OtherBugs(BugHelper):
     """ """
