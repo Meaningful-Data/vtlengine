@@ -92,6 +92,7 @@ from vtlengine.Operators.HROperators import (
     HAAssignment,
     Hierarchy,
     get_measure_from_dataset,
+    unique_data_points,
 )
 from vtlengine.Operators.Numeric import Round, Trunc
 from vtlengine.Operators.String import DISTANCE_DISPATCH, Instr, Replace, Substr
@@ -225,6 +226,8 @@ class InterpreterAnalyzer(ASTTemplate):
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
     # Names of the rules that computed each code item, in evaluation order
     hr_agg_item_rules: Optional[Dict[str, List[str]]] = None
+    # Name of the ruleset of the hierarchy being computed
+    hr_agg_ruleset: Optional[str] = None
     ruleset_mode: Optional[str] = None
     hr_input: Optional[str] = None
     # DL
@@ -1754,12 +1757,12 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.is_from_hr_agg = True
                 self.hr_agg_rules_computed = {}
                 self.hr_agg_item_rules = {}
+                self.hr_agg_ruleset = hr_name
                 for rule in rules:
                     self.visit(rule)
                 self.is_from_hr_agg = False
-                other_ids = [i for i in dataset.get_identifiers_names() if i != component]
-                self._check_hr_overlaps(hr_name, other_ids)
                 self.hr_agg_item_rules = None
+                self.hr_agg_ruleset = None
             else:
                 self.is_from_hr_val = True
                 for rule in rules:
@@ -1795,6 +1798,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     viral_values=hr_viral_values,
                     node_children=node_children,
                     rule_component=component,
+                    ruleset=hr_name,
                 )
                 self.hr_agg_rules_computed = None
             return result
@@ -2167,7 +2171,7 @@ class InterpreterAnalyzer(ASTTemplate):
             else self.hr_agg_item_rules.get(node.value)
         )
         if computed_by:
-            computed = self._hr_computed_item(computed_by, rule_data, other_ids)
+            computed = self._hr_computed_item(computed_by, rule_data, other_ids, hr_component)
             if self.hr_input in (RULE_PRIORITY, DATASET_PRIORITY):
                 # The operand's data point where no rule computed a non-null one; a null
                 # computed one is kept where the operand has none
@@ -2195,17 +2199,25 @@ class InterpreterAnalyzer(ASTTemplate):
             self.partial_rule_elements.add(name)  # type: ignore[union-attr]
 
     def _hr_computed_item(
-        self, rule_names: List[str], rule_data: pd.DataFrame, other_ids: List[str]
+        self,
+        rule_names: List[str],
+        rule_data: pd.DataFrame,
+        other_ids: List[str],
+        rule_component: str,
     ) -> pd.DataFrame:
         """Data points that earlier rules computed for a code item, on this rule's groups.
 
-        Every rule that computed the code item contributes its data points (issue #1142).
-        They take the labels of the matching groups of the current rule: a rule with a
-        condition numbers the groups of its own rows only, so the labels of its output do
-        not match the ones of another rule.
+        Every rule that computed the code item contributes its data points (issue #1142),
+        once when several of them computed the same one (issue #1193). They take the labels
+        of the matching groups of the current rule: a rule with a condition numbers the
+        groups of its own rows only, so the labels of its output do not match the ones of
+        another rule.
         """
         computed = cast(Dict[str, pd.DataFrame], self.hr_agg_rules_computed)
         df = pd.concat([computed[name] for name in rule_names], ignore_index=True)
+        if len(rule_names) > 1:
+            components = cast(Dataset, self.ruleset_dataset).components
+            df = unique_data_points(df, components, cast(str, self.hr_agg_ruleset), rule_component)
         if not other_ids:
             # A single (global) group, labelled 0 like the code items of the rule
             return df
@@ -2213,24 +2225,6 @@ class InterpreterAnalyzer(ASTTemplate):
         groups["__group__"] = groups.index
         labelled = merge_frames(df, groups, on=other_ids, how="inner")
         return labelled.set_index("__group__").rename_axis(None)
-
-    def _check_hr_overlaps(self, ruleset: str, other_ids: List[str]) -> None:
-        """Raise when two rules computed the same code item for the same data point."""
-        if self.hr_agg_rules_computed is None or self.hr_agg_item_rules is None:
-            return
-        for code_item, rule_names in self.hr_agg_item_rules.items():
-            if len(rule_names) < 2:
-                continue
-            if other_ids:
-                keys = pd.concat(
-                    [self.hr_agg_rules_computed[name][other_ids] for name in rule_names],
-                    ignore_index=True,
-                )
-                overlap = bool(keys.duplicated().any())
-            else:
-                overlap = True
-            if overlap:
-                raise RunTimeError("2-1-10-1", ruleset=ruleset, code_item=code_item)
 
     def visit_UDOCall(self, node: AST.UDOCall) -> None:  # noqa: C901
         if self.udos is None:

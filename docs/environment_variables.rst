@@ -19,8 +19,10 @@ These variables control how VTL Engine handles floating-point precision in numer
 Controls the significant digits used for Number comparison operations (``=``, ``<>``, ``>=``, ``<=``, ``between``).
 
 This covers the comparisons in hierarchical rulesets as well, so ``check_hierarchy`` does not
-report an imbalance that falls below the threshold. Strict ``>`` and ``<`` are always exact:
-the tolerance only ever affects whether two values count as *equal*.
+report an imbalance that falls below the threshold, and ``hierarchy`` returns once a data point
+that several rules compute with Number values equal within the threshold, with the values of the
+last of those rules in the ruleset. Strict ``>`` and ``<`` are always exact: the tolerance only ever affects
+whether two values count as *equal*.
 
 .. list-table::
    :header-rows: 1

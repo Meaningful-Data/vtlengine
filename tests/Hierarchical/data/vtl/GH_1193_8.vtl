@@ -1,0 +1,6 @@
+define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+    when Id_1 in {"X", "Y"} then TOTAL = B;
+    when Id_1 in {"Y", "Z"} then TOTAL = C
+end hierarchical ruleset;
+
+DS_r <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);

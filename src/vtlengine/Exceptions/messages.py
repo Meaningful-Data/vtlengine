@@ -795,9 +795,12 @@ centralised_messages = {
     },
     "2-1-10-1": {
         "message": "More than one rule of the Hierarchy Roll-up {ruleset} computes code item "
-        "{code_item} for the same data point.",
+        "{code_item} for the same data point, with different values.",
         "description": "Raised when the conditions of several rules that define the same code "
-        "item hold on the same data point of a hierarchy operation.",
+        "item hold on the same data point of a hierarchy operation and the rules compute "
+        "different values for it, in the measure or in a viral attribute. Rules that compute "
+        "the same values, Numbers within the COMPARISON_ABSOLUTE_THRESHOLD tolerance, give the "
+        "data point once.",
     },  # RunTimeError.
     # General Operators
     "1-1-12-1": {

@@ -73,7 +73,7 @@ from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, V
 from vtlengine.Operators.Analytic import DEFAULT_ANALYTIC_WINDOW
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.Utils._recursion import recursion_headroom
-from vtlengine.ViralPropagation import get_current_registry
+from vtlengine.ViralPropagation import apply_viral_return_types, get_current_registry
 from vtlengine.ViralPropagation.sql import (
     vp_group_sql,
     vp_group_sql_windowed,
@@ -4374,10 +4374,21 @@ FROM (
             child_selects = []
             for child in parsed.right_code_items:
                 proj = ", ".join(other_q + raw_cols)
-                if child in node_cte:
-                    child_selects.append(
-                        " UNION ALL ".join(f"SELECT {proj} FROM {name}" for name in node_cte[child])
+                child_ctes = node_cte.get(child, [])
+                if len(child_ctes) > 1:
+                    # The values of the last rule that computed the child for a group, the
+                    # rule whose measure this rule reads (issue #1193)
+                    union = " UNION ALL ".join(
+                        f"SELECT {proj}, {k} AS _vpo FROM {name}"
+                        for k, name in enumerate(child_ctes)
                     )
+                    last = f"PARTITION BY {', '.join(other_q)} " if other_q else ""
+                    child_selects.append(
+                        f"SELECT {proj} FROM ({union}) AS _vpc_{i} "
+                        f"QUALIFY ROW_NUMBER() OVER ({last}ORDER BY _vpo DESC) = 1"
+                    )
+                elif child_ctes:
+                    child_selects.append(f"SELECT {proj} FROM {child_ctes[0]}")
                 else:
                     child_selects.append(
                         f"SELECT {proj} FROM {table_src} WHERE {quote_name(rule_comp)} = '{child}'"
@@ -4439,7 +4450,12 @@ FROM (
             if cte_name is None:
                 continue
             proj = ", ".join(
-                [*other_q, f"'{parsed.left_code_item}' AS {quote_name(rule_comp)}", *raw_cols]
+                [
+                    *other_q,
+                    f"'{parsed.left_code_item}' AS {quote_name(rule_comp)}",
+                    *raw_cols,
+                    f"{i} AS _hr_rule",
+                ]
             )
             tagged.append(f"SELECT {proj} FROM {cte_name}")
         if not tagged:
@@ -4517,16 +4533,23 @@ FROM (
             computed_items.add(parsed.left_code_item)
             current_pivot = next_pivot
 
+        # Several rules may compute the same code item under different conditions (issue
+        # #1142): each data point keeps the rule that computed it (issue #1193)
+        left_items = [parsed.left_code_item for parsed in parsed_rules]
+        overlaps = len(set(left_items)) < len(left_items)
+
         # Build final SELECT per rule
         final_selects: List[str] = []
         # The groups each rule computed, to combine its viral values on them only
         rule_groups: List[str] = []
         q_rc = quote_name(rule_comp)
         q_m = quote_name(measure)
-        for rule_cte, left_ci in rule_result_refs:
+        for i, (rule_cte, left_ci) in enumerate(rule_result_refs):
             cols = [quote_name(c) for c in other_ids]
             cols.append(f"'{left_ci}' AS {q_rc}")
             cols.append(f"_computed AS {q_m}")
+            if overlaps:
+                cols.append(f"{i} AS _hr_rule")
 
             result_filter: List[str] = []
             if mode == "non_null":
@@ -4541,35 +4564,30 @@ FROM (
 
         computed_sql = " UNION ALL ".join(final_selects)
 
-        left_items = [parsed.left_code_item for parsed in parsed_rules]
-        if len(set(left_items)) < len(left_items):
-            # Several rules compute the same code item under different conditions
-            # (issue #1142): two of them must not hold on the same data point.
-            keys = ", ".join([*(quote_name(c) for c in other_ids), q_rc])
-            ruleset_sql = ruleset_name.replace("'", "''")
-            message = (
-                f"'VTL 2-1-10-1: ruleset {ruleset_sql}, code item ' || CAST({q_rc} AS VARCHAR)"
-            )
-            computed_sql = (
-                f"SELECT * FROM ({computed_sql}) AS _hr_rules QUALIFY "
-                f"CASE WHEN COUNT(*) OVER (PARTITION BY {keys}) > 1 "
-                f"THEN error({message}) ELSE TRUE END"
-            )
-
         # Combine child viral values into each computed node (issue #877).
         vp_info = self._build_hierarchy_viral_ctes(
             cte, ds, parsed_rules, rule_comp, other_ids, table_src, rule_groups
         )
+        values = [measure]
         if vp_info is not None:
             vp_name, viral_names = vp_info
+            values += viral_names
             conds = [f"c.{q_rc} = v.{q_rc}"]
             conds += [
                 f"c.{quote_name(o)} IS NOT DISTINCT FROM v.{quote_name(o)}" for o in other_ids
             ]
+            if overlaps:
+                # Each data point takes the viral values of the rule that computed it
+                conds.append("c._hr_rule = v._hr_rule")
             viral_sel = ", ".join(f"v.{quote_name(vn)}" for vn in viral_names)
             computed_sql = (
                 f"SELECT c.*, {viral_sel} FROM ({computed_sql}) AS c "
                 f"LEFT JOIN {vp_name} AS v ON {' AND '.join(conds)}"
+            )
+
+        if overlaps:
+            computed_sql = self._build_hr_unique_points_sql(
+                computed_sql, ds, values, other_ids, rule_comp, ruleset_name
             )
 
         if output == "computed":
@@ -4591,6 +4609,47 @@ FROM (
             f"SELECT *, ROW_NUMBER() OVER ("
             f"PARTITION BY {id_cols_csv} ORDER BY _src DESC) AS _rn "
             f"FROM _combined) WHERE _rn = 1"
+        )
+
+    @staticmethod
+    def _build_hr_unique_points_sql(
+        computed_sql: str,
+        ds: Dataset,
+        values: List[str],
+        other_ids: List[str],
+        rule_comp: str,
+        ruleset_name: str,
+    ) -> str:
+        """Keep once each data point that several rules compute (issue #1193).
+
+        When all of them give it the same values, it is kept once, with the values of the
+        last of them in the ruleset, the ones later rules read. Numbers are the same within
+        the tolerance of the comparisons and a null is the same as a null; otherwise
+        2-1-10-1 is raised.
+        """
+        result_components = dict(ds.components)
+        apply_viral_return_types(ds.get_viral_attributes(), result_components)
+        partition = ", ".join(quote_name(k) for k in [*other_ids, rule_comp])
+        window = f"OVER (PARTITION BY {partition})"
+        differ = []
+        for name in values:
+            col = quote_name(name)
+            low, high = f"MIN({col}) {window}", f"MAX({col}) {window}"
+            same = None
+            if result_components[name].data_type == Number:
+                same = number_tolerance_sql(tokens.EQ, low, high)
+            # A null and a value are different
+            differ.append(
+                f"(COUNT({col}) {window} NOT IN (0, COUNT(*) {window}) "
+                f"OR NOT COALESCE({same or f'{low} = {high}'}, TRUE))"
+            )
+        ruleset_sql = ruleset_name.replace("'", "''")
+        q_rc = quote_name(rule_comp)
+        message = f"'VTL 2-1-10-1: ruleset {ruleset_sql}, code item ' || CAST({q_rc} AS VARCHAR)"
+        return (
+            f"SELECT * EXCLUDE (_hr_rule) FROM ({computed_sql}) AS _hr_points QUALIFY "
+            f"CASE WHEN {' OR '.join(differ)} THEN error({message}) "
+            f"ELSE ROW_NUMBER() OVER (PARTITION BY {partition} ORDER BY _hr_rule DESC) = 1 END"
         )
 
     def _build_hierarchy_rule_cte(

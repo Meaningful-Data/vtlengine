@@ -152,7 +152,7 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
         op, param, minimum = match.groups() if match else ("", "", "")
         return RunTimeError("2-1-18-1", op=op, param_type=param, correct_type=f">= {minimum}")
 
-    # hierarchy: two rules compute the same code item for one data point (issue #1142)
+    # hierarchy: two rules compute different values for one data point (issues #1142, #1193)
     if "vtl 2-1-10-1" in msg_lower:
         match = re.search(r"ruleset (.+?), code item (.+)", msg)
         ruleset, code_item = (match.group(1), match.group(2).strip()) if match else ("", "")
