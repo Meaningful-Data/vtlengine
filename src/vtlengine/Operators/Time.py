@@ -945,19 +945,13 @@ class Time_Aggregation(Time):
         if data_type == TimePeriod:  # Time period
             return _time_period_access(value, period_to)
 
-        elif data_type == Date:
-            if conf is None:
-                raise SemanticError("1-1-19-11")
-            start = conf == "first"
-            # Date
-            if period_to == "D":
-                return value
-            return _date_access(value, period_to, start)
-        else:
-            raise SemanticError(
-                "1-3-14",
-                location=f"Time_Aggregation._execute_time_aggregation ({data_type.__name__})",
-            )
+        # Date, the only other type the validation lets through
+        if conf is None:
+            raise SemanticError("1-1-19-11")
+        start = conf == "first"
+        if period_to == "D":
+            return value
+        return _date_access(value, period_to, start)
 
     @classmethod
     def dataset_evaluation(

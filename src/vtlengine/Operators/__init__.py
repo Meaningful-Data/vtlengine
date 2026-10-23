@@ -68,6 +68,13 @@ class Operator:
             return cls.validate(*args, **kwargs)
         return cls.evaluate(*args, **kwargs)
 
+    # Implemented by each operator
+    @classmethod
+    def validate(cls, *args: Any, **kwargs: Any) -> Any: ...
+
+    @classmethod
+    def evaluate(cls, *args: Any, **kwargs: Any) -> Any: ...
+
     @classmethod
     def cast_time_types(cls, data_type: Any, series: Any) -> Any:
         if cls.op not in BINARY_COMPARISON_OPERATORS:
@@ -123,60 +130,20 @@ class Operator:
                     del result.data[column]
 
     @classmethod
-    def validate_dataset_type(cls, *args: Any) -> None:
-        raise SemanticError("1-3-14", location=f"{cls.__name__}.validate_dataset_type")
-
-    @classmethod
-    def validate_component_type(cls, *args: Any) -> None:
-        raise SemanticError("1-3-14", location=f"{cls.__name__}.validate_component_type")
-
-    @classmethod
-    def validate_scalar_type(cls, *args: Any) -> None:
-        raise SemanticError("1-3-14", location=f"{cls.__name__}.validate_scalar_type")
-
-    @classmethod
-    def validate(cls, *args: Any, **kwargs: Any) -> Any:
-        raise SemanticError("1-3-14", location=f"{cls.__name__}.validate")
-
-    @classmethod
-    def evaluate(cls, *args: Any, **kwargs: Any) -> Any:
-        raise SemanticError("1-3-14", location=f"{cls.__name__}.evaluate")
-
-    @classmethod
-    def scalar_validation(cls, *args: Any) -> Any:
-        raise SemanticError("1-3-14", location=f"{cls.__name__}.scalar_validation")
-
-    @classmethod
-    def component_validation(cls, *args: Any) -> Any:
-        raise SemanticError("1-3-14", location=f"{cls.__name__}.component_validation")
-
-    @classmethod
     def validate_type_compatibility(cls, *args: Any) -> bool:
         if len(args) == 1:
             operand = args[0]
             return check_unary_implicit_promotion(operand, cls.type_to_check, cls.return_type)
-        if len(args) == 2:
-            left, right = args
-            return check_binary_implicit_promotion(left, right, cls.type_to_check, cls.return_type)
-        raise SemanticError("1-3-14", location=f"{cls.__name__}.validate_type_compatibility")
+        left, right = args
+        return check_binary_implicit_promotion(left, right, cls.type_to_check, cls.return_type)
 
     @classmethod
     def type_validation(cls, *args: Any) -> Any:
         if len(args) == 1:
             operand = args[0]
             return unary_implicit_promotion(operand, cls.type_to_check, cls.return_type)
-        if len(args) == 2:
-            left, right = args
-            return binary_implicit_promotion(left, right, cls.type_to_check, cls.return_type)
-        raise SemanticError("1-3-14", location=f"{cls.__name__}.type_validation")
-
-    @classmethod
-    def apply_return_type_dataset(cls, *args: Any) -> None:
-        raise SemanticError("1-3-14", location=f"{cls.__name__}.apply_return_type_dataset")
-
-    @classmethod
-    def apply_return_type(cls, *args: Any) -> None:
-        raise SemanticError("1-3-14", location=f"{cls.__name__}.apply_return_type")
+        left, right = args
+        return binary_implicit_promotion(left, right, cls.type_to_check, cls.return_type)
 
 
 def _id_type_promotion_join_keys(

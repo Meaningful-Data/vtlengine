@@ -12,9 +12,7 @@ import pandas as pd
 import pytest
 
 from vtlengine import semantic_analysis
-from vtlengine.AST.ASTConstructorModules.Expr import Expr
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
-from vtlengine.AST.Grammar._cpp_parser import parse, parser_lock
 from vtlengine.DataTypes import Duration, Integer
 from vtlengine.Exceptions import (
     DataLoadError,
@@ -26,7 +24,6 @@ from vtlengine.Exceptions import (
 )
 from vtlengine.Exceptions.messages import centralised_messages
 from vtlengine.Model import Component, DataComponent, Dataset, Role
-from vtlengine.Operators import Operator
 from vtlengine.Operators.Comparison import Between
 
 SOURCE = Path(__file__).parents[2] / "src" / "vtlengine"
@@ -198,8 +195,6 @@ DATA_STRUCTURES = {
     ]
 }
 
-REPORT = "Please report it at https://github.com/Meaningful-Data/vtlengine/issues."
-
 
 @pytest.mark.parametrize(
     "script, construct",
@@ -325,34 +320,13 @@ def test_error_code_errors_quote_the_script(monkeypatch: pytest.MonkeyPatch) -> 
         'define datapoint ruleset dpr (variable Me_1) is r1: isnull(Me_1) errorcode "E1" '
         "end datapoint ruleset;"
     )
-    unreadable = SemanticError("1-3-14", location="Terminals.visitConstant")
+    unreadable = UnboundLocalError("constant_node")
     monkeypatch.setattr(Terminals, "visitConstant", mock.Mock(side_effect=unreadable))
     with pytest.raises(InputValidationException) as context:
         semantic_analysis(script=script, data_structures=DATA_STRUCTURES)
     assert context.value.args == (
         "Error code must be a string: '\"E1\"' (line 1, column 76).",
         "0-5-1-5",
-    )
-
-
-def test_internal_errors_ask_to_report_them():
-    with pytest.raises(SemanticError) as context:
-        Operator.validate()
-    assert context.value.args == (
-        f"Internal engine error in Operator.validate. {REPORT}",
-        "1-3-14",
-    )
-
-
-def test_internal_parser_errors_quote_the_script():
-    with parser_lock:
-        statement = parse("DS_r <- 1;").children[0]
-        with pytest.raises(SemanticError) as context:
-            Expr().visitTimeFunctions(statement)
-    assert context.value.args == (
-        f"Internal engine error in Expr.visitTimeFunctions at 'DS_r <- 1' (line 1, column 1). "
-        f"{REPORT}",
-        "1-3-14",
     )
 
 

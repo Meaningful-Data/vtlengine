@@ -17,7 +17,7 @@ from vtlengine.AST import (
     UnaryOp,
     VarID,
 )
-from vtlengine.AST.ASTConstructorModules import extract_token_info, script_location
+from vtlengine.AST.ASTConstructorModules import extract_token_info
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
@@ -114,12 +114,6 @@ class ExprComp:
             var_id_node = VarID(value=token_text, **extract_token_info(ctx))
             return var_id_node
 
-        else:
-            # AST_ASTCONSTRUCTOR.3
-            raise SemanticError(
-                "1-3-14", location=f"ExprComp.visitExprComponent at {script_location(ctx)}"
-            )
-
     def bin_op_creator_comp(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
         left_node = self.visitExprComponent(ctx_list[0])
@@ -151,10 +145,6 @@ class ExprComp:
             right_node = Terminals().visitLists(ctx_list[2])
         elif not ctx_list[2].is_terminal and ctx_list[2].ctx_id == RC.VALUE_DOMAIN_ID:
             right_node = Terminals().visitValueDomainID(ctx_list[2])
-        else:
-            raise SemanticError(
-                "1-3-14", location=f"ExprComp.visitInNotInExprComp at {script_location(ctx)}"
-            )
         bin_op_node = BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
         return bin_op_node
@@ -273,10 +263,6 @@ class ExprComp:
 
         elif ctx.ctx_id == RC.ANALYTIC_FUNCTIONS_COMPONENTS:
             return self.visitAnalyticFunctionsComponents(c)
-        else:
-            raise SemanticError(
-                "1-3-14", location=f"ExprComp.visitFunctionsComponents at {script_location(ctx)}"
-            )
 
     """
                                 -----------------------------------
@@ -291,11 +277,6 @@ class ExprComp:
             return self.visitEvalAtomComponent(ctx)
         elif ctx.ctx_id == RC.CAST_EXPR_COMPONENT:
             return self.visitCastExprComponent(ctx)
-        else:
-            raise SemanticError(
-                "1-3-14",
-                location=f"ExprComp.visitGenericFunctionsComponents at {script_location(ctx)}",
-            )
 
     def visitCallComponent(self, ctx):  # type: ignore[no-untyped-def]
         """
@@ -365,12 +346,6 @@ class ExprComp:
                 op=op, children=children_nodes, params=param_node, **extract_token_info(ctx)
             )
 
-        else:
-            # AST_ASTCONSTRUCTOR.14
-            raise SemanticError(
-                "1-3-14", location=f"ExprComp.visitCastExprComponent at {script_location(ctx)}"
-            )
-
     def visitParameterComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
         c = ctx_list[0]
@@ -379,10 +354,6 @@ class ExprComp:
             return self.visitExprComponent(c)
         elif c.is_terminal:
             return ID(type_="OPTIONAL", value=c.text, **extract_token_info(ctx))
-        else:
-            raise SemanticError(
-                "1-3-14", location=f"ExprComp.visitParameterComponent at {script_location(ctx)}"
-            )
 
     """
                             -----------------------------------
@@ -401,11 +372,6 @@ class ExprComp:
             return self.visitInstrAtomComponent(ctx)
         elif ctx.ctx_id == RC.STRING_DISTANCE_ATOM_COMPONENT:
             return self.visitStringDistanceAtomComponent(ctx)
-        else:
-            raise SemanticError(
-                "1-3-14",
-                location=f"ExprComp.visitStringFunctionsComponents at {script_location(ctx)}",
-            )
 
     def visitUnaryStringFunctionComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -538,11 +504,6 @@ class ExprComp:
             return self.visitUnaryWithOptionalNumericComponent(ctx)
         elif ctx.ctx_id == RC.BINARY_NUMERIC_COMPONENT:
             return self.visitBinaryNumericComponent(ctx)
-        else:
-            raise SemanticError(
-                "1-3-14",
-                location=f"ExprComp.visitNumericFunctionsComponents at {script_location(ctx)}",
-            )
 
     def visitUnaryNumericComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -625,11 +586,6 @@ class ExprComp:
             RC.MONTH_TODAY_ATOM_COMPONENT,
         ):
             return self.visitTimeUnaryAtomComponent(ctx)
-        else:
-            raise SemanticError(
-                "1-3-14",
-                location=f"ExprComp.visitTimeFunctionsComponents at {script_location(ctx)}",
-            )
 
     def visitTimeUnaryAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
         """
@@ -644,12 +600,6 @@ class ExprComp:
             for operand in ctx_list
             if not operand.is_terminal and operand.rule_index == RC.EXPR_COMPONENT[0]
         ]
-
-        if len(operand_node) == 0:
-            # AST_ASTCONSTRUCTOR.15
-            raise SemanticError(
-                "1-3-14", location=f"ExprComp.visitTimeUnaryAtomComponent at {script_location(ctx)}"
-            )
 
         return UnaryOp(op=op, operand=operand_node[0], **extract_token_info(ctx))
 
@@ -828,11 +778,6 @@ class ExprComp:
     def visitConditionalFunctionsComponents(self, ctx):  # type: ignore[no-untyped-def]
         if ctx.ctx_id == RC.NVL_ATOM_COMPONENT:
             return self.visitNvlAtomComponent(ctx)
-        else:
-            raise SemanticError(
-                "1-3-14",
-                location=f"ExprComp.visitConditionalFunctionsComponents at {script_location(ctx)}",
-            )
 
     def visitNvlAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -856,11 +801,6 @@ class ExprComp:
             return self.visitCharsetMatchAtomComponent(ctx)
         elif ctx.ctx_id == RC.IS_NULL_ATOM_COMPONENT:
             return self.visitIsNullAtomComponent(ctx)
-        else:
-            raise SemanticError(
-                "1-3-14",
-                location=f"ExprComp.visitComparisonFunctionsComponents at {script_location(ctx)}",
-            )
 
     def visitBetweenAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -907,11 +847,6 @@ class ExprComp:
             return self.visitAggrComp(ctx)
         elif ctx.ctx_id == RC.COUNT_AGGR_COMP:
             return self.visitCountAggrComp(ctx)
-        else:
-            raise SemanticError(
-                "1-3-14",
-                location=f"ExprComp.visitAggregateFunctionsComponents at {script_location(ctx)}",
-            )
 
     def visitAggrComp(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -939,11 +874,6 @@ class ExprComp:
             return self.visitRankAnComponent(ctx)
         elif ctx.ctx_id == RC.RATIO_TO_REPORT_AN_COMPONENT:
             return self.visitRatioToReportAnComponent(ctx)
-        else:
-            raise SemanticError(
-                "1-3-14",
-                location=f"ExprComp.visitAnalyticFunctionsComponents at {script_location(ctx)}",
-            )
 
     def visitAnSimpleFunctionComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -966,11 +896,6 @@ class ExprComp:
             elif not c.is_terminal and c.ctx_id == RC.WINDOWING_CLAUSE:
                 params = Terminals().visitWindowingClause(c)
                 continue
-            else:
-                raise SemanticError(
-                    "1-3-14",
-                    location=f"ExprComp.visitAnSimpleFunctionComponent at {script_location(ctx)}",
-                )
 
         return Analytic(
             op=op_node,

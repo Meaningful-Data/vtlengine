@@ -13,7 +13,6 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
 
 from vtlengine.DataTypes import ScalarType
-from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset, Role
 
 if hasattr(inspect, "get_annotations"):
@@ -372,10 +371,6 @@ class Windowing(AST):
 class OrderBy(AST):
     component: str
     order: str
-
-    def __post_init__(self):
-        if self.order not in ["asc", "desc"]:
-            raise SemanticError("1-3-14", location=f"OrderBy (order {self.order})")
 
     __eq__ = AST.ast_equality
 

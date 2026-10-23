@@ -144,6 +144,10 @@ class Concatenate(Binary):
 
 
 class Parameterized(Unary):
+    # Implemented by each operator
+    @classmethod
+    def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None: ...
+
     @classmethod
     def validate(cls, *args: Any) -> Any:
         operand: Operator.ALL_MODEL_DATA_TYPES
@@ -250,14 +254,6 @@ class Parameterized(Unary):
         if isinstance(operand, DataComponent):
             return cls.component_evaluation(operand, param1, param2)
         return cls.scalar_evaluation(operand, param1, param2)
-
-    @classmethod
-    def check_param(cls, *args: Any) -> None:
-        raise SemanticError("1-3-14", location=f"{cls.__name__}.check_param")
-
-    @classmethod
-    def check_param_value(cls, *args: Any) -> None:
-        raise SemanticError("1-3-14", location=f"{cls.__name__}.check_param_value")
 
     @classmethod
     def generate_series_from_param(cls, *args: Any) -> Any:

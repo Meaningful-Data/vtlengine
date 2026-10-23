@@ -638,10 +638,6 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> None:
         operand = self.visit(node.operand)
-        if node.op not in UNARY_MAPPING and node.op not in ROLE_SETTER_MAPPING:
-            raise SemanticError(
-                "1-3-14", location=f"InterpreterAnalyzer.visit_UnaryOp (operator {node.op})"
-            )
         if (
             node.op in (PLUS, MINUS)
             and isinstance(operand, Scalar)
@@ -1558,10 +1554,6 @@ class InterpreterAnalyzer(ASTTemplate):
                 return Replace.analyze(op_element, param1, param2)
             elif node.op == INSTR:
                 return Instr.analyze(op_element, param1, param2, param3)
-            else:
-                raise SemanticError(
-                    "1-3-14", location=f"InterpreterAnalyzer.visit_ParamOp (operator {node.op})"
-                )
         elif node.op == HAVING:
             if self.aggregation_dataset is not None and self.aggregation_grouping is not None:
                 for id_name in self.aggregation_grouping:
@@ -1671,11 +1663,6 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
             elif hr_info["node"].signature_type == "valuedomain" and component is None:
                 raise SemanticError("1-1-10-4", op=node.op)
-            elif component is None:
-                raise SemanticError(
-                    "1-3-14",
-                    location="InterpreterAnalyzer.visit_HROperation (no rule component)",
-                )
 
             cond_info = {}
             for i, cond_comp in enumerate(hr_info["condition"]):
@@ -1752,6 +1739,8 @@ class InterpreterAnalyzer(ASTTemplate):
                     dataset.get_identifiers_names() + [c.name for c in hr_viral_components]
                 ].copy()
 
+            # A ruleset with a signature or a rule clause gives the component
+            component = cast(str, component)
             Check_Hierarchy.validate_hr_dataset(dataset, component)
 
             # Set up interpreter state for rule processing
@@ -2314,12 +2303,6 @@ class InterpreterAnalyzer(ASTTemplate):
                                 )
                             signature_values[param["name"]] = param_element
 
-                    else:
-                        raise SemanticError(
-                            "1-3-14",
-                            location="InterpreterAnalyzer.visit_UDOCall "
-                            f"(parameter type {param['type']})",
-                        )
                 elif issubclass(param["type"], ScalarType):  # Basic types
                     # For basic Scalar types (Integer, Float, String, Boolean)
                     # We validate the type is correct and cast the value
@@ -2354,12 +2337,6 @@ class InterpreterAnalyzer(ASTTemplate):
                         nullable=param_element.nullable,
                         # A literal argument stays a literal inside the operator (issue #1192)
                         literal=param_element.literal,
-                    )
-                else:
-                    raise SemanticError(
-                        "1-3-14",
-                        location="InterpreterAnalyzer.visit_UDOCall "
-                        f"(parameter type {param['type']})",
                     )
 
         # We set it here to a list to start the stack of UDO params

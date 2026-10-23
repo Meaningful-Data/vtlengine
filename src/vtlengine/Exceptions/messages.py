@@ -1332,12 +1332,6 @@ centralised_messages = {
         "description": "Raised when the script uses a VTL construct that the engine does not "
         "support.",
     },
-    "1-3-14": {
-        "message": "Internal engine error in {location}. Please report it at "
-        "https://github.com/Meaningful-Data/vtlengine/issues.",
-        "description": "Raised when the engine reaches a state that no script should lead to, "
-        "which points to an engine bug.",
-    },
     # AST Creation
     "1-3-2-0": {
         "message": "Error creating DAG.",

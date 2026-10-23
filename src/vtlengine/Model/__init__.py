@@ -369,11 +369,6 @@ class Dataset:
         return self.components[component_name]
 
     def add_component(self, component: Component) -> None:
-        if component.name in self.components:
-            raise SemanticError(
-                "1-3-14",
-                location=f"Dataset.add_component (duplicated component {component.name})",
-            )
         self.components[component.name] = component
 
     def delete_component(self, component_name: str) -> None:

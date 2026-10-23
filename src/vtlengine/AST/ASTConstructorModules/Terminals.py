@@ -66,10 +66,6 @@ class Terminals:
                     constant_node = Constant(type_="BOOLEAN_CONSTANT", value=True, **token_info)
                 elif child.text == "false":
                     constant_node = Constant(type_="BOOLEAN_CONSTANT", value=False, **token_info)
-                else:
-                    raise SemanticError(
-                        "1-3-14", location=f"Terminals.visitConstant at {script_location(ctx)}"
-                    )
 
             elif child.symbol_type == vtl_cpp_parser.STRING_CONSTANT:
                 constant_node = Constant(
@@ -78,11 +74,6 @@ class Terminals:
 
             elif child.symbol_type == vtl_cpp_parser.NULL_CONSTANT:
                 constant_node = Constant(type_="NULL_CONSTANT", value=None, **token_info)
-
-            else:
-                raise SemanticError(
-                    "1-3-14", location=f"Terminals.visitConstant at {script_location(ctx)}"
-                )
 
         return constant_node
 
@@ -336,10 +327,6 @@ class Terminals:
         c = ctx_list[0]
         if not c.is_terminal and c.rule_index == RC.CONSTANT[0]:
             return self.visitConstant(c)
-        else:
-            raise SemanticError(
-                "1-3-14", location=f"Terminals.visitSimpleScalar at {script_location(ctx)}"
-            )
 
     def visitScalarType(self, ctx):
         """
@@ -467,10 +454,6 @@ class Terminals:
 
         elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return self.visitComponentType(c)
-        else:
-            raise SemanticError(
-                "1-3-14", location=f"Terminals.visitInputParameterType at {script_location(ctx)}"
-            )
 
     def visitOutputParameterType(self, ctx):
         """
@@ -491,10 +474,6 @@ class Terminals:
 
         elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return "Component"
-        else:
-            raise SemanticError(
-                "1-3-14", location=f"Terminals.visitOutputParameterType at {script_location(ctx)}"
-            )
 
     def visitDeclaredOutputType(self, ctx):
         """
@@ -531,11 +510,6 @@ class Terminals:
 
         elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return self.visitComponentType(c)
-        else:
-            raise SemanticError(
-                "1-3-14",
-                location=f"Terminals.visitOutputParameterTypeComponent at {script_location(ctx)}",
-            )
 
     def visitScalarItem(self, ctx):
         # ctx is a scalarItem node (either simpleScalar or scalarWithCast alternative)
@@ -543,10 +517,6 @@ class Terminals:
             return self.visitSimpleScalar(ctx)
         elif ctx.ctx_id == RC.SCALAR_WITH_CAST:
             return self.visitScalarWithCast(ctx)
-        else:
-            raise SemanticError(
-                "1-3-14", location=f"Terminals.visitScalarItem at {script_location(ctx)}"
-            )
 
     def visitScalarWithCast(self, ctx):
         """
@@ -576,12 +546,6 @@ class Terminals:
                 op=op, children=children_nodes, params=param_node, **extract_token_info(ctx)
             )
 
-        else:
-            # AST_ASTCONSTRUCTOR.14
-            raise SemanticError(
-                "1-3-14", location=f"Terminals.visitScalarWithCast at {script_location(ctx)}"
-            )
-
     def visitScalarSetType(self, ctx):
         """
         scalarSetType: SET ('<' scalarType '>')? ;
@@ -606,19 +570,10 @@ class Terminals:
                 param_constant_node = Constant(
                     type_="BOOLEAN_CONSTANT", value=False, **extract_token_info(token)
                 )
-            else:
-                raise SemanticError(
-                    "1-3-14", location=f"Terminals.visitRetainType at {script_location(ctx)}"
-                )
 
         elif token.symbol_type == vtl_cpp_parser.ALL:
             param_constant_node = ParamConstant(
                 type_="PARAM_CONSTANT", value=token.text, **extract_token_info(token)
-            )
-
-        else:
-            raise SemanticError(
-                "1-3-14", location=f"Terminals.visitRetainType at {script_location(ctx)}"
             )
 
         return param_constant_node
@@ -631,10 +586,6 @@ class Terminals:
             return self.visitDatasetType(c)
         elif not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
             return self.visitScalarType(c)
-        else:
-            raise SemanticError(
-                "1-3-14", location=f"Terminals.visitEvalDatasetType at {script_location(ctx)}"
-            )
 
     def visitAlias(self, ctx):
         return ctx.children[0].text
