@@ -778,7 +778,7 @@ class UdoTest(UDOHelper):
         """
         code = "GH_1162_4"
         number_inputs = 1
-        message = "2-3-5"
+        message = "1-2-18"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
