@@ -621,7 +621,8 @@ centralised_messages = {
         "description": "Raised when the conditions of several rules that define the same code "
         "item hold on the same data point of a hierarchy operation and the rules compute "
         "different values for it, in the measure or in a viral attribute. Rules that compute "
-        "the same values give the data point once.",
+        "the same values, Numbers within the COMPARISON_ABSOLUTE_THRESHOLD tolerance, give the "
+        "data point once.",
     },  # RunTimeError.
     # General Operators
     "2-1-12-1": {

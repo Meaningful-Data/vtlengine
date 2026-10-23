@@ -2195,9 +2195,8 @@ class InterpreterAnalyzer(ASTTemplate):
         computed = cast(Dict[str, pd.DataFrame], self.hr_agg_rules_computed)
         df = pd.concat([computed[name] for name in rule_names], ignore_index=True)
         if len(rule_names) > 1:
-            df = unique_data_points(
-                df, [*other_ids, rule_component], cast(str, self.hr_agg_ruleset), rule_component
-            )
+            components = cast(Dataset, self.ruleset_dataset).components
+            df = unique_data_points(df, components, cast(str, self.hr_agg_ruleset), rule_component)
         if not other_ids:
             # A single (global) group, labelled 0 like the code items of the rule
             return df

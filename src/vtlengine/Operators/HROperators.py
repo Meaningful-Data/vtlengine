@@ -27,23 +27,46 @@ from vtlengine.ViralPropagation import (
 REMOVE = "REMOVE_VALUE"
 # A right code item whose condition is not TRUE is left out of the rule (issue #1168)
 EXCLUDE = "EXCLUDE_VALUE"
+# The rule that computed each data point of a hierarchy (issue #1193)
+RULE = "__rule__"
 
 
 def unique_data_points(
-    data: DataFrame, identifiers: List[str], ruleset: str, rule_component: str
+    data: DataFrame, components: Dict[str, Component], ruleset: str, rule_component: str
 ) -> DataFrame:
     """Keep once each data point that several rules compute (issue #1193).
 
     The conditions of the rules that compute a code item may hold on the same data point.
-    When all of them give it the same values, a null being equal to a null, it is kept
-    once; otherwise there would be two data points with the same identifiers.
+    When all of them give it the same values, it is kept once, with the values of the rule
+    evaluated last, the ones later rules read: the data points come in evaluation order.
+    Numbers are the same within the tolerance of the comparisons and a null is the same as
+    a null; otherwise there would be two data points with the same identifiers.
     """
-    unique = data.drop_duplicates()
-    clashes = unique[unique.duplicated(subset=identifiers)]
+    identifiers = [name for name in data.columns if components[name].role == Role.IDENTIFIER]
+    repeated = data[data.duplicated(subset=identifiers, keep=False)].copy()
+    if len(repeated) == 0:
+        return data
+    values = [name for name in data.columns if name not in identifiers]
+    numbers = [name for name in values if components[name].data_type == Number]
+    for name in numbers:
+        repeated[name] = pd.to_numeric(repeated[name].astype(object), errors="coerce")
+    groups = repeated.groupby(identifiers, sort=False)
+    filled = groups[values].count()
+    # A null and a value are different
+    differ = filled.gt(0) & filled.lt(groups.size(), axis=0)
+    exact = [name for name in values if name not in numbers]
+    if exact:
+        differ[exact] |= groups[exact].nunique() > 1
+    for name in numbers:
+        low, high = groups[name].min(), groups[name].max()
+        same = [pd.isna(a) or numbers_are_equal(a, b) for a, b in zip(low, high)]
+        differ[name] |= ~pd.Series(same, index=low.index, dtype=bool)
+    clashes = differ.index[differ.any(axis=1)]
     if len(clashes) > 0:
-        code_item = clashes[rule_component].iloc[0]
+        key = clashes[0]
+        code_item = key[identifiers.index(rule_component)] if isinstance(key, tuple) else key
         raise RunTimeError("2-1-10-1", ruleset=ruleset, code_item=code_item)
-    return unique
+    return data.drop_duplicates(subset=identifiers, keep="last")
 
 
 def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
@@ -301,7 +324,8 @@ class Hierarchy(Operators.Operator):
 
     @staticmethod
     def generate_computed_data(computed_dict: Dict[str, DataFrame]) -> DataFrame:
-        list_data = list(computed_dict.values())
+        # Each data point keeps the rule that computed it (issue #1193)
+        list_data = [data.assign(**{RULE: name}) for name, data in computed_dict.items()]
         df = pd.concat(list_data, axis=0)
         df.reset_index(drop=True, inplace=True)
         return df
@@ -399,14 +423,19 @@ class Hierarchy(Operators.Operator):
                     computed_groups = computed_dict[rule_name][other_ids].drop_duplicates()
                     nv = merge_frames(nv, computed_groups, on=other_ids, how="inner")
             if node in node_viral:
-                # Rules computing the node for the same group give the same values: a later
-                # node combines them once (issue #1193)
+                # A later rule combines the values of the last rule that computed the node
+                # for a group, the rule whose measure it reads (issue #1193)
                 both = pd.concat([node_viral[node], nv], ignore_index=True)
-                node_viral[node] = both.drop_duplicates()
+                node_viral[node] = (
+                    both.drop_duplicates(subset=other_ids, keep="last")
+                    if other_ids
+                    else both.tail(1)
+                )
             else:
                 node_viral[node] = nv
             tagged = nv.copy()
             tagged[rule_component] = node
+            tagged[RULE] = rule_name
             tagged_frames.append(tagged)
         if not tagged_frames:
             return None
@@ -448,9 +477,14 @@ class Hierarchy(Operators.Operator):
                 viral_values, viral_names, node_children, rule_component, other_ids, computed_dict
             )
             if computed_viral is not None:
+                # Each data point takes the viral values of the rule that computed it
                 computed_data = merge_frames(
-                    computed_data, computed_viral, on=other_ids + [rule_component], how="left"
+                    computed_data,
+                    computed_viral,
+                    on=[*other_ids, rule_component, RULE],
+                    how="left",
                 )
+        computed_data = computed_data.drop(columns=RULE, errors="ignore")
 
         rules_per_node = Counter(node for node, _ in (node_children or {}).values())
         repeated_nodes = max(rules_per_node.values(), default=0) > 1
@@ -458,7 +492,7 @@ class Hierarchy(Operators.Operator):
             # Several rules may compute the same data point: it is kept once when they give
             # it the same measure and viral attribute values (issue #1193)
             computed_data = unique_data_points(
-                computed_data, dataset.get_identifiers_names(), ruleset, rule_component
+                computed_data, result.components, ruleset, rule_component
             ).reset_index(drop=True)
 
         if output == "computed":

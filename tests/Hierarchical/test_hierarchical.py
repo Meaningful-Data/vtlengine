@@ -1,4 +1,6 @@
+import os
 from pathlib import Path
+from unittest import mock
 
 from tests.Helper import TestHelper
 from vtlengine.API import create_ast
@@ -4278,3 +4280,96 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
+
+    def test_GH_1193_7(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        when Id_1 in {"X", "Y"} then TOTAL = A + B + C;
+                        when Id_1 in {"Y", "Z"} then TOTAL = C + B + A;
+                        G = TOTAL + D
+                    end hierarchical ruleset;
+
+                    define viral propagation VP_1 (variable At_1) is
+                        aggregate sum
+                    end viral propagation;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
+                    DS_n <- count(DS_r group by Id_2);
+
+        Description: Both rules apply to Y, where Me_1 and At_1 of A, B and C are 0.1, 0.2
+        and 0.3. Adding them in the order of the first rule gives 0.6000000000000001 and in
+        the order of the second one 0.6, the same value within 15 significant digits. DS_n
+        counts the data points of each code item, so a repeated one shows there.
+
+        Git Branch: #1193.
+        Goal: Check TOTAL is computed once for Y, with the values of the second rule, which
+        G reads.
+        """
+
+        code = "GH_1193_7"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1193_8(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        when Id_1 in {"X", "Y"} then TOTAL = B;
+                        when Id_1 in {"Y", "Z"} then TOTAL = C
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
+
+        Description: Both rules apply to Y: the first one computes 1.0 and the second one
+        1.00000000000001, which differ in the 15th significant digit.
+
+        Git Branch: #1193.
+        Goal: Check values that differ within 15 significant digits raise the runtime error.
+        """
+
+        code = "GH_1193_8"
+        number_inputs = 1
+        exception_code = "2-1-10-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_1193_9(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        when Id_1 in {"X", "Y"} then TOTAL = B;
+                        when Id_1 in {"Y", "Z"} then TOTAL = C;
+                        G = TOTAL + D
+                    end hierarchical ruleset;
+
+                    define viral propagation VP_1 (variable At_1) is
+                        aggregate sum
+                    end viral propagation;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
+
+        Description: With COMPARISON_ABSOLUTE_THRESHOLD set to 6, the 1.0 that the first
+        rule computes for TOTAL of Y, in Me_1 and in At_1, and the 1.000001 of the second
+        one are the same value.
+
+        Git Branch: #1193.
+        Goal: Check the data point keeps the values of the last rule, which G reads.
+        """
+
+        code = "GH_1193_9"
+        number_inputs = 1
+        references_names = ["1"]
+
+        with mock.patch.dict(os.environ, {"COMPARISON_ABSOLUTE_THRESHOLD": "6"}):
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
