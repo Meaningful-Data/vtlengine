@@ -17,7 +17,7 @@ import pandas as pd
 import pytest
 
 from vtlengine.API import run
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import RunTimeError
 
 NUMBER_DS: Dict[str, Any] = {
     "datasets": [
@@ -268,7 +268,7 @@ def test_domain_errors_parity(script: str, values: list, error_code: str) -> Non
     warnings.filterwarnings("ignore", category=FutureWarning)
     df = pd.DataFrame({"Id_1": range(1, len(values) + 1), "Me_1": values})
     for use_duckdb in (False, True):
-        with pytest.raises((SemanticError, RunTimeError)) as ctx:
+        with pytest.raises(RunTimeError) as ctx:
             run(
                 script=script,
                 data_structures=NUMBER_DS,

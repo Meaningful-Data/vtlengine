@@ -36,7 +36,7 @@ from vtlengine.duckdb_transpiler.io._time_handling import (
     format_time_period_scalar,
 )
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
-from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
+from vtlengine.Exceptions import RunTimeError, transformation_output
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Component, Dataset, Scalar
 from vtlengine.Utils._number_config import get_effective_output_digits
@@ -72,14 +72,14 @@ def _map_time_agg_error(msg: str, msg_lower: str) -> RunTimeError:
 def _mixed_frequency_error(msg_lower: str) -> Exception:
     """The time operator that rejected an operand holding more than one frequency."""
     if "timeshift" in msg_lower:
-        return SemanticError(
-            "1-1-19-9",
+        return RunTimeError(
+            "2-1-19-23",
             op="timeshift",
             comp_type="dataset",
             param="single time series frequency",
         )
-    return SemanticError(
-        "1-1-19-9",
+    return RunTimeError(
+        "2-1-19-23",
         op="fill_time_series",
         comp_type="dataset",
         param="single time interval frequency",
@@ -120,10 +120,37 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
                 op = macro_op
         return RunTimeError("2-1-15-6", op=op)
 
-    # VTL macros vtl_power / vtl_sqrt: negative operand (mirrors 2-1-15-2)
+    # VTL macros vtl_power / vtl_sqrt / vtl_random_index: negative operand (mirrors 2-1-15-2)
     if "vtl 2-1-15-2" in msg_lower:
-        op = "power" if "2-1-15-2 power:" in msg_lower else "sqrt"
+        op = "sqrt"
+        for macro_op in ("power", "random"):
+            if f"2-1-15-2 {macro_op}:" in msg_lower:
+                op = macro_op
         return RunTimeError("2-1-15-2", op=op, value=msg.rsplit(" ", 1)[-1])
+
+    # VTL macros vtl_text_to_double / vtl_text_to_integer: text that is no number
+    if "vtl 2-1-5-1 " in msg_lower:
+        match = re.search(r"VTL 2-1-5-1 (\w+) (.*)", msg)
+        type_2, value = match.groups() if match else ("Number", "unknown")
+        return RunTimeError("2-1-5-1", value=value, type_1="String", type_2=type_2)
+
+    # VTL macro vtl_text_to_date: text that is not a date (mirrors 2-1-19-8)
+    if "vtl 2-1-19-8 " in msg_lower:
+        return RunTimeError("2-1-19-8", date=msg.split("VTL 2-1-19-8 ", 1)[-1])
+
+    # VTL macro vtl_dateadd: a period indicator that is not one (mirrors 2-1-19-2)
+    if "vtl 2-1-19-2 invalid period" in msg_lower:
+        return RunTimeError("2-1-19-2", period=msg.rsplit(" ", 1)[-1])
+
+    # datediff: a Time value, which holds two dates
+    if "vtl 2-1-19-25" in msg_lower:
+        return RunTimeError("2-1-19-25", op="datediff", comp_type="Date or Time_Period value")
+
+    # substr / instr: an integer parameter read from the data below its minimum
+    if "vtl 2-1-18-1" in msg_lower:
+        match = re.search(r"VTL 2-1-18-1 (\S+) (\S+) (-?\d+)", msg)
+        op, param, minimum = match.groups() if match else ("", "", "")
+        return RunTimeError("2-1-18-1", op=op, param_type=param, correct_type=f">= {minimum}")
 
     # hierarchy: two rules compute different values for one data point (issues #1142, #1193)
     if "vtl 2-1-10-1" in msg_lower:
@@ -141,6 +168,10 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
         return RunTimeError("2-1-15-8", op=op, value=msg.rsplit(" ", 1)[-1])
 
     return None
+
+
+# The VTL type of the SQL types a text is cast to when it is read as a number
+_NUMERIC_SQL_TYPES = {"DOUBLE": "Number", "INT64": "Integer", "BIGINT": "Integer"}
 
 
 def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
@@ -177,6 +208,16 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
         value = msg.split(": ", 1)[-1] if ": " in msg else "unknown"
         return RunTimeError("2-1-5-1", value=value, type_1="Time", type_2="Time_Period")
 
+    # Text cast to a number whose type the SQL generation could not tell (mirrors 2-1-5-1)
+    conversion = re.search(r"Could not convert string '(.*?)' to (\w+)", msg)
+    if conversion is not None and conversion.group(2).upper() in _NUMERIC_SQL_TYPES:
+        return RunTimeError(
+            "2-1-5-1",
+            value=conversion.group(1),
+            type_1="String",
+            type_2=_NUMERIC_SQL_TYPES[conversion.group(2).upper()],
+        )
+
     # Invalid date/timestamp format (e.g. casting interval string to timestamp)
     if "conversion" in msg_lower and ("timestamp" in msg_lower or "date" in msg_lower):
         date_val = "unknown"
@@ -195,20 +236,21 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
         value = m.group(2).strip() if m else "unknown"
         return RunTimeError("2-1-19-22", op=op, value=value, expected=expected)
 
-    # VTL macro vtl_hamming: strings of unequal length (mirrors 1-1-18-11)
-    if "vtl 1-1-18-11" in msg_lower:
+    # VTL macro vtl_hamming: strings of unequal length (mirrors 2-1-18-2)
+    if "vtl 2-1-18-2" in msg_lower:
         m = re.search(r"hamming length mismatch (\d+) (\d+)", msg)
         len1, len2 = (m.group(1), m.group(2)) if m else ("?", "?")
-        return SemanticError("1-1-18-11", op="string_distance", len1=len1, len2=len2)
+        return RunTimeError("2-1-18-2", op="string_distance", len1=len1, len2=len2)
 
-    # A time operator over an operand of more than one frequency (mirrors 1-1-19-9)
-    if "vtl 1-1-19-9" in msg_lower:
+    # A time operator over an operand of more than one frequency (mirrors 2-1-19-23)
+    if "vtl 2-1-19-23" in msg_lower:
         return _mixed_frequency_error(msg_lower)
 
     # Division by zero: the specific VTL error crafted by ratio_to_report must be
     # checked before the generic DuckDB pattern, as its message contains both.
     if "vtl error 2-1-3-1" in msg_lower:
-        return RunTimeError("2-1-3-1", op="ratio_to_report")
+        m = re.search(r"infinite values in (\w+)", msg)
+        return RunTimeError("2-1-3-1", op=m.group(1) if m else "ratio_to_report")
     if "division by zero" in msg_lower or "divide by zero" in msg_lower:
         return RunTimeError("2-1-3-1", op="division")
 

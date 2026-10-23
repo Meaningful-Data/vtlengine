@@ -47,10 +47,10 @@ scalar_time_params = [
 ]
 
 scalar_time_error_params = [
-    ('getyear(cast("2023-01-12/2024-01-03", date))', RunTimeError, "2-1-19-8"),
-    ('getmonth(cast("2023-01-12/2024-02-15", date))', RunTimeError, "2-1-19-8"),
-    ('dayofmonth(cast("2023-01-12/2024-02-02", date))', RunTimeError, "2-1-19-8"),
-    ('dayofyear(cast("2023-01-12/2024-03-06", date))', RunTimeError, "2-1-19-8"),
+    ('getyear(cast("2023-01-12/2024-01-03", date))', SemanticError, "1-1-5-6"),
+    ('getmonth(cast("2023-01-12/2024-02-15", date))', SemanticError, "1-1-5-6"),
+    ('dayofmonth(cast("2023-01-12/2024-02-02", date))', SemanticError, "1-1-5-6"),
+    ('dayofyear(cast("2023-01-12/2024-03-06", date))', SemanticError, "1-1-5-6"),
     ('getyear(cast("2023-01-12/2024-01-31", time))', SemanticError, "1-1-19-10"),
     ('getmonth(cast("2023-01-12/2024-03-25", time))', SemanticError, "1-1-19-10"),
     ('dayofmonth(cast("2023-01-12/2024-05-29", time))', SemanticError, "1-1-19-10"),

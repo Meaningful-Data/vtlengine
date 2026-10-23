@@ -1267,7 +1267,10 @@ class TestTimeOperators:
         )
 
         result = transpiler.visit_BinOp(binop)
-        expected_sql = "ABS(DATE_DIFF('day', '2024-01-15', '2024-01-01'))"
+        expected_sql = (
+            "ABS(DATE_DIFF('day', vtl_datediff_date('2024-01-15'), "
+            "vtl_datediff_date('2024-01-01')))"
+        )
         assert_sql_equal(result, expected_sql)
 
     # NOTE: Tests for period_indicator, flow_to_stock, stock_to_flow, and
@@ -1311,11 +1314,12 @@ class TestRandomOperator:
 
         result = transpiler.visit(random_op)
 
-        # Full SQL: applies random to each measure
+        # Full SQL: applies random to each measure, which gives null for a null value
         expected_sql = (
             'SELECT "Id_1", '
+            'CASE WHEN "Me_1" IS NULL THEN NULL ELSE '
             "(ABS(hash(CAST(\"Me_1\" AS VARCHAR) || '_' || CAST(3 AS VARCHAR))) % 1000000) "
-            '/ 1000000.0 AS "Me_1" '
+            '/ 1000000.0 END AS "Me_1" '
             'FROM "DS_1"'
         )
         assert_sql_equal(result, expected_sql)

@@ -4060,7 +4060,7 @@ class TimeOperatorsTest(AdditionalHelper):
         text = "DS_r <- DS_1[calc Me_2 := Me_1 < Me_1];"
         code = "GH_261"
         number_inputs = 1
-        exception_code = "2-1-19-17"
+        exception_code = "1-1-19-18"
 
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
@@ -4070,7 +4070,7 @@ class TimeOperatorsTest(AdditionalHelper):
         text = "DS_r <- DS_1[calc Me_2 := Me_1 <= Me_1];"
         code = "GH_261"
         number_inputs = 1
-        exception_code = "2-1-19-17"
+        exception_code = "1-1-19-18"
 
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
@@ -4080,7 +4080,7 @@ class TimeOperatorsTest(AdditionalHelper):
         text = "DS_r <- DS_1[calc Me_2 := Me_1 > Me_1];"
         code = "GH_261"
         number_inputs = 1
-        exception_code = "2-1-19-17"
+        exception_code = "1-1-19-18"
 
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
@@ -4090,7 +4090,7 @@ class TimeOperatorsTest(AdditionalHelper):
         text = "DS_r <- DS_1[calc Me_2 := Me_1 >= Me_1];"
         code = "GH_261"
         number_inputs = 1
-        exception_code = "2-1-19-17"
+        exception_code = "1-1-19-18"
 
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=exception_code

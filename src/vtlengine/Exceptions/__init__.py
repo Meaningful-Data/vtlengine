@@ -137,7 +137,9 @@ def check_key(field: str, dict_keys: Any, key: str) -> None:
     if key not in dict_keys:
         closest_key = find_closest_key(dict_keys, key)
         message_append = f". Did you mean {closest_key}?" if closest_key else ""
-        raise SemanticError("0-1-1-13", field=field, key=key, closest_key=message_append)
+        raise InputValidationException(
+            code="0-1-1-13", field=field, key=key, closest_key=message_append
+        )
 
 
 def find_closest_key(dict_keys: Any, key: str) -> Optional[str]:
@@ -172,7 +174,9 @@ def key_distance(key: str, objetive: str) -> int:
     return dp[-1][-1]
 
 
-class DataLoadError(VTLEngineException):
+class DataLoadError(InputValidationException):
+    """An input error found while loading data (0-3-* codes)."""
+
     output_message = " Please check loaded file"
     comp_code: Optional[str] = None
 
@@ -182,12 +186,13 @@ class DataLoadError(VTLEngineException):
         comp_code: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
-        message = centralised_messages[code]["message"].format(**kwargs) + self.output_message
+        # InputValidationException appends this to the catalogued message after a space
+        suffix = self.output_message.lstrip()
         dataset_output = _dataset_output.get()
         if dataset_output:
-            message += " " + dataset_output
+            suffix += " " + dataset_output
 
-        super().__init__(message, None, None, code)
+        super().__init__(suffix, code=code, **kwargs)
 
         if comp_code:
             self.comp_code = comp_code

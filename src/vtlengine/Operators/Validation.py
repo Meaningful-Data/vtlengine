@@ -53,9 +53,7 @@ class Check(Operator):
             operand_identifiers = validation_element.get_identifiers_names()
             imbalance_identifiers = imbalance_element.get_identifiers_names()
             if operand_identifiers != imbalance_identifiers:
-                raise Exception(
-                    "The validation and imbalance operands must have the same identifiers"
-                )
+                raise SemanticError("1-1-10-11", op=cls.op)
             if len(imbalance_element.get_measures()) != 1:
                 raise SemanticError("1-1-10-1", op=cls.op, op_type="imbalance", me_type="Numeric")
 
