@@ -11,8 +11,8 @@ requires exactly one).
   "most of the scalar operations (arithmetic, logical, and others) return null when any of
   their arguments is null", and the manual's own `length` and `instr` examples show it.
 
-The result measure is named `num_var`, as in the manual's examples 1 and 2 of String distances,
-which are dataset examples. The page leaves the name open: its Result type is
-`dataset { measure<number> _+ }` and the typical behaviour would give homonymous measures (here
-`Me_1`), whereas its Behaviour paragraph says that for two datasets the result is "a dataset
-with a single measure of type *number*".
+The result measure is `num_var`: `string_distance` changes the data type (string to number), so
+the typical behaviour of the operators changing the data type (Typical behaviours of the ML
+Operators, "Operators changing the data type") replaces the operand measure by the default
+measure of the result type, `num_var` for number. The page's Result type,
+`dataset { measure<number> _+ }`, names no measure, and its examples 1 and 2 give `num_var`.
