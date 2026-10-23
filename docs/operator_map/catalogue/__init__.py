@@ -9,6 +9,7 @@ from catalogue.boolean import CHAPTER as BOOLEAN_CHAPTER
 from catalogue.clause import CHAPTER as CLAUSE_CHAPTER
 from catalogue.comparison import CHAPTER as COMPARISON_CHAPTER
 from catalogue.conditional import CHAPTER as CONDITIONAL_CHAPTER
+from catalogue.definitions import CHAPTER as DEFINITIONS_CHAPTER
 from catalogue.general import CHAPTER as GENERAL_CHAPTER
 from catalogue.hierarchy import CHAPTER as HIERARCHY_CHAPTER
 from catalogue.numeric import CHAPTER as NUMERIC_CHAPTER
@@ -31,5 +32,6 @@ CHAPTERS: tuple[Chapter, ...] = (
     VALIDATION_CHAPTER,
     CONDITIONAL_CHAPTER,
     CLAUSE_CHAPTER,
+    DEFINITIONS_CHAPTER,
 )
 TYPES: tuple[TypeDef, ...] = _TYPES

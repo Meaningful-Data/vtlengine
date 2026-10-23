@@ -1,0 +1,6 @@
+define operator same_time (x time)
+    returns time is
+        x
+end operator;
+
+SC_r := same_time(cast("2020-01-01/2020-12-31", time));

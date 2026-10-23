@@ -1,0 +1,6 @@
+define operator twice (c measure<integer>)
+    returns component<integer> is
+        c * 2
+end operator;
+
+DS_r := DS_1[calc Me_2 := twice(Me_1)];

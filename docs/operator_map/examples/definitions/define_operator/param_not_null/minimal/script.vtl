@@ -1,0 +1,6 @@
+define operator add_one (x integer not null)
+    returns integer is
+        x + 1
+end operator;
+
+SC_r := add_one(2);

@@ -1,0 +1,6 @@
+define operator with_suffix (x string)
+    returns string is
+        x || "_B"
+end operator;
+
+SC_r := with_suffix("A");

@@ -1,0 +1,9 @@
+{
+  "scalars": [
+    {
+      "name": "SC_r",
+      "type": "Time_Period",
+      "value": "2020Q1"
+    }
+  ]
+}
