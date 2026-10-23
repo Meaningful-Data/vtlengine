@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from tool.model import Chapter, TypeDef
 
+from catalogue.aggregate import CHAPTER as AGGREGATE_CHAPTER
 from catalogue.boolean import CHAPTER as BOOLEAN_CHAPTER
 from catalogue.clause import CHAPTER as CLAUSE_CHAPTER
 from catalogue.comparison import CHAPTER as COMPARISON_CHAPTER
@@ -21,6 +22,7 @@ CHAPTERS: tuple[Chapter, ...] = (
     BOOLEAN_CHAPTER,
     TIME_CHAPTER,
     SET_CHAPTER,
+    AGGREGATE_CHAPTER,
     CONDITIONAL_CHAPTER,
     CLAUSE_CHAPTER,
 )
