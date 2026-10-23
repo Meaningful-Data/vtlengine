@@ -608,7 +608,11 @@ def check_max_date(str_: Optional[str]) -> Optional[str]:
         except (ValueError, InputValidationException):
             raise RunTimeError("2-1-19-8", date=str_) from None
     elif len(str_) == 10 and str_[7] == "-":
-        return date.fromisoformat(str_).isoformat()
+        try:
+            return date.fromisoformat(str_).isoformat()
+        except ValueError:
+            # A day that does not exist, such as 2022-02-30 (issue #1192)
+            raise RunTimeError("2-1-19-8", date=str_) from None
     else:
         raise RunTimeError("2-1-19-8", date=str_)
 

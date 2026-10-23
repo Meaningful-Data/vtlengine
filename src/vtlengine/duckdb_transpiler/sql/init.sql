@@ -483,6 +483,20 @@ CREATE OR REPLACE MACRO vtl_text_to_integer(x) AS (
     END
 );
 
+-- Text cast to Date, which mirrors VTL error 2-1-19-8 for text that is not a date
+-- written YYYY-MM-DD (or YYYY-MM-D) or a full YYYY-MM-DD[T| ]HH:MM:SS datetime.
+CREATE OR REPLACE MACRO vtl_text_to_date(x) AS (
+    CASE WHEN x IS NULL THEN NULL
+         WHEN regexp_full_match(x, '[0-9]{4}-[0-9]{2}-[0-9]{1,2}')
+              OR regexp_full_match(
+                  x,
+                  '[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([+-][0-9]{2}:[0-9]{2}|Z)?'
+              )
+         THEN x
+         ELSE error('VTL 2-1-19-8 ' || x)
+    END
+);
+
 -- Random index computed from a scalar expression, which mirrors VTL error 2-1-15-2
 -- when negative (a literal or a scalar value is checked before any SQL runs).
 CREATE OR REPLACE MACRO vtl_random_index(x) AS (

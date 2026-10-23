@@ -4451,6 +4451,40 @@ class DefinedBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": "abc"}
         )
 
+    def test_GH_1192_53(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, date)]; (Me_1 = "2022-1-5")
+        Description: A date that is not written YYYY-MM-DD is a runtime error on both engines:
+                     DuckDB read it as 2022-01-05.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_53"
+        number_inputs = 1
+        message = "2-1-19-8"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_54(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, date)]; (Me_1 = "2022-02-30")
+        Description: A day that does not exist is a runtime error on both engines: the pandas
+                     engine raised a ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_54"
+        number_inputs = 1
+        message = "2-1-19-8"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class OtherBugs(BugHelper):
     """ """

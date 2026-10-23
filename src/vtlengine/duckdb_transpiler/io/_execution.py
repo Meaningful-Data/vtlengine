@@ -134,6 +134,10 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
         type_2, value = match.groups() if match else ("Number", "unknown")
         return RunTimeError("2-1-5-1", value=value, type_1="String", type_2=type_2)
 
+    # VTL macro vtl_text_to_date: text that is not a date (mirrors 2-1-19-8)
+    if "vtl 2-1-19-8 " in msg_lower:
+        return RunTimeError("2-1-19-8", date=msg.split("VTL 2-1-19-8 ", 1)[-1])
+
     # VTL macro vtl_dateadd: a period indicator that is not one (mirrors 2-1-19-2)
     if "vtl 2-1-19-2 invalid period" in msg_lower:
         return RunTimeError("2-1-19-2", period=msg.rsplit(" ", 1)[-1])

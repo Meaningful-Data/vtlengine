@@ -2384,6 +2384,9 @@ FROM (
             return f"vtl_period_normalize(CAST({expr} AS VARCHAR))"
 
         if target_type_str == "Date":
+            if source_lower == "string":
+                # Text that is not a date raises 2-1-19-8, as on the pandas engine
+                return f"CAST(vtl_text_to_date({expr}) AS {duckdb_type})"
             if source_lower in ("time_period", "timeperiod"):
                 return f"vtl_period_to_date({expr})"
             if source_lower in ("time", "timeinterval"):
