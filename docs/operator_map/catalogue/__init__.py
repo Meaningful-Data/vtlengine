@@ -12,6 +12,7 @@ from catalogue.conditional import CHAPTER as CONDITIONAL_CHAPTER
 from catalogue.definitions import CHAPTER as DEFINITIONS_CHAPTER
 from catalogue.general import CHAPTER as GENERAL_CHAPTER
 from catalogue.hierarchy import CHAPTER as HIERARCHY_CHAPTER
+from catalogue.join import CHAPTER as JOIN_CHAPTER
 from catalogue.numeric import CHAPTER as NUMERIC_CHAPTER
 from catalogue.set import CHAPTER as SET_CHAPTER
 from catalogue.string import CHAPTER as STRING_CHAPTER
@@ -21,6 +22,7 @@ from catalogue.validation import CHAPTER as VALIDATION_CHAPTER
 
 CHAPTERS: tuple[Chapter, ...] = (
     GENERAL_CHAPTER,
+    JOIN_CHAPTER,
     STRING_CHAPTER,
     NUMERIC_CHAPTER,
     COMPARISON_CHAPTER,

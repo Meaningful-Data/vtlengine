@@ -1,0 +1,17 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r",
+      "DataStructure": [
+        {"name": "Id_11", "type": "Integer", "role": "Identifier"},
+        {"name": "Id_12", "type": "String", "role": "Identifier"},
+        {"name": "Id_21", "type": "Integer", "role": "Identifier"},
+        {"name": "Id_22", "type": "String", "role": "Identifier"},
+        {"name": "Me_1", "type": "String", "role": "Measure"},
+        {"name": "Me_12", "type": "String", "role": "Measure"},
+        {"name": "Me_1A", "type": "String", "role": "Measure"},
+        {"name": "Me_2", "type": "String", "role": "Measure"}
+      ]
+    }
+  ]
+}
