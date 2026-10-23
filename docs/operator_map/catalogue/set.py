@@ -25,7 +25,7 @@ CHAPTER = Chapter(
                 Variant(
                     id="two",
                     label="union(DS, DS)",
-                    examples=(manual("ex_1"), manual("ex_2")),
+                    examples=(manual("ex_1"), manual("ex_2"), authored()),
                 ),
                 Variant(
                     id="n",
@@ -45,7 +45,7 @@ CHAPTER = Chapter(
                 Variant(
                     id="two",
                     label="intersect(DS, DS)",
-                    examples=(manual("ex_1"),),
+                    examples=(manual("ex_1"), authored()),
                 ),
                 Variant(
                     id="n",
@@ -65,7 +65,7 @@ CHAPTER = Chapter(
                 Variant(
                     id="two",
                     label="setdiff(DS, DS)",
-                    examples=(manual("ex_1"), manual("ex_2")),
+                    examples=(manual("ex_1"), manual("ex_2"), authored()),
                 ),
             ),
         ),
@@ -80,7 +80,7 @@ CHAPTER = Chapter(
                 Variant(
                     id="two",
                     label="symdiff(DS, DS)",
-                    examples=(manual("ex_1"),),
+                    examples=(manual("ex_1"), authored()),
                 ),
             ),
         ),
