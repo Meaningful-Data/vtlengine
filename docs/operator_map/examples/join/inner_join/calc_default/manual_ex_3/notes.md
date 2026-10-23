@@ -1,13 +1,12 @@
-# inner_join: calc_measure (manual example 3)
+# inner_join: calc_default (manual example 3)
 
 Manual: [Inner Join](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html),
 example 3:
 `DS_r := inner_join ( DS_1  filter Id_2 ="B" calc Me_2 := Me_2 || "_NEW" keep Me_1, Me_2);`
 
-Mapped to `calc_measure`: its `calc` gives no role, and in a join "if the role is not specified,
-it will be **measure**", so it is the role-less form of the variant whose authored example writes
-`measure` out. It overwrites `Me_2`, which is in the input. The `filter` and `keep` of the example
-have authored examples of their own (and `keep` has manual example 1).
+Mapped to `calc_default`: its `calc` gives no role, and in a join "if the role is not specified,
+it will be **measure**". It overwrites `Me_2`, which is in the input. The `filter` and `keep` of
+the example have authored examples of their own (and `keep` has manual example 1).
 
 The expected output is the manual's, imported as it is. Re-derived from the page:
 
