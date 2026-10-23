@@ -4585,9 +4585,9 @@ FROM (
         """Keep once each data point that several rules compute (issue #1193).
 
         When all of them give it the same values, it is kept once, with the values of the
-        rule evaluated last, the ones later rules read. Numbers are the same within the
-        tolerance of the comparisons and a null is the same as a null; otherwise 2-1-10-1
-        is raised.
+        last of them in the ruleset, the ones later rules read. Numbers are the same within
+        the tolerance of the comparisons and a null is the same as a null; otherwise
+        2-1-10-1 is raised.
         """
         result_components = dict(ds.components)
         apply_viral_return_types(ds.get_viral_attributes(), result_components)

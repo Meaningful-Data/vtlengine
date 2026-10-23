@@ -37,10 +37,11 @@ def unique_data_points(
     """Keep once each data point that several rules compute (issue #1193).
 
     The conditions of the rules that compute a code item may hold on the same data point.
-    When all of them give it the same values, it is kept once, with the values of the rule
-    evaluated last, the ones later rules read: the data points come in evaluation order.
-    Numbers are the same within the tolerance of the comparisons and a null is the same as
-    a null; otherwise there would be two data points with the same identifiers.
+    When all of them give it the same values, it is kept once, with the values of the last
+    of them in the ruleset, the ones later rules read: the data points come in the order the
+    rules are evaluated, which keeps the order they are written in. Numbers are the same
+    within the tolerance of the comparisons and a null is the same as a null; otherwise
+    there would be two data points with the same identifiers.
     """
     identifiers = [name for name in data.columns if components[name].role == Role.IDENTIFIER]
     repeated = data[data.duplicated(subset=identifiers, keep=False)].copy()

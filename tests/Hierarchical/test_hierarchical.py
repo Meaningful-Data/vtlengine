@@ -4373,3 +4373,33 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         with mock.patch.dict(os.environ, {"COMPARISON_ABSOLUTE_THRESHOLD": "6"}):
             self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1193_10(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        when Id_1 in {"X", "Y"} then TOTAL = B + C;
+                        when Id_1 in {"Y", "Z"} then TOTAL = B + D;
+                        C = E + F;
+                        H = TOTAL + B
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
+
+        Description: With COMPARISON_ABSOLUTE_THRESHOLD set to 6, the 1.0 that the first
+        rule computes for TOTAL of Y and the 1.000001 of the second one are the same value.
+        The first rule reads C, which a later rule computes.
+
+        Git Branch: #1193.
+        Goal: Check the data point keeps the value of the last rule written, which H reads,
+        even when the first one depends on a later rule.
+        """
+
+        code = "GH_1193_10"
+        number_inputs = 1
+        references_names = ["1"]
+
+        with mock.patch.dict(os.environ, {"COMPARISON_ABSOLUTE_THRESHOLD": "6"}):
+            self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
