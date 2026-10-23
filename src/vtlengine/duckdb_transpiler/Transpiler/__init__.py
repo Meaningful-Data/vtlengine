@@ -5095,4 +5095,21 @@ FROM (
                     query = re.sub(rf"\b{re.escape(table_name)}\b", op_name, query)
                     break
 
-        return query
+        # An infinite value in the result raises 2-1-3-1, as on the pandas engine
+        numeric = (
+            [
+                quote_name(name)
+                for name, comp in node.output.components.items()
+                if comp.data_type in (Number, Integer)
+            ]
+            if node.output is not None
+            else []
+        )
+        if not numeric:
+            return query
+        infinite = " OR ".join(f"isinf(TRY_CAST({name} AS DOUBLE))" for name in numeric)
+        error = "'VTL Error 2-1-3-1: Division by zero produced infinite values in eval'"
+        return (
+            f"SELECT * FROM ({query.strip().rstrip(';')}) AS eval_result "
+            f"WHERE CASE WHEN {infinite} THEN error({error}) ELSE TRUE END"
+        )

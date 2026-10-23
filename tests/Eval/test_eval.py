@@ -151,6 +151,14 @@ def test_execute_query_sql_error():
         Eval._execute_query(query, ["DS_1"], datasets)
 
 
+def test_execute_query_infinite_values():
+    query = "SELECT A, CAST('Infinity' AS DOUBLE) AS B FROM DS_1;"
+    datasets = {"DS_1": pd.DataFrame([{"A": 1}])}
+    with pytest.raises(RunTimeError) as context:
+        Eval._execute_query(query, ["DS_1"], datasets)
+    assert context.value.args[1] == "2-1-3-1"
+
+
 def test_execute_query_duckdb_function():
     query = "SELECT ABS(A) AS abs_a FROM DS_1;"
     datasets = {"DS_1": pd.DataFrame([{"A": -10}])}

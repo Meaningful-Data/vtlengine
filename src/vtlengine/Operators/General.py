@@ -166,15 +166,15 @@ class Eval(Unary):
                     df = data[ds_name]
                     conn.register(ds_name, df)
                 df_result = conn.execute(query).fetchdf()
-                for col_name in df_result.columns:
-                    arr = pa.array(df_result[col_name])
-                    if pa.types.is_floating(arr.type) and pc.any(pc.is_inf(arr)).as_py():
-                        conn.close()
-                        raise RunTimeError("2-1-3-1", op="eval")
-                conn.close()
             except Exception as e:
-                conn.close()
                 raise query_error(e)
+            finally:
+                conn.close()
+            # Checked out of the query handling, which would report it as a query error
+            for col_name in df_result.columns:
+                arr = pa.array(df_result[col_name])
+                if pa.types.is_floating(arr.type) and pc.any(pc.is_inf(arr)).as_py():
+                    raise RunTimeError("2-1-3-1", op="eval")
         except (RunTimeError, SemanticError):
             raise
         except Exception as e:

@@ -218,7 +218,8 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     # Division by zero: the specific VTL error crafted by ratio_to_report must be
     # checked before the generic DuckDB pattern, as its message contains both.
     if "vtl error 2-1-3-1" in msg_lower:
-        return RunTimeError("2-1-3-1", op="ratio_to_report")
+        m = re.search(r"infinite values in (\w+)", msg)
+        return RunTimeError("2-1-3-1", op=m.group(1) if m else "ratio_to_report")
     if "division by zero" in msg_lower or "divide by zero" in msg_lower:
         return RunTimeError("2-1-3-1", op="division")
 

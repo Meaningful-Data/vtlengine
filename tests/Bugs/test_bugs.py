@@ -4214,6 +4214,24 @@ class DefinedBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1192_40(self):
+        """
+        Status: OK
+        Expression: DS_r <- eval(GH_1192_40(DS_1) language "SQL" returns dataset {...});
+        Description: An External Routine whose result holds infinite values raises 2-1-3-1 on
+                     both engines: pandas reported it as 2-1-1-1 and DuckDB returned the
+                     infinite values.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_40"
+        number_inputs = 1
+        message = "2-1-3-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, sql_names=[code]
+        )
+
 
 class OtherBugs(BugHelper):
     """ """
