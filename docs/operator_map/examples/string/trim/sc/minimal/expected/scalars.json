@@ -1,0 +1,5 @@
+{
+  "scalars": [
+    {"name": "sc_r", "type": "String", "value": "Hello"}
+  ]
+}
