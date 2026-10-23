@@ -100,7 +100,8 @@ def verdict(example: Example, files: ExampleFiles, out: RunOutput, today: str) -
     ``mismatch`` with the detail ``missing output <name>``. Then, by the ``check`` of the example:
 
     * ``exact``: every expected dataset and scalar must compare as equal, or the verdict is a
-      ``mismatch`` and the detail is the first problem found;
+      ``mismatch`` and the detail is the first problem found, with the name of the output in
+      front (``DS_s: ...``) when the example expects more than one;
     * ``random``: the run must be ``stable`` (the same on every run) and have at least one value,
       and every non-null value of a component that is not an identifier, and of a scalar, must
       be a number from 0 up to, but not including, 1;
@@ -213,18 +214,20 @@ def _first_problem(
     """The first problem that a rule finds between an expected output and the one of the run.
 
     The datasets come first, then the scalars, each in the order of the expected files. Every
-    expected output is in the run: ``_missing_output`` has checked it.
+    expected output is in the run: ``_missing_output`` has checked it. The problem names its
+    output (``<name>: ...``) when there is more than one expected output, to tell them apart.
     """
     datasets = {dataset.name: dataset for dataset in out.datasets}
     scalars = {scalar.name: scalar for scalar in out.scalars}
+    several = len(files.expected_datasets) + len(files.expected_scalars) > 1
     for wanted_dataset in files.expected_datasets:
         problem = dataset_rule(wanted_dataset, datasets[wanted_dataset.name])
         if problem is not None:
-            return problem
+            return f"{wanted_dataset.name}: {problem}" if several else problem
     for wanted_scalar in files.expected_scalars:
         problem = scalar_rule(wanted_scalar, scalars[wanted_scalar.name])
         if problem is not None:
-            return problem
+            return f"{wanted_scalar.name}: {problem}" if several else problem
     return None
 
 

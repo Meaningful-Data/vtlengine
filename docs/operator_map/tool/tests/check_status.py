@@ -254,10 +254,33 @@ def test_the_detail_of_a_mismatch_is_the_first_problem_in_file_order() -> None:
     assert first_problem is not None
     assert second_problem is not None
     assert first_problem != second_problem
+    # An example with several expected outputs names the one that is wrong.
     both = verdict(authored(), wanted, run(first, second), TODAY)
-    assert both == EngineVerdict("mismatch", first_problem)
+    assert both == EngineVerdict("mismatch", f"DS_r: {first_problem}")
     only_second = verdict(authored(), wanted, run(actual_dataset(), second), TODAY)
-    assert only_second == EngineVerdict("mismatch", second_problem)
+    assert only_second == EngineVerdict("mismatch", f"DS_s: {second_problem}")
+
+
+def test_the_detail_names_the_output_only_when_the_example_expects_several() -> None:
+    wrong_scalar = ActualScalar("sc_r", "Integer", "9")
+    scalar_problem = compare_scalar(ExpectedScalar("sc_r", "Integer", "8"), wrong_scalar)
+    assert scalar_problem is not None
+    # A dataset and a scalar: the scalar is the one that is wrong, and the detail says so.
+    several = files(datasets=[expected_dataset()], scalars=[ExpectedScalar("sc_r", "Integer", "8")])
+    got = verdict(authored(), several, run(actual_dataset(), wrong_scalar), TODAY)
+    assert got == EngineVerdict("mismatch", f"sc_r: {scalar_problem}")
+    # The structure check of the property checks names the output too.
+    properties = files(
+        datasets=[expected_dataset(rows=[])], scalars=[ExpectedScalar("sc_r", "Number", None)]
+    )
+    out = run(numbers("0.25"), ActualScalar("sc_r", "Integer", "0.5"), stable=True)
+    assert verdict(authored(check="random"), properties, out, TODAY) == (
+        EngineVerdict("mismatch", "sc_r: type expected Number got Integer")
+    )
+    # One expected output needs no name: there is nothing to tell apart.
+    single = files(datasets=[], scalars=[ExpectedScalar("sc_r", "Integer", "8")])
+    got = verdict(authored(), single, run(wrong_scalar), TODAY)
+    assert got == EngineVerdict("mismatch", scalar_problem)
 
 
 def test_a_scalar_does_not_stand_for_an_expected_dataset() -> None:
