@@ -1,0 +1,6 @@
+define operator same_period (x time_period)
+    returns time_period is
+        x
+end operator;
+
+sc_r := same_period(cast("2020Q1", time_period));

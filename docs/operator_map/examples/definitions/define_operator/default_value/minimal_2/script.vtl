@@ -1,0 +1,6 @@
+define operator add (x integer, y integer default 10)
+    returns integer is
+        x + y
+end operator;
+
+sc_r := add(1, _);

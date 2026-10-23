@@ -1,0 +1,9 @@
+{
+  "scalars": [
+    {
+      "name": "sc_r",
+      "type": "Duration",
+      "value": "M"
+    }
+  ]
+}

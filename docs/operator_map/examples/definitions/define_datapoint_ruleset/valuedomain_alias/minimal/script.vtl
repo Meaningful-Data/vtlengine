@@ -1,0 +1,5 @@
+define datapoint ruleset DPR_1 (valuedomain VD_FLOW as F, VD_AMOUNT as A) is
+    when F = "CREDIT" then A >= 0
+end datapoint ruleset;
+
+DS_r := check_datapoint(DS_1, DPR_1 components Id_2, Me_1 all);

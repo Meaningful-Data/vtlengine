@@ -1,0 +1,6 @@
+define operator is_in (x string, s set<string>)
+    returns boolean is
+        x in s
+end operator;
+
+sc_r := is_in("B", {"A", "B"});
