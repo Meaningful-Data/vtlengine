@@ -679,6 +679,12 @@ centralised_messages = {
         "description": "Raised when a side of the apply expression of a join, such as a constant "
         "or the only operand of the join, names no Measures shared between the joined Data Sets.",
     },
+    "1-1-13-23": {
+        "message": "At op apply: {expression} is not supported, the apply expression must be a "
+        "binary operation between operands of the join, such as d1 + d2.",
+        "description": "Raised when the apply expression of a join is not a binary operation, "
+        "such as a function call or an if-then-else.",
+    },
     "1-1-13-9": {
         "message": "Ambiguity for this variable {comp_name} inside a Join clause.",
         "description": "Raised when a component name is ambiguous in a Join operation.",

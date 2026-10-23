@@ -5,10 +5,11 @@ from typing import Any, Dict, List, Optional, Set
 import pandas as pd
 
 from vtlengine.AST import BinOp
+from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.Grammar.tokens import CROSS_JOIN, FULL_JOIN, INNER_JOIN, LEFT_JOIN
 from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE, binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Operators import Operator, _id_type_promotion_join_keys
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
@@ -505,67 +506,68 @@ class Apply(Operator):
     @classmethod
     def evaluate(cls, dataset: Dataset, expression: Any, op_map: Dict[str, Any]) -> Dataset:
         for child in expression:
-            cls._check_operands(dataset, child)
-            dataset = cls.execute(dataset, op_map[child.op], child.left.value, child.right.value)
+            dataset = cls._apply(dataset, child, op_map, evaluate=True)
         return dataset
-
-    @classmethod
-    def execute(cls, dataset: Dataset, op: Any, left: str, right: str) -> Dataset:
-        left_dataset = cls.create_dataset("left", left, dataset)
-        right_dataset = cls.create_dataset("right", right, dataset)
-        left_dataset, right_dataset = cls.get_common_components(left_dataset, right_dataset)
-        return op.evaluate(left_dataset, right_dataset)
 
     @classmethod
     def validate(cls, dataset: Dataset, child: Any, op_map: Dict[str, Any]) -> Dataset:
         if isinstance(child, list):
             for c in child:
                 dataset = cls.validate(dataset, c, op_map)
-        else:
-            cls._check_operands(dataset, child)
-            cls._check_bin_expr(dataset, child, op_map)
-            left_dataset = cls.create_dataset("left", child.left.value, dataset)
-            right_dataset = cls.create_dataset("right", child.right.value, dataset)
-            dataset, _ = cls.get_common_components(left_dataset, right_dataset)
+            return dataset
+        return cls._apply(dataset, child, op_map, evaluate=False)
 
-        return dataset
+    @classmethod
+    def _apply(
+        cls, dataset: Dataset, child: Any, op_map: Dict[str, Any], evaluate: bool
+    ) -> Dataset:
+        """Apply the operator of the expression to each pair of homonym Measures of the operands,
+        as a Component operation, so each Measure gets the type the operator gives it."""
+        if not isinstance(child, BinOp) or child.op not in op_map:
+            raise SemanticError("1-1-13-23", expression=ASTString().render(child))
+        left_name, right_name = cls._operand_names(dataset, child)
+        left = cls.create_dataset("left", left_name, dataset)
+        right = cls.create_dataset("right", right_name, dataset)
+        left, right = cls.get_common_components(left, right)
+        operator = op_map[child.op]
+        components = {comp.name: comp for comp in left.get_identifiers()}
+        data = left.data[list(components)].copy() if evaluate and left.data is not None else None
+        for measure in left.get_measures_names():
+            operands = [
+                DataComponent(
+                    name=measure,
+                    data=operand.data[measure] if data is not None else None,
+                    data_type=operand.components[measure].data_type,
+                    role=Role.MEASURE,
+                    nullable=operand.components[measure].nullable,
+                )
+                for operand in (left, right)
+            ]
+            result = (
+                operator.evaluate(*operands) if data is not None else operator.validate(*operands)
+            )
+            components[measure] = Component(
+                name=measure,
+                data_type=result.data_type,
+                role=Role.MEASURE,
+                nullable=result.nullable,
+            )
+            if data is not None:
+                data[measure] = result.data
+        return Dataset(name=VirtualCounter._new_ds_name(), components=components, data=data)
 
     @staticmethod
-    def _check_operands(dataset: Dataset, child: Any) -> None:
-        """Each side of the apply expression must name an operand of the join."""
-        if not isinstance(child, BinOp):
-            return
+    def _operand_names(dataset: Dataset, child: BinOp) -> List[str]:
+        """The operands of the join that the sides of the apply expression name."""
+        names = []
         for side in (child.left, child.right):
-            name = getattr(side, "value", side)
+            name = getattr(side, "value", None)
             if not isinstance(name, str) or not any(
                 comp.startswith(f"{name}#") for comp in dataset.components
             ):
-                raise SemanticError("1-1-13-22", operand=name)
-
-    @classmethod
-    def _check_bin_expr(cls, dataset: Dataset, child: Any, op_map: Dict[str, Any]) -> None:
-        if not isinstance(child, BinOp):
-            raise Exception(
-                f"Invalid expression {child} on apply operator. Only BinOp are accepted"
-            )
-        if child.op not in op_map:
-            raise Exception(f"Operator {child.op} not implemented")
-        if hasattr(child.left, "value") and hasattr(child.right, "value"):
-            left_components = [
-                comp.name[len(child.left.value) + 1]
-                for comp in dataset.components.values()
-                if comp.name.startswith(child.left.value)
-            ]
-            right_components = [
-                comp.name[len(child.right.value) + 1]
-                for comp in dataset.components.values()
-                if comp.name.startswith(child.right.value)
-            ]
-            if len(set(left_components) & set(right_components)) == 0:
-                raise Exception(
-                    f"{child.left.value} and {child.right.value} "
-                    f"has not any match on dataset components"
-                )
+                raise SemanticError("1-1-13-22", operand=ASTString().render(side))
+            names.append(name)
+        return names
 
     @classmethod
     def create_dataset(cls, name: str, prefix: str, dataset: Dataset) -> Dataset:
