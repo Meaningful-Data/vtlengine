@@ -5,8 +5,9 @@ valuedomain { condition vdConditioningSignature } rule ruleValueDomain`), and `r
 associates the Identifier `Id_2` with it.
 
 The value domains belong to the information model: `value_domains/` holds them as enumerated
-domains. A vtlengine structure has no place to say that a component takes its values from a
-value domain, so the association is the one the call gives. On value domains,
+domains. vtlengine's structure schema (`json_schema_2.1.json`) has `variables: [{name,
+domain}]` and `domains` to say which value domain a component takes its values from, but the
+loader ignores them, so the association is the one the call gives. On value domains,
 [check_hierarchy](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Data%20validation%20operators/Check%20hierarchy/index.html) must name the components: "If hr is defined on Value Domains then it
 is mandatory to specify the condition (if any in the ruleset hr) and the rule parameters", and
 they "must take values on the Value Domains corresponding, in positional order, to the ones

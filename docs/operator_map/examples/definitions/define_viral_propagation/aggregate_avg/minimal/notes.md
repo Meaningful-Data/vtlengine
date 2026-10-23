@@ -19,4 +19,4 @@ DS_r").
 | 1 | 1.5 | 4.0 | 2.75 |
 | 2 | 3.0 | 2.0 | 2.5 |
 
-The expected values follow the manual, as the open issue #1175 (viral `avg` and the associative law) asks: over the pair of values, `avg` is their mean. `At_1` is a Number, so no question of a type change from an integer mean arises.
+Issue #1175 (viral `avg` and the associative law) was closed on 2026-10-22 with a team reading: `avg` relies on the order of execution across operators and takes the whole set within one operator (the clarification proposed in sdmx-twg/vtl#744). Over a single pair both readings give the mean, so this example follows the manual and needs no decision marker; `minimal_2` and `minimal_3` show the two cases where the reading decides the result. `At_1` is a Number, so no question of a type change from an integer mean arises.

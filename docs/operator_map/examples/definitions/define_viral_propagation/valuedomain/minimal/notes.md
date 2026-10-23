@@ -6,9 +6,10 @@ default for all Attributes using that Value Domain, unless a more specific rule 
 directly on the Attribute's Represented Variable". `At_1` takes its values from `CL_CONF` and has
 no rule of its own, so the rule applies to it.
 
-The value domain belongs to the information model: `value_domains/CL_CONF.json` holds it.
-That `At_1` takes its values from `CL_CONF` is part of the information model too; a vtlengine
-structure has no place to say it.
+The value domain belongs to the information model: `value_domains/CL_CONF.json` holds it. The
+input structures record, under `variables`, that `At_1` takes its values from `CL_CONF`:
+vtlengine's structure schema (`json_schema_2.1.json`) has `variables: [{name, domain}]` and
+`domains` for this, but the loader ignores them.
 The rule is the manual's `CONF_priority` example ("the CL_CONF list with C > N > F").
 
 `DS_1 + DS_2` pairs the data points with the same `Id_1` and adds their Measures ([Typical

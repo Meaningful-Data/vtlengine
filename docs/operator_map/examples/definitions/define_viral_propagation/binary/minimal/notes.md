@@ -28,6 +28,8 @@ not explicitly listed; when it is absent, missing combinations yield NULL".
 | 3 | M | F | `when "M"` (not the pair C, M) | M |
 | 4 | C | C | none: `else` | F |
 
+Row 4, the pair (C, C), combines two equal values into a different one (F). The section calls the algorithm "reflexive", but the User Manual's reflexive law is about one operand ("A( §(D1)) = A(D1)"), and the manual's own examples also give another value for a pair of equal values (`OBS_STATUS_default` gives F for (E, E), `COMPUTED_missing` gives " " for (C, C)), so the example follows the clauses as written.
+
 Like the manual's `COMPUTED_missing`, this rule is not associative over three values (M with
 the N of a previous (C, M) gives M), which the manual asks of a rule ("the rule must be defined
 such that the result is consistent regardless of grouping"). Here it only combines pairs, so

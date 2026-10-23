@@ -23,3 +23,5 @@ not explicitly listed; when it is absent, missing combinations yield NULL".
 | 1 | C | N | `when "C"` | C |
 | 2 | N | N | none | null |
 | 3 | N | A | none | null |
+
+Row 2, the pair (N, N), combines two equal values into a different one (null). The section calls the algorithm "reflexive", but the User Manual's reflexive law is about one operand ("A( §(D1)) = A(D1)"), and the manual's own examples also give another value for a pair of equal values (`OBS_STATUS_default` gives F for (E, E), `COMPUTED_missing` gives " " for (C, C)), so the example follows the clauses as written.

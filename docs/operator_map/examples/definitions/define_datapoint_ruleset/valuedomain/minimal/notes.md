@@ -11,8 +11,9 @@ and `Me_1` with `VD_AMOUNT`.
 The value domains belong to the information model. `value_domains/VD_FLOW.json` holds the
 enumerated `VD_FLOW` (`CREDIT`, `DEBIT`). `VD_AMOUNT` is a described domain (the integer
 amounts), which a value-domain file of vtlengine cannot hold, since it takes only a list of
-values, so it has no file. A vtlengine structure has no place to say that a component takes its
-values from a value domain; the association is the one `components` gives.
+values, so it has no file. vtlengine's structure schema (`json_schema_2.1.json`) has
+`variables: [{name, domain}]` and `domains` to say which value domain a component takes its
+values from, but the loader ignores them, so the association is the one `components` gives.
 
 Each rule is an implication, evaluated on each data point ([define datapoint
 ruleset](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/datapoint_rulesets.html), Semantic specification): "if the antecedentCondition evaluates to false, the
