@@ -21,11 +21,16 @@ Per `Id_1` group (`group by Id_1` drops `Id_2`):
 | 2 | 3, 4 | 7 | 4, 9 | 9 |
 
 Each item aggregates its own component. The Measure item keeps the result an ordinary data set
-with a Measure. Its role-omitted reading is the one the manual's own `aggr` examples use (`ex_1`
-`Me_1 := sum(Me_1)`). The attribute-only form is covered by `attribute_role/minimal_2`.
+with a Measure; its role-omitted reading is the one of the manual's own `aggr` examples
+(`ex_1`: `Me_1 := sum(Me_1)`). The attribute-only form is covered by `attribute_role/minimal_2`.
 
-Type of the `sum`: the Sum page declares the result **number** and adds "Since **integer** is a subtype of **number**, implementations may preserve the **integer** type for the resulting measure or component when all operand values are **integer**", so the expected `Me_1` may be Integer or Number. `max` keeps the type of its operand (Max page: "the result has the **same** type as the
-operand"), so `At_1` is an Integer.
+Type of the `sum`: the Sum page declares the result **number** and adds "Since **integer** is a
+subtype of **number**, implementations may preserve the **integer** type for the resulting
+measure or component when all operand values are **integer** and the sum is computed in
+integer arithmetic", so the expected `Me_1` may be Integer or Number.
+
+`max` keeps the type of its operand (Max page: "the result has the **same** type as the operand"),
+so `At_1` is an Integer.
 
 Triage (2026-10-23): both engines return `At_1` as a Measure, the same finding as
 `calc/measure_default/minimal_2`. Re-derived from the rule quoted above, the expected output

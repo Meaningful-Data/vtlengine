@@ -12,13 +12,15 @@ clauses are maintained in the result".
 | 1 | 1, 5 | 6 | 5 |
 | 2 | 3, 4 | 7 | 4 |
 
-Why the `Me_1 := sum(Me_1)` item is there: "The **aggr** computed Measures and Attributes are the
-only Measures and Attributes returned in the output Data Set", so without it the result would have
-no Measure. When this example was written it was not checked whether the manual allows that, so
-a Measure was kept to make the result an ordinary data set. It was **not** added because the
-attribute-only form fails on an engine: that form had not been run. The User Manual does allow
-it ("There can be from 0 to N Measures in a Data Structure. A Data Set without Measures is
-allowed"), so `minimal_2` holds the attribute-only form.
+The `Me_1 := sum(Me_1)` item keeps a Measure in the result: "The **aggr** computed Measures and
+Attributes are the only Measures and Attributes returned in the output Data Set", so without it
+the result would have no Measure. That form is valid too (User Manual: "A Data Set without
+Measures is allowed") and is the example `minimal_2`.
 
-Type of the `sum`: the Sum page declares the result **number** and adds "Since **integer** is a subtype of **number**, implementations may preserve the **integer** type for the resulting measure or component when all operand values are **integer**", so the expected `Me_1` may be Integer or Number. `max` keeps the type of its operand (Max page: "the result has the **same** type as the
-operand"), so `At_1` is an Integer.
+Type of the `sum`: the Sum page declares the result **number** and adds "Since **integer** is a
+subtype of **number**, implementations may preserve the **integer** type for the resulting
+measure or component when all operand values are **integer** and the sum is computed in
+integer arithmetic", so the expected `Me_1` may be Integer or Number.
+
+`max` keeps the type of its operand (Max page: "the result has the **same** type as the operand"),
+so `At_1` is an Integer.
