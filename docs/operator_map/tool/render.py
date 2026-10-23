@@ -88,7 +88,8 @@ _MARKUP: Final = re.compile(r"([\\*`|_])")
 # What the smart quotes of Sphinx would change in a text that is not a literal: the straight
 # quotes, a run of hyphens (a dash) and an ellipsis, ``...`` or ``. . .``. Every character of such
 # a sequence is escaped, which keeps it as it was written and leaves the rest of the text alone.
-_TYPESET: Final = re.compile(r"""['"]|-{2,}|\.{3,}|\.(?: \.){2}""")
+# A hyphen or a dot after a backslash of the text is escaped too, or Sphinx drops the backslash.
+_TYPESET: Final = re.compile(r"""['"]|-{2,}|\.{3,}|\.(?: \.){2}|(?<=\\)[-.]""")
 _TYPESET_CHARACTER: Final = re.compile(r"""['".-]""")
 # A paragraph that starts like a list, a field, a table, a comment... is read as one, unless its
 # first character is escaped.
@@ -710,7 +711,9 @@ def _text(text: str) -> str:
     """
     one_line = _NEWLINE.sub(" ", text).strip()
     escaped = _inline(one_line)
-    if not escaped or escaped.startswith("\\"):  # an escaped first character protects it
+    # An escaped first character protects the paragraph, but a line of backslashes only is a
+    # transition, however they are escaped.
+    if not escaped or (escaped.startswith("\\") and escaped.strip("\\")):
         return escaped
     if one_line[0].isalnum() and not _ENUMERATOR.match(one_line):
         return escaped

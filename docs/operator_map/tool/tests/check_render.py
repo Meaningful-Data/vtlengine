@@ -391,6 +391,9 @@ def test_detail_is_one_line_escaped_and_cut_at_200_characters(tmp_path: Path) ->
         ("it's a -- b --- c - d -> e", "it\\'s a \\-\\- b \\-\\-\\- c - d -> e"),
         ("wait... then . . . and .. no", "wait\\.\\.\\. then \\. \\. \\. and .. no"),
         ("2.5 and a.b and 1-1-1-1", "2.5 and a.b and 1-1-1-1"),
+        # A backslash that comes right before a hyphen or a dot would be lost under Sphinx.
+        ("regex \\d+\\.\\d+ and \\-x", "regex \\\\d+\\\\\\.\\\\d+ and \\\\\\-x"),
+        ("a\\'b a\\\"b", "a\\\\\\'b a\\\\\\\"b"),
     ],
 )
 def test_detail_escapes_what_rst_reads_as_markup(detail: str, cell: str, tmp_path: Path) -> None:
@@ -420,6 +423,7 @@ def test_detail_escapes_what_rst_reads_as_markup(detail: str, cell: str, tmp_pat
         ("__ item", "\\_\\_ item"),
         ("| item", "\\| item"),
         ("see below::", "see below:\\:"),
+        ("\\\\", "\\ \\\\\\\\"),  # two backslashes would be four: a transition
         ("not a list 1. item", "not a list 1. item"),
         ("e.g. a value", "e.g. a value"),
     ],
@@ -907,6 +911,8 @@ HOSTILE = [
     "'quoted' \"text\" --dash... end\\",
     'Parser Error: syntax error at or near "SELECT" -- it\'s a query... ---. . .',
     "DuckDB: Binder Error: column \"Me_1\" not found, candidates: 'Me_2' -- didn't match...",
+    "regex \\d+\\.\\d+ and \\-x, \\'s\\' and \\\"q\\\" and \\\\-- and \\...",
+    "\\\\",
 ]
 HOSTILE_LABELS = ["f(x) || *y* _z_", "f(`n`) || *y* _z_", "f(x) \\"]
 
