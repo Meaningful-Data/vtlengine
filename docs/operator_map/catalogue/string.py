@@ -113,6 +113,7 @@ _SUBSTR = Operator(
         ),
         Variant("ds_noargs", "substr(DS)", (authored(),)),
         Variant("comp_start_len", "substr(comp, start, length)", (manual("ex_3"),)),
+        Variant("comp_params", "substr(comp, comp, comp)", (authored(),)),
         Variant(
             "sc_start_len",
             "substr(sc, start, length)",
@@ -132,6 +133,7 @@ _REPLACE = Operator(
         Variant("ds_two", "replace(DS, pattern1, pattern2)", (manual("ex_1"),)),
         Variant("ds_one", "replace(DS, pattern1)", (authored(),)),
         Variant("comp_two", "replace(comp, pattern1, pattern2)", (manual("ex_2"),)),
+        Variant("comp_patterns", "replace(comp, comp, comp)", (authored(),)),
         Variant("sc_two", "replace(sc, pattern1, pattern2)", (authored(),)),
     ),
 )
@@ -153,6 +155,7 @@ _INSTR = Operator(
         ),
         Variant("ds_placeholder_occ", "instr(DS, pattern, _, occurrence)", (authored(),)),
         Variant("comp_pattern", "instr(comp, pattern)", (manual("ex_2"), manual("ex_3"))),
+        Variant("comp_params", "instr(comp, comp, comp)", (authored(),)),
         Variant("sc_pattern", "instr(sc, pattern)", (authored(),)),
     ),
 )
