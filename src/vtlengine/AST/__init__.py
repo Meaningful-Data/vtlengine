@@ -372,10 +372,6 @@ class OrderBy(AST):
     component: str
     order: str
 
-    def __post_init__(self):
-        if self.order not in ["asc", "desc"]:
-            raise ValueError(f"Invalid order: {self.order}")
-
     __eq__ = AST.ast_equality
 
 

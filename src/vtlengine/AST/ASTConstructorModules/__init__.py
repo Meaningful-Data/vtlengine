@@ -1,6 +1,33 @@
 from typing import Any, Dict
 
-from vtlengine.AST.Grammar._cpp_parser.vtl_cpp_parser import ParseNode, TerminalNode
+from vtlengine.AST.Grammar._cpp_parser.vtl_cpp_parser import (
+    ParseNode,
+    TerminalNode,
+    get_input_text,
+)
+
+# Longest script text quoted in an error message
+MAX_QUOTED_TEXT = 60
+
+
+def script_location(node: Any) -> str:
+    """
+    Quotes the script text of a parse node and the line and column where it starts, for the
+    errors raised while the AST is built (issue #1192). Whitespace runs are collapsed and long
+    texts shortened.
+    """
+    info = extract_token_info(node)
+    lines = get_input_text().split("\n")[info["line_start"] - 1 : info["line_stop"]]
+    if len(lines) == 1:
+        text = lines[0][info["column_start"] : info["column_stop"]]
+    else:
+        text = "\n".join(
+            [lines[0][info["column_start"] :], *lines[1:-1], lines[-1][: info["column_stop"]]]
+        )
+    text = " ".join(text.split())
+    if len(text) > MAX_QUOTED_TEXT:
+        text = text[: MAX_QUOTED_TEXT - 3] + "..."
+    return f"'{text}' (line {info['line_start']}, column {info['column_start'] + 1})"
 
 
 def extract_token_info(token: Any) -> Dict[str, int]:

@@ -361,3 +361,10 @@ def test_GH_676_2():
     with pytest.raises(InputValidationException) as ctx:
         s.values = ["not_an_integer"]
     assert ctx.value.args[1] == "0-1-2-7"
+
+
+def test_scalar_repr_leaves_out_the_literal_flag():
+    literal = Scalar(name="sc_r", data_type=DataTypes.Integer, value=-1, literal=True)
+    value = Scalar(name="sc_r", data_type=DataTypes.Integer, value=-1)
+    assert "literal" not in repr(literal)
+    assert repr(literal) == repr(value)

@@ -75,7 +75,7 @@ def normalize_datetime(value: str) -> str:
     component is missing, truncated, malformed or out of range.
     """
     if _STRICT_DATETIME_RE.match(value) is None:
-        raise ValueError(f"Invalid or incomplete time component in {value!r}")
+        raise InputValidationException(code="0-1-1-28", value=repr(value))
     normalized = _normalize_fractional_seconds(value)
     # datetime.fromisoformat only parses a trailing "Z" on Python 3.11+; rewrite it
     # so 3.9/3.10 behave the same, then drop the offset (keep wall-clock -> naive).
@@ -150,7 +150,7 @@ def check_date(value: Any) -> str:
             iso_result = normalize_datetime(value)
         else:
             iso_result = date.fromisoformat(value).isoformat()
-    except ValueError:
+    except (ValueError, InputValidationException):
         raise _build_date_error(value) from None
 
     # Check date is between 1800 and 9999
@@ -177,6 +177,14 @@ time_pattern = r"^" + date_pattern + r"/" + date_pattern + r"$"
 
 def check_time(value: str) -> str:
     value = value.strip()
+    try:
+        return _check_time(value)
+    except ValueError:
+        # A year or a month the calendar refuses (2020-13)
+        raise InputValidationException(code="0-1-1-30", value=value) from None
+
+
+def _check_time(value: str) -> str:
     year_result = re.fullmatch(year_pattern, value)
     if year_result is not None:
         date1_time = datetime.strptime(value, "%Y")
@@ -192,11 +200,9 @@ def check_time(value: str) -> str:
     if time_result is not None:
         time_list = value.split("/")
         if time_list[0] > time_list[1]:
-            raise ValueError("Start date is greater than end date.")
+            raise InputValidationException(code="0-1-1-29", value=value)
         return value
-    raise ValueError(
-        "Time is not in the correct format. Use YYYY-MM-DD/YYYY-MM-DD or YYYY or YYYY-MM."
-    )
+    raise InputValidationException(code="0-1-1-30", value=value)
 
 
 # Comprehensive time period pattern covering all accepted input formats.
@@ -258,8 +264,9 @@ def _check_time_period_cached(value: str) -> str:
         result = TimePeriodHandler(value)
         return str(result)
 
-    raise ValueError(
-        f"Time period '{value}' is not in a valid format. "
-        f"Accepted formats: YYYY, YYYYA, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd, "
-        f"YYYY-MM, YYYY-MM-DD, YYYY-Mxx, YYYY-Qx, YYYY-Sx, YYYY-Wxx, YYYY-Dxxx, YYYY-A1."
+    raise InputValidationException(
+        code="0-1-1-31",
+        value=value,
+        formats="YYYY, YYYYA, YYYYSn, YYYYQn, YYYYMm, YYYYWw, YYYYDd, YYYY-MM, YYYY-MM-DD, "
+        "YYYY-Mxx, YYYY-Qx, YYYY-Sx, YYYY-Wxx, YYYY-Dxxx, YYYY-A1",
     )

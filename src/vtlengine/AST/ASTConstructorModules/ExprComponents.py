@@ -6,7 +6,6 @@ from vtlengine.AST import (
     Case,
     CaseObj,
     Constant,
-    EvalOp,
     Identifier,
     If,
     MulOp,
@@ -23,7 +22,7 @@ from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
 from vtlengine.AST.Grammar.tokens import STRING_DISTANCE
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import InputValidationException, SemanticError
 
 
 class ExprComp:
@@ -115,10 +114,6 @@ class ExprComp:
             var_id_node = VarID(value=token_text, **extract_token_info(ctx))
             return var_id_node
 
-        else:
-            # AST_ASTCONSTRUCTOR.3
-            raise NotImplementedError
-
     def bin_op_creator_comp(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
         left_node = self.visitExprComponent(ctx_list[0])
@@ -150,8 +145,6 @@ class ExprComp:
             right_node = Terminals().visitLists(ctx_list[2])
         elif not ctx_list[2].is_terminal and ctx_list[2].ctx_id == RC.VALUE_DOMAIN_ID:
             right_node = Terminals().visitValueDomainID(ctx_list[2])
-        else:
-            raise NotImplementedError
         bin_op_node = BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
         return bin_op_node
@@ -190,7 +183,7 @@ class ExprComp:
         ctx_list = ctx.children
 
         if len(ctx_list) % 4 != 3:
-            raise ValueError("Syntax error.")
+            raise InputValidationException(code="0-5-1-1")
 
         else_node = self.visitExprComponent(ctx_list[-1])
         ctx_list = ctx_list[1:-2]
@@ -270,8 +263,6 @@ class ExprComp:
 
         elif ctx.ctx_id == RC.ANALYTIC_FUNCTIONS_COMPONENTS:
             return self.visitAnalyticFunctionsComponents(c)
-        else:
-            raise NotImplementedError
 
     """
                                 -----------------------------------
@@ -286,8 +277,6 @@ class ExprComp:
             return self.visitEvalAtomComponent(ctx)
         elif ctx.ctx_id == RC.CAST_EXPR_COMPONENT:
             return self.visitCastExprComponent(ctx)
-        else:
-            raise NotImplementedError
 
     def visitCallComponent(self, ctx):  # type: ignore[no-untyped-def]
         """
@@ -309,52 +298,8 @@ class ExprComp:
         """
         | EVAL LPAREN routineName LPAREN (componentID|scalarItem)? (COMMA (componentID|scalarItem))* RPAREN (LANGUAGE STRING_CONSTANT)? (RETURNS outputParameterTypeComponent)? RPAREN      # evalAtomComponent
         """  # noqa E501
-        ctx_list = ctx.children
-
-        routine_name = Terminals().visitRoutineName(ctx_list[2])
-
-        # Think of a way to maintain the order, for now its not necessary.
-        var_ids_nodes = [
-            Terminals().visitVarID(varID)
-            for varID in ctx_list
-            if not varID.is_terminal and varID.ctx_id == RC.VAR_ID
-        ]
-        constant_nodes = [
-            Terminals().visitScalarItem(scalar)
-            for scalar in ctx_list
-            if not scalar.is_terminal and scalar.rule_index == RC.SCALAR_ITEM[0]
-        ]
-        children_nodes = var_ids_nodes + constant_nodes
-
-        if len(children_nodes) > 1:
-            raise Exception("Only one operand is allowed in Eval")
-
-        # Reference manual says it is mandatory.
-        language_name = [
-            language
-            for language in ctx_list
-            if language.is_terminal and language.symbol_type == vtl_cpp_parser.STRING_CONSTANT
-        ]
-        if len(language_name) == 0:
-            # AST_ASTCONSTRUCTOR.12
-            raise SemanticError("1-3-2-1", option="language")
-        # Reference manual says it is mandatory.
-        output_node = [
-            Terminals().visitOutputParameterTypeComponent(output)
-            for output in ctx_list
-            if not output.is_terminal and output.ctx_id == RC.OUTPUT_PARAMETER_TYPE_COMPONENT
-        ]
-        if len(output_node) == 0:
-            # AST_ASTCONSTRUCTOR.13
-            raise SemanticError("1-3-2-1", option="output")
-
-        return EvalOp(
-            name=routine_name,
-            operands=children_nodes[0],
-            output=output_node[0],
-            language=language_name[0].text,
-            **extract_token_info(ctx),
-        )
+        # The grammar accepts eval inside a clause, but eval only applies to Data Sets
+        raise SemanticError("1-3-2-5")
 
     def visitCastExprComponent(self, ctx):  # type: ignore[no-untyped-def]
         """
@@ -401,10 +346,6 @@ class ExprComp:
                 op=op, children=children_nodes, params=param_node, **extract_token_info(ctx)
             )
 
-        else:
-            # AST_ASTCONSTRUCTOR.14
-            raise NotImplementedError
-
     def visitParameterComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
         c = ctx_list[0]
@@ -413,8 +354,6 @@ class ExprComp:
             return self.visitExprComponent(c)
         elif c.is_terminal:
             return ID(type_="OPTIONAL", value=c.text, **extract_token_info(ctx))
-        else:
-            raise NotImplementedError
 
     """
                             -----------------------------------
@@ -433,8 +372,6 @@ class ExprComp:
             return self.visitInstrAtomComponent(ctx)
         elif ctx.ctx_id == RC.STRING_DISTANCE_ATOM_COMPONENT:
             return self.visitStringDistanceAtomComponent(ctx)
-        else:
-            raise NotImplementedError
 
     def visitUnaryStringFunctionComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -567,8 +504,6 @@ class ExprComp:
             return self.visitUnaryWithOptionalNumericComponent(ctx)
         elif ctx.ctx_id == RC.BINARY_NUMERIC_COMPONENT:
             return self.visitBinaryNumericComponent(ctx)
-        else:
-            raise NotImplementedError
 
     def visitUnaryNumericComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -651,8 +586,6 @@ class ExprComp:
             RC.MONTH_TODAY_ATOM_COMPONENT,
         ):
             return self.visitTimeUnaryAtomComponent(ctx)
-        else:
-            raise NotImplementedError
 
     def visitTimeUnaryAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
         """
@@ -667,10 +600,6 @@ class ExprComp:
             for operand in ctx_list
             if not operand.is_terminal and operand.rule_index == RC.EXPR_COMPONENT[0]
         ]
-
-        if len(operand_node) == 0:
-            # AST_ASTCONSTRUCTOR.15
-            raise NotImplementedError
 
         return UnaryOp(op=op, operand=operand_node[0], **extract_token_info(ctx))
 
@@ -849,8 +778,6 @@ class ExprComp:
     def visitConditionalFunctionsComponents(self, ctx):  # type: ignore[no-untyped-def]
         if ctx.ctx_id == RC.NVL_ATOM_COMPONENT:
             return self.visitNvlAtomComponent(ctx)
-        else:
-            raise NotImplementedError
 
     def visitNvlAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -874,8 +801,6 @@ class ExprComp:
             return self.visitCharsetMatchAtomComponent(ctx)
         elif ctx.ctx_id == RC.IS_NULL_ATOM_COMPONENT:
             return self.visitIsNullAtomComponent(ctx)
-        else:
-            raise NotImplementedError
 
     def visitBetweenAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -922,8 +847,6 @@ class ExprComp:
             return self.visitAggrComp(ctx)
         elif ctx.ctx_id == RC.COUNT_AGGR_COMP:
             return self.visitCountAggrComp(ctx)
-        else:
-            raise NotImplementedError
 
     def visitAggrComp(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -951,8 +874,6 @@ class ExprComp:
             return self.visitRankAnComponent(ctx)
         elif ctx.ctx_id == RC.RATIO_TO_REPORT_AN_COMPONENT:
             return self.visitRatioToReportAnComponent(ctx)
-        else:
-            raise NotImplementedError
 
     def visitAnSimpleFunctionComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -975,8 +896,6 @@ class ExprComp:
             elif not c.is_terminal and c.ctx_id == RC.WINDOWING_CLAUSE:
                 params = Terminals().visitWindowingClause(c)
                 continue
-            else:
-                raise NotImplementedError
 
         return Analytic(
             op=op_node,

@@ -1540,7 +1540,7 @@ def test_load_data_structure_with_new_schema(data_structure):
 
 @pytest.mark.parametrize("ds_r, error_message", param_id_null)
 def test_load_data_structure_with_null_id(ds_r, error_message):
-    with pytest.raises(ValueError, match=error_message):
+    with pytest.raises(InputValidationException, match=error_message):
         load_datasets(ds_r)
 
 

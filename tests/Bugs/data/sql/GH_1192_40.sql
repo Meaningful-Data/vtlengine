@@ -1,0 +1,1 @@
+SELECT Id_1, 1.0 / Me_1 AS Me_1 FROM DS_1;

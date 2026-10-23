@@ -92,8 +92,6 @@ def vp_pair_sql(rule: ViralPropagationRule, a_ref: str, b_ref: str) -> str:
 
 def vp_reduce_refs(rule: ViralPropagationRule, refs: List[str]) -> str:
     """Fold vp_pair_sql across an ordered list of column refs (>=1)."""
-    if not refs:
-        raise ValueError("vp_reduce_refs requires at least one column ref")
     acc = refs[0]
     for ref in refs[1:]:
         acc = vp_pair_sql(rule, acc, ref)

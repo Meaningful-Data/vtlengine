@@ -2486,3 +2486,75 @@ class JoinsGeneralTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1202_1(self):
+        """
+        Expression: DS_r <- inner_join(DS_1, DS_2 apply DS_1 = DS_2);
+        Description: The comparison is applied to each pair of homonym Measures, so Me_1 and
+                     Me_2 are Boolean, the same on both engines.
+        Git Issue: GH_1202.
+        """
+        code = "GH_1202_1"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1202_2(self):
+        """
+        Expression: DS_r <- inner_join(DS_1, DS_2 apply DS_1 || DS_2);
+        Description: Concatenating Number Measures is an invalid implicit cast, raised as the same SemanticError on both engines.
+        Git Issue: GH_1202.
+        """
+        code = "GH_1202_2"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-2"
+        )
+
+    def test_GH_1202_3(self):
+        """
+        Expression: DS_r <- inner_join(DS_1, DS_2 apply abs(DS_1));
+        Description: A function call is not a binary operation, raised as the same SemanticError on both engines.
+        Git Issue: GH_1202.
+        """
+        code = "GH_1202_3"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-23"
+        )
+
+    def test_GH_1202_4(self):
+        """
+        Expression: DS_r <- inner_join(DS_1, DS_2 apply if true then DS_1 else DS_2);
+        Description: An if-then-else is not a binary operation, raised as the same SemanticError on both engines.
+        Git Issue: GH_1202.
+        """
+        code = "GH_1202_4"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-23"
+        )
+
+    def test_GH_1202_5(self):
+        """
+        Expression: DS_r <- inner_join(DS_1, DS_2 apply DS_1 in {1, 2});
+        Description: A set is not an operand of the join, raised as the same SemanticError on both engines.
+        Git Issue: GH_1202.
+        """
+        code = "GH_1202_5"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-22"
+        )
+
+    def test_GH_1202_6(self):
+        """
+        Expression: DS_r <- inner_join(DS_1, DS_2 apply DS_1#Me_1);
+        Description: A Component is not an operand of the join, raised as the same SemanticError on both engines.
+        Git Issue: GH_1202.
+        """
+        code = "GH_1202_6"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-22"
+        )

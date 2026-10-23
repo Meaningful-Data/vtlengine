@@ -372,6 +372,17 @@ CREATE OR REPLACE MACRO vtl_period_to_natural(input VARCHAR) AS (
 -- VTL String Functions
 -- =========================================================================
 
+-- An integer parameter of substr or instr read from the data, which must be at
+-- least min_value (mirrors VTL error 2-1-18-1). A literal parameter is checked
+-- by the semantic analysis before any SQL runs.
+CREATE OR REPLACE MACRO vtl_param_min(x, min_value, op_name, param_name) AS (
+    CASE WHEN x < min_value
+         THEN error('VTL 2-1-18-1 ' || op_name || ' ' || param_name || ' '
+                    || CAST(min_value AS VARCHAR))
+         ELSE x
+    END
+);
+
 -- VTL instr(string, pattern, start, occurrence)
 CREATE OR REPLACE MACRO vtl_instr(
     s VARCHAR, pat VARCHAR, start_pos_raw BIGINT, occur_raw BIGINT
@@ -455,11 +466,83 @@ CREATE OR REPLACE MACRO vtl_power(a, b) AS (
     END
 );
 
+-- Text cast to Number or Integer, which mirrors VTL error 2-1-5-1 for text that is
+-- no number, or no integer (the pandas engine casts text to Integer with int()).
+CREATE OR REPLACE MACRO vtl_text_to_double(x) AS (
+    CASE WHEN x IS NOT NULL AND TRY_CAST(x AS DOUBLE) IS NULL
+         THEN error('VTL 2-1-5-1 Number ' || CAST(x AS VARCHAR))
+         ELSE CAST(x AS DOUBLE)
+    END
+);
+
+CREATE OR REPLACE MACRO vtl_text_to_integer(x) AS (
+    CASE WHEN x IS NULL THEN NULL
+         WHEN NOT regexp_full_match(trim(x), '[+-]?[0-9]+(_[0-9]+)*')
+         THEN error('VTL 2-1-5-1 Integer ' || x)
+         ELSE CAST(replace(trim(x), '_', '') AS BIGINT)
+    END
+);
+
+-- Text cast to Duration: an ISO duration or a code in any case gives the code, as on the
+-- pandas engine, and other text mirrors VTL error 2-1-5-1.
+CREATE OR REPLACE MACRO vtl_text_to_duration(x) AS (
+    CASE upper(trim(x))
+        WHEN 'A' THEN 'A' WHEN 'S' THEN 'S' WHEN 'Q' THEN 'Q'
+        WHEN 'M' THEN 'M' WHEN 'W' THEN 'W' WHEN 'D' THEN 'D'
+        WHEN 'P1Y' THEN 'A' WHEN 'P6M' THEN 'S' WHEN 'P3M' THEN 'Q' WHEN 'P1M' THEN 'M'
+        WHEN 'P1W' THEN 'W' WHEN 'P7D' THEN 'W' WHEN 'P1D' THEN 'D'
+        ELSE CASE WHEN x IS NULL THEN NULL ELSE error('VTL 2-1-5-1 Duration ' || x) END
+    END
+);
+
+-- Text cast to Date, which mirrors VTL error 2-1-19-8 for text that is not a date
+-- written YYYY-MM-DD (or YYYY-MM-D) or a full YYYY-MM-DD[T| ]HH:MM:SS datetime.
+CREATE OR REPLACE MACRO vtl_text_to_date(x) AS (
+    CASE WHEN x IS NULL THEN NULL
+         WHEN regexp_full_match(x, '[0-9]{4}-[0-9]{2}-[0-9]{1,2}')
+              OR regexp_full_match(
+                  x,
+                  '[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([+-][0-9]{2}:[0-9]{2}|Z)?'
+              )
+         THEN x
+         ELSE error('VTL 2-1-19-8 ' || x)
+    END
+);
+
+-- Random index computed in the script or read from a Component, which mirrors VTL error
+-- 2-1-15-2 when negative (a literal or a scalar value is checked before any SQL runs).
+CREATE OR REPLACE MACRO vtl_random_index(x) AS (
+    CASE WHEN x < 0 THEN error('VTL 2-1-15-2 random: negative index ' || CAST(x AS VARCHAR))
+         ELSE x
+    END
+);
+
 -- Square root that mirrors VTL error 2-1-15-2 on negative values.
 CREATE OR REPLACE MACRO vtl_sqrt(x) AS (
     CASE WHEN x IS NULL OR isnan(CAST(x AS DOUBLE)) THEN NULL
          WHEN x < 0 THEN error('VTL 2-1-15-2 sqrt: negative value ' || CAST(x AS VARCHAR))
          ELSE SQRT(x)
+    END
+);
+
+-- datediff reads dates and time periods. A Time value holds two dates, so any
+-- value but a null fails (mirrors VTL error 2-1-19-25).
+CREATE OR REPLACE MACRO vtl_datediff_no_time(x) AS (
+    CASE WHEN x IS NULL THEN NULL
+         ELSE error('VTL 2-1-19-25 datediff: Time value ' || CAST(x AS VARCHAR))
+    END
+);
+
+-- A datediff operand whose type the SQL generation could not tell, read as the
+-- pandas engine reads it: a Time value fails (VTL error 2-1-19-25), a value with
+-- two dashes is a date and any other is a time period, read as its last day.
+CREATE OR REPLACE MACRO vtl_datediff_date(x) AS (
+    CASE WHEN x IS NULL THEN NULL
+         WHEN contains(CAST(x AS VARCHAR), '/')
+         THEN error('VTL 2-1-19-25 datediff: Time value ' || CAST(x AS VARCHAR))
+         WHEN length(CAST(x AS VARCHAR)) - length(replace(CAST(x AS VARCHAR), '-', '')) = 2
+         THEN CAST(CAST(x AS VARCHAR) AS DATE)
+         ELSE vtl_tp_end_date(vtl_period_parse(CAST(x AS VARCHAR)))
     END
 );
 
@@ -554,7 +637,7 @@ CREATE OR REPLACE MACRO vtl_hamming(s1 VARCHAR, s2 VARCHAR) AS (
     CASE
         WHEN s1 IS NULL OR s2 IS NULL THEN NULL
         WHEN LENGTH(s1) <> LENGTH(s2) THEN
-            error('VTL 1-1-18-11: hamming length mismatch '
+            error('VTL 2-1-18-2: hamming length mismatch '
                   || LENGTH(s1) || ' ' || LENGTH(s2))
         ELSE hamming(s1, s2)
     END

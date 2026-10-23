@@ -1,7 +1,7 @@
 import inspect
 import json
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
 
@@ -28,6 +28,8 @@ class Scalar:
     _value: Any
     nullable: bool = True
     persistent: bool = False
+    # A literal written in the script, whose value the semantic analysis already knows
+    literal: bool = field(default=False, repr=False)
 
     def __init__(
         self,
@@ -36,12 +38,14 @@ class Scalar:
         value: Any,
         nullable: bool = True,
         persistent: bool = False,
+        literal: bool = False,
     ) -> None:
         self.name = name
         self.data_type = data_type
         self.value = value
         self.nullable = nullable
         self.persistent = persistent
+        self.literal = literal
 
     @property
     def value(self) -> Any:
@@ -169,7 +173,7 @@ class Component:
 
     def __post_init__(self) -> None:
         if self.role == Role.IDENTIFIER and self.nullable:
-            raise ValueError(f"Identifier {self.name} cannot be nullable")
+            raise InputValidationException(code="0-1-1-18", name=self.name)
         if self.role == Role.VIRAL_ATTRIBUTE and self.name in RESERVED_COMPONENT_NAMES:
             raise SemanticError(
                 "1-3-3-7",
@@ -235,12 +239,10 @@ class Dataset:
     def __post_init__(self) -> None:
         if self.data is not None:
             if len(self.components) != len(self.data.columns):
-                raise ValueError(
-                    "The number of components must match the number of columns in the data"
-                )
+                raise InputValidationException(code="0-1-1-19", name=self.name)
             for name, _ in self.components.items():
                 if name not in self.data.columns:
-                    raise ValueError(f"Component {name} not found in the data")
+                    raise InputValidationException(code="0-1-1-20", comp_name=name, name=self.name)
 
     def enforce_dtypes(self) -> None:
         """Ensure all DataFrame column dtypes match their component DataType."""
@@ -302,7 +304,7 @@ class Dataset:
         elif self.data is None or other.data is None:
             return False
         if len(self.data) == len(other.data) == 0 and self.data.shape != other.data.shape:
-            raise SemanticError("0-1-1-14", dataset1=self.name, dataset2=other.name)
+            raise InputValidationException(code="0-1-1-14", dataset1=self.name, dataset2=other.name)
 
         for comp in self.components.values():
             type_name: str = comp.data_type.__name__.__str__()
@@ -367,8 +369,6 @@ class Dataset:
         return self.components[component_name]
 
     def add_component(self, component: Component) -> None:
-        if component.name in self.components:
-            raise ValueError(f"Component with name {component.name} already exists")
         self.components[component.name] = component
 
     def delete_component(self, component_name: str) -> None:
@@ -513,9 +513,7 @@ class ValueDomain:
     def __post_init__(self) -> None:
         if len(set(self.setlist)) != len(self.setlist):
             duplicated = [item for item, count in Counter(self.setlist).items() if count > 1]
-            raise ValueError(
-                f"The setlist must have unique values. Duplicated values: {duplicated}"
-            )
+            raise InputValidationException(code="0-1-1-21", name=self.name, duplicated=duplicated)
 
         # Cast values to the correct type
         self.setlist = [self.type.cast(value) for value in self.setlist]
@@ -523,7 +521,7 @@ class ValueDomain:
     @classmethod
     def from_json(cls, json_str: str) -> str:
         if len(json_str) == 0:
-            raise ValueError("Empty JSON string for ValueDomain")
+            raise InputValidationException(code="0-1-1-22")
 
         json_info = json.loads(json_str)
         return cls.from_dict(json_info)
@@ -532,9 +530,9 @@ class ValueDomain:
     def from_dict(cls, value: Dict[str, Any]) -> Any:
         for x in ("name", "type", "setlist"):
             if x not in value:
-                raise Exception("Invalid format for ValueDomain. Requires name, type and setlist.")
+                raise InputValidationException(code="0-1-1-23")
         if value["type"] not in SCALAR_TYPES:
-            raise ValueError(f"Invalid data type {value['type']} for ValueDomain {value['name']}")
+            raise InputValidationException(code="0-1-1-24", type=value["type"], name=value["name"])
 
         return cls(value["name"], SCALAR_TYPES[value["type"]], value["setlist"])
 
@@ -564,7 +562,7 @@ class ExternalRoutine:
             dataset_names = cls._extract_dataset_names(query)
             return cls(dataset_names, query, name)
         except sqlglot.errors.ParseError as e:
-            raise Exception(f"Invalid SQL query in external routine '{name}': {e}") from e
+            raise InputValidationException(code="0-1-1-25", name=name, error=e) from e
 
     @classmethod
     def _extract_dataset_names(cls, query: str) -> List[str]:

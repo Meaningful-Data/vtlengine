@@ -6,7 +6,7 @@ from pytest import mark
 
 from tests.NewOperators.conftest import run_expression, run_scalar_expression
 from vtlengine.DataTypes import Integer
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import SemanticError
 
 pytestmark = mark.input_path(Path(__file__).parent / "data")
 
@@ -32,8 +32,8 @@ scalar_time_params = [
 ]
 
 scalar_time_error_params = [
-    ('datediff(cast("2022Q1",date),cast("2023Q2",time_period))', RunTimeError, "2-1-19-8"),
-    ('datediff(cast("2020D1",time_period),cast("2020D15",date))', RunTimeError, "2-1-19-8"),
+    ('datediff(cast("2022Q1",date),cast("2023Q2",time_period))', SemanticError, "1-1-5-6"),
+    ('datediff(cast("2020D1",time_period),cast("2020D15",date))', SemanticError, "1-1-5-6"),
 ]
 
 

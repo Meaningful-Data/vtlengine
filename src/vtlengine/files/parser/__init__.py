@@ -185,7 +185,7 @@ def _parse_boolean(value: Any) -> bool:
     # types and the DuckDb engine's own Boolean reading take out the same way.
     text = str(value).replace('"', "")
     if not Boolean.check(text):
-        raise ValueError(f"Value {value} is not a Boolean")
+        raise InputValidationException(code="0-1-1-32", value=value)
     return bool(Boolean.cast(text))
 
 
@@ -208,7 +208,7 @@ def _cast_exact_integer(value: Any) -> Optional[int]:
     except ValueError:
         result = Integer.cast(float(text))
     if result is not None and not _INT64_MIN <= result <= _INT64_MAX:
-        raise ValueError(f"Value {text} is out of range for Integer (int64)")
+        raise InputValidationException(code="0-1-1-33", value=text)
     return result
 
 
@@ -309,11 +309,9 @@ def _validate_pandas(
                             .all()
                         )
                         if not values_correct:
-                            raise ValueError(
-                                f"Duration values are not correct in column {comp_name}"
-                            )
+                            raise InputValidationException(code="0-1-1-34", comp_name=comp_name)
                     except ValueError:
-                        raise ValueError(f"Duration values are not correct in column {comp_name}")
+                        raise InputValidationException(code="0-1-1-34", comp_name=comp_name)
             else:
                 data[comp_name] = data[comp_name].map(str, na_action="ignore")
             data[comp_name] = data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]

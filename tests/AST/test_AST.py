@@ -45,7 +45,7 @@ from vtlengine.AST import (
 from vtlengine.AST.ASTEncoders import ComplexDecoder, ComplexEncoder
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.DataTypes import ScalarType
-from vtlengine.Exceptions import SemanticError, VTLSyntaxError
+from vtlengine.Exceptions import InputValidationException, SemanticError, VTLSyntaxError
 from vtlengine.Interpreter import InterpreterAnalyzer
 
 base_path = Path(__file__).parent
@@ -82,6 +82,25 @@ def test_decode_ast(script):
     with open(filepath / "reference_encode.json") as file:
         ast_decode = json.load(file, object_hook=ComplexDecoder.object_hook)
     assert ast_decode == ast
+
+
+def test_decode_unknown_ast_class():
+    with pytest.raises(InputValidationException) as context:
+        json.loads('{"class_name": "NotAnAstClass"}', object_hook=ComplexDecoder.object_hook)
+    assert context.value.args == ("Unknown AST class NotAnAstClass in the JSON AST.", "0-5-1-11")
+
+
+def test_decode_ast_class_with_unknown_fields():
+    with pytest.raises(InputValidationException) as context:
+        json.loads(
+            '{"class_name": "VarID", "value": "DS_1", "unknown": 1}',
+            object_hook=ComplexDecoder.object_hook,
+        )
+    assert context.value.args[1] == "0-5-1-12"
+    assert context.value.args[0].startswith(
+        "Invalid fields for the AST class VarID in the JSON AST:"
+    )
+    assert "unknown" in context.value.args[0]
 
 
 params_comments_ast = [

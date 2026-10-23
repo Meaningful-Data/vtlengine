@@ -23,7 +23,7 @@ from vtlengine.AST.Grammar.tokens import (
     UCASE,
 )
 from vtlengine.DataTypes import Integer, Number, String, check_unary_implicit_promotion
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 
 
@@ -144,6 +144,11 @@ class Concatenate(Binary):
 
 
 class Parameterized(Unary):
+    # Implemented by each operator
+    @classmethod
+    def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None:
+        raise NotImplementedError
+
     @classmethod
     def validate(cls, *args: Any) -> Any:
         operand: Operator.ALL_MODEL_DATA_TYPES
@@ -252,14 +257,6 @@ class Parameterized(Unary):
         return cls.scalar_evaluation(operand, param1, param2)
 
     @classmethod
-    def check_param(cls, *args: Any) -> None:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
-    def check_param_value(cls, *args: Any) -> None:
-        raise Exception("Method should be implemented by inheritors")
-
-    @classmethod
     def generate_series_from_param(cls, *args: Any) -> Any:
         param: Optional[Union[DataComponent, Scalar]] = None
         length: int
@@ -327,15 +324,24 @@ class Substr(Parameterized):
             if param.data is not None:
                 param.data.map(lambda x: cls.check_param_value(x, position))
         else:
-            cls.check_param_value(param.value, position)
+            cls.check_param_value(param.value, position, literal=param.literal)
 
     @classmethod
-    def check_param_value(cls, param: Optional[Any], position: int) -> None:
-        if param is not None:
-            if not pd.isnull(param) and not param >= 1 and position == 1:
-                raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
-            elif not pd.isnull(param) and not param >= 0 and position == 2:
-                raise SemanticError("1-1-18-4", op=cls.op, param_type="Length", correct_type=">= 0")
+    def check_param_value(cls, param: Optional[Any], position: int, literal: bool = False) -> None:
+        if param is None or pd.isnull(param):
+            return
+        if position == 1 and not param >= 1:
+            param_type, correct_type = "Start", ">= 1"
+        elif position == 2 and not param >= 0:
+            param_type, correct_type = "Length", ">= 0"
+        else:
+            return
+        # A literal is part of the script, a scalar or component value is data (issue #1192)
+        if literal:
+            raise SemanticError(
+                "1-1-18-4", op=cls.op, param_type=param_type, correct_type=correct_type
+            )
+        raise RunTimeError("2-1-18-1", op=cls.op, param_type=param_type, correct_type=correct_type)
 
 
 class Replace(Parameterized):
@@ -453,7 +459,7 @@ class Hamming(StringDistance):
     @staticmethod
     def py_op(s1: str, s2: str) -> int:
         if len(s1) != len(s2):
-            raise SemanticError("1-1-18-11", op=STRING_DISTANCE, len1=len(s1), len2=len(s2))
+            raise RunTimeError("2-1-18-2", op=STRING_DISTANCE, len1=len(s1), len2=len(s2))
         return sum(1 for a, b in zip(s1, s2) if a != b)
 
 
@@ -549,7 +555,7 @@ class Instr(Parameterized):
         if not param:
             return
         if position not in (1, 2, 3):
-            raise SemanticError("1-1-18-9", op=cls.op)
+            raise SemanticError("1-1-18-3", op=cls.op, pos=position)
         data_type: Any = param.data_type
 
         if position == 1:
@@ -574,14 +580,17 @@ class Instr(Parameterized):
             if param.data is not None:
                 param.data.map(lambda x: cls.check_param_value(x, position))
         else:
-            cls.check_param_value(param.value, position)
+            cls.check_param_value(param.value, position, literal=param.literal)
 
     @classmethod
-    def check_param_value(cls, param: Any, position: int) -> None:
-        if position == 2 and not pd.isnull(param) and param < 1:
-            raise SemanticError("1-1-18-4", op=cls.op, param_type="Start", correct_type=">= 1")
-        elif position == 3 and not pd.isnull(param) and param < 1:
-            raise SemanticError("1-1-18-4", op=cls.op, param_type="Occurrence", correct_type=">= 1")
+    def check_param_value(cls, param: Any, position: int, literal: bool = False) -> None:
+        if position not in (2, 3) or pd.isnull(param) or not param < 1:
+            return
+        param_type = "Start" if position == 2 else "Occurrence"
+        # A literal is part of the script, a scalar or component value is data (issue #1192)
+        if literal:
+            raise SemanticError("1-1-18-4", op=cls.op, param_type=param_type, correct_type=">= 1")
+        raise RunTimeError("2-1-18-1", op=cls.op, param_type=param_type, correct_type=">= 1")
 
     @classmethod
     def apply_operation_series_scalar(
@@ -719,8 +728,8 @@ class Instr(Parameterized):
                 start = int(start - 1)
             else:
                 # OPERATORS_STRINGOPERATORS.92
-                raise SemanticError(
-                    "1-1-18-4", op=cls.op, param_type="Start", correct_type="Integer"
+                raise RunTimeError(
+                    "2-1-18-1", op=cls.op, param_type="Start", correct_type="Integer"
                 )
         else:
             start = 0
@@ -730,8 +739,8 @@ class Instr(Parameterized):
                 occurrence = int(occurrence - 1)
             else:
                 # OPERATORS_STRINGOPERATORS.93
-                raise SemanticError(
-                    "1-1-18-4",
+                raise RunTimeError(
+                    "2-1-18-1",
                     op=cls.op,
                     param_type="Occurrence",
                     correct_type="Integer",

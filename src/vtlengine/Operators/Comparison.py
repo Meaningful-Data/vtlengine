@@ -18,8 +18,8 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     NOT_IN,
 )
-from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, String
-from vtlengine.Exceptions import SemanticError
+from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, String, TimeInterval
+from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
@@ -206,12 +206,26 @@ class NotEqual(Binary):
         return cls.py_op(x, y)
 
 
-class Greater(Binary):
+class Ordering(Binary):
+    """
+    Comparison operators that order their operands, which Time values do not support.
+    """
+
+    @classmethod
+    def type_validation(cls, left_type: Any, right_type: Any) -> Any:
+        # The order of two Time values depends only on their type, so the validation
+        # rejects it and the semantic analysis raises the error (issue #1192)
+        if TimeInterval in (left_type, right_type):
+            raise SemanticError("1-1-19-18", op=cls.op)
+        return super().type_validation(left_type, right_type)
+
+
+class Greater(Ordering):
     op = GT
     py_op = operator.gt
 
 
-class GreaterEqual(Binary):
+class GreaterEqual(Ordering):
     op = GTE
     py_op = operator.ge
 
@@ -229,12 +243,12 @@ class GreaterEqual(Binary):
         return cls.py_op(x, y)
 
 
-class Less(Binary):
+class Less(Ordering):
     op = LT
     py_op = operator.lt
 
 
-class LessEqual(Binary):
+class LessEqual(Ordering):
     op = LTE
     py_op = operator.le
 
@@ -413,6 +427,15 @@ class Between(Operator.Operator):
                 role=Role.MEASURE,
             )
 
+        operand_types = (
+            [measure.data_type for measure in operand.get_measures()]
+            if isinstance(operand, Dataset)
+            else [operand.data_type]
+        )
+        if TimeInterval in (*operand_types, from_.data_type, to.data_type):
+            # between orders its operands, which Time values do not support (issue #1192)
+            raise SemanticError("1-1-19-18", op=cls.op)
+
         if isinstance(operand, Dataset):
             for measure in operand.get_measures():
                 cls.validate_type_compatibility(measure.data_type, from_.data_type)
@@ -441,7 +464,7 @@ class Between(Operator.Operator):
             and isinstance(to_data, pd.Series)
             and len(from_data) != len(to_data)
         ):
-            raise ValueError("From and To must have the same length")
+            raise RunTimeError("2-1-1-18", op=cls.op)
 
         if isinstance(operand, Dataset):
             result.data = operand.data.copy()

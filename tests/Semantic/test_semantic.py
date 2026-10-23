@@ -6,7 +6,7 @@ from tests.Helper import TestHelper, _use_duckdb_backend
 from vtlengine import semantic_analysis
 from vtlengine.API import create_ast
 from vtlengine.API._InternalApi import load_datasets_with_data
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset, Scalar
 
@@ -2337,7 +2337,7 @@ class ScalarTests(SemanticHelper):
         """
         code = "Sc_22"
         number_inputs = 1
-        error_code = "2-3-4"
+        error_code = "1-2-17"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2357,7 +2357,7 @@ class ScalarTests(SemanticHelper):
         """
         code = "Sc_23"
         number_inputs = 1
-        error_code = "2-3-4"
+        error_code = "1-2-17"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2377,7 +2377,7 @@ class ScalarTests(SemanticHelper):
         """
         code = "Sc_24"
         number_inputs = 1
-        error_code = "2-3-4"
+        error_code = "1-2-17"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2398,7 +2398,7 @@ class ScalarTests(SemanticHelper):
         """
         code = "Sc_25"
         number_inputs = 1
-        error_code = "2-3-4"
+        error_code = "1-2-17"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2928,9 +2928,9 @@ def test_bug_349():
             },
         ],
     }
-    with pytest.raises(SemanticError, match="0-1-2-8"):
+    with pytest.raises(InputValidationException, match="0-1-2-8"):
         semantic_analysis(script_1, data_structures=data_structures_1)
-    with pytest.raises(SemanticError, match="0-1-2-8"):
+    with pytest.raises(InputValidationException, match="0-1-2-8"):
         semantic_analysis(script_2, data_structures=data_structures_2)
 
 
@@ -2960,7 +2960,7 @@ def test_bug_411():
 
 
 def test_GH_676_1():
-    """Referencing a dataset name not provided in datasets triggers 2-3-6."""
+    """Referencing a dataset name not provided in datasets triggers 1-2-19."""
     script = "DS_r := DS_unknown;"
     data_structures = {
         "datasets": [
@@ -2975,11 +2975,11 @@ def test_GH_676_1():
     }
     with pytest.raises(SemanticError) as ctx:
         semantic_analysis(script=script, data_structures=data_structures)
-    assert ctx.value.args[1] == "2-3-6"
+    assert ctx.value.args[1] == "1-2-19"
 
 
 def test_GH_676_2():
-    """Using a value domain reference when value_domains is None triggers 2-3-10."""
+    """Using a value domain reference when value_domains is None triggers 1-2-22."""
     script = "DS_r := DS_1[filter Me_1 in undefined_vd];"
     data_structures = {
         "datasets": [
@@ -2999,11 +2999,11 @@ def test_GH_676_2():
     )
     with pytest.raises(SemanticError) as ctx:
         interpreter.visit(ast)
-    assert ctx.value.args[1] == "2-3-10"
+    assert ctx.value.args[1] == "1-2-22"
 
 
 def test_GH_676_3():
-    """exists_in with a scalar instead of a dataset triggers 2-3-11."""
+    """exists_in with a scalar instead of a dataset triggers 1-2-23."""
     script = "DS_r := exists_in(1, DS_1);"
     data_structures = {
         "datasets": [
@@ -3018,7 +3018,7 @@ def test_GH_676_3():
     }
     with pytest.raises(SemanticError) as ctx:
         semantic_analysis(script=script, data_structures=data_structures)
-    assert ctx.value.args[1] == "2-3-11"
+    assert ctx.value.args[1] == "1-2-23"
 
 
 def test_GH_676_4():

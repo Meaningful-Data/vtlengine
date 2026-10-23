@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -777,7 +778,7 @@ class UdoTest(UDOHelper):
         """
         code = "GH_1162_4"
         number_inputs = 1
-        message = "2-3-5"
+        message = "1-2-18"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
@@ -804,9 +805,9 @@ class UdoTest(UDOHelper):
         code = "GH_353"
         number_inputs = 0
         references_names = []
-        error_message = "Invalid parameter type definition dattt at line 1:31."
+        error_message = "Invalid parameter type definition 'dattt' (line 1, column 32)."
 
-        with pytest.raises(Exception, match=error_message):
+        with pytest.raises(Exception, match=re.escape(error_message)):
             self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GH_1161_1(self):

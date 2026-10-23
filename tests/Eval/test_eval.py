@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from tests.Helper import TestHelper, _use_duckdb_backend
-from vtlengine import run
+from vtlengine import run, semantic_analysis
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Operators.General import Eval
 
@@ -74,7 +74,7 @@ class SQLliteEval(TestEval):
         references_names = ["DS_r"]
         sql_names = ["SQL_DS_NOT_FOUND"]
         with pytest.raises(
-            ValueError,
+            SemanticError,
             match="External Routine dataset DS_X is not present in Eval operands",
         ):
             self.BaseTest(
@@ -151,6 +151,14 @@ def test_execute_query_sql_error():
         Eval._execute_query(query, ["DS_1"], datasets)
 
 
+def test_execute_query_infinite_values():
+    query = "SELECT A, CAST('Infinity' AS DOUBLE) AS B FROM DS_1;"
+    datasets = {"DS_1": pd.DataFrame([{"A": 1}])}
+    with pytest.raises(RunTimeError) as context:
+        Eval._execute_query(query, ["DS_1"], datasets)
+    assert context.value.args[1] == "2-1-3-1"
+
+
 def test_execute_query_duckdb_function():
     query = "SELECT ABS(A) AS abs_a FROM DS_1;"
     datasets = {"DS_1": pd.DataFrame([{"A": -10}])}
@@ -225,3 +233,45 @@ def test_eval_julian_with_date_columns():
 
     assert result["DS_r"] is not None
     assert result["DS_r"].data["DIFF_DAYS"].tolist() == expected_diff_days.tolist()
+
+
+EVAL_IN_CLAUSE_STRUCTURES = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+
+@pytest.mark.parametrize(
+    "script",
+    [
+        'DS_r <- DS_1[calc Me_2 := eval(SQL_1(Me_1) language "SQL" returns number)];',
+        'DS_r <- DS_1[calc Me_2 := eval(SQL_1(Me_1, Me_1) language "SQL" returns number)];',
+    ],
+)
+def test_eval_inside_a_clause_is_not_supported(script: str) -> None:
+    """Eval only applies to Data Sets: inside a clause it is a SemanticError, where an
+    IndexError was raised."""
+    external_routines = [{"name": "SQL_1", "query": "SELECT Me_1 FROM DS_1"}]
+    with pytest.raises(SemanticError) as context:
+        semantic_analysis(
+            script=script,
+            data_structures=EVAL_IN_CLAUSE_STRUCTURES,
+            external_routines=external_routines,
+        )
+    assert context.value.args[1] == "1-3-2-5"
+    with pytest.raises(SemanticError) as context:
+        run(
+            script=script,
+            data_structures=EVAL_IN_CLAUSE_STRUCTURES,
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [1.0]})},
+            external_routines=external_routines,
+            use_duckdb=_use_duckdb_backend(),
+        )
+    assert context.value.args[1] == "1-3-2-5"

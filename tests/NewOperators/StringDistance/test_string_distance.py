@@ -5,7 +5,7 @@ import pytest
 from pytest import mark
 
 from tests.NewOperators.conftest import run_expression, run_scalar_expression
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import RunTimeError
 
 pytestmark = mark.input_path(Path(__file__).parent / "data")
 
@@ -61,6 +61,6 @@ def test_string_distance_scalar():
 
 def test_hamming_length_mismatch():
     expression = 'DS_r := string_distance(hamming, "foo", "fooo");'
-    with pytest.raises(SemanticError) as exc:
+    with pytest.raises(RunTimeError) as exc:
         run_scalar_expression(expression)
-    assert exc.value.args[1] == "1-1-18-11"
+    assert exc.value.args[1] == "2-1-18-2"

@@ -1,0 +1,10 @@
+define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+    when Id_1 in {"X", "Y"} then TOTAL = B + C;
+    when Id_1 in {"Y", "Z"} then TOTAL = B + C;
+    G = TOTAL + A
+end hierarchical ruleset;
+
+define viral propagation VP_1 (variable At_1) is aggregate sum end viral propagation;
+
+DS_r <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2);
+DS_n <- count(DS_r group by Id_2);

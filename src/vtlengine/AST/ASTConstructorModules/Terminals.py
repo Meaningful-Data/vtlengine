@@ -10,7 +10,7 @@ from vtlengine.AST import (
     VarID,
     Windowing,
 )
-from vtlengine.AST.ASTConstructorModules import extract_token_info
+from vtlengine.AST.ASTConstructorModules import extract_token_info, script_location
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
 from vtlengine.DataTypes import (
@@ -23,6 +23,7 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
+from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Component, Dataset, Role, Scalar
 
 
@@ -65,8 +66,6 @@ class Terminals:
                     constant_node = Constant(type_="BOOLEAN_CONSTANT", value=True, **token_info)
                 elif child.text == "false":
                     constant_node = Constant(type_="BOOLEAN_CONSTANT", value=False, **token_info)
-                else:
-                    raise NotImplementedError
 
             elif child.symbol_type == vtl_cpp_parser.STRING_CONSTANT:
                 constant_node = Constant(
@@ -75,9 +74,6 @@ class Terminals:
 
             elif child.symbol_type == vtl_cpp_parser.NULL_CONSTANT:
                 constant_node = Constant(type_="NULL_CONSTANT", value=None, **token_info)
-
-            else:
-                raise NotImplementedError
 
         return constant_node
 
@@ -179,10 +175,7 @@ class Terminals:
         """
         ctx_list = ctx.children
         # AST_ASTCONSTRUCTOR.48
-        raise NotImplementedError(
-            "Value Domain '{}' not available for cast operator or scalar type "
-            "representation or rulesets.".format(ctx_list[0].text)
-        )
+        raise InputValidationException(code="0-5-1-8", name=ctx_list[0].text)
 
     def visitValueDomainValue(self, ctx):
         child = ctx.children[0]
@@ -322,7 +315,9 @@ class Terminals:
 
         if len(component_mult) != 0:
             # AST_ASTCONSTRUCTOR.51
-            raise NotImplementedError
+            raise SemanticError(
+                "1-3-13", construct=f"multiplicity modifier in {script_location(ctx)}"
+            )
 
         component_node[0].name = component_name[0]
         return component_node[0]
@@ -332,8 +327,6 @@ class Terminals:
         c = ctx_list[0]
         if not c.is_terminal and c.rule_index == RC.CONSTANT[0]:
             return self.visitConstant(c)
-        else:
-            raise NotImplementedError
 
     def visitScalarType(self, ctx):
         """
@@ -376,22 +369,19 @@ class Terminals:
             type_node = self.visitBasicScalarType(scalartype)
 
         else:
-            raise SyntaxError(
-                f"Invalid parameter type definition {scalartype.children[0].text} at line "
-                f"{ctx.start_line}:{ctx.start_column}."
-            )
+            raise InputValidationException(code="0-5-1-10", definition=script_location(scalartype))
 
         if len(scalartype_constraint) != 0:
             # AST_ASTCONSTRUCTOR.45
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct=f"type constraint in {script_location(ctx)}")
 
         if len(not_) != 0:
             # AST_ASTCONSTRUCTOR.46
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct=f"not null in {script_location(ctx)}")
 
         if len(null_constant) != 0:
             # AST_ASTCONSTRUCTOR.47
-            raise NotImplementedError
+            raise SemanticError("1-3-13", construct=f"null in {script_location(ctx)}")
 
         return type_node
 
@@ -417,27 +407,7 @@ class Terminals:
                    | hrRuleset
                    ;
         """
-        raise NotImplementedError
-
-    def visitDpRuleset(self, ctx):
-        """
-        DATAPOINT                                                                               # dataPoint
-            | DATAPOINT_ON_VD  (GLPAREN  valueDomainName (MUL valueDomainName)*  GRPAREN )?         # dataPointVd
-            | DATAPOINT_ON_VAR  (GLPAREN  varID (MUL varID)*  GRPAREN )?                            # dataPointVar
-        ;
-        """  # noqa E501
-        # AST_ASTCONSTRUCTOR.54
-        raise NotImplementedError
-
-    def visitHrRuleset(self, ctx):
-        """
-        hrRuleset: HIERARCHICAL                                                                                                            # hrRulesetType
-            | HIERARCHICAL_ON_VD ( GLPAREN  vdName=IDENTIFIER (LPAREN valueDomainName (MUL valueDomainName)* RPAREN)?  GRPAREN )?   # hrRulesetVdType
-            | HIERARCHICAL_ON_VAR ( GLPAREN  varName=varID (LPAREN  varID (MUL varID)* RPAREN)?  GRPAREN )?                         # hrRulesetVarType
-        ;
-        """  # noqa E501
-        # AST_ASTCONSTRUCTOR.55
-        raise NotImplementedError
+        raise SemanticError("1-3-13", construct=f"ruleset type {script_location(ctx)}")
 
     def visitComponentType(self, ctx):
         """
@@ -484,8 +454,6 @@ class Terminals:
 
         elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return self.visitComponentType(c)
-        else:
-            raise NotImplementedError
 
     def visitOutputParameterType(self, ctx):
         """
@@ -506,8 +474,6 @@ class Terminals:
 
         elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return "Component"
-        else:
-            raise NotImplementedError
 
     def visitDeclaredOutputType(self, ctx):
         """
@@ -523,8 +489,10 @@ class Terminals:
                 return self.visitDatasetType(c)
             elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
                 return self.visitComponentType(c)
-        except (NotImplementedError, SyntaxError):
+        except (InputValidationException, SemanticError) as error:
             # The type visitors reject these forms, so only output_type describes the result
+            if error.args[1] not in ("0-5-1-10", "1-3-13"):
+                raise
             return None
         return None
 
@@ -542,8 +510,6 @@ class Terminals:
 
         elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return self.visitComponentType(c)
-        else:
-            raise NotImplementedError
 
     def visitScalarItem(self, ctx):
         # ctx is a scalarItem node (either simpleScalar or scalarWithCast alternative)
@@ -551,8 +517,6 @@ class Terminals:
             return self.visitSimpleScalar(ctx)
         elif ctx.ctx_id == RC.SCALAR_WITH_CAST:
             return self.visitScalarWithCast(ctx)
-        else:
-            raise NotImplementedError
 
     def visitScalarWithCast(self, ctx):
         """
@@ -582,16 +546,12 @@ class Terminals:
                 op=op, children=children_nodes, params=param_node, **extract_token_info(ctx)
             )
 
-        else:
-            # AST_ASTCONSTRUCTOR.14
-            raise NotImplementedError
-
     def visitScalarSetType(self, ctx):
         """
         scalarSetType: SET ('<' scalarType '>')? ;
         """
         # AST_ASTCONSTRUCTOR.60
-        raise NotImplementedError
+        raise SemanticError("1-3-13", construct=f"set type {script_location(ctx)}")
 
     def visitRetainType(self, ctx):
         """
@@ -610,16 +570,11 @@ class Terminals:
                 param_constant_node = Constant(
                     type_="BOOLEAN_CONSTANT", value=False, **extract_token_info(token)
                 )
-            else:
-                raise NotImplementedError
 
         elif token.symbol_type == vtl_cpp_parser.ALL:
             param_constant_node = ParamConstant(
                 type_="PARAM_CONSTANT", value=token.text, **extract_token_info(token)
             )
-
-        else:
-            raise NotImplementedError
 
         return param_constant_node
 
@@ -631,8 +586,6 @@ class Terminals:
             return self.visitDatasetType(c)
         elif not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
             return self.visitScalarType(c)
-        else:
-            raise NotImplementedError
 
     def visitAlias(self, ctx):
         return ctx.children[0].text
@@ -657,7 +610,7 @@ class Terminals:
         try:
             return str(self.visitConstant(ctx_list[1]).value)
         except Exception:
-            raise Exception(f"Error code must be a string, line {ctx_list[1].start_line}")
+            raise InputValidationException(code="0-5-1-5", definition=script_location(ctx_list[1]))
 
     def visitErLevel(self, ctx):
         """
@@ -779,18 +732,12 @@ class Terminals:
             and num_rows_1 == -1
             and num_rows_2 == -1
         ):  # preceding and preceding (error)
-            raise Exception(
-                f"Cannot have 2 preceding clauses with unbounded in analytic clause, "
-                f"line {ctx_list[3].start_line}"
-            )
+            raise InputValidationException(code="0-5-1-6", window=script_location(ctx))
 
         if (
             mode_1 == "following" and num_rows_1 == -1 and num_rows_2 == -1
         ):  # following and following (error)
-            raise Exception(
-                f"Cannot have 2 following clauses with unbounded in analytic clause, "
-                f"line {ctx_list[3].start_line}"
-            )
+            raise InputValidationException(code="0-5-1-7", window=script_location(ctx))
 
         if mode_1 == mode_2:
             if mode_1 == "preceding" and first != -1 and second > first:  # 3 and 1: must be [-3:-1]

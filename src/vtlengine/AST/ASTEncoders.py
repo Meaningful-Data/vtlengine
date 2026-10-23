@@ -1,6 +1,7 @@
 import json
 
 from vtlengine import AST
+from vtlengine.Exceptions import InputValidationException
 from vtlengine.Model import Dataset
 
 
@@ -19,14 +20,16 @@ class ComplexDecoder(json.JSONDecoder):
     @staticmethod
     def object_hook(dictionary):
         if "class_name" in dictionary:
-            if not hasattr(AST, dictionary["class_name"]):
-                raise ValueError(f"Class {dictionary['class_name']} not found in AST")
+            # A JSON AST is an input: what it names must exist in the AST (issue #1192)
+            name = dictionary["class_name"]
+            if not hasattr(AST, name):
+                raise InputValidationException(code="0-5-1-11", name=name)
 
-            ast_class = getattr(AST, dictionary["class_name"])
+            ast_class = getattr(AST, name)
             del dictionary["class_name"]
             try:
                 return ast_class(**dictionary)
-            except TypeError as e:
-                raise e
+            except TypeError as error:
+                raise InputValidationException(code="0-5-1-12", name=name, error=error) from error
         else:
             return dictionary

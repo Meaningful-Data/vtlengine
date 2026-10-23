@@ -55,8 +55,6 @@ class ScalarType(metaclass=DataTypeSimpleRepr):
     default: Optional[Union[str, "ScalarType"]] = None
 
     def strictly_same_class(self, obj: "ScalarType") -> bool:
-        if not isinstance(obj, ScalarType):
-            raise Exception("Not use strictly_same_class")
         return self.__class__ == obj.__class__
 
     def __eq__(self, other: Any) -> bool:
@@ -76,13 +74,14 @@ class ScalarType(metaclass=DataTypeSimpleRepr):
     def promotion_changed_type(cls, promoted: Any) -> bool:
         return not issubclass(cls, promoted)
 
+    # Implemented by each type
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> Any:
-        raise Exception("Method should be implemented by inheritors")
+        raise NotImplementedError
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
-        raise Exception("Method should be implemented by inheritors")
+        raise NotImplementedError
 
     @classmethod
     def is_subtype(cls, obj: Any) -> bool:
@@ -96,7 +95,7 @@ class ScalarType(metaclass=DataTypeSimpleRepr):
     def check_type(cls, value: Any) -> bool:
         if isinstance(value, CAST_MAPPING[cls.__name__]):
             return True
-        raise Exception(f"Value {value} is not a {cls.__name__}")
+        raise InputValidationException(code="0-1-1-26", value=value, type=cls.__name__)
 
     @classmethod
     def cast(cls, value: Any) -> Any:
@@ -129,7 +128,7 @@ class String(ScalarType):
         if from_type in {Boolean, String}:
             return str(value)
 
-        raise SemanticError(
+        raise RunTimeError(
             "2-1-5-1",
             value=value,
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
@@ -314,7 +313,7 @@ class Integer(Number):
             if value.is_integer():
                 return int(value)
             else:
-                raise ValueError(f"Value {value} has decimals, cannot cast to integer")
+                raise InputValidationException(code="0-1-1-27", value=value)
         if isinstance(value, str):
             if value.lower() == "true":
                 return 1
@@ -366,7 +365,8 @@ class TimeInterval(ScalarType):
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
-        if from_type == String:
+        # Text that is no time, such as 2020X1, is a cast error (issue #1192)
+        if from_type == String and cls.check(value):
             return value
         raise RunTimeError(
             "2-1-5-1",
@@ -488,6 +488,14 @@ class TimePeriod(TimeInterval):
                     type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
                     type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
                 )
+            if not cls.check(value):
+                # Text that is no time period, such as 2020X1 (issue #1192)
+                raise RunTimeError(
+                    "2-1-5-1",
+                    value=value,
+                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                    type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
+                )
             return value
         if from_type == TimeInterval:
             result = interval_to_period_str(str(value))
@@ -546,7 +554,7 @@ class Duration(ScalarType):
                 return True
             else:
                 raise InputValidationException(
-                    code="2-1-5-1", value=value, type_1=type(value).__name__, type_2="Duration"
+                    code="0-1-1-35", value=value, type_1=type(value).__name__, type_2="Duration"
                 )
         return False
 
@@ -577,8 +585,8 @@ class Duration(ScalarType):
                     type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
                     type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
                 )
-            # VTL shortcode (A, S, Q, M, W, D)
-            if cls.validate_duration(s):
+            # VTL shortcode (A, S, Q, M, W, D); other text is a cast error, not an input one
+            if s in PERIOD_IND_MAPPING:
                 return s
         raise RunTimeError(
             "2-1-5-1",
