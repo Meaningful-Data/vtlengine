@@ -8,9 +8,13 @@ Expected, from check_hierarchy with the default mode `non_null`, the default inp
 and output `all` (Check hierarchy, Behaviour): the rule `A = B + C` gives 10 = 4 + 6, so
 `bool_var` is true and `imbalance` (left minus right) is 0. The output has the Identifiers of
 `DS_1`, `ruleid` (`1`, the order number of the unnamed rule), `bool_var`, `imbalance`, and
-`errorcode` and `errorlevel`, null because the rule has none.
+`errorcode` and `errorlevel`, null because the rule has none. `errorlevel` is typed Integer
+or Number: the manual does not fix its type ([define hierarchical ruleset](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/hierarchical_rulesets.html): "VTL
+assumes that a Value Domain errorlevel_vd of the error levels exists in the Information Model
+and contains all the possible error levels"), and this example does not test it; the
+`errorlevel` variant of `define_hierarchical_ruleset` checks the manual's typing.
 
-`imbalance` is a Number like `Me_1`; `errorcode` is a String and `errorlevel` an Integer, as
-in the manual's example of check_hierarchy.
+`imbalance` is a Number like `Me_1`, and `ruleid` and `errorcode` are Strings, as in the
+manual's example of check_hierarchy.
 
 The script closes the definition with `end operator`, as the two examples of the [define operator](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html) section and the VTL grammar do. The syntax line of the same section writes `end define operator`; the manual is not consistent on this keyword.

@@ -18,5 +18,10 @@ the Boolean Measure `bool_var` (the relation holds or not); the Measure `imbalan
 difference between the Measure values of the Data Points on the left side of the Rule and the
 Measure values of the corresponding calculated Data Points on the right side"; and the Measures
 `errorcode` and `errorlevel`, null unless `bool_var` is false and the rule has them. The
-original Measure is not in an `all` output. `imbalance` is a Number like `Me_1`; `errorcode` is
-a String and `errorlevel` an Integer, as in the manual's example of check_hierarchy.
+original Measure is not in an `all` output. `imbalance` is a Number like `Me_1`, and `ruleid`
+and `errorcode` are Strings, as in the manual's example of check_hierarchy.
+
+`errorlevel` is typed Integer or Number: the manual does not fix its type ([define hierarchical
+ruleset](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/hierarchical_rulesets.html): "VTL assumes that a Value Domain errorlevel_vd of the error levels exists in the
+Information Model and contains all the possible error levels"), and this example does not test
+it; the `errorlevel` variant checks the typing of the manual's examples, Integer.

@@ -19,5 +19,11 @@ the Boolean Measure `bool_var` (the relation holds or not); the Measure `imbalan
 difference between the Measure values of the Data Points on the left side of the Rule and the
 Measure values of the corresponding calculated Data Points on the right side"; and the Measures
 `errorcode` and `errorlevel`, null unless `bool_var` is false and the rule has them. The
-original Measure is not in an `all` output. `imbalance` is a Number like `Me_1`; `errorcode` is
-a String and `errorlevel` an Integer, as in the manual's example of check_hierarchy.
+original Measure is not in an `all` output. `imbalance` is a Number like `Me_1`, and `ruleid`
+and `errorcode` are Strings, as in the manual's example of check_hierarchy.
+
+This example tests `errorlevel`, so it is typed strictly as the manual does: in
+[check](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Data%20validation%20operators/Check/index.html) the error level "must be a valid value of the errorlevel_vd Value Domain (or
+integer if the errorcode_vd Value Domain is not found)", no such value domain is defined here,
+and the manual's examples of check, check_datapoint and check_hierarchy all type `errorlevel`
+as Integer. `errorcode` is a String, null here because the rule has none.

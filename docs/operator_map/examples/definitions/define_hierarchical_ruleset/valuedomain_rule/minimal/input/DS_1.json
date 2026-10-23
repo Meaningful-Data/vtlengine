@@ -23,11 +23,5 @@
         }
       ]
     }
-  ],
-  "variables": [
-    {
-      "name": "Id_2",
-      "domain": "VD_ITEM"
-    }
   ]
 }

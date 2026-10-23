@@ -23,15 +23,5 @@
         }
       ]
     }
-  ],
-  "variables": [
-    {
-      "name": "Id_2",
-      "domain": "VD_FLOW"
-    },
-    {
-      "name": "Me_1",
-      "domain": "VD_AMOUNT"
-    }
   ]
 }

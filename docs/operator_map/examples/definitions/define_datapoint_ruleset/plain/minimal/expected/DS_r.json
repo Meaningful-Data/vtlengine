@@ -30,7 +30,10 @@
         },
         {
           "name": "errorlevel",
-          "type": "Integer",
+          "type": [
+            "Integer",
+            "Number"
+          ],
           "role": "Measure"
         }
       ]

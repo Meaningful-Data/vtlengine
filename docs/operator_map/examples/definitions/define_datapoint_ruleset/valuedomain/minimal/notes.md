@@ -11,9 +11,8 @@ and `Me_1` with `VD_AMOUNT`.
 The value domains belong to the information model. `value_domains/VD_FLOW.json` holds the
 enumerated `VD_FLOW` (`CREDIT`, `DEBIT`). `VD_AMOUNT` is a described domain (the integer
 amounts), which a value-domain file of vtlengine cannot hold, since it takes only a list of
-values, so it has no file. The input structure also records, under
-`variables`, which value domain each component takes its values from: this key is part of
-vtlengine's JSON schema for structures, and the engine ignores it.
+values, so it has no file. A vtlengine structure has no place to say that a component takes its
+values from a value domain; the association is the one `components` gives.
 
 Each rule is an implication, evaluated on each data point ([define datapoint
 ruleset](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/datapoint_rulesets.html), Semantic specification): "if the antecedentCondition evaluates to false, the
@@ -27,9 +26,13 @@ is assumed to be the progressive order number of the Rule in the Ruleset").
 | 2 | CREDIT | -5 | true | false | false |
 | 3 | DEBIT | -2 | false | not evaluated | true |
 
-The output comes from [check_datapoint](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Data%20validation%20operators/Check%20datapoint/index.html) with output `all` (Behaviour): the
-Identifiers of `DS_1`, the Identifier `ruleid`, the Boolean Measure `bool_var` with the result
-of the rule on each data point, and the Measures `errorcode` and `errorlevel` ("if the Measure
-bool_var is true or null then errorcode is null", and the same for errorlevel). The original
-Measures are not in an `all` output. The types of `ruleid`, `errorcode` (String) and
-`errorlevel` (Integer) are the ones of the manual's examples of check_datapoint.
+[check_datapoint](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Data%20validation%20operators/Check%20datapoint/index.html) with output `all` returns (Behaviour) the Identifiers of `DS_1`, the
+Identifier `ruleid`, the Boolean Measure `bool_var` with the result of each rule on each data
+point, and the Measures `errorcode` and `errorlevel` ("if the Measure bool_var is true or null
+then errorcode is null", and the same for errorlevel); the original Measures are not in an `all`
+output. `ruleid` and `errorcode` are Strings, as in the manual's examples of check_datapoint.
+
+`errorlevel` is typed Integer or Number: the manual does not fix its type ([define datapoint
+ruleset](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/datapoint_rulesets.html): "VTL assumes that a Value Domain errorlevel_vd of error levels exists in the
+Information Model and contains all possible error levels"), and this example does not test it;
+the `errorlevel` variant checks the typing of the manual's examples, Integer.

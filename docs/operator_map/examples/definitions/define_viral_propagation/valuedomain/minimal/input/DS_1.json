@@ -23,11 +23,5 @@
         }
       ]
     }
-  ],
-  "variables": [
-    {
-      "name": "At_1",
-      "domain": "CL_CONF"
-    }
   ]
 }
