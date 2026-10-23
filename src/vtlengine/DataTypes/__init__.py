@@ -582,8 +582,8 @@ class Duration(ScalarType):
                     type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
                     type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
                 )
-            # VTL shortcode (A, S, Q, M, W, D)
-            if cls.validate_duration(s):
+            # VTL shortcode (A, S, Q, M, W, D); other text is a cast error, not an input one
+            if s in PERIOD_IND_MAPPING:
                 return s
         raise RunTimeError(
             "2-1-5-1",

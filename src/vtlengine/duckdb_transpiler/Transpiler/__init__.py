@@ -254,6 +254,15 @@ def _rename_var_ids(node: AST.AST, names: Dict[str, str]) -> AST.AST:
     return node
 
 
+# Text casts that check the text as the pandas engine does ({0}: the text, {1}: the SQL type)
+_TEXT_CASTS = {
+    "Integer": "vtl_text_to_integer({0})",
+    "Number": "vtl_text_to_double({0})",
+    "Duration": "vtl_text_to_duration({0})",
+    "Date": "CAST(vtl_text_to_date({0}) AS {1})",
+}
+
+
 def _contains_analytic(node: Any) -> bool:
     """Return True if any descendant of ``node`` is an ``AST.Analytic``."""
     if isinstance(node, AST.Analytic):
@@ -2342,17 +2351,14 @@ FROM (
         if target_type_str == "Boolean" and source_lower == "string":
             return f"(LOWER(TRIM(CAST({expr} AS VARCHAR))) = 'true')"
 
+        if source_lower == "string" and target_type_str in _TEXT_CASTS:
+            # Text the pandas engine does not cast raises its error (issue #1192)
+            return _TEXT_CASTS[target_type_str].format(expr, duckdb_type)
+
         if target_type_str == "Integer":
             if source_lower == "boolean":
                 return f"CAST({expr} AS {duckdb_type})"
-            if source_lower == "string":
-                # Text that is no integer raises 2-1-5-1, as on the pandas engine
-                return f"vtl_text_to_integer({expr})"
             return f"CAST(TRUNC(CAST({expr} AS DOUBLE)) AS {duckdb_type})"
-
-        if target_type_str == "Number" and source_lower == "string":
-            # Text that is no number raises 2-1-5-1, as on the pandas engine
-            return f"vtl_text_to_double({expr})"
 
         if target_type_str == "String" and source_lower == "boolean":
             return _bool_to_str(expr)
@@ -2396,9 +2402,6 @@ FROM (
             return f"vtl_period_normalize({text})"
 
         if target_type_str == "Date":
-            if source_lower == "string":
-                # Text that is not a date raises 2-1-19-8, as on the pandas engine
-                return f"CAST(vtl_text_to_date({expr}) AS {duckdb_type})"
             if source_lower in ("time_period", "timeperiod"):
                 return f"vtl_period_to_date({expr})"
             if source_lower in ("time", "timeinterval"):

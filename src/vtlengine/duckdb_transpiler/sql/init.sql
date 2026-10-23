@@ -483,6 +483,18 @@ CREATE OR REPLACE MACRO vtl_text_to_integer(x) AS (
     END
 );
 
+-- Text cast to Duration: an ISO duration or a code in any case gives the code, as on the
+-- pandas engine, and other text mirrors VTL error 2-1-5-1.
+CREATE OR REPLACE MACRO vtl_text_to_duration(x) AS (
+    CASE upper(trim(x))
+        WHEN 'A' THEN 'A' WHEN 'S' THEN 'S' WHEN 'Q' THEN 'Q'
+        WHEN 'M' THEN 'M' WHEN 'W' THEN 'W' WHEN 'D' THEN 'D'
+        WHEN 'P1Y' THEN 'A' WHEN 'P6M' THEN 'S' WHEN 'P3M' THEN 'Q' WHEN 'P1M' THEN 'M'
+        WHEN 'P1W' THEN 'W' WHEN 'P7D' THEN 'W' WHEN 'P1D' THEN 'D'
+        ELSE CASE WHEN x IS NULL THEN NULL ELSE error('VTL 2-1-5-1 Duration ' || x) END
+    END
+);
+
 -- Text cast to Date, which mirrors VTL error 2-1-19-8 for text that is not a date
 -- written YYYY-MM-DD (or YYYY-MM-D) or a full YYYY-MM-DD[T| ]HH:MM:SS datetime.
 CREATE OR REPLACE MACRO vtl_text_to_date(x) AS (
