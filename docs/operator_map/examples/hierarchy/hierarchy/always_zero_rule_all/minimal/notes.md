@@ -18,16 +18,34 @@ end hierarchical ruleset;
 
 | Id_1 | Id_2 | Me_1 |
 |---|---|---|
-| 1 | B | 2 |
-| 1 | C | null |
-| 1 | D | 0 |
-| 2 | C | 3 |
+| 1 | B | 1 |
+| 1 | C | 10 |
+| 1 | D | 2 |
+| 1 | E | 3 |
+| 2 | B | 4 |
+| 2 | C | 20 |
+| 2 | D | null |
+| 2 | E | 5 |
+| 3 | B | 0 |
 
-`Id_1 = 1` has one missing data point (E), one null data point (C) and one zero data point (D).
-`Id_1 = 2` has only C, so both right-side items of `C = D + E` are missing there: that is the only
-case where the `partial_*` and `always_*` modes differ, and one missing data point cannot make it
-with two items on each right side. C is both computed by a rule and present in `DS_1`, which is
-what makes the inputs `dataset`, `rule` and `rule_priority` differ.
+`DS_1` has 9 data points, more than the 2 to 4 of the map's other examples, because the three
+`Id_1` groups each test what no smaller input can test together with the others:
+
+- `Id_1 = 1` (`dataset` against `rule`): B, C, D and E are all there and the C of `DS_1` (10)
+  is not D + E (5), so the computed C is not null in every mode and `dataset` reads 10 where
+  `rule` and `rule_priority` read 5. All four items are needed: in the `*_null` modes a single
+  missing item would make the computed C null.
+- `Id_1 = 2` (`rule` against `rule_priority`): D is null, so the computed C is null (or, in
+  `non_null`, not computed) in every mode, and `rule_priority` falls back to the C of `DS_1`
+  (20) where `rule` keeps the null. E and B are not zero, so `non_zero` evaluates both rules on a
+  right-side data point that is not zero and no reading of a null against zero comes into play.
+- `Id_1 = 3` (the modes): only B = 0. `C = D + E` has no right-side data point at all, the only
+  case where `always_*` differs from `partial_*`; the missing items count as null in the
+  `*_null` modes and as 0 in the `*_zero` modes; and `A = B + C` adds up to 0, which `non_zero`
+  drops and `partial_zero` keeps.
+
+With this input every mode gives a different result for each input and output, and the three
+inputs give three different results in every mode.
 
 ## The parameters (the page)
 
@@ -35,19 +53,35 @@ what makes the inputs `dataset`, `rule` and `rule_priority` differ.
 - input `rule`: "if the item is not defined as the result (left-hand side) of another Rule, the current Rule takes the input Data Points from the operand *op*; if the item is defined as the result of another Rule, the current Rule takes the input Data Points from the computed output of such other Rule".
 - output `all`: "the resulting Data Set contains the union between the set of Data Points “R” computed according to the Ruleset and the set of Data Points of op that have different combinations of values for the Identifiers. In other words, the result is the outcome of the following (virtual)expression: **union ( setdiff (op , R) , R )**".
 
-## Derivation
+## Derivation, by `Id_1` group
 
 `C = D + E` is evaluated first, because `A = B + C` uses C.
 
-| Id_1 | Rule | Right side | Me_1 | Returned |
-|---|---|---|---|---|
-| 1 | C = D + E | 0 + 0 (E is missing) | 0 | yes |
-| 1 | A = B + C | 2 + 0 (computed C) | 2 | yes |
-| 2 | C = D + E | 0 + 0 (D and E are missing) | 0 | yes |
-| 2 | A = B + C | 0 (B is missing) + 0 (computed C) | 0 | yes |
+**Id_1 = 1** (all four items present; the C of `DS_1` (10) differs from D + E (5))
 
-**Reading used.** "Produced in any case" covers every `Id_1` of `DS_1`: for `Id_1 = 2`, where neither D nor E has a data point, `C = D + E` still gives a data point (both items count as existing, with a zero measure), and so does `A = B + C`. This is where `always_*` differs from `partial_*`, which gives no C for `Id_1 = 2` (mode table: the rule is evaluated "Always").
+| Rule | Right side | Me_1 | Returned |
+|---|---|---|---|
+| C = D + E | 2 + 3 | 5 | yes |
+| A = B + C | 1 + 5 (computed C) | 6 | yes |
 
-R, the computed data points, is (1, A, 2), (1, C, 0), (2, A, 0), (2, C, 0). Output `all` adds the data points of `DS_1` whose identifiers R does not have: (1, B, 2), (1, D, 0). The data points of `DS_1` at (1, C), (2, C) give way to the computed ones.
+**Id_1 = 2** (D is null, so the computed C is null whenever the rule is evaluated)
 
-Expected `DS_r`: (1, A, 2), (1, B, 2), (1, C, 0), (1, D, 0), (2, A, 0), (2, C, 0).
+| Rule | Right side | Me_1 | Returned |
+|---|---|---|---|
+| C = D + E | null + 5 (D is null) | null | yes |
+| A = B + C | 4 + null (computed C) | null | yes |
+
+**Id_1 = 3** (only B = 0: `C = D + E` has no right-side data point at all)
+
+| Rule | Right side | Me_1 | Returned |
+|---|---|---|---|
+| C = D + E | 0 + 0 (D and E are missing) | 0 | yes |
+| A = B + C | 0 + 0 (computed C) | 0 | yes |
+
+**Reading used.** "Produced in any case" covers every `Id_1` of `DS_1`: for `Id_1 = 3`, where neither D nor E has a data point, `C = D + E` still gives a data point (both items count as existing, with a zero measure). This is where `always_*` differs from `partial_*`, which gives no C for `Id_1 = 3` (mode table: the rule is evaluated "Always").
+
+With this input the three inputs give three different results in this mode. In `Id_1 = 1` `dataset` reads the C of `DS_1` (10) while `rule` and `rule_priority` read the computed C (5). In `Id_1 = 2` the computed C is null, so `rule_priority` falls back to the C of `DS_1` (20) while `rule` does not. No mode makes two inputs equal by definition: `rule_priority` takes the computed C when it exists and is not null (as `rule` does) and the C of `DS_1` otherwise (as `dataset` does), so it can always differ from one of them; and this input has both cases in every mode.
+
+R, the computed data points, is (1, A, 6), (1, C, 5), (2, A, null), (2, C, null), (3, A, 0), (3, C, 0). Output `all` adds the data points of `DS_1` whose identifiers R does not have: (1, B, 1), (1, D, 2), (1, E, 3), (2, B, 4), (2, D, null), (2, E, 5), (3, B, 0). The data points of `DS_1` at (1, C), (2, C) give way to the computed ones.
+
+Expected `DS_r`: (1, A, 6), (1, B, 1), (1, C, 5), (1, D, 2), (1, E, 3), (2, A, null), (2, B, 4), (2, C, null), (2, D, null), (2, E, 5), (3, A, 0), (3, B, 0), (3, C, 0).
