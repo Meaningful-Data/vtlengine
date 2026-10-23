@@ -728,6 +728,61 @@ class UdoTest(UDOHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1162_1(self):
+        """
+        Status: OK
+        Description: An argument written as _ takes the default of its parameter, in any
+            position and on operators over components and datasets
+        Goal: Check Result.
+        """
+        code = "GH_1162_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1162_2(self):
+        """
+        Status: OK
+        Description: An operator that calls itself is not supported
+        Goal: Check Exception.
+        """
+        code = "GH_1162_2"
+        number_inputs = 1
+        message = "1-3-2-7"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1162_3(self):
+        """
+        Status: OK
+        Description: Two operators that call each other are not supported
+        Goal: Check Exception.
+        """
+        code = "GH_1162_3"
+        number_inputs = 1
+        message = "1-3-2-7"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1162_4(self):
+        """
+        Status: OK
+        Description: A number with decimals passed to an integer parameter
+        Goal: Check Exception.
+        """
+        code = "GH_1162_4"
+        number_inputs = 1
+        message = "2-3-5"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
     def test_GH_94(self):
         """
         Status: OK
