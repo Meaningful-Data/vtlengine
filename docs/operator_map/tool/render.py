@@ -294,8 +294,9 @@ semantics, and never from the output of an engine. A viewer may ignore the links
 diagrams: the tables are the reliable way to the files.
 - **Comparison.** Only the outputs that the example expects are compared: the components, \
 their roles and types, and the data points, in any order. A number is compared to the digits \
-written in the expected file. ``random`` and ``current_date`` are checked by a property of their \
-values, and the two engines must still return the same values."""
+written in the expected file, as far as a double holds them. ``random`` and ``current_date`` are \
+checked by a property of their values (for ``random``, those of the columns that are empty in \
+the expected file), and the two engines must still return the same values."""
 
 _OVERVIEW: Final = (
     "One node per chapter, with how many of its variants are in each status, and an arrow to "

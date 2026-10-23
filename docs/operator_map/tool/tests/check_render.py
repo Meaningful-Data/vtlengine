@@ -671,6 +671,14 @@ def test_index_overview_does_not_promise_that_a_click_works(tmp_path: Path) -> N
     assert "A viewer may ignore the links of the diagrams" in how
 
 
+def test_how_to_read_describes_the_comparison_as_it_is_made(tmp_path: Path) -> None:
+    how = section(index_rst(CAT, INDEX, META, examples_root=tmp_path), "How to read")
+    # A number is compared to the digits written, never finer than a double; a random example
+    # compares what its expected file has, and checks the columns that are empty there.
+    assert "written in the expected file, as far as a double holds them" in how
+    assert "those of the columns that are empty in the expected file" in how
+
+
 def test_index_chapter_table_counts_variants(tmp_path: Path) -> None:
     chapters = section(index_rst(CAT, INDEX, META, examples_root=tmp_path), "Chapters")
     assert row_with(chapters, "Chapter") == [
