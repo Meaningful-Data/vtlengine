@@ -17,9 +17,9 @@ Numbers that are not whole are written with 6 decimals.
 
 `count` returns the number of Data Points ([Counting the number of data points](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Counting%20the%20number%20of%20data%20points/index.html)).
 
-The count page gives the result type `dataset { measure<integer> int_var }` for the data set form, against the Analytic invocation's "the resulting Data Set has the same Identifiers and Measures as the input Data Set": this is the same conflict that #1049 settles for the aggregate invocation, and its reasoning (the specific result type of count prevails) is followed here.
+The result has a single Integer measure `int_var`. That is the reading of the count page's result type, the only one it gives for the data set form: `dataset { measure<integer> int_var }`. The Analytic invocation's generic "the resulting Data Set has the same Identifiers and Measures as the input Data Set" is read as giving way to that specific result type.
 
-Team decision [#1049](https://github.com/Meaningful-Data/vtlengine/issues/1049) (📌): `count` over a Data Set always returns a single Integer Measure `int_var`, whatever the Measures of the operand (the count page's result type `dataset { measure<integer> int_var }` prevails over the Aggregate invocation's "the resulting Data Set has the same Measures as the operand"), and a Data Point whose Measures are all null is ignored. `DS_1` has no null, so `int_var` is the number of Data Points of the group.
+No team decision applies: #1049 settles the same conflict for the Aggregate invocation only (PR #1050: "The analytic invocation of count is untouched: the issue covers the Aggregate invocation only"), so this example carries no 📌. `DS_1` has no null, so `int_var` is the number of data points of the partition.
 
 Derivation (per partition):
 

@@ -8,14 +8,20 @@ or as analytic functions with ``over ( ... )``. ``first_value``, ``last_value``,
 ``lead``, ``rank`` and ``ratio_to_report`` are analytic only. The two invocation pages describe
 the grouping clause and the analytic clause (partition, order and window) once for all of them.
 
-The dataset form of ``count`` returns a single Integer measure ``int_var``, whatever the measures
-of the operand: that is the team decision of #1049, so those examples carry ``decision=1049``.
-Every ``having`` example references only aggregated expressions of the aggregated measures, where
-the manual and the reading of #1119 agree, so none of them needs ``decision=1119``.
+In the Aggregate invocation, the data set form of ``count`` returns a single Integer measure
+``int_var``, whatever the measures of the operand, and ignores the data points whose measures are
+all null: that is the team decision of #1049, so those examples carry ``decision=1049``. The
+decision does not cover the analytic invocation, whose data set form follows the single result
+type of the count page without a decision. Every ``having`` example references only aggregated
+expressions of the aggregated measures, where the manual and the reading of #1119 agree, so none
+of them needs ``decision=1119``.
 
 The authored examples share one input, ``DS_1`` with a String and a Time_Period identifier and
-two Number measures, except the ``minimal_2`` examples of ``ds_having``, which drop the second
-measure; the notes of each example derive its expected output.
+two Number measures, and no null. The exceptions are ``minimal_2`` examples: those of
+``ds_having`` drop the second measure; that of ``count.ds_group_by`` has a data point whose
+measures are all null and one with a single null measure; that of ``avg.ds_group_by`` has one
+null value; and those of ``min.ds_group_by`` and ``max.ds_group_by`` have a String measure. The
+notes of each example derive its expected output.
 """
 
 from __future__ import annotations
@@ -24,6 +30,9 @@ from tool.model import Chapter, Example, Operator, Variant, authored, manual
 
 _CHAPTER_TITLE = "Aggregate and Analytic operators"
 _COUNT_DECISION = 1049  # count over a data set returns the single measure int_var
+# The functions whose ``group by`` form has a second example, ``minimal_2``: nulls for ``count``
+# and ``avg``, a String measure for ``min`` and ``max``.
+_GROUP_BY_SECOND = ("count", "avg", "min", "max")
 
 
 def _page(title: str) -> str:
@@ -39,8 +48,8 @@ def _aggregate_function(op_id: str, name: str, title: str, accepts: str, returns
     is_count = op_id == "count"
     decision = _COUNT_DECISION if is_count else None
 
-    def dataset_form(example: Example | None = None) -> tuple[Example, ...]:
-        return (example or authored(decision=decision),)
+    def dataset_form() -> tuple[Example, ...]:
+        return (authored(decision=decision),)
 
     # ``minimal`` has the two measures of the shared input; ``minimal_2`` the first one only.
     having: tuple[Variant, ...] = (
@@ -58,18 +67,18 @@ def _aggregate_function(op_id: str, name: str, title: str, accepts: str, returns
                 (manual("ex_2", decision=decision),),
             ),
         )
+    group_by: tuple[Example, ...] = (manual("ex_1", decision=decision),)
+    if op_id in _GROUP_BY_SECOND:
+        group_by += (authored("minimal_2", decision=decision),)
     variants = (
         Variant("ds_no_group", f"{op_id}(DS)", dataset_form()),
-        Variant(
-            "ds_group_by",
-            f"{op_id}(DS group by Id)",
-            dataset_form(manual("ex_1", decision=decision)),
-        ),
+        Variant("ds_group_by", f"{op_id}(DS group by Id)", group_by),
         Variant("ds_group_except", f"{op_id}(DS group except Id)", dataset_form()),
         Variant("ds_group_all", f'{op_id}(DS group all time_agg("A"))', dataset_form()),
         *having,
         Variant("comp_in_aggr", f"DS[aggr Me := {op_id}(Me) group by Id]", (authored(),)),
-        Variant("analytic_ds", f"{op_id}(DS over (partition by Id))", dataset_form()),
+        # #1049 covers the Aggregate invocation only: no decision on the analytic form.
+        Variant("analytic_ds", f"{op_id}(DS over (partition by Id))", (authored(),)),
         Variant(
             "analytic_comp",
             f"DS[calc Me := {op_id}(Me over (partition by Id))]",
@@ -93,8 +102,8 @@ def _first_or_last(op_id: str, name: str) -> Operator:
         name=name,
         symbol=op_id,
         page=_page(name),
-        accepts=("number",),
-        returns=("number",),
+        accepts=("scalar",),
+        returns=("scalar",),
         variants=(
             Variant(
                 "analytic_ds",
@@ -236,7 +245,7 @@ _RANK = Operator(
     name="Rank",
     symbol="rank",
     page=_page("Rank"),
-    accepts=("dataset",),
+    accepts=("scalar",),
     returns=("integer",),
     variants=(
         Variant(
