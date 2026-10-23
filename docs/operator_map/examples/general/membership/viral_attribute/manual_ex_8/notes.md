@@ -2,7 +2,7 @@
 
 Manual example 8 of [Membership](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Membership/index.html).
 
-## What the manual gives
+## Erratum: what the manual gives
 
 `ex_8.json` and `ex_8.csv` expect a scalar:
 
@@ -27,18 +27,30 @@ there can be only one value for `comp` in `ds`."
 value of `At_1`. So the general rule applies: "The membership operator returns a Data Set having
 the same Identifier Components of `ds` and a single Measure. [...] If `comp` is an Identifier or an
 Attribute Component in `ds`, then all the existing Measures of `ds` are dropped in the result and a
-new Measure is added", named `string_var` for a string, and the viral `At_1` is kept as viral.
-The expression is the one of example 6 (`DS_r := DS_2#At_1`), so the corrected result is the
-dataset of example 6, assigned to `SC_r`:
+new Measure is added", named for its type, and the viral `At_1` is kept as viral. The expression
+is the one of example 6 (`DS_r := DS_2#At_1`), so the corrected result is the dataset of example
+6, assigned to `SC_r`:
 
-| Id_1 | Id_2 | string_var | At_1 (viral) |
+| Id_1 | Id_2 | str_var | At_1 (viral) |
 |---|---|---|---|
 | 1 | A | null | null |
 | 1 | B | P | P |
 | 2 | A | null | null |
 
 The example probably meant an operand without identifiers, as in example 7
-(`max(DS_1)#Me_1`), for the attribute case of the scalar rule.
+(`max(DS_1)#Me_1`), for the attribute case of the scalar rule. That case has its own authored
+example, `membership/attribute/minimal_2`.
+
+## Adaptation: the new measure is named `str_var`
+
+The manual's own name for the measure (in example 6, which has the same expression) is
+`string_var`. The page says "A default conventional name is assigned to the new Measure depending
+on its type: for example `num_var` if the Measure is `numeric`, `string_var` if it is `string`",
+and the typical behaviour's table of default names adds: "These are only the names used in this
+manual for explanatory purposes and can be personalised in the implementations. If VTL rules are
+exchanged, the personalised names need to be shared with the partners of the exchange."
+vtlengine uses `str_var`, and documents it in `docs/data_types.rst`. By the controller's ruling on
+default names, the corrected output names the measure `str_var`.
 
 ## Input
 
@@ -50,4 +62,4 @@ script uses.
 ## Triage (both engines return a dataset with no measure)
 
 Both engines return a dataset, as the correction says, but with `Id_1`, `Id_2` and the viral
-`At_1` only, as in example 6. The expected file stays (see example 6).
+`At_1` only, as in example 6. The expected file keeps the measure (see example 6).

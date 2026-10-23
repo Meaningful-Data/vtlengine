@@ -5,7 +5,7 @@
       "DataStructure": [
         {"name": "Id_1", "type": "Integer", "role": "Identifier"},
         {"name": "Id_2", "type": "String", "role": "Identifier"},
-        {"name": "string_var", "type": "String", "role": "Measure"}
+        {"name": "str_var", "type": "String", "role": "Measure"}
       ]
     }
   ]

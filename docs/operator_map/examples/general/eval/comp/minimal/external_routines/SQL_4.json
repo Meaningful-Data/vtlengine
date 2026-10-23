@@ -1,0 +1,4 @@
+{
+  "name": "SQL_4",
+  "query": "SELECT $1 * 2"
+}

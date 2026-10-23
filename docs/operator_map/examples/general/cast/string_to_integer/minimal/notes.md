@@ -6,9 +6,13 @@ Authored for [Type conversion](https://sdmx-twg.github.io/vtl/v2.2/reference_man
 
 "When performing a conversion from a `string` value, all leading and trailing blanks are removed from the input string value before performing the conversion." The inputs have no blanks.
 
+For a null: "An empty string generally causes an error to be raised when instead a `null`
+input string is converted to the corresponding `null` value of the desired value domain." The
+last data point has a null `Me_1` (an empty field of the CSV), so its `Me_2` is null.
+
 | Me_1 | Me_2 | why |
 |---|---|---|
 | `42` | `42` |  |
 | `-7` | `-7` | the sign `-` is consumed |
-| `+15` | `15` | the sign `+` is consumed |
-| `007` | `7` | leading zeroes are skipped |
+| `+007` | `7` | the sign `+` is consumed, and leading zeroes are skipped |
+| null | null | a null string gives a null integer |

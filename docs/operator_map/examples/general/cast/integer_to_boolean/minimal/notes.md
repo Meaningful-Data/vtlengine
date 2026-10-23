@@ -1,4 +1,4 @@
-# `cast(Me_1, boolean)` on a integer measure
+# `cast(Me_1, boolean)` on an integer measure
 
 Authored for [Type conversion](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html), which has no runnable example. The conversion table allows integer to boolean as an explicit cast without mask.
 
