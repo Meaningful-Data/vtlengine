@@ -1,14 +1,12 @@
-Manual example `Numeric operators/Random/ex_2`, imported as it is.
+Manual example `Numeric operators/Random/ex_2`, with its illustrative values left out.
 
-The manual's values for `Me_2` (0.7545341, 0.3457166, 0.5183224) only illustrate the result: a
-random sequence cannot be fixed, and the page says only that the operator "returns a random
-decimal number >= 0 and <1". No engine is expected to give these numbers.
+The manual prints `Me_2` as 0.7545341, 0.3457166 and 0.5183224, but only to illustrate the
+result: a random sequence cannot be fixed, and the page says only that the operator "returns a
+random decimal number >= 0 and <1". No engine can be expected to give those numbers, so
+`Me_2` is blank in `expected/DS_r.csv` (the adaptation) and the example is checked by property.
 
-This example is not checked by property, because it keeps the seed. The property check looks at
-every value of the output that is not an identifier, and `calc` keeps `Me_1` (16.0, 4.0, 7.2),
-which is not a draw: the check would report `'16.0' is not a number in [0, 1)` on both engines
-although the new measure `Me_2` holds draws. So it keeps the default check, the comparison with
-the manual's values, which an engine cannot pass: its result says nothing about the operator.
-The status of the `random(comp, n)` variant is meant to come from the authored example
-`minimal`, which overwrites the seed so that every non-identifier value is a draw, and is
-checked by property.
+`calc` keeps the seed `Me_1` (16.0, 4.0, 7.2), and the expected file has it. The check compares
+the columns that have values in the expected file, here the identifiers and `Me_1`, as an exact
+example does, and takes the columns that are empty in it for draws: the values of `Me_2` must be
+numbers in [0, 1), the same on every run, and the two engines must still give the same ones.
+The authored example `minimal` checks the same form with a seed that `calc` overwrites.

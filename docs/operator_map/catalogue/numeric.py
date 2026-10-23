@@ -335,10 +335,15 @@ _LOG = Operator(
 # --- Random ---
 # The values are not fixed: an example is checked by the property that they are in [0, 1) and
 # the same on every run, and the two engines must give the same ones. The property is checked
-# on every value that is not an identifier, so it fits an example only when all of them are
-# draws. The manual's ``ex_2`` of the component form keeps the seed column ``Me_1`` next to the
-# new measure, so it is not checked by property (its values are the manual's illustration, and
-# no engine can match them); ``minimal`` overwrites the seed measure and is.
+# on the columns that are empty in the expected file, and the columns that have values there
+# are compared as usual. The manual's examples print illustrative draws, which no engine can
+# match: they are blanked (an adaptation), and the seed that ``ex_2`` keeps next to its draws
+# stays in the file and is compared.
+
+_RANDOM_ADAPTATION = (
+    "the manual's illustrative random values are not reproducible; the random column is "
+    "property-checked"
+)
 
 _RANDOM = Operator(
     id="random",
@@ -348,8 +353,17 @@ _RANDOM = Operator(
     accepts=("number", "integer"),
     returns=_NUMBER,
     variants=(
-        Variant("ds", "random(DS, n)", (manual("ex_1", check="random"),)),
-        Variant("comp", "random(comp, n)", (manual("ex_2"), authored(check="random"))),
+        Variant(
+            "ds", "random(DS, n)", (manual("ex_1", check="random", adaptation=_RANDOM_ADAPTATION),)
+        ),
+        Variant(
+            "comp",
+            "random(comp, n)",
+            (
+                manual("ex_2", check="random", adaptation=_RANDOM_ADAPTATION),
+                authored(check="random"),
+            ),
+        ),
         Variant("sc", "random(sc, n)", (authored(check="random"),)),
     ),
 )

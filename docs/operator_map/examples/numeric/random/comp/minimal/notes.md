@@ -11,4 +11,5 @@ The expected output therefore states the structure only (`Id_1` an Integer ident
 Number measure) and has no data points.
 
 The manual's own example of this form, `manual_ex_2`, calculates a new measure and keeps the
-seed column, which the property check cannot tell apart from the draws.
+seed column: its expected file has the seed, which is compared, and leaves the new measure
+blank, which is checked by property.
