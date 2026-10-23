@@ -6,7 +6,11 @@ The result type is Integer.
 The measure keeps its name, `Me_1`. The page declares the result as
 `dataset { measure<number> _+ }` and defers to the typical behaviour of the unary operators,
 which applies the operator to every measure "in order to produce homonymous Measures in DS_r".
-The pages of `length` and `instr` name a single `int_var` instead. The manual's section
-"Operators changing the data type" would also give `int_var` on a mono-measure dataset, but the
-page does not put this operator among them, and the manual's own ceiling and floor examples,
-which turn numbers into integers as well, keep the names of the measures.
+The manual's own Ceiling and Floor `ex_1` turn two number measures, `Me_1` and `Me_2`, into
+integers on a two-measure dataset, and their results are homonymous: so the manual does not
+treat a number that becomes an integer as a change of the data type that renames the measure.
+The pages that do rename say so: String length and String pattern location type their result
+as `dataset { measure<integer[value >= 0]> int_var }`. The section "Operators changing the data
+type" would also give `int_var` (mono-measure datasets only), but nothing puts this operator
+among them.
+`minimal_2` is the same operator on two measures.

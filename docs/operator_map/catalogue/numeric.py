@@ -147,7 +147,10 @@ _MODULO = Operator(
 # --- Rounding and truncation ---
 # ``numDigit`` omitted, or the ``_`` placeholder, makes the result an integer. The manual's
 # second example of each page, ``round(Me_1)`` in a ``calc``, is the component form with no
-# ``numDigit``: ``comp_no_digits``.
+# ``numDigit``: ``comp_no_digits``. ``numDigit`` is an integer or a component of type integer,
+# so a scalar operand has the forms ``sc_digits`` and ``sc_comp_digits``. ``ds_no_digits`` has
+# an example with one measure (``minimal``) and one with two (``minimal_2``), as the naming of
+# the result measures differs.
 
 _ROUND = Operator(
     id="round",
@@ -158,13 +161,20 @@ _ROUND = Operator(
     returns=_NUMBER,
     variants=(
         Variant("ds_digits", "round(DS, n)", (manual("ex_1"),)),
-        Variant("ds_no_digits", "round(DS)", (authored(),), returns=_INTEGER),
+        Variant(
+            "ds_no_digits",
+            "round(DS)",
+            (authored(), authored("minimal_2")),
+            returns=_INTEGER,
+        ),
         Variant("ds_placeholder", "round(DS, _)", (authored(),), returns=_INTEGER),
         Variant("comp_digits", "round(comp, n)", (manual("ex_3"),)),
         Variant("comp_no_digits", "round(comp)", (manual("ex_2"),), returns=_INTEGER),
         Variant("comp_comp_digits", "round(comp, comp)", (authored(),)),
+        Variant("sc_comp_digits", "round(sc, comp)", (authored(),)),
         Variant("sc_digits", "round(sc, n)", (authored(),)),
         Variant("sc_no_digits", "round(sc)", (authored(),), returns=_INTEGER),
+        Variant("sc_placeholder", "round(sc, _)", (authored(),), returns=_INTEGER),
     ),
 )
 
@@ -177,17 +187,26 @@ _TRUNC = Operator(
     returns=_NUMBER,
     variants=(
         Variant("ds_digits", "trunc(DS, n)", (manual("ex_1"),)),
-        Variant("ds_no_digits", "trunc(DS)", (authored(),), returns=_INTEGER),
+        Variant(
+            "ds_no_digits",
+            "trunc(DS)",
+            (authored(), authored("minimal_2")),
+            returns=_INTEGER,
+        ),
         Variant("ds_placeholder", "trunc(DS, _)", (authored(),), returns=_INTEGER),
         Variant("comp_digits", "trunc(comp, n)", (manual("ex_3"),)),
         Variant("comp_no_digits", "trunc(comp)", (manual("ex_2"),), returns=_INTEGER),
         Variant("comp_comp_digits", "trunc(comp, comp)", (authored(),)),
+        Variant("sc_comp_digits", "trunc(sc, comp)", (authored(),)),
         Variant("sc_digits", "trunc(sc, n)", (authored(),)),
         Variant("sc_no_digits", "trunc(sc)", (authored(),), returns=_INTEGER),
+        Variant("sc_placeholder", "trunc(sc, _)", (authored(),), returns=_INTEGER),
     ),
 )
 
 # --- Ceiling and floor ---
+# The manual's ``ex_1`` has two measures. ``minimal`` has one, to see whether a number measure
+# that becomes an integer keeps its name.
 
 _CEIL = Operator(
     id="ceil",
@@ -197,7 +216,7 @@ _CEIL = Operator(
     accepts=_NUMBER,
     returns=_INTEGER,
     variants=(
-        Variant("ds", "ceil(DS)", (manual("ex_1"),)),
+        Variant("ds", "ceil(DS)", (manual("ex_1"), authored())),
         Variant("comp", "ceil(comp)", (manual("ex_2"),)),
         Variant("sc", "ceil(sc)", (authored(),)),
     ),
@@ -211,7 +230,7 @@ _FLOOR = Operator(
     accepts=_NUMBER,
     returns=_INTEGER,
     variants=(
-        Variant("ds", "floor(DS)", (manual("ex_1"),)),
+        Variant("ds", "floor(DS)", (manual("ex_1"), authored())),
         Variant("comp", "floor(comp)", (manual("ex_2"),)),
         Variant("sc", "floor(sc)", (authored(),)),
     ),
@@ -290,6 +309,7 @@ _POWER = Operator(
         Variant("ds_sc", "power(DS, sc)", (manual("ex_1"),)),
         Variant("comp_sc", "power(comp, sc)", (manual("ex_2"),)),
         Variant("comp_comp", "power(comp, comp)", (authored(),)),
+        Variant("sc_comp", "power(sc, comp)", (authored(),)),
         Variant("sc_sc", "power(sc, sc)", (authored(),)),
     ),
 )
@@ -305,6 +325,7 @@ _LOG = Operator(
         Variant("ds_sc", "log(DS, sc)", (manual("ex_1"),)),
         Variant("comp_sc", "log(comp, sc)", (manual("ex_2"),)),
         Variant("comp_comp", "log(comp, comp)", (authored(),)),
+        Variant("sc_comp", "log(sc, comp)", (authored(),)),
         Variant("sc_sc", "log(sc, sc)", (authored(),)),
     ),
 )
