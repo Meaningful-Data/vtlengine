@@ -4283,6 +4283,21 @@ class DefinedBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1192_43(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := - -Me_1, Me_3 := -(-1), Me_4 := - - 1.5];
+        Description: A sign before a signed operand keeps them apart on DuckDB, where -- starts
+                     an SQL comment (it raised a ParserException or a BinderException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Result.
+        """
+        code = "GH_1192_43"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class OtherBugs(BugHelper):
     """ """

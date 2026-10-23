@@ -172,6 +172,18 @@ class OperatorRegistry:
         return f"{vtl_token.upper()}({', '.join(operands)})"
 
 
+def _signed(sign: str) -> Callable[[str], str]:
+    """Writes a sign before an operand. A signed operand goes in parentheses, since two signs
+    together (--) start an SQL comment."""
+
+    def generate(operand: str) -> str:
+        if operand.lstrip().startswith(("-", "+")):
+            return f"{sign}({operand})"
+        return f"{sign}{operand}"
+
+    return generate
+
+
 def _param_min_sql(
     value: Optional[str], *, op: str, param_name: str, min_val: int
 ) -> Optional[str]:
@@ -248,8 +260,14 @@ def _create_default_registry() -> OperatorRegistry:
 
     # Unary operators
     # Arithmetic functions
-    ops.register(tokens.PLUS, "+{0}", is_prefix=True)
-    ops.register(tokens.MINUS, "-{0}", is_prefix=True)
+    for _sign in (tokens.PLUS, tokens.MINUS):
+        ops.register_custom(
+            _sign,
+            SQLOperator(
+                sql_template=f"{_sign}{{0}}", is_prefix=True, custom_generator=_signed(_sign)
+            ),
+            arity=1,
+        )
     ops.register(tokens.CEIL, "CAST(CEIL({0}) AS BIGINT)")
     ops.register(tokens.FLOOR, "CAST(FLOOR({0}) AS BIGINT)")
     ops.register(tokens.ABS, "ABS({0})")
