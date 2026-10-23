@@ -176,6 +176,97 @@ class GeneralBugs(BugHelper):
         assert result["x"].value == 9
         assert result["y"].value == 10
 
+    def test_GH_1163_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift(DS_1, DS_2);
+        Description: A Data Set as the shift number of timeshift raises a SemanticError instead of a Python error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1163
+        Goal: Check Exception.
+        """
+        code = "GH_1163_1"
+        number_inputs = 2
+        message = "1-1-18-4"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+        )
+
+    def test_GH_1163_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := timeshift(Id_1, 1)];
+        Description: timeshift over a Component raises a SemanticError instead of a Python error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1163
+        Goal: Check Exception.
+        """
+        code = "GH_1163_2"
+        number_inputs = 1
+        message = "1-1-19-7"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+        )
+
+    def test_GH_1163_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- eval(GH_1163_3(DS_1) language "SQL" returns integer);
+        Description: An eval that returns a scalar type raises a SemanticError instead of a Python error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1163
+        Goal: Check Exception.
+        """
+        code = "GH_1163_3"
+        number_inputs = 1
+        message = "1-3-2-1"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            sql_names=["GH_1163_3"],
+        )
+
+    def test_GH_1163_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join(DS_1 as d1, DS_2 as d2 apply d1 + 1);
+        Description: A constant in the apply expression of a join raises a SemanticError instead of a Python error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1163
+        Goal: Check Exception.
+        """
+        code = "GH_1163_4"
+        number_inputs = 2
+        message = "1-1-13-22"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+        )
+
+    def test_GH_1163_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join(DS_1 apply DS_1 + DS_1);
+        Description: An apply over the only operand of a join raises a SemanticError instead of a Python error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1163
+        Goal: Check Exception.
+        """
+        code = "GH_1163_5"
+        number_inputs = 1
+        message = "1-1-13-22"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+        )
+
     def test_GH_976_1(self):
         """
         Expression: DS_r <- check_datapoint(DS_1, DR_1);

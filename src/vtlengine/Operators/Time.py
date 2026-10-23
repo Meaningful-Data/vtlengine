@@ -32,6 +32,7 @@ from vtlengine.DataTypes import (
     String,
     TimeInterval,
     TimePeriod,
+    check_unary_implicit_promotion,
     unary_implicit_promotion,
 )
 from vtlengine.DataTypes._time_checking import _has_time_component, parse_date_value
@@ -729,8 +730,16 @@ class Time_Shift(Binary):
         return frequencies.pop() if frequencies else "Y"
 
     @classmethod
-    def validate(cls, operand: Dataset, shift_value: str) -> Dataset:
+    def validate(cls, operand: Dataset, shift_value: Any) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
+        if not isinstance(operand, Dataset):
+            raise SemanticError("1-1-19-7", op=cls.op)
+        if not isinstance(shift_value, Scalar) or not check_unary_implicit_promotion(
+            shift_value.data_type, Integer
+        ):
+            raise SemanticError(
+                "1-1-18-4", op=cls.op, param_type="Shift number", correct_type="an Integer Scalar"
+            )
         if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         return Dataset(name=dataset_name, components=operand.components.copy(), data=None)

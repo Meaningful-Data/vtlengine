@@ -851,6 +851,12 @@ centralised_messages = {
         "description": "Occurs when a join operation requires a 'using' clause but none "
         "is provided.",
     },
+    "1-1-13-22": {
+        "message": "At op apply: {operand} does not name a joined Data Set that shares its "
+        "Measures with another operand of the join.",
+        "description": "Raised when a side of the apply expression of a join, such as a constant "
+        "or the only operand of the join, names no Measures shared between the joined Data Sets.",
+    },
     "1-1-13-9": {
         "message": "Ambiguity for this variable {comp_name} inside a Join clause.",
         "description": "Raised when a component name is ambiguous in a Join operation.",
