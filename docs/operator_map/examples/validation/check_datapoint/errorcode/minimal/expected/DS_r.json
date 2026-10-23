@@ -8,7 +8,7 @@
         {"name": "ruleid", "type": "String", "role": "Identifier"},
         {"name": "bool_var", "type": "Boolean", "role": "Measure"},
         {"name": "errorcode", "type": "String", "role": "Measure"},
-        {"name": "errorlevel", "type": "Integer", "role": "Measure"}
+        {"name": "errorlevel", "type": ["Integer", "Number"], "role": "Measure"}
       ]
     }
   ]

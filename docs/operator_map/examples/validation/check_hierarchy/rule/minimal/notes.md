@@ -16,6 +16,6 @@ errorlevel, so both are null.
 *number*, then the other operand is implicitly cast to *number* and therefore the result has
 type *number*".
 
-`errorlevel` is Integer even where no rule gives one: the manual's check_datapoint examples 1
-and 2 have no errorlevel in their ruleset and still type it Integer (and `check` says "or
-*integer* if the errorcode_vd Value Domain is not found").
+`errorlevel` (null here) may be Integer or Number: "VTL assumes that a Value Domain
+errorlevel_vd of the error levels exists in the Information Model" (define hierarchical
+ruleset), so its type is the Information Model's choice; the `errorlevel` variant tests it.

@@ -10,7 +10,7 @@
         {"name": "Me_1", "type": "Number", "role": "Measure"},
         {"name": "imbalance", "type": "Number", "role": "Measure"},
         {"name": "errorcode", "type": "String", "role": "Measure"},
-        {"name": "errorlevel", "type": "Integer", "role": "Measure"}
+        {"name": "errorlevel", "type": ["Integer", "Number"], "role": "Measure"}
       ]
     }
   ]

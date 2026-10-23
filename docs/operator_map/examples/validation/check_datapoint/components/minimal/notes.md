@@ -21,6 +21,6 @@ considered as valid (true)". A null consequent gives a null `bool_var` ("true, f
 on variables the list is "for documentation purposes" and changes nothing. The output is
 the default, `invalid`: (2, A, R1) and (3, B, R2). `ruleid` is the rule name.
 
-`errorlevel` is Integer even where no rule gives one: the manual's check_datapoint examples 1
-and 2 have no errorlevel in their ruleset and still type it Integer (and `check` says "or
-*integer* if the errorcode_vd Value Domain is not found").
+`errorlevel` (null here) may be Integer or Number: "VTL assumes that a Value Domain
+errorlevel_vd of error levels exists in the Information Model" (define datapoint ruleset), so its
+type is the Information Model's choice; the `errorlevel` variant tests it.

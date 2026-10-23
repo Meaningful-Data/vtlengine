@@ -22,6 +22,9 @@ errorlevel specified in the rule; if the Measure bool_var is true or null then e
 null": 1 on (2, A, R1) and 2 on (3, B, R2), null elsewhere. Output `all`, so that the true
 and null results show their null errorlevel. `ruleid` is the rule name.
 
-`errorlevel` is Integer even where no rule gives one: the manual's check_datapoint examples 1
-and 2 have no errorlevel in their ruleset and still type it Integer (and `check` says "or
-*integer* if the errorcode_vd Value Domain is not found").
+`errorlevel` is Integer, the typing of the manual's example structures (check_datapoint
+examples 1 and 2, check_hierarchy example 1). The manual leaves the type to the Information
+Model ("VTL assumes that a Value Domain errorlevel_vd of error levels exists in the Information
+Model", define datapoint ruleset; define hierarchical ruleset says the same), so this variant
+keeps the manual's example typing strict on purpose: a difference here is for the maintainer to
+decide, and the other examples accept Integer or Number.

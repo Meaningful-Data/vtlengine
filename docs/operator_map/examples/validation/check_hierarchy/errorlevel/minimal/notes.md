@@ -22,7 +22,13 @@ three false results, a true one and two null ones side by side, and no rule with
 Measure bool_var is **true** or **null** then errorlevel is **null**": R3, R4 and R6 (false) carry
 theirs; R1, R2 (null) and R7 (true) have a null errorlevel.
 
-`errorlevel` is Integer, as in the structure of the manual's example 1 (and `check`: "or
-*integer* if the errorcode_vd Value Domain is not found"). `Me_1` is Integer here, as in
-that example, so `imbalance` is Integer too (Subtraction: "If the type of both operands is
-*integer* then the result has type *integer*"): this example also checks that typing.
+`errorlevel` is Integer, the typing of the manual's example structures (check_datapoint
+examples 1 and 2, check_hierarchy example 1). The manual leaves the type to the Information
+Model ("VTL assumes that a Value Domain errorlevel_vd of error levels exists in the Information
+Model", define datapoint ruleset; define hierarchical ruleset says the same), so this variant
+keeps the manual's example typing strict on purpose: a difference here is for the maintainer to
+decide, and the other examples accept Integer or Number.
+
+`Me_1` is Integer here, as in the manual's example 1, so `imbalance`
+is Integer (Subtraction: "If the type of both operands is *integer* then the result has type
+*integer*"): this example also tests that typing.
