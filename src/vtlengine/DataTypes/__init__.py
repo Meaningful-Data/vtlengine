@@ -76,10 +76,12 @@ class ScalarType(metaclass=DataTypeSimpleRepr):
 
     # Implemented by each type
     @classmethod
-    def implicit_cast(cls, value: Any, from_type: Any) -> Any: ...
+    def implicit_cast(cls, value: Any, from_type: Any) -> Any:
+        raise NotImplementedError
 
     @classmethod
-    def explicit_cast(cls, value: Any, from_type: Any) -> Any: ...
+    def explicit_cast(cls, value: Any, from_type: Any) -> Any:
+        raise NotImplementedError
 
     @classmethod
     def is_subtype(cls, obj: Any) -> bool:

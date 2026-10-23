@@ -5,7 +5,7 @@ carries a 1-* code and a RunTimeError a 2-* code.
 
 import ast
 from pathlib import Path
-from typing import List
+from typing import Any, List
 from unittest import mock
 
 import pandas as pd
@@ -13,7 +13,7 @@ import pytest
 
 from vtlengine import semantic_analysis
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
-from vtlengine.DataTypes import Duration, Integer
+from vtlengine.DataTypes import Duration, Integer, ScalarType
 from vtlengine.Exceptions import (
     DataLoadError,
     InputValidationException,
@@ -24,7 +24,9 @@ from vtlengine.Exceptions import (
 )
 from vtlengine.Exceptions.messages import centralised_messages
 from vtlengine.Model import Component, DataComponent, Dataset, Role
+from vtlengine.Operators import Operator
 from vtlengine.Operators.Comparison import Between
+from vtlengine.Operators.String import Parameterized as StringParameterized
 
 SOURCE = Path(__file__).parents[2] / "src" / "vtlengine"
 CODE_FAMILY = {"SemanticError": "1-", "RunTimeError": "2-"}
@@ -88,17 +90,40 @@ def _indirect_error_uses() -> List[str]:
     return failures
 
 
+def _hook_raises(tree: ast.AST) -> List[int]:
+    """The raises that are the whole body of a method: hooks each subclass implements."""
+    hooks = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            body = [
+                stmt
+                for stmt in node.body
+                if not (isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Constant))
+            ]
+            if len(body) == 1 and isinstance(body[0], ast.Raise):
+                hooks.append(id(body[0]))
+    return hooks
+
+
 def _plain_raises() -> List[str]:
-    """Every raise of a plain Python error that a VTL error should replace (issue #1192)."""
+    """Every raise of a plain Python error that a VTL error should replace (issue #1192).
+
+    A NotImplementedError that is the whole body of a method declares a hook each subclass
+    implements: reaching it is an engine bug, not a VTL error.
+    """
     failures = []
     for path in sorted(SOURCE.rglob("*.py")):
         if "_cpp_parser" in path.parts:
             continue
-        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        hooks = _hook_raises(tree)
+        for node in ast.walk(tree):
             if not isinstance(node, ast.Raise) or node.exc is None:
                 continue
             exc = node.exc.func if isinstance(node.exc, ast.Call) else node.exc
             name = getattr(exc, "id", None) or getattr(exc, "attr", None)
+            if name == "NotImplementedError" and id(node) in hooks:
+                continue
             if name in ("Exception", "ValueError", "NotImplementedError", "SyntaxError"):
                 failures.append(f"{path.relative_to(SOURCE)}:{node.lineno} {name}")
     return failures
@@ -160,6 +185,21 @@ def test_empty_dataset_shape_mismatch_raises_input_error():
 
 def test_engine_raises_only_vtl_errors():
     assert _plain_raises() == []
+
+
+@pytest.mark.parametrize(
+    "hook",
+    [
+        lambda: Operator.validate(),
+        lambda: Operator.evaluate(),
+        lambda: ScalarType.implicit_cast("1", Integer),
+        lambda: ScalarType.explicit_cast("1", Integer),
+        lambda: StringParameterized.check_param(None, 1),
+    ],
+)
+def test_hooks_each_subclass_implements_fail_fast(hook: Any) -> None:
+    with pytest.raises(NotImplementedError):
+        hook()
 
 
 def test_load_errors_are_input_errors():

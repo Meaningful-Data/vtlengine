@@ -70,10 +70,12 @@ class Operator:
 
     # Implemented by each operator
     @classmethod
-    def validate(cls, *args: Any, **kwargs: Any) -> Any: ...
+    def validate(cls, *args: Any, **kwargs: Any) -> Any:
+        raise NotImplementedError
 
     @classmethod
-    def evaluate(cls, *args: Any, **kwargs: Any) -> Any: ...
+    def evaluate(cls, *args: Any, **kwargs: Any) -> Any:
+        raise NotImplementedError
 
     @classmethod
     def cast_time_types(cls, data_type: Any, series: Any) -> Any:

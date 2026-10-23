@@ -146,7 +146,8 @@ class Concatenate(Binary):
 class Parameterized(Unary):
     # Implemented by each operator
     @classmethod
-    def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None: ...
+    def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None:
+        raise NotImplementedError
 
     @classmethod
     def validate(cls, *args: Any) -> Any:
