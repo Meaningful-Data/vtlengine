@@ -4384,6 +4384,73 @@ class DefinedBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1192_49(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, integer)];
+        Description: Text that is no integer is a runtime error on both engines: DuckDB raised a raw
+                     ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_49"
+        number_inputs = 1
+        message = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_50(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, number)];
+        Description: Text that is no number is a runtime error on both engines: DuckDB raised a raw
+                     ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_50"
+        number_inputs = 1
+        message = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_51(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast("abc", integer)];
+        Description: A literal that is no integer is rejected by the semantic analysis, as a literal
+                     that is no date is.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_51"
+        number_inputs = 1
+        message = "1-1-5-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_52(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(sc_1, number)];
+        Description: A scalar value that is no number is a runtime error on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_52"
+        number_inputs = 1
+        message = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": "abc"}
+        )
+
 
 class OtherBugs(BugHelper):
     """ """

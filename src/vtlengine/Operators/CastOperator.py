@@ -10,11 +10,9 @@ from vtlengine.DataTypes import (
     EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
     IMPLICIT_TYPE_PROMOTION_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
-    Date,
     ScalarType,
-    String,
 )
-from vtlengine.Exceptions import RunTimeError, SemanticError
+from vtlengine.Exceptions import InputValidationException, RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
@@ -148,17 +146,28 @@ class Cast(Operator.Unary):
         """This method validates the operation when the operand is a Scalar."""
         from_type = operand.data_type
         cls.check_cast(from_type, to_type, mask)
-        if from_type == String and to_type == Date and operand.value is not None:
+        if operand.value is not None and not pd.isna(operand.value):
             try:
-                Date.explicit_cast(operand.value, String)
-            except RunTimeError as error:
+                cls.cast_value(operand.value, from_type, to_type)
+            except (RunTimeError, InputValidationException) as error:
+                types = {
+                    "type_1": SCALAR_TYPES_CLASS_REVERSE[from_type],
+                    "type_2": SCALAR_TYPES_CLASS_REVERSE[to_type],
+                }
                 # A literal is part of the script, a scalar value is data (issue #1192)
                 if operand.literal:
-                    raise SemanticError(
-                        "1-1-5-6", value=operand.value, type_1="String", type_2="Date"
-                    ) from error
-                raise
+                    raise SemanticError("1-1-5-6", value=operand.value, **types) from error
+                if isinstance(error, RunTimeError):
+                    raise
+                raise RunTimeError("2-1-5-1", value=operand.value, **types) from error
         return Scalar(name=operand.name, data_type=to_type, value=None, nullable=operand.nullable)
+
+    @classmethod
+    def cast_value(cls, value: Any, from_type: Type[ScalarType], to_type: Type[ScalarType]) -> Any:
+        """Cast a single value to the type to_type without mask."""
+        if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
+            return to_type.implicit_cast(value, from_type)
+        return to_type.explicit_cast(value, from_type)
 
     @classmethod
     def evaluate(  # type: ignore[override]
@@ -208,10 +217,7 @@ class Cast(Operator.Unary):
             return Scalar(
                 name=result_scalar.name, data_type=to_type, value=None, nullable=operand.nullable
             )
-        if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
-            casted_data = to_type.implicit_cast(operand.value, from_type)
-        else:
-            casted_data = to_type.explicit_cast(operand.value, from_type)
+        casted_data = cls.cast_value(operand.value, from_type, to_type)
         return Scalar(
             name=result_scalar.name, data_type=to_type, value=casted_data, nullable=operand.nullable
         )

@@ -128,6 +128,12 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
                 op = macro_op
         return RunTimeError("2-1-15-2", op=op, value=msg.rsplit(" ", 1)[-1])
 
+    # VTL macros vtl_text_to_double / vtl_text_to_integer: text that is no number
+    if "vtl 2-1-5-1 " in msg_lower:
+        match = re.search(r"VTL 2-1-5-1 (\w+) (.*)", msg)
+        type_2, value = match.groups() if match else ("Number", "unknown")
+        return RunTimeError("2-1-5-1", value=value, type_1="String", type_2=type_2)
+
     # VTL macro vtl_dateadd: a period indicator that is not one (mirrors 2-1-19-2)
     if "vtl 2-1-19-2 invalid period" in msg_lower:
         return RunTimeError("2-1-19-2", period=msg.rsplit(" ", 1)[-1])
@@ -158,6 +164,10 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
         return RunTimeError("2-1-15-8", op=op, value=msg.rsplit(" ", 1)[-1])
 
     return None
+
+
+# The VTL type of the SQL types a text is cast to when it is read as a number
+_NUMERIC_SQL_TYPES = {"DOUBLE": "Number", "INT64": "Integer", "BIGINT": "Integer"}
 
 
 def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
@@ -193,6 +203,16 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     if "cannot determine period for interval" in msg_lower:
         value = msg.split(": ", 1)[-1] if ": " in msg else "unknown"
         return RunTimeError("2-1-5-1", value=value, type_1="Time", type_2="Time_Period")
+
+    # Text cast to a number whose type the SQL generation could not tell (mirrors 2-1-5-1)
+    conversion = re.search(r"Could not convert string '(.*?)' to (\w+)", msg)
+    if conversion is not None and conversion.group(2).upper() in _NUMERIC_SQL_TYPES:
+        return RunTimeError(
+            "2-1-5-1",
+            value=conversion.group(1),
+            type_1="String",
+            type_2=_NUMERIC_SQL_TYPES[conversion.group(2).upper()],
+        )
 
     # Invalid date/timestamp format (e.g. casting interval string to timestamp)
     if "conversion" in msg_lower and ("timestamp" in msg_lower or "date" in msg_lower):

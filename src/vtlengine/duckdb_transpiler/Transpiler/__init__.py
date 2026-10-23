@@ -2340,7 +2340,14 @@ FROM (
         if target_type_str == "Integer":
             if source_lower == "boolean":
                 return f"CAST({expr} AS {duckdb_type})"
+            if source_lower == "string":
+                # Text that is no integer raises 2-1-5-1, as on the pandas engine
+                return f"vtl_text_to_integer({expr})"
             return f"CAST(TRUNC(CAST({expr} AS DOUBLE)) AS {duckdb_type})"
+
+        if target_type_str == "Number" and source_lower == "string":
+            # Text that is no number raises 2-1-5-1, as on the pandas engine
+            return f"vtl_text_to_double({expr})"
 
         if target_type_str == "String" and source_lower == "boolean":
             return _bool_to_str(expr)
