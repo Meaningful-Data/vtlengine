@@ -32,10 +32,11 @@ group has its own job:
 
 - `Id_1 = 1` separates `dataset` from `rule` and `rule_priority`. D and E are both there and not
   null, so `C = D + E` gives 5 in every mode (in the `*_null` modes a missing D or E would make
-  it null), and B is there, so A is computed in the `*_null` modes too. `DS_1` has no C, so
-  `dataset` reads a missing C (null in the `*_null` modes, 0 in the `*_zero` modes) where
-  `rule` and `rule_priority` read the computed 5. An input that took the C of `DS_1` first and
-  the computed C otherwise would read 5 as well, so the `dataset` examples tell it apart too.
+  it null), and B is there, so for `rule` and `rule_priority` `A = B + C` is not null in the
+  `*_null` modes either. `DS_1` has no C, so `dataset` reads a missing C (null in the `*_null`
+  modes, 0 in the `*_zero` modes) where `rule` and `rule_priority` read the computed 5. An input
+  that took the C of `DS_1` first and the computed C otherwise would read 5 as well, so the
+  `dataset` examples tell it apart too.
 - `Id_1 = 2` separates `rule` from `rule_priority`. D is null, so `C = D + E` gives a null C (in
   `non_null`, no C), and `rule_priority` falls back to the C of `DS_1` (20) where `rule` keeps the
   null. E and B are not zero, so `non_zero` evaluates both rules on a right-side data point that
