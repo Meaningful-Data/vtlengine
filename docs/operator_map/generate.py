@@ -22,9 +22,11 @@ the folders with no catalogue example always. Nothing is run or written with ``-
 stops after the checks, and does not ask for previous results.
 
 The exit code is 0 for a run that wrote its files, 1 for any problem (printed one per line, and
-nothing is written), and 2 for a run that was interrupted or hit an internal error (one line: its
-type and message). Whatever the failure, the files of the previous run stay as they were. This
-process never imports vtlengine or pandas: the engines run in the children of ``tool.runner``.
+nothing is written), and 2 for a run that was interrupted, wherever the interrupt came, or hit an
+internal error (one line: its type and message). Whatever the failure, the files of the previous
+run stay as they were. Only when putting them back fails too, the folder that has their old bytes
+is kept, and the line says where it is. This process never imports vtlengine or pandas: the
+engines run in the children of ``tool.runner``.
 """
 
 from __future__ import annotations
@@ -76,6 +78,10 @@ class GenerateError(Exception):
     """A problem that stops the run before anything is written, said in one line."""
 
 
+class RestoreError(Exception):
+    """A write failed and some old files could not be put back: the staging folder keeps them."""
+
+
 @dataclass(frozen=True)
 class _Item:
     """One example of the catalogue, with where it lives."""
@@ -102,6 +108,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
     try:
         return _generate(args)
+    except KeyboardInterrupt:  # while running, judging, rendering or writing: all or nothing
+        print("interrupted: nothing was written", file=sys.stderr)
+        return 2
     except Exception as exc:  # whatever it is, one line and exit 2: the files are as they were
         print(
             f"internal error: {type(exc).__name__}: {' '.join(str(exc).split())}", file=sys.stderr
@@ -110,7 +119,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _generate(args: argparse.Namespace) -> int:
-    """The run of ``main`` after the arguments: the exit codes 0, 1 and 2 (interrupted)."""
+    """The run of ``main`` after the arguments: the exit codes 0 and 1."""
     cat = load_catalogue()
     only: list[str] = list(dict.fromkeys(args.only))
     known = [*(chapter.id for chapter in cat.chapters), _TYPES]
@@ -138,11 +147,7 @@ def _generate(args: argparse.Namespace) -> int:
 
     examples_root = ROOT / "examples"
     print(f"running {len(todo)} examples on both engines ({args.workers} at a time)", flush=True)
-    try:
-        outputs = run_all(_jobs(todo, examples_root), args.workers, args.timeout)
-    except KeyboardInterrupt:
-        print("interrupted: nothing was written", file=sys.stderr)
-        return 2
+    outputs = run_all(_jobs(todo, examples_root), args.workers, args.timeout)
     results = _judge(todo, checked.loaded, outputs, examples_root, meta.date)
     index = build_index(cat, {**checked.previous, **results})
     try:
@@ -497,23 +502,32 @@ def _write_all(root: Path, files: Mapping[str, str]) -> None:
     Everything is written before anything is replaced, so that a file that cannot be written
     leaves the old ones as they are. The folder is in ``root``: a move inside a filesystem
     replaces a file in one step. A move that fails puts back the files that were moved before it.
+    The folder is removed at the end, unless an old file could not be put back: then it is kept,
+    and the ``RestoreError`` says where it is.
     """
     staging = Path(tempfile.mkdtemp(prefix=".generate-", dir=root))
+    keep = False
     try:
         for name, text in files.items():
             with (staging / name).open("w", encoding="utf-8", newline="\n") as handle:
                 handle.write(text)
         _replace_all(root, staging, list(files))
+    except RestoreError:
+        keep = True
+        raise
     finally:
-        shutil.rmtree(staging, ignore_errors=True)
+        if not keep:
+            shutil.rmtree(staging, ignore_errors=True)
 
 
 def _replace_all(root: Path, staging: Path, names: Sequence[str]) -> None:
     """Move ``names`` from ``staging`` over the files of ``root``, all or none.
 
-    The old bytes of a file are copied aside before it is replaced. If anything goes wrong, even
-    an interrupt, the files that were replaced get their old bytes back, or are removed if they
-    were new, and the error goes on.
+    The old bytes of a file are copied aside before it is replaced, and the file is noted before
+    the move, so that a move that is cut short, even by an interrupt right after it, is undone
+    too. If anything goes wrong, the files that were noted get their old bytes back, or are
+    removed if they were new, and the error goes on. When a file cannot be put back, the others
+    still are, and the ``RestoreError`` that follows names the ones that could not.
     """
     backups = staging / "old"
     backups.mkdir()
@@ -522,15 +536,35 @@ def _replace_all(root: Path, staging: Path, names: Sequence[str]) -> None:
         for name in names:
             if (root / name).is_file():
                 shutil.copy2(root / name, backups / name)
-            os.replace(staging / name, root / name)
             replaced.append(name)
-    except BaseException:
-        for name in replaced:
+            os.replace(staging / name, root / name)
+    except BaseException as exc:
+        lost = _put_back(root, backups, replaced)
+        if lost:
+            cause = f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__
+            raise RestoreError(
+                f"{cause}; could not put back {', '.join(lost)}; the staging folder {staging} "
+                f"is kept, the old files are in its folder {backups.name}"
+            ) from exc
+        raise
+
+
+def _put_back(root: Path, backups: Path, names: Sequence[str]) -> list[str]:
+    """Give ``names`` their old bytes in ``root``, or remove them if they are new.
+
+    Every file is tried, whatever happened to the ones before it. The result is the ones that
+    could not be put back.
+    """
+    lost: list[str] = []
+    for name in names:
+        try:
             if (backups / name).is_file():
                 os.replace(backups / name, root / name)
             else:
                 (root / name).unlink(missing_ok=True)
-        raise
+        except Exception:  # one failure must not stop the others
+            lost.append(name)
+    return lost
 
 
 if __name__ == "__main__":

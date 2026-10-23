@@ -729,6 +729,147 @@ def test_a_write_that_fails_leaves_the_old_files_and_no_staging_folder(
     assert_untouched(world, old)
 
 
+def interrupt() -> None:
+    raise KeyboardInterrupt
+
+
+def run_main_interrupted() -> int:
+    """``generate.main`` of a run that is interrupted: an interrupt that gets out is a failure."""
+    try:
+        return generate.main([])
+    except KeyboardInterrupt:
+        pytest.fail("the interrupt got out of main")
+
+
+def interrupt_judging(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(generate, "_judge", lambda *_a, **_k: interrupt())
+
+
+def interrupt_rendering(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(generate, "chapter_rst", lambda *_a, **_k: interrupt())
+
+
+def interrupt_the_replace(
+    nth: int, *, after: bool = False
+) -> Callable[[World, pytest.MonkeyPatch], None]:
+    """The ``nth`` ``os.replace`` is interrupted: before it moves the file, or right after."""
+
+    def inject(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
+        real_replace = os.replace
+        calls: list[object] = []
+
+        def flaky(source: Any, target: Any) -> None:
+            calls.append(target)
+            if len(calls) == nth and not after:
+                interrupt()
+            real_replace(source, target)
+            if len(calls) == nth:
+                interrupt()
+
+        monkeypatch.setattr(os, "replace", flaky)
+
+    return inject
+
+
+@pytest.mark.parametrize("seeded", [True, False], ids=["old files", "no old files"])
+@pytest.mark.parametrize(
+    "inject",
+    [
+        interrupt_judging,
+        interrupt_rendering,
+        interrupt_the_replace(1),
+        interrupt_the_replace(3),
+        interrupt_the_replace(1, after=True),
+        interrupt_the_replace(3, after=True),
+    ],
+    ids=[
+        "judging",
+        "rendering",
+        "first replace",
+        "third replace",
+        "right after the first replace",
+        "right after the third replace",
+    ],
+)
+def test_an_interrupt_at_any_stage_exits_2_and_leaves_the_old_files(
+    world: World,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    inject: Callable[[World, pytest.MonkeyPatch], None],
+    seeded: bool,
+) -> None:
+    old = seed_outputs(world) if seeded else {}
+    inject(world, monkeypatch)
+    assert run_main_interrupted() == 2
+    assert "interrupted" in capsys.readouterr().err
+    # A move that was cut short, right after it was done, is undone as well.
+    assert_untouched(world, old)
+
+
+def staging_folders(world: World) -> list[Path]:
+    """The staging folders of the generator that are left in its folder."""
+    return [path for path in world.root.iterdir() if path.name.startswith(".generate-")]
+
+
+def test_a_restore_that_fails_keeps_the_staging_folder_and_the_others_are_still_tried(
+    world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    old = seed_outputs(world)
+    real_replace = os.replace
+    calls: list[tuple[str, str]] = []  # (the name of the file, the folder it comes from)
+
+    def flaky(source: Any, target: Any) -> None:
+        file, folder = Path(source).name, Path(source).parent.name
+        calls.append((file, folder))
+        restores = [name for name, where in calls if where == "old"]
+        # The third file cannot be replaced, and the first file to be put back cannot be put back.
+        if len(calls) == 3 or (folder == "old" and len(restores) == 1):
+            raise OSError(errno.EACCES, "no way")
+        real_replace(source, target)
+
+    monkeypatch.setattr(os, "replace", flaky)
+    assert generate.main([]) == 2
+    [line] = problems(capsys)
+    failed = next(name for name, where in calls if where == "old")
+    # Every file that was replaced, the one that could not be replaced too, was tried.
+    assert sorted(name for name, where in calls if where == "old") == sorted(OUTPUTS[:3])
+    # The file that could not be put back has the new bytes; the staging folder has the old ones.
+    [staging] = staging_folders(world)
+    assert (staging / "old" / failed).read_bytes() == old[failed]
+    assert (world.root / failed).read_bytes() != old[failed]
+    # The other files are as they were, and the line says where the old files are.
+    others = {name: data for name, data in old.items() if name != failed}
+    assert {name: (world.root / name).read_bytes() for name in others} == others
+    assert line.startswith("internal error: ")
+    assert str(staging) in line
+    assert failed in line
+
+
+def test_a_new_file_that_cannot_be_removed_keeps_the_staging_folder_too(
+    world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # No old files: undoing the first replaces is removing the new files, and that fails.
+    real_replace = os.replace
+    calls: list[object] = []
+
+    def third_fails(source: Any, target: Any) -> None:
+        calls.append(target)
+        if len(calls) == 3:
+            raise OSError(errno.EACCES, "no way")
+        real_replace(source, target)
+
+    def cannot_remove(self: Path, missing_ok: bool = False) -> None:
+        raise OSError(errno.EACCES, "no way")
+
+    monkeypatch.setattr(os, "replace", third_fails)
+    monkeypatch.setattr(Path, "unlink", cannot_remove)
+    assert generate.main([]) == 2
+    [line] = problems(capsys)
+    [staging] = staging_folders(world)
+    assert str(staging) in line
+    assert "index.rst" in line
+
+
 # --- The metadata of the run ---
 
 
