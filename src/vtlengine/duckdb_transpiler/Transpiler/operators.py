@@ -580,6 +580,20 @@ def is_re2_incompatible(pattern: str) -> bool:
     return _has_numeric_backreference(pattern)
 
 
+# Python UDF telling whether a text is a time period the pandas engine reads
+TIME_PERIOD_CHECK_FUNCTION = "vtl_is_time_period"
+
+
+def register_time_period_functions(conn: duckdb.DuckDBPyConnection) -> None:
+    """Register the time period check UDF on a DuckDB connection (issue #1192).
+
+    It applies the check of the pandas engine, so both engines accept the same texts as time
+    periods. Idempotent, as register_regex_functions.
+    """
+    with contextlib.suppress(duckdb.Error):
+        conn.create_function(TIME_PERIOD_CHECK_FUNCTION, TimePeriod.check, [VARCHAR], BOOLEAN)
+
+
 def register_regex_functions(conn: duckdb.DuckDBPyConnection) -> None:
     """Register the Python regex fallback UDF on a DuckDB connection.
 

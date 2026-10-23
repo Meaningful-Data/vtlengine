@@ -488,6 +488,14 @@ class TimePeriod(TimeInterval):
                     type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
                     type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
                 )
+            if not cls.check(value):
+                # Text that is no time period, such as 2020X1 (issue #1192)
+                raise RunTimeError(
+                    "2-1-5-1",
+                    value=value,
+                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                    type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
+                )
             return value
         if from_type == TimeInterval:
             result = interval_to_period_str(str(value))

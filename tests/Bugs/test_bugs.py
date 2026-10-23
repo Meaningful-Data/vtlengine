@@ -4485,6 +4485,62 @@ class DefinedBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1192_55(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, time_period)]; (Me_1 = "2020X1")
+        Description: Text that is no time period is a runtime error of the cast on both
+                     engines: DuckDB read it as 2020D1, and pandas only failed when writing the
+                     result.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_55"
+        number_inputs = 1
+        message = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_56(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast("2020X1", time_period)];
+        Description: A literal that is no time period is rejected by the semantic analysis on
+                     both engines: pandas raised the input error 0-1-2-7 at run time and DuckDB
+                     read it as 2020D1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_56"
+        number_inputs = 1
+        message = "1-1-5-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1192_57(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_2 := cast(sc_1, time_period)]; (sc_1 = "2020X1")
+        Description: A scalar value that is no time period is a runtime error on both engines:
+                     pandas raised the input error 0-1-2-7.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
+        Goal: Check Exception.
+        """
+        code = "GH_1192_57"
+        number_inputs = 1
+        message = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            scalars={"sc_1": "2020X1"},
+        )
+
 
 class OtherBugs(BugHelper):
     """ """

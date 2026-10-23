@@ -46,6 +46,7 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     NATIVE_MATCH_FUNCTION,
     NUMBER_TOLERANCE_OPS,
     ROUNDED_NUMERIC_OPS,
+    TIME_PERIOD_CHECK_FUNCTION,
     get_duckdb_type,
     is_number_comparison,
     is_re2_incompatible,
@@ -2381,7 +2382,14 @@ FROM (
                 canonical = _try_normalize_time_period(literal)
                 if canonical is not None:
                     return f"'{canonical.replace(chr(39), chr(39) * 2)}'"
-            return f"vtl_period_normalize(CAST({expr} AS VARCHAR))"
+            text = f"CAST({expr} AS VARCHAR)"
+            if source_lower == "string":
+                # Text that is no time period raises 2-1-5-1, as on the pandas engine
+                text = (
+                    f"CASE WHEN NOT {TIME_PERIOD_CHECK_FUNCTION}({text}) "
+                    f"THEN error('VTL 2-1-5-1 Time_Period ' || {text}) ELSE {text} END"
+                )
+            return f"vtl_period_normalize({text})"
 
         if target_type_str == "Date":
             if source_lower == "string":
