@@ -860,6 +860,12 @@ centralised_messages = {
         "description": "Raised when a side of the apply expression of a join, such as a constant "
         "or the only operand of the join, names no Measures shared between the joined Data Sets.",
     },
+    "1-1-13-23": {
+        "message": "At op apply: {expression} is not supported, the apply expression must be a "
+        "binary operation between operands of the join, such as d1 + d2.",
+        "description": "Raised when the apply expression of a join is not a binary operation, "
+        "such as a function call or an if-then-else.",
+    },
     "1-1-13-9": {
         "message": "Ambiguity for this variable {comp_name} inside a Join clause.",
         "description": "Raised when a component name is ambiguous in a Join operation.",
@@ -915,17 +921,6 @@ centralised_messages = {
     "1-1-13-19": {
         "message": "At op {op}: Join operator requires at least 1 dataset.",
         "description": "Raised when a join receives no Dataset.",
-    },
-    "1-1-13-20": {
-        "message": "At op {op}: Invalid expression {expression} on apply operator. Only BinOp are "
-        "accepted.",
-        "description": "Raised when the apply clause of a join holds an expression that is not "
-        "a binary operation.",
-    },
-    "1-1-13-21": {
-        "message": "At op {op}: {left} and {right} has not any match on dataset components.",
-        "description": "Raised when the operands of an apply clause name no Component of the "
-        "joined Datasets.",
     },
     # Operators general errors
     "1-1-14-1": {
