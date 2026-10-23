@@ -4,5 +4,7 @@ from __future__ import annotations
 
 from tool.model import Chapter, TypeDef
 
-CHAPTERS: tuple[Chapter, ...] = ()
-TYPES: tuple[TypeDef, ...] = ()
+from catalogue import boolean, types
+
+CHAPTERS: tuple[Chapter, ...] = (boolean.CHAPTER,)
+TYPES: tuple[TypeDef, ...] = types.TYPES
