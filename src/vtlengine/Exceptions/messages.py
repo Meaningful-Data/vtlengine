@@ -1069,6 +1069,12 @@ centralised_messages = {
         "message": "At op {op}: User defined operator without returns is not implemented.",
         "description": "Occurs when a user-defined operator lacks a return definition.",
     },
+    "1-3-2-6": {
+        "message": "At op {op}: type constraints, null and not null, multiplicity modifiers and "
+        "value domains are not supported in the returns of a user defined operator.",
+        "description": "Raised when a user defined operator declares its result with a type "
+        "form that the engine cannot check.",
+    },
     "1-3-2-3": {
         "message": "At op {op}: Vtl Script contains Cycles, no DAG established. "
         "Nodes involved: {nodes}.",
