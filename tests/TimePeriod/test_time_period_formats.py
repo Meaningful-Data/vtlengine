@@ -18,7 +18,7 @@ from vtlengine import run
 from vtlengine.DataTypes import TimePeriod
 from vtlengine.DataTypes._time_checking import check_time_period
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
-from vtlengine.Exceptions import RunTimeError
+from vtlengine.Exceptions import InputValidationException, RunTimeError
 from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
@@ -134,7 +134,7 @@ def test_check_time_period_integer_as_input() -> None:
     ids=["garbage", "short year", "unknown indicator"],
 )
 def test_check_time_period_invalid(input_val: str) -> None:
-    with pytest.raises(ValueError, match="not in a valid format"):
+    with pytest.raises(InputValidationException, match="not in a valid format"):
         check_time_period(input_val)
 
 

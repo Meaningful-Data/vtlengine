@@ -36,6 +36,24 @@ jobs:
           path: src/vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*
           key: cpp-parser-ubuntu2404-py3.12-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml') }}
 
+      - name: Use the official Ubuntu mirrors
+        # The runner image tries azure.archive.ubuntu.com first and only falls
+        # back on errors, so a slow Azure mirror stalls apt for minutes.
+        run: |
+          sudo tee /etc/apt/sources.list.d/ubuntu.sources > /dev/null <<'EOF'
+          Types: deb
+          URIs: https://archive.ubuntu.com/ubuntu/
+          Suites: noble noble-updates noble-backports
+          Components: main universe restricted multiverse
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+          Types: deb
+          URIs: https://security.ubuntu.com/ubuntu/
+          Suites: noble-security
+          Components: main universe restricted multiverse
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+          EOF
+
       - name: Install system dependencies
         run: |
           sudo apt-get update

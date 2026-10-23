@@ -39,7 +39,6 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     _BOOLEAN_RESULT_BINOPS,
     _BOOLEAN_RESULT_UNARY_OPS,
     _NUMERIC_RESULT_BINOPS,
-    _ORDERING_OPS,
     _STRING_PARAM_OPS,
     _STRING_UNARY_OPS,
     COMPARISON_OPS,
@@ -47,6 +46,8 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     NATIVE_MATCH_FUNCTION,
     NUMBER_TOLERANCE_OPS,
     ROUNDED_NUMERIC_OPS,
+    TIME_CHECK_FUNCTION,
+    TIME_PERIOD_CHECK_FUNCTION,
     get_duckdb_type,
     is_number_comparison,
     is_re2_incompatible,
@@ -72,7 +73,7 @@ from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, V
 from vtlengine.Operators.Analytic import DEFAULT_ANALYTIC_WINDOW
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.Utils._recursion import recursion_headroom
-from vtlengine.ViralPropagation import get_current_registry
+from vtlengine.ViralPropagation import apply_viral_return_types, get_current_registry
 from vtlengine.ViralPropagation.sql import (
     vp_group_sql,
     vp_group_sql_windowed,
@@ -158,8 +159,11 @@ def _datediff_to_date(ref: str, dt: Optional[type]) -> str:
         return f"vtl_tp_end_date(vtl_period_parse({ref}))"
     if dt == Date:
         return f"CAST({ref} AS DATE)"
-    # TimeInterval or unknown: pass through (NULL propagates, non-null errors at runtime)
-    return f"CAST({ref} AS DATE)"
+    if dt == TimeInterval:
+        # A Time value holds two dates: a null passes, any other value fails (VTL 2-1-19-25)
+        return f"CAST(vtl_datediff_no_time({ref}) AS DATE)"
+    # Unknown: the value is read as the pandas engine reads it (issue #1192)
+    return f"vtl_datediff_date({ref})"
 
 
 def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, str]]) -> str:
@@ -249,6 +253,21 @@ def _rename_var_ids(node: AST.AST, names: Dict[str, str]) -> AST.AST:
         elif isinstance(item, AST.AST):
             pending.extend(vars(item).values())
     return node
+
+
+# Text casts that check the text as the pandas engine does, by the lower case name of the
+# target type ({0}: the text, {1}: the SQL type)
+_TEXT_CASTS = {
+    "integer": "vtl_text_to_integer({0})",
+    "number": "vtl_text_to_double({0})",
+    "duration": "vtl_text_to_duration({0})",
+    "date": "CAST(vtl_text_to_date({0}) AS {1})",
+    "time": (
+        f"CASE WHEN NOT {TIME_CHECK_FUNCTION}({{0}}) "
+        "THEN error('VTL 2-1-5-1 Time ' || {0}) ELSE {0} END"
+    ),
+}
+_TEXT_CASTS["timeinterval"] = _TEXT_CASTS["time"]
 
 
 def _contains_analytic(node: Any) -> bool:
@@ -933,11 +952,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         # ones with registry overrides, and Number is inferred for bare literals.
         dt = next((t for t in (left_type, right_type) if t not in (None, Number)), None)
         dt = dt or left_type or right_type
-        # TimeInterval: ordering not supported
-        if op in _ORDERING_OPS and dt == TimeInterval:
-            raise RunTimeError("2-1-19-17", op=op)
         # datediff: convert each operand to DATE individually based on its type
-        if op == tokens.DATEDIFF and dt in (TimePeriod, TimeInterval, Date):
+        if op == tokens.DATEDIFF:
             left_ref = _datediff_to_date(left_ref, left_type)
             right_ref = _datediff_to_date(right_ref, right_type)
             return f"ABS(DATE_DIFF('day', {left_ref}, {right_ref}))"
@@ -1949,7 +1965,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         cte.cte(
             "freq",
             "SELECT CASE WHEN COUNT(DISTINCT f) > 1 THEN error("
-            "'VTL 1-1-19-9: fill_time_series needs a single time interval frequency') "
+            "'VTL 2-1-19-23: fill_time_series needs a single time interval frequency') "
             "ELSE vtl_interval_freq_to_step(MIN(f)) END AS step, MIN(iv) AS sample "
             f"FROM (SELECT vtl_interval_freq({time_col}) AS f, {time_col} AS iv "
             f"FROM source WHERE {time_col} IS NOT NULL)",
@@ -2084,7 +2100,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             ]
             freq_sql = (
                 "SELECT CASE WHEN COUNT(DISTINCT vtl_interval_freq(iv)) > 1 THEN error("
-                "'VTL 1-1-19-9: timeshift needs a single time series frequency') "
+                "'VTL 2-1-19-23: timeshift needs a single time series frequency') "
                 "ELSE vtl_interval_step(MIN(iv)) END AS step "
                 f"FROM (SELECT {time_col} AS iv FROM {src} WHERE {time_col} IS NOT NULL)"
             )
@@ -2118,7 +2134,7 @@ FROM {src}, (
             cte.cte(
                 "freq",
                 "SELECT CASE WHEN COUNT(DISTINCT period_ind) > 1 THEN error("
-                "'VTL 1-1-19-9: timeshift needs a single time series frequency') "
+                "'VTL 2-1-19-23: timeshift needs a single time series frequency') "
                 "ELSE COALESCE(MIN(period_ind), 'A') END AS period_ind FROM freq_series",
             )
             return cte.select(f"SELECT {', '.join(cols)} FROM source s, freq")
@@ -2188,8 +2204,11 @@ FROM (
         operand_node = node.children[0]
         operand_type = self._get_node_type(operand_node)
 
-        shift_sql = self.visit(node.params[0]) if node.params else "0"
-        period_sql = self.visit(node.params[1]) if len(node.params) > 1 else "'D'"
+        # Typed, so that a null scalar still binds the macro (issue #1192)
+        shift_sql = f"CAST({self.visit(node.params[0])} AS INTEGER)" if node.params else "0"
+        period_sql = (
+            f"CAST({self.visit(node.params[1])} AS VARCHAR)" if len(node.params) > 1 else "'D'"
+        )
 
         is_tp = self._is_operand_type(operand_node, TimePeriod)
 
@@ -2339,6 +2358,10 @@ FROM (
         if target_type_str == "Boolean" and source_lower == "string":
             return f"(LOWER(TRIM(CAST({expr} AS VARCHAR))) = 'true')"
 
+        if source_lower == "string" and target_lower in _TEXT_CASTS:
+            # Text the pandas engine does not cast raises its error (issue #1192)
+            return _TEXT_CASTS[target_lower].format(expr, duckdb_type)
+
         if target_type_str == "Integer":
             if source_lower == "boolean":
                 return f"CAST({expr} AS {duckdb_type})"
@@ -2376,7 +2399,14 @@ FROM (
                 canonical = _try_normalize_time_period(literal)
                 if canonical is not None:
                     return f"'{canonical.replace(chr(39), chr(39) * 2)}'"
-            return f"vtl_period_normalize(CAST({expr} AS VARCHAR))"
+            text = f"CAST({expr} AS VARCHAR)"
+            if source_lower == "string":
+                # Text that is no time period raises 2-1-5-1, as on the pandas engine
+                text = (
+                    f"CASE WHEN NOT {TIME_PERIOD_CHECK_FUNCTION}({text}) "
+                    f"THEN error('VTL 2-1-5-1 Time_Period ' || {text}) ELSE {text} END"
+                )
+            return f"vtl_period_normalize({text})"
 
         if target_type_str == "Date":
             if source_lower in ("time_period", "timeperiod"):
@@ -2386,36 +2416,30 @@ FROM (
 
         return f"CAST({expr} AS {duckdb_type})"
 
-    @staticmethod
-    def _check_random_negative_index(index_node: Optional[AST.AST]) -> None:
-        """Raise SemanticError if the index is a negative literal."""
-        if (
-            isinstance(index_node, AST.UnaryOp)
-            and index_node.op == "-"
-            and isinstance(index_node.operand, AST.Constant)
-        ):
-            # The literal sits inside the minus, so the index reads as its negation.
-            raise SemanticError("2-1-15-2", op="random", value=f"-{index_node.operand.value}")
-
     def _visit_random_impl(
         self,
         seed_node: Optional[AST.AST],
         index_node: Optional[AST.AST],
     ) -> str:
         """Generate SQL for RANDOM (shared by ParamOp and BinOp forms)."""
-        self._check_random_negative_index(index_node)
         seed_type = self._get_node_type(seed_node) if seed_node else _SCALAR
+        index_sql = self.visit(index_node) if index_node else "0"
+        if index_node is not None and not isinstance(index_node, AST.Constant):
+            # An index computed in the script or read from a Component has no value in the
+            # semantic analysis, so the query checks it (issue #1192)
+            index_sql = f"vtl_random_index({index_sql})"
+
+        index_nullable = index_node is not None and not isinstance(index_node, AST.Constant)
 
         if seed_type == _DATASET and seed_node is not None:
-            index_sql = self.visit(index_node) if index_node else "0"
             return self._apply_measures(
                 seed_node,
-                lambda col: self._random_hash_expr(col, index_sql),
+                lambda col: self._random_hash_expr(col, index_sql, True, index_nullable),
             )
 
         seed_sql = self.visit(seed_node) if seed_node else "0"
-        index_sql = self.visit(index_node) if index_node else "0"
-        return self._random_hash_expr(seed_sql, index_sql)
+        seed_nullable = seed_node is not None and not isinstance(seed_node, AST.Constant)
+        return self._random_hash_expr(seed_sql, index_sql, seed_nullable, index_nullable)
 
     def visit_ParamOp_random(self, node: AST.ParamOp) -> str:
         """Visit RANDOM operator (ParamOp form)."""
@@ -2428,12 +2452,26 @@ FROM (
         return self._visit_random_impl(node.left, node.right)
 
     @staticmethod
-    def _random_hash_expr(seed_sql: str, index_sql: str) -> str:
-        """Build a deterministic hash-based random expression in [0, 1)."""
-        return (
+    def _random_hash_expr(
+        seed_sql: str, index_sql: str, seed_nullable: bool = False, index_nullable: bool = False
+    ) -> str:
+        """Build a deterministic hash-based random expression in [0, 1).
+
+        The hash of a null is a number, so a seed or an index that can be null gives null
+        explicitly (issue #1192).
+        """
+        random_sql = (
             f"(ABS(hash(CAST({seed_sql} AS VARCHAR) || '_' || "
             f"CAST({index_sql} AS VARCHAR))) % 1000000) / 1000000.0"
         )
+        nulls = [
+            f"{sql} IS NULL"
+            for sql, nullable in ((seed_sql, seed_nullable), (index_sql, index_nullable))
+            if nullable
+        ]
+        if not nulls:
+            return random_sql
+        return f"CASE WHEN {' OR '.join(nulls)} THEN NULL ELSE {random_sql} END"
 
     # Clause visitor
 
@@ -4336,10 +4374,21 @@ FROM (
             child_selects = []
             for child in parsed.right_code_items:
                 proj = ", ".join(other_q + raw_cols)
-                if child in node_cte:
-                    child_selects.append(
-                        " UNION ALL ".join(f"SELECT {proj} FROM {name}" for name in node_cte[child])
+                child_ctes = node_cte.get(child, [])
+                if len(child_ctes) > 1:
+                    # The values of the last rule that computed the child for a group, the
+                    # rule whose measure this rule reads (issue #1193)
+                    union = " UNION ALL ".join(
+                        f"SELECT {proj}, {k} AS _vpo FROM {name}"
+                        for k, name in enumerate(child_ctes)
                     )
+                    last = f"PARTITION BY {', '.join(other_q)} " if other_q else ""
+                    child_selects.append(
+                        f"SELECT {proj} FROM ({union}) AS _vpc_{i} "
+                        f"QUALIFY ROW_NUMBER() OVER ({last}ORDER BY _vpo DESC) = 1"
+                    )
+                elif child_ctes:
+                    child_selects.append(f"SELECT {proj} FROM {child_ctes[0]}")
                 else:
                     child_selects.append(
                         f"SELECT {proj} FROM {table_src} WHERE {quote_name(rule_comp)} = '{child}'"
@@ -4401,7 +4450,12 @@ FROM (
             if cte_name is None:
                 continue
             proj = ", ".join(
-                [*other_q, f"'{parsed.left_code_item}' AS {quote_name(rule_comp)}", *raw_cols]
+                [
+                    *other_q,
+                    f"'{parsed.left_code_item}' AS {quote_name(rule_comp)}",
+                    *raw_cols,
+                    f"{i} AS _hr_rule",
+                ]
             )
             tagged.append(f"SELECT {proj} FROM {cte_name}")
         if not tagged:
@@ -4479,16 +4533,23 @@ FROM (
             computed_items.add(parsed.left_code_item)
             current_pivot = next_pivot
 
+        # Several rules may compute the same code item under different conditions (issue
+        # #1142): each data point keeps the rule that computed it (issue #1193)
+        left_items = [parsed.left_code_item for parsed in parsed_rules]
+        overlaps = len(set(left_items)) < len(left_items)
+
         # Build final SELECT per rule
         final_selects: List[str] = []
         # The groups each rule computed, to combine its viral values on them only
         rule_groups: List[str] = []
         q_rc = quote_name(rule_comp)
         q_m = quote_name(measure)
-        for rule_cte, left_ci in rule_result_refs:
+        for i, (rule_cte, left_ci) in enumerate(rule_result_refs):
             cols = [quote_name(c) for c in other_ids]
             cols.append(f"'{left_ci}' AS {q_rc}")
             cols.append(f"_computed AS {q_m}")
+            if overlaps:
+                cols.append(f"{i} AS _hr_rule")
 
             result_filter: List[str] = []
             if mode == "non_null":
@@ -4503,35 +4564,30 @@ FROM (
 
         computed_sql = " UNION ALL ".join(final_selects)
 
-        left_items = [parsed.left_code_item for parsed in parsed_rules]
-        if len(set(left_items)) < len(left_items):
-            # Several rules compute the same code item under different conditions
-            # (issue #1142): two of them must not hold on the same data point.
-            keys = ", ".join([*(quote_name(c) for c in other_ids), q_rc])
-            ruleset_sql = ruleset_name.replace("'", "''")
-            message = (
-                f"'VTL 2-1-10-1: ruleset {ruleset_sql}, code item ' || CAST({q_rc} AS VARCHAR)"
-            )
-            computed_sql = (
-                f"SELECT * FROM ({computed_sql}) AS _hr_rules QUALIFY "
-                f"CASE WHEN COUNT(*) OVER (PARTITION BY {keys}) > 1 "
-                f"THEN error({message}) ELSE TRUE END"
-            )
-
         # Combine child viral values into each computed node (issue #877).
         vp_info = self._build_hierarchy_viral_ctes(
             cte, ds, parsed_rules, rule_comp, other_ids, table_src, rule_groups
         )
+        values = [measure]
         if vp_info is not None:
             vp_name, viral_names = vp_info
+            values += viral_names
             conds = [f"c.{q_rc} = v.{q_rc}"]
             conds += [
                 f"c.{quote_name(o)} IS NOT DISTINCT FROM v.{quote_name(o)}" for o in other_ids
             ]
+            if overlaps:
+                # Each data point takes the viral values of the rule that computed it
+                conds.append("c._hr_rule = v._hr_rule")
             viral_sel = ", ".join(f"v.{quote_name(vn)}" for vn in viral_names)
             computed_sql = (
                 f"SELECT c.*, {viral_sel} FROM ({computed_sql}) AS c "
                 f"LEFT JOIN {vp_name} AS v ON {' AND '.join(conds)}"
+            )
+
+        if overlaps:
+            computed_sql = self._build_hr_unique_points_sql(
+                computed_sql, ds, values, other_ids, rule_comp, ruleset_name
             )
 
         if output == "computed":
@@ -4553,6 +4609,47 @@ FROM (
             f"SELECT *, ROW_NUMBER() OVER ("
             f"PARTITION BY {id_cols_csv} ORDER BY _src DESC) AS _rn "
             f"FROM _combined) WHERE _rn = 1"
+        )
+
+    @staticmethod
+    def _build_hr_unique_points_sql(
+        computed_sql: str,
+        ds: Dataset,
+        values: List[str],
+        other_ids: List[str],
+        rule_comp: str,
+        ruleset_name: str,
+    ) -> str:
+        """Keep once each data point that several rules compute (issue #1193).
+
+        When all of them give it the same values, it is kept once, with the values of the
+        last of them in the ruleset, the ones later rules read. Numbers are the same within
+        the tolerance of the comparisons and a null is the same as a null; otherwise
+        2-1-10-1 is raised.
+        """
+        result_components = dict(ds.components)
+        apply_viral_return_types(ds.get_viral_attributes(), result_components)
+        partition = ", ".join(quote_name(k) for k in [*other_ids, rule_comp])
+        window = f"OVER (PARTITION BY {partition})"
+        differ = []
+        for name in values:
+            col = quote_name(name)
+            low, high = f"MIN({col}) {window}", f"MAX({col}) {window}"
+            same = None
+            if result_components[name].data_type == Number:
+                same = number_tolerance_sql(tokens.EQ, low, high)
+            # A null and a value are different
+            differ.append(
+                f"(COUNT({col}) {window} NOT IN (0, COUNT(*) {window}) "
+                f"OR NOT COALESCE({same or f'{low} = {high}'}, TRUE))"
+            )
+        ruleset_sql = ruleset_name.replace("'", "''")
+        q_rc = quote_name(rule_comp)
+        message = f"'VTL 2-1-10-1: ruleset {ruleset_sql}, code item ' || CAST({q_rc} AS VARCHAR)"
+        return (
+            f"SELECT * EXCLUDE (_hr_rule) FROM ({computed_sql}) AS _hr_points QUALIFY "
+            f"CASE WHEN {' OR '.join(differ)} THEN error({message}) "
+            f"ELSE ROW_NUMBER() OVER (PARTITION BY {partition} ORDER BY _hr_rule DESC) = 1 END"
         )
 
     def _build_hierarchy_rule_cte(
@@ -5015,7 +5112,8 @@ FROM (
         if target is None and node.period_to_ref is not None:
             target = self._resolve_period_to_ref(node.period_to_ref)
         if target is None:
-            raise SemanticError("1-3-2-4")
+            # The reference gave no period indicator: its scalar holds no value (issue #1192)
+            raise RunTimeError("2-1-19-24", name=cast(AST.VarID, node.period_to_ref).value)
 
         if node.operand is not None:
             operand_type = self._get_node_type(node.operand)
@@ -5052,9 +5150,10 @@ FROM (
             return f"vtl_tp_{edge}_date({parsed})"
         return expr
 
-    def _resolve_period_to_ref(self, ref: AST.AST) -> str:
+    def _resolve_period_to_ref(self, ref: AST.AST) -> Optional[str]:
         name = ref.value  # type: ignore[attr-defined]
-        return str(self.input_scalars[name].value)
+        value = self.input_scalars[name].value
+        return None if value is None else str(value)
 
     def _resolve_scalar_varid(self, value: Any) -> Any:
         """Non-VarID values pass through unchanged."""
@@ -5107,4 +5206,21 @@ FROM (
                     query = re.sub(rf"\b{re.escape(table_name)}\b", op_name, query)
                     break
 
-        return query
+        # An infinite value in the result raises 2-1-3-1, as on the pandas engine
+        numeric = (
+            [
+                quote_name(name)
+                for name, comp in node.output.components.items()
+                if comp.data_type in (Number, Integer)
+            ]
+            if node.output is not None
+            else []
+        )
+        if not numeric:
+            return query
+        infinite = " OR ".join(f"isinf(TRY_CAST({name} AS DOUBLE))" for name in numeric)
+        error = "'VTL Error 2-1-3-1: Division by zero produced infinite values in eval'"
+        return (
+            f"SELECT * FROM ({query.strip().rstrip(';')}) AS eval_result "
+            f"WHERE CASE WHEN {infinite} THEN error({error}) ELSE TRUE END"
+        )

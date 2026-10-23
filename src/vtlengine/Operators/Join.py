@@ -304,7 +304,7 @@ class Join(Operator):
             cls._validate_nvl(operands, nvl)
         dataset_name = VirtualCounter._new_ds_name()
         if len(operands) < 1 or sum([isinstance(op, Dataset) for op in operands]) < 1:
-            raise Exception("Join operator requires at least 1 dataset")
+            raise SemanticError("1-1-13-19", op=cls.op)
         if not all(isinstance(op, Dataset) for op in operands):
             raise SemanticError("1-1-13-10")
         if len(operands) == 1 and isinstance(operands[0], Dataset):

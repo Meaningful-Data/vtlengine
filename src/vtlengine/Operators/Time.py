@@ -457,8 +457,8 @@ class Fill_time_series(Binary):
         elif data_type == TimeInterval:
             categories = result.data[cls.time_id].apply(cls._classify_interval_period).unique()
             if len(categories) > 1:
-                raise SemanticError(
-                    "1-1-19-9",
+                raise RunTimeError(
+                    "2-1-19-23",
                     op=cls.op,
                     comp_type="dataset",
                     param="single time interval frequency",
@@ -686,8 +686,8 @@ class Time_Shift(Binary):
             if not result.data.empty:
                 categories = result.data[cls.time_id].apply(cls._classify_interval_period).unique()
                 if len(categories) > 1:
-                    raise SemanticError(
-                        "1-1-19-9",
+                    raise RunTimeError(
+                        "2-1-19-23",
                         op=cls.op,
                         comp_type="dataset",
                         param="single time series frequency",
@@ -721,8 +721,8 @@ class Time_Shift(Binary):
             if series.nunique() > 1:
                 frequencies.add(cls.find_min_frequency(series))
         if len(frequencies) > 1:
-            raise SemanticError(
-                "1-1-19-9",
+            raise RunTimeError(
+                "2-1-19-23",
                 op=cls.op,
                 comp_type="dataset",
                 param="single time series frequency",
@@ -767,7 +767,7 @@ class Time_Shift(Binary):
                     months=months * shift_value,
                     days=days * shift_value,
                 )
-        raise SemanticError("2-1-19-2", period=frequency)
+        raise RunTimeError("2-1-19-2", period=frequency)
 
     @classmethod
     def shift_period(
@@ -854,17 +854,37 @@ class Time_Aggregation(Time):
             raise SemanticError("1-1-19-3", op=cls.op, param="duration")
 
     @classmethod
-    def _check_params(cls, period_from: Optional[str], period_to: str) -> None:
+    def check_period_value(cls, period_from: Optional[str], period_to: str) -> None:
+        """Check a period to aggregate to read from a scalar, which is data (issue #1192)."""
+        if period_to not in PERIOD_IND_MAPPING:
+            raise RunTimeError("2-1-19-2", period=period_to)
+        if (
+            period_from is not None
+            and period_from in PERIOD_IND_MAPPING
+            and PERIOD_IND_MAPPING[period_to] <= PERIOD_IND_MAPPING[period_from]
+        ):
+            raise RunTimeError("2-1-19-26", value_1=period_from, value_2=period_to)
+
+    @classmethod
+    def _check_params(cls, period_from: Optional[str], period_to: Optional[str]) -> None:
         cls._check_duration(period_to)
         if period_from is not None:
             cls._check_duration(period_from)
-            if PERIOD_IND_MAPPING[period_to] <= PERIOD_IND_MAPPING[period_from]:
+            # A period read from a scalar is only known at run time (issue #1192)
+            if (
+                period_to is not None
+                and PERIOD_IND_MAPPING[period_to] <= PERIOD_IND_MAPPING[period_from]
+            ):
                 # OPERATORS_TIMEOPERATORS.19
                 raise SemanticError("1-1-19-4", op=cls.op, value_1=period_from, value_2=period_to)
 
     @classmethod
     def dataset_validation(
-        cls, operand: Dataset, period_from: Optional[str], period_to: str, conf: Optional[str]
+        cls,
+        operand: Dataset,
+        period_from: Optional[str],
+        period_to: Optional[str],
+        conf: Optional[str],
     ) -> Dataset:
         # TODO: Review with VTL TF as this makes no sense
 
@@ -897,7 +917,7 @@ class Time_Aggregation(Time):
         cls,
         operand: DataComponent,
         period_from: Optional[str],
-        period_to: str,
+        period_to: Optional[str],
         conf: Optional[str],
     ) -> DataComponent:
         if operand.data_type not in cls.TIME_DATA_TYPES:
@@ -915,7 +935,11 @@ class Time_Aggregation(Time):
 
     @classmethod
     def scalar_validation(
-        cls, operand: Scalar, period_from: Optional[str], period_to: str, conf: Optional[str]
+        cls,
+        operand: Scalar,
+        period_from: Optional[str],
+        period_to: Optional[str],
+        conf: Optional[str],
     ) -> Scalar:
         if operand.data_type not in cls.TIME_DATA_TYPES:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time scalar")
@@ -942,16 +966,13 @@ class Time_Aggregation(Time):
         if data_type == TimePeriod:  # Time period
             return _time_period_access(value, period_to)
 
-        elif data_type == Date:
-            if conf is None:
-                raise SemanticError("1-1-19-11")
-            start = conf == "first"
-            # Date
-            if period_to == "D":
-                return value
-            return _date_access(value, period_to, start)
-        else:
-            raise NotImplementedError
+        # Date, the only other type the validation lets through
+        if conf is None:
+            raise SemanticError("1-1-19-11")
+        start = conf == "first"
+        if period_to == "D":
+            return value
+        return _date_access(value, period_to, start)
 
     @classmethod
     def dataset_evaluation(
@@ -1003,7 +1024,7 @@ class Time_Aggregation(Time):
         cls,
         operand: Union[Dataset, DataComponent, Scalar],
         period_from: Optional[str],
-        period_to: str,
+        period_to: Optional[str],
         conf: Optional[str],
     ) -> Union[Dataset, DataComponent, Scalar]:
         cls._check_params(period_from, period_to)
@@ -1104,8 +1125,11 @@ class Date_Diff(SimpleBinaryTime):
 
     @classmethod
     def py_op(cls, x: Any, y: Any) -> int:
+        # datediff counts the days between dates or time periods: a Time value holds two
+        # dates. The reference manual types the operands as time, so the value is checked,
+        # not the type (issue #1192)
         if (x.count("/") >= 1) or (y.count("/") >= 1):
-            raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
+            raise RunTimeError("2-1-19-25", op=cls.op, comp_type="Date or Time_Period value")
 
         if x.count("-") == 2:
             date_1 = parse_date_value(x)
@@ -1146,25 +1170,29 @@ class Date_Add(Parametrized):
         dataset_name = VirtualCounter._new_ds_name()
         expected_types = [Integer, String]
         for i, param in enumerate(param_list):
-            error = (
-                12
-                if not isinstance(param, Scalar)  # type: ignore[redundant-expr]
-                else 13
-                if (param.data_type != expected_types[i])
-                else None
-            )
-            if error is not None:
+            if not isinstance(param, Scalar):
                 raise SemanticError(
-                    f"2-1-19-{error}",
+                    "1-1-19-14",
                     op=cls.op,
-                    type=(param.__class__.__name__ if error == 12 else param.data_type.__name__),
-                    name="shiftNumber" if error == 12 else "periodInd",
-                    expected="Scalar" if error == 12 else expected_types[i].__name__,
+                    type=param.__class__.__name__,
+                    name="shiftNumber",
+                    expected="Scalar",
+                )
+            if param.data_type != expected_types[i]:
+                raise SemanticError(
+                    "1-1-19-15",
+                    op=cls.op,
+                    type=param.data_type.__name__,
+                    name="periodInd",
+                    expected=expected_types[i].__name__,
                 )
 
         period_ind = param_list[1].value if len(param_list) > 1 else None
         if isinstance(period_ind, str) and period_ind not in PERIOD_IND_MAPPING:
-            raise SemanticError("2-1-19-2", period=period_ind)
+            # A literal is part of the script, a scalar value is data (issue #1192)
+            if param_list[1].literal:
+                raise SemanticError("1-1-19-17", period=period_ind)
+            raise RunTimeError("2-1-19-2", period=period_ind)
 
         if isinstance(operand, (Scalar, DataComponent)) and operand.data_type not in [
             Date,
@@ -1180,7 +1208,7 @@ class Date_Add(Parametrized):
             )
 
         if all(comp.data_type not in [Date, TimePeriod] for comp in operand.components.values()):
-            raise SemanticError("2-1-19-14", op=cls.op, name=operand.name)
+            raise SemanticError("1-1-19-16", op=cls.op, name=operand.name)
         # Fresh Component copies: the retype below must not reach the operand's
         # (shared) Component objects (#1032)
         result_components = {name: copy(comp) for name, comp in operand.components.items()}
@@ -1222,7 +1250,12 @@ class Date_Add(Parametrized):
         return result
 
     @classmethod
-    def py_op(cls, date_str: str, shift: int, period: str, is_tp: bool = False) -> str:
+    def py_op(
+        cls, date_str: str, shift: Optional[int], period: Optional[str], is_tp: bool = False
+    ) -> Optional[str]:
+        if shift is None or period is None:
+            # A null shift or period gives null, as any null operand (issue #1192)
+            return None
         has_time = _has_time_component(date_str)
         if is_tp:
             tp_value = TimePeriodHandler(date_str)
