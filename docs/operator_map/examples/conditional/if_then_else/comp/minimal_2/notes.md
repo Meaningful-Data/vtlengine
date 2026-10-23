@@ -1,0 +1,9 @@
+Authored. Component-level `if` inside `calc` where both operands are scalars, the usual way to
+build a flag. The page: "If one of the operands thenOperand or elseOperand is scalar, such a
+scalar value can be returned depending on the outcome of the condition."
+
+Derivation (if-then-else page, Behaviour at Component level):
+
+- Id_1 = 1: 5 > 10 is false -> elseOperand 0.
+- Id_1 = 2: 15 > 10 is true -> thenOperand 1.
+- Id_1 = 3: 10 > 10 is false -> elseOperand 0.
