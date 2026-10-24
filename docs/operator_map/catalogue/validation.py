@@ -1,8 +1,37 @@
-"""The data validation operators: ``check_datapoint``, ``check_hierarchy`` and ``check``."""
+"""The data validation operators: ``check_datapoint``, ``check_hierarchy`` and ``check``.
+
+Each form takes the types of the page's "Input parameters type", narrowed to what the form takes,
+and gives the types of the measures of its result, which its output decides. A form whose label
+names no output has the default one, ``invalid``. Every form is on data sets and no form id has a
+kind token, so no form has a kind and the three operators are drawn without boxes.
+
+* ``check_datapoint`` takes ``scalar``, for its operand ``dataset`` of any type, and the
+  ``datapoint_ruleset`` (``name<datapoint>``). ``invalid`` gives "the Measures of op", so ``any``,
+  the types of the input; ``all`` gives "the boolean Measure bool_var"; ``all_measures`` both.
+* ``check_hierarchy`` takes ``number``, for ``dataset { measure<number> _ }``, and the
+  ``hierarchical_ruleset`` (``name<hierarchical>``). Its result, ``dataset { measure<number> _ }``,
+  has the ``number`` imbalance with every output and the measure of the operand with ``invalid``
+  and ``all_measures``; ``all`` and ``all_measures`` add the ``boolean`` bool_var.
+* ``check`` takes its operand, "a boolean Data Set", and gives the ``boolean`` bool_var. The form
+  that sets the error code takes and gives a ``string`` ("or string if the errorcode_vd Value
+  Domain is not found"), the one that sets the error level an ``integer`` ("or integer if the
+  errorcode_vd Value Domain is not found"), and the one that sets the imbalance a ``number``.
+
+The components that ``components``, ``condition`` and ``rule`` name have no type of their own. The
+error code and level that the rules of a ruleset set are a ``string`` and an ``integer``, as in
+the definitions, and the forms whose rules set them give them. A measure that a form leaves null
+("If not specified then errorcode is null") adds no type.
+
+The ``<mode>_<input>_<output>`` forms of ``check_hierarchy`` share one data set and one ruleset.
+Each example is named after what its mode shows on them, or, with the input ``dataset_priority``,
+after the null item that the rule computing it gives.
+"""
 
 from __future__ import annotations
 
-from tool.model import Chapter, Link, Operator, Variant, authored, manual
+from typing import Final
+
+from tool.model import Chapter, Example, Link, Operator, Variant, authored, manual
 
 _CHAPTER = "Data validation operators"
 
@@ -10,14 +39,51 @@ _MODES = ("non_null", "non_zero", "partial_null", "partial_zero", "always_null",
 _INPUTS = ("dataset", "dataset_priority")
 _OUTPUTS = ("invalid", "all", "all_measures")
 
+# What the forms take: the operand, and the ruleset of check_datapoint and check_hierarchy.
+_ANY_DATA_SET: Final = ("scalar", "datapoint_ruleset")
+_NUMBER_DATA_SET: Final = ("number", "hierarchical_ruleset")
+_BOOLEAN: Final = ("boolean",)
+
+# What each output of check_hierarchy gives: the number imbalance, with the measure of the operand
+# (invalid), the boolean bool_var (all) or both (all_measures).
+_HIERARCHY_GIVES: Final[dict[str, tuple[str, ...]]] = {
+    "invalid": ("number",),
+    "all": ("number", "boolean"),
+    "all_measures": ("number", "boolean"),
+}
+# The example of a grid form: what its mode shows on the shared data set and ruleset, or, with the
+# input dataset_priority, the null item that the rule computing it gives.
+_MODE_EXAMPLES: Final[dict[str, str]] = {
+    "non_null": "null_or_missing_item_drops_the_rule",
+    "non_zero": "rule_with_no_nonzero_item_dropped",
+    "partial_null": "missing_items_count_as_null",
+    "partial_zero": "missing_items_count_as_zero",
+    "always_null": "rule_with_no_item_found_is_null",
+    "always_zero": "rule_with_no_item_found_is_false",
+}
+_PRIORITY_EXAMPLE: Final = "null_item_from_the_rule_computing_it"
+
+
+def _form(
+    variant_id: str,
+    label: str,
+    takes: tuple[str, ...],
+    gives: tuple[str, ...],
+    *examples: Example,
+) -> Variant:
+    """A form with the types it takes and gives, and its examples."""
+    return Variant(id=variant_id, label=label, examples=examples, takes=takes, gives=gives)
+
 
 def _hierarchy_grid() -> tuple[Variant, ...]:
-    """The ``<mode>_<input>_<output>`` variants of ``check_hierarchy``, in the manual's order."""
+    """The ``<mode>_<input>_<output>`` forms of ``check_hierarchy``, in the manual's order."""
     return tuple(
-        Variant(
+        _form(
             f"{mode}_{input_}_{output}",
             f"check_hierarchy(DS, HR {mode} {input_} {output})",
-            (authored(),),
+            _NUMBER_DATA_SET,
+            _HIERARCHY_GIVES[output],
+            authored(_PRIORITY_EXAMPLE if input_ == "dataset_priority" else _MODE_EXAMPLES[mode]),
         )
         for mode in _MODES
         for input_ in _INPUTS
@@ -33,17 +99,50 @@ CHECK_DATAPOINT = Operator(
     accepts=("dataset", "datapoint_ruleset"),
     returns=("dataset",),
     variants=(
-        Variant("output_default", "check_datapoint(DS, DPR)", (manual("ex_1"),)),
-        Variant("invalid", "check_datapoint(DS, DPR invalid)", (authored(),)),
-        Variant("all", "check_datapoint(DS, DPR all)", (manual("ex_2"),)),
-        Variant("all_measures", "check_datapoint(DS, DPR all_measures)", (authored(),)),
-        Variant(
+        _form(
+            "output_default",
+            "check_datapoint(DS, DPR)",
+            _ANY_DATA_SET,
+            ("any",),
+            manual("ex_1"),
+        ),
+        _form(
+            "invalid",
+            "check_datapoint(DS, DPR invalid)",
+            _ANY_DATA_SET,
+            ("any",),
+            authored("false_results_with_the_measures"),
+        ),
+        _form("all", "check_datapoint(DS, DPR all)", _ANY_DATA_SET, ("boolean",), manual("ex_2")),
+        _form(
+            "all_measures",
+            "check_datapoint(DS, DPR all_measures)",
+            _ANY_DATA_SET,
+            ("boolean", "any"),
+            authored("every_result_with_the_measures"),
+        ),
+        _form(
             "components",
             "check_datapoint(DS, DPR components C1, C2)",
-            (authored(), authored("minimal_2")),
+            _ANY_DATA_SET,
+            ("any",),
+            authored("listed_variables_change_nothing"),
+            authored("value_domains_bound_to_components"),
         ),
-        Variant("errorcode", "check_datapoint(DS, DPR all), rules with errorcode", (authored(),)),
-        Variant("errorlevel", "check_datapoint(DS, DPR all), rules with errorlevel", (authored(),)),
+        _form(
+            "errorcode",
+            "check_datapoint(DS, DPR all), rules with errorcode",
+            _ANY_DATA_SET,
+            ("string", "boolean"),
+            authored("code_only_on_false_results"),
+        ),
+        _form(
+            "errorlevel",
+            "check_datapoint(DS, DPR all), rules with errorlevel",
+            _ANY_DATA_SET,
+            ("integer", "boolean"),
+            authored("integer_level_on_false_results"),
+        ),
     ),
     links=(Link("definitions.define_datapoint_ruleset", "uses"),),
 )
@@ -57,34 +156,41 @@ CHECK_HIERARCHY = Operator(
     returns=("dataset",),
     variants=(
         *_hierarchy_grid(),
-        Variant(
+        _form(
             "condition",
             "check_hierarchy(DS, HR condition C)",
-            (authored(), authored("minimal_2")),
+            _NUMBER_DATA_SET,
+            _HIERARCHY_GIVES["invalid"],
+            authored("conditioning_variable_named"),
+            authored("conditioning_value_domain_bound"),
         ),
-        Variant(
+        _form(
             "rule",
             "check_hierarchy(DS, HR rule C)",
-            (
-                manual(
-                    "ex_1",
-                    erratum=(
-                        "rule R030 evaluates to true, so its errorcode must be null; "
-                        'the manual prints "XX"'
-                    ),
+            _NUMBER_DATA_SET,
+            _HIERARCHY_GIVES["invalid"],
+            manual(
+                "ex_1",
+                erratum=(
+                    "rule R030 evaluates to true, so its errorcode must be null; "
+                    'the manual prints "XX"'
                 ),
-                authored(),
             ),
+            authored("value_domain_bound_to_identifier"),
         ),
-        Variant(
+        _form(
             "errorcode",
             "check_hierarchy(DS, HR partial_zero dataset all), rules with errorcode",
-            (authored(),),
+            _NUMBER_DATA_SET,
+            ("number", "string", "boolean"),
+            authored("code_only_on_false_results"),
         ),
-        Variant(
+        _form(
             "errorlevel",
             "check_hierarchy(DS, HR partial_zero dataset all), rules with errorlevel",
-            (authored(),),
+            _NUMBER_DATA_SET,
+            ("number", "integer", "boolean"),
+            authored("integer_level_on_false_results"),
         ),
     ),
     links=(Link("definitions.define_hierarchical_ruleset", "uses"),),
@@ -98,12 +204,36 @@ CHECK = Operator(
     accepts=("dataset", "boolean", "number"),
     returns=("dataset",),
     variants=(
-        Variant("bare", "check(B)", (authored(),)),
-        Variant("errorcode", "check(B errorcode C)", (authored(),)),
-        Variant("errorlevel", "check(B errorlevel L)", (authored(),)),
-        Variant("imbalance", "check(B imbalance N)", (manual("ex_1"),)),
-        Variant("invalid", "check(B invalid)", (authored(),)),
-        Variant("all", "check(B all)", (authored(),)),
+        _form("bare", "check(B)", _BOOLEAN, _BOOLEAN, authored("every_point_returned_by_default")),
+        _form(
+            "errorcode",
+            "check(B errorcode C)",
+            ("string", "boolean"),
+            ("string", "boolean"),
+            authored("code_only_on_the_false_point"),
+        ),
+        _form(
+            "errorlevel",
+            "check(B errorlevel L)",
+            ("integer", "boolean"),
+            ("integer", "boolean"),
+            authored("level_only_on_the_false_point"),
+        ),
+        _form(
+            "imbalance",
+            "check(B imbalance N)",
+            ("number", "boolean"),
+            ("number", "boolean"),
+            manual("ex_1"),
+        ),
+        _form(
+            "invalid",
+            "check(B invalid)",
+            _BOOLEAN,
+            _BOOLEAN,
+            authored("only_the_false_point_returned"),
+        ),
+        _form("all", "check(B all)", _BOOLEAN, _BOOLEAN, authored("explicit_all_same_as_default")),
     ),
 )
 
