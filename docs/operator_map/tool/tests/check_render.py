@@ -19,18 +19,8 @@ from typing import Any
 
 import pytest
 
-from tool.mermaid import chapter_blocks, lattice_block, overview_block, type_flow_block
-from tool.model import (
-    Catalogue,
-    Chapter,
-    Link,
-    Operator,
-    Status,
-    TypeDef,
-    Variant,
-    authored,
-    manual,
-)
+from tool.mermaid import chapter_blocks, overview_block
+from tool.model import Catalogue, Chapter, Link, Operator, Status, Variant, authored, manual
 from tool.render import RunMeta, chapter_rst, index_rst, manual_url, mermaid_blocks
 from tool.status import EngineVerdict, ExampleResult, StatusIndex, build_index
 
@@ -41,19 +31,6 @@ META = RunMeta(
     "2026-10-23", "abc1234", "9.9.9", SPEC, pandas_version="2.3.3", duckdb_version="1.5.5"
 )
 ERRATA_TITLE = "Manual errata (corrected expected outputs, scripts or inputs)"
-# The types that have a flow in the index: the basic ones and the dataset.
-FLOW_TYPES = (
-    "scalar",
-    "number",
-    "integer",
-    "string",
-    "boolean",
-    "time",
-    "date",
-    "time_period",
-    "duration",
-    "dataset",
-)
 
 
 # --- Builders ---
@@ -97,7 +74,7 @@ def make_operator(
     )
 
 
-# A small map: two chapters and a type, with an erratum, an adaptation, a decision and every status.
+# A small map: two chapters, with an erratum, an adaptation, a decision and every status.
 CONCAT = make_operator(
     "concat",
     "Concatenation",
@@ -123,19 +100,13 @@ CALC = make_operator(
 )
 STRING = Chapter("string", "String operators", (CONCAT, LENGTH))
 CLAUSE = Chapter("clause", "Clause operators", (CALC,))
-TYPES = (
-    TypeDef("scalar", ()),
-    TypeDef("number", ("scalar",), (Variant("identity", "identity", (authored(),)),)),
-    TypeDef("dataset", ()),
-)
-CAT = Catalogue((STRING, CLAUSE), TYPES)
+CAT = Catalogue((STRING, CLAUSE))
 RESULTS = {
     "string/concat/ds_ds/manual_ex_1": OK,
     "string/concat/ds_ds/minimal": DIVERGE,
     "string/concat/comp_sc/minimal": PARTIAL,
     "string/length/comp/minimal": MISSING,
     "clause/calc/measure/minimal": OK,
-    "types/number/identity/minimal": OK,
 }
 INDEX = build_index(CAT, RESULTS)
 
@@ -144,7 +115,7 @@ MINI_OPERATOR = make_operator(
     "length", "String length", "length", (Variant("comp", "length(Me_1)", (authored(),)),)
 )
 MINI_CHAPTER = Chapter("string", "String operators", (MINI_OPERATOR,))
-MINI_CAT = Catalogue((MINI_CHAPTER,), ())
+MINI_CAT = Catalogue((MINI_CHAPTER,))
 MINI_INDEX = build_index(MINI_CAT, {"string/length/comp/minimal": OK})
 
 
@@ -227,8 +198,7 @@ def row_with(text: str, needle: str) -> list[str]:
 def detail_of(result: ExampleResult, tmp_path: Path) -> str:
     """The Detail cell of the only example of a one-example chapter that has ``result``."""
     cat = Catalogue(
-        (Chapter("c", "C", (make_operator("o", "O", "o", (Variant("v", "v", (authored(),)),)),)),),
-        (),
+        (Chapter("c", "C", (make_operator("o", "O", "o", (Variant("v", "v", (authored(),)),)),)),)
     )
     index = build_index(cat, {"c/o/v/minimal": result})
     text = chapter_rst(cat.chapters[0], cat, index, META, examples_root=tmp_path)
@@ -367,7 +337,7 @@ def test_the_row_of_an_example_shows_its_verdicts(tmp_path: Path) -> None:
 def test_a_label_that_a_literal_cannot_hold_is_escaped_text(tmp_path: Path) -> None:
     labels = {"tick": "a `b` c", "lines": "line one\nline two", "empty": "", "slash": "a\\"}
     variants = tuple(Variant(name, label, (authored(),)) for name, label in labels.items())
-    cat = Catalogue((Chapter("c", "C", (make_operator("o", "O", "o", variants),)),), ())
+    cat = Catalogue((Chapter("c", "C", (make_operator("o", "O", "o", variants),)),))
     index = build_index(cat, {f"c/o/{name}/minimal": OK for name in labels})
     text = chapter_rst(cat.chapters[0], cat, index, META, examples_root=tmp_path)
 
@@ -603,7 +573,7 @@ def test_index_starts_with_the_title_and_a_hidden_toctree_of_the_chapters(tmp_pa
 
 
 def test_index_without_chapters_has_no_toctree(tmp_path: Path) -> None:
-    empty = Catalogue((), ())
+    empty = Catalogue(())
     text = index_rst(empty, StatusIndex({}, {}, {}, {}), META, examples_root=tmp_path)
     assert ".. toctree::" not in text
     assert titles(text, "=") == ["VTL 2.2 operator map"]
@@ -617,8 +587,6 @@ def test_index_sections_come_in_the_order_of_the_design(tmp_path: Path) -> None:
         "How to read",
         "Overview",
         "Chapters",
-        "Type lattice",
-        "Type flows",
         "📌 Team decisions",
         ERRATA_TITLE,
         "Adaptations",
@@ -679,16 +647,10 @@ def test_the_lists_of_the_index_say_what_they_list(tmp_path: Path) -> None:
     assert "Manual inputs that vtlengine cannot load" not in adaptations
 
 
-def test_index_blocks_are_the_overview_the_lattice_and_a_flow_per_basic_type(
-    tmp_path: Path,
-) -> None:
+def test_index_has_one_block_the_overview(tmp_path: Path) -> None:
     text = index_rst(CAT, INDEX, META, examples_root=tmp_path)
     assert blocks(section(text, "Overview")) == [overview_block(CAT, INDEX)]
-    assert blocks(section(text, "Type lattice")) == [lattice_block(CAT, INDEX)]
-    flows = section(text, "Type flows")
-    assert blocks(flows) == [type_flow_block(type_id, CAT, INDEX) for type_id in FLOW_TYPES]
-    assert titles(flows, "~") == list(FLOW_TYPES)
-    assert len(blocks(text)) == 12
+    assert len(blocks(text)) == 1
 
 
 def test_index_overview_does_not_promise_that_a_click_works(tmp_path: Path) -> None:
@@ -761,9 +723,9 @@ def test_index_chapter_table_counts_variants(tmp_path: Path) -> None:
         "0",
         "0",
     ]
-    # The type hubs have no page of their own; the total counts everything above it.
-    assert row_with(chapters, "Data types") == ["Data types", "🟢", "1", "1", "0", "0", "0"]
-    assert row_with(chapters, "Total") == ["**Total**", "🔵", "5", "2", "1", "1", "1"]
+    # The total counts everything above it.
+    assert row_with(chapters, "Total") == ["**Total**", "🔵", "4", "1", "1", "1", "1"]
+    assert len(table_rows(chapters)) == 4  # the header, the two chapters and the total
 
 
 def test_index_lists_errata_adaptations_and_decisions(tmp_path: Path) -> None:
@@ -794,7 +756,7 @@ def test_index_lists_errata_adaptations_and_decisions(tmp_path: Path) -> None:
 def test_index_escapes_the_free_text_of_the_lists(tmp_path: Path) -> None:
     erratum = "the *manual* prints a_b | c, `x` and \\ and ends with ::"
     variant = Variant("v", "f(x)", (authored(erratum=erratum),))
-    cat = Catalogue((Chapter("c", "C", (make_operator("o", "Some_op", "f", (variant,)),)),), ())
+    cat = Catalogue((Chapter("c", "C", (make_operator("o", "Some_op", "f", (variant,)),)),))
     index = build_index(cat, {"c/o/v/minimal": OK})
     errata = section(
         index_rst(cat, index, META, examples_root=tmp_path),
@@ -807,7 +769,7 @@ def test_index_escapes_the_free_text_of_the_lists(tmp_path: Path) -> None:
     # Quotes, runs of hyphens and ellipses are what Sphinx would typeset: each one is escaped.
     typeset = 'it\'s "a" -- b --- c - d... e. . . f'
     variant = Variant("v", "f(x)", (authored(erratum=typeset),))
-    cat = Catalogue((Chapter("c", "C", (make_operator("o", "Some_op", "f", (variant,)),)),), ())
+    cat = Catalogue((Chapter("c", "C", (make_operator("o", "Some_op", "f", (variant,)),)),))
     index = build_index(cat, {"c/o/v/minimal": OK})
     errata = section(
         index_rst(cat, index, META, examples_root=tmp_path),
@@ -845,16 +807,15 @@ def test_index_lists_variants_that_are_not_green_by_status(tmp_path: Path) -> No
     ]
     assert "``length(Me_1)``" in row_with(missing, "<string>")[2]
     assert '``Me_1 || "x"``' in row_with(partial, "<string>")[2]
-    # The green variants are not listed, and neither are the type hubs that are green.
+    # The green variants are not listed.
     assert "Calculation" not in listing
-    assert "Data types" not in listing
 
 
 def test_a_diverging_variant_is_listed_with_the_example_that_diverges(tmp_path: Path) -> None:
     # The first example is only 🟡: the row of the 🔵 variant has to point at the second.
     variant = Variant("ds", "DS_1 + DS_2", (authored("minimal"), authored("minimal_2")))
     operator = make_operator("plus", "Addition", "+", (variant,))
-    cat = Catalogue((Chapter("numeric", "Numeric operators", (operator,)),), ())
+    cat = Catalogue((Chapter("numeric", "Numeric operators", (operator,)),))
     results = {"numeric/plus/ds/minimal": PARTIAL, "numeric/plus/ds/minimal_2": DIVERGE}
     listing = section(
         index_rst(cat, build_index(cat, results), META, examples_root=tmp_path),
@@ -883,16 +844,6 @@ def test_index_lists_a_refused_variant_after_the_others(tmp_path: Path) -> None:
     assert row[4] == "RunTimeError 2-1-15-6: Scalar division by Zero."
 
 
-def test_index_lists_the_variants_of_a_type_that_are_not_green(tmp_path: Path) -> None:
-    results = {**RESULTS, "types/number/identity/minimal": PARTIAL}
-    listing = section(
-        index_rst(CAT, build_index(CAT, results), META, examples_root=tmp_path),
-        "Variants that are not green",
-    )
-    row = row_with(listing, "Data types")
-    assert row[:3] == ["Data types", "number", "``identity``"]
-
-
 def test_index_attribution_sentence_is_verbatim(tmp_path: Path) -> None:
     attribution = section(index_rst(CAT, INDEX, META, examples_root=tmp_path), "Attribution")
     assert (
@@ -904,15 +855,13 @@ def test_index_attribution_sentence_is_verbatim(tmp_path: Path) -> None:
 
 
 def test_index_empty_lists_say_so(tmp_path: Path) -> None:
-    cat = Catalogue((MINI_CHAPTER,), ())
+    cat = Catalogue((MINI_CHAPTER,))
     text = index_rst(cat, MINI_INDEX, META, examples_root=tmp_path)
     assert "None: no expected output follows a recorded team decision." in text
     assert "None: nothing in the manual's examples had to be corrected." in text
     assert "None: no example needed an adaptation." in text
     assert "Every variant is green." in text
-    # No type has a variant, so there is no row for the types, and the blocks still render.
-    assert "Data types" not in text
-    assert len(blocks(text)) == 12
+    assert len(blocks(text)) == 1
 
 
 def test_a_page_asks_the_examples_folder_it_is_given(tmp_path: Path) -> None:
@@ -1007,7 +956,7 @@ def test_the_pages_are_read_as_written_by_docutils(tmp_path: Path) -> None:
         for n, detail in enumerate(HOSTILE)
     )
     operator = make_operator("o_p", "Name_with *marks* | `ticks` \\", "||", forms)
-    cat = Catalogue((Chapter("c", "C_hapter", (operator,)),), ())
+    cat = Catalogue((Chapter("c", "C_hapter", (operator,)),))
     results = {}
     for n, detail in enumerate(HOSTILE):
         verdict = EngineVerdict("mismatch", detail)

@@ -3,7 +3,7 @@
 
 The runner is replaced by canned outputs, the catalogue and the manual index by small hand-made
 ones, and the folder that the generator writes to by a temporary one: no engine runs here. Each
-check gets a map of two chapters and a type, with their example folders on disk.
+check gets a map of two chapters, with their example folders on disk.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ from catalogue import manual_index
 from tool import runner
 from tool.compare import ActualComponent, ActualDataset, ActualScalar
 from tool.mermaid import MermaidLimitError
-from tool.model import Catalogue, Chapter, Example, Operator, TypeDef, Variant, authored, manual
+from tool.model import Catalogue, Chapter, Example, Operator, Variant, authored, manual
 from tool.runner import Engine, RunOutput
 from tool.status import EngineVerdict
 
@@ -92,11 +92,7 @@ BETA = Chapter(
         ),
     ),
 )
-TYPES = (
-    TypeDef("scalar", ()),
-    TypeDef("number", ("scalar",), (Variant("identity", "identity", (authored(),)),)),
-)
-CAT = Catalogue((ALPHA, BETA), TYPES)
+CAT = Catalogue((ALPHA, BETA))
 PAGES = ("Alpha operators/First", "Beta operators/Second")
 MANUAL_EXAMPLES = ("Alpha operators/First/ex_1",)
 KEYS = [
@@ -104,7 +100,6 @@ KEYS = [
     "alpha/first/ds/minimal",
     "alpha/first/sc/minimal",
     "beta/second/ds/minimal",
-    "types/number/identity/minimal",
 ]
 
 
@@ -118,10 +113,6 @@ def examples_of(cat: Catalogue) -> Iterator[tuple[str, Example]]:
             for variant in operator.variants:
                 for example in variant.examples:
                     yield f"{chapter.id}/{operator.id}/{variant.id}/{example.name}", example
-    for typedef in cat.types:
-        for variant in typedef.variants:
-            for example in variant.examples:
-                yield f"types/{typedef.id}/{variant.id}/{example.name}", example
 
 
 def write_examples(root: Path, cat: Catalogue) -> None:
@@ -197,9 +188,8 @@ class World:
     def index_row(self, text: str) -> list[str]:
         """The cells of the row of the chapter table of ``index.rst`` that holds ``text``."""
         page = (self.root / "index.rst").read_text(encoding="utf-8")
-        chapters = re.split(r"\nChapters\n-+\n", page, maxsplit=1)[1].split("\nType lattice\n", 1)[
-            0
-        ]
+        chapters = re.split(r"\nChapters\n-+\n", page, maxsplit=1)[1]
+        chapters = chapters.split("\n📌 Team decisions\n", 1)[0]
         rows: list[list[str]] = []
         for line in chapters.splitlines():
             if line.startswith("   * -"):
@@ -287,7 +277,7 @@ def test_problems_of_the_catalogue_are_printed_one_per_line(
     world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     bad = make_operator("odd", "Odd", "Alpha operators/Odd", Variant("ds", "odd", (authored(),)))
-    cat = Catalogue((Chapter("alpha", "Alpha operators", (*ALPHA.operators, bad)), BETA), TYPES)
+    cat = Catalogue((Chapter("alpha", "Alpha operators", (*ALPHA.operators, bad)), BETA))
     monkeypatch.setattr(generate, "load_catalogue", lambda: cat)
     assert generate.main([]) == 1
     lines = problems(capsys)
@@ -319,7 +309,9 @@ def test_example_folder_without_a_script_is_not_called_missing(
 
 
 def test_orphan_example_folder_fails(world: World, capsys: pytest.CaptureFixture[str]) -> None:
-    for stray in ("alpha/first/ds/stray", "types/number/identity/extra"):
+    # The second one is in a folder that is no chapter, as the type hubs of the first version of
+    # the map were.
+    for stray in ("alpha/first/ds/stray", "types/number/identity/minimal"):
         folder = world.root / "examples" / stray
         folder.mkdir(parents=True)
         (folder / "script.vtl").write_text("DS_r := DS_1;\n", encoding="utf-8")
@@ -328,7 +320,7 @@ def test_orphan_example_folder_fails(world: World, capsys: pytest.CaptureFixture
     (world.root / "examples/alpha/first/ds/empty").mkdir()
     orphans = [
         "example folder not in the catalogue: examples/alpha/first/ds/stray",
-        "example folder not in the catalogue: examples/types/number/identity/extra",
+        "example folder not in the catalogue: examples/types/number/identity/minimal",
     ]
     assert generate.main([]) == 1
     assert problems(capsys) == orphans
@@ -344,14 +336,9 @@ def test_missing_folders_are_checked_only_for_the_chapters_named(
 ) -> None:
     shutil.rmtree(world.root / "examples/beta/second/ds/minimal")
     assert generate.main(["--only", "alpha", "--check-only"]) == 0
-    assert generate.main(["--only", "types", "--check-only"]) == 0
     capsys.readouterr()
     assert generate.main(["--only", "beta", "--check-only"]) == 1
     assert problems(capsys) == ["missing example folder: examples/beta/second/ds/minimal"]
-    # The types count as a chapter.
-    shutil.rmtree(world.root / "examples/types/number/identity/minimal")
-    assert generate.main(["--only", "types", "--check-only"]) == 1
-    assert problems(capsys) == ["missing example folder: examples/types/number/identity/minimal"]
 
 
 def test_only_limits_the_page_coverage_to_the_chapters_named(
@@ -366,7 +353,8 @@ def test_only_limits_the_page_coverage_to_the_chapters_named(
     ]
     assert generate.main(["--only", "alpha", "--check-only"]) == 1
     assert problems(capsys) == ["page not covered: Alpha operators/Extra"]
-    assert generate.main(["--only", "types", "--check-only"]) == 0
+    assert generate.main(["--only", "beta", "--check-only"]) == 1
+    assert problems(capsys) == ["page not covered: Beta operators/Extra"]
 
 
 def test_unknown_only_chapter_is_rejected(world: World, capsys: pytest.CaptureFixture[str]) -> None:
@@ -374,7 +362,10 @@ def test_unknown_only_chapter_is_rejected(world: World, capsys: pytest.CaptureFi
     lines = problems(capsys)
     assert len(lines) == 1
     assert "unknown chapter 'nope'" in lines[0]
-    assert "alpha, beta, types" in lines[0]
+    assert "(known: alpha, beta)" in lines[0]
+    # The type hubs of the first version of the map are gone, and their group with them.
+    assert generate.main(["--only", "types", "--check-only"]) == 1
+    assert problems(capsys) == ["unknown chapter 'types' for --only (known: alpha, beta)"]
     assert world.calls == []
     assert world.names() == ["examples"]
 
@@ -410,6 +401,98 @@ def test_workers_and_timeout_must_be_finite_numbers_above_zero(option: str, valu
     assert stopped.value.code == 2
 
 
+# --- The strict checks of the forms ---
+
+
+# The notes of an example in the fixed layout.
+NOTES = ":Tests: What it tests.\n:Manual: The rule.\n:Expected: The result.\n"
+LAYOUT = (
+    "they must be Tests, Manual, Expected, then any of Finding, Erratum, Adaptation, "
+    "Team decision, in this order and once each"
+)
+
+
+def strict_catalogue() -> Catalogue:
+    """The map of ``CAT`` with typed forms, and authored examples named after what they test."""
+
+    def form(variant_id: str, label: str, *examples: Example) -> Variant:
+        return Variant(variant_id, label, examples, takes=("number",), gives=("number",))
+
+    first = make_operator(
+        "first",
+        "First",
+        "Alpha operators/First",
+        form("ds", "first(DS_1)", manual("ex_1"), authored("two_rows")),
+        form("sc", "first(1)", authored("one_value")),
+    )
+    second = make_operator(
+        "second",
+        "Second",
+        "Beta operators/Second",
+        form("ds", "second(DS_1)", authored("two_rows")),
+    )
+    return Catalogue(
+        (
+            Chapter("alpha", "Alpha operators", (first,)),
+            Chapter("beta", "Beta operators", (second,)),
+        )
+    )
+
+
+def test_strict_forms_checks_the_forms_of_the_chapters_named(
+    world: World, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The map of every check has untyped forms, examples named ``minimal`` and no notes: the
+    # strict checks are off unless they are asked for.
+    assert generate.main(["--check-only"]) == 0
+    capsys.readouterr()
+    assert generate.main(["--check-only", "--strict-forms", "--only", "beta"]) == 1
+    folder = world.root / "examples/beta/second/ds/minimal"
+    assert problems(capsys) == [
+        "beta.second.ds: the form declares no takes",
+        "beta.second.ds: the form declares no gives",
+        "beta.second.ds: example name 'minimal' does not say what the example tests",
+        f"{folder}: missing notes.rst",
+    ]
+    # Without ``--only``, every chapter is checked; and a run stops before it starts.
+    assert generate.main(["--strict-forms"]) == 1
+    lines = problems(capsys)
+    assert "alpha.first.sc: the form declares no takes" in lines
+    assert f"{folder}: missing notes.rst" in lines
+    assert world.calls == []
+    assert world.names() == ["examples"]
+
+
+def test_strict_forms_notes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    cat = strict_catalogue()
+    world = build_world(tmp_path, monkeypatch, cat)
+    examples = world.root / "examples"
+    for key, _ in examples_of(cat):
+        (examples / key / "notes.rst").write_text(NOTES, encoding="utf-8")
+    assert generate.main(["--check-only", "--strict-forms"]) == 0
+    capsys.readouterr()
+    # A folder of a chapter that is checked: notes.md, a missing notes.rst, a notes.rst that is
+    # not in the layout.
+    (examples / "alpha/first/ds/two_rows/notes.md").write_text("Old notes.\n", encoding="utf-8")
+    (examples / "alpha/first/sc/one_value/notes.rst").unlink()
+    (examples / "beta/second/ds/two_rows/notes.rst").write_text(":Tests: T.\n", encoding="utf-8")
+    assert generate.main(["--check-only", "--strict-forms", "--only", "alpha"]) == 1
+    assert problems(capsys) == [
+        f"{examples / 'alpha/first/ds/two_rows/notes.md'}: the notes go in notes.rst, "
+        "not in notes.md",
+        f"{examples / 'alpha/first/sc/one_value'}: missing notes.rst",
+    ]
+    assert generate.main(["--check-only", "--strict-forms", "--only", "beta"]) == 1
+    assert problems(capsys) == [
+        f"{examples / 'beta/second/ds/two_rows/notes.rst'}: the fields are Tests: {LAYOUT}"
+    ]
+    # Off by default, whatever the notes are.
+    assert generate.main(["--check-only"]) == 0
+    assert world.calls == []
+
+
 # --- The jobs ---
 
 
@@ -423,7 +506,7 @@ def test_jobs_are_every_example_on_both_engines_and_random_runs_twice(
         Variant("ds", "random(DS_1, 1)", (authored(check="random"),)),
     )
     alpha = Chapter("alpha", "Alpha operators", (*ALPHA.operators, extra))
-    cat = Catalogue((alpha, BETA), TYPES)
+    cat = Catalogue((alpha, BETA))
     world = build_world(tmp_path, monkeypatch, cat, (*PAGES, "Alpha operators/Random"))
     assert generate.main([]) == 0
     base = world.root / "examples"
@@ -466,10 +549,10 @@ def test_a_child_that_cannot_import_the_engines_stops_the_run_before_it_starts(
 def test_only_runs_the_jobs_of_the_chapters_named(world: World) -> None:
     assert generate.main([]) == 0
     world.calls.clear()
-    assert generate.main(["--only", "types", "--only", "beta"]) == 0
-    assert world.run_chapters() == {"types", "beta"}
+    assert generate.main(["--only", "beta"]) == 0
+    assert world.run_chapters() == {"beta"}
     [jobs] = world.calls
-    assert len(jobs) == 4  # two examples on two engines
+    assert len(jobs) == 2  # one example on two engines
 
 
 def test_current_date_is_checked_against_the_day_of_the_run(
@@ -481,7 +564,7 @@ def test_current_date_is_checked_against_the_day_of_the_run(
         "Alpha operators/Now",
         Variant("sc", "current_date()", (authored(check="current_date"),)),
     )
-    cat = Catalogue((Chapter("alpha", "Alpha operators", (today,)),), ())
+    cat = Catalogue((Chapter("alpha", "Alpha operators", (today,)),))
     world = build_world(tmp_path, monkeypatch, cat, ("Alpha operators/Now",), ())
     assert generate.main([]) == 0
     assert world.status()["examples"]["alpha/now/sc/minimal"]["status"] == "ok"
@@ -533,7 +616,6 @@ def test_only_merges_previous_status(world: World) -> None:
         "0",
     ]
     assert world.index_row("<beta>") == beta
-    assert world.index_row("Data types") == ["Data types", "🟢", "1", "1", "0", "0", "0"]
     examples = world.status()["examples"]
     assert examples["beta/second/ds/minimal"]["status"] == "partial"
     assert examples["alpha/first/sc/minimal"]["status"] == "missing"
@@ -555,10 +637,7 @@ def test_only_without_a_previous_result_is_a_validation_problem(
 ) -> None:
     assert generate.main(["--only", "alpha"]) == 1
     lines = problems(capsys)
-    assert sorted(line.split(":")[0] for line in lines) == [
-        "no result for beta/second/ds/minimal",
-        "no result for types/number/identity/minimal",
-    ]
+    assert [line.split(":")[0] for line in lines] == ["no result for beta/second/ds/minimal"]
     assert world.calls == []
     assert world.names() == ["examples"]
 
@@ -574,36 +653,33 @@ def test_only_with_an_unreadable_status_file_is_one_problem(
     assert world.calls == []
 
 
-def test_only_naming_every_example_chapter_does_not_read_the_previous_results(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    # No type has an example: the chapters are all there is, and ``--only`` names both.
-    cat = Catalogue((ALPHA, BETA), (TypeDef("scalar", ()),))
-    world = build_world(tmp_path, monkeypatch, cat)
+def test_only_naming_every_chapter_does_not_read_the_previous_results(world: World) -> None:
     (world.root / "status.json").write_text("{not json", encoding="utf-8")
     assert generate.main(["--only", "alpha", "--only", "beta"]) == 0
-    assert sorted(world.status()["examples"]) == sorted(KEYS[:4])
-
-
-def test_only_naming_every_chapter_and_the_types_does_not_read_the_previous_results(
-    world: World,
-) -> None:
-    (world.root / "status.json").write_text("{not json", encoding="utf-8")
-    assert generate.main(["--only", "alpha", "--only", "beta", "--only", "types"]) == 0
     assert sorted(world.status()["examples"]) == sorted(KEYS)
 
 
 def test_only_reads_the_previous_results_when_a_chapter_with_examples_is_left_out(
-    world: World, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    # The types have examples, so naming the two chapters is not naming everything.
+    gamma = Chapter(
+        "gamma",
+        "Gamma operators",
+        (
+            make_operator(
+                "third", "Third", "Gamma operators/Third", Variant("ds", "t", (authored(),))
+            ),
+        ),
+    )
+    cat = Catalogue((ALPHA, BETA, gamma))
+    world = build_world(tmp_path, monkeypatch, cat, (*PAGES, "Gamma operators/Third"))
     (world.root / "status.json").write_text("{not json", encoding="utf-8")
     assert generate.main(["--only", "alpha", "--only", "beta"]) == 1
     [line] = problems(capsys)
     assert line.startswith("status.json: cannot read the previous results")
 
 
-@pytest.mark.parametrize(("variants", "more"), [(8, None), (9, 1), (13, 5)])
+@pytest.mark.parametrize(("variants", "more"), [(9, None), (10, 1), (14, 5)])
 def test_only_prints_ten_no_result_lines_at_most_and_counts_the_rest(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -613,13 +689,12 @@ def test_only_prints_ten_no_result_lines_at_most_and_counts_the_rest(
 ) -> None:
     forms = tuple(Variant(f"v{n}", f"many(DS_{n})", (authored(),)) for n in range(variants))
     many = make_operator("many", "Many", "Gamma operators/Many", *forms)
-    cat = Catalogue((ALPHA, BETA, Chapter("gamma", "Gamma operators", (many,))), TYPES)
+    cat = Catalogue((ALPHA, BETA, Chapter("gamma", "Gamma operators", (many,))))
     world = build_world(tmp_path, monkeypatch, cat, (*PAGES, "Gamma operators/Many"))
     assert generate.main(["--only", "alpha"]) == 1
     lines = problems(capsys)
-    # Beta, the variants of gamma and the type example have no result: 2 + ``variants`` examples.
+    # Beta and the variants of gamma have no result: 1 + ``variants`` examples.
     expected = ["beta/second/ds/minimal", *(f"gamma/many/v{n}/minimal" for n in range(variants))]
-    expected.append("types/number/identity/minimal")
     assert [line.split(":")[0] for line in lines[:10]] == [
         f"no result for {x}" for x in expected[:10]
     ]

@@ -23,7 +23,7 @@ from tool.compare import (
     compare_scalar,
 )
 from tool.examples import ExampleFiles, ExpectedComponent, ExpectedDataset, ExpectedScalar
-from tool.model import Catalogue, Chapter, Operator, Status, TypeDef, Variant, authored, manual
+from tool.model import Catalogue, Chapter, Operator, Status, Variant, authored, manual
 from tool.runner import RunOutput
 from tool.status import (
     EMOJI,
@@ -1231,7 +1231,7 @@ def addition_results(changes: dict[str, Status] | None = None) -> dict[str, Exam
 
 
 def test_build_index_keys() -> None:
-    cat = Catalogue((numeric(addition()),), ())
+    cat = Catalogue((numeric(addition()),))
     index = build_index(cat, addition_results())
     assert isinstance(index, StatusIndex)
     assert index.operators["numeric/addition"] == "ok"
@@ -1246,7 +1246,7 @@ def test_build_index_keys() -> None:
 
 
 def test_build_index_examples_are_the_results() -> None:
-    cat = Catalogue((numeric(addition()),), ())
+    cat = Catalogue((numeric(addition()),))
     results = addition_results({"numeric/addition/ds_ds/minimal": "partial"})
     index = build_index(cat, results)
     assert (
@@ -1256,7 +1256,7 @@ def test_build_index_examples_are_the_results() -> None:
 
 
 def test_build_index_rolls_the_statuses_up() -> None:
-    cat = Catalogue((numeric(addition(), subtraction()),), ())
+    cat = Catalogue((numeric(addition(), subtraction()),))
     results = {
         **addition_results({"numeric/addition/ds_ds/minimal": "missing"}),
         "numeric/subtraction/ds_ds/minimal": result("missing"),
@@ -1277,7 +1277,7 @@ def test_build_index_rolls_the_statuses_up() -> None:
 
 
 def test_build_index_rolls_the_refused_status_up() -> None:
-    cat = Catalogue((numeric(addition(), subtraction()),), ())
+    cat = Catalogue((numeric(addition(), subtraction()),))
     refused: dict[str, Status] = {
         "numeric/addition/ds_ds/manual_ex_1": "refused",
         "numeric/addition/ds_ds/minimal": "refused",
@@ -1302,7 +1302,7 @@ def test_build_index_rolls_the_refused_status_up() -> None:
 
 
 def test_build_index_names_the_first_example_without_a_result() -> None:
-    cat = Catalogue((numeric(addition(), subtraction()),), ())
+    cat = Catalogue((numeric(addition(), subtraction()),))
     results = addition_results()
     with pytest.raises(ValueError, match="numeric/subtraction/ds_ds/minimal"):
         build_index(cat, results)
@@ -1314,60 +1314,20 @@ def test_build_index_names_the_first_example_without_a_result() -> None:
 
 
 def test_build_index_ignores_results_of_other_examples() -> None:
-    cat = Catalogue((numeric(addition()),), ())
+    cat = Catalogue((numeric(addition()),))
     results = {
         **addition_results(),
         "numeric/addition/ds_ds/removed": result("diverge"),
         "string/length/ds/minimal": result("missing"),
+        # A result of the type hubs of the first version of the map, in an old status.json.
+        "types/number/identity/minimal": result("partial"),
     }
     index = build_index(cat, results)
     assert "numeric/addition/ds_ds/removed" not in index.examples
     assert "string/length/ds/minimal" not in index.examples
+    assert list(index.examples) == list(addition_results())
     assert index.chapters == {"numeric": "ok"}
     assert index.operators == {"numeric/addition": "ok"}
-
-
-def test_build_index_has_the_types_under_their_own_keys() -> None:
-    types = (
-        TypeDef("scalar", ()),  # a hub without examples
-        TypeDef("number", ("scalar",), (Variant("identity", "identity", (authored(),)),)),
-        TypeDef(
-            "integer",
-            ("number",),
-            (
-                Variant("identity", "identity", (authored(),)),
-                Variant("cast", "cast", (authored(), authored("minimal_2"))),
-            ),
-        ),
-    )
-    cat = Catalogue((numeric(addition()),), types)
-    results = {
-        **addition_results(),
-        "types/number/identity/minimal": result("ok"),
-        "types/integer/identity/minimal": result("ok"),
-        "types/integer/cast/minimal": result("missing"),
-        "types/integer/cast/minimal_2": result("ok"),
-    }
-    index = build_index(cat, results)
-    assert index.examples["types/integer/cast/minimal_2"] is results["types/integer/cast/minimal_2"]
-    assert index.variants["types/integer/cast"] == "partial"
-    assert index.operators["types/number"] == "ok"
-    assert index.operators["types/integer"] == "partial"
-    assert "types/scalar" not in index.operators  # no variants, no status
-    assert index.chapters == {"numeric": "ok", "types": "partial"}
-
-    missing = {
-        key: value for key, value in results.items() if key != "types/number/identity/minimal"
-    }
-    with pytest.raises(ValueError, match="types/number/identity/minimal"):
-        build_index(cat, missing)
-
-
-def test_build_index_has_no_types_chapter_when_no_type_has_examples() -> None:
-    cat = Catalogue((numeric(addition()),), (TypeDef("scalar", ()), TypeDef("number", ("scalar",))))
-    index = build_index(cat, addition_results())
-    assert index.chapters == {"numeric": "ok"}
-    assert not any(key.startswith("types/") for key in index.operators)
 
 
 @pytest.mark.parametrize(
@@ -1386,11 +1346,11 @@ def test_build_index_rejects_a_catalogue_entry_with_nothing_to_roll_up(
     chapter: Chapter, key: str
 ) -> None:
     with pytest.raises(ValueError, match=f"nothing to roll up for {key}"):
-        build_index(Catalogue((chapter,), ()), {})
+        build_index(Catalogue((chapter,)), {})
 
 
 def test_status_values_are_frozen_dataclasses() -> None:
-    index = build_index(Catalogue((numeric(addition()),), ()), addition_results())
+    index = build_index(Catalogue((numeric(addition()),)), addition_results())
     for value, field in (
         (EngineVerdict("match", ""), "detail"),
         (result("ok"), "status"),

@@ -1,13 +1,16 @@
 """General purpose operators: parentheses, assignments, membership, calls and ``cast``.
 
 Parentheses take a dataset, a component or a scalar. The persistent assignment ``<-`` takes a
-dataset, the non-persistent one ``:=`` a dataset or a scalar. Membership ``DS#comp`` picks one
-component of a dataset as its measure, and gives a scalar when the dataset has no identifiers;
-``alias#comp`` inside a join is not membership (the manual says so) and belongs to the joins. A
-user-defined operator is called with no arguments, with all of them, with trailing optional ones
-omitted, or with ``_`` for an optional one. ``eval`` runs an external routine, which vtlengine
-takes as a SQL query named after its file (``external_routines/<name>.json``); the routine gets a
-non-dataset argument as a positional parameter (``$1``, ``$2``...).
+dataset, the non-persistent one ``:=`` a dataset or a scalar. The dataset form of ``:=`` also has
+an example for each basic type, ``<type>_measure``: a dataset with a measure of the type, assigned
+as it is, which shows that vtlengine loads, keeps and writes the values of the type. Membership
+``DS#comp`` picks one component of a dataset as its measure, and gives a scalar when the dataset
+has no identifiers; ``alias#comp`` inside a join is not membership (the manual says so) and
+belongs to the joins. A user-defined operator is called with no arguments, with all of them, with
+trailing optional ones omitted, or with ``_`` for an optional one. ``eval`` runs an external
+routine, which vtlengine takes as a SQL query named after its file
+(``external_routines/<name>.json``); the routine gets a non-dataset argument as a positional
+parameter (``$1``, ``$2``...).
 
 ``cast`` has one variant per conversion that the manual's conversion table allows, at component
 level (``DS_1[calc Me_2 := cast(Me_1, <type>)]``): the explicit ones, the implicit ones written
@@ -58,6 +61,19 @@ _OPTIONAL_MASK = (  # "Optional mask": once without and once with a mask
 # The conversions with more than one example: the second holds the inputs that a rule of the
 # manual treats in its own way.
 _SECOND_EXAMPLE = frozenset({("string", "boolean")})
+
+
+# The basic types of VTL, each with an example of the dataset form of ``:=``, ``<type>_measure``.
+_BASIC_TYPES = (
+    "number",
+    "integer",
+    "string",
+    "boolean",
+    "time",
+    "date",
+    "time_period",
+    "duration",
+)
 
 
 # The manual's default measure name of a string, ``string_var``, is one that "can be personalised
@@ -150,7 +166,11 @@ CHAPTER = Chapter(
             accepts=("dataset", "scalar"),
             returns=("dataset", "scalar"),
             variants=(
-                Variant("ds", "DS_r := DS", (manual("ex_1"),)),
+                Variant(
+                    "ds",
+                    "DS_r := DS",
+                    (manual("ex_1"), *(authored(f"{type_id}_measure") for type_id in _BASIC_TYPES)),
+                ),
                 Variant("sc", "SC_r := sc", (authored(),)),
             ),
         ),

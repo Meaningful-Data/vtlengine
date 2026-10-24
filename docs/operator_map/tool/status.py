@@ -106,7 +106,6 @@ NOT_IMPLEMENTED: Final[dict[str, str]] = {
 _STATUSES: Final[tuple[Status, ...]] = ("ok", "partial", "refused", "missing", "diverge")
 # The statuses that a group has when all its members have it, in the order that ``rollup`` asks.
 _UNIFORM: Final[tuple[Status, ...]] = ("ok", "refused", "missing")
-_TYPES: Final = "types"  # the chapter, in the index, of the type hubs
 _IDENTIFIER: Final = "Identifier"
 
 # A decimal number in ASCII digits. ``float`` alone would also take ``nan``, ``inf`` and ``1_0``.
@@ -140,17 +139,12 @@ class ExampleResult:
 
 @dataclass(frozen=True)
 class StatusIndex:
-    """The statuses of a catalogue at every level, by key; the keys are in catalogue order.
+    """The statuses of a catalogue at every level, by key; the keys are in catalogue order."""
 
-    The type hubs are keyed like operators under ``types``: ``types/<type>/<variant>/<example>``
-    for an example, ``types/<type>/<variant>`` for a variant, ``types/<type>`` in ``operators``
-    and ``types`` in ``chapters``. A type with no variants has no key.
-    """
-
-    examples: dict[str, ExampleResult]  # "chapter/op/variant/example", "types/<type>/..."
+    examples: dict[str, ExampleResult]  # "chapter/op/variant/example"
     variants: dict[str, Status]  # "chapter/op/variant"
-    operators: dict[str, Status]  # "chapter/op" and "types/<type>"
-    chapters: dict[str, Status]  # "chapter" and "types"
+    operators: dict[str, Status]  # "chapter/op"
+    chapters: dict[str, Status]  # "chapter"
 
 
 # --- Verdicts ---
@@ -568,13 +562,11 @@ def counts(statuses: Sequence[Status]) -> dict[Status, int]:
 def build_index(cat: Catalogue, results: Mapping[str, ExampleResult]) -> StatusIndex:
     """The statuses of every example, variant, operator and chapter of ``cat``.
 
-    ``results`` has the result of an example by its key: ``<chapter>/<operator>/<variant>/
-    <example>``, or ``types/<type>/<variant>/<example>`` for an example of a type. A key of
-    ``results`` that is not an example of the catalogue is ignored. An example of the catalogue
-    with no result raises ``ValueError``, naming the first one in catalogue order, and so does
-    an entry that has nothing to roll up, such as a variant with no examples. The statuses are
-    rolled up with ``rollup``. A type with no variants has no status, and is not part of the
-    ``types`` chapter, which is absent when no type has one.
+    ``results`` has the result of an example by its key, ``<chapter>/<operator>/<variant>/
+    <example>``. A key of ``results`` that is not an example of the catalogue is ignored. An
+    example of the catalogue with no result raises ``ValueError``, naming the first one in
+    catalogue order, and so does an entry that has nothing to roll up, such as a variant with no
+    examples. The statuses are rolled up with ``rollup``.
     """
     examples: dict[str, ExampleResult] = {}
     variants: dict[str, Status] = {}
@@ -606,15 +598,6 @@ def build_index(cat: Catalogue, results: Mapping[str, ExampleResult]) -> StatusI
             )
             chapter_statuses.append(operators[operator_key])
         chapters[chapter.id] = _rolled(chapter.id, chapter_statuses)
-
-    type_statuses: list[Status] = []
-    for typedef in cat.types:
-        if typedef.variants:
-            type_key = f"{_TYPES}/{typedef.id}"
-            operators[type_key] = _rolled(type_key, roll_variants(type_key, typedef.variants))
-            type_statuses.append(operators[type_key])
-    if type_statuses:
-        chapters[_TYPES] = rollup(type_statuses)
     return StatusIndex(examples, variants, operators, chapters)
 
 

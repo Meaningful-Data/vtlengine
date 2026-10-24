@@ -16,10 +16,14 @@ An example lives in ``examples/<chapter>/<operator>/<variant>/<example>/`` and h
 * ``expected/error.json``: the error that the script is to raise, ``{"code": "2-1-15-6"}``, with
   the code of a vtlengine error. It stands for the expected outputs: an example has the expected
   outputs or the expected error, not both;
-* ``notes.md``: free text that the tool does not read.
+* ``notes.rst``: the notes of the example, a field list in a fixed layout that ``check_notes``
+  checks: what the example tests, the rule of the manual, the expected result, and a finding, an
+  erratum, an adaptation or a team decision when one applies. The pages include it. It replaces
+  ``notes.md``, the free text of the first version of the map, which the tool does not read.
 
 An expected output or an expected error is required. Any problem of an example folder raises
-``ExampleError``.
+``ExampleError``. The notes are not part of what ``load_example`` loads: the strict checks of the
+generator ask for them, with ``notes_problems``.
 """
 
 from __future__ import annotations
@@ -31,6 +35,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final, TypeVar
 
+from tool.model import Example
+
 _SCRIPT: Final = "script.vtl"
 _INPUT: Final = "input"
 _EXPECTED: Final = "expected"
@@ -38,6 +44,28 @@ _SCALARS: Final = "scalars.json"
 _ERROR: Final = "error.json"
 _VALUE_DOMAINS: Final = "value_domains"
 _EXTERNAL_ROUTINES: Final = "external_routines"
+_NOTES: Final = "notes.rst"
+_OLD_NOTES: Final = "notes.md"
+
+# The fields of the notes, in their order: the first three always, then any of the others.
+_REQUIRED_FIELDS: Final = ("Tests", "Manual", "Expected")
+_OPTIONAL_FIELDS: Final = ("Finding", "Erratum", "Adaptation", "Team decision")
+_LAYOUT: Final = (
+    "they must be Tests, Manual, Expected, then any of Finding, Erratum, Adaptation, "
+    "Team decision, in this order and once each"
+)
+# The field that an example has when the catalogue sets an attribute of it, and only then.
+_FLAGGED_FIELDS: Final = (
+    ("Erratum", "erratum"),
+    ("Adaptation", "adaptation"),
+    ("Team decision", "decision"),
+)
+_MAX_NOTES: Final = 1200  # characters
+# The first line of a field: ``:<Name>:`` at the start of a line, then a space or the line end.
+_FIELD: Final = re.compile(r"^:([A-Za-z ]+):\s")
+_OUTSIDE: Final = (
+    "is outside the fields: a field starts with ':<Name>: ' and goes on in indented lines"
+)
 
 # The code of a vtlengine error, such as ``1-1-1-1`` or ``2-3-6``: digits in two groups or more.
 # It is written once, here: the loader checks the code of ``expected/error.json`` with it, and the
@@ -174,6 +202,105 @@ def load_example(path: Path) -> ExampleFiles:
         expected_scalars=scalars,
         expected_error=error,
     )
+
+
+# --- Notes ---
+
+
+def check_notes(text: str, example: Example) -> list[str]:
+    """The problems of ``text``, the ``notes.rst`` of ``example``: none when it is well formed.
+
+    The notes are a field list. Its fields are ``Tests``, ``Manual`` and ``Expected``, then any of
+    ``Finding``, ``Erratum``, ``Adaptation`` and ``Team decision``, in this order and once each.
+    ``Erratum`` is there when the example sets ``erratum`` and only then, ``Adaptation`` the same
+    for ``adaptation`` and ``Team decision`` for ``decision``. A field is one paragraph: it starts
+    with ``:<Name>:`` at the start of a line and goes on in indented lines, with no blank line
+    inside it and nothing outside the fields. The text has 1200 characters at most.
+
+    The field list is read with a regular expression, as the tool does not depend on docutils:
+    ``check_notes_render.py`` parses the notes with docutils, in the venv of the docs.
+    """
+    problems: list[str] = []
+    if len(text) > _MAX_NOTES:
+        problems.append(f"{len(text)} characters: the notes have {_MAX_NOTES} at most")
+    fields, layout = _note_fields(text)
+    problems.extend(layout)
+    names = [name for name, _ in fields]
+    known = (*_REQUIRED_FIELDS, *_OPTIONAL_FIELDS)
+    problems.extend(f"unknown field '{name}'" for name in names if name not in known)
+    if not _in_layout([name for name in names if name in known]):
+        problems.append(f"the fields are {', '.join(names) or 'none'}: {_LAYOUT}")
+    for field, attribute in _FLAGGED_FIELDS:
+        flagged = getattr(example, attribute) is not None
+        if flagged and field not in names:
+            problems.append(f"no field '{field}', but the example sets {attribute}")
+        elif field in names and not flagged:
+            problems.append(f"a field '{field}', but the example does not set {attribute}")
+    return problems
+
+
+def notes_problems(path: Path, example: Example) -> list[str]:
+    """The problems of the notes of the example folder ``path``, ``example`` in the catalogue.
+
+    The folder has a ``notes.rst`` that ``check_notes`` finds well formed, and no ``notes.md``:
+    the notes of the first version of the map, which ``notes.rst`` replaces. Each problem names
+    its file, or the folder for a ``notes.rst`` that is missing.
+    """
+    problems: list[str] = []
+    old = path / _OLD_NOTES
+    if old.exists():
+        problems.append(f"{old}: the notes go in {_NOTES}, not in {_OLD_NOTES}")
+    notes = path / _NOTES
+    if not notes.is_file():
+        problems.append(f"{path}: missing {_NOTES}")
+        return problems
+    try:
+        text = _read_text(notes)
+    except ExampleError as exc:
+        return [*problems, str(exc)]
+    problems.extend(f"{notes}: {problem}" for problem in check_notes(text, example))
+    return problems
+
+
+def _note_fields(text: str) -> tuple[list[tuple[str, list[str]]], list[str]]:
+    """The fields of the notes, each a name and the lines of its text, and the layout problems.
+
+    A line that is not a field, nor the indented line of one, is outside the fields. An indented
+    line after a blank line in a field would make a second paragraph of it.
+    """
+    fields: list[tuple[str, list[str]]] = []
+    problems: list[str] = []
+    gap = False  # a blank line since the last line of the field
+    for number, line in enumerate(text.splitlines(), start=1):
+        if not line.strip():
+            gap = True
+            continue
+        found = _FIELD.match(f"{line}\n")
+        if found is not None:
+            first = line[found.end() :].strip()
+            fields.append((found.group(1), [first] if first else []))
+        elif not line[0].isspace() or not fields:
+            problems.append(f"line {number} {_OUTSIDE}")
+        else:
+            if gap:
+                name = fields[-1][0]
+                problems.append(
+                    f"line {number}: a blank line inside the field '{name}': a field is one "
+                    "paragraph"
+                )
+            fields[-1][1].append(line.strip())
+        gap = False
+    problems.extend(f"the field '{name}' is empty" for name, lines in fields if not lines)
+    return fields, problems
+
+
+def _in_layout(names: list[str]) -> bool:
+    """Whether ``names`` are the required fields, then optional ones in their order, each once."""
+    head, rest = names[: len(_REQUIRED_FIELDS)], names[len(_REQUIRED_FIELDS) :]
+    if tuple(head) != _REQUIRED_FIELDS or any(name not in _OPTIONAL_FIELDS for name in rest):
+        return False
+    positions = [_OPTIONAL_FIELDS.index(name) for name in rest]
+    return all(before < after for before, after in zip(positions, positions[1:]))
 
 
 # --- Files ---

@@ -1,24 +1,20 @@
-"""Mermaid flowcharts of the operator map: chapters, type flows, the type lattice, the overview.
+"""Mermaid flowcharts of the operator map: the chapters and the overview.
 
 Every block starts with ``flowchart LR`` and the same ``classDef`` lines, so a block can be
 pasted into a fence on its own. A node is coloured by the status of what it stands for and
 starts with its emoji. Nothing here needs the run to be complete: a key that the ``StatusIndex``
-does not have is a node with no emoji and no status class, never an error.
+does not have is a node with no emoji and no status class, never an error. No diagram has a node
+for a type: the forms carry their types (``tool.model.form_types``).
 
-* ``chapter_blocks``: one unit per operator (the operator, its variants, the types it takes and
-  gives, and its links to other operators), packed in order into as few blocks as the limits of
-  Mermaid allow. The type hubs ``in_<type>`` and ``out_<type>`` and the stubs of the operators it
-  links to are defined once per block.
-* ``type_flow_block``: the operators that give a type, the type, the operators that take it, and
-  its subtypes.
-* ``lattice_block`` and ``overview_block``: the types, and the chapters with their types.
+* ``chapter_blocks``: one unit per operator (the operator, its variants, and its links to other
+  operators), packed in order into as few blocks as the limits of Mermaid allow. The stubs of
+  the operators it links to are defined once per block.
+* ``overview_block``: the chapters, with how many of their variants are in each status.
 
 The ``click`` targets are relative to ``docs/operator_map``, where the pages of the map are. An
 operator or a variant links to the folder of its first example, a chapter or a link stub to
 the page of the chapter, ``<chapter>`` and ``PAGE_SUFFIX``: the pages are part of the Sphinx
-docs, so that is the page of the built site. A type, wherever it is drawn (a hub, a subtype, a
-node of the lattice or of the overview), links to its first example, or to the first example of
-the operator or the variant it ``see``s, and has no link if it has neither.
+docs, so that is the page of the built site.
 
 The output follows the order of the catalogue, so a rerun gives the same text.
 """
@@ -26,13 +22,13 @@ The output follows the order of the catalogue, so a rerun gives the same text.
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
 from tool.examples import example_dir
-from tool.model import Catalogue, Chapter, Operator, Status, TypeDef, Variant
+from tool.model import Catalogue, Chapter, Operator, Status, Variant
 from tool.status import EMOJI, StatusIndex, counts
 
 # The defaults of Mermaid (``maxEdges`` and ``maxTextSize``). A block stays strictly under both,
@@ -58,7 +54,6 @@ _CLASSES: Final = (
     "classDef partial fill:#fff3cd,stroke:#ffc107,color:#000",
     "classDef missing fill:#f8d7da,stroke:#dc3545,color:#000",
     "classDef diverge fill:#cce5ff,stroke:#007bff,color:#000",
-    "classDef type fill:#eeeeee,color:#000",
     "classDef ext stroke-dasharray: 5 5",
 )
 
@@ -151,10 +146,6 @@ def _box(node: str, label: str, css: str | None) -> str:
     return f'{node}["{label}"]{_css(css)}'
 
 
-def _circle(node: str, label: str, css: str | None) -> str:
-    return f'{node}(("{label}")){_css(css)}'
-
-
 def _click(node: str, target: str) -> str:
     return f'click {node} "{target}"'
 
@@ -168,41 +159,12 @@ def _label(status: Status | None, *parts: str, pinned: bool = False) -> str:
     return " ".join(words)
 
 
-def _type_node(type_id: str) -> str:
-    """The node of a type in the lattice and the overview, where chapters have nodes too."""
-    return node_id(f"type_{type_id}")
-
-
-def _hub(
-    shared: dict[str, str],
-    direction: str,
-    type_id: str,
-    type_folder: Callable[[str], str | None],
-) -> str:
-    """The id of the hub ``in_<type>`` or ``out_<type>``, defined in ``shared`` if it is not.
-
-    The definition is followed by the ``click`` to the folder of the type, if it has one.
-    """
-    hub = node_id(f"{direction}_{type_id}")
-    shared.setdefault(hub, _circle(hub, escape_label(type_id), "type"))
-    folder = type_folder(type_id)
-    if folder is not None:
-        shared.setdefault(f"click {hub}", _click(hub, folder))
-    return hub
-
-
 # --- What the catalogue says ---
 
 
 def _pinned(variants: Sequence[Variant]) -> bool:
     """Whether an example of ``variants`` follows a recorded team decision."""
     return any(example.decision is not None for variant in variants for example in variant.examples)
-
-
-def _returned(operator: Operator) -> tuple[str, ...]:
-    """The types that ``operator`` gives: its own ``returns`` and those of its variants."""
-    from_variants = (type_id for variant in operator.variants for type_id in variant.returns)
-    return tuple(dict.fromkeys([*operator.returns, *from_variants]))
 
 
 def _first_example(variants: Sequence[Variant]) -> tuple[str, str] | None:
@@ -252,7 +214,7 @@ class _Unit:
 
     owner: str  # ``<chapter>.<operator>``
     lines: tuple[str, ...]
-    shared: tuple[tuple[str, str], ...]  # (key, line) of the hubs and stubs, once per block
+    shared: tuple[tuple[str, str], ...]  # (key, line) of the stubs, once per block
 
 
 def chapter_blocks(chapter: Chapter, cat: Catalogue, index: StatusIndex) -> list[str]:
@@ -260,22 +222,16 @@ def chapter_blocks(chapter: Chapter, cat: Catalogue, index: StatusIndex) -> list
 
     An operator is never split across blocks. Its links point to stubs of the operators of
     ``cat`` that they name; a link to an operator that is not in ``cat`` is a ``ValueError``.
-    A single operator that is over a limit by itself raises ``MermaidLimitError``. The hubs link
-    to the example of their type, which is looked for only for the types that the chapter uses.
+    A single operator that is over a limit by itself raises ``MermaidLimitError``.
     """
     targets = _targets(cat)
-    type_folder = _type_folders(cat)
-    units = [
-        _unit(chapter, operator, targets, type_folder, index) for operator in chapter.operators
-    ]
-    return _pack(units)
+    return _pack([_unit(chapter, operator, targets, index) for operator in chapter.operators])
 
 
 def _unit(
     chapter: Chapter,
     operator: Operator,
     targets: Mapping[str, tuple[Chapter, Operator]],
-    type_folder: Callable[[str], str | None],
     index: StatusIndex,
 ) -> _Unit:
     """The nodes, the edges and the clicks of ``operator``, in that order."""
@@ -295,13 +251,6 @@ def _unit(
 
     shared: dict[str, str] = {}
     edges = [f"{op_node} --- {form_node}" for _, form_node in forms]
-    for type_id in dict.fromkeys(operator.accepts):
-        edges.append(f"{_hub(shared, 'in', type_id, type_folder)} --> {op_node}")
-    for type_id in dict.fromkeys(operator.returns):
-        edges.append(f"{op_node} --> {_hub(shared, 'out', type_id, type_folder)}")
-    for variant, form_node in forms:
-        for type_id in dict.fromkeys(variant.returns):
-            edges.append(f"{form_node} --> {_hub(shared, 'out', type_id, type_folder)}")
     for link in operator.links:
         target_chapter, target = _resolve(targets, link.target, owner)
         stub = node_id(f"ext_{target_chapter.id}", target.id)
@@ -358,153 +307,23 @@ def _pack(units: Sequence[_Unit]) -> list[str]:
     return blocks
 
 
-# --- Types and the overview ---
-
-
-def type_flow_block(type_id: str, cat: Catalogue, index: StatusIndex) -> str:
-    """The flow of a type: its producers, the type ``t``, its consumers and its subtypes.
-
-    A producer is an operator whose ``returns``, or those of any of its variants, hold the type,
-    and a consumer one whose ``accepts`` do. An operator is a node once, with an edge for each
-    way it uses the type. The nodes are the names of the operators, coloured by their status,
-    and each links to the folder of its first example, as in a chapter block; the type and its
-    subtypes link to the example of their type. Raises ``MermaidLimitError`` if the flow is over
-    a limit: a flow is a single block.
-    """
-    children = [typedef.id for typedef in cat.types if type_id in typedef.parents]
-    nodes = [_circle("t", escape_label(type_id), "type")]
-    subs = {child: node_id(f"sub_{child}") for child in children}
-    nodes.extend(_circle(sub, escape_label(child), "type") for child, sub in subs.items())
-    edges = [f'{sub} -. "subtype of" .-> t' for sub in subs.values()]
-    consumers: list[str] = []
-    types = [("t", type_id), *((sub, child) for child, sub in subs.items())]
-    clicks = _type_clicks(types, _type_folders(cat))
-    for chapter in cat.chapters:
-        for operator in chapter.operators:
-            makes = type_id in _returned(operator)
-            takes = type_id in operator.accepts
-            if not (makes or takes):
-                continue
-            node = node_id(chapter.id, operator.id)
-            status = index.operators.get(f"{chapter.id}/{operator.id}")
-            nodes.append(_box(node, _label(status, operator.name), status))
-            folder = _operator_folder(chapter.id, operator)
-            if folder is not None:
-                clicks.append(_click(node, folder))
-            if makes:
-                edges.append(f"{node} --> t")
-            if takes:
-                consumers.append(f"t --> {node}")
-    block = _assemble([*nodes, *edges, *consumers, *clicks])
-    return _checked(block, f"type flow of {type_id}")
-
-
-def lattice_block(cat: Catalogue, index: StatusIndex) -> str:
-    """The lattice of the types: ``child --> parent``, coloured by the status of each type.
-
-    A parent that has no ``TypeDef`` is drawn too, with no status. Raises ``MermaidLimitError``
-    if the lattice is over a limit.
-    """
-    parents = (parent for typedef in cat.types for parent in typedef.parents)
-    types = dict.fromkeys([*(typedef.id for typedef in cat.types), *parents])
-    nodes: list[str] = []
-    for type_id in types:
-        status = index.operators.get(f"types/{type_id}")
-        nodes.append(_circle(_type_node(type_id), _label(status, type_id), status or "type"))
-    edges = [
-        f"{_type_node(typedef.id)} --> {_type_node(parent)}"
-        for typedef in cat.types
-        for parent in typedef.parents
-    ]
-    clicks = _type_clicks([(_type_node(type_id), type_id) for type_id in types], _type_folders(cat))
-    return _checked(_assemble([*nodes, *edges, *clicks]), "type lattice")
-
-
-def _type_folder(
-    typedef: TypeDef | None, targets: Mapping[str, tuple[Chapter, Operator]]
-) -> str | None:
-    """The folder a type links to: its first example, else that of what it ``see``s."""
-    if typedef is None:
-        return None
-    own = _first_example(typedef.variants)
-    if own is not None:
-        return _folder("types", typedef.id, *own)
-    if typedef.see is None:
-        return None
-    return _seen_folder(targets, typedef.see, f"types.{typedef.id}")
-
-
-def _seen_folder(
-    targets: Mapping[str, tuple[Chapter, Operator]], address: str, owner: str
-) -> str | None:
-    """The folder of the first example of ``address``: ``chapter.operator`` or a variant of it.
-
-    A variant is ``chapter.operator.variant``. One that the operator does not have raises a
-    ``ValueError``, as an operator that is not in ``targets`` does.
-    """
-    parts = address.split(".")
-    chapter, operator = _resolve(targets, ".".join(parts[:2]), owner)
-    if len(parts) <= 2:
-        return _operator_folder(chapter.id, operator)
-    variant = next((each for each in operator.variants if [each.id] == parts[2:]), None)
-    if variant is None:
-        raise ValueError(f"{owner}: target '{address}' not found")
-    first = _first_example((variant,))
-    return None if first is None else _folder(chapter.id, operator.id, *first)
-
-
-def _type_folders(cat: Catalogue) -> Callable[[str], str | None]:
-    """The function that gives the folder a type of ``cat`` links to, or None.
-
-    The ``see`` of a type is looked for when the type is asked for, so only the types that are
-    drawn need a target that exists. A type that is not in ``cat`` has no folder.
-    """
-    typedefs = {typedef.id: typedef for typedef in cat.types}
-    targets = _targets(cat)
-
-    def type_folder(type_id: str) -> str | None:
-        return _type_folder(typedefs.get(type_id), targets)
-
-    return type_folder
-
-
-def _type_clicks(
-    types: Iterable[tuple[str, str]], type_folder: Callable[[str], str | None]
-) -> list[str]:
-    """The ``click`` lines of the nodes of types, given as ``(node, type id)``.
-
-    A type that has no folder to link to gets no line.
-    """
-    folders = [(node, type_folder(type_id)) for node, type_id in types]
-    return [_click(node, folder) for node, folder in folders if folder is not None]
+# --- The overview ---
 
 
 def overview_block(cat: Catalogue, index: StatusIndex) -> str:
     """One node per chapter, with how many of its variants are in each status.
 
-    Each chapter has an edge to every type that its operators, or their variants, return. A
-    chapter links to its page and a type to the example of the type. Raises
-    ``MermaidLimitError`` if the overview is over a limit.
+    A chapter links to its page. Raises ``MermaidLimitError`` if the overview is over a limit.
     """
     nodes: list[str] = []
-    edges: list[str] = []
     clicks: list[str] = []
-    type_nodes: dict[str, str] = {}  # the node of each type, in the order the types are met
     for chapter in cat.chapters:
         node = node_id("chapter", chapter.id)
         status = index.chapters.get(chapter.id)
         label = f"{_label(status, chapter.title)}<br/>{_tally(chapter, index)}"
         nodes.append(_box(node, label, status))
         clicks.append(_click(node, f"{chapter.id}{PAGE_SUFFIX}"))
-        for type_id in dict.fromkeys(
-            t for operator in chapter.operators for t in _returned(operator)
-        ):
-            hub = type_nodes.setdefault(type_id, _type_node(type_id))
-            edges.append(f"{node} --> {hub}")
-    hubs = [_circle(hub, escape_label(type_id), "type") for type_id, hub in type_nodes.items()]
-    types = [(hub, type_id) for type_id, hub in type_nodes.items()]
-    clicks.extend(_type_clicks(types, _type_folders(cat)))
-    return _checked(_assemble([*nodes, *hubs, *edges, *clicks]), "overview")
+    return _checked(_assemble([*nodes, *clicks]), "overview")
 
 
 def _tally(chapter: Chapter, index: StatusIndex) -> str:

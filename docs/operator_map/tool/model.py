@@ -11,9 +11,16 @@ from typing import Any, Final, Literal
 Status = Literal["ok", "partial", "refused", "missing", "diverge"]
 Source = Literal["manual", "authored"]
 Check = Literal["exact", "random", "current_date"]
+# The kind of the widest operand of a form: a dataset, a component or a scalar (``form_kind``).
+Kind = Literal["ds", "comp", "sc"]
 
-TYPE_IDS: Final[tuple[str, ...]] = (
-    "scalar",
+# The types that a form takes and gives (``Variant.takes`` and ``Variant.gives``). The value types
+# of VTL are matched along their hierarchy, ``TYPE_PARENTS``: a form that gives an ``integer``
+# gives a ``number``. ``scalar`` is any value type, for a form that takes any of them (``=``,
+# ``isnull``, ``nvl``...), and ``any`` is any type at all, for a form whose result follows its
+# input (``nvl``, ``if-then-else``, the joins, the clauses...). The structural types are not
+# values: each one matches only itself.
+VALUE_TYPES: Final[tuple[str, ...]] = (
     "number",
     "integer",
     "string",
@@ -22,7 +29,23 @@ TYPE_IDS: Final[tuple[str, ...]] = (
     "date",
     "time_period",
     "duration",
-    "dataset",
+)
+ANY_SCALAR: Final = "scalar"
+ANY_TYPE: Final = "any"
+# Each value type with its supertypes: scalar, then number and integer under it; string, boolean
+# and duration; time, then date and time_period under it.
+TYPE_PARENTS: Final[dict[str, tuple[str, ...]]] = {
+    ANY_SCALAR: (),
+    "number": (ANY_SCALAR,),
+    "integer": ("number",),
+    "string": (ANY_SCALAR,),
+    "boolean": (ANY_SCALAR,),
+    "time": (ANY_SCALAR,),
+    "date": ("time",),
+    "time_period": ("time",),
+    "duration": (ANY_SCALAR,),
+}
+STRUCTURAL_TYPES: Final[tuple[str, ...]] = (
     "set",
     "value_domain",
     "datapoint_ruleset",
@@ -31,6 +54,15 @@ TYPE_IDS: Final[tuple[str, ...]] = (
     "operator",
     "external_routine",
 )
+# A link is shown at both of its ends: at its target, with the reverse of its label.
+REVERSE_LABELS: Final[dict[str, str]] = {
+    "uses": "used by",
+    "used by": "uses",
+    "used in": "uses",
+    "used in over()": "uses, in over()",
+    "used in group all": "uses, in group all",
+    "propagates at": "propagation defined by",
+}
 DL_PAGES: Final[tuple[str, ...]] = ("dl/udo", "dl/datapoint", "dl/hierarchical", "dl/viral")
 
 
@@ -38,7 +70,7 @@ DL_PAGES: Final[tuple[str, ...]] = ("dl/udo", "dl/datapoint", "dl/hierarchical",
 class Example:
     """One runnable example of a variant."""
 
-    name: str  # folder name: ``manual_ex_1``, ``minimal``, ``minimal_2``...
+    name: str  # folder name: ``manual_ex_1`` for a manual example, else a slug: ``zero_divisor``
     source: Source
     manual_ref: str | None = None  # manual example on the operator's page, e.g. ``ex_1``
     # A slip of the manual that is corrected: in its script, its input or its expected output.
@@ -53,12 +85,20 @@ class Example:
 
 @dataclass(frozen=True)
 class Variant:
-    """One syntax form of an operator or type."""
+    """One syntax form of an operator.
+
+    ``takes`` and ``gives`` are the types of the form, of ``VALUE_TYPES``, ``ANY_SCALAR``,
+    ``ANY_TYPE`` and ``STRUCTURAL_TYPES``. Whether it is on datasets, components or scalars is
+    its kind (``form_kind``), not a type. A form that does not declare its types has those of its
+    operator (``form_types``).
+    """
 
     id: str
     label: str
     examples: tuple[Example, ...]
     returns: tuple[str, ...] = ()  # return types when they differ from the operator's
+    takes: tuple[str, ...] = ()
+    gives: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -66,7 +106,7 @@ class Link:
     """A composition link to another operator, drawn as a labelled dotted edge."""
 
     target: str  # ``chapter.operator``
-    label: str
+    label: str  # a key of ``REVERSE_LABELS``: the target shows the reverse
 
 
 @dataclass(frozen=True)
@@ -93,22 +133,10 @@ class Chapter:
 
 
 @dataclass(frozen=True)
-class TypeDef:
-    """A data type hub; ``id`` is one of ``TYPE_IDS`` and ``parents`` its supertypes."""
-
-    id: str
-    parents: tuple[str, ...]
-    variants: tuple[Variant, ...] = ()
-    # ``chapter.operator``, or ``chapter.operator.variant``, whose first example the hub links to.
-    see: str | None = None
-
-
-@dataclass(frozen=True)
 class Catalogue:
     """Everything the map shows."""
 
     chapters: tuple[Chapter, ...]
-    types: tuple[TypeDef, ...]
 
 
 def manual(ref: str, **kw: Any) -> Example:
@@ -122,17 +150,83 @@ def authored(name: str = "minimal", **kw: Any) -> Example:
 
 
 def load_catalogue() -> Catalogue:
-    """Read ``catalogue.CHAPTERS`` and ``catalogue.TYPES``."""
+    """Read ``catalogue.CHAPTERS``."""
     import catalogue  # late: the catalogue modules import this one
 
-    return Catalogue(chapters=tuple(catalogue.CHAPTERS), types=tuple(catalogue.TYPES))
+    return Catalogue(chapters=tuple(catalogue.CHAPTERS))
+
+
+# --- Forms, links and examples ---
+
+
+_DATASET: Final = "dataset"
+# The kinds of the forms, the widest first: the first one whose token the id has is its kind.
+_KINDS: Final[tuple[Kind, ...]] = ("ds", "comp", "sc")
+_MANUAL_NAME: Final = re.compile(r"manual_ex_(\d+)")  # the folder of the manual example N
+
+
+def form_kind(v: Variant) -> Kind | None:
+    """The kind of the widest operand of a form, from the tokens of its id split on ``_``.
+
+    Any ``ds`` makes a dataset form, else any ``comp`` a component form, else any ``sc`` a scalar
+    form: ``sc_comp_digits`` is ``comp`` and ``analytic_ds`` is ``ds``. An id that has none of
+    the three has no kind (``identity``, ``param_dataset``, ``ds2``).
+    """
+    tokens = v.id.split("_")
+    return next((kind for kind in _KINDS if kind in tokens), None)
+
+
+def form_types(op: Operator, v: Variant) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """What the form ``v`` of ``op`` takes and gives: its own types, else those of ``op``.
+
+    Each side falls back on its own. A form that declares no ``takes`` takes the ``accepts`` of
+    its operator. One that declares no ``gives`` gives its own ``returns``, else the ``returns``
+    of its operator. ``dataset`` is left out of these: it is the kind of a form, not a type.
+    """
+    takes = v.takes or _without_dataset(op.accepts)
+    gives = v.gives or _without_dataset(v.returns) or _without_dataset(op.returns)
+    return takes, gives
+
+
+def _without_dataset(types: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(type_id for type_id in types if type_id != _DATASET)
+
+
+def reverse_label(label: str) -> str:
+    """The label of a link as its target shows it: ``used in`` is ``uses`` there.
+
+    A label that ``REVERSE_LABELS`` does not have raises ``KeyError``; ``validate_catalogue``
+    reports a link that has one.
+    """
+    return REVERSE_LABELS[label]
+
+
+def example_title(e: Example) -> str:
+    """The title of an example: ``Manual example N`` for ``manual_ex_N``, else its name.
+
+    The name is a slug of what the example tests, and its title that slug in sentence case:
+    ``zero_divisor`` is ``Zero divisor``.
+    """
+    found = _MANUAL_NAME.fullmatch(e.name)
+    if found is not None:
+        return f"Manual example {found.group(1)}"
+    words = e.name.replace("_", " ")
+    return words[:1].upper() + words[1:]
+
+
+# --- Validation ---
 
 
 _ID_PATTERN: Final = re.compile(r"[a-z0-9_]+")
-_KNOWN_TYPES: Final = frozenset(TYPE_IDS)
+# The name of an authored example, under the strict checks: a slug of what it tests, which is
+# not one of the names that the first version of the map gave them (``minimal``, ``minimal_2``).
+_SLUG: Final = re.compile(r"[a-z][a-z0-9_]{0,39}")
+_SLUG_RULE: Final = "a letter, then up to 39 letters, digits or underscores"
+_PLACEHOLDER: Final = re.compile(r"minimal(?:_\d+)?")
+_FORM_TYPES: Final = frozenset((*VALUE_TYPES, *STRUCTURAL_TYPES, ANY_SCALAR, ANY_TYPE))
+# The types of an operator, and the ``returns`` of a form, may name ``dataset`` too.
+_OPERATOR_TYPES: Final = _FORM_TYPES | {_DATASET}
 _DEFINITIONS: Final = "definitions"  # the chapter whose pages are ``DL_PAGES``
-_DATASET: Final = "dataset"
-_DATASET_PART: Final = "ds"  # a variant whose id has this part, split on ``_``, is on datasets
 
 
 def _bad_id(owner: str, item_id: str, what: str = "id") -> Iterator[str]:
@@ -148,9 +242,9 @@ def _duplicate(owner: str, kind: str, item_id: str, seen: dict[str, int]) -> Ite
         yield f"{owner}: duplicate {kind} '{item_id}'"
 
 
-def _unknown_types(owner: str, type_ids: Iterable[str]) -> Iterator[str]:
+def _unknown_types(owner: str, type_ids: Iterable[str], known: frozenset[str]) -> Iterator[str]:
     for type_id in dict.fromkeys(type_ids):
-        if type_id not in _KNOWN_TYPES:
+        if type_id not in known:
             yield f"{owner}: unknown type '{type_id}'"
 
 
@@ -162,13 +256,21 @@ def _manual_keys(operator: Operator) -> Iterator[str]:
                 yield f"{operator.page}/{example.manual_ref}"
 
 
-def _variant_problems(owner: str, variants: Iterable[Variant]) -> Iterator[str]:
+def _variant_problems(owner: str, variants: Iterable[Variant], strict: bool) -> Iterator[str]:
+    """The problems of the variants of ``owner`` and of their examples.
+
+    ``strict`` adds the strict checks of the forms: each declares the types it takes and gives,
+    and each authored example has a slug of what it tests for a name.
+    """
     seen: dict[str, int] = {}
     for variant in variants:
         yield from _bad_id(owner, variant.id)
         yield from _duplicate(owner, "variant", variant.id, seen)
         variant_owner = f"{owner}.{variant.id}"
-        yield from _unknown_types(variant_owner, variant.returns)
+        yield from _unknown_types(variant_owner, variant.returns, _OPERATOR_TYPES)
+        yield from _unknown_types(variant_owner, (*variant.takes, *variant.gives), _FORM_TYPES)
+        if strict:
+            yield from _untyped(variant_owner, variant)
         seen_examples: dict[str, int] = {}
         for example in variant.examples:
             # The name of an example names its folder, and so the target of a click.
@@ -176,27 +278,31 @@ def _variant_problems(owner: str, variants: Iterable[Variant]) -> Iterator[str]:
             yield from _duplicate(variant_owner, "example", example.name, seen_examples)
             if example.manual_ref is not None:
                 yield from _bad_id(variant_owner, example.manual_ref, "manual_ref")
+            if strict and example.source == "authored":
+                yield from _slug_problems(variant_owner, example.name)
 
 
-def _dataset_forms(variants: Iterable[Variant]) -> list[Variant]:
-    """The dataset forms: the variants whose id has the part ``ds`` (``ds_sc``, ``analytic_ds``)."""
-    return [variant for variant in variants if _DATASET_PART in variant.id.split("_")]
+def _untyped(owner: str, variant: Variant) -> Iterator[str]:
+    """The types that a form does not declare: neither its ``returns`` nor its operator's count."""
+    if not variant.takes:
+        yield f"{owner}: the form declares no takes"
+    if not variant.gives:
+        yield f"{owner}: the form declares no gives"
 
 
-def _dataset_flow_problems(owner: str, operator: Operator) -> Iterator[str]:
-    """What keeps an operator that has dataset forms out of the type flow of ``dataset``.
+def _slug_problems(owner: str, name: str) -> Iterator[str]:
+    """Why ``name`` does not name an authored example after what it tests, if it does not.
 
-    A dataset form takes a dataset, so ``accepts`` has ``dataset``. It gives one too: a form that
-    declares no ``returns`` of its own gives those of the operator, which then have ``dataset``.
+    A name that breaks the id rule is reported as such, and only so.
     """
-    forms = _dataset_forms(operator.variants)
-    if forms and _DATASET not in operator.accepts:
-        ids = ", ".join(form.id for form in forms)
-        yield f"{owner}: '{_DATASET}' is not in accepts, but its dataset forms take one: {ids}"
-    plain = [form for form in forms if not form.returns]
-    if plain and _DATASET not in operator.returns:
-        ids = ", ".join(form.id for form in plain)
-        yield f"{owner}: '{_DATASET}' is not in returns, but its dataset forms give one: {ids}"
+    if _ID_PATTERN.fullmatch(name) is None:
+        return
+    if _PLACEHOLDER.fullmatch(name) is not None:
+        yield f"{owner}: example name '{name}' does not say what the example tests"
+    elif _MANUAL_NAME.fullmatch(name) is not None:
+        yield f"{owner}: example name '{name}' is the name of a manual example"
+    elif _SLUG.fullmatch(name) is None:
+        yield f"{owner}: example name '{name}' is not a slug ({_SLUG_RULE})"
 
 
 def _operator_problems(
@@ -205,19 +311,21 @@ def _operator_problems(
     targets: Collection[str],
     pages: frozenset[str],
     manual_examples: frozenset[str],
+    strict: bool,
 ) -> Iterator[str]:
     owner = f"{chapter.id}.{operator.id}"
     if operator.page not in pages:
         yield f"{owner}: unknown page '{operator.page}'"
-    yield from _unknown_types(owner, (*operator.accepts, *operator.returns))
-    yield from _dataset_flow_problems(owner, operator)
+    yield from _unknown_types(owner, (*operator.accepts, *operator.returns), _OPERATOR_TYPES)
     for link in operator.links:
         if link.target not in targets:
             yield f"{owner}: link target '{link.target}' not found"
+        if link.label not in REVERSE_LABELS:
+            yield f"{owner}: link label '{link.label}' has no reverse label"
     for key in _manual_keys(operator):
         if key not in manual_examples:
             yield f"{owner}: unknown manual example '{key}'"
-    yield from _variant_problems(owner, operator.variants)
+    yield from _variant_problems(owner, operator.variants, strict)
 
 
 def _chapter_problems(
@@ -225,7 +333,9 @@ def _chapter_problems(
     targets: Collection[str],
     pages: frozenset[str],
     manual_examples: frozenset[str],
+    strict: Callable[[str], bool],
 ) -> Iterator[str]:
+    """The problems of every chapter, with the strict checks for those that ``strict`` names."""
     seen_chapters: dict[str, int] = {}
     for chapter in cat.chapters:
         yield from _bad_id("catalogue", chapter.id)
@@ -234,28 +344,9 @@ def _chapter_problems(
         for operator in chapter.operators:
             yield from _bad_id(chapter.id, operator.id)
             yield from _duplicate(chapter.id, "operator", operator.id, seen_operators)
-            yield from _operator_problems(chapter, operator, targets, pages, manual_examples)
-
-
-def _typedef_problems(cat: Catalogue, targets: Collection[str]) -> Iterator[str]:
-    """The problems of the type definitions; a ``see`` names an operator or one of its variants."""
-    variants = {
-        f"{chapter.id}.{operator.id}.{variant.id}"
-        for chapter in cat.chapters
-        for operator in chapter.operators
-        for variant in operator.variants
-    }
-    seen_types: dict[str, int] = {}
-    for typedef in cat.types:
-        owner = f"types.{typedef.id}"
-        if typedef.id not in _KNOWN_TYPES:
-            yield f"types: unknown type '{typedef.id}'"
-        yield from _duplicate("types", "type", typedef.id, seen_types)
-        yield from _unknown_types(owner, typedef.parents)
-        see = typedef.see
-        if see is not None and see not in targets and see not in variants:
-            yield f"{owner}: see target '{see}' not found"
-        yield from _variant_problems(owner, typedef.variants)
+            yield from _operator_problems(
+                chapter, operator, targets, pages, manual_examples, strict(chapter.id)
+            )
 
 
 def _in_scope(cat: Catalogue, scope: Collection[str] | None) -> Callable[[str], bool]:
@@ -308,29 +399,41 @@ def validate_catalogue(
     manual_examples: Collection[str],
     *,
     scope: Collection[str] | None = None,
+    strict_forms: bool = False,
 ) -> list[str]:
     """Return the problems of ``cat``, such as unknown types, pages or manual examples.
 
-    Problems come in catalogue order (chapters, then types), followed by the page and manual
-    example coverage problems, each sorted. ``pages`` are all the manual pages and
-    ``manual_examples`` all its ``<page>/<example>`` keys.
+    Problems come in catalogue order, followed by the page and manual example coverage problems,
+    each sorted. ``pages`` are all the manual pages and ``manual_examples`` all its
+    ``<page>/<example>`` keys.
 
     ``scope`` is a collection of chapter ids. When given, the page coverage and the manual
-    example mapping are checked only for the pages of those chapters. All the other checks
-    (types, links, ``see`` targets, ids, duplicates, and the pages and manual examples the
-    catalogue refers to) always cover the whole catalogue, against all of ``pages`` and
-    ``manual_examples``.
+    example mapping are checked only for the pages of those chapters, and the strict checks only
+    for those chapters. All the other checks (types, links, ids, duplicates, and the pages and
+    manual examples the catalogue refers to) always cover the whole catalogue, against all of
+    ``pages`` and ``manual_examples``.
 
     Ids, example names and manual refs follow the id rule, ``[a-z0-9_]+``: they name folders
-    and the targets of the clicks of the diagrams. An operator with a dataset form, a variant
-    whose id has the token ``ds`` (split on ``_``), lists ``dataset`` in ``accepts``, and in
-    ``returns`` unless each such form declares ``returns`` of its own.
+    and the targets of the clicks of the diagrams. The ``takes`` and ``gives`` of a form are of
+    ``VALUE_TYPES``, ``STRUCTURAL_TYPES``, ``ANY_SCALAR`` and ``ANY_TYPE``; the ``accepts`` and
+    ``returns`` of an operator, and the ``returns`` of a form, may name ``dataset`` as well. The
+    label of every link has a reverse in ``REVERSE_LABELS``.
+
+    ``strict_forms`` turns on the strict checks of the forms: every form declares its ``takes``
+    and its ``gives``, and every authored example is named after what it tests, with a slug that
+    matches ``[a-z][a-z0-9_]{0,39}`` and is neither ``minimal`` nor ``minimal_<n>``, nor the name
+    of a manual example, ``manual_ex_<n>``. The notes of the examples are checked with their
+    folders, by the generator.
     """
     targets = {f"{chapter.id}.{op.id}" for chapter in cat.chapters for op in chapter.operators}
     known_pages = frozenset(pages)
     known_examples = frozenset(manual_examples)
+    chosen = None if scope is None else frozenset(scope)
+
+    def strict(chapter_id: str) -> bool:
+        return strict_forms and (chosen is None or chapter_id in chosen)
+
     return [
-        *_chapter_problems(cat, targets, known_pages, known_examples),
-        *_typedef_problems(cat, targets),
+        *_chapter_problems(cat, targets, known_pages, known_examples, strict),
         *_coverage_problems(cat, known_pages, known_examples, scope),
     ]

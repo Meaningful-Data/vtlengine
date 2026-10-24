@@ -40,7 +40,7 @@ def make_examples(srcdir: Path) -> Path:
     (one / "input" / "DS_1.csv").write_text("Id_1,Me_1\n1,a\n", encoding="utf-8")
     (one / "expected" / "DS_r.csv").write_text("Id_1,Me_1\n1,1\n", encoding="utf-8")
     (one / "notes.md").write_text("Notes.\n", encoding="utf-8")
-    two = examples / "types" / "number" / "identity" / "minimal"
+    two = examples / "general" / "non_persistent_assignment" / "sc" / "minimal"
     two.mkdir(parents=True)
     (two / "script.vtl").write_text("sc_r := 1;\n", encoding="utf-8")
     return examples
@@ -66,7 +66,7 @@ def test_the_examples_are_copied_next_to_the_pages(tmp_path: Path) -> None:
     assert (copied / "input" / "DS_1.csv").is_file()
     assert (copied / "expected" / "DS_r.csv").is_file()
     assert (copied / "notes.md").is_file()
-    assert (out / "operator_map" / "examples" / "types" / "number").is_dir()
+    assert (out / "operator_map" / "examples" / "general" / "non_persistent_assignment").is_dir()
 
 
 def test_a_source_without_examples_copies_nothing(tmp_path: Path) -> None:
@@ -82,7 +82,7 @@ def test_every_folder_gets_a_listing_that_links_what_it_holds(tmp_path: Path) ->
     make_examples(src)
     SITE.copy_examples(src, out)
     root = out / "operator_map" / "examples"
-    assert links(root / "index.html") == ["string/", "types/"]
+    assert links(root / "index.html") == ["general/", "string/"]
     example = root / "string" / "length" / "comp" / "minimal"
     # A way up, the folders, and then the files.
     assert links(example / "index.html") == [
@@ -147,9 +147,8 @@ def test_the_folders_above_the_examples_show_no_file(tmp_path: Path) -> None:
     root = out / "operator_map" / "examples"
     for folder in (root, root / "string", root / "string" / "length" / "comp"):
         assert "<pre>" not in (folder / "index.html").read_text(encoding="utf-8"), folder
-    assert shown(root / "types" / "number" / "identity" / "minimal" / "index.html") == [
-        ("script.vtl", "sc_r := 1;\n")
-    ]
+    two = root / "general" / "non_persistent_assignment" / "sc" / "minimal"
+    assert shown(two / "index.html") == [("script.vtl", "sc_r := 1;\n")]
 
 
 def test_a_file_too_large_or_not_text_is_linked_instead_of_shown(tmp_path: Path) -> None:

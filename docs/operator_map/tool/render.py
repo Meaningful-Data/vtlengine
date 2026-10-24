@@ -31,7 +31,7 @@ from typing import Final
 from urllib.parse import quote
 
 from tool.examples import example_dir
-from tool.mermaid import chapter_blocks, lattice_block, overview_block, type_flow_block
+from tool.mermaid import chapter_blocks, overview_block
 from tool.model import Catalogue, Chapter, Example, Operator, Status, Variant
 from tool.status import EMOJI, ExampleResult, StatusIndex, counts, rollup
 
@@ -49,24 +49,8 @@ _DEFINITION_PAGES: Final = {
     "dl/viral": "vtl_dl_rulesets/viral_attributes.html",
 }
 
-# The types that get a flow diagram in the index: the basic ones, and the dataset.
-FLOW_TYPES: Final = (
-    "scalar",
-    "number",
-    "integer",
-    "string",
-    "boolean",
-    "time",
-    "date",
-    "time_period",
-    "duration",
-    "dataset",
-)
-
 _INDEX_DOC: Final = "index"  # the page that the chapters link back to
 _EXAMPLES: Final = Path("examples")  # relative to ``docs/operator_map``
-_TYPES: Final = "types"  # the group, in the index, of the type hubs
-_TYPES_TITLE: Final = "Data types"
 _ORDER: Final[tuple[Status, ...]] = ("ok", "partial", "missing", "diverge")
 # The statuses that are not green, worst first, with the title of their group in the index.
 _GROUPS: Final[tuple[tuple[Status, str], ...]] = (
@@ -291,10 +275,8 @@ _HOW_TO_READ: Final = """\
 - **Chapter pages.** One page per chapter of the manual, and one for its definitions. Each \
 starts with diagrams, and has a table per operator with a row for every example.
 - **Diagrams.** An operator shows its status, its name and its symbol, and a plain line joins \
-it to its syntax variants. A solid arrow from a type to an operator means that the operator \
-accepts the type, and from an operator to a type that it returns it. A dotted, labelled arrow \
-joins an operator to one that it is used in or with, and a dashed box with an arrow is an \
-operator of another chapter. Grey circles are data types.
+it to its syntax variants. A dotted, labelled arrow joins an operator to one that it is used in \
+or with, and a dashed box with an arrow is an operator of another chapter.
 - **Status.** The colour of a node and its emoji say the same. A variant is 🟢 when both engines \
 give the expected output on all of its examples, 🔵 when the engines differ on any of them, 🔴 \
 when both engines fail on all of them, and 🟡 otherwise. An operator and a chapter take the \
@@ -323,21 +305,11 @@ _REGENERATE: Final = (
 )
 
 _OVERVIEW: Final = (
-    "One node per chapter, with how many of its variants are in each status, and an arrow to "
-    "each type that its operators return. Where the viewer supports links in diagrams, a "
-    "chapter node opens the page of the chapter. The table of chapters below is the reliable "
-    "way to every chapter page."
+    "One node per chapter, with how many of its variants are in each status. Where the viewer "
+    "supports links in diagrams, a chapter node opens the page of the chapter. The table of "
+    "chapters below is the reliable way to every chapter page."
 )
 _CHAPTERS: Final = "The counts are over syntax variants."
-_LATTICE: Final = (
-    "An arrow reads *is a subtype of*. A type has the status of its own examples, when it has "
-    "any, and links to the first of them."
-)
-_FLOWS: Final = (
-    "One diagram for each basic type and one for the dataset: the operators that return the "
-    "type on the left, the operators that accept it on the right, and its subtypes as dotted "
-    "arrows."
-)
 
 
 def index_rst(
@@ -362,8 +334,6 @@ def index_rst(
         _section("How to read", _HOW_TO_READ),
         _section("Overview", _OVERVIEW, _mermaid(overview_block(cat, index))),
         _section("Chapters", _CHAPTERS, _chapter_table(cat, index)),
-        _section("Type lattice", _LATTICE, _mermaid(lattice_block(cat, index))),
-        _section("Type flows", _FLOWS, _flow_blocks(cat, index)),
         _decisions(entries, examples_root),
         _errata(entries, examples_root),
         _adaptations(entries, examples_root),
@@ -408,7 +378,7 @@ def _legend() -> str:
 
 
 def _chapter_table(cat: Catalogue, index: StatusIndex) -> str:
-    """One row per chapter, a row for the type hubs when they have examples, and the total."""
+    """One row per chapter, and the total."""
     rows = [
         _count_row(
             _doc(chapter.title, chapter.id),
@@ -417,13 +387,10 @@ def _chapter_table(cat: Catalogue, index: StatusIndex) -> str:
         )
         for chapter in cat.chapters
     ]
-    type_statuses = _statuses_of(_type_variant_keys(cat), index)
-    if type_statuses:
-        rows.append(_count_row(_TYPES_TITLE, index.chapters.get(_TYPES), type_statuses))
     every = [status for chapter in cat.chapters for status in _chapter_statuses(chapter, index)]
-    group_statuses = [index.chapters[key] for key in _index_chapters(cat) if key in index.chapters]
+    group_statuses = [index.chapters[c.id] for c in cat.chapters if c.id in index.chapters]
     total = rollup(group_statuses) if group_statuses else None
-    rows.append(_count_row("**Total**", total, [*every, *type_statuses]))
+    rows.append(_count_row("**Total**", total, every))
     head = ("Chapter", "Status", "Variants", *(EMOJI[status] for status in _ORDER))
     return _table(head, rows)
 
@@ -434,13 +401,6 @@ def _count_row(first: str, status: Status | None, statuses: Sequence[Status]) ->
     return [first, emoji, str(len(statuses)), *(str(tally[each]) for each in _ORDER)]
 
 
-def _flow_blocks(cat: Catalogue, index: StatusIndex) -> str:
-    return "\n\n".join(
-        f"{_title(type_id, _SUBSECTION)}\n\n{_mermaid(type_flow_block(type_id, cat, index))}"
-        for type_id in FLOW_TYPES
-    )
-
-
 # --- The lists of the index ---
 
 
@@ -448,11 +408,11 @@ def _flow_blocks(cat: Catalogue, index: StatusIndex) -> str:
 class _Entry:
     """One example of the catalogue, with the operator and the variant it belongs to."""
 
-    group: str  # the chapter id, or ``types``
+    group: str  # the chapter id
     title: str  # the title of the chapter
     operator_id: str
     operator_name: str
-    page: str | None  # the manual page, if it has one
+    page: str  # the manual page
     variant: Variant
     example: Example
 
@@ -465,8 +425,8 @@ class _Entry:
         return f"{self.variant_key}/{self.example.name}"
 
     def chapter(self) -> str:
-        """The title of the chapter, linking to its page; the types have no page."""
-        return self.title if self.group == _TYPES else _doc(self.title, self.group)
+        """The title of the chapter, linking to its page."""
+        return _doc(self.title, self.group)
 
     def where(self) -> str:
         """``Chapter › Operator › ``variant`` (example)``."""
@@ -482,7 +442,7 @@ class _Entry:
 
 
 def _entries(cat: Catalogue) -> Iterator[_Entry]:
-    """Every example of the catalogue, chapters first and then the types, in catalogue order."""
+    """Every example of the catalogue, in catalogue order."""
     for chapter in cat.chapters:
         for operator in chapter.operators:
             for variant in operator.variants:
@@ -496,17 +456,11 @@ def _entries(cat: Catalogue) -> Iterator[_Entry]:
                         variant,
                         example,
                     )
-    for typedef in cat.types:
-        for variant in typedef.variants:
-            for example in variant.examples:
-                yield _Entry(_TYPES, _TYPES_TITLE, typedef.id, typedef.id, None, variant, example)
 
 
 def _item(entry: _Entry, head: str, text: str, root: Path) -> str:
     """A list item: ``head``, where the example is, ``text``, and the links of the example."""
-    links = []
-    if entry.page is not None:
-        links.append(_link("manual", manual_url(entry.page)))
+    links = [_link("manual", manual_url(entry.page))]
     if (entry.on_disk(root) / "notes.md").is_file():
         links.append(_link("notes", f"{entry.folder()}/notes.md"))
     line = f"{head}{entry.where()}"
@@ -653,20 +607,8 @@ def _chapter_statuses(chapter: Chapter, index: StatusIndex) -> list[Status]:
     return _statuses_of(keys, index)
 
 
-def _type_variant_keys(cat: Catalogue) -> Iterator[str]:
-    """The index keys of the variants of the types."""
-    for typedef in cat.types:
-        for variant in typedef.variants:
-            yield f"{_TYPES}/{typedef.id}/{variant.id}"
-
-
 def _statuses_of(keys: Iterator[str], index: StatusIndex) -> list[Status]:
     return [index.variants[key] for key in keys if key in index.variants]
-
-
-def _index_chapters(cat: Catalogue) -> list[str]:
-    """The keys of ``index.chapters`` that ``cat`` can have: its chapters and the types."""
-    return [*(chapter.id for chapter in cat.chapters), _TYPES]
 
 
 # --- Mermaid ---

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tool.model import Chapter, TypeDef
+from tool.model import Chapter
 
 from catalogue.aggregate import CHAPTER as AGGREGATE_CHAPTER
 from catalogue.boolean import CHAPTER as BOOLEAN_CHAPTER
@@ -17,7 +17,6 @@ from catalogue.numeric import CHAPTER as NUMERIC_CHAPTER
 from catalogue.set import CHAPTER as SET_CHAPTER
 from catalogue.string import CHAPTER as STRING_CHAPTER
 from catalogue.time import CHAPTER as TIME_CHAPTER
-from catalogue.types import TYPES as _TYPES
 from catalogue.validation import CHAPTER as VALIDATION_CHAPTER
 
 CHAPTERS: tuple[Chapter, ...] = (
@@ -36,4 +35,3 @@ CHAPTERS: tuple[Chapter, ...] = (
     CLAUSE_CHAPTER,
     DEFINITIONS_CHAPTER,
 )
-TYPES: tuple[TypeDef, ...] = _TYPES

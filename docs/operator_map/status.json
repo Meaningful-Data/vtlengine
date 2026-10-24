@@ -5388,7 +5388,103 @@
       },
       "status": "partial"
     },
+    "general/non_persistent_assignment/ds/boolean_measure": {
+      "duckdb": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/non_persistent_assignment/ds/date_measure": {
+      "duckdb": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/non_persistent_assignment/ds/duration_measure": {
+      "duckdb": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/non_persistent_assignment/ds/integer_measure": {
+      "duckdb": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
     "general/non_persistent_assignment/ds/manual_ex_1": {
+      "duckdb": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/non_persistent_assignment/ds/number_measure": {
+      "duckdb": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/non_persistent_assignment/ds/string_measure": {
+      "duckdb": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/non_persistent_assignment/ds/time_measure": {
+      "duckdb": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/non_persistent_assignment/ds/time_period_measure": {
       "duckdb": {
         "detail": "",
         "outcome": "match"
@@ -10403,102 +10499,6 @@
         "outcome": "error"
       },
       "status": "missing"
-    },
-    "types/boolean/identity/minimal": {
-      "duckdb": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "types/date/identity/minimal": {
-      "duckdb": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "types/duration/identity/minimal": {
-      "duckdb": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "types/integer/identity/minimal": {
-      "duckdb": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "types/number/identity/minimal": {
-      "duckdb": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "types/string/identity/minimal": {
-      "duckdb": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "types/time/identity/minimal": {
-      "duckdb": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "types/time_period/identity/minimal": {
-      "duckdb": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "outcome": "match"
-      },
-      "status": "ok"
     },
     "validation/check/all/minimal": {
       "duckdb": {

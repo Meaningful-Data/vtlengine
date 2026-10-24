@@ -18,11 +18,14 @@ from tool.examples import (
     ExpectedComponent,
     ExpectedDataset,
     ExpectedScalar,
+    check_notes,
     example_dir,
     load_example,
+    notes_problems,
     read_csv_rows,
     scan_example_dirs,
 )
+from tool.model import Example, authored, manual
 
 SCRIPT = "DS_r := DS_1 * 2;\n"
 TYPE_MESSAGE = "the type of Me_1 must be a string or a non-empty list of strings"
@@ -675,7 +678,189 @@ def test_scan_example_dirs_ignores_other_depths_and_folders_without_script(
     write(tmp_path / "chapter/operator/variant/example/other.vtl", "only script.vtl counts")
     (tmp_path / "chapter/operator/variant/empty").mkdir()
     (tmp_path / "chapter/operator/variant/folder/script.vtl").mkdir(parents=True)  # not a file
-    write(tmp_path / "types/number/identity/minimal/script.vtl", "")  # the types chapter
+    write(tmp_path / "general/non_persistent_assignment/ds/integer_measure/script.vtl", "")
 
-    assert scan_example_dirs(tmp_path) == {("types", "number", "identity", "minimal")}
+    assert scan_example_dirs(tmp_path) == {
+        ("general", "non_persistent_assignment", "ds", "integer_measure")
+    }
     assert scan_example_dirs(tmp_path / "does_not_exist") == set()
+
+
+# --- Notes ---
+
+
+# The fixed layout: one field per line, the three that every example has.
+NOTES = (
+    ":Tests: The remainder of a division by zero.\n"
+    ':Manual: "It returns op1 if divisor op2 is 0" (Modulo, Behaviour).\n'
+    ":Expected: ``mod(9, 0)`` is 9, the dividend.\n"
+)
+ZERO_DIVISOR = authored("zero_divisor")
+LAYOUT = (
+    "they must be Tests, Manual, Expected, then any of Finding, Erratum, Adaptation, "
+    "Team decision, in this order and once each"
+)
+
+
+def fields(*names: str) -> str:
+    """A ``notes.rst`` text with one field per name, in that order, each on one line."""
+    return "".join(f":{name}: Some text about {name.lower()}.\n" for name in names)
+
+
+@pytest.mark.parametrize(
+    ("names", "example"),
+    [
+        (("Tests", "Manual", "Expected"), ZERO_DIVISOR),
+        (("Tests", "Manual", "Expected", "Finding"), ZERO_DIVISOR),
+        (("Tests", "Manual", "Expected", "Erratum"), manual("ex_1", erratum="E")),
+        (("Tests", "Manual", "Expected", "Adaptation"), manual("ex_1", adaptation="A")),
+        (("Tests", "Manual", "Expected", "Team decision"), authored("count", decision=1049)),
+        (
+            ("Tests", "Manual", "Expected", "Finding", "Erratum", "Adaptation", "Team decision"),
+            manual("ex_2", erratum="E", adaptation="A", decision=1049),
+        ),
+    ],
+)
+def test_check_notes_takes_the_fixed_layout(names: tuple[str, ...], example: Example) -> None:
+    assert check_notes(fields(*names), example) == []
+
+
+def test_check_notes() -> None:
+    assert check_notes(NOTES, ZERO_DIVISOR) == []
+    # Tests, Manual and Expected, in this order, then any of the others, in their order: each
+    # once.
+    for names in (
+        ("Manual", "Tests", "Expected"),
+        ("Tests", "Manual"),
+        ("Tests", "Expected", "Manual"),
+        ("Tests", "Finding", "Manual", "Expected"),
+        ("Tests", "Manual", "Expected", "Tests"),
+        ("Tests", "Manual", "Expected", "Finding", "Finding"),
+        ("Expected",),
+    ):
+        assert check_notes(fields(*names), ZERO_DIVISOR) == [
+            f"the fields are {', '.join(names)}: {LAYOUT}"
+        ], names
+    both = manual("ex_1", erratum="E", adaptation="A")
+    wrong = ("Tests", "Manual", "Expected", "Adaptation", "Erratum")
+    assert check_notes(fields(*wrong), both) == [f"the fields are {', '.join(wrong)}: {LAYOUT}"]
+    # A field that the layout does not have is named; the others are still in order.
+    assert check_notes(fields("Tests", "Manual", "Expected", "Notes"), ZERO_DIVISOR) == [
+        "unknown field 'Notes'"
+    ]
+    assert check_notes(fields("Tests", "Comment", "Manual", "Expected"), ZERO_DIVISOR) == [
+        "unknown field 'Comment'"
+    ]
+    # A text with no field at all is none of the layout.
+    assert check_notes("Some notes.\n", ZERO_DIVISOR) == [
+        "line 1 is outside the fields: a field starts with ':<Name>: ' and goes on in "
+        "indented lines",
+        f"the fields are none: {LAYOUT}",
+    ]
+    assert check_notes("", ZERO_DIVISOR) == [f"the fields are none: {LAYOUT}"]
+
+
+@pytest.mark.parametrize(
+    ("field", "flagged", "attribute"),
+    [
+        ("Erratum", manual("ex_1", erratum="E"), "erratum"),
+        ("Adaptation", manual("ex_1", adaptation="A"), "adaptation"),
+        ("Team decision", authored("count", decision=1049), "decision"),
+    ],
+)
+def test_check_notes_has_a_field_for_an_erratum_an_adaptation_and_a_decision(
+    field: str, flagged: Example, attribute: str
+) -> None:
+    # The field is there when the example says so in the catalogue, and only then.
+    assert check_notes(NOTES, flagged) == [f"no field '{field}', but the example sets {attribute}"]
+    assert check_notes(NOTES + f":{field}: Why.\n", ZERO_DIVISOR) == [
+        f"a field '{field}', but the example does not set {attribute}"
+    ]
+    assert check_notes(NOTES + f":{field}: Why.\n", flagged) == []
+
+
+def test_check_notes_are_1200_characters_at_most() -> None:
+    exact = NOTES[:-1] + "x" * (1200 - len(NOTES)) + "\n"
+    assert len(exact) == 1200
+    assert check_notes(exact, ZERO_DIVISOR) == []
+    longer = exact[:-1] + "y\n"
+    assert check_notes(longer, ZERO_DIVISOR) == ["1201 characters: the notes have 1200 at most"]
+
+
+def test_check_notes_has_one_paragraph_per_field() -> None:
+    # A field goes on in indented lines, and the fields may be apart.
+    goes_on = (
+        ":Tests: The remainder of a division\n"
+        "   by zero.\n"
+        "\n"
+        ":Manual:\n"
+        '   "It returns op1 if divisor op2 is 0".\n'
+        "\n"
+        "\n"
+        ":Expected: 9.\n"
+    )
+    assert check_notes(goes_on, ZERO_DIVISOR) == []
+    # A blank line inside a field makes a second paragraph.
+    two = ":Tests: The remainder.\n\n   Of a division by zero.\n:Manual: M.\n:Expected: E.\n"
+    assert check_notes(two, ZERO_DIVISOR) == [
+        "line 3: a blank line inside the field 'Tests': a field is one paragraph"
+    ]
+    after_marker = ":Tests:\n\n   The remainder.\n:Manual: M.\n:Expected: E.\n"
+    assert check_notes(after_marker, ZERO_DIVISOR) == [
+        "line 3: a blank line inside the field 'Tests': a field is one paragraph"
+    ]
+    # A line that is not indented is not in the field: the field list ends there.
+    unindented = ":Tests: The remainder\nof a division.\n:Manual: M.\n:Expected: E.\n"
+    outside = "is outside the fields: a field starts with ':<Name>: ' and goes on in indented lines"
+    assert check_notes(unindented, ZERO_DIVISOR) == [f"line 2 {outside}"]
+    titled = "Notes\n=====\n\n" + NOTES
+    assert check_notes(titled, ZERO_DIVISOR) == [f"line 1 {outside}", f"line 2 {outside}"]
+    # A field with nothing in it says nothing.
+    empty = ":Tests:\n:Manual: M.\n:Expected:   \n"
+    assert check_notes(empty, ZERO_DIVISOR) == [
+        "the field 'Tests' is empty",
+        "the field 'Expected' is empty",
+    ]
+
+
+def test_check_notes_reads_the_fields_only() -> None:
+    # The markup of the text is for docutils to check (``check_notes_render.py``), not for this.
+    text = (
+        ':Tests: "quotes" *stars* ``code`` `role` | pipe :: colons, and :field: inside.\n'
+        ":Manual: A rule::\n"
+        ":Expected: *unclosed.\n"
+    )
+    assert check_notes(text, ZERO_DIVISOR) == []
+
+
+def test_notes_problems_of_a_folder(tmp_path: Path) -> None:
+    folder = build_example(tmp_path / "zero_divisor")
+    assert notes_problems(folder, ZERO_DIVISOR) == [f"{folder}: missing notes.rst"]
+    write(folder / "notes.rst", NOTES)
+    assert notes_problems(folder, ZERO_DIVISOR) == []
+    # The notes of the first version of the map are replaced, not kept beside.
+    write(folder / "notes.md", "Free text.\n")
+    old = f"{folder / 'notes.md'}: the notes go in notes.rst, not in notes.md"
+    assert notes_problems(folder, ZERO_DIVISOR) == [old]
+    (folder / "notes.rst").unlink()
+    assert notes_problems(folder, ZERO_DIVISOR) == [old, f"{folder}: missing notes.rst"]
+    # The problems of the text name the file.
+    write(folder / "notes.rst", fields("Tests", "Expected"))
+    (folder / "notes.md").unlink()
+    assert notes_problems(folder, ZERO_DIVISOR) == [
+        f"{folder / 'notes.rst'}: the fields are Tests, Expected: {LAYOUT}"
+    ]
+    assert notes_problems(folder, manual("ex_1", erratum="E")) == [
+        f"{folder / 'notes.rst'}: the fields are Tests, Expected: {LAYOUT}",
+        f"{folder / 'notes.rst'}: no field 'Erratum', but the example sets erratum",
+    ]
+
+
+def test_notes_problems_of_a_file_that_is_not_text(tmp_path: Path) -> None:
+    folder = build_example(tmp_path / "zero_divisor")
+    (folder / "notes.rst").write_bytes(b":Tests: caf\xe9.\n")
+    [problem] = notes_problems(folder, ZERO_DIVISOR)
+    assert problem.startswith(f"{folder / 'notes.rst'}: not valid UTF-8")
+    # A byte order mark is not part of the text.
+    (folder / "notes.rst").write_bytes(b"\xef\xbb\xbf" + NOTES.encode())
+    assert notes_problems(folder, ZERO_DIVISOR) == []
