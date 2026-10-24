@@ -9,9 +9,10 @@ here runs an engine. The page of an operator reads the files of its examples, in
 data of their CSV and JSON files.
 
 **Operator page.** The title (``Name · symbol``), a chip with the status of the operator and a
-link to its page of the manual; the legend (``LEGEND_HTML``) and, when the diagram has boxes, the
-key of their borders (``BORDER_KEY_HTML``); the diagram of the operator, and under it the full
-list of what it is used with when the "Used with" box of the diagram is grouped by block. Then:
+link to its page of the manual; the legend (``LEGEND_HTML``) and, when the diagram has boxes for
+the kinds of the forms, the key of their borders (``BORDER_KEY_HTML``); the diagram of the
+operator, and under it the full list of what it is used with when the "Used with" box of the
+diagram is grouped by block. Then:
 
 * **Types**: what its forms take and give, and two columns, "Comes from" and "Goes to", with the
   operators that give what it takes and those that take what it gives (``tool.typelinks``),
@@ -20,8 +21,10 @@ list of what it is used with when the "Used with" box of the diagram is grouped 
   is fed by any operator that returns a value, and one that returns the type of its input feeds
   whatever takes that type: each says so in one line instead of a list.
 * **Forms**: a section per form, in the order of the diagram (``forms_in_diagram_order``), headed
-  by its label, its status and its types. Each example is a collapsible block: its title, its
-  status and the mark of each engine (``tool.status.mark``), then its notes
+  by its label, its status and its types. When the forms name the boxes that they are in
+  (``Variant.box``), the title of each box is a caption above its first form (``_box_caption``),
+  and there is no border key: the titles tell the boxes apart. Each example is a collapsible
+  block: its title, its status and the mark of each engine (``tool.status.mark``), then its notes
   (``.. include::``), its script (``.. literalinclude::``), its data, its expected scalars or
   error, and links to its files and to its own page in the built site.
 
@@ -94,6 +97,7 @@ from tool.model import (
     ViralGroup,
     example_title,
     form_types,
+    has_titled_boxes,
     load_viral_groups,
 )
 from tool.status import (
@@ -249,18 +253,12 @@ def operator_rst(
         _title(title, _PAGE, overline=True),
         _raw(_head(index.operators.get(key), summary, meta, manual_url(op.page))),
         _raw(LEGEND_HTML),
-        *([_raw(BORDER_KEY_HTML)] if has_boxes(op) else []),
+        *([_raw(BORDER_KEY_HTML)] if has_boxes(op) and not has_titled_boxes(op) else []),
         _diagram(operator_diagram(chapter, op, cat, index)),
         *_used_with_list(chapter, op, cat, index),
         _section("Types", _raw(*_types(chapter, op, cat, index, groups))),
         *([_applied_by(cat, index, groups)] if op.page == _VIRAL_PAGE else []),
-        _section(
-            "Forms",
-            *(
-                _form_section(chapter, op, variant, index, examples_root)
-                for variant in forms_in_diagram_order(op)
-            ),
-        ),
+        _section("Forms", *_form_sections(chapter, op, index, examples_root)),
     ]
     return "\n\n".join(parts) + "\n"
 
@@ -537,6 +535,30 @@ def _page_title(page: str) -> str:
 
 
 # --- Forms and examples ---
+
+
+def _form_sections(chapter: Chapter, op: Operator, index: StatusIndex, root: Path) -> list[str]:
+    """The sections of the forms of ``op`` in the order of its diagram, with the box captions.
+
+    The forms that name a box come box by box, so the caption of a box is written once, right
+    before the first form that names it. A form that names no box has no caption.
+    """
+    parts: list[str] = []
+    box: str | None = None
+    for variant in forms_in_diagram_order(op):
+        if variant.box is not None and variant.box != box:
+            parts.append(_box_caption(variant.box))
+        box = variant.box
+        parts.append(_form_section(chapter, op, variant, index, root))
+    return parts
+
+
+def _box_caption(title: str) -> str:
+    """The title of a box of the diagram as a caption of the forms in it: raw HTML, no section.
+
+    It is not a heading: the sections of a page, and the anchors of its forms, stay as they are.
+    """
+    return _raw(f'<p class="om-box-title">{html.escape(title)}</p>')
 
 
 def _form_section(
@@ -875,7 +897,9 @@ them.
 and its blocks or its operators on both sides. The page of an operator has the operator on top. \
 When its forms use two kinds of operands or more, they are in a light box for each kind: a \
 solid border for the forms on datasets, a dashed one for components and a dotted one for \
-scalars, as the key above the diagram shows. Otherwise its forms are on both sides of it. A box \
+scalars, as the key above the diagram shows. Otherwise its forms are on both sides of it. The \
+forms of a definition of the VTL-DL stand for the parts of its syntax, and are in light boxes with \
+a thin solid border, titled after them: Signature, Body, Return type. A box \
 with a thin, sparsely dotted border, "Used with", has the operators that it is combined with. \
 Where the viewer supports links in diagrams, a node opens its page, and a form its section; the \
 tables and the lists are the reliable way.

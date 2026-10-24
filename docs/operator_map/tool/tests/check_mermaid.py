@@ -8,6 +8,7 @@ expected text of a diagram is written out in full where its layout is what is ch
 
 from __future__ import annotations
 
+import dataclasses
 import re
 
 import pytest
@@ -15,6 +16,7 @@ import pytest
 from tool.mermaid import (
     BOX_STYLES,
     CLASSES,
+    LIGHT_BOX_STYLE,
     MAX_CHARS,
     MAX_EDGES,
     PAGE_SUFFIX,
@@ -55,6 +57,8 @@ CLASS_LINES = [
 SOLID = "fill:#f8f9fa,stroke:#495057,stroke-width:2px"
 DASHED = f"{SOLID},stroke-dasharray: 8 5"
 DOTTED = f"{SOLID},stroke-dasharray: 2 3"
+# The light box that the forms name: the same fill, and a thin solid border.
+LIGHT = "fill:#f8f9fa,stroke:#868e96,stroke-width:1px"
 USED_WITH = "fill:#ffffff,stroke:#868e96,stroke-width:1px,stroke-dasharray: 1 4"
 
 
@@ -79,6 +83,7 @@ def make_variant(
     decision: int | None = None,
     examples: tuple[str, ...] = ("minimal",),
     kind: Kind | None = None,
+    box: str | None = None,
 ) -> Variant:
     return Variant(
         variant_id,
@@ -86,6 +91,7 @@ def make_variant(
         tuple(authored(name, decision=decision) for name in examples),
         returns,
         kind=kind,
+        box=box,
     )
 
 
@@ -177,6 +183,36 @@ ROUND_INDEX = make_index(
     },
     operators={"numeric/round": "partial"},
     chapters={"numeric": "partial"},
+)
+
+
+# A definition of the VTL-DL: its forms are parts of a syntax, and each names the light box that it
+# is drawn in. The catalogue lists them form by form, so the boxes are not in the order of the
+# forms: the Signature has the first and the third, the Body the second and the fourth. It is used
+# in a calc.
+DEFINE = make_operator(
+    "define_viral",
+    "Viral propagation",
+    "define viral propagation",
+    (
+        make_variant("variable", "define x (variable v)", box="Signature"),
+        make_variant("enumerated", "when v = x then y", box="Body"),
+        make_variant("valuedomain", "define x (valuedomain d)", box="Signature"),
+        make_variant("aggregation", "aggr sum", box="Body"),
+    ),
+    (Link("clause.calc", "used in"),),
+)
+DEFINE_CHAPTER = Chapter("definitions", "Definitions", (DEFINE,))
+DEFINE_CAT = Catalogue((DEFINE_CHAPTER, CLAUSE))
+DEFINE_INDEX = make_index(
+    variants={
+        "definitions/define_viral/variable": "ok",
+        "definitions/define_viral/enumerated": "partial",
+        "definitions/define_viral/valuedomain": "ok",
+        "definitions/define_viral/aggregation": "diverge",
+    },
+    operators={"definitions/define_viral": "diverge", "clause/calc": "missing"},
+    chapters={"definitions": "diverge", "clause": "missing"},
 )
 
 
@@ -306,6 +342,10 @@ def test_check_limits_counts_characters_as_mermaid_does() -> None:
 def test_the_classes_and_the_styles_are_the_designed_ones() -> None:
     assert [f"    {line}" for line in CLASSES] == CLASS_LINES
     assert BOX_STYLES == {"ds": SOLID, "comp": DASHED, "sc": DOTTED}
+    assert LIGHT_BOX_STYLE == LIGHT
+    # The light box has the fill of the boxes of the kinds, and a thin solid border: no dashes.
+    assert LIGHT.split(",stroke")[0] == SOLID.split(",stroke")[0]
+    assert "stroke-dasharray" not in LIGHT
     assert USED_WITH_STYLE == USED_WITH
     assert USED_WITH_MAX == 8
 
@@ -316,7 +356,10 @@ def test_every_diagram_starts_with_its_type_and_the_classes() -> None:
         block_diagram(STRING, INDEX),
         operator_diagram(CLAUSE, CALC, CAT, INDEX),
     ]
-    boxes = [operator_diagram(NUMERIC, ROUND, ROUND_CAT, ROUND_INDEX)]
+    boxes = [
+        operator_diagram(NUMERIC, ROUND, ROUND_CAT, ROUND_INDEX),
+        operator_diagram(DEFINE_CHAPTER, DEFINE, DEFINE_CAT, DEFINE_INDEX),
+    ]
     for direction, diagrams in (("LR", sides), ("TB", boxes)):
         for diagram in diagrams:
             assert diagram.splitlines()[: 1 + len(CLASS_LINES)] == [
@@ -531,6 +574,214 @@ def test_a_form_that_says_its_kind_goes_to_that_box_whatever_its_id_says() -> No
     lines = body(operator_diagram(chapter, operator, cat, NOTHING_RUN))
     assert lines[lines.index('subgraph G_ds["Dataset"]') + 2] == 'v_sc_comp_digits["x"]'
     assert lines[lines.index('subgraph G_sc["Scalar"]') + 2] == 'v_sc["y"]'
+
+
+# --- The diagram of an operator: boxes that the forms name ---
+
+
+def boxes_of(diagram: str) -> dict[str, list[str]]:
+    """The nodes in each subgraph of a diagram, by the id of the subgraph, in order of writing."""
+    found: dict[str, list[str]] = {}
+    current: str | None = None
+    for line in body(diagram):
+        opening = re.match(r'subgraph (\w+)\["', line)
+        if opening is not None:
+            current = opening.group(1)
+            found[current] = []
+        elif line == "end":
+            current = None
+        elif current is not None and line != "direction LR":
+            node = re.match(r"(\w+)\[", line)
+            assert node is not None, line
+            found[current].append(node.group(1))
+    return found
+
+
+def test_operator_diagram_titled_boxes() -> None:
+    # Two boxes, Signature and Body, two forms each, and what the operator is used with. The
+    # forms are in the order of the catalogue inside each box, and the boxes in the order in which
+    # their titles first appear: the form that opens the Body is the second of the catalogue.
+    assert operator_diagram(DEFINE_CHAPTER, DEFINE, DEFINE_CAT, DEFINE_INDEX) == block_of(
+        "TB",
+        'O["Viral propagation · define viral propagation<br/>🟢2 🟡1 🔵1"]:::diverge',
+        'subgraph G_b1["Signature"]',
+        "    direction LR",
+        '    v_variable["define x (variable v)"]:::ok',
+        '    v_valuedomain["define x (valuedomain d)"]:::ok',
+        "end",
+        'subgraph G_b2["Body"]',
+        "    direction LR",
+        '    v_enumerated["when v = x then y"]:::partial',
+        '    v_aggregation["aggr sum"]:::diverge',
+        "end",
+        'subgraph G_use["Used with"]',
+        "    direction LR",
+        '    used__clause__calc["calc ↗<br/><small>used in</small>"]:::ext',
+        "end",
+        "O --- G_b1",
+        "O --- G_b2",
+        "O -.- G_use",
+        f"style G_b1 {LIGHT}",
+        f"style G_b2 {LIGHT}",
+        f"style G_use {USED_WITH}",
+        'click v_variable href "#form-variable"',
+        'click v_enumerated href "#form-enumerated"',
+        'click v_valuedomain href "#form-valuedomain"',
+        'click v_aggregation href "#form-aggregation"',
+        'click used__clause__calc href "../clause/calc.html" "Calculation · calc"',
+    )
+
+
+def test_titled_boxes_are_in_the_order_of_first_appearance() -> None:
+    forms = (
+        make_variant("body_a", "a", box="Body"),
+        make_variant("signature_a", "b", box="Signature"),
+        make_variant("body_b", "c", box="Body"),
+        make_variant("return_type", "d", box="Return type"),
+        make_variant("signature_b", "e", box="Signature"),
+    )
+    chapter, operator, cat = lone(forms)
+    text = operator_diagram(chapter, operator, cat, NOTHING_RUN)
+    lines = body(text)
+    assert text.splitlines()[0] == "flowchart TB"
+    # One box for each title, numbered as the titles first appear: not by name, not by form.
+    assert [line for line in lines if line.startswith("subgraph ")] == [
+        'subgraph G_b1["Body"]',
+        'subgraph G_b2["Signature"]',
+        'subgraph G_b3["Return type"]',
+    ]
+    # Each box has its forms, in the order of the catalogue.
+    assert list(boxes_of(text).items()) == [
+        ("G_b1", ["v_body_a", "v_body_b"]),
+        ("G_b2", ["v_signature_a", "v_signature_b"]),
+        ("G_b3", ["v_return_type"]),
+    ]
+    assert [line for line in lines if line.startswith("O --- ")] == [
+        "O --- G_b1",
+        "O --- G_b2",
+        "O --- G_b3",
+    ]
+    assert [line for line in lines if line.startswith("style ")] == [
+        f"style G_b{n} {LIGHT}" for n in (1, 2, 3)
+    ]
+    # The page lists the forms in the order that the diagram draws them.
+    assert [form.id for form in forms_in_diagram_order(operator)] == [
+        "body_a",
+        "body_b",
+        "signature_a",
+        "signature_b",
+        "return_type",
+    ]
+
+
+def test_titles_that_differ_are_boxes_that_differ() -> None:
+    forms = (
+        make_variant("a", "a", box="Body"),
+        make_variant("b", "b", box="body"),
+        make_variant("c", "c", box="Body "),
+        make_variant("d", "d", box="Body"),
+    )
+    chapter, operator, cat = lone(forms)
+    text = operator_diagram(chapter, operator, cat, NOTHING_RUN)
+    assert list(boxes_of(text).items()) == [
+        ("G_b1", ["v_a", "v_d"]),
+        ("G_b2", ["v_b"]),
+        ("G_b3", ["v_c"]),
+    ]
+
+
+def test_kinds_are_ignored_when_the_forms_name_boxes() -> None:
+    # The ids have the tokens of the three kinds, and one form says a kind of its own: none of it
+    # counts. The box of the first form is the first box, whatever its kind would put first.
+    forms = (
+        make_variant("sc_x", "a", box="Signature"),
+        make_variant("ds_x", "b", box="Body"),
+        make_variant("comp_x", "c", box="Signature", kind="ds"),
+        make_variant("free", "d", box="Body"),
+    )
+    chapter, operator, cat = lone(forms)
+    text = operator_diagram(chapter, operator, cat, NOTHING_RUN)
+    assert text.splitlines()[0] == "flowchart TB"
+    for word in ("G_ds", "G_comp", "G_sc", "Dataset", "Component", "Scalar"):
+        assert word not in text
+    for style in BOX_STYLES.values():
+        assert style not in text
+    assert list(boxes_of(text).items()) == [
+        ("G_b1", ["v_sc_x", "v_comp_x"]),
+        ("G_b2", ["v_ds_x", "v_free"]),
+    ]
+    assert [form.id for form in forms_in_diagram_order(operator)] == [
+        "sc_x",
+        "comp_x",
+        "ds_x",
+        "free",
+    ]
+
+
+def test_boxes_that_the_forms_name_are_drawn_whatever_the_kinds() -> None:
+    # Boxes by kind need two kinds (R6). Boxes that the forms name need none: forms of one kind,
+    # of no kind, or a single box are drawn in boxes all the same.
+    for forms in (
+        (make_variant("comp_a", "a", box="Body"), make_variant("comp_b", "b", box="Body")),
+        (make_variant("free", "a", box="Body"),),
+        (make_variant("ds_a", "a", box="Signature"), make_variant("ds_b", "b", box="Body")),
+    ):
+        chapter, operator, cat = lone(forms)
+        text = operator_diagram(chapter, operator, cat, NOTHING_RUN)
+        assert has_boxes(operator)
+        assert text.splitlines()[0] == "flowchart TB"
+        assert "-->" not in text
+        assert text.count("subgraph ") == len({form.box for form in forms})
+        # The same forms that name no box have none: one kind is not two.
+        plain = tuple(dataclasses.replace(form, box=None) for form in forms)
+        assert not has_boxes(dataclasses.replace(operator, variants=plain))
+
+
+def test_a_form_that_names_no_box_among_forms_that_do_hangs_from_the_operator() -> None:
+    # The strict checks of the catalogue refuse this mixture, but a diagram never drops a form.
+    forms = (
+        make_variant("a", "a", box="Signature"),
+        make_variant("other", "o"),
+        make_variant("b", "b", box="Body"),
+    )
+    chapter, operator, cat = lone(forms)
+    text = operator_diagram(chapter, operator, cat, NOTHING_RUN)
+    lines = body(text)
+    assert text.splitlines()[0] == "flowchart TB"
+    assert list(boxes_of(text).items()) == [("G_b1", ["v_a"]), ("G_b2", ["v_b"])]
+    assert lines.index('v_other["o"]') > lines.index("end")
+    assert lines.index("O --- v_other") > lines.index("O --- G_b2")
+    assert 'click v_other href "#form-other"' in lines
+    # It is the last form of the page, as it is the last that the diagram draws.
+    assert [form.id for form in forms_in_diagram_order(operator)] == ["a", "b", "other"]
+
+
+def test_a_box_title_is_escaped_as_a_label_is() -> None:
+    chapter, operator, cat = lone((make_variant("a", "a", box='Sig #1 "x" <b>; [c]'),))
+    lines = body(operator_diagram(chapter, operator, cat, NOTHING_RUN))
+    assert 'subgraph G_b1["Sig #35;1 #quot;x#quot; #60;b#62;#59; #91;c#93;"]' in lines
+
+
+def test_titled_boxes_have_a_line_and_a_style_each_and_the_forms_have_the_clicks() -> None:
+    forms = tuple(make_variant(f"f{n}", f"form {n}", box=f"Box {n % 3}") for n in range(7))
+    chapter, operator, cat = lone(forms)
+    text = operator_diagram(chapter, operator, cat, NOTHING_RUN)
+    lines = body(text)
+    boxes = boxes_of(text)
+    assert list(boxes) == ["G_b1", "G_b2", "G_b3"]
+    # The ids of the boxes are not those of the kinds, of "Used with", of the operator or of a form.
+    assert not set(boxes) & {"G_ds", "G_comp", "G_sc", "G_use", "O"}
+    assert not set(boxes) & {f"v_{form.id}" for form in forms}
+    for box in boxes:
+        assert f"O --- {box}" in lines
+        assert f"style {box} {LIGHT}" in lines
+        assert not any(line.startswith(f"click {box} ") for line in lines)
+    # Every form is in exactly one box, and clicks to its section.
+    members = [node for nodes in boxes.values() for node in nodes]
+    assert sorted(members) == sorted(f"v_{form.id}" for form in forms)
+    for form in forms:
+        assert f'click v_{form.id} href "#{form_anchor(form)}"' in lines
+    assert edges_of(text) == 3  # a line for each box, and no other
 
 
 # --- The diagram of an operator: both sides ---
@@ -1050,6 +1301,14 @@ def defined_ids(diagram: str) -> list[str]:
 
 def test_every_diagram_is_well_formed() -> None:
     mixed = lone((make_variant("ds", "a"), make_variant("comp", "b"), make_variant("other", "c")))
+    # Titled boxes, one of them with a title to escape, and a form that names no box.
+    hanging = lone(
+        (
+            make_variant("a", "a", box='Sig "x"'),
+            make_variant("b", "b", box="Body"),
+            make_variant("other", "c"),
+        )
+    )
     diagrams = [
         overview_block(CAT, INDEX),
         block_diagram(STRING, INDEX),
@@ -1057,6 +1316,8 @@ def test_every_diagram_is_well_formed() -> None:
         operator_diagram(STRING, CONCAT, CAT, INDEX),
         operator_diagram(CLAUSE, CALC, CAT, INDEX),
         operator_diagram(*mixed[:2], mixed[2], NOTHING_RUN),
+        operator_diagram(DEFINE_CHAPTER, DEFINE, DEFINE_CAT, DEFINE_INDEX),
+        operator_diagram(*hanging[:2], hanging[2], NOTHING_RUN),
     ]
     for declared in (5, 6):  # eight entries of "Used with" are nodes, nine are blocks
         hub = hub_of(declared, 3)
@@ -1317,3 +1578,26 @@ def test_forms_in_diagram_order_are_the_boxes_in_order_then_the_forms_with_no_ki
         "o", "O", "o", (make_variant("b", "b"), make_variant("a", "a"), make_variant("c", "c"))
     )
     assert forms_in_diagram_order(both_sides) == list(both_sides.variants)
+
+
+def test_has_boxes_when_the_forms_name_them_and_forms_in_diagram_order_follow_the_boxes() -> None:
+    assert has_boxes(DEFINE)
+    assert [form.id for form in forms_in_diagram_order(DEFINE)] == [
+        "variable",
+        "valuedomain",
+        "enumerated",
+        "aggregation",
+    ]
+    # One form that names a box is enough, and the kinds say nothing then: this is a form of
+    # each kind, in the boxes it names, the other way round to the order of the kinds.
+    forms = (
+        make_variant("sc", "a", box="Body"),
+        make_variant("comp", "b"),
+        make_variant("ds", "c", box="Signature"),
+    )
+    operator = make_operator("o", "O", "o", forms)
+    assert has_boxes(operator)
+    assert [form.id for form in forms_in_diagram_order(operator)] == ["sc", "ds", "comp"]
+    # The forms of an operator with boxes that the kinds draw are as before.
+    assert has_boxes(ROUND)
+    assert [form.id for form in forms_in_diagram_order(ROUND)] == ["ds", "comp", "sc"]

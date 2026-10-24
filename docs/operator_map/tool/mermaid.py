@@ -23,6 +23,14 @@ types (``tool.model.form_types``).
   mixture that the strict checks of the catalogue refuse, but it is still drawn: it hangs from the
   operator, outside the boxes.
 
+  Forms can name the box that they are in instead (``Variant.box``): the forms of the definitions
+  of the VTL-DL stand for the parts of a syntax, and are drawn in light boxes titled "Signature",
+  "Body" or "Return type". An operator whose forms name boxes has those boxes and not the boxes of
+  the kinds, which it ignores: one box for each title, in the order in which the titles first
+  appear (``G_b1``, ``G_b2``...), with a thin solid border (``LIGHT_BOX_STYLE``), and the forms in
+  the order of the catalogue inside each. The layout is the one of the boxes of the kinds, and a
+  form that names no box, a mixture that the strict checks refuse, hangs from the operator.
+
 The "Used with" box of an operator diagram holds the operators that this one is combined with,
 from the links of the whole catalogue. A link is shown at both of its ends: the operator that
 declares it shows its target with the label that the link has, and the target shows that operator
@@ -59,6 +67,7 @@ from tool.model import (
     Status,
     Variant,
     form_kind,
+    has_titled_boxes,
     reverse_label,
 )
 from tool.status import EMOJI, StatusIndex, counts
@@ -100,6 +109,9 @@ BOX_STYLES: Final[dict[Kind, str]] = {
     "sc": f"{_BOX},stroke-dasharray: 2 3",
 }
 BOX_TITLES: Final[dict[Kind, str]] = {"ds": "Dataset", "comp": "Component", "sc": "Scalar"}
+# The boxes that the forms name (``Variant.box``) have the light fill of the boxes of the kinds and
+# a thin solid border: no border tells them apart, as their titles do.
+LIGHT_BOX_STYLE: Final = "fill:#f8f9fa,stroke:#868e96,stroke-width:1px"
 # The "Used with" box: a thin, sparsely dotted border.
 USED_WITH_STYLE: Final = "fill:#ffffff,stroke:#868e96,stroke-width:1px,stroke-dasharray: 1 4"
 
@@ -433,13 +445,14 @@ class UsedWith:
 def operator_diagram(chapter: Chapter, op: Operator, cat: Catalogue, index: StatusIndex) -> str:
     """The operator with its forms, and the operators that it is used with.
 
-    The forms are in boxes, one for each kind of operand, when they use at least two kinds, and
-    on both sides of the operator otherwise, with the columns balanced when there is a "Used with"
-    box (the module docstring has the details). Each form links to its section of the page, and is
-    pinned when an example of it follows a team decision. The "Used with" box comes from the links
-    of ``cat``, in both directions. Raises ``ValueError`` for a link of the operator to a target
-    that is not in ``cat``, or whose label has no reverse, and ``MermaidLimitError`` if the
-    diagram is over a limit.
+    The forms are in the boxes that they name (``Variant.box``) if they name any, else in boxes,
+    one for each kind of operand, when they use at least two kinds, and on both sides of the
+    operator otherwise, with the columns balanced when there is a "Used with" box (the module
+    docstring has the details). Each form links to its section of the page, and is pinned when an
+    example of it follows a team decision. The "Used with" box comes from the links of ``cat``, in
+    both directions. Raises ``ValueError`` for a link of the operator to a target that is not in
+    ``cat``, or whose label has no reverse, and ``MermaidLimitError`` if the diagram is over a
+    limit.
     """
     key = f"{chapter.id}/{op.id}"
     status = index.operators.get(key)
@@ -462,27 +475,41 @@ def operator_diagram(chapter: Chapter, op: Operator, cat: Catalogue, index: Stat
 
 
 def has_boxes(op: Operator) -> bool:
-    """Whether the diagram of ``op`` has boxes: only when its forms use two kinds or more.
+    """Whether the diagram of ``op`` has boxes: those that its forms name, else those of its kinds.
 
-    An operator whose forms have no kind, such as a join, or all have the same one, such as an
-    operator on components alone, has both sides and no boxes. A form with no kind counts for
-    none of the kinds.
+    The forms that name a box (``has_titled_boxes``) are in those boxes, whatever their kinds.
+    Otherwise there are boxes only when the forms use two kinds or more: an operator whose forms
+    have no kind, such as a join, or all have the same one, such as an operator on components
+    alone, has both sides and no boxes. A form with no kind counts for none of the kinds.
     """
+    if has_titled_boxes(op):
+        return True
     return len({kind for kind in map(form_kind, op.variants) if kind is not None}) >= 2
 
 
 def forms_in_diagram_order(op: Operator) -> list[Variant]:
     """The forms of ``op`` in the order that its diagram draws them.
 
-    With boxes (``has_boxes``), the forms of the dataset box come first, then those of the
+    With titled boxes (``has_titled_boxes``), the forms of the box whose title appears first come
+    first, then those of the box whose title appears second, and so on, and last the forms that
+    name no box, which hang from the operator; each in the order of the catalogue. With the boxes
+    of the kinds (``has_boxes``), the forms of the dataset box come first, then those of the
     component box and of the scalar box, and last the forms with no kind, which hang from the
     operator; each in the order of the catalogue. Without boxes, the order of the catalogue: the
     first forms are on the left of the operator and the others on its right.
     """
+    if has_titled_boxes(op):
+        position: dict[str | None, int] = {t: n for n, t in enumerate(_box_titles(op))}
+        return sorted(op.variants, key=lambda variant: position.get(variant.box, len(position)))
     if not has_boxes(op):
         return list(op.variants)
     rank: dict[Kind | None, int] = {kind: place for place, kind in enumerate(_KINDS)}
     return sorted(op.variants, key=lambda variant: rank.get(form_kind(variant), len(_KINDS)))
+
+
+def _box_titles(op: Operator) -> list[str]:
+    """The titles of the boxes that the forms of ``op`` name, each once, as they first appear."""
+    return list(dict.fromkeys(v.box for v in op.variants if v.box is not None))
 
 
 def _forms(chapter: Chapter, op: Operator, index: StatusIndex) -> list[_Form]:
@@ -497,26 +524,37 @@ def _forms(chapter: Chapter, op: Operator, index: StatusIndex) -> list[_Form]:
 
 
 def _boxes(op: Operator, forms: Sequence[_Form], parts: _Parts) -> None:
-    """The box of each kind that ``forms`` use, under the operator, with its forms in it.
+    """The boxes of the forms, under the operator, with the forms in them.
 
-    The forms are drawn in the order of ``forms_in_diagram_order``. A kind that no form has gets
-    no box. A form that has no kind hangs from the operator.
+    The forms are drawn in the order of ``forms_in_diagram_order``. The forms that name a box are
+    in a box for each title, in the order of its first appearance, with the escaped title, ``G_b1``,
+    ``G_b2``... for ids, and ``LIGHT_BOX_STYLE``; the kinds of the forms are not looked at. Else
+    there is a box for each kind that a form has, and none for a kind that no form has. A form
+    that has no box, or no kind, hangs from the operator.
     """
     by_variant = {form.variant.id: form for form in forms}
-    by_kind: dict[Kind | None, list[_Form]] = {}
-    for variant in forms_in_diagram_order(op):
-        by_kind.setdefault(form_kind(variant), []).append(by_variant[variant.id])
-    for kind in _KINDS:
-        members = by_kind.get(kind, [])
-        if not members:
-            continue
-        box = f"G_{kind}"
-        parts.nodes += _subgraph(box, BOX_TITLES[kind], (form.line for form in members))
-        parts.edges.append(f"{_OPERATOR_ROOT} --- {box}")
-        parts.styles.append(f"style {box} {BOX_STYLES[kind]}")
-    for form in by_kind.get(None, []):
+    ordered = [by_variant[variant.id] for variant in forms_in_diagram_order(op)]
+    if has_titled_boxes(op):
+        for number, title in enumerate(_box_titles(op), 1):
+            members = [form for form in ordered if form.variant.box == title]
+            _add_box(parts, f"G_b{number}", escape_label(title), LIGHT_BOX_STYLE, members)
+        hanging = [form for form in ordered if form.variant.box is None]
+    else:
+        for kind in _KINDS:
+            members = [form for form in ordered if form_kind(form.variant) == kind]
+            if members:
+                _add_box(parts, f"G_{kind}", BOX_TITLES[kind], BOX_STYLES[kind], members)
+        hanging = [form for form in ordered if form_kind(form.variant) is None]
+    for form in hanging:
         parts.nodes.append(form.line)
         parts.edges.append(f"{_OPERATOR_ROOT} --- {form.node}")
+
+
+def _add_box(parts: _Parts, box: str, title: str, style: str, members: Sequence[_Form]) -> None:
+    """A box with ``members`` in it, joined to the operator by a line, and its ``style``."""
+    parts.nodes += _subgraph(box, title, (form.line for form in members))
+    parts.edges.append(f"{_OPERATOR_ROOT} --- {box}")
+    parts.styles.append(f"style {box} {style}")
 
 
 # --- "Used with" ---

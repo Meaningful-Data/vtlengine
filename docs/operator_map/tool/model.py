@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from collections.abc import Callable, Collection, Iterable, Iterator
+from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from typing import Any, Final, Literal
 
@@ -64,6 +64,8 @@ REVERSE_LABELS: Final[dict[str, str]] = {
     "propagates at": "propagation defined by",
 }
 DL_PAGES: Final[tuple[str, ...]] = ("dl/udo", "dl/datapoint", "dl/hierarchical", "dl/viral")
+# The longest title of a light box that the forms of an operator name (``Variant.box``).
+BOX_TITLE_MAX: Final = 30
 
 
 @dataclass(frozen=True)
@@ -93,6 +95,12 @@ class Variant:
     as ``current_date()``. Whether a form is on datasets, components or scalars is its kind
     (``form_kind``), not a type. ``kind`` says the kind of a form whose id has no token for it,
     such as the conversions of ``cast`` (``integer_to_boolean`` is on components).
+
+    ``box`` is the title of the light box that the diagram of the operator draws the form in, for
+    forms that stand for a part of a syntax, such as the "Signature", the "Body" and the "Return
+    type" of a definition of the VTL-DL. The forms of an operator all have a ``box`` or none has
+    (the strict checks), and a title is not empty and at most ``BOX_TITLE_MAX`` characters. An
+    operator whose forms have boxes is drawn in those boxes, whatever the kinds of its forms.
     """
 
     id: str
@@ -102,6 +110,7 @@ class Variant:
     takes: tuple[str, ...] | None = None  # None: not declared; (): takes nothing
     gives: tuple[str, ...] | None = None  # None: not declared
     kind: Kind | None = None  # the kind of its widest operand, when the id does not say it
+    box: str | None = None  # the title of its light box, when its forms are in titled boxes
 
 
 @dataclass(frozen=True)
@@ -203,6 +212,15 @@ def form_kind(v: Variant) -> Kind | None:
         return v.kind
     tokens = v.id.split("_")
     return next((kind for kind in _KINDS if kind in tokens), None)
+
+
+def has_titled_boxes(op: Operator) -> bool:
+    """Whether the forms of ``op`` name the light boxes that they are drawn in (``Variant.box``).
+
+    One form that names a box is enough: the diagram of the operator then has those boxes, and the
+    kinds of its forms say nothing. The strict checks want all the forms to name one, or none.
+    """
+    return any(variant.box is not None for variant in op.variants)
 
 
 def form_types(op: Operator, v: Variant) -> tuple[tuple[str, ...], tuple[str, ...]]:
@@ -326,6 +344,27 @@ def _mixed_kinds(owner: str, variants: Iterable[Variant]) -> Iterator[str]:
         yield f"{owner}: these forms have no kind, but other forms have one: {', '.join(kindless)}"
 
 
+def _box_problems(owner: str, variants: Sequence[Variant]) -> Iterator[str]:
+    """The problems of the boxes that the forms of an operator name.
+
+    The forms of an operator all name a box, or none does: a diagram draws the boxes that its
+    forms name, and a form that names none would hang outside them. A title is not empty (blank
+    is empty) and has at most ``BOX_TITLE_MAX`` characters, for it is the title of a box.
+    """
+    unboxed = [variant.id for variant in variants if variant.box is None]
+    if unboxed and len(unboxed) < len(variants):
+        yield f"{owner}: these forms have no box, but other forms have one: {', '.join(unboxed)}"
+    for variant in variants:
+        title = variant.box
+        if title is None:
+            continue
+        if not title.strip():
+            yield f"{owner}.{variant.id}: the box title is empty"
+        elif len(title) > BOX_TITLE_MAX:
+            problem = f"box title '{title}' is longer than {BOX_TITLE_MAX} characters"
+            yield f"{owner}.{variant.id}: {problem}"
+
+
 def _untyped(owner: str, variant: Variant) -> Iterator[str]:
     """What a form misses of its types: neither its ``returns`` nor its operator's count.
 
@@ -376,7 +415,10 @@ def _operator_problems(
         if key not in manual_examples:
             yield f"{owner}: unknown manual example '{key}'"
     if strict:
-        yield from _mixed_kinds(owner, operator.variants)
+        yield from _box_problems(owner, operator.variants)
+        # The kinds of forms that are in boxes of their own say nothing: no box is drawn by kind.
+        if not has_titled_boxes(operator):
+            yield from _mixed_kinds(owner, operator.variants)
     yield from _variant_problems(owner, operator.variants, strict)
 
 
@@ -473,7 +515,9 @@ def validate_catalogue(
 
     ``strict_forms`` turns on the strict checks of the forms: every form declares its ``takes``,
     empty for a form that takes nothing, and its ``gives``, with a type at least; the forms of an
-    operator all have a kind (``form_kind``) or none has; and every authored example is named
+    operator all have a kind (``form_kind``) or none has, unless they name light boxes; the forms
+    of an operator all name a box (``Variant.box``) or none does, and the title of a box is not
+    empty and has at most ``BOX_TITLE_MAX`` characters; and every authored example is named
     after what it tests, with a slug that matches ``[a-z][a-z0-9_]{0,39}`` and is neither
     ``minimal`` nor ``minimal_<n>``, nor the name of a manual example, ``manual_ex_<n>``. The
     notes of the examples are checked with their folders, by the generator.

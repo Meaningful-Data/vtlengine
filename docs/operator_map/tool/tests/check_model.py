@@ -13,6 +13,7 @@ import pytest
 from tool.model import (
     ANY_SCALAR,
     ANY_TYPE,
+    BOX_TITLE_MAX,
     DL_PAGES,
     REVERSE_LABELS,
     STRUCTURAL_TYPES,
@@ -29,6 +30,7 @@ from tool.model import (
     example_title,
     form_kind,
     form_types,
+    has_titled_boxes,
     load_catalogue,
     manual,
     reverse_label,
@@ -85,7 +87,12 @@ def strict_problems_for(cat: Catalogue, scope: tuple[str, ...] | None = None) ->
     return validate_catalogue(cat, {ADD_PAGE}, {ADD_EX_1}, scope=scope, strict_forms=True)
 
 
-def typed_form(*examples: Example, variant_id: str = "ds_ds", kind: Kind | None = None) -> Variant:
+def typed_form(
+    *examples: Example,
+    variant_id: str = "ds_ds",
+    kind: Kind | None = None,
+    box: str | None = None,
+) -> Variant:
     """A form of the addition that declares its types, with ``examples`` (its manual example)."""
     return Variant(
         variant_id,
@@ -94,6 +101,7 @@ def typed_form(*examples: Example, variant_id: str = "ds_ds", kind: Kind | None 
         takes=("number",),
         gives=("number",),
         kind=kind,
+        box=box,
     )
 
 
@@ -731,6 +739,104 @@ def test_strict_forms_mixed_kinds() -> None:
     assert problems_for(mixed) == []
     assert strict_problems_for(mixed, scope=("string",)) == []
     assert strict_problems_for(mixed, scope=("numeric",)) == strict_problems_for(mixed)
+
+
+def boxed_operator(*boxes: str | None, ids: tuple[str, ...] = ()) -> Catalogue:
+    """The addition with a form for each of ``boxes``, in the box it names (None: no box).
+
+    The forms are called ``one``, ``two``..., or ``ids``. The first one has the manual example.
+    """
+    names = ids or ("one", "two", "three", "four", "five")
+    forms = tuple(
+        typed_form(
+            *((manual("ex_1"),) if n == 0 else (authored("one_row"),)),
+            variant_id=names[n],
+            box=box,
+        )
+        for n, box in enumerate(boxes)
+    )
+    return make_catalogue(make_operator(variants=forms))
+
+
+def test_a_form_names_its_box_and_the_default_is_none() -> None:
+    assert Variant("x", "x", (authored(),)).box is None
+    form = Variant("x", "x", (authored(),), box="Signature")
+    assert form.box == "Signature"
+    assert not has_titled_boxes(make_operator())
+    assert has_titled_boxes(make_operator(variants=(typed_form(box="Body"),)))
+    # One form that names a box is enough for the operator to have them, which is what the
+    # diagram goes by: the strict checks are what asks for all of them.
+    one_of_two = (typed_form(), typed_form(variant_id="sc_sc", box="Body"))
+    assert has_titled_boxes(make_operator(variants=one_of_two))
+    assert not has_titled_boxes(make_operator(variants=()))
+
+
+def test_strict_forms_boxes_are_all_or_none() -> None:
+    owner = "numeric.addition"
+    # Every form names a box: fine, whether the boxes are one or many, in any order.
+    assert (
+        strict_problems_for(boxed_operator("Signature", "Body", "Signature", "Return type")) == []
+    )
+    assert strict_problems_for(boxed_operator("Body")) == []
+    # No form names one: fine too, as it always was.
+    assert strict_problems_for(boxed_operator(None, None, None)) == []
+    # Some do and some do not: the forms that do not are the problem, in the order of the
+    # catalogue, whichever form comes first.
+    assert strict_problems_for(boxed_operator("Signature", None, "Body", None)) == [
+        f"{owner}: these forms have no box, but other forms have one: two, four"
+    ]
+    assert strict_problems_for(boxed_operator(None, None, "Body")) == [
+        f"{owner}: these forms have no box, but other forms have one: one, two"
+    ]
+
+
+def test_strict_forms_boxes_are_a_strict_check_for_the_chapters_in_scope() -> None:
+    partial = boxed_operator("Signature", None)
+    assert problems_for(partial) == []  # off by default
+    assert strict_problems_for(partial, scope=("string",)) == []
+    assert strict_problems_for(partial, scope=("numeric",)) == strict_problems_for(partial)
+    assert len(strict_problems_for(partial)) == 1
+    too_long = boxed_operator("x" * (BOX_TITLE_MAX + 1))
+    assert problems_for(too_long) == []
+    assert strict_problems_for(too_long, scope=("string",)) == []
+    assert len(strict_problems_for(too_long, scope=("numeric",))) == 1
+
+
+def test_strict_forms_box_titles() -> None:
+    owner = "numeric.addition"
+    assert BOX_TITLE_MAX == 30
+    # A title is for a box: some words, at most 30 characters.
+    assert strict_problems_for(boxed_operator("Signature", "Return type", "x", "y" * 30)) == []
+    assert strict_problems_for(boxed_operator("y" * 30)) == []
+    long = "y" * 31
+    assert strict_problems_for(boxed_operator(long)) == [
+        f"{owner}.one: box title '{long}' is longer than 30 characters"
+    ]
+    # It is not empty, and a blank title is empty.
+    assert strict_problems_for(boxed_operator("")) == [f"{owner}.one: the box title is empty"]
+    assert strict_problems_for(boxed_operator("   ")) == [f"{owner}.one: the box title is empty"]
+    # Each form is checked, so a title that is wrong is reported at its form.
+    assert strict_problems_for(boxed_operator("Body", "", "Body", long)) == [
+        f"{owner}.two: the box title is empty",
+        f"{owner}.four: box title '{long}' is longer than 30 characters",
+    ]
+    # The length is the length of the title, as it is written.
+    assert strict_problems_for(boxed_operator("é" * 30, "é" * 31)) == [
+        f"{owner}.two: box title '{'é' * 31}' is longer than 30 characters"
+    ]
+
+
+def test_strict_forms_the_kinds_of_forms_in_boxes_say_nothing() -> None:
+    # ``ds_ds`` has a kind and ``plain`` has none: without boxes that is a mixture...
+    ids = ("ds_ds", "plain", "sc_sc")
+    mixture = "numeric.addition: these forms have no kind, but other forms have one: plain"
+    assert strict_problems_for(boxed_operator(None, None, None, ids=ids)) == [mixture]
+    # ...and with boxes, where no box is drawn by kind, it is not.
+    assert strict_problems_for(boxed_operator("Signature", "Body", "Body", ids=ids)) == []
+    # A form that names no box is the problem then, and the kinds are still not looked at.
+    assert strict_problems_for(boxed_operator("Signature", None, "Body", ids=ids)) == [
+        "numeric.addition: these forms have no box, but other forms have one: plain"
+    ]
 
 
 # --- Model helpers ---

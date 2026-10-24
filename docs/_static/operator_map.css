@@ -36,6 +36,19 @@
 .om-box.dashed { border-style: dashed; }
 .om-box.dotted { border-style: dotted; }
 
+/* The title of a light box that the forms of an operator name (Signature, Body, Return type),
+ * above the first form of the box in the Forms section: the light fill and the thin solid border
+ * of the box in the diagram. It is a caption, not a heading. */
+.om-box-title {
+    margin: 20px 0 0;
+    padding: 2px 10px;
+    background: #f8f9fa;
+    border: 1px solid #868e96;
+    color: #343a40;
+    font-size: 13px;
+    font-weight: bold;
+}
+
 /* The line under the title: the status, the manual page and the versions of the engines. */
 .om-head { margin: 0 0 6px; }
 .om-head .om-gen { color: #666; font-size: 12px; }

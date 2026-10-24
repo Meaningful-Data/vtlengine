@@ -97,9 +97,17 @@ def form(
     takes: tuple[str, ...],
     gives: tuple[str, ...],
     *examples: Example,
+    box: str | None = None,
 ) -> Variant:
     """A form that declares its types, with ``examples``, or one named ``two_rows``."""
-    return Variant(variant_id, label, examples or (authored("two_rows"),), takes=takes, gives=gives)
+    return Variant(
+        variant_id,
+        label,
+        examples or (authored("two_rows"),),
+        takes=takes,
+        gives=gives,
+        box=box,
+    )
 
 
 def operator(
@@ -187,6 +195,38 @@ INDEX = index_of(
     },
 )
 
+# A definition whose forms name the light boxes that they are in. The catalogue lists the forms in
+# another order than the boxes: the Body, the Signature, the Body, the Signature and the Return
+# type. The diagram draws the Body first, as its title is the first to appear, then the Signature
+# and the Return type, and the page lists the forms in that order.
+DEFINE = operator(
+    "define_x",
+    "Define x",
+    "define x",
+    form("body_when", "when c then v", ("boolean",), ("viral_propagation",), box="Body"),
+    form(
+        "sign_variable",
+        "define x (variable v)",
+        ("scalar",),
+        ("viral_propagation",),
+        box="Signature",
+    ),
+    form("body_aggr", "aggr sum", ("number",), ("viral_propagation",), box="Body"),
+    form(
+        "sign_domain",
+        "define x (valuedomain d)",
+        ("value_domain",),
+        ("viral_propagation",),
+        box="Signature",
+    ),
+    form("result", "returns r", ("scalar",), ("viral_propagation",), box="Return type"),
+)
+DEFINE_CHAPTER = Chapter("definitions", "Definitions", (DEFINE,))
+DEFINE_MAP = Catalogue((DEFINE_CHAPTER,))
+DEFINE_INDEX = index_of(DEFINE_MAP)
+DEFINE_ORDER = ["body_when", "body_aggr", "sign_variable", "sign_domain", "result"]
+DEFINE_BOXES = ["Body", "Signature", "Return type"]
+
 NOTES = (
     ':Tests: "quotes" *stars* `code` | pipe :: colons.\n:Manual: The rule.\n:Expected: ``DS_r``.\n'
 )
@@ -258,6 +298,12 @@ def write_modulo(root: Path) -> None:
     # The value is written as the file writes it: 1.50 keeps its zero.
     text = json.dumps(scalars).replace("1.5", "1.50")
     write_example(root, f"{base}/sc_sc/positive_operands", {"expected/scalars.json": text})
+
+
+def write_define(root: Path, chapter_id: str = "definitions") -> None:
+    """The examples of ``DEFINE``: a script and notes for each of its forms."""
+    for variant in DEFINE.variants:
+        write_example(root, f"{chapter_id}/define_x/{variant.id}/two_rows", {})
 
 
 # --- Reading a page back ---
@@ -440,6 +486,10 @@ def test_legend_has_five_statuses(tmp_path: Path) -> None:
     assert with_boxes.count(BORDER_KEY_HTML) == 1
     one_kind = operator_rst(NUMERIC, CEIL, MAP, INDEX, META, examples_root=tmp_path)
     assert BORDER_KEY_HTML not in one_kind
+    # The captions of boxes are for the forms that name their boxes: the boxes of the kinds have
+    # the key of their borders, and no caption.
+    assert "om-box-title" not in with_boxes
+    assert "om-box-title" not in one_kind
 
 
 # --- The page of an operator ---
@@ -646,6 +696,126 @@ def test_mermaid_blocks_reads_back_the_blocks_of_a_page(tmp_path: Path) -> None:
     assert mermaid_blocks(text) == [operator_diagram(NUMERIC, ROUND, MAP, INDEX)]
     assert mermaid_blocks(block_rst(NUMERIC, MAP, INDEX, META)) == [block_diagram(NUMERIC, INDEX)]
     assert mermaid_blocks(index_rst(MAP, INDEX, META)) == [overview_block(MAP, INDEX)]
+
+
+# --- The boxes that the forms name ---
+
+
+def define_page(root: Path) -> str:
+    """The page of ``DEFINE``, whose forms name the boxes that they are in."""
+    write_define(root)
+    return operator_rst(DEFINE_CHAPTER, DEFINE, DEFINE_MAP, DEFINE_INDEX, META, examples_root=root)
+
+
+def test_the_forms_in_titled_boxes_have_a_caption_before_the_first_form_of_each_box(
+    tmp_path: Path,
+) -> None:
+    text = define_page(tmp_path)
+    # The legend of the statuses is there once. The key of the borders is for the boxes of the
+    # kinds: the titles tell these boxes apart.
+    assert text.count(LEGEND_HTML) == 1
+    assert BORDER_KEY_HTML not in text
+    assert "om-borders" not in text
+    assert "om-box " not in text
+    # The diagram is the one of the operator, drawn in the boxes that its forms name.
+    assert blocks(text) == [operator_diagram(DEFINE_CHAPTER, DEFINE, DEFINE_MAP, DEFINE_INDEX)]
+    assert 'subgraph G_b1["Body"]' in blocks(text)[0]
+    # One caption for each box, in the order of the boxes of the diagram.
+    assert re.findall(r'<p class="om-box-title">(.*?)</p>', text) == DEFINE_BOXES
+    # The sections of the forms are in the order of the diagram, with a caption before the first
+    # form of each box, and before the anchor of that form.
+    forms = {variant.id: variant for variant in DEFINE.variants}
+    taken = {
+        "body_when": "boolean",
+        "body_aggr": "number",
+        "sign_variable": "any scalar",
+        "sign_domain": "value domain",
+        "result": "any scalar",
+    }
+
+    def heading(form_id: str) -> str:
+        return f"{forms[form_id].label} 🟢 · {taken[form_id]} → viral propagation"
+
+    def form_part(form_id: str) -> list[str]:
+        anchor = f'raw <span class="om-anchor" id="{form_anchor(forms[form_id])}">'
+        return [anchor, f"~ {heading(form_id)}"]
+
+    caption = 'raw <p class="om-box-title">'
+    assert [
+        item
+        for item in skeleton(text)
+        if item.startswith(("- ", "~ ", caption, 'raw <span class="om-anchor"'))
+    ] == [
+        "- Types",
+        "- Forms",
+        caption,
+        *form_part("body_when"),
+        *form_part("body_aggr"),
+        caption,
+        *form_part("sign_variable"),
+        *form_part("sign_domain"),
+        caption,
+        *form_part("result"),
+    ]
+    first = (
+        '.. raw:: html\n\n   <p class="om-box-title">Body</p>\n\n'
+        '.. raw:: html\n\n   <span class="om-anchor" id="form-body-when"></span>\n\n'
+    )
+    assert first in text
+    # The captions are not headings: the sections of the page are what they were.
+    assert titles(text, "-") == ["Types", "Forms"]
+    assert titles(text, "~") == [heading(form_id) for form_id in DEFINE_ORDER]
+    # Every click of the diagram still lands on the anchor of its form.
+    clicks = re.findall(r'click \w+ href "#([^"]+)"', blocks(text)[0])
+    anchors = re.findall(r'<span class="om-anchor" id="([^"]+)"></span>', text)
+    assert sorted(clicks) == sorted(anchors) == sorted(form_anchor(v) for v in DEFINE.variants)
+
+
+def test_the_caption_of_a_box_is_written_once_for_the_forms_that_are_not_next_to_each_other(
+    tmp_path: Path,
+) -> None:
+    # The catalogue lists the forms of the Body and of the Signature in turn: the page lists them
+    # box by box, so that no caption is repeated.
+    text = define_page(tmp_path)
+    for title in DEFINE_BOXES:
+        assert text.count(f'<p class="om-box-title">{title}</p>') == 1
+    assert [v.id for v in DEFINE.variants] != DEFINE_ORDER
+    anchors = re.findall(r'<span class="om-anchor" id="form-([^"]+)"></span>', text)
+    assert anchors == [form_id.replace("_", "-") for form_id in DEFINE_ORDER]
+
+
+def test_the_title_of_a_box_is_escaped_in_its_caption(tmp_path: Path) -> None:
+    hostile = 'A & <B> "C"'
+    only = operator("o", "O", "o", form("v", "v", NUMBER, NUMBER, box=hostile))
+    chapter = Chapter("c", "C", (only,))
+    cat = Catalogue((chapter,))
+    write_example(tmp_path, "c/o/v/two_rows", {})
+    text = operator_rst(chapter, only, cat, index_of(cat), META, examples_root=tmp_path)
+    assert '<p class="om-box-title">A &amp; &lt;B&gt; &quot;C&quot;</p>' in text
+    assert f'<p class="om-box-title">{hostile}' not in text
+    # The same title is in the diagram, escaped as a label is, not as HTML.
+    assert 'subgraph G_b1["A & #60;B#62; #quot;C#quot;"]' in blocks(text)[0]
+
+
+def test_the_captions_of_the_boxes_are_raw_html_and_make_no_section(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    nodes = pytest.importorskip("docutils.nodes")
+    examples = tmp_path / "examples"
+    text = define_page(examples)
+    tree = read_rst(text, tmp_path / "definitions" / "define_x.rst", monkeypatch)
+    raws = [node for node in tree.findall(nodes.raw) if "om-box-title" in node.astext()]
+    assert [node.astext() for node in raws] == [
+        f'<p class="om-box-title">{title}</p>' for title in DEFINE_BOXES
+    ]
+    assert {node["format"] for node in raws} == {"html"}
+    # The page has the sections that it had: its title, Types, Forms, and a section for each form.
+    assert [title.astext() for title in tree.findall(nodes.title)] == [
+        "Define x · define x",
+        "Types",
+        "Forms",
+        *(title for title in titles(text, "~")),
+    ]
 
 
 # --- Viral propagation, in text ---
@@ -1272,11 +1442,13 @@ def test_docs_build_anchor_ids(tmp_path: Path) -> None:
         form("ds_ds", "DS + DS", NUMBER, NUMBER, authored("two_rows")),
         form("sc_sc", "sc + sc", NUMBER, NUMBER, authored("two_numbers")),
     )
-    chapter = Chapter("numeric", "Numeric operators", (MODULO, plus))
+    # A definition, whose forms name their boxes, is in the block too: it has captions.
+    chapter = Chapter("numeric", "Numeric operators", (MODULO, plus, DEFINE))
     cat = Catalogue((chapter,))
     index = index_of(cat, {"numeric/modulo/sc_sc/zero_divisor": REFUSED})
     examples = source / "examples"
     write_modulo(examples)
+    write_define(examples, "numeric")
     write_example(examples, "numeric/addition/ds_ds/two_rows", {"input/DS_1.csv": EDGE_CSV})
     write_example(examples, "numeric/addition/sc_sc/two_numbers", {"expected/DS_r.csv": "A\n"})
     pages = {
@@ -1333,7 +1505,7 @@ def test_docs_build_anchor_ids(tmp_path: Path) -> None:
     assert warnings.getvalue() == ""
 
     built = {name: (output / name).with_suffix(".html").read_text("utf-8") for name in pages}
-    for name in ("numeric/modulo.rst", "numeric/addition.rst"):
+    for name in ("numeric/modulo.rst", "numeric/addition.rst", "numeric/define_x.rst"):
         page = built[name]
         ids = set(re.findall(r'\bid="([^"]+)"', page))
         clicks = re.findall(r"href (?:&quot;|\")#(form-[a-z0-9-]+)(?:&quot;|\")", page)
@@ -1342,6 +1514,21 @@ def test_docs_build_anchor_ids(tmp_path: Path) -> None:
         # The notes are rendered as fields, inside the collapsible block of their example.
         assert "<summary>" in page
         assert "Tests" in page
+    # The captions of the boxes are in the built page, each before the first form of its box.
+    define = built["numeric/define_x.rst"]
+    markers = [
+        '<p class="om-box-title">Body</p>',
+        'id="form-body-when"',
+        'id="form-body-aggr"',
+        '<p class="om-box-title">Signature</p>',
+        'id="form-sign-variable"',
+        'id="form-sign-domain"',
+        '<p class="om-box-title">Return type</p>',
+        'id="form-result"',
+    ]
+    places = [define.index(marker) for marker in markers]
+    assert places == sorted(places)
+    assert define.count('<p class="om-box-title">') == len(DEFINE_BOXES)
     # The links of the index and of the block page land on the anchors of the examples.
     modulo_ids = set(re.findall(r'\bid="([^"]+)"', built["numeric/modulo.rst"]))
     for page in (built["index.rst"], built["numeric/index.rst"]):
