@@ -1,0 +1,3 @@
+:Tests: ``calc At_1 := At_1 || "x"``: the Viral Attribute ``At_1`` of ``DS_1`` recalculated under its own name, with the role left out.
+:Manual: `Full Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Full%20Join/index.html>`__: in calc "the original role can be changed if the name is kept the same; if the role is not specified, it will be measure", and on viral attributes "if the calc clause is present instead, it may directly replace the computation algorithm used for the propagation".
+:Expected: the four keys of ``DS_1`` (every key of ``DS_2`` is in it), with ``Me_2`` null at ``(2,B)``, and ``At_1`` as a Measure: ``ax``, ``bx``, ``cx`` and ``dx``. Outside a join, the Calculation of a Component page would keep the role.

@@ -1,0 +1,3 @@
+:Tests: ``calc At_1 := At_1 || "x"``: the Attribute ``At_1`` of ``DS_1`` recalculated under its own name, with the role left out.
+:Manual: `Cross Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Cross%20Join/index.html>`__: calc "If a generated component already exists in any of the input data sets, all input components homonymous to the former are removed", and "if the role is not specified, it will be measure". Outside a join, the Calculation of a Component page keeps the role: "if the component exists in the operand Data Set then it maintains its role".
+:Expected: the cartesian product of ``DS_1`` (``Id_1`` 1, 2) and ``DS_2`` (``Id_2`` A, B) has 2 × 2 = 4 data points, and ``At_1`` is a Measure: ``ax``, ``ax``, ``bx`` and ``bx``.

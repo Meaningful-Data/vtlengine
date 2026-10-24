@@ -1,0 +1,3 @@
+:Tests: ``filter``, then ``calc Me_2 := Me_2 || "_NEW"`` with no role, then ``keep``, in a join of one operand.
+:Manual: `Inner Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html>`__, Example 3, output verbatim. The page asks for "a minimum of two data set operands", but the VTL 2.2 grammar (``joinClauseItem (COMMA joinClauseItem)*?``) accepts one and the page prints its result, so the example is kept as it is.
+:Expected: VDS₁ is ``DS_1``; ``filter Id_2 = "B"`` keeps ``(1,B)``, where the calc gives the Measure ``Me_2`` = ``D_NEW`` ("only the generated component is kept"; "if the role is not specified, it will be measure"), and ``keep`` keeps it with ``Me_1`` = ``C``.

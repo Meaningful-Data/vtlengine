@@ -1,0 +1,3 @@
+:Tests: ``aggr At_1 := max(At_1) group by Id_1``: the Attribute ``At_1`` of ``DS_1`` aggregated under its own name, with the role left out.
+:Manual: `Inner Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html>`__: in aggr "the original role can be changed if the name is kept the same; if the role is not specified, it will be measure". Outside a join, the Aggregation clause page keeps it: "if the component exists in the operand Data Set then it maintains its role".
+:Expected: ``At_1`` comes from one operand, so VDS₁ keeps it, and the result has it as a String Measure (the maximum of a String is a String): ``b`` for ``Id_1`` = 1 and ``c`` for ``Id_1`` = 2, as ``(2,B)`` is in ``DS_1`` only.

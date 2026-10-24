@@ -1,0 +1,3 @@
+:Tests: ``aggr`` with the sum of ``Me_1`` by ``Id_1`` as ``Me_3`` and its maximum as ``At_1``, with the role ``viral attribute``.
+:Manual: `Inner Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html>`__: the role of an aggregated component is ``aggrRole ::= { measure | attribute | viral attribute }``, and "if omitted, the Measure role is assumed"; on viral attributes, "The Attributes explicitly calculated through the calc or aggr clauses are maintained unchanged."
+:Expected: the natural join keeps ``(1,A)``, ``(2,A)`` and ``(2,B)``, the keys in both operands. ``Id_1`` = 1 gives ``Me_3`` = 10 and ``At_1`` = 10, ``Id_1`` = 2 gives 70 and 40; ``At_1`` is a Number Viral Attribute.
