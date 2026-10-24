@@ -37,7 +37,6 @@ from tool.model import (
     ANY_TYPE,
     VALUE_TYPES,
     Chapter,
-    Link,
     Operator,
     Variant,
     authored,
@@ -347,7 +346,6 @@ CHAPTER = Chapter(
                     gives=(ANY_TYPE,),
                 ),
             ),
-            links=(Link("definitions.define_operator", "uses"),),
         ),
         Operator(
             id="eval",

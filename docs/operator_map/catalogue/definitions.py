@@ -29,7 +29,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from tool.model import Chapter, Example, Link, Operator, Variant, authored
+from tool.model import Chapter, Example, Operator, Variant, authored
 
 # What each operator gives: the structural type of what it defines.
 _OPERATOR: Final = ("operator",)
@@ -201,7 +201,6 @@ DEFINE_OPERATOR = Operator(
             authored("every_measure_plus_one"),
         ),
     ),
-    links=(Link("general.udo_call", "used by"),),
 )
 
 DEFINE_DATAPOINT_RULESET = Operator(
@@ -273,7 +272,6 @@ DEFINE_DATAPOINT_RULESET = Operator(
             authored("level_on_the_invalid_point"),
         ),
     ),
-    links=(Link("validation.check_datapoint", "used by"),),
 )
 
 DEFINE_HIERARCHICAL_RULESET = Operator(
@@ -375,10 +373,6 @@ DEFINE_HIERARCHICAL_RULESET = Operator(
             _HIERARCHICAL_RULESET,
             authored("rules_named_by_their_order"),
         ),
-    ),
-    links=(
-        Link("hierarchy.hierarchy", "used by"),
-        Link("validation.check_hierarchy", "used by"),
     ),
 )
 
@@ -494,12 +488,6 @@ DEFINE_VIRAL_PROPAGATION = Operator(
             _VIRAL_PROPAGATION,
             authored("computed_total"),
         ),
-    ),
-    links=(
-        Link("numeric.addition", "propagates at"),
-        Link("join.inner_join", "propagates at"),
-        Link("aggregate.sum", "propagates at"),
-        Link("hierarchy.hierarchy", "propagates at"),
     ),
 )
 
