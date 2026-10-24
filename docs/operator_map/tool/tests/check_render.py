@@ -531,16 +531,14 @@ def test_diagram_clicks_point_to_the_pages_of_the_site_not_to_md_files(tmp_path:
     chapter = chapter_rst(STRING, CAT, INDEX, META, examples_root=tmp_path)
     index = index_rst(CAT, INDEX, META, examples_root=tmp_path)
     (block,) = blocks(chapter)
-    # The link to an operator of another chapter: its click and the page named in its label.
-    assert '    click ext_clause__calc "clause.html"' in block.splitlines()
-    assert "↗ Calculation (clause.html)" in block
+    # An operator of the diagram of the chapter links to its page.
+    assert '    click string__concat href "concat.html"' in block.splitlines()
+    assert '    click string__length href "length.html"' in block.splitlines()
     (overview, *_) = blocks(index)
-    assert '    click chapter__string "string.html"' in overview.splitlines()
-    assert '    click chapter__clause "clause.html"' in overview.splitlines()
+    assert '    click chapter__string href "string/index.html"' in overview.splitlines()
+    assert '    click chapter__clause href "clause/index.html"' in overview.splitlines()
     for text in (chapter, index):
         assert ".md" not in "".join(blocks(text))
-    # The clicks to a folder are what the diagram builder wrote.
-    assert '    click string__length "examples/string/length/comp/minimal/"' in block.splitlines()
 
 
 def test_mermaid_blocks_reads_back_the_blocks_of_a_page(tmp_path: Path) -> None:

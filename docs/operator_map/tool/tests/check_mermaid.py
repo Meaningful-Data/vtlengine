@@ -1,7 +1,9 @@
 # ruff: noqa: S101
-"""Checks for the Mermaid rendering: escaping, ids, limits, chapters and the overview.
+"""Checks for the Mermaid diagrams: escaping, ids, limits, and the three diagrams of the map.
 
-The catalogues and the statuses are small hand-made values: no engine runs here.
+The three diagrams are the overview of the blocks, the diagram of a block and the diagram of an
+operator. The catalogues and the statuses are small hand-made values: no engine runs here. The
+expected text of a diagram is written out in full where its layout is what is checked.
 """
 
 from __future__ import annotations
@@ -10,38 +12,62 @@ import re
 
 import pytest
 
-import tool.mermaid
 from tool.mermaid import (
+    BOX_STYLES,
+    CLASSES,
     MAX_CHARS,
     MAX_EDGES,
     PAGE_SUFFIX,
+    USED_WITH_MAX,
+    USED_WITH_STYLE,
     MermaidLimitError,
+    block_diagram,
     chapter_blocks,
     check_limits,
     escape_label,
+    example_anchor,
+    form_anchor,
     node_id,
+    operator_diagram,
     overview_block,
+    used_with,
 )
-from tool.model import Catalogue, Chapter, Link, Operator, Status, Variant, authored
+from tool.model import Catalogue, Chapter, Kind, Link, Operator, Status, Variant, authored
 from tool.status import EMOJI, StatusIndex
 
-# What every block starts with: the diagram type and the classes of the statuses and the stubs.
-CLASSES = [
-    "flowchart LR",
+# What every diagram has after its ``flowchart`` line: the classes of the statuses, the one of
+# the central node and the one of the entries of "Used with". They are written out here, so that
+# a change of a colour or of a border is seen.
+CLASS_LINES = [
     "    classDef ok fill:#d4edda,stroke:#28a745,color:#000",
     "    classDef partial fill:#fff3cd,stroke:#ffc107,color:#000",
+    (
+        "    classDef refused fill:#d4edda,stroke:#28a745,stroke-width:3px,"
+        "stroke-dasharray: 2 2,color:#000"
+    ),
     "    classDef missing fill:#f8d7da,stroke:#dc3545,color:#000",
     "    classDef diverge fill:#cce5ff,stroke:#007bff,color:#000",
-    "    classDef ext stroke-dasharray: 5 5",
+    "    classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold",
+    "    classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5",
 ]
+# The light box of each kind of operand: the same fill, and a border of its own.
+SOLID = "fill:#f8f9fa,stroke:#495057,stroke-width:2px"
+DASHED = f"{SOLID},stroke-dasharray: 8 5"
+DOTTED = f"{SOLID},stroke-dasharray: 2 3"
+USED_WITH = "fill:#ffffff,stroke:#868e96,stroke-width:1px,stroke-dasharray: 1 4"
 
 
 # --- Builders ---
 
 
-def block_of(*lines: str) -> str:
-    """The text of a block: the classes, then ``lines`` indented."""
-    return "\n".join([*CLASSES, *(f"    {line}" for line in lines)])
+def block_of(direction: str, *lines: str) -> str:
+    """The text of a diagram: its ``flowchart`` line, the classes, then ``lines`` indented."""
+    return "\n".join([f"flowchart {direction}", *CLASS_LINES, *(f"    {line}" for line in lines)])
+
+
+def body(diagram: str) -> list[str]:
+    """The lines of a diagram after its ``flowchart`` line and its classes, indentation off."""
+    return [line.strip() for line in diagram.splitlines()[1 + len(CLASS_LINES) :]]
 
 
 def make_variant(
@@ -51,12 +77,14 @@ def make_variant(
     returns: tuple[str, ...] = (),
     decision: int | None = None,
     examples: tuple[str, ...] = ("minimal",),
+    kind: Kind | None = None,
 ) -> Variant:
     return Variant(
         variant_id,
         label,
         tuple(authored(name, decision=decision) for name in examples),
         returns,
+        kind=kind,
     )
 
 
@@ -64,13 +92,11 @@ def make_operator(
     operator_id: str,
     name: str,
     symbol: str,
-    accepts: tuple[str, ...],
-    returns: tuple[str, ...],
     variants: tuple[Variant, ...],
     links: tuple[Link, ...] = (),
 ) -> Operator:
     page = f"Some operators/{name}"
-    return Operator(operator_id, name, symbol, page, accepts, returns, variants, links)
+    return Operator(operator_id, name, symbol, page, (), (), variants, links)
 
 
 def make_index(
@@ -81,13 +107,24 @@ def make_index(
     return StatusIndex({}, variants or {}, operators or {}, chapters or {})
 
 
-# A small map: string operators that link to a clause.
+def edges_of(diagram: str) -> int:
+    """How many edges a diagram has: one per line that has a ``---`` or an arrow."""
+    marks = ("-->", "---", ".->", "-.-")
+    return sum(1 for line in diagram.splitlines() if any(mark in line for mark in marks))
+
+
+def size_of(diagram: str) -> int:
+    """The length of a diagram as Mermaid counts it, in UTF-16 code units."""
+    return len(diagram.encode("utf-16-le")) // 2
+
+
+# A small map: string operators that link to a clause. Concatenation has a dataset form and a
+# component form, so its diagram has two boxes; Calculation has one form with no kind, so its
+# diagram has both sides and no box; String length has not been run.
 CONCAT = make_operator(
     "concat",
     "Concatenation",
     "||",
-    ("string",),
-    ("string",),
     (
         make_variant("ds_ds", "DS_1 || DS_2", examples=("manual_ex_1", "minimal")),
         make_variant("comp_sc", 'Me_1 || "x"', decision=1049),
@@ -98,25 +135,15 @@ LENGTH = make_operator(
     "length",
     "String length",
     "length",
-    ("string",),
-    ("integer",),
     (
         make_variant("comp", "length(Me_1)"),
         make_variant("sc_null", "length(null)", returns=("number",)),
     ),
 )
-CALC = make_operator(
-    "calc",
-    "Calculation",
-    "calc",
-    ("dataset",),
-    ("dataset",),
-    (make_variant("measure", "calc Me_1 := 1"),),
-)
+CALC = make_operator("calc", "Calculation", "calc", (make_variant("measure", "calc Me_1 := 1"),))
 STRING = Chapter("string", "String operators", (CONCAT, LENGTH))
 CLAUSE = Chapter("clause", "Clause operators", (CALC,))
 CAT = Catalogue((STRING, CLAUSE))
-# ``string/length`` has not been run: it has no status at any level.
 INDEX = make_index(
     variants={
         "string/concat/ds_ds": "ok",
@@ -127,6 +154,59 @@ INDEX = make_index(
     chapters={"string": "diverge", "clause": "missing"},
 )
 NOTHING_RUN = make_index()
+
+# An operator with a form of each kind: the three boxes, in the order of the widest operand.
+ROUND = make_operator(
+    "round",
+    "Rounding",
+    "round",
+    (
+        make_variant("ds", "round(DS_1, 1)"),
+        make_variant("comp", "DS_1[calc Me_1 := round(Me_1)]"),
+        make_variant("sc", "round(1.5)"),
+    ),
+)
+NUMERIC = Chapter("numeric", "Numeric operators", (ROUND,))
+ROUND_CAT = Catalogue((NUMERIC,))
+ROUND_INDEX = make_index(
+    variants={
+        "numeric/round/ds": "ok",
+        "numeric/round/comp": "partial",
+        "numeric/round/sc": "refused",
+    },
+    operators={"numeric/round": "partial"},
+    chapters={"numeric": "partial"},
+)
+
+
+def chapters_of(count: int) -> tuple[Chapter, ...]:
+    """``count`` chapters, ``c0``... in that order, each with one operator."""
+    return tuple(
+        Chapter(
+            f"c{n}",
+            f"Chapter {n}",
+            (make_operator(f"o{n}", f"Operator {n}", f"op{n}", (make_variant("v", "v"),)),),
+        )
+        for n in range(count)
+    )
+
+
+def operators_of(count: int) -> Chapter:
+    """A chapter of ``count`` operators, ``o0``..., each with two forms, ``a`` and ``b``."""
+    operators = tuple(
+        make_operator(
+            f"o{n}", f"Operator {n}", f"op{n}", (make_variant("a", "a"), make_variant("b", "b"))
+        )
+        for n in range(count)
+    )
+    return Chapter("numeric", "Numeric operators", operators)
+
+
+def lone(variants: tuple[Variant, ...]) -> tuple[Chapter, Operator, Catalogue]:
+    """An operator with ``variants``, alone in its chapter."""
+    operator = make_operator("op", "Op", "op", variants)
+    chapter = Chapter("numeric", "Numeric operators", (operator,))
+    return chapter, operator, Catalogue((chapter,))
 
 
 # --- Escaping and ids ---
@@ -153,6 +233,32 @@ def test_node_id_replaces_characters_outside_the_id_alphabet() -> None:
     assert node_id("a-b", "c d.e", "f#") == "a_b__c_d_e__f_"
 
 
+# --- Anchors ---
+
+
+def test_form_anchor_has_no_underscore() -> None:
+    assert form_anchor(make_variant("ds_group_by", "sum(DS group by Id)")) == "form-ds-group-by"
+    assert form_anchor(make_variant("ds", "x")) == "form-ds"
+
+
+def test_form_anchors_are_what_docutils_makes_of_them() -> None:
+    # Sphinx writes the id of a target with ``make_id``: an anchor that it would change is a click
+    # that lands nowhere. It needs docutils, which the docs have: the check is skipped without it.
+    nodes = pytest.importorskip("docutils.nodes")
+    for form_id in ("ds", "ds_group_by", "comp_2", "sc_null", "2d", "a_b_c_d"):
+        anchor = form_anchor(make_variant(form_id, "x"))
+        assert nodes.make_id(anchor) == anchor
+
+
+def test_example_anchor_has_the_form_and_the_name_and_no_underscore() -> None:
+    form = make_variant("ds_group_by", "x", examples=("zero_divisor", "manual_ex_1", "minimal"))
+    assert [example_anchor(form, example) for example in form.examples] == [
+        "ex-ds-group-by-zero-divisor",
+        "ex-ds-group-by-manual-ex-1",
+        "ex-ds-group-by-minimal",
+    ]
+
+
 # --- Limits ---
 
 
@@ -170,14 +276,15 @@ def test_check_limits_counts_every_edge_style_and_stays_under_the_limit() -> Non
     under = [
         "flowchart LR",
         'n0["a"]',  # a node line is not an edge
-        *edge_lines(200, "-->"),
-        *edge_lines(150, "---"),
+        *edge_lines(150, "-->"),
+        *edge_lines(100, "---"),
+        *edge_lines(100, "-.-"),  # the dotted line of "Used with"
         *edge_lines(149, ".->"),
     ]
     check_limits("\n".join(under))  # 499 edges
     assert MAX_EDGES == 500
     with pytest.raises(MermaidLimitError, match="500 edges"):
-        check_limits("\n".join([*under, "a --- b"]))
+        check_limits("\n".join([*under, "a -.- b"]))
 
 
 def test_check_limits_counts_characters_as_mermaid_does() -> None:
@@ -192,196 +299,790 @@ def test_check_limits_counts_characters_as_mermaid_does() -> None:
         check_limits(emojis)
 
 
-# --- Chapter blocks ---
+# --- The classes and the styles ---
 
 
-def test_every_block_starts_with_the_class_definitions() -> None:
-    blocks = [*chapter_blocks(STRING, CAT, INDEX), overview_block(CAT, INDEX)]
-    for block in blocks:
-        assert block.splitlines()[: len(CLASSES)] == CLASSES
+def test_the_classes_and_the_styles_are_the_designed_ones() -> None:
+    assert [f"    {line}" for line in CLASSES] == CLASS_LINES
+    assert BOX_STYLES == {"ds": SOLID, "comp": DASHED, "sc": DOTTED}
+    assert USED_WITH_STYLE == USED_WITH
+    assert USED_WITH_MAX == 8
 
 
-def test_chapter_block_layout() -> None:
-    assert chapter_blocks(STRING, CAT, INDEX) == [
-        block_of(
-            # The stubs of the operators of other chapters, once per block, as they are met.
-            'ext_clause__calc["↗ Calculation (clause.html)"]:::ext',
-            'click ext_clause__calc "clause.html"',
-            # Concatenation: a decision of its second variant pins it and that variant.
-            'string__concat["🔵 Concatenation #124;#124; 📌"]:::diverge',
-            'string__concat__ds_ds["🟢 DS_1 #124;#124; DS_2"]:::ok',
-            'string__concat__comp_sc["🔵 Me_1 #124;#124; #quot;x#quot; 📌"]:::diverge',
-            "string__concat --- string__concat__ds_ds",
-            "string__concat --- string__concat__comp_sc",
-            'string__concat -. "used in" .-> ext_clause__calc',
-            'click string__concat "examples/string/concat/ds_ds/manual_ex_1/"',
-            'click string__concat__ds_ds "examples/string/concat/ds_ds/manual_ex_1/"',
-            'click string__concat__comp_sc "examples/string/concat/comp_sc/minimal/"',
-            # String length has not been run: no emoji and no class. What it takes and gives,
-            # and what its second variant returns, are no nodes: a diagram has no types.
-            'string__length["String length length"]',
-            'string__length__comp["length(Me_1)"]',
-            'string__length__sc_null["length(null)"]',
-            "string__length --- string__length__comp",
-            "string__length --- string__length__sc_null",
-            'click string__length "examples/string/length/comp/minimal/"',
-            'click string__length__comp "examples/string/length/comp/minimal/"',
-            'click string__length__sc_null "examples/string/length/sc_null/minimal/"',
-        )
+def test_every_diagram_starts_with_its_type_and_the_classes() -> None:
+    sides = [
+        overview_block(CAT, INDEX),
+        block_diagram(STRING, INDEX),
+        operator_diagram(CLAUSE, CALC, CAT, INDEX),
     ]
+    boxes = [operator_diagram(NUMERIC, ROUND, ROUND_CAT, ROUND_INDEX)]
+    for direction, diagrams in (("LR", sides), ("TB", boxes)):
+        for diagram in diagrams:
+            assert diagram.splitlines()[: 1 + len(CLASS_LINES)] == [
+                f"flowchart {direction}",
+                *CLASS_LINES,
+            ]
 
 
-def test_chapter_without_operators_has_no_blocks() -> None:
-    empty = Chapter("empty", "Empty", ())
-    assert chapter_blocks(empty, Catalogue((empty,)), NOTHING_RUN) == []
-
-
-def test_operator_without_examples_has_no_click() -> None:
-    bare = make_operator("bare", "Bare", "bare", (), (), ())
-    chapter = Chapter("numeric", "Numeric operators", (bare,))
-    (block,) = chapter_blocks(chapter, Catalogue((chapter,)), NOTHING_RUN)
-    assert block == block_of('numeric__bare["Bare bare"]')
-
-
-def test_link_stub_is_defined_once_for_several_operators() -> None:
-    link = (Link("clause.calc", "used in"),)
-    first = make_operator("a", "A", "a", (), (), (make_variant("v", "a"),), link)
-    second = make_operator("b", "B", "b", (), (), (make_variant("v", "b"),), link)
-    chapter = Chapter("numeric", "Numeric operators", (first, second))
-    (block,) = chapter_blocks(chapter, Catalogue((chapter, CLAUSE)), NOTHING_RUN)
-    assert block.count('ext_clause__calc["') == 1
-    assert block.count('click ext_clause__calc "clause.html"') == 1
-    assert block.count(".-> ext_clause__calc") == 2
-
-
-def test_the_pages_of_the_chapters_are_html_pages_of_the_site() -> None:
-    # The map is a part of the Sphinx docs: a chapter is the page ``<chapter>.html``, never a
-    # file of Markdown. The diagrams name it so, in the clicks and in the labels of the stubs.
-    assert PAGE_SUFFIX == ".html"
-    (block,) = chapter_blocks(STRING, CAT, INDEX)
-    overview = overview_block(CAT, INDEX)
-    for text in (block, overview):
-        assert ".md" not in text
-    assert f'click ext_clause__calc "clause{PAGE_SUFFIX}"' in block
-    assert f"(clause{PAGE_SUFFIX})" in block
-    assert f'click chapter__string "string{PAGE_SUFFIX}"' in overview
-
-
-def test_the_size_limits_are_checked_on_the_text_with_the_page_suffix(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    targets = [
-        make_operator(f"t{n}", f"T{n}", "t", (), (), (make_variant("v", "t"),)) for n in "123"
-    ]
-    other = Chapter("other", "Other operators", tuple(targets))
-    links = tuple(Link(f"other.t{n}", "uses") for n in "123")
-
-    def chapter(padding: int) -> Chapter:
-        name = "x" * padding
-        pad = make_operator("pad", name, "p", (), (), (make_variant("v", "p"),), links)
-        return Chapter("numeric", "Numeric operators", (pad,))
-
-    def size(padding: int) -> int:
-        (block,) = chapter_blocks(
-            chapter(padding), Catalogue((chapter(padding), other)), NOTHING_RUN
-        )
-        return len(block.encode("utf-16-le")) // 2
-
-    # With the suffix ``.md`` the block would be one character under the limit (the name of the
-    # operator is one character long to begin with, and adds a character for each other one)...
-    monkeypatch.setattr(tool.mermaid, "PAGE_SUFFIX", ".md")
-    padding = MAX_CHARS - size(1)
-    assert size(padding) == MAX_CHARS - 1
-    # ...and the name of each page is written twice for each of the three stubs: with the real
-    # suffix it is over, and the check says so.
-    monkeypatch.setattr(tool.mermaid, "PAGE_SUFFIX", PAGE_SUFFIX)
-    with pytest.raises(MermaidLimitError, match="characters"):
-        size(padding)
-
-
-def test_link_labels_stub_names_and_chapter_titles_are_escaped() -> None:
-    target = make_operator("calc", 'Calc "x" [y]', "calc", (), (), (make_variant("v", "calc"),))
-    clause = Chapter("clause", "Clause # operators", (target,))
-    link = Link("clause.calc", "a|b")
-    source = make_operator("a", "A", "a", (), (), (make_variant("v", "a"),), (link,))
-    chapter = Chapter("numeric", "Numeric operators", (source,))
-    cat = Catalogue((chapter, clause))
-    (block,) = chapter_blocks(chapter, cat, NOTHING_RUN)
-    assert 'numeric__a -. "a#124;b" .-> ext_clause__calc' in block
-    assert 'ext_clause__calc["↗ Calc #quot;x#quot; #91;y#93; (clause.html)"]:::ext' in block
-    assert 'chapter__clause["Clause #35; operators<br/>' in overview_block(cat, NOTHING_RUN)
-
-
-def test_link_to_an_unknown_target_raises() -> None:
-    lost = make_operator("lost", "Lost", "lost", (), (), (), (Link("clause.nope", "used in"),))
-    chapter = Chapter("numeric", "Numeric operators", (lost,))
-    with pytest.raises(ValueError, match="numeric.lost: target 'clause.nope' not found"):
-        chapter_blocks(chapter, Catalogue((chapter, CLAUSE)), NOTHING_RUN)
-
-
-def synthetic_chapter(count: int) -> Chapter:
-    """``count`` operators with two variants each."""
-    operators = tuple(
-        make_operator(
-            f"op_{n}",
-            f"Operator {n}",
-            f"op{n}",
-            ("number",) if n % 2 else ("string",),
-            ("number",),
-            (make_variant("ds", "DS"), make_variant("comp", "Me_1")),
-        )
-        for n in range(count)
-    )
-    return Chapter("numeric", "Numeric operators", operators)
-
-
-def test_chapter_blocks_split_under_limits() -> None:
-    chapter = synthetic_chapter(300)
-    blocks = chapter_blocks(chapter, Catalogue((chapter,)), NOTHING_RUN)
-    assert len(blocks) >= 2
-    for block in blocks:
-        check_limits(block)
-    defined = [
-        [m.group(1) for m in re.finditer(r"^ *(numeric__op_\d+)\[", block, re.MULTILINE)]
-        for block in blocks
-    ]
-    # Every operator is defined in exactly one block, and the blocks keep the catalogue order.
-    assert [node for nodes in defined for node in nodes] == [
-        node_id("numeric", operator.id) for operator in chapter.operators
-    ]
-
-
-def test_a_single_operator_over_the_limit_raises() -> None:
-    forms = tuple(make_variant(f"v{n}", f"form {n}") for n in range(MAX_EDGES + 1))
-    big = make_operator("big", "Big", "big", (), (), forms)
-    chapter = Chapter("numeric", "Numeric operators", (big,))
-    with pytest.raises(MermaidLimitError, match=r"numeric\.big"):
-        chapter_blocks(chapter, Catalogue((chapter,)), NOTHING_RUN)
-
-
-# --- Overview ---
+# --- The overview ---
 
 
 def test_overview_layout() -> None:
-    # One node per chapter, with how many of its variants are in each status, and a click to
-    # its page: no node for a type.
+    # VTL 2.2 in the middle, the first half of the blocks to the left of it and the rest to the
+    # right, with plain lines. A block says how many operators it has and how many are in each
+    # status, and links to its page: there is no node for a type.
     assert overview_block(CAT, INDEX) == block_of(
-        'chapter__string["🔵 String operators<br/>🟢 1 · 🟡 0 · 🔴 0 · 🔵 1"]:::diverge',
-        'chapter__clause["🔴 Clause operators<br/>🟢 0 · 🟡 0 · 🔴 1 · 🔵 0"]:::missing',
-        'click chapter__string "string.html"',
-        'click chapter__clause "clause.html"',
+        "LR",
+        'R["VTL 2.2<br/>Reference Manual"]:::block',
+        'chapter__string["🔵 String operators<br/>2 operators · 🔵1"]:::diverge',
+        'chapter__clause["🔴 Clause operators<br/>1 operator · 🔴1"]:::missing',
+        "chapter__string --- R",
+        "R --- chapter__clause",
+        'click chapter__string href "string/index.html"',
+        'click chapter__clause href "clause/index.html"',
     )
 
 
-# --- Statuses that are not there yet ---
+@pytest.mark.parametrize(("count", "left"), [(14, 7), (5, 3), (4, 2), (1, 1), (0, 0)])
+def test_overview_both_sides(count: int, left: int) -> None:
+    cat = Catalogue(chapters_of(count))
+    text = overview_block(cat, NOTHING_RUN)
+    assert text.splitlines()[0] == "flowchart LR"
+    assert "-->" not in text
+    lines = body(text)
+    ids = [node_id("chapter", chapter.id) for chapter in cat.chapters]
+    # The first half of the chapters is written ``X --- R`` and the rest ``R --- X``, in order.
+    assert [line for line in lines if line.endswith(" --- R")] == [f"{i} --- R" for i in ids[:left]]
+    assert [line for line in lines if line.startswith("R --- ")] == [
+        f"R --- {i}" for i in ids[left:]
+    ]
+    for chapter, node in zip(cat.chapters, ids):
+        assert f'click {node} href "{chapter.id}/index.html"' in lines
+
+
+def test_overview_counts_the_operators_and_tallies_their_statuses() -> None:
+    operators = tuple(
+        make_operator(f"o{n}", f"O{n}", "o", (make_variant("v", "v"),)) for n in range(5)
+    )
+    cat = Catalogue((Chapter("c", "C", operators),))
+    index = make_index(
+        operators={
+            "c/o0": "ok",
+            "c/o1": "ok",
+            "c/o2": "refused",
+            "c/o3": "missing",
+            "c/o4": "diverge",
+        },
+        chapters={"c": "diverge"},
+    )
+    assert body(overview_block(cat, index))[1] == (
+        'chapter__c["🔵 C<br/>5 operators · 🟢2 🛡️1 🔴1 🔵1"]:::diverge'
+    )
+
+
+# --- The diagram of a block ---
+
+
+def test_block_diagram_layout() -> None:
+    # The block in the middle, half of its operators to the left and half to the right. An
+    # operator shows how many of its forms are in each status, and links to its page; a team
+    # decision of one of its examples pins it. String length has not been run: no emoji, no
+    # class and no tally.
+    assert block_diagram(STRING, INDEX) == block_of(
+        "LR",
+        'B["String operators"]:::block',
+        'string__concat["🔵 Concatenation · #124;#124; 📌<br/>🟢1 🔵1"]:::diverge',
+        'string__length["String length · length"]',
+        "string__concat --- B",
+        "B --- string__length",
+        'click string__concat href "concat.html"',
+        'click string__length href "length.html"',
+    )
+
+
+def test_block_diagram_both_sides_clicks() -> None:
+    chapter = operators_of(9)
+    variants: dict[str, Status] = {}
+    for n in range(9):
+        variants[f"numeric/o{n}/a"] = "ok"
+        variants[f"numeric/o{n}/b"] = "partial"
+    index = make_index(variants=variants, operators={f"numeric/o{n}": "partial" for n in range(9)})
+    text = block_diagram(chapter, index)
+    assert text.splitlines()[0] == "flowchart LR"
+    assert "-->" not in text
+    lines = body(text)
+    ids = [node_id("numeric", operator.id) for operator in chapter.operators]
+    # Half of the operators to the left of the block, the larger half when they are odd.
+    assert [line for line in lines if line.endswith(" --- B")] == [f"{i} --- B" for i in ids[:5]]
+    assert [line for line in lines if line.startswith("B --- ")] == [f"B --- {i}" for i in ids[5:]]
+    for operator, node in zip(chapter.operators, ids):
+        assert f'click {node} href "{operator.id}.html"' in lines
+        # The label carries the tally of the forms of the operator.
+        label = next(line for line in lines if line.startswith(f"{node}["))
+        assert label.endswith('<br/>🟢1 🟡1"]:::partial')
+
+
+def test_block_diagram_of_a_chapter_without_operators_is_the_block_alone() -> None:
+    empty = Chapter("empty", "Empty", ())
+    assert block_diagram(empty, NOTHING_RUN) == block_of("LR", 'B["Empty"]:::block')
+
+
+def test_block_diagram_of_an_operator_without_forms_has_no_tally() -> None:
+    bare = make_operator("bare", "Bare", "bare", ())
+    chapter = Chapter("numeric", "Numeric operators", (bare,))
+    index = make_index(operators={"numeric/bare": "ok"})
+    assert body(block_diagram(chapter, index))[1] == 'numeric__bare["🟢 Bare · bare"]:::ok'
+
+
+# --- The diagram of an operator: boxes ---
+
+
+def test_operator_diagram_boxes() -> None:
+    assert operator_diagram(NUMERIC, ROUND, ROUND_CAT, ROUND_INDEX) == block_of(
+        "TB",
+        'O["🟡 Rounding · round<br/>🟢1 🟡1 🛡️1"]:::partial',
+        'subgraph G_ds["Dataset"]',
+        "    direction LR",
+        '    v_ds["🟢 round(DS_1, 1)"]:::ok',
+        "end",
+        'subgraph G_comp["Component"]',
+        "    direction LR",
+        '    v_comp["🟡 DS_1#91;calc Me_1 #58;#61; round(Me_1)#93;"]:::partial',
+        "end",
+        'subgraph G_sc["Scalar"]',
+        "    direction LR",
+        '    v_sc["🛡️ round(1.5)"]:::refused',
+        "end",
+        "O --- G_ds",
+        "O --- G_comp",
+        "O --- G_sc",
+        f"style G_ds {SOLID}",
+        f"style G_comp {DASHED}",
+        f"style G_sc {DOTTED}",
+        'click v_ds href "#form-ds"',
+        'click v_comp href "#form-comp"',
+        'click v_sc href "#form-sc"',
+    )
+
+
+def test_operator_diagram_boxes_have_a_border_each_and_every_form_a_click() -> None:
+    text = operator_diagram(NUMERIC, ROUND, ROUND_CAT, ROUND_INDEX)
+    lines = body(text)
+    assert text.splitlines()[0] == "flowchart TB"
+    assert "-->" not in text
+    for kind, title, style in (
+        ("ds", "Dataset", SOLID),
+        ("comp", "Component", DASHED),
+        ("sc", "Scalar", DOTTED),
+    ):
+        assert f'subgraph G_{kind}["{title}"]' in lines
+        assert f"O --- G_{kind}" in lines
+        assert f"style G_{kind} {style}" in lines
+    # Each form is a click to its own section of the page, by the anchor of its form.
+    for form in ROUND.variants:
+        assert f'click v_{form.id} href "#{form_anchor(form)}"' in lines
+    # The fill is the same in the three boxes: the border tells them apart.
+    assert len({style.split(",stroke-dasharray")[0] for style in BOX_STYLES.values()}) == 1
+
+
+def test_a_kind_with_no_forms_has_no_box() -> None:
+    chapter, operator, cat = lone(
+        (make_variant("ds", "substr(DS_1, 1)"), make_variant("sc", 'substr("abc", 1)'))
+    )
+    text = operator_diagram(chapter, operator, cat, NOTHING_RUN)
+    lines = body(text)
+    assert text.splitlines()[0] == "flowchart TB"
+    assert text.count("subgraph ") == 2
+    assert 'subgraph G_ds["Dataset"]' in lines
+    assert 'subgraph G_sc["Scalar"]' in lines
+    assert "O --- G_ds" in lines
+    assert "O --- G_sc" in lines
+    assert "G_comp" not in text
+    assert "Component" not in text
+
+
+def test_an_operator_of_two_kinds_gets_boxes_whatever_the_kind_of_most_forms() -> None:
+    # ``cast``: many forms on components, one on a dataset, one on a scalar. The ids of the
+    # conversions have no token for their kind: the kind of the form says it.
+    conversions = tuple(
+        make_variant(f"{source}_to_{target}", f"cast(Me_1, {target})", kind="comp")
+        for source, target in (("integer", "boolean"), ("string", "date"), ("number", "string"))
+    )
+    forms = (*conversions, make_variant("ds", "cast(DS_1, string)"), make_variant("sc", "cast(1)"))
+    chapter, operator, cat = lone(forms)
+    text = operator_diagram(chapter, operator, cat, NOTHING_RUN)
+    lines = body(text)
+    assert text.splitlines()[0] == "flowchart TB"
+    assert text.count("subgraph ") == 3
+    start = lines.index('subgraph G_comp["Component"]')
+    assert lines[start + 2 : start + 6] == [
+        'v_integer_to_boolean["cast(Me_1, boolean)"]',
+        'v_string_to_date["cast(Me_1, date)"]',
+        'v_number_to_string["cast(Me_1, string)"]',
+        "end",
+    ]
+
+
+def test_a_form_that_says_its_kind_goes_to_that_box_whatever_its_id_says() -> None:
+    chapter, operator, cat = lone(
+        (make_variant("sc_comp_digits", "x", kind="ds"), make_variant("sc", "y"))
+    )
+    lines = body(operator_diagram(chapter, operator, cat, NOTHING_RUN))
+    assert lines[lines.index('subgraph G_ds["Dataset"]') + 2] == 'v_sc_comp_digits["x"]'
+    assert lines[lines.index('subgraph G_sc["Scalar"]') + 2] == 'v_sc["y"]'
+
+
+# --- The diagram of an operator: both sides ---
+
+
+def test_operator_diagram_single_kind() -> None:
+    # Join forms have no token for a kind: the diagram has both sides, half of the forms on each,
+    # and no box. The same goes for an operator whose forms are all of one kind.
+    joins = tuple(make_variant(f"form_{n}", f"inner_join(DS_{n})") for n in range(5))
+    only_components = tuple(make_variant(f"comp_{n}", f"Me_{n}") for n in range(4))
+    for forms, left in ((joins, 3), (only_components, 2)):
+        chapter, operator, cat = lone(forms)
+        text = operator_diagram(chapter, operator, cat, NOTHING_RUN)
+        assert text.splitlines()[0] == "flowchart LR"
+        for word in ("subgraph", "style ", "G_", "-->"):
+            assert word not in text
+        lines = body(text)
+        ids = [f"v_{form.id}" for form in forms]
+        assert [line for line in lines if line.endswith(" --- O")] == [
+            f"{i} --- O" for i in ids[:left]
+        ]
+        assert [line for line in lines if line.startswith("O --- ")] == [
+            f"O --- {i}" for i in ids[left:]
+        ]
+        for form in forms:
+            assert f'click v_{form.id} href "#{form_anchor(form)}"' in lines
+
+
+def test_operator_diagram_both_sides_layout() -> None:
+    assert operator_diagram(CLAUSE, CALC, Catalogue((CLAUSE,)), INDEX) == block_of(
+        "LR",
+        'O["🔴 Calculation · calc<br/>🔴1"]:::missing',
+        'v_measure["🔴 calc Me_1 #58;#61; 1"]:::missing',
+        "v_measure --- O",
+        'click v_measure href "#form-measure"',
+    )
+
+
+def test_a_form_with_no_kind_among_forms_of_two_kinds_hangs_from_the_operator() -> None:
+    # The strict checks of the catalogue refuse this mixture, but a diagram never drops a form.
+    chapter, operator, cat = lone(
+        (make_variant("ds", "a"), make_variant("comp", "b"), make_variant("other", "c"))
+    )
+    text = operator_diagram(chapter, operator, cat, NOTHING_RUN)
+    lines = body(text)
+    assert text.splitlines()[0] == "flowchart TB"
+    assert text.count("subgraph ") == 2
+    assert 'v_other["c"]' in lines
+    assert "O --- v_other" in lines
+    assert 'click v_other href "#form-other"' in lines
+
+
+def test_a_form_with_no_kind_among_forms_of_one_kind_is_drawn_on_the_sides() -> None:
+    chapter, operator, cat = lone(
+        (make_variant("comp", "a"), make_variant("comp_2", "b"), make_variant("other", "c"))
+    )
+    text = operator_diagram(chapter, operator, cat, NOTHING_RUN)
+    lines = body(text)
+    assert text.splitlines()[0] == "flowchart LR"
+    assert "subgraph" not in text
+    assert [line for line in lines if " --- " in line] == [
+        "v_comp --- O",
+        "v_comp_2 --- O",
+        "O --- v_other",
+    ]
+
+
+def test_an_operator_without_forms_is_the_operator_alone() -> None:
+    bare = make_operator("bare", "Bare", "", ())
+    chapter = Chapter("definitions", "Definitions", (bare,))
+    text = operator_diagram(chapter, bare, Catalogue((chapter,)), NOTHING_RUN)
+    assert text == block_of("LR", 'O["Bare"]')
+
+
+# --- "Used with" ---
+
+
+def test_used_with_both_ends() -> None:
+    # Concatenation says that it is used in a calc. The diagram of the calc has the concatenation,
+    # with the reverse of "used in", and the diagram of the concatenation has the calc, with the
+    # label that it declared. Each is a link to the page of the other operator.
+    calc = body(operator_diagram(CLAUSE, CALC, CAT, INDEX))
+    assert 'subgraph G_use["Used with"]' in calc
+    assert (
+        'used__string__concat["Concatenation · #124;#124; ↗<br/><small>uses</small>"]:::ext' in calc
+    )
+    assert 'click used__string__concat href "../string/concat.html"' in calc
+    concat = body(operator_diagram(STRING, CONCAT, CAT, INDEX))
+    assert 'subgraph G_use["Used with"]' in concat
+    assert 'used__clause__calc["Calculation · calc ↗<br/><small>used in</small>"]:::ext' in concat
+    assert 'click used__clause__calc href "../clause/calc.html"' in concat
+
+
+def test_used_with_layout_with_boxes() -> None:
+    assert operator_diagram(STRING, CONCAT, CAT, INDEX) == block_of(
+        "TB",
+        'O["🔵 Concatenation · #124;#124; 📌<br/>🟢1 🔵1"]:::diverge',
+        'subgraph G_ds["Dataset"]',
+        "    direction LR",
+        '    v_ds_ds["🟢 DS_1 #124;#124; DS_2"]:::ok',
+        "end",
+        'subgraph G_comp["Component"]',
+        "    direction LR",
+        '    v_comp_sc["🔵 Me_1 #124;#124; #quot;x#quot; 📌"]:::diverge',
+        "end",
+        'subgraph G_use["Used with"]',
+        "    direction LR",
+        '    used__clause__calc["Calculation · calc ↗<br/><small>used in</small>"]:::ext',
+        "end",
+        "O --- G_ds",
+        "O --- G_comp",
+        "O -.- G_use",
+        f"style G_ds {SOLID}",
+        f"style G_comp {DASHED}",
+        f"style G_use {USED_WITH}",
+        'click v_ds_ds href "#form-ds-ds"',
+        'click v_comp_sc href "#form-comp-sc"',
+        'click used__clause__calc href "../clause/calc.html"',
+    )
+
+
+def test_used_with_layout_on_both_sides() -> None:
+    assert operator_diagram(CLAUSE, CALC, CAT, INDEX) == block_of(
+        "LR",
+        'O["🔴 Calculation · calc<br/>🔴1"]:::missing',
+        'v_measure["🔴 calc Me_1 #58;#61; 1"]:::missing',
+        'subgraph G_use["Used with"]',
+        "    direction LR",
+        '    used__string__concat["Concatenation · #124;#124; ↗<br/><small>uses</small>"]:::ext',
+        "end",
+        "v_measure --- O",
+        "O -.- G_use",
+        f"style G_use {USED_WITH}",
+        'click v_measure href "#form-measure"',
+        'click used__string__concat href "../string/concat.html"',
+    )
+
+
+def linked(label: str) -> Catalogue:
+    """The operator ``alpha.a`` links to ``beta.b`` with ``label``."""
+    source = make_operator(
+        "a", "Alpha", "a", (make_variant("x", "a(1)"),), (Link("beta.b", label),)
+    )
+    target = make_operator("b", "Beta", "b", (make_variant("y", "b(1)"),))
+    return Catalogue(
+        (
+            Chapter("alpha", "Alpha operators", (source,)),
+            Chapter("beta", "Beta operators", (target,)),
+        )
+    )
+
+
+def diagram_of(cat: Catalogue, chapter_id: str, operator_id: str) -> list[str]:
+    """The lines of the diagram of an operator of ``cat``, with nothing run."""
+    chapter = next(chapter for chapter in cat.chapters if chapter.id == chapter_id)
+    operator = next(operator for operator in chapter.operators if operator.id == operator_id)
+    return body(operator_diagram(chapter, operator, cat, NOTHING_RUN))
+
+
+@pytest.mark.parametrize(
+    ("declared", "reverse"),
+    [
+        ("uses", "used by"),
+        ("used by", "uses"),
+        ("used in", "uses"),
+        ("used in over()", "uses, in over()"),
+        ("used in group all", "uses, in group all"),
+        ("propagates at", "propagation defined by"),
+    ],
+)
+def test_used_with_reverse_labels(declared: str, reverse: str) -> None:
+    cat = linked(declared)
+    source = diagram_of(cat, "alpha", "a")
+    target = diagram_of(cat, "beta", "b")
+    assert f'used__beta__b["Beta · b ↗<br/><small>{declared}</small>"]:::ext' in source
+    assert f'used__alpha__a["Alpha · a ↗<br/><small>{reverse}</small>"]:::ext' in target
+    assert 'click used__beta__b href "../beta/b.html"' in source
+    assert 'click used__alpha__a href "../alpha/a.html"' in target
+
+
+def test_used_with_a_link_declared_at_both_ends_is_shown_once() -> None:
+    # The definitions say "used by" where the operators say "uses": at each end, the box has the
+    # other operator once, with one label.
+    back = make_operator(
+        "b", "Beta", "b", (make_variant("y", "b(1)"),), (Link("alpha.a", "used by"),)
+    )
+    cat = Catalogue((linked("uses").chapters[0], Chapter("beta", "Beta operators", (back,))))
+    for chapter_id, operator_id, other, label in (
+        ("alpha", "a", "beta__b", "uses"),
+        ("beta", "b", "alpha__a", "used by"),
+    ):
+        entries = [
+            line for line in diagram_of(cat, chapter_id, operator_id) if line.startswith("used__")
+        ]
+        assert len(entries) == 1
+        assert entries[0].startswith(f"used__{other}[")
+        assert f"<small>{label}</small>" in entries[0]
+
+
+def test_used_with_two_labels_for_one_operator_are_one_entry() -> None:
+    source = make_operator(
+        "a",
+        "Alpha",
+        "a",
+        (make_variant("x", "a(1)"),),
+        (Link("beta.b", "uses"), Link("beta.b", "used in over()")),
+    )
+    target = make_operator("b", "Beta", "b", (make_variant("y", "b(1)"),))
+    cat = Catalogue(
+        (
+            Chapter("alpha", "Alpha operators", (source,)),
+            Chapter("beta", "Beta operators", (target,)),
+        )
+    )
+    entries = [line for line in diagram_of(cat, "alpha", "a") if line.startswith("used__")]
+    assert entries == ['used__beta__b["Beta · b ↗<br/><small>uses · used in over()</small>"]:::ext']
+
+
+def test_used_with_declared_entries_come_before_the_reverse_ones() -> None:
+    def operator(operator_id: str, links: tuple[Link, ...] = ()) -> Operator:
+        return make_operator(operator_id, operator_id, "", (make_variant("y", "y"),), links)
+
+    hub = operator("hub", (Link("beta.b2", "uses"), Link("beta.b1", "uses")))
+    users = (
+        operator("u2", (Link("alpha.hub", "uses"),)),
+        operator("u1", (Link("alpha.hub", "uses"),)),
+    )
+    beta = Chapter("beta", "Beta operators", (operator("b1"), operator("b2")))
+    cat = Catalogue((Chapter("alpha", "Alpha operators", (hub, *users)), beta))
+    entries = [line.split("[")[0] for line in diagram_of(cat, "alpha", "hub")]
+    assert [entry for entry in entries if entry.startswith("used__")] == [
+        "used__beta__b2",  # declared, in the order of its links
+        "used__beta__b1",
+        "used__alpha__u2",  # then those that link here, in the order of the catalogue
+        "used__alpha__u1",
+    ]
+
+
+def hub_of(declared: int, users: int) -> Catalogue:
+    """A hub that links to ``declared`` operators of ``alpha``, and that ``users`` of ``beta``."""
+    alpha = tuple(
+        make_operator(f"a{n}", f"A{n}", f"a{n}", (make_variant("y", "y"),)) for n in range(declared)
+    )
+    beta = tuple(
+        make_operator(
+            f"b{n}", f"B{n}", f"b{n}", (make_variant("y", "y"),), (Link("hub.hub", "used in"),)
+        )
+        for n in range(users)
+    )
+    links = tuple(Link(f"alpha.a{n}", "uses") for n in range(declared))
+    hub = make_operator("hub", "Hub", "hub", (make_variant("x", "hub(1)"),), links)
+    return Catalogue(
+        (
+            Chapter("alpha", "Alpha # operators", alpha),
+            Chapter("hub", "Hub operators", (hub,)),
+            Chapter("beta", "Beta operators", beta),
+        )
+    )
+
+
+def test_used_with_eight_entries_are_one_node_each() -> None:
+    # Five links that it declares and three that point to it: eight entries, a node for each.
+    lines = diagram_of(hub_of(5, 3), "hub", "hub")
+    nodes = [line for line in lines if line.startswith("used__")]
+    assert len(nodes) == USED_WITH_MAX == 8
+    assert all("↗<br/><small>" in node for node in nodes)
+    assert [line for line in lines if line.startswith("click used__")] == [
+        *(f'click used__alpha__a{n} href "../alpha/a{n}.html"' for n in range(5)),
+        *(f'click used__beta__b{n} href "../beta/b{n}.html"' for n in range(3)),
+    ]
+
+
+def test_used_with_grouped_over_8() -> None:
+    # Six links that it declares and three that point to it: nine entries become one node for
+    # each block, with the title of the block and how many entries it has, linking to the page of
+    # the block, in the order of the catalogue.
+    lines = diagram_of(hub_of(6, 3), "hub", "hub")
+    assert [line for line in lines if line.startswith("used__")] == [
+        'used__alpha["Alpha #35; operators (6)"]:::ext',
+        'used__beta["Beta operators (3)"]:::ext',
+    ]
+    assert [line for line in lines if line.startswith("click used__")] == [
+        'click used__alpha href "../alpha/index.html"',
+        'click used__beta href "../beta/index.html"',
+    ]
+    assert "O -.- G_use" in lines
+    assert f"style G_use {USED_WITH}" in lines
+    assert not any("↗" in line for line in lines)
+
+
+def test_used_with_grouped_counts_the_entries_that_point_to_the_operator_too() -> None:
+    assert [
+        line for line in diagram_of(hub_of(0, 9), "hub", "hub") if line.startswith("used__")
+    ] == ['used__beta["Beta operators (9)"]:::ext']
+
+
+def test_used_with_lists_the_operators_of_the_box_with_their_labels() -> None:
+    # The same operators as the box, in the same order, whether the box shows them one by one or
+    # by block: a page that lists them in full agrees with the diagram.
+    def listed(cat: Catalogue, chapter_id: str, operator_id: str) -> list[tuple[str, ...]]:
+        chapter = next(chapter for chapter in cat.chapters if chapter.id == chapter_id)
+        operator = next(operator for operator in chapter.operators if operator.id == operator_id)
+        return [
+            (entry.chapter.id, entry.operator.id, *entry.labels)
+            for entry in used_with(chapter, operator, cat)
+        ]
+
+    assert listed(CAT, "string", "concat") == [("clause", "calc", "used in")]
+    assert listed(CAT, "clause", "calc") == [("string", "concat", "uses")]
+    assert listed(CAT, "string", "length") == []
+    assert listed(hub_of(1, 1), "hub", "hub") == [
+        ("alpha", "a0", "uses"),
+        ("beta", "b0", "uses"),
+    ]
+    nine = listed(hub_of(6, 3), "hub", "hub")
+    assert len(nine) == 9
+    assert [entry[0] for entry in nine] == ["alpha"] * 6 + ["beta"] * 3
+
+
+def test_used_with_none_has_no_box() -> None:
+    text = operator_diagram(NUMERIC, ROUND, ROUND_CAT, ROUND_INDEX)
+    for word in ("G_use", "Used with", "-.-"):
+        assert word not in text
+
+
+def test_a_link_to_an_unknown_target_raises() -> None:
+    lost = make_operator("lost", "Lost", "lost", (), (Link("clause.nope", "used in"),))
+    chapter = Chapter("numeric", "Numeric operators", (lost,))
+    with pytest.raises(ValueError, match="numeric.lost: target 'clause.nope' not found"):
+        operator_diagram(chapter, lost, Catalogue((chapter, CLAUSE)), NOTHING_RUN)
+
+
+def test_a_label_with_no_reverse_raises_at_the_target_end() -> None:
+    cat = linked("sees")
+    # The end that declares the label shows it as it is; the other end needs its reverse.
+    assert 'used__beta__b["Beta · b ↗<br/><small>sees</small>"]:::ext' in diagram_of(
+        cat, "alpha", "a"
+    )
+    with pytest.raises(ValueError, match="alpha.a: link label 'sees' has no reverse label"):
+        diagram_of(cat, "beta", "b")
+
+
+# --- All the diagrams ---
+
+
+def defined_ids(diagram: str) -> list[str]:
+    """The ids that a diagram defines, as nodes and as subgraphs, in order."""
+    found = (re.match(r'(?:subgraph )?(\w+)\["', line) for line in body(diagram))
+    return [match.group(1) for match in found if match is not None]
+
+
+def test_every_diagram_is_well_formed() -> None:
+    mixed = lone((make_variant("ds", "a"), make_variant("comp", "b"), make_variant("other", "c")))
+    diagrams = [
+        overview_block(CAT, INDEX),
+        block_diagram(STRING, INDEX),
+        operator_diagram(NUMERIC, ROUND, ROUND_CAT, ROUND_INDEX),
+        operator_diagram(STRING, CONCAT, CAT, INDEX),
+        operator_diagram(CLAUSE, CALC, CAT, INDEX),
+        operator_diagram(*mixed[:2], mixed[2], NOTHING_RUN),
+    ]
+    for declared in (5, 6):  # eight entries of "Used with" are nodes, nine are blocks
+        hub = hub_of(declared, 3)
+        diagrams.append(operator_diagram(hub.chapters[1], hub.chapters[1].operators[0], hub, INDEX))
+    for diagram in diagrams:
+        ids = defined_ids(diagram)
+        assert len(ids) == len(set(ids)), "an id is defined twice"
+        for line in body(diagram):
+            if line.startswith(("click ", "style ")):
+                assert line.split()[1] in ids, line
+            edge = re.fullmatch(r"(\w+) (?:---|-\.-) (\w+)", line)
+            if edge is not None:
+                assert edge.group(1) in ids, line
+                assert edge.group(2) in ids, line
+
+
+# --- The statuses ---
+
+
+def test_refused_class() -> None:
+    # Refused is the green of "all ok" with a 3 px dotted border, and the shield.
+    assert (
+        "classDef refused fill:#d4edda,stroke:#28a745,stroke-width:3px,"
+        "stroke-dasharray: 2 2,color:#000"
+    ) in CLASSES
+    assert EMOJI["refused"] == "🛡️"
+    chapter = Chapter("c", "C", (make_operator("o", "O", "o", (make_variant("v", "v()"),)),))
+    cat = Catalogue((chapter,))
+    index = make_index(
+        variants={"c/o/v": "refused"}, operators={"c/o": "refused"}, chapters={"c": "refused"}
+    )
+    operator = body(operator_diagram(chapter, chapter.operators[0], cat, index))
+    assert 'O["🛡️ O · o<br/>🛡️1"]:::refused' in operator
+    assert 'v_v["🛡️ v()"]:::refused' in operator
+    assert 'c__o["🛡️ O · o<br/>🛡️1"]:::refused' in body(block_diagram(chapter, index))
+    assert 'chapter__c["🛡️ C<br/>1 operator · 🛡️1"]:::refused' in body(overview_block(cat, index))
+
+
+def test_all_the_statuses_are_in_the_tally_in_the_order_of_the_legend() -> None:
+    statuses: tuple[Status, ...] = ("ok", "partial", "refused", "missing", "diverge")
+    forms = tuple(make_variant(f"f{n}", f"f{n}") for n in range(5))
+    chapter, operator, cat = lone(forms)
+    index = make_index(
+        variants={f"numeric/op/f{n}": status for n, status in enumerate(statuses)},
+        operators={"numeric/op": "diverge"},
+    )
+    node = body(operator_diagram(chapter, operator, cat, index))[0]
+    assert node == 'O["🔵 Op · op<br/>🟢1 🟡1 🛡️1 🔴1 🔵1"]:::diverge'
 
 
 def test_missing_statuses_render_neutral() -> None:
-    blocks = chapter_blocks(STRING, CAT, NOTHING_RUN)
-    text = "\n".join(line for block in blocks for line in block.splitlines()[len(CLASSES) :])
-    for status, emoji in EMOJI.items():
-        assert f":::{status}" not in text
-        assert emoji not in text
-    assert overview_block(CAT, NOTHING_RUN).splitlines()[len(CLASSES)] == (
-        '    chapter__string["String operators<br/>🟢 0 · 🟡 0 · 🔴 0 · 🔵 0"]'
+    diagrams = [
+        overview_block(CAT, NOTHING_RUN),
+        block_diagram(STRING, NOTHING_RUN),
+        operator_diagram(STRING, CONCAT, CAT, NOTHING_RUN),
+        operator_diagram(CLAUSE, CALC, CAT, NOTHING_RUN),
+    ]
+    for diagram in diagrams:
+        text = "\n".join(diagram.splitlines()[1 + len(CLASS_LINES) :])
+        for status, emoji in EMOJI.items():
+            assert f":::{status}" not in text
+            assert emoji not in text
+    assert body(overview_block(CAT, NOTHING_RUN))[1] == (
+        'chapter__string["String operators<br/>2 operators"]'
     )
+    assert body(block_diagram(STRING, NOTHING_RUN))[1] == (
+        'string__concat["Concatenation · #124;#124; 📌"]'
+    )
+
+
+# --- Pages and escaping ---
+
+
+def test_the_pages_of_the_diagrams_are_html_pages_of_the_site() -> None:
+    # The map is a part of the Sphinx docs: a page is ``<name>.html``, never a file of Markdown.
+    # The overview goes to the page of a block, a block to the page of an operator, and an
+    # operator to the section of a form or to the page of what it is used with: all relative.
+    assert PAGE_SUFFIX == ".html"
+    diagrams = [
+        overview_block(CAT, INDEX),
+        block_diagram(STRING, INDEX),
+        operator_diagram(STRING, CONCAT, CAT, INDEX),
+        operator_diagram(CLAUSE, CALC, CAT, INDEX),
+    ]
+    for diagram in diagrams:
+        assert ".md" not in diagram
+    clicks = [line for diagram in diagrams for line in body(diagram) if line.startswith("click ")]
+    found = [re.fullmatch(r'click \S+ href "([^"]+)"', line) for line in clicks]
+    assert sorted(match.group(1) for match in found if match is not None) == [
+        "#form-comp-sc",
+        "#form-ds-ds",
+        "#form-measure",
+        "../clause/calc.html",
+        "../string/concat.html",
+        "clause/index.html",
+        "concat.html",
+        "length.html",
+        "string/index.html",
+    ]
+    assert len(found) == len(clicks) == 9
+
+
+def test_the_titles_names_labels_and_forms_are_escaped() -> None:
+    odd = make_operator(
+        "odd",
+        'Odd "x" [y]',
+        "a|b",
+        (make_variant("v", "f(#1) | {2}; <3>"),),
+        (Link("clause.c", "a|b"),),
+    )
+    target = make_operator("c", "Calc {z}", "c<>", (make_variant("w", "w"),))
+    chapter = Chapter("numeric", "Numeric # operators", (odd,))
+    cat = Catalogue((chapter, Chapter("clause", "Clause # operators", (target,))))
+    operator = diagram_of(cat, "numeric", "odd")
+    assert 'O["Odd #quot;x#quot; #91;y#93; · a#124;b"]' in operator
+    assert 'v_v["f(#35;1) #124; #123;2#125;#59; #60;3#62;"]' in operator
+    assert (
+        'used__clause__c["Calc #123;z#125; · c#60;#62; ↗<br/><small>a#124;b</small>"]:::ext'
+        in operator
+    )
+    assert 'B["Numeric #35; operators"]:::block' in body(block_diagram(chapter, NOTHING_RUN))
+    assert 'chapter__clause["Clause #35; operators<br/>1 operator"]' in body(
+        overview_block(cat, NOTHING_RUN)
+    )
+
+
+# --- Limits ---
+
+
+def big_operator(count: int, *, kinds: bool) -> Operator:
+    """An operator of ``count`` forms with a label as long as the longest one of the map.
+
+    ``kinds`` gives them a kind each in turn, so that they are in the boxes; without it they have
+    none, and are on both sides. It links to as many operators as "Used with" shows.
+    """
+    names = ("ds", "comp", "sc")
+    forms = tuple(
+        make_variant(f"{names[n % 3]}_{n}" if kinds else f"form_{n}", f"{'x' * 83}{n}")
+        for n in range(count)
+    )
+    links = tuple(Link(f"other.t{n}", "used in over()") for n in range(USED_WITH_MAX))
+    return make_operator("big", "Big", "big", forms, links)
+
+
+def targets_of(count: int) -> Chapter:
+    operators = tuple(
+        make_operator(f"t{n}", f"Target {n}", f"t{n}", (make_variant("v", "t"),))
+        for n in range(count)
+    )
+    return Chapter("other", "Other operators", operators)
+
+
+@pytest.mark.parametrize("kinds", [True, False])
+def test_limits_on_largest(kinds: bool) -> None:
+    # Sixty forms, more than the largest operator has, and the most that "Used with" shows.
+    big = big_operator(60, kinds=kinds)
+    chapter = Chapter("numeric", "Numeric operators", (big,))
+    cat = Catalogue((chapter, targets_of(USED_WITH_MAX)))
+    text = operator_diagram(chapter, big, cat, NOTHING_RUN)
+    assert text.count("subgraph G_ds") == (1 if kinds else 0)
+    assert len([line for line in body(text) if line.startswith("used__other__")]) == USED_WITH_MAX
+    assert edges_of(text) < MAX_EDGES
+    assert size_of(text) < MAX_CHARS
+    check_limits(text)
+
+
+def test_an_operator_over_a_limit_raises() -> None:
+    forms = tuple(make_variant(f"v{n}", f"form {n}") for n in range(MAX_EDGES + 1))
+    chapter, operator, cat = lone(forms)
+    with pytest.raises(MermaidLimitError, match=r"numeric\.op: 501 edges"):
+        operator_diagram(chapter, operator, cat, NOTHING_RUN)
+
+
+def test_a_block_over_a_limit_raises() -> None:
+    with pytest.raises(MermaidLimitError, match=r"numeric: 501 edges"):
+        block_diagram(operators_of(MAX_EDGES + 1), NOTHING_RUN)
+
+
+def test_an_overview_over_a_limit_raises() -> None:
+    with pytest.raises(MermaidLimitError, match=r"overview: 500 edges"):
+        overview_block(Catalogue(chapters_of(MAX_EDGES)), NOTHING_RUN)
+
+
+def test_the_diagrams_of_the_size_of_the_real_map_are_under_the_limits() -> None:
+    # 14 blocks, and 18 operators in the largest block.
+    check_limits(overview_block(Catalogue(chapters_of(14)), NOTHING_RUN))
+    check_limits(block_diagram(operators_of(18), NOTHING_RUN))
+
+
+# --- What ``render.py`` still calls ---
+
+
+def test_chapter_blocks_is_the_one_block_diagram_of_the_chapter() -> None:
+    assert chapter_blocks(STRING, CAT, INDEX) == [block_diagram(STRING, INDEX)]
+    empty = Chapter("empty", "Empty", ())
+    assert chapter_blocks(empty, Catalogue((empty,)), NOTHING_RUN) == []
