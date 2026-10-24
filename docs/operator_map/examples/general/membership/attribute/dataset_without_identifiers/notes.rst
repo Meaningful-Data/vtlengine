@@ -1,0 +1,3 @@
+:Tests: The scalar rule for an attribute, the case that Manual example 8 meant: on a dataset with no identifiers, ``DS_1#At_1`` gives the value of ``At_1``.
+:Manual: `Membership <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Membership/index.html>`__: "If ds has no Identifier Components (for example is a result of an aggregate invocation), comp must be a Data Set Component of the Data Set ds (a Measure or an Attribute). In this case the operator returns a scalar value equal to the value of ``comp`` in ``ds``".
+:Expected: ``SC_r = "P"``, a String. ``DS_1`` is given as it is, without identifiers, because an aggregation would drop the non-viral ``At_1``.

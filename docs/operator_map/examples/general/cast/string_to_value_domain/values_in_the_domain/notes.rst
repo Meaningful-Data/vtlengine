@@ -1,0 +1,4 @@
+:Tests: ``cast(Me_1, VD_1)`` on a String measure whose values are in ``VD_1``, after the page's Example 6, ``cast(GEO_STRING, GEO_AREA)``.
+:Manual: `Type conversion <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html>`__: "VTL allows any value of a basic scalar type to be implicitly converted into a value belonging to a value domain or value domain subset based on that basic scalar type (downcast)", and ``scalarType`` is any "scalar type (see the section: Data type syntax)", which a value domain is.
+:Expected: ``VD_1`` is a String value domain of ``A``, ``B`` and ``C``, so ``A`` and ``B`` are kept as they are, and ``Me_2`` has the basic type String in vtlengine's structures.
+:Finding: Both engines refuse the value domain with InputValidationException ``0-5-1-8``: "Value Domain 'VD_1' not available for cast operator or scalar type representation or rulesets".

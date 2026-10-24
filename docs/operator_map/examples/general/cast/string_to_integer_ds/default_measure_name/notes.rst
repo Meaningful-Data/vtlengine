@@ -1,0 +1,3 @@
+:Tests: ``cast(DS_1, integer)`` on a dataset with one String measure.
+:Manual: `Operators changing the data type <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#operators-changing-the-data-type>`__: "the operators changing the data type are allowed only on mono-measure operand Data Sets [...]. A default generic Measure is assigned by default to the result Data Set, depending on the data type of the result", ``int_var`` for an integer.
+:Expected: ``Id_1`` and the measure ``int_var``, 42 and -7 by the rule of `Type conversion <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html>`__: "a sequence of digits is consumed to determine its absolute value".

@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, number)`` on a String measure, without a mask: a sign, decimals, an exponent and no decimal part.
+:Manual: `Type conversion <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html>`__, "To **number**": a sign "is possibly consumed", then the integer part, then "a ``.`` is possibly consumed; if it's not present, the parsing ends and the number is returned without a decimal part", then the decimal part, and "``E`` is possibly consumed to determine if a base-ten exponent is present".
+:Expected: ``3.25``, ``-0.5``, ``150`` from ``1.5E2``, and ``2`` from ``+2``. By the rule an exponent needs a ``.`` before it, which ``1.5E2`` has; the inputs have no blanks for the conversion to remove.

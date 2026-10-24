@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, time_period)`` on a Time measure of a whole year, a quarter and a month, an explicit cast without mask.
+:Manual: `Type conversion <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html>`__: "From **time** to **time_period**: A ``time_period`` value is returned if the time value has a regular duration (see above for its meaning) otherwise an error is raised." Nothing above defines it: the inputs have the durations that the page accepts for a period parsed from an interval, "an entire year, a half of a year, a quarter of a year or a month".
+:Expected: ``2020A``, ``2020Q2`` and ``2020M07``, the comparison taking ``2020A`` and ``2020`` as the same period.
