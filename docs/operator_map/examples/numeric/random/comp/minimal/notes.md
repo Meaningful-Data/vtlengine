@@ -1,8 +1,9 @@
 Authored example of the component form `ds [calc r := random(col_1, 12)]` of `Numeric
 operators/Random`. `calc Me_1 := random(Me_1, 5)` replaces the seed measure by the draws (the
 typical behaviour of the operators on components: a result component that is one of the original
-measures replaces its values). So the only value of the result that is not an identifier is a
-draw, and the property check, which looks at every such value, can be used.
+measures replaces its values). So the result has no seed column to compare: its only measure,
+`Me_1`, holds draws. The property check takes a column that has no value in the expected file for
+draws, and the expected file of this example has no data point, so that is the case of `Me_1`.
 
 The values are not fixed: the page says only that the operator "returns a random decimal number
 >= 0 and <1". The example is checked by property, as the design says for `random`: the values
