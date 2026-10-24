@@ -1,0 +1,4 @@
+:Tests: the placeholder ``_`` for ``numDigit``, on a dataset with one Number measure.
+:Manual: `Truncation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Truncation/index.html>`__: "``trunc ( 12345.6, _ )`` gives ``12345``"; the result is typed ``dataset { measure<number> _+ }``, and the unary operators give "homonymous Measures in DS_r". Only the pages that rename say so, such as String length and String pattern location: ``dataset { measure<integer[value >= 0]> int_var }``.
+:Expected: the placeholder stands for an omitted ``numDigit``, so ``Me_1`` keeps its name and becomes an Integer as with ``trunc(DS_1)``: 3, 2 and 12345. Ceiling and Floor Example 1 do the same, and nothing puts ``trunc`` among the "Operators changing the data type", which would rename the measure ``int_var``.
+:Finding: both engines return the measure as ``int_var``, not ``Me_1``.

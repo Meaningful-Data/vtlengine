@@ -2,7 +2,8 @@
 
 A variant is one syntax form: the level of each operand (``DS`` a dataset, ``comp`` a component
 inside ``calc``, ``sc`` a scalar) and, for ``round`` and ``trunc``, whether ``numDigit`` is
-given, omitted or the ``_`` placeholder.
+given, omitted or the ``_`` placeholder. Each form says what it takes and gives, by the "Input
+parameters type" and "Result type" of its page.
 """
 
 from __future__ import annotations
@@ -10,12 +11,17 @@ from __future__ import annotations
 from tool.model import Chapter, Operator, Variant, authored, manual
 
 _CHAPTER = "Numeric operators"
-# Every operator of the chapter has a data set form, ``op(DS)``: it takes and gives a dataset as
-# well as numbers, so it is in the type flow of ``dataset`` too.
-_NUMBER = ("number", "dataset")
-_NUMBER_OR_INTEGER = ("number", "integer", "dataset")  # an integer numDigit, exponent or seed
-_TO_INTEGER = ("integer", "dataset")  # ceil and floor
-_INTEGER = ("integer",)  # the result of a form with no numDigit, or with ``_``
+
+# What a form takes and gives. The level of its operands, a dataset, a component or a scalar, is
+# its kind and not a type, so ``op(DS)`` has the types of ``op(sc)``.
+_NUMBER = ("number",)
+_NUMBER_INTEGER = ("number", "integer")  # the operand, then an integer numDigit, num or index
+_INTEGER = ("integer",)  # ceil and floor, and round and trunc with no numDigit, or with ``_``
+
+# The types of an operator: those of its forms, and ``dataset`` for its form ``op(DS)``.
+_OP_NUMBER = (*_NUMBER, "dataset")
+_OP_NUMBER_INTEGER = (*_NUMBER_INTEGER, "dataset")
+_OP_INTEGER = (*_INTEGER, "dataset")
 
 
 def _page(page: str) -> str:
@@ -29,12 +35,12 @@ _UNARY_PLUS = Operator(
     name="Unary plus",
     symbol="+",
     page=_page("Unary plus"),
-    accepts=_NUMBER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER,
+    returns=_OP_NUMBER,
     variants=(
-        Variant("ds", "+DS", (manual("ex_1"),)),
-        Variant("comp", "+comp", (manual("ex_2"),)),
-        Variant("sc", "+sc", (authored(),)),
+        Variant("ds", "+DS", (manual("ex_1"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("comp", "+comp", (manual("ex_2"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("sc", "+sc", (authored("negative_operand"),), takes=_NUMBER, gives=_NUMBER),
     ),
 )
 
@@ -43,12 +49,12 @@ _UNARY_MINUS = Operator(
     name="Unary minus",
     symbol="-",
     page=_page("Unary minus"),
-    accepts=_NUMBER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER,
+    returns=_OP_NUMBER,
     variants=(
-        Variant("ds", "-DS", (manual("ex_1"),)),
-        Variant("comp", "-comp", (manual("ex_2"),)),
-        Variant("sc", "-sc", (authored(),)),
+        Variant("ds", "-DS", (manual("ex_1"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("comp", "-comp", (manual("ex_2"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("sc", "-sc", (authored("negative_operand"),), takes=_NUMBER, gives=_NUMBER),
     ),
 )
 
@@ -59,16 +65,40 @@ _ADDITION = Operator(
     name="Addition",
     symbol="+",
     page=_page("Addition"),
-    accepts=_NUMBER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER,
+    returns=_OP_NUMBER,
     variants=(
-        Variant("ds_ds", "DS + DS", (manual("ex_1"),)),
-        Variant("ds_sc", "DS + sc", (manual("ex_2"),)),
-        Variant("sc_ds", "sc + DS", (authored(),)),
-        Variant("comp_comp", "comp + comp", (authored(),)),
-        Variant("comp_sc", "comp + sc", (manual("ex_3"),)),
-        Variant("sc_comp", "sc + comp", (authored(),)),
-        Variant("sc_sc", "sc + sc", (authored(),)),
+        Variant("ds_ds", "DS + DS", (manual("ex_1"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("ds_sc", "DS + sc", (manual("ex_2"),), takes=_NUMBER, gives=_NUMBER),
+        Variant(
+            "sc_ds",
+            "sc + DS",
+            (authored("integer_and_number_measures"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "comp_comp",
+            "comp + comp",
+            (authored("integer_plus_number"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
+        Variant("comp_sc", "comp + sc", (manual("ex_3"),), takes=_NUMBER, gives=_NUMBER),
+        Variant(
+            "sc_comp",
+            "sc + comp",
+            (authored("integer_plus_integer"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "sc_sc",
+            "sc + sc",
+            (authored("integer_plus_integer"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
     ),
 )
 
@@ -77,16 +107,24 @@ _SUBTRACTION = Operator(
     name="Subtraction",
     symbol="-",
     page=_page("Subtraction"),
-    accepts=_NUMBER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER,
+    returns=_OP_NUMBER,
     variants=(
-        Variant("ds_ds", "DS - DS", (manual("ex_1"),)),
-        Variant("ds_sc", "DS - sc", (manual("ex_2"),)),
-        Variant("sc_ds", "sc - DS", (authored(),)),
-        Variant("comp_comp", "comp - comp", (authored(),)),
-        Variant("comp_sc", "comp - sc", (manual("ex_3"),)),
-        Variant("sc_comp", "sc - comp", (authored(),)),
-        Variant("sc_sc", "sc - sc", (authored(),)),
+        Variant("ds_ds", "DS - DS", (manual("ex_1"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("ds_sc", "DS - sc", (manual("ex_2"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("sc_ds", "sc - DS", (authored("scalar_minuend"),), takes=_NUMBER, gives=_NUMBER),
+        Variant(
+            "comp_comp",
+            "comp - comp",
+            (authored("integer_minus_number"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
+        Variant("comp_sc", "comp - sc", (manual("ex_3"),), takes=_NUMBER, gives=_NUMBER),
+        Variant(
+            "sc_comp", "sc - comp", (authored("scalar_minuend"),), takes=_NUMBER, gives=_NUMBER
+        ),
+        Variant("sc_sc", "sc - sc", (authored("negative_result"),), takes=_NUMBER, gives=_NUMBER),
     ),
 )
 
@@ -95,34 +133,72 @@ _MULTIPLICATION = Operator(
     name="Multiplication",
     symbol="*",
     page=_page("Multiplication"),
-    accepts=_NUMBER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER,
+    returns=_OP_NUMBER,
     variants=(
-        Variant("ds_ds", "DS * DS", (manual("ex_1"),)),
-        Variant("ds_sc", "DS * sc", (manual("ex_2"),)),
-        Variant("sc_ds", "sc * DS", (authored(),)),
-        Variant("comp_comp", "comp * comp", (manual("ex_3"),)),
-        Variant("comp_sc", "comp * sc", (authored(),)),
-        Variant("sc_comp", "sc * comp", (authored(),)),
-        Variant("sc_sc", "sc * sc", (authored(),)),
+        Variant("ds_ds", "DS * DS", (manual("ex_1"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("ds_sc", "DS * sc", (manual("ex_2"),), takes=_NUMBER, gives=_NUMBER),
+        Variant(
+            "sc_ds",
+            "sc * DS",
+            (authored("integer_and_number_measures"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
+        Variant("comp_comp", "comp * comp", (manual("ex_3"),), takes=_NUMBER, gives=_NUMBER),
+        Variant(
+            "comp_sc",
+            "comp * sc",
+            (authored("integer_times_integer"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "sc_comp",
+            "sc * comp",
+            (authored("integer_times_number"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "sc_sc",
+            "sc * sc",
+            (authored("integer_times_integer"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
     ),
 )
 
+# The Division page makes a zero divisor a run-time error: ``zero_divisor`` expects an error and
+# no value, with the code that ``docs/error_messages.rst`` gives to "Scalar division by Zero".
 _DIVISION = Operator(
     id="division",
     name="Division",
     symbol="/",
     page=_page("Division"),
-    accepts=_NUMBER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER,
+    returns=_OP_NUMBER,
     variants=(
-        Variant("ds_ds", "DS / DS", (manual("ex_1"),)),
-        Variant("ds_sc", "DS / sc", (manual("ex_2"),)),
-        Variant("sc_ds", "sc / DS", (authored(),)),
-        Variant("comp_comp", "comp / comp", (manual("ex_3"),)),
-        Variant("comp_sc", "comp / sc", (authored(),)),
-        Variant("sc_comp", "sc / comp", (authored(),)),
-        Variant("sc_sc", "sc / sc", (authored(),)),
+        Variant("ds_ds", "DS / DS", (manual("ex_1"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("ds_sc", "DS / sc", (manual("ex_2"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("sc_ds", "sc / DS", (authored("scalar_dividend"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("comp_comp", "comp / comp", (manual("ex_3"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("comp_sc", "comp / sc", (authored("number_result"),), takes=_NUMBER, gives=_NUMBER),
+        Variant(
+            "sc_comp",
+            "sc / comp",
+            (authored("scalar_dividend"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "sc_sc",
+            "sc / sc",
+            (authored("number_result"), authored("zero_divisor")),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
     ),
 )
 
@@ -131,19 +207,43 @@ _MODULO = Operator(
     name="Modulo",
     symbol="mod",
     page=_page("Modulo"),
-    accepts=_NUMBER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER,
+    returns=_OP_NUMBER,
     variants=(
-        Variant("ds_ds", "mod(DS, DS)", (manual("ex_1"),)),
-        Variant("ds_sc", "mod(DS, sc)", (manual("ex_2"),)),
-        Variant("sc_ds", "mod(sc, DS)", (authored(),)),
-        Variant("comp_comp", "mod(comp, comp)", (authored(),)),
-        Variant("comp_sc", "mod(comp, sc)", (manual("ex_3"),)),
-        Variant("sc_comp", "mod(sc, comp)", (authored(),)),
+        Variant("ds_ds", "mod(DS, DS)", (manual("ex_1"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("ds_sc", "mod(DS, sc)", (manual("ex_2"),), takes=_NUMBER, gives=_NUMBER),
+        Variant(
+            "sc_ds",
+            "mod(sc, DS)",
+            (authored("integer_and_number_measures"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "comp_comp",
+            "mod(comp, comp)",
+            (authored("integer_mod_number"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
+        Variant("comp_sc", "mod(comp, sc)", (manual("ex_3"),), takes=_NUMBER, gives=_NUMBER),
+        Variant(
+            "sc_comp",
+            "mod(sc, comp)",
+            (authored("integer_mod_integer"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
         Variant(
             "sc_sc",
             "mod(sc, sc)",
-            (authored(), authored("minimal_2"), authored("minimal_3")),
+            (
+                authored("positive_operands"),
+                authored("negative_divisor"),
+                authored("zero_divisor"),
+            ),
+            takes=_NUMBER,
+            gives=_NUMBER,
         ),
     ),
 )
@@ -153,33 +253,80 @@ _MODULO = Operator(
 # second example of each page, ``round(Me_1)`` in a ``calc``, is the component form with no
 # ``numDigit``: ``comp_no_digits``. ``numDigit`` is an integer or a component of type integer,
 # so a scalar operand has the forms ``sc_digits`` and ``sc_comp_digits``. ``ds_no_digits`` has
-# an example with one measure (``minimal``) and one with two (``minimal_2``), as the naming of
-# the result measures differs.
+# an example with one measure (``one_number_measure``) and one with two
+# (``two_number_measures``), as the naming of the result measures differs.
 
 _ROUND = Operator(
     id="round",
     name="Rounding",
     symbol="round",
     page=_page("Rounding"),
-    accepts=_NUMBER_OR_INTEGER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER_INTEGER,
+    returns=_OP_NUMBER,
     variants=(
-        Variant("ds_digits", "round(DS, n)", (manual("ex_1"),)),
+        Variant(
+            "ds_digits", "round(DS, n)", (manual("ex_1"),), takes=_NUMBER_INTEGER, gives=_NUMBER
+        ),
         Variant(
             "ds_no_digits",
             "round(DS)",
-            (authored(), authored("minimal_2")),
-            returns=_INTEGER,
+            (authored("one_number_measure"), authored("two_number_measures")),
+            takes=_NUMBER,
+            gives=_INTEGER,
         ),
-        Variant("ds_placeholder", "round(DS, _)", (authored(),), returns=_INTEGER),
-        Variant("comp_digits", "round(comp, n)", (manual("ex_3"),)),
-        Variant("comp_no_digits", "round(comp)", (manual("ex_2"),), returns=_INTEGER),
-        Variant("comp_placeholder", "round(comp, _)", (authored(),), returns=_INTEGER),
-        Variant("comp_comp_digits", "round(comp, comp)", (authored(),)),
-        Variant("sc_comp_digits", "round(sc, comp)", (authored(),)),
-        Variant("sc_digits", "round(sc, n)", (authored(),)),
-        Variant("sc_no_digits", "round(sc)", (authored(),), returns=_INTEGER),
-        Variant("sc_placeholder", "round(sc, _)", (authored(),), returns=_INTEGER),
+        Variant(
+            "ds_placeholder",
+            "round(DS, _)",
+            (authored("placeholder_for_digits"),),
+            takes=_NUMBER,
+            gives=_INTEGER,
+        ),
+        Variant(
+            "comp_digits", "round(comp, n)", (manual("ex_3"),), takes=_NUMBER_INTEGER, gives=_NUMBER
+        ),
+        Variant("comp_no_digits", "round(comp)", (manual("ex_2"),), takes=_NUMBER, gives=_INTEGER),
+        Variant(
+            "comp_placeholder",
+            "round(comp, _)",
+            (authored("placeholder_for_digits"),),
+            takes=_NUMBER,
+            gives=_INTEGER,
+        ),
+        Variant(
+            "comp_comp_digits",
+            "round(comp, comp)",
+            (authored("digits_from_component"),),
+            takes=_NUMBER_INTEGER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "sc_comp_digits",
+            "round(sc, comp)",
+            (authored("digits_from_component"),),
+            takes=_NUMBER_INTEGER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "sc_digits",
+            "round(sc, n)",
+            (authored("rounds_up_at_fourth_decimal"),),
+            takes=_NUMBER_INTEGER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "sc_no_digits",
+            "round(sc)",
+            (authored("rounds_up_to_integer"),),
+            takes=_NUMBER,
+            gives=_INTEGER,
+        ),
+        Variant(
+            "sc_placeholder",
+            "round(sc, _)",
+            (authored("placeholder_for_digits"),),
+            takes=_NUMBER,
+            gives=_INTEGER,
+        ),
     ),
 )
 
@@ -188,43 +335,96 @@ _TRUNC = Operator(
     name="Truncation",
     symbol="trunc",
     page=_page("Truncation"),
-    accepts=_NUMBER_OR_INTEGER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER_INTEGER,
+    returns=_OP_NUMBER,
     variants=(
-        Variant("ds_digits", "trunc(DS, n)", (manual("ex_1"),)),
+        Variant(
+            "ds_digits", "trunc(DS, n)", (manual("ex_1"),), takes=_NUMBER_INTEGER, gives=_NUMBER
+        ),
         Variant(
             "ds_no_digits",
             "trunc(DS)",
-            (authored(), authored("minimal_2")),
-            returns=_INTEGER,
+            (authored("one_number_measure"), authored("two_number_measures")),
+            takes=_NUMBER,
+            gives=_INTEGER,
         ),
-        Variant("ds_placeholder", "trunc(DS, _)", (authored(),), returns=_INTEGER),
-        Variant("comp_digits", "trunc(comp, n)", (manual("ex_3"),)),
-        Variant("comp_no_digits", "trunc(comp)", (manual("ex_2"),), returns=_INTEGER),
-        Variant("comp_placeholder", "trunc(comp, _)", (authored(),), returns=_INTEGER),
-        Variant("comp_comp_digits", "trunc(comp, comp)", (authored(),)),
-        Variant("sc_comp_digits", "trunc(sc, comp)", (authored(),)),
-        Variant("sc_digits", "trunc(sc, n)", (authored(),)),
-        Variant("sc_no_digits", "trunc(sc)", (authored(),), returns=_INTEGER),
-        Variant("sc_placeholder", "trunc(sc, _)", (authored(),), returns=_INTEGER),
+        Variant(
+            "ds_placeholder",
+            "trunc(DS, _)",
+            (authored("placeholder_for_digits"),),
+            takes=_NUMBER,
+            gives=_INTEGER,
+        ),
+        Variant(
+            "comp_digits", "trunc(comp, n)", (manual("ex_3"),), takes=_NUMBER_INTEGER, gives=_NUMBER
+        ),
+        Variant("comp_no_digits", "trunc(comp)", (manual("ex_2"),), takes=_NUMBER, gives=_INTEGER),
+        Variant(
+            "comp_placeholder",
+            "trunc(comp, _)",
+            (authored("placeholder_for_digits"),),
+            takes=_NUMBER,
+            gives=_INTEGER,
+        ),
+        Variant(
+            "comp_comp_digits",
+            "trunc(comp, comp)",
+            (authored("digits_from_component"),),
+            takes=_NUMBER_INTEGER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "sc_comp_digits",
+            "trunc(sc, comp)",
+            (authored("digits_from_component"),),
+            takes=_NUMBER_INTEGER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "sc_digits",
+            "trunc(sc, n)",
+            (authored("drops_after_fourth_decimal"),),
+            takes=_NUMBER_INTEGER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "sc_no_digits",
+            "trunc(sc)",
+            (authored("drops_fraction_to_integer"),),
+            takes=_NUMBER,
+            gives=_INTEGER,
+        ),
+        Variant(
+            "sc_placeholder",
+            "trunc(sc, _)",
+            (authored("placeholder_for_digits"),),
+            takes=_NUMBER,
+            gives=_INTEGER,
+        ),
     ),
 )
 
 # --- Ceiling and floor ---
-# The manual's ``ex_1`` has two measures. ``minimal`` has one, to see whether a number measure
-# that becomes an integer keeps its name.
+# The manual's ``ex_1`` has two measures. ``one_number_measure`` has one, to see whether a number
+# measure that becomes an integer keeps its name.
 
 _CEIL = Operator(
     id="ceil",
     name="Ceiling",
     symbol="ceil",
     page=_page("Ceiling"),
-    accepts=_NUMBER,
-    returns=_TO_INTEGER,
+    accepts=_OP_NUMBER,
+    returns=_OP_INTEGER,
     variants=(
-        Variant("ds", "ceil(DS)", (manual("ex_1"), authored())),
-        Variant("comp", "ceil(comp)", (manual("ex_2"),)),
-        Variant("sc", "ceil(sc)", (authored(),)),
+        Variant(
+            "ds",
+            "ceil(DS)",
+            (manual("ex_1"), authored("one_number_measure")),
+            takes=_NUMBER,
+            gives=_INTEGER,
+        ),
+        Variant("comp", "ceil(comp)", (manual("ex_2"),), takes=_NUMBER, gives=_INTEGER),
+        Variant("sc", "ceil(sc)", (authored("positive_fraction"),), takes=_NUMBER, gives=_INTEGER),
     ),
 )
 
@@ -233,12 +433,18 @@ _FLOOR = Operator(
     name="Floor",
     symbol="floor",
     page=_page("Floor"),
-    accepts=_NUMBER,
-    returns=_TO_INTEGER,
+    accepts=_OP_NUMBER,
+    returns=_OP_INTEGER,
     variants=(
-        Variant("ds", "floor(DS)", (manual("ex_1"), authored())),
-        Variant("comp", "floor(comp)", (manual("ex_2"),)),
-        Variant("sc", "floor(sc)", (authored(),)),
+        Variant(
+            "ds",
+            "floor(DS)",
+            (manual("ex_1"), authored("one_number_measure")),
+            takes=_NUMBER,
+            gives=_INTEGER,
+        ),
+        Variant("comp", "floor(comp)", (manual("ex_2"),), takes=_NUMBER, gives=_INTEGER),
+        Variant("sc", "floor(sc)", (authored("negative_fraction"),), takes=_NUMBER, gives=_INTEGER),
     ),
 )
 
@@ -249,12 +455,12 @@ _ABS = Operator(
     name="Absolute value",
     symbol="abs",
     page=_page("Absolute value"),
-    accepts=_NUMBER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER,
+    returns=_OP_NUMBER,
     variants=(
-        Variant("ds", "abs(DS)", (manual("ex_1"),)),
-        Variant("comp", "abs(comp)", (manual("ex_2"),)),
-        Variant("sc", "abs(sc)", (authored(),)),
+        Variant("ds", "abs(DS)", (manual("ex_1"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("comp", "abs(comp)", (manual("ex_2"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("sc", "abs(sc)", (authored("negative_number"),), takes=_NUMBER, gives=_NUMBER),
     ),
 )
 
@@ -263,12 +469,12 @@ _EXP = Operator(
     name="Exponential",
     symbol="exp",
     page=_page("Exponential"),
-    accepts=_NUMBER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER,
+    returns=_OP_NUMBER,
     variants=(
-        Variant("ds", "exp(DS)", (manual("ex_1"),)),
-        Variant("comp", "exp(comp)", (manual("ex_2"),)),
-        Variant("sc", "exp(sc)", (authored(),)),
+        Variant("ds", "exp(DS)", (manual("ex_1"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("comp", "exp(comp)", (manual("ex_2"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("sc", "exp(sc)", (authored("integer_operand"),), takes=_NUMBER, gives=_NUMBER),
     ),
 )
 
@@ -277,12 +483,12 @@ _LN = Operator(
     name="Natural logarithm",
     symbol="ln",
     page=_page("Natural logarithm"),
-    accepts=_NUMBER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER,
+    returns=_OP_NUMBER,
     variants=(
-        Variant("ds", "ln(DS)", (manual("ex_1"),)),
-        Variant("comp", "ln(comp)", (manual("ex_2"),)),
-        Variant("sc", "ln(sc)", (authored(),)),
+        Variant("ds", "ln(DS)", (manual("ex_1"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("comp", "ln(comp)", (manual("ex_2"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("sc", "ln(sc)", (authored("integer_operand"),), takes=_NUMBER, gives=_NUMBER),
     ),
 )
 
@@ -291,32 +497,51 @@ _SQRT = Operator(
     name="Square root",
     symbol="sqrt",
     page=_page("Square root"),
-    accepts=_NUMBER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER,
+    returns=_OP_NUMBER,
     variants=(
-        Variant("ds", "sqrt(DS)", (manual("ex_1"),)),
-        Variant("comp", "sqrt(comp)", (manual("ex_2"),)),
-        Variant("sc", "sqrt(sc)", (authored(),)),
+        Variant("ds", "sqrt(DS)", (manual("ex_1"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("comp", "sqrt(comp)", (manual("ex_2"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("sc", "sqrt(sc)", (authored("integer_operand"),), takes=_NUMBER, gives=_NUMBER),
     ),
 )
 
 # --- Power and logarithm ---
 # The examples of the manual call ``log(number, base)``, e.g. ``log(1024, 2)`` gives 10, so
-# the authored examples do the same.
+# the authored examples do the same. The page types the exponent of ``power`` as a number, and
+# the second operand of ``log`` as an integer.
 
 _POWER = Operator(
     id="power",
     name="Power",
     symbol="power",
     page=_page("Power"),
-    accepts=_NUMBER_OR_INTEGER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER,
+    returns=_OP_NUMBER,
     variants=(
-        Variant("ds_sc", "power(DS, sc)", (manual("ex_1"),)),
-        Variant("comp_sc", "power(comp, sc)", (manual("ex_2"),)),
-        Variant("comp_comp", "power(comp, comp)", (authored(),)),
-        Variant("sc_comp", "power(sc, comp)", (authored(),)),
-        Variant("sc_sc", "power(sc, sc)", (authored(),)),
+        Variant("ds_sc", "power(DS, sc)", (manual("ex_1"),), takes=_NUMBER, gives=_NUMBER),
+        Variant("comp_sc", "power(comp, sc)", (manual("ex_2"),), takes=_NUMBER, gives=_NUMBER),
+        Variant(
+            "comp_comp",
+            "power(comp, comp)",
+            (authored("negative_and_fractional_exponents"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "sc_comp",
+            "power(sc, comp)",
+            (authored("integer_exponents"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "sc_sc",
+            "power(sc, sc)",
+            (authored("integer_operands"),),
+            takes=_NUMBER,
+            gives=_NUMBER,
+        ),
     ),
 )
 
@@ -325,14 +550,34 @@ _LOG = Operator(
     name="Logarithm",
     symbol="log",
     page=_page("Logarithm"),
-    accepts=_NUMBER_OR_INTEGER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER_INTEGER,
+    returns=_OP_NUMBER,
     variants=(
-        Variant("ds_sc", "log(DS, sc)", (manual("ex_1"),)),
-        Variant("comp_sc", "log(comp, sc)", (manual("ex_2"),)),
-        Variant("comp_comp", "log(comp, comp)", (authored(),)),
-        Variant("sc_comp", "log(sc, comp)", (authored(),)),
-        Variant("sc_sc", "log(sc, sc)", (authored(),)),
+        Variant("ds_sc", "log(DS, sc)", (manual("ex_1"),), takes=_NUMBER_INTEGER, gives=_NUMBER),
+        Variant(
+            "comp_sc", "log(comp, sc)", (manual("ex_2"),), takes=_NUMBER_INTEGER, gives=_NUMBER
+        ),
+        Variant(
+            "comp_comp",
+            "log(comp, comp)",
+            (authored("number_then_base"),),
+            takes=_NUMBER_INTEGER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "sc_comp",
+            "log(sc, comp)",
+            (authored("component_base"),),
+            takes=_NUMBER_INTEGER,
+            gives=_NUMBER,
+        ),
+        Variant(
+            "sc_sc",
+            "log(sc, sc)",
+            (authored("integer_operands"),),
+            takes=_NUMBER_INTEGER,
+            gives=_NUMBER,
+        ),
     ),
 )
 
@@ -354,21 +599,33 @@ _RANDOM = Operator(
     name="Random",
     symbol="random",
     page=_page("Random"),
-    accepts=_NUMBER_OR_INTEGER,
-    returns=_NUMBER,
+    accepts=_OP_NUMBER_INTEGER,
+    returns=_OP_NUMBER,
     variants=(
         Variant(
-            "ds", "random(DS, n)", (manual("ex_1", check="random", adaptation=_RANDOM_ADAPTATION),)
+            "ds",
+            "random(DS, n)",
+            (manual("ex_1", check="random", adaptation=_RANDOM_ADAPTATION),),
+            takes=_NUMBER_INTEGER,
+            gives=_NUMBER,
         ),
         Variant(
             "comp",
             "random(comp, n)",
             (
                 manual("ex_2", check="random", adaptation=_RANDOM_ADAPTATION),
-                authored(check="random"),
+                authored("seed_replaced_by_draws", check="random"),
             ),
+            takes=_NUMBER_INTEGER,
+            gives=_NUMBER,
         ),
-        Variant("sc", "random(sc, n)", (authored(check="random"),)),
+        Variant(
+            "sc",
+            "random(sc, n)",
+            (authored("single_draw", check="random"),),
+            takes=_NUMBER_INTEGER,
+            gives=_NUMBER,
+        ),
     ),
 )
 
