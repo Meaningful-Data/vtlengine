@@ -1,0 +1,4 @@
+:Tests: a parameter of type ``set<string>``, passed the value domain ``VD_AB`` (``A`` and ``B``) by its name, as the grammar takes set literals only after ``in`` and ``not_in``.
+:Manual: `define operator <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html>`__: ``scalarSetType ::= set { < scalarType > }``, and in `Element of <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Comparison%20operators/Element%20of/index.html>`__ a set "can be a Set name or a Set literal" and the collection is "the Set or the Value Domain which contains the values". The script ends with ``end operator``, as the page's examples and the grammar do; its syntax line writes ``end define operator``.
+:Expected: ``SC_r = true``, a Boolean: ``"B" in s`` holds, as ``B`` is a value of ``VD_AB``.
+:Finding: both engines raise SemanticError ``1-3-13``, "Unsupported VTL construct: set type 'set<string>'".

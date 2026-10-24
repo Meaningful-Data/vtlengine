@@ -1,0 +1,3 @@
+:Tests: a parameter of type ``duration``, called with ``cast("M", duration)``: ``M``, a month, is one of the User Manual's one-character codes of the duration type.
+:Manual: `define operator <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html>`__: a parameter type is "a VTL data type" (``basicScalarType ::= ... duration ...``), and the User Manual says that these types "do not directly support literals". The script ends with ``end operator``, as the page's examples and the grammar do; its syntax line writes ``end define operator``.
+:Expected: ``SC_r = M``, a Duration: the body returns its argument.

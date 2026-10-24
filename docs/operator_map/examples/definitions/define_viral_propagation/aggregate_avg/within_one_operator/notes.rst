@@ -1,0 +1,4 @@
+:Tests: ``aggregate avg`` at ``sum(DS_1 group by Id_1)``, one operator over three data points.
+:Manual: the User Manual: "Within one operator, the result of *A* (in term of Attributes) is independent of the sequence of processing", and in the `Aggregate invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Aggregate%20invocation/index.html>`__ "For invocation at Data Set level, the Attribute propagation rule is applied".
+:Expected: ``At_1`` avg(1, 2, 6) = 3 in any order, where pair by pair it would give 3.75, 2.5 or 2.75; ``Me_1`` 60.
+:Team decision: 📌 #1175, closed on 2026-10-22: the standard "will be clarified that the avg relies on the execution order" (sdmx-twg/vtl#744). Within one operator ``avg`` takes the whole set of operand values; across operators the propagation follows the order of execution.
