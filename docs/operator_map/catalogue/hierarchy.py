@@ -12,7 +12,7 @@ default input and output, so each one goes to the grid variant of its mode.
 
 from __future__ import annotations
 
-from tool.model import Chapter, Example, Operator, Variant, authored, manual
+from tool.model import Chapter, Example, Link, Operator, Variant, authored, manual
 
 _PAGE = "Hierarchical aggregation/Hierarchical roll-up"
 
@@ -88,6 +88,7 @@ HIERARCHY = Operator(
             examples=(authored(),),
         ),
     ),
+    links=(Link("definitions.define_hierarchical_ruleset", "uses"),),
 )
 
 CHAPTER = Chapter(id="hierarchy", title="Hierarchical aggregation", operators=(HIERARCHY,))

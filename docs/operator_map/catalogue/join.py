@@ -25,7 +25,7 @@ variant whose clause they exercise.
 
 from __future__ import annotations
 
-from tool.model import Chapter, Example, Operator, Variant, authored, manual
+from tool.model import Chapter, Example, Link, Operator, Variant, authored, manual
 
 
 def _form(variant_id: str, label: str, *examples: Example) -> Variant:
@@ -39,6 +39,10 @@ _EX_5_ERRATUM = (
     "result. ds_5.json also declares Me_2 an Identifier, but the result has Me_21 and Me_22 as "
     "Measures: it is loaded as a Measure."
 )
+
+# The clauses of the body of a join are operators of the chapter Clause operators.
+_BODY_CLAUSES = ("filter", "calc", "aggr", "keep", "drop", "rename")
+_CLAUSE_LINKS = tuple(Link(f"clause.{clause}", "uses") for clause in _BODY_CLAUSES)
 
 CHAPTER = Chapter(
     id="join",
@@ -97,6 +101,7 @@ CHAPTER = Chapter(
                     authored(),
                 ),
             ),
+            links=_CLAUSE_LINKS,
         ),
         Operator(
             id="left_join",
@@ -151,6 +156,7 @@ CHAPTER = Chapter(
                 _form("rename", "left_join(DS, DS rename C to C2)"),
                 _form("nary", "left_join(DS, DS, DS)"),
             ),
+            links=_CLAUSE_LINKS,
         ),
         Operator(
             id="full_join",
@@ -205,6 +211,7 @@ CHAPTER = Chapter(
                 _form("rename", "full_join(DS, DS rename C to C2)"),
                 _form("nary", "full_join(DS, DS, DS)"),
             ),
+            links=_CLAUSE_LINKS,
         ),
         Operator(
             id="cross_join",
@@ -252,6 +259,7 @@ CHAPTER = Chapter(
                 _form("rename", "cross_join(DS, DS rename C to C2)", manual("ex_1"), authored()),
                 _form("nary", "cross_join(DS, DS, DS)"),
             ),
+            links=_CLAUSE_LINKS,
         ),
     ),
 )

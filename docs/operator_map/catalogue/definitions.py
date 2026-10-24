@@ -9,7 +9,7 @@ attribute for a viral propagation.
 
 from __future__ import annotations
 
-from tool.model import Chapter, Example, Operator, Variant, authored
+from tool.model import Chapter, Example, Link, Operator, Variant, authored
 
 
 def _variant(variant_id: str, label: str, *examples: Example) -> Variant:
@@ -81,6 +81,7 @@ DEFINE_OPERATOR = Operator(
         _variant("returns_component", "returns component<integer>"),
         _variant("returns_dataset", "returns dataset"),
     ),
+    links=(Link("general.udo_call", "used by"),),
 )
 
 DEFINE_DATAPOINT_RULESET = Operator(
@@ -102,6 +103,7 @@ DEFINE_DATAPOINT_RULESET = Operator(
         _variant("errorcode", 'errorcode "NEG_CREDIT"'),
         _variant("errorlevel", "errorlevel 5"),
     ),
+    links=(Link("validation.check_datapoint", "used by"),),
 )
 
 DEFINE_HIERARCHICAL_RULESET = Operator(
@@ -130,6 +132,10 @@ DEFINE_HIERARCHICAL_RULESET = Operator(
         _variant("errorlevel", "errorlevel 3"),
         _variant("named", "R_1 : A = B"),
         _variant("unnamed", "rule without a name"),
+    ),
+    links=(
+        Link("hierarchy.hierarchy", "used by"),
+        Link("validation.check_hierarchy", "used by"),
     ),
 )
 
@@ -162,6 +168,12 @@ DEFINE_VIRAL_PROPAGATION = Operator(
         _variant("at_join", "at inner_join"),
         _variant("at_aggregation", "at sum group by"),
         _variant("at_hierarchy", "at hierarchy"),
+    ),
+    links=(
+        Link("numeric.addition", "propagates at"),
+        Link("join.inner_join", "propagates at"),
+        Link("aggregate.sum", "propagates at"),
+        Link("hierarchy.hierarchy", "propagates at"),
     ),
 )
 
