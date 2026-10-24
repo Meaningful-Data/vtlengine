@@ -1,0 +1,3 @@
+:Tests: ``aggr attribute At_1 := max ( Me_1 ) group by Id_1``: an attribute as the only aggregated component.
+:Manual: `Aggregation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Aggregation/index.html>`__: "The aggr computed Measures and Attributes are the only Measures and Attributes returned in the output Data Set"; the `User Manual <https://sdmx-twg.github.io/vtl/v2.2/user_manual/model.html>`__: "There can be from 0 to N Measures in a Data Structure. A Data Set without Measures is allowed".
+:Expected: ``Id_1`` and the Attribute ``At_1`` = 5 and 4, the maxima, with no Measure: ``Me_1`` is not in the result. ``At_1`` is an Integer, as for ``max`` "For numeric operands, the result has the same type as the operand".
