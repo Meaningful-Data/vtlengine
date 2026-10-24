@@ -1,0 +1,4 @@
+:Tests: a cross join of ``DS_1`` and the expression ``DS_2 [filter Me_1 > 0]``, with no alias; both have ``Me_1``.
+:Manual: `Cross Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Cross%20Join/index.html>`__: the components of several data sets are prefixed with the alias, else with "the data set name", and the aliases "are mandatory ... for non-named data set obtained as result of a sub-expression".
+:Expected: the error ``1-1-13-2``, "Missing mandatory aliasing", for "If the data set name can't be determined (for example the join operand is an expression), an error is raised": ``Me_1`` needs a prefix, and the expression has no name.
+:Finding: both engines raise SemanticError ``1-1-13-9``, "Ambiguity for this variable {comp_name} inside a Join clause", which reads as the page's later error, when stripping the prefixes "determines a structure with homonymous components", not as the missing alias.

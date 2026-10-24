@@ -1,0 +1,4 @@
+:Tests: ``using Id_1`` with two rules, ``nvl(d1#Id_2, "Y")`` and ``nvl(d2#Id_2, "X")``: the ``Id_2`` of each operand, named through its alias, gets its own value; the renames name the two ``Id_2``, as stripping their prefixes would give two ``Id_2``, an error.
+:Manual: `Full Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Full%20Join/index.html>`__: "prefixing the identifier name with the alias of the operand in the nvl() rule allows to specify different rules for each of them".
+:Expected: ``(1,A,C,10,1)``, ``(1,B,C,20,1)``, ``(2,B,X,30,null)`` and ``(3,Y,D,null,3)`` as ``Id_1``, ``Id_21``, ``Id_22``, ``Me_1``, ``Me_2``: ``Id_1`` = 2 takes the rule of ``d2#Id_2``, ``Id_1`` = 3 that of ``d1#Id_2``.
+:Finding: both engines crash with AttributeError "'BinOp' object has no attribute 'value'".
