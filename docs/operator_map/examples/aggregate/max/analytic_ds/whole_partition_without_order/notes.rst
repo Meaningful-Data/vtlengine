@@ -1,0 +1,4 @@
+:Tests: ``max`` as an analytic function at data set level, partitioned by ``Id_1``, with no order and no window clause.
+:Manual: `Analytic invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html>`__: "If windowClause is not specified, then the set of Data Points which contribute to the analytic operation is the whole partition which the current Data Point belongs to". With no order clause, the two defaults that the page gives for an omitted window agree.
+:Expected: every data point gets the values of its partition: 5 and 3.5 in ``A``, 8 and 6.5 in ``B``.
+:Finding: both engines give the maximum of the data points up to the current one in the order of ``Id_2``: the ``Me_1`` of ``A`` is 3.0 at 2020Q1 and at 2020Q2.

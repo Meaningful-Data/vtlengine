@@ -1,0 +1,3 @@
+:Tests: ``ratio_to_report`` at data set level, partitioned by ``Id_1`` and ``Id_2``.
+:Manual: `Ratio to report <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Ratio%20to%20report/index.html>`__, Example 1, output verbatim: "The operator returns the ratio between the value of the current Data Point and the sum of the values of the partition which the current Data Point belongs to."
+:Expected: the sums are 20 and 10 in ``XX``, 40 and 10 in ``YY``: from 3 / 20 = 0.15 to 14 / 40 = 0.35 for ``Me_1``, and from 1 / 10 = 0.1 to -3 / 10 = -0.3 for ``Me_2``, as Numbers.

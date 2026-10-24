@@ -1,0 +1,4 @@
+:Tests: ``median`` as an analytic function at data set level, partitioned by ``Id_1``, with no order and no window clause.
+:Manual: `Analytic invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html>`__: "If windowClause is not specified, then the set of Data Points which contribute to the analytic operation is the whole partition which the current Data Point belongs to". With no order clause, the two defaults that the page gives for an omitted window agree.
+:Expected: every data point gets the values of its partition: 2 and 2 in ``A``, 6 and 5.5 in ``B``.
+:Finding: both engines give the median of the data points up to the current one in the order of ``Id_2``: the ``Me_2`` of ``A`` is 1.5 at 2020Q1 and 2.5 at 2020Q2.

@@ -8,6 +8,16 @@ or as analytic functions with ``over ( ... )``. ``first_value``, ``last_value``,
 ``lead``, ``rank`` and ``ratio_to_report`` are analytic only. The two invocation pages describe
 the grouping clause and the analytic clause (partition, order and window) once for all of them.
 
+The types of the forms come from the "Input parameters type" and the "Result type" of each page,
+and from the table at the start of the chapter. ``count``, ``min``, ``max``, ``first_value``,
+``last_value``, ``lag``, ``lead`` and ``rank`` take any scalar; the other functions take numbers.
+``count`` and ``rank`` give integers; ``min``, ``max``, ``first_value``, ``last_value``, ``lag``
+and ``lead`` give the type of their operand (``any``); the others give numbers, ``sum`` included,
+whose result the manual declares a number. A form with ``having`` takes the boolean of its
+condition too, and a form of ``lag`` or ``lead`` with an offset takes the integer of the offset.
+The two invocation pages have no type of their own: their forms take any scalar and give the
+type of the function that they invoke.
+
 In the Aggregate invocation, the data set form of ``count`` returns a single Integer measure
 ``int_var``, whatever the measures of the operand, and ignores the data points whose measures are
 all null: that is the team decision of #1049. ``decision=1049`` marks only the examples whose
@@ -20,22 +30,40 @@ expressions of the aggregated measures, where the manual and the reading of #111
 of them needs ``decision=1119``.
 
 The authored examples share one input, ``DS_1`` with a String and a Time_Period identifier and
-two Number measures, and no null. The exceptions are ``minimal_2`` examples: those of
-``ds_having`` drop the second measure; that of ``count.ds_group_by`` has a data point whose
-measures are all null and one with a single null measure; that of ``avg.ds_group_by`` has one
-null value; and those of ``min.ds_group_by`` and ``max.ds_group_by`` have a String measure. The
-notes of each example derive its expected output.
+two Number measures, and no null. The exceptions are the ``one_measure`` examples of
+``ds_having``, which drop the second measure, and the second examples of ``ds_group_by``: that of
+``count`` has a data point whose measures are all null and one with a single null measure, that
+of ``avg`` has one null value, and those of ``min`` and ``max`` have a String measure. The notes
+of each example say what it tests and why it gives its expected output.
 """
 
 from __future__ import annotations
 
-from tool.model import Chapter, Example, Link, Operator, Variant, authored, manual
+from tool.model import (
+    ANY_SCALAR,
+    ANY_TYPE,
+    Chapter,
+    Example,
+    Link,
+    Operator,
+    Variant,
+    authored,
+    manual,
+)
 
 _CHAPTER_TITLE = "Aggregate and Analytic operators"
 _COUNT_DECISION = 1049  # count over a data set returns the single measure int_var
-# The functions whose ``group by`` form has a second example, ``minimal_2``: nulls for ``count``
-# and ``avg``, a String measure for ``min`` and ``max``.
-_GROUP_BY_SECOND = ("count", "avg", "min", "max")
+_NUMBER = "number"
+_INTEGER = "integer"  # what count and rank give, and the offset of lag and lead
+_BOOLEAN = "boolean"  # the condition of having
+# The functions whose ``group by`` form has a second example, after the manual's: nulls for
+# ``count`` and ``avg``, a String measure for ``min`` and ``max``.
+_GROUP_BY_SECOND = {
+    "count": "all_null_data_point_ignored",
+    "avg": "null_left_out_of_average",
+    "min": "string_measure",
+    "max": "string_measure",
+}
 # The clauses that the functions are used in: an aggregate function in ``aggr``, and any function
 # that takes ``over ( ... )``, the aggregate ones included, in ``calc``.
 _AGGR_LINK = Link("clause.aggr", "used in")
@@ -48,28 +76,31 @@ def _page(title: str) -> str:
 
 def _with_dataset(type_id: str) -> tuple[str, ...]:
     """``type_id`` and ``dataset``: a function with a data set form takes and gives one too."""
-    return tuple(dict.fromkeys((type_id, "dataset")))
+    return (type_id, "dataset")
 
 
-def _aggregate_function(op_id: str, name: str, title: str, accepts: str, returns: str) -> Operator:
+def _aggregate_function(op_id: str, name: str, title: str, takes: str, gives: str) -> Operator:
     """One of the ten aggregate functions, with its eight forms (nine for ``count``).
 
-    Each function has the manual example ``ex_1``, a ``group by`` over one identifier; ``count``
-    also has ``ex_2``, ``count ( )`` in a ``having`` condition.
+    ``takes`` is the type of its operand and ``gives`` the type of its result; a form with
+    ``having`` takes the boolean of its condition too. Each function has the manual example
+    ``ex_1``, a ``group by`` over one identifier; ``count`` also has ``ex_2``, ``count ( )`` in a
+    ``having`` condition.
     """
     is_count = op_id == "count"
     decision = _COUNT_DECISION if is_count else None
-
-    def dataset_form() -> tuple[Example, ...]:
-        return (authored(decision=decision),)
-
-    # ``minimal`` has the two measures of the shared input; ``minimal_2`` the first one only,
-    # which gives the manual's own ``int_var`` for ``count``: no decision there.
+    operand = (takes,)
+    with_condition = (takes, _BOOLEAN)
+    result = (gives,)
+    # ``two_measures`` has the two measures of the shared input; ``one_measure`` the first one
+    # only, which gives the manual's own ``int_var`` for ``count``: no decision there.
     having: tuple[Variant, ...] = (
         Variant(
             "ds_having",
             f"{op_id}(DS group by Id having cond)",
-            (authored(decision=decision), authored("minimal_2")),
+            (authored("two_measures", decision=decision), authored("one_measure")),
+            takes=with_condition,
+            gives=result,
         ),
     )
     if is_count:
@@ -78,25 +109,60 @@ def _aggregate_function(op_id: str, name: str, title: str, accepts: str, returns
                 "count_in_having",
                 "count(DS group by Id having count() > n)",
                 (manual("ex_2"),),
+                takes=with_condition,
+                gives=result,
+                kind="ds",
             ),
         )
     # ex_1 has a single measure and no null: the manual's own ``int_var``, no decision.
     group_by: tuple[Example, ...] = (manual("ex_1"),)
     if op_id in _GROUP_BY_SECOND:
-        group_by += (authored("minimal_2", decision=decision),)
+        group_by += (authored(_GROUP_BY_SECOND[op_id], decision=decision),)
     variants = (
-        Variant("ds_no_group", f"{op_id}(DS)", dataset_form()),
-        Variant("ds_group_by", f"{op_id}(DS group by Id)", group_by),
-        Variant("ds_group_except", f"{op_id}(DS group except Id)", dataset_form()),
-        Variant("ds_group_all", f'{op_id}(DS group all time_agg("A"))', dataset_form()),
+        Variant(
+            "ds_no_group",
+            f"{op_id}(DS)",
+            (authored("single_group_no_identifiers", decision=decision),),
+            takes=operand,
+            gives=result,
+        ),
+        Variant("ds_group_by", f"{op_id}(DS group by Id)", group_by, takes=operand, gives=result),
+        Variant(
+            "ds_group_except",
+            f"{op_id}(DS group except Id)",
+            (authored("drops_the_listed_identifier", decision=decision),),
+            takes=operand,
+            gives=result,
+        ),
+        Variant(
+            "ds_group_all",
+            f'{op_id}(DS group all time_agg("A"))',
+            (authored("quarters_to_years", decision=decision),),
+            takes=operand,
+            gives=result,
+        ),
         *having,
-        Variant("comp_in_aggr", f"DS[aggr Me := {op_id}(Me) group by Id]", (authored(),)),
+        Variant(
+            "comp_in_aggr",
+            f"DS[aggr Me := {op_id}(Me) group by Id]",
+            (authored("keeps_only_calculated_measure"),),
+            takes=operand,
+            gives=result,
+        ),
         # #1049 covers the Aggregate invocation only: no decision on the analytic form.
-        Variant("analytic_ds", f"{op_id}(DS over (partition by Id))", (authored(),)),
+        Variant(
+            "analytic_ds",
+            f"{op_id}(DS over (partition by Id))",
+            (authored("whole_partition_without_order"),),
+            takes=operand,
+            gives=result,
+        ),
         Variant(
             "analytic_comp",
             f"DS[calc Me := {op_id}(Me over (partition by Id))]",
-            (authored(),),
+            (authored("whole_partition_without_order"),),
+            takes=operand,
+            gives=result,
         ),
     )
     return Operator(
@@ -104,76 +170,98 @@ def _aggregate_function(op_id: str, name: str, title: str, accepts: str, returns
         name=name,
         symbol=op_id,
         page=_page(title),
-        accepts=_with_dataset(accepts),
-        returns=_with_dataset(returns),
+        accepts=_with_dataset(takes),
+        returns=_with_dataset(gives),
         variants=variants,
         links=(_AGGR_LINK, _OVER_LINK),
     )
 
 
-def _first_or_last(op_id: str, name: str) -> Operator:
+def _first_or_last(op_id: str, name: str, slug: str) -> Operator:
+    """``first_value`` or ``last_value``: any scalar, and a result of its type."""
     return Operator(
         id=op_id,
         name=name,
         symbol=op_id,
         page=_page(name),
-        accepts=("scalar", "dataset"),
-        returns=("scalar", "dataset"),
+        accepts=_with_dataset(ANY_SCALAR),
+        returns=_with_dataset(ANY_TYPE),
         variants=(
             Variant(
                 "analytic_ds",
                 f"{op_id}(DS over (partition by Id order by Id data points ...))",
                 (manual("ex_1"),),
+                takes=(ANY_SCALAR,),
+                gives=(ANY_TYPE,),
             ),
             Variant(
                 "analytic_comp",
                 f"DS[calc Me := {op_id}(Me over (partition by Id order by Id data points ...))]",
-                (authored(),),
+                (authored(slug),),
+                takes=(ANY_SCALAR,),
+                gives=(ANY_TYPE,),
             ),
         ),
         links=(_OVER_LINK,),
     )
 
 
-def _lag_or_lead(op_id: str, name: str) -> Operator:
+def _lag_or_lead(op_id: str, name: str, comp_slug: str) -> Operator:
+    """``lag`` or ``lead``: any scalar, an integer offset, and a result of the operand's type."""
+    with_offset = (ANY_SCALAR, _INTEGER)
     return Operator(
         id=op_id,
         name=name,
         symbol=op_id,
         page=_page(name),
-        accepts=("scalar", "dataset"),
-        returns=("scalar", "dataset"),
+        accepts=(ANY_SCALAR, _INTEGER, "dataset"),
+        returns=_with_dataset(ANY_TYPE),
         variants=(
             Variant(
-                "ds_no_offset", f"{op_id}(DS over (partition by Id order by Id))", (authored(),)
+                "ds_no_offset",
+                f"{op_id}(DS over (partition by Id order by Id))",
+                (authored("offset_defaults_to_one"),),
+                takes=(ANY_SCALAR,),
+                gives=(ANY_TYPE,),
             ),
             Variant(
                 "ds_offset",
                 f"{op_id}(DS, n over (partition by Id order by Id))",
                 (manual("ex_1"),),
+                takes=with_offset,
+                gives=(ANY_TYPE,),
             ),
             Variant(
                 "ds_offset_default",
                 f"{op_id}(DS, n, default over (partition by Id order by Id))",
-                (authored(),),
+                (authored("offset_two_default_zero"),),
+                takes=with_offset,
+                gives=(ANY_TYPE,),
             ),
             Variant(
                 "comp_offset",
                 f"DS[calc Me := {op_id}(Me, n over (partition by Id order by Id))]",
-                (authored(),),
+                (authored(comp_slug),),
+                takes=with_offset,
+                gives=(ANY_TYPE,),
             ),
         ),
         links=(_OVER_LINK,),
     )
 
+
+# The invocation pages have no type of their own: their forms take any scalar, and give the type
+# of the function that they invoke. Their ids have no kind token, so each form says its kind.
+_INVOCATION_TAKES = (ANY_SCALAR,)
+_INVOCATION_GIVES = (ANY_TYPE,)
 
 _AGGREGATE_INVOCATION = Operator(
     id="aggregate_invocation",
     name="Aggregate invocation",
     symbol="group by",
     page=_page("Aggregate invocation"),
-    accepts=("dataset",),
-    returns=("dataset",),
+    accepts=_with_dataset(ANY_SCALAR),
+    returns=_with_dataset(ANY_TYPE),
     variants=(
         Variant(
             "group_by",
@@ -188,9 +276,26 @@ _AGGREGATE_INVOCATION = Operator(
                     ),
                 ),
             ),
+            takes=_INVOCATION_TAKES,
+            gives=_INVOCATION_GIVES,
+            kind="ds",
         ),
-        Variant("group_by_two", "agg(DS group by Id, Id)", (manual("ex_2"),)),
-        Variant("no_group", "agg(DS)", (manual("ex_3"),)),
+        Variant(
+            "group_by_two",
+            "agg(DS group by Id, Id)",
+            (manual("ex_2"),),
+            takes=_INVOCATION_TAKES,
+            gives=_INVOCATION_GIVES,
+            kind="ds",
+        ),
+        Variant(
+            "no_group",
+            "agg(DS)",
+            (manual("ex_3"),),
+            takes=_INVOCATION_TAKES,
+            gives=_INVOCATION_GIVES,
+            kind="ds",
+        ),
         Variant(
             "aggr_multiple",
             "DS[aggr Me := agg(Me), Me := agg(Me) group by Id]",
@@ -204,6 +309,9 @@ _AGGREGATE_INVOCATION = Operator(
                     ),
                 ),
             ),
+            takes=_INVOCATION_TAKES,
+            gives=_INVOCATION_GIVES,
+            kind="comp",
         ),
     ),
     links=(_AGGR_LINK,),
@@ -214,11 +322,25 @@ _ANALYTIC_INVOCATION = Operator(
     name="Analytic invocation",
     symbol="over",
     page=_page("Analytic invocation"),
-    accepts=("dataset",),
-    returns=("dataset",),
+    accepts=_with_dataset(ANY_SCALAR),
+    returns=_with_dataset(ANY_TYPE),
     variants=(
-        Variant("partition_by", "an(Me over (partition by Id))", (authored(),)),
-        Variant("partition_except", "an(Me over (partition except Id))", (authored(),)),
+        Variant(
+            "partition_by",
+            "an(Me over (partition by Id))",
+            (authored("sum_per_quarter"),),
+            takes=_INVOCATION_TAKES,
+            gives=_INVOCATION_GIVES,
+            kind="comp",
+        ),
+        Variant(
+            "partition_except",
+            "an(Me over (partition except Id))",
+            (authored("partition_by_unlisted_identifier"),),
+            takes=_INVOCATION_TAKES,
+            gives=_INVOCATION_GIVES,
+            kind="comp",
+        ),
         Variant(
             "partition_except_all",
             "an(over (partition except all order by Id))",
@@ -230,49 +352,87 @@ _ANALYTIC_INVOCATION = Operator(
                         "DS_1, and rank returns integer, so both are Integer."
                     ),
                 ),
-                authored(),
+                authored("whole_data_set_one_partition"),
             ),
+            takes=_INVOCATION_TAKES,
+            gives=_INVOCATION_GIVES,
+            kind="comp",
         ),
-        Variant("order_asc", "an(over (partition by Id order by Me asc))", (authored(),)),
-        Variant("order_desc", "an(over (partition by Id order by Me desc))", (authored(),)),
+        Variant(
+            "order_asc",
+            "an(over (partition by Id order by Me asc))",
+            (authored("ascending_rank_with_tie"),),
+            takes=_INVOCATION_TAKES,
+            gives=_INVOCATION_GIVES,
+            kind="comp",
+        ),
+        Variant(
+            "order_desc",
+            "an(over (partition by Id order by Me desc))",
+            (authored("descending_rank_with_tie"),),
+            takes=_INVOCATION_TAKES,
+            gives=_INVOCATION_GIVES,
+            kind="comp",
+        ),
         Variant(
             "window_data_points",
             "an(DS over (order by Id data points between n preceding and n following))",
             (manual("ex_1"),),
+            takes=_INVOCATION_TAKES,
+            gives=_INVOCATION_GIVES,
+            kind="ds",
         ),
         Variant(
             "window_range",
             "an(Me over (partition by Id order by Me range between n preceding and n following))",
-            (authored(),),
+            (authored("range_bounds_are_inclusive"),),
+            takes=_INVOCATION_TAKES,
+            gives=_INVOCATION_GIVES,
+            kind="comp",
         ),
         Variant(
             "window_unbounded",
             "an(Me over (... data points between unbounded preceding and unbounded following))",
-            (authored(),),
+            (authored("unbounded_covers_whole_partition"),),
+            takes=_INVOCATION_TAKES,
+            gives=_INVOCATION_GIVES,
+            kind="comp",
         ),
         Variant(
             "window_current",
             "an(Me over (... data points between n preceding and current data point))",
-            (authored(),),
+            (authored("one_preceding_to_current"),),
+            takes=_INVOCATION_TAKES,
+            gives=_INVOCATION_GIVES,
+            kind="comp",
         ),
     ),
     links=(Link("clause.calc", "used in"),),
 )
 
+# rank has no operand: it ranks by the components of its order clause, of any type.
 _RANK = Operator(
     id="rank",
     name="Rank",
     symbol="rank",
     page=_page("Rank"),
-    accepts=("scalar",),
-    returns=("integer",),
+    accepts=(ANY_SCALAR,),
+    returns=(_INTEGER,),
     variants=(
         Variant(
             "partition_order",
             "DS[calc Me := rank(over (partition by Id order by Me))]",
             (manual("ex_1"),),
+            takes=(ANY_SCALAR,),
+            gives=(_INTEGER,),
         ),
-        Variant("order_only", "DS[calc Me := rank(over (order by Id))]", (authored(),)),
+        Variant(
+            "order_only",
+            "DS[calc Me := rank(over (order by Id))]",
+            (authored("default_partition_by_other_identifiers"),),
+            takes=(ANY_SCALAR,),
+            gives=(_INTEGER,),
+        ),
     ),
     links=(_OVER_LINK,),
 )
@@ -282,14 +442,22 @@ _RATIO_TO_REPORT = Operator(
     name="Ratio to report",
     symbol="ratio_to_report",
     page=_page("Ratio to report"),
-    accepts=("number", "dataset"),
-    returns=("number", "dataset"),
+    accepts=_with_dataset(_NUMBER),
+    returns=_with_dataset(_NUMBER),
     variants=(
-        Variant("ds", "ratio_to_report(DS over (partition by Id))", (manual("ex_1"),)),
+        Variant(
+            "ds",
+            "ratio_to_report(DS over (partition by Id))",
+            (manual("ex_1"),),
+            takes=(_NUMBER,),
+            gives=(_NUMBER,),
+        ),
         Variant(
             "comp",
             "DS[calc Me := ratio_to_report(Me over (partition by Id))]",
-            (authored(),),
+            (authored("share_of_partition_sum"),),
+            takes=(_NUMBER,),
+            gives=(_NUMBER,),
         ),
     ),
     links=(_OVER_LINK,),
@@ -305,36 +473,36 @@ CHAPTER = Chapter(
             "count",
             "Counting the number of data points",
             "Counting the number of data points",
-            "dataset",
-            "integer",
+            ANY_SCALAR,
+            _INTEGER,
         ),
-        _aggregate_function("min", "Minimum value", "Minimun value", "scalar", "scalar"),
-        _aggregate_function("max", "Maximum value", "Maximum value", "scalar", "scalar"),
-        _aggregate_function("median", "Median value", "Median value", "number", "number"),
-        _aggregate_function("sum", "Sum", "Sum", "number", "number"),
-        _aggregate_function("avg", "Average value", "Average value", "number", "number"),
+        _aggregate_function("min", "Minimum value", "Minimun value", ANY_SCALAR, ANY_TYPE),
+        _aggregate_function("max", "Maximum value", "Maximum value", ANY_SCALAR, ANY_TYPE),
+        _aggregate_function("median", "Median value", "Median value", _NUMBER, _NUMBER),
+        _aggregate_function("sum", "Sum", "Sum", _NUMBER, _NUMBER),
+        _aggregate_function("avg", "Average value", "Average value", _NUMBER, _NUMBER),
         _aggregate_function(
             "stddev_pop",
             "Population standard deviation",
             "Population standard deviation",
-            "number",
-            "number",
+            _NUMBER,
+            _NUMBER,
         ),
         _aggregate_function(
             "stddev_samp",
             "Sample standard deviation",
             "Sample standard deviation",
-            "number",
-            "number",
+            _NUMBER,
+            _NUMBER,
         ),
         _aggregate_function(
-            "var_pop", "Population variance", "Population variance", "number", "number"
+            "var_pop", "Population variance", "Population variance", _NUMBER, _NUMBER
         ),
-        _aggregate_function("var_samp", "Sample variance", "Sample variance", "number", "number"),
-        _first_or_last("first_value", "First value"),
-        _first_or_last("last_value", "Last value"),
-        _lag_or_lead("lag", "Lag"),
-        _lag_or_lead("lead", "Lead"),
+        _aggregate_function("var_samp", "Sample variance", "Sample variance", _NUMBER, _NUMBER),
+        _first_or_last("first_value", "First value", "first_in_order_not_smallest"),
+        _first_or_last("last_value", "Last value", "last_in_order_not_greatest"),
+        _lag_or_lead("lag", "Lag", "previous_value_or_null"),
+        _lag_or_lead("lead", "Lead", "next_value_or_null"),
         _RANK,
         _RATIO_TO_REPORT,
     ),
