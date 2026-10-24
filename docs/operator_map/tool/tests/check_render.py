@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from catalogue import manual_index
 
 from tool.mermaid import (
     USED_WITH_MAX,
@@ -37,7 +38,19 @@ from tool.mermaid import (
     operator_diagram,
     overview_block,
 )
-from tool.model import Catalogue, Chapter, Example, Link, Operator, Variant, authored, manual
+from tool.model import (
+    Catalogue,
+    Chapter,
+    Example,
+    Link,
+    Operator,
+    Variant,
+    ViralGroup,
+    authored,
+    load_catalogue,
+    load_viral_groups,
+    manual,
+)
 from tool.render import (
     BORDER_KEY_HTML,
     LEGEND_HTML,
@@ -88,9 +101,15 @@ def form(
 
 
 def operator(
-    operator_id: str, name: str, symbol: str, *variants: Variant, links: tuple[Link, ...] = ()
+    operator_id: str,
+    name: str,
+    symbol: str,
+    *variants: Variant,
+    links: tuple[Link, ...] = (),
+    page: str = "",
 ) -> Operator:
-    return Operator(operator_id, name, symbol, f"Some operators/{name}", (), (), variants, links)
+    page = page or f"Some operators/{name}"
+    return Operator(operator_id, name, symbol, page, (), (), variants, links)
 
 
 def keys(cat: Catalogue) -> Iterator[str]:
@@ -358,6 +377,8 @@ def test_manual_url_of_the_definitions() -> None:
     assert manual_url("dl/datapoint") == f"{BASE}/vtl_dl_rulesets/datapoint_rulesets.html"
     assert manual_url("dl/hierarchical") == f"{BASE}/vtl_dl_rulesets/hierarchical_rulesets.html"
     assert manual_url("dl/viral") == f"{BASE}/vtl_dl_rulesets/viral_attributes.html"
+    # The typical behaviours of the operators, which the viral groups quote.
+    assert manual_url("typical") == f"{BASE}/typical_behaviour.html"
 
 
 # --- The legend ---
@@ -598,6 +619,112 @@ def test_mermaid_blocks_reads_back_the_blocks_of_a_page(tmp_path: Path) -> None:
     assert mermaid_blocks(text) == [operator_diagram(NUMERIC, ROUND, MAP, INDEX)]
     assert mermaid_blocks(block_rst(NUMERIC, MAP, INDEX, META)) == [block_diagram(NUMERIC, INDEX)]
     assert mermaid_blocks(index_rst(MAP, INDEX, META)) == [overview_block(MAP, INDEX)]
+
+
+# --- Viral propagation, in text ---
+
+
+VIRAL_DEFINITION = operator(
+    "define_viral_propagation",
+    "define viral propagation",
+    "",
+    form("variable", "variable At_1", ("scalar",), ("viral_propagation",)),
+    page="dl/viral",
+)
+DEFINITIONS = Chapter("definitions", "Definitions (VTL-DL)", (VIRAL_DEFINITION,))
+VIRAL_MAP = Catalogue((NUMERIC, STRING, CONDITIONAL, DEFINITIONS))
+VIRAL_INDEX = index_of(VIRAL_MAP, {"numeric/modulo/ds_ds/manual_ex_1": DIVERGE})
+GROUPS = (
+    ViralGroup(
+        "Operators on two data sets",
+        "typical",
+        "For each couple (DP_1, DP_2) ... the proper Attribute propagation algorithm",
+        ("numeric.modulo", "string.length"),
+    ),
+    # An operator that the catalogue does not have is not listed.
+    ViralGroup("Rounding", "Numeric operators/Rounding", "It's applied", ("numeric.round", "x.y")),
+)
+VIRAL_LINE = (
+    '<p class="om-viral"><b>Viral attributes:</b> combined with the propagation rules → '
+    '<a href="../definitions/define_viral_propagation.html">Viral propagation</a></p>'
+)
+
+
+def test_an_operator_that_applies_the_viral_rules_says_so_under_its_types(tmp_path: Path) -> None:
+    text = operator_rst(
+        NUMERIC, MODULO, VIRAL_MAP, VIRAL_INDEX, META, examples_root=tmp_path, viral=GROUPS
+    )
+    takes = '<p class="om-takes"><b>Takes</b> number · <b>Gives</b> number</p>'
+    assert f'   {takes}\n   {VIRAL_LINE}\n   <div class="om-cols">' in text
+    assert text.count("om-viral") == 1
+    # Never in a diagram.
+    assert "viral" not in blocks(text)[0].lower()
+    # An operator that is in no group has no line.
+    ceil = operator_rst(NUMERIC, CEIL, VIRAL_MAP, VIRAL_INDEX, META, viral=GROUPS)
+    assert "om-viral" not in ceil
+    # Without the page of the definition, the line names it without a link.
+    alone = operator_rst(NUMERIC, ROUND, MAP, INDEX, META, examples_root=tmp_path, viral=GROUPS)
+    assert "→ Viral propagation</p>" in alone
+
+
+def test_the_viral_propagation_page_lists_the_operators_that_apply_it(tmp_path: Path) -> None:
+    text = operator_rst(DEFINITIONS, VIRAL_DEFINITION, VIRAL_MAP, VIRAL_INDEX, META, viral=GROUPS)
+    assert titles(text, "-") == ["Types", "Applied by", "Forms"]
+    applied = section(text, "Applied by")
+    # Each group, with the sentence of the manual and its page.
+    assert (
+        '- **Operators on two data sets**: \\"For each couple (DP\\_1, DP\\_2) \\.\\.\\. '
+        'the proper Attribute propagation algorithm\\" '
+        f"(`Typical behaviours of the ML operators <{BASE}/typical_behaviour.html>`__)"
+    ) in applied.splitlines()
+    assert (
+        '- **Rounding**: \\"It\\\'s applied\\" '
+        f"(`Rounding <{BASE}/operators/Numeric%20operators/Rounding/index.html>`__)"
+    ) in applied.splitlines()
+    # The operators, by block, each block closed, as the type lists: the unknown one is not there.
+    assert "<b>Applied by</b> — 3 operators in 2 blocks 🟢2 🔵1" in applied
+    assert '<details class="om-blk"><summary>Numeric operators <b>(2)</b> 🟢1 🔵1</summary>' in (
+        applied
+    )
+    for target in ("../numeric/modulo.html", "../numeric/round.html", "../string/length.html"):
+        assert f'href="{target}"' in applied
+    assert "x.y" not in applied
+    assert ">y<" not in applied
+    # Only the page of the definition has the section, and its diagram has none of them.
+    assert "Applied by" not in operator_rst(NUMERIC, MODULO, VIRAL_MAP, VIRAL_INDEX, META, viral=())
+    assert "modulo" not in blocks(text)[0]
+
+
+def test_the_viral_groups_name_operators_of_the_catalogue() -> None:
+    cat = load_catalogue()
+    addresses = {f"{chapter.id}.{op.id}" for chapter in cat.chapters for op in chapter.operators}
+    groups = load_viral_groups()
+    listed = [address for group in groups for address in group.operators]
+    # Each operator once, every one of the catalogue, and no definition of the VTL-DL.
+    assert len(listed) == len(set(listed))
+    assert set(listed) <= addresses
+    assert not [address for address in listed if address.startswith("definitions.")]
+    # What the manual leaves out: the time series and the set operators, and membership.
+    left_out = {
+        "time.fill_time_series",
+        "time.flow_to_stock",
+        "time.stock_to_flow",
+        "time.timeshift",
+        "set.union",
+        "set.intersect",
+        "set.setdiff",
+        "set.symdiff",
+        "general.membership",
+    }
+    assert not left_out & set(listed)
+    # The joins, hierarchy and check_hierarchy, as the design lists them.
+    joins = {"join.inner_join", "join.left_join", "join.full_join", "join.cross_join"}
+    assert joins | {"hierarchy.hierarchy", "validation.check_hierarchy"} <= set(listed)
+    # Each group quotes a page of the manual.
+    for group in groups:
+        assert group.page == "typical" or group.page in manual_index.MANUAL_PAGES, group.page
+        assert group.sentence, group.title
+        assert group.operators, group.title
 
 
 # --- The page of a block ---

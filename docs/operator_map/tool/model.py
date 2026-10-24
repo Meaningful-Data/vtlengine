@@ -142,6 +142,22 @@ class Catalogue:
     chapters: tuple[Chapter, ...]
 
 
+@dataclass(frozen=True)
+class ViralGroup:
+    """The operators that apply the viral propagation rules, and the manual sentence that says so.
+
+    ``page`` is the page of the manual that has the sentence, as ``Operator.page`` names a page, or
+    ``typical`` for its Typical behaviours of the ML operators. ``operators`` are addresses,
+    ``<chapter>.<operator>``. The groups are kept by hand in ``catalogue.viral``; they are never a
+    ``Link``, as a definition of the VTL-DL is not used inside an operator.
+    """
+
+    title: str
+    page: str
+    sentence: str  # quoted from ``page``
+    operators: tuple[str, ...]
+
+
 def manual(ref: str, **kw: Any) -> Example:
     """A manual example, named ``manual_<ref>`` and mapped to ``<operator.page>/<ref>``."""
     return Example(name=f"manual_{ref}", source="manual", manual_ref=ref, **kw)
@@ -157,6 +173,13 @@ def load_catalogue() -> Catalogue:
     import catalogue  # late: the catalogue modules import this one
 
     return Catalogue(chapters=tuple(catalogue.CHAPTERS))
+
+
+def load_viral_groups() -> tuple[ViralGroup, ...]:
+    """Read ``catalogue.viral.GROUPS``: the operators that apply the viral propagation rules."""
+    from catalogue import viral  # late: the catalogue modules import this one
+
+    return viral.GROUPS
 
 
 # --- Forms, links and examples ---

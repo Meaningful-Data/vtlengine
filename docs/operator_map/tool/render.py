@@ -91,8 +91,10 @@ from tool.model import (
     Operator,
     Status,
     Variant,
+    ViralGroup,
     example_title,
     form_types,
+    load_viral_groups,
 )
 from tool.status import (
     EMOJI,
@@ -112,13 +114,17 @@ ISSUES: Final = "https://github.com/Meaningful-Data/vtlengine/issues"
 MAX_DETAIL: Final = 200  # characters of what went wrong with an example, the ellipsis included
 DEFAULT_EXAMPLES_ROOT: Final = Path(__file__).resolve().parents[1] / "examples"
 
-# The manual pages of the VTL-DL: the definitions are not under ``operators/``.
+# The manual pages that are not under ``operators/``: those of the VTL-DL, and the typical
+# behaviours of the operators, which the groups of ``catalogue.viral`` quote.
 _DEFINITION_PAGES: Final = {
     "dl/udo": "vtl_dl_udo.html",
     "dl/datapoint": "vtl_dl_rulesets/datapoint_rulesets.html",
     "dl/hierarchical": "vtl_dl_rulesets/hierarchical_rulesets.html",
     "dl/viral": "vtl_dl_rulesets/viral_attributes.html",
+    "typical": "typical_behaviour.html",
 }
+_PAGE_TITLES: Final = {"typical": "Typical behaviours of the ML operators"}
+_VIRAL_PAGE: Final = "dl/viral"  # the page of ``define viral propagation``
 
 _STATUSES: Final[tuple[Status, ...]] = ("ok", "partial", "refused", "missing", "diverge")
 # What each status means, as the legend says it, and the tooltip of a chip.
@@ -200,10 +206,11 @@ class RunMeta:
 
 
 def manual_url(page: str) -> str:
-    """The URL of a manual page: ``<Chapter>/<Page>``, or one of the definitions, ``dl/...``.
+    """The URL of a manual page: ``<Chapter>/<Page>``, a definition, ``dl/...``, or ``typical``.
 
-    A page of an operator lives under ``operators/`` with its spaces encoded, and the pages of
-    the definitions are the ``vtl_dl_*`` pages.
+    A page of an operator lives under ``operators/`` with its spaces encoded, the pages of the
+    definitions are the ``vtl_dl_*`` pages, and ``typical`` is the page of the typical behaviours
+    of the operators.
     """
     if page in _DEFINITION_PAGES:
         return f"{MANUAL_BASE}/{_DEFINITION_PAGES[page]}"
@@ -221,12 +228,17 @@ def operator_rst(
     meta: RunMeta,
     *,
     examples_root: Path = DEFAULT_EXAMPLES_ROOT,
+    viral: Sequence[ViralGroup] | None = None,
 ) -> str:
     """The page of ``op``, an operator of ``chapter``, with the examples in ``examples_root``.
 
-    It raises ``MermaidLimitError`` when the diagram cannot fit the limits of Mermaid, and
-    ``ValueError`` when an operator that a list names has no status in ``index``.
+    ``viral`` are the groups of operators that apply the viral propagation rules, the catalogue's
+    (``catalogue.viral``) unless it is given. An operator of a group says so under its types, and
+    the page of ``define viral propagation`` lists them all. It raises ``MermaidLimitError`` when
+    the diagram cannot fit the limits of Mermaid, and ``ValueError`` when an operator that a list
+    names has no status in ``index``.
     """
+    groups = load_viral_groups() if viral is None else viral
     key = f"{chapter.id}/{op.id}"
     statuses = [index.variants.get(f"{key}/{variant.id}") for variant in op.variants]
     summary = f"{_all_ok(statuses)} of {_count(len(statuses), 'form')} all ok"
@@ -238,7 +250,8 @@ def operator_rst(
         *([_raw(BORDER_KEY_HTML)] if has_boxes(op) else []),
         _diagram(operator_diagram(chapter, op, cat, index)),
         *_used_with_list(chapter, op, cat, index),
-        _section("Types", _raw(*_types(chapter, op, cat, index))),
+        _section("Types", _raw(*_types(chapter, op, cat, index, groups))),
+        *([_applied_by(cat, index, groups)] if op.page == _VIRAL_PAGE else []),
         _section(
             "Forms",
             *(
@@ -311,13 +324,24 @@ def _in_catalogue_order(refs: Iterable[Ref], cat: Catalogue) -> list[Ref]:
 # --- Types ---
 
 
-def _types(chapter: Chapter, op: Operator, cat: Catalogue, index: StatusIndex) -> list[str]:
-    """The lines of HTML of the Types section: what it takes and gives, and the two columns."""
+def _types(
+    chapter: Chapter,
+    op: Operator,
+    cat: Catalogue,
+    index: StatusIndex,
+    groups: Sequence[ViralGroup],
+) -> list[str]:
+    """The lines of HTML of the Types section: what it takes and gives, and the two columns.
+
+    An operator that applies the viral propagation rules says so under the first line.
+    """
     links = type_links(cat, index, chapter, op)
     takes, gives = _type_list(links.takes), _type_list(links.gives)
+    applies = any(f"{chapter.id}.{op.id}" in group.operators for group in groups)
     return [
         f'<p class="om-takes"><b>Takes</b> {html.escape(takes)} · '
         f"<b>Gives</b> {html.escape(gives)}</p>",
+        *([_viral_line(cat)] if applies else []),
         '<div class="om-cols"><div class="om-col">'
         + "".join(_comes_from(links, cat))
         + '</div><div class="om-col">'
@@ -442,6 +466,72 @@ def _ref_chip(ref: Ref, labels: Mapping[tuple[str, str], str] | None) -> str:
 
 def _line(head: str, text: str) -> str:
     return f'<p class="om-line"><b>{html.escape(head)}</b> {html.escape(text)}</p>'
+
+
+# --- Viral propagation ---
+
+
+def _viral_line(cat: Catalogue) -> str:
+    """The line of an operator that applies the viral propagation rules, under its types.
+
+    It links to the page of ``define viral propagation``, when the catalogue has it.
+    """
+    found = _viral_definition(cat)
+    target = "Viral propagation"
+    if found is not None:
+        chapter, op = found
+        url = _attribute(f"../{chapter.id}/{op.id}.html")
+        target = f'<a href="{url}">Viral propagation</a>'
+    return (
+        '<p class="om-viral"><b>Viral attributes:</b> combined with the propagation rules → '
+        f"{target}</p>"
+    )
+
+
+def _viral_definition(cat: Catalogue) -> tuple[Chapter, Operator] | None:
+    """The chapter and the operator of the page of ``define viral propagation``, if any."""
+    for chapter in cat.chapters:
+        for op in chapter.operators:
+            if op.page == _VIRAL_PAGE:
+                return chapter, op
+    return None
+
+
+def _applied_by(cat: Catalogue, index: StatusIndex, groups: Sequence[ViralGroup]) -> str:
+    """The "Applied by" section of the page of ``define viral propagation``.
+
+    The groups of operators that apply its rules, each with the sentence of the manual that says
+    so, then all of them by block, as the lists of the Types section. An operator that the
+    catalogue does not have is left out.
+    """
+    operators = {
+        f"{chapter.id}.{op.id}": (chapter, op)
+        for chapter in cat.chapters
+        for op in chapter.operators
+    }
+    found = [operators[a] for group in groups for a in group.operators if a in operators]
+    refs = _in_catalogue_order((_ref(chapter, op, index) for chapter, op in found), cat)
+    intro = (
+        "Every operator that propagates viral attributes applies the rules that this definition "
+        "registers, as the manual says: "
+        + _inline(
+            '"e.g., the typical behaviour rules for binary, aggregate, analytic, or join operators"'
+        )
+        + ". These operators combine viral attributes, and the manual says so for each group:"
+    )
+    items = [
+        f"- **{_inline(group.title)}**: {_inline(chr(34) + group.sentence + chr(34))} "
+        f"({_link(_page_title(group.page), manual_url(group.page))})"
+        for group in groups
+    ]
+    return _section(
+        "Applied by", intro, "\n".join(items), _raw(_listing("Applied by", refs, opened=True))
+    )
+
+
+def _page_title(page: str) -> str:
+    """The title of a page of the manual: its last part, or the title of a page of its own."""
+    return _PAGE_TITLES.get(page, page.rsplit("/", 1)[-1])
 
 
 # --- Forms and examples ---
