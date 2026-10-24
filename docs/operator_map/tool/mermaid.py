@@ -2,10 +2,11 @@
 
 Every diagram starts with its ``flowchart`` line and the same ``classDef`` lines (``CLASSES``), so
 a diagram can be pasted into a fence on its own. A node is coloured by the status of what it
-stands for and starts with its emoji. Nothing here needs the run to be complete: a key that the
-``StatusIndex`` does not have is a node with no emoji and no status class, and no part of a tally,
-never an error. No diagram has a node for a type: the forms carry their types
-(``tool.model.form_types``).
+stands for, and has no emoji of its own: the class says it, and the emoji of the statuses are in
+the tallies. ``refused`` is the colour of ``ok`` with a thick dotted border. Nothing here needs the
+run to be complete: a key that the ``StatusIndex`` does not have is a node with no status class,
+and no part of a tally, never an error. No diagram has a node for a type: the forms carry their
+types (``tool.model.form_types``).
 
 * ``overview_block``: VTL 2.2 is the central node, with the blocks split half to the left of it
   and half to the right ("both sides"), joined to it by plain lines. A block shows how many
@@ -16,17 +17,21 @@ never an error. No diagram has a node for a type: the forms carry their types
   light box for each kind of operand that its forms use (``form_kind``): solid for the datasets,
   dashed for the components and dotted for the scalars. The boxes are there only when the forms
   use at least two kinds. An operator whose forms use none, such as a join, or only one, has "both
-  sides" and no boxes: half of its forms to the left of it, and half to the right. A form with no
-  kind among forms that have one is a mixture that the strict checks of the catalogue refuse, but
-  it is still drawn: it hangs from the operator, outside the boxes.
+  sides" and no boxes: its forms to the left of it and to the right, half and half, and the
+  "Used with" box under the forms on the right. The columns are balanced: the box counts as one
+  form more than it has nodes (``_left``). A form with no kind among forms that have one is a
+  mixture that the strict checks of the catalogue refuse, but it is still drawn: it hangs from the
+  operator, outside the boxes.
 
 The "Used with" box of an operator diagram holds the operators that this one is combined with,
 from the links of the whole catalogue. A link is shown at both of its ends: the operator that
 declares it shows its target with the label that the link has, and the target shows that operator
 with the reverse of the label (``tool.model.reverse_label``). An operator that is linked in both
-ways is shown once, with each of its labels. With more than ``USED_WITH_MAX`` operators the box has
-one node for each block instead, with how many of its operators are there. ``used_with`` has the
-operators of the box, for a page that lists them in full under the diagram.
+ways is shown once, with each of its labels. An entry is short: the symbol of the operator (its
+name when the symbol is not a word, or there is none), an arrow and the label, and its tooltip has
+the name and the symbol. With more than ``USED_WITH_MAX`` operators the box has one node for each
+block instead, with how many of its operators are there. ``used_with`` has the operators of the
+box, for a page that lists them in full under the diagram.
 
 The ``click`` targets are relative to the page that has the diagram. The overview is on the index
 page of the map: a block is ``<chapter>/index.html``. A block diagram is on that page, and an
@@ -71,8 +76,9 @@ PAGE_SUFFIX: Final = ".html"
 USED_WITH_MAX: Final = 8
 
 # The text is black on the light fills, so that it also reads on a dark theme. ``refused`` is the
-# green of ``ok`` with a thick dotted border: a deliberate refusal. ``block`` is the central node
-# of the overview and of a block, and ``ext`` an entry of "Used with", an operator of another page.
+# green of ``ok`` with a thick dotted border: a deliberate refusal, which the border alone says on
+# a node. ``block`` is the central node of the overview and of a block, and ``ext`` an entry of
+# "Used with", an operator of another page.
 CLASSES: Final = (
     "classDef ok fill:#d4edda,stroke:#28a745,color:#000",
     "classDef partial fill:#fff3cd,stroke:#ffc107,color:#000",
@@ -128,6 +134,9 @@ _ESCAPES: Final = {
 }
 _ESCAPE: Final = re.compile("|".join(re.escape(symbol) for symbol in _ESCAPES))
 _NOT_ID_CHAR: Final = re.compile(r"[^A-Za-z0-9_]")
+# A symbol that is a word, letters, digits and underscores, says what an operator is in few
+# characters: ``aggr``, ``inner_join``. ``+``, ``||`` and ``group by`` do not.
+_WORD: Final = re.compile(r"[A-Za-z0-9_]+")
 
 
 class MermaidLimitError(Exception):
@@ -231,8 +240,14 @@ def _node(node: str, label: str, css: str | None) -> str:
     return f'{node}["{label}"]' + ("" if css is None else f":::{css}")
 
 
-def _click(node: str, target: str) -> str:
-    return f'click {node} href "{target}"'
+def _click(node: str, target: str, tooltip: str | None = None) -> str:
+    """The line that makes ``node`` a link to ``target``, with a tooltip if it has one.
+
+    The tooltip is a quoted string, as a label is: the caller escapes it with ``escape_label``,
+    and Mermaid decodes the entity codes in the text of the tooltip.
+    """
+    line = f'click {node} href "{target}"'
+    return line if tooltip is None else f'{line} "{tooltip}"'
 
 
 def _subgraph(node: str, title: str, members: Iterable[str]) -> list[str]:
@@ -245,25 +260,34 @@ def _subgraph(node: str, title: str, members: Iterable[str]) -> list[str]:
     ]
 
 
-def _both_sides(root: str, nodes: Sequence[str]) -> list[str]:
-    """The lines that join ``nodes`` to ``root``: the first half to its left, the rest to its right.
+def _both_sides(root: str, nodes: Sequence[str], left: int | None = None) -> list[str]:
+    """The lines that join ``nodes`` to ``root``: the first ``left`` of them on its left side.
 
-    The lines have no arrowheads. The left side has the extra node when there is an odd number.
+    The rest are on its right side. Without ``left`` the first half is on the left, with the extra
+    node when there is an odd number. The lines have no arrowheads.
     """
-    half = (len(nodes) + 1) // 2
+    count = (len(nodes) + 1) // 2 if left is None else left
     return [
-        *(f"{node} --- {root}" for node in nodes[:half]),
-        *(f"{root} --- {node}" for node in nodes[half:]),
+        *(f"{node} --- {root}" for node in nodes[:count]),
+        *(f"{root} --- {node}" for node in nodes[count:]),
     ]
 
 
-def _head(status: Status | None, text: str, *, pinned: bool = False) -> str:
-    """The first line of a node: the emoji of its status, the escaped ``text`` and the pin."""
-    words = [EMOJI[status]] if status is not None else []
-    words.append(escape_label(text))
-    if pinned:
-        words.append(_PIN)
-    return " ".join(words)
+def _left(forms: int, slots: int) -> int:
+    """How many of ``forms`` go to the left of the operator, so that its two sides balance.
+
+    The right side has the other forms and then the "Used with" box, which counts as ``slots``
+    forms: a slot for each of its nodes and one for its title, and none when there is no box. The
+    left side takes ``ceil((forms + slots) / 2)`` of the forms, and all of them when the box is
+    longer than they are. Without a box that is half of them, and the extra one if they are odd.
+    """
+    return min(forms, (forms + slots + 1) // 2)
+
+
+def _head(text: str, *, pinned: bool = False) -> str:
+    """The first line of a node: the escaped ``text`` and the pin, with no emoji of the status."""
+    escaped = escape_label(text)
+    return f"{escaped} {_PIN}" if pinned else escaped
 
 
 def _tally(statuses: Iterable[Status | None]) -> str:
@@ -290,6 +314,15 @@ def _count(number: int, noun: str) -> str:
 def _title(operator: Operator) -> str:
     """``Name · symbol`` of an operator, and just the name when it has no symbol."""
     return f"{operator.name} · {operator.symbol}" if operator.symbol else operator.name
+
+
+def _short(operator: Operator) -> str:
+    """What an entry of "Used with" calls an operator: its symbol if that is a word, else its name.
+
+    ``aggr`` and ``inner_join`` are words. ``+``, ``||``, ``group by`` and ``name( )`` are not,
+    and an operator with no symbol has none to show: they are called by their name.
+    """
+    return operator.symbol if _WORD.fullmatch(operator.symbol) else operator.name
 
 
 # --- What the catalogue says ---
@@ -338,7 +371,7 @@ def overview_block(cat: Catalogue, index: StatusIndex) -> str:
         tally = _tally(index.operators.get(f"{chapter.id}/{op.id}") for op in chapter.operators)
         size = _count(len(chapter.operators), "operator")
         second = f"{size} · {tally}" if tally else size
-        nodes.append(_node(node, _lines(_head(status, chapter.title), second), status))
+        nodes.append(_node(node, _lines(_head(chapter.title), second), status))
         blocks.append(node)
         clicks.append(_click(node, f"{chapter.id}/index{PAGE_SUFFIX}"))
     lines = [*nodes, *_both_sides(_OVERVIEW_ROOT, blocks), *clicks]
@@ -364,7 +397,7 @@ def block_diagram(chapter: Chapter, index: StatusIndex) -> str:
         key = f"{chapter.id}/{operator.id}"
         status = index.operators.get(key)
         tally = _tally(index.variants.get(f"{key}/{each.id}") for each in operator.variants)
-        head = _head(status, _title(operator), pinned=_pinned(operator.variants))
+        head = _head(_title(operator), pinned=_pinned(operator.variants))
         nodes.append(_node(node, _lines(head, tally), status))
         operators.append(node)
         clicks.append(_click(node, f"{operator.id}{PAGE_SUFFIX}"))
@@ -410,27 +443,30 @@ def operator_diagram(chapter: Chapter, op: Operator, cat: Catalogue, index: Stat
     """The operator with its forms, and the operators that it is used with.
 
     The forms are in boxes, one for each kind of operand, when they use at least two kinds, and
-    on both sides of the operator otherwise (the module docstring has the details). Each form
-    links to its section of the page, and is pinned when an example of it follows a team decision.
-    The "Used with" box comes from the links of ``cat``, in both directions. Raises ``ValueError``
-    for a link of the operator to a target that is not in ``cat``, or whose label has no reverse,
-    and ``MermaidLimitError`` if the diagram is over a limit.
+    on both sides of the operator otherwise, with the columns balanced when there is a "Used with"
+    box (the module docstring has the details). Each form links to its section of the page, and is
+    pinned when an example of it follows a team decision. The "Used with" box comes from the links
+    of ``cat``, in both directions. Raises ``ValueError`` for a link of the operator to a target
+    that is not in ``cat``, or whose label has no reverse, and ``MermaidLimitError`` if the
+    diagram is over a limit.
     """
     key = f"{chapter.id}/{op.id}"
     status = index.operators.get(key)
     tally = _tally(index.variants.get(f"{key}/{each.id}") for each in op.variants)
-    head = _head(status, _title(op), pinned=_pinned(op.variants))
+    head = _head(_title(op), pinned=_pinned(op.variants))
     parts = _Parts(nodes=[_node(_OPERATOR_ROOT, _lines(head, tally), status)])
     forms = _forms(chapter, op, index)
+    shown = _shown(used_with(chapter, op, cat), cat)
     if _has_boxes(op):
         direction = "TB"
         _boxes(forms, parts)
     else:
         direction = "LR"
+        left = _left(len(forms), len(shown) + 1 if shown else 0)
         parts.nodes += [form.line for form in forms]
-        parts.edges += _both_sides(_OPERATOR_ROOT, [form.node for form in forms])
+        parts.edges += _both_sides(_OPERATOR_ROOT, [form.node for form in forms], left)
     parts.clicks += [_click(form.node, f"#{form_anchor(form.variant)}") for form in forms]
-    _used_with_box(used_with(chapter, op, cat), cat, parts)
+    _used_with_box(shown, parts)
     return _checked(_assemble(parts.lines(), direction), f"{chapter.id}.{op.id}")
 
 
@@ -450,7 +486,7 @@ def _forms(chapter: Chapter, op: Operator, index: StatusIndex) -> list[_Form]:
     for variant in op.variants:
         status = index.variants.get(f"{chapter.id}/{op.id}/{variant.id}")
         node = node_id(f"v_{variant.id}")
-        label = _head(status, variant.label, pinned=_pinned((variant,)))
+        label = _head(variant.label, pinned=_pinned((variant,)))
         forms.append(_Form(variant, node, _node(node, label, status)))
     return forms
 
@@ -521,41 +557,60 @@ def _reversed(owner: str, label: str) -> str:
         raise ValueError(f"{owner}: link label '{label}' has no reverse label") from None
 
 
-def _used_with_box(entries: Sequence[UsedWith], cat: Catalogue, parts: _Parts) -> None:
-    """The "Used with" box of ``entries``, if any, joined to the operator by a dotted line.
+@dataclass(frozen=True)
+class _Shown:
+    """A node of the "Used with" box: its id, its label, the page that it links to and its tooltip.
 
-    Up to ``USED_WITH_MAX`` entries have a node each, with the label of their link, that links to
-    the page of the operator. More are one node for each block, with how many entries it has,
-    that links to the page of the block.
+    The label and the tooltip are escaped. A node for a block has no tooltip.
     """
-    if not entries:
+
+    node: str
+    label: str
+    target: str
+    tooltip: str | None = None
+
+
+def _shown(entries: Sequence[UsedWith], cat: Catalogue) -> list[_Shown]:
+    """The nodes of the "Used with" box of ``entries``; none for no entry, and then no box.
+
+    Each entry is a node, up to ``USED_WITH_MAX`` of them. With more there is a node for each block.
+    """
+    return _by_block(entries, cat) if len(entries) > USED_WITH_MAX else _by_operator(entries)
+
+
+def _used_with_box(shown: Sequence[_Shown], parts: _Parts) -> None:
+    """The "Used with" box of the nodes ``shown``, if any, with a dotted line to the operator."""
+    if not shown:
         return
-    shown = _by_block(entries, cat) if len(entries) > USED_WITH_MAX else _by_operator(entries)
-    nodes = [_node(node, label, "ext") for node, label, _ in shown]
+    nodes = [_node(each.node, each.label, "ext") for each in shown]
     parts.nodes += _subgraph(_USED_WITH, "Used with", nodes)
     parts.edges.append(f"{_OPERATOR_ROOT} -.- {_USED_WITH}")
     parts.styles.append(f"style {_USED_WITH} {USED_WITH_STYLE}")
-    parts.clicks += [_click(node, target) for node, _, target in shown]
+    parts.clicks += [_click(each.node, each.target, each.tooltip) for each in shown]
 
 
-def _by_operator(entries: Sequence[UsedWith]) -> list[tuple[str, str, str]]:
-    """The ``(node, label, target)`` of each entry: the operator, its labels and its page."""
+def _by_operator(entries: Sequence[UsedWith]) -> list[_Shown]:
+    """A node for each entry: the short name of the operator, an arrow and the labels of its links.
+
+    It links to the page of the operator, and its tooltip is the name and the symbol of it.
+    """
     return [
-        (
+        _Shown(
             node_id("used", entry.chapter.id, entry.operator.id),
-            f"{escape_label(_title(entry.operator))} ↗"
+            f"{escape_label(_short(entry.operator))} ↗"
             f"<br/><small>{escape_label(' · '.join(entry.labels))}</small>",
             f"../{entry.chapter.id}/{entry.operator.id}{PAGE_SUFFIX}",
+            escape_label(_title(entry.operator)),
         )
         for entry in entries
     ]
 
 
-def _by_block(entries: Sequence[UsedWith], cat: Catalogue) -> list[tuple[str, str, str]]:
-    """The ``(node, label, target)`` of each block that has entries, in the order of ``cat``."""
+def _by_block(entries: Sequence[UsedWith], cat: Catalogue) -> list[_Shown]:
+    """A node for each block that has entries, in the order of ``cat``: its title and how many."""
     sizes = Counter(entry.chapter.id for entry in entries)
     return [
-        (
+        _Shown(
             node_id("used", chapter.id),
             f"{escape_label(chapter.title)} ({sizes[chapter.id]})",
             f"../{chapter.id}/index{PAGE_SUFFIX}",

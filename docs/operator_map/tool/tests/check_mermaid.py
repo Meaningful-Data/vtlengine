@@ -334,8 +334,8 @@ def test_overview_layout() -> None:
     assert overview_block(CAT, INDEX) == block_of(
         "LR",
         'R["VTL 2.2<br/>Reference Manual"]:::block',
-        'chapter__string["🔵 String operators<br/>2 operators · 🔵1"]:::diverge',
-        'chapter__clause["🔴 Clause operators<br/>1 operator · 🔴1"]:::missing',
+        'chapter__string["String operators<br/>2 operators · 🔵1"]:::diverge',
+        'chapter__clause["Clause operators<br/>1 operator · 🔴1"]:::missing',
         "chapter__string --- R",
         "R --- chapter__clause",
         'click chapter__string href "string/index.html"',
@@ -376,7 +376,7 @@ def test_overview_counts_the_operators_and_tallies_their_statuses() -> None:
         chapters={"c": "diverge"},
     )
     assert body(overview_block(cat, index))[1] == (
-        'chapter__c["🔵 C<br/>5 operators · 🟢2 🛡️1 🔴1 🔵1"]:::diverge'
+        'chapter__c["C<br/>5 operators · 🟢2 🛡️1 🔴1 🔵1"]:::diverge'
     )
 
 
@@ -386,12 +386,12 @@ def test_overview_counts_the_operators_and_tallies_their_statuses() -> None:
 def test_block_diagram_layout() -> None:
     # The block in the middle, half of its operators to the left and half to the right. An
     # operator shows how many of its forms are in each status, and links to its page; a team
-    # decision of one of its examples pins it. String length has not been run: no emoji, no
-    # class and no tally.
+    # decision of one of its examples pins it. String length has not been run: no class and
+    # no tally. No node has an emoji of its status: the class says it.
     assert block_diagram(STRING, INDEX) == block_of(
         "LR",
         'B["String operators"]:::block',
-        'string__concat["🔵 Concatenation · #124;#124; 📌<br/>🟢1 🔵1"]:::diverge',
+        'string__concat["Concatenation · #124;#124; 📌<br/>🟢1 🔵1"]:::diverge',
         'string__length["String length · length"]',
         "string__concat --- B",
         "B --- string__length",
@@ -431,7 +431,7 @@ def test_block_diagram_of_an_operator_without_forms_has_no_tally() -> None:
     bare = make_operator("bare", "Bare", "bare", ())
     chapter = Chapter("numeric", "Numeric operators", (bare,))
     index = make_index(operators={"numeric/bare": "ok"})
-    assert body(block_diagram(chapter, index))[1] == 'numeric__bare["🟢 Bare · bare"]:::ok'
+    assert body(block_diagram(chapter, index))[1] == 'numeric__bare["Bare · bare"]:::ok'
 
 
 # --- The diagram of an operator: boxes ---
@@ -440,18 +440,18 @@ def test_block_diagram_of_an_operator_without_forms_has_no_tally() -> None:
 def test_operator_diagram_boxes() -> None:
     assert operator_diagram(NUMERIC, ROUND, ROUND_CAT, ROUND_INDEX) == block_of(
         "TB",
-        'O["🟡 Rounding · round<br/>🟢1 🟡1 🛡️1"]:::partial',
+        'O["Rounding · round<br/>🟢1 🟡1 🛡️1"]:::partial',
         'subgraph G_ds["Dataset"]',
         "    direction LR",
-        '    v_ds["🟢 round(DS_1, 1)"]:::ok',
+        '    v_ds["round(DS_1, 1)"]:::ok',
         "end",
         'subgraph G_comp["Component"]',
         "    direction LR",
-        '    v_comp["🟡 DS_1#91;calc Me_1 #58;#61; round(Me_1)#93;"]:::partial',
+        '    v_comp["DS_1#91;calc Me_1 #58;#61; round(Me_1)#93;"]:::partial',
         "end",
         'subgraph G_sc["Scalar"]',
         "    direction LR",
-        '    v_sc["🛡️ round(1.5)"]:::refused',
+        '    v_sc["round(1.5)"]:::refused',
         "end",
         "O --- G_ds",
         "O --- G_comp",
@@ -561,8 +561,8 @@ def test_operator_diagram_single_kind() -> None:
 def test_operator_diagram_both_sides_layout() -> None:
     assert operator_diagram(CLAUSE, CALC, Catalogue((CLAUSE,)), INDEX) == block_of(
         "LR",
-        'O["🔴 Calculation · calc<br/>🔴1"]:::missing',
-        'v_measure["🔴 calc Me_1 #58;#61; 1"]:::missing',
+        'O["Calculation · calc<br/>🔴1"]:::missing',
+        'v_measure["calc Me_1 #58;#61; 1"]:::missing',
         "v_measure --- O",
         'click v_measure href "#form-measure"',
     )
@@ -610,34 +610,37 @@ def test_an_operator_without_forms_is_the_operator_alone() -> None:
 def test_used_with_both_ends() -> None:
     # Concatenation says that it is used in a calc. The diagram of the calc has the concatenation,
     # with the reverse of "used in", and the diagram of the concatenation has the calc, with the
-    # label that it declared. Each is a link to the page of the other operator.
+    # label that it declared. Each is a link to the page of the other operator, with its name and
+    # its symbol as the tooltip: the symbol of the concatenation is not a word, so its entry says
+    # its name.
     calc = body(operator_diagram(CLAUSE, CALC, CAT, INDEX))
     assert 'subgraph G_use["Used with"]' in calc
+    assert 'used__string__concat["Concatenation ↗<br/><small>uses</small>"]:::ext' in calc
     assert (
-        'used__string__concat["Concatenation · #124;#124; ↗<br/><small>uses</small>"]:::ext' in calc
+        'click used__string__concat href "../string/concat.html" "Concatenation · #124;#124;"'
+        in calc
     )
-    assert 'click used__string__concat href "../string/concat.html"' in calc
     concat = body(operator_diagram(STRING, CONCAT, CAT, INDEX))
     assert 'subgraph G_use["Used with"]' in concat
-    assert 'used__clause__calc["Calculation · calc ↗<br/><small>used in</small>"]:::ext' in concat
-    assert 'click used__clause__calc href "../clause/calc.html"' in concat
+    assert 'used__clause__calc["calc ↗<br/><small>used in</small>"]:::ext' in concat
+    assert 'click used__clause__calc href "../clause/calc.html" "Calculation · calc"' in concat
 
 
 def test_used_with_layout_with_boxes() -> None:
     assert operator_diagram(STRING, CONCAT, CAT, INDEX) == block_of(
         "TB",
-        'O["🔵 Concatenation · #124;#124; 📌<br/>🟢1 🔵1"]:::diverge',
+        'O["Concatenation · #124;#124; 📌<br/>🟢1 🔵1"]:::diverge',
         'subgraph G_ds["Dataset"]',
         "    direction LR",
-        '    v_ds_ds["🟢 DS_1 #124;#124; DS_2"]:::ok',
+        '    v_ds_ds["DS_1 #124;#124; DS_2"]:::ok',
         "end",
         'subgraph G_comp["Component"]',
         "    direction LR",
-        '    v_comp_sc["🔵 Me_1 #124;#124; #quot;x#quot; 📌"]:::diverge',
+        '    v_comp_sc["Me_1 #124;#124; #quot;x#quot; 📌"]:::diverge',
         "end",
         'subgraph G_use["Used with"]',
         "    direction LR",
-        '    used__clause__calc["Calculation · calc ↗<br/><small>used in</small>"]:::ext',
+        '    used__clause__calc["calc ↗<br/><small>used in</small>"]:::ext',
         "end",
         "O --- G_ds",
         "O --- G_comp",
@@ -647,24 +650,24 @@ def test_used_with_layout_with_boxes() -> None:
         f"style G_use {USED_WITH}",
         'click v_ds_ds href "#form-ds-ds"',
         'click v_comp_sc href "#form-comp-sc"',
-        'click used__clause__calc href "../clause/calc.html"',
+        'click used__clause__calc href "../clause/calc.html" "Calculation · calc"',
     )
 
 
 def test_used_with_layout_on_both_sides() -> None:
     assert operator_diagram(CLAUSE, CALC, CAT, INDEX) == block_of(
         "LR",
-        'O["🔴 Calculation · calc<br/>🔴1"]:::missing',
-        'v_measure["🔴 calc Me_1 #58;#61; 1"]:::missing',
+        'O["Calculation · calc<br/>🔴1"]:::missing',
+        'v_measure["calc Me_1 #58;#61; 1"]:::missing',
         'subgraph G_use["Used with"]',
         "    direction LR",
-        '    used__string__concat["Concatenation · #124;#124; ↗<br/><small>uses</small>"]:::ext',
+        '    used__string__concat["Concatenation ↗<br/><small>uses</small>"]:::ext',
         "end",
         "v_measure --- O",
         "O -.- G_use",
         f"style G_use {USED_WITH}",
         'click v_measure href "#form-measure"',
-        'click used__string__concat href "../string/concat.html"',
+        'click used__string__concat href "../string/concat.html" "Concatenation · #124;#124;"',
     )
 
 
@@ -704,10 +707,10 @@ def test_used_with_reverse_labels(declared: str, reverse: str) -> None:
     cat = linked(declared)
     source = diagram_of(cat, "alpha", "a")
     target = diagram_of(cat, "beta", "b")
-    assert f'used__beta__b["Beta · b ↗<br/><small>{declared}</small>"]:::ext' in source
-    assert f'used__alpha__a["Alpha · a ↗<br/><small>{reverse}</small>"]:::ext' in target
-    assert 'click used__beta__b href "../beta/b.html"' in source
-    assert 'click used__alpha__a href "../alpha/a.html"' in target
+    assert f'used__beta__b["b ↗<br/><small>{declared}</small>"]:::ext' in source
+    assert f'used__alpha__a["a ↗<br/><small>{reverse}</small>"]:::ext' in target
+    assert 'click used__beta__b href "../beta/b.html" "Beta · b"' in source
+    assert 'click used__alpha__a href "../alpha/a.html" "Alpha · a"' in target
 
 
 def test_used_with_a_link_declared_at_both_ends_is_shown_once() -> None:
@@ -745,7 +748,67 @@ def test_used_with_two_labels_for_one_operator_are_one_entry() -> None:
         )
     )
     entries = [line for line in diagram_of(cat, "alpha", "a") if line.startswith("used__")]
-    assert entries == ['used__beta__b["Beta · b ↗<br/><small>uses · used in over()</small>"]:::ext']
+    assert entries == ['used__beta__b["b ↗<br/><small>uses · used in over()</small>"]:::ext']
+
+
+def entry_of(symbol: str, name: str = "Target name") -> tuple[str, str]:
+    """The node and the click of an operator in the "Used with" box of another one.
+
+    The operator ``beta.b`` has the given ``name`` and ``symbol``, and ``alpha.a`` links to it.
+    """
+    source = make_operator(
+        "a", "Alpha", "a", (make_variant("x", "a(1)"),), (Link("beta.b", "uses"),)
+    )
+    target = make_operator("b", name, symbol, (make_variant("y", "b(1)"),))
+    cat = Catalogue(
+        (
+            Chapter("alpha", "Alpha operators", (source,)),
+            Chapter("beta", "Beta operators", (target,)),
+        )
+    )
+    lines = diagram_of(cat, "alpha", "a")
+    node = next(line for line in lines if line.startswith("used__beta__b["))
+    click = next(line for line in lines if line.startswith("click used__beta__b "))
+    return node, click
+
+
+@pytest.mark.parametrize("symbol", ["calc", "inner_join", "check_datapoint", "A1", "x_2"])
+def test_used_with_entry_is_the_symbol_when_it_is_a_word(symbol: str) -> None:
+    # Short, as in the approved mock-up: ``aggr ↗`` and the label in small letters. The tooltip
+    # of the click has the name and the symbol.
+    node, click = entry_of(symbol)
+    assert node == f'used__beta__b["{symbol} ↗<br/><small>uses</small>"]:::ext'
+    assert click == f'click used__beta__b href "../beta/b.html" "Target name · {symbol}"'
+
+
+@pytest.mark.parametrize(
+    ("symbol", "tooltip"),
+    [
+        ("+", "Target name · +"),
+        ("||", "Target name · #124;#124;"),
+        ("<>", "Target name · #60;#62;"),
+        ("group by", "Target name · group by"),
+        ("name( )", "Target name · name( )"),
+        ("a-b", "Target name · a-b"),
+        ("", "Target name"),  # no symbol: the tooltip is the name alone
+    ],
+)
+def test_used_with_entry_is_the_name_when_the_symbol_is_not_a_word(
+    symbol: str, tooltip: str
+) -> None:
+    # A word is letters, digits and underscores. ``+``, ``group by`` and the missing symbol of a
+    # definition do not say what the operator is: its name does.
+    node, click = entry_of(symbol)
+    assert node == 'used__beta__b["Target name ↗<br/><small>uses</small>"]:::ext'
+    assert click == f'click used__beta__b href "../beta/b.html" "{tooltip}"'
+
+
+def test_used_with_tooltip_is_escaped_as_a_label_is() -> None:
+    # A quote would end the string of the tooltip: it is an entity code, like the rest.
+    node, click = entry_of("a|b", name='Say "hi" [x] {y}; #1')
+    said = "Say #quot;hi#quot; #91;x#93; #123;y#125;#59; #35;1"
+    assert node == f'used__beta__b["{said} ↗<br/><small>uses</small>"]:::ext'
+    assert click == f'click used__beta__b href "../beta/b.html" "{said} · a#124;b"'
 
 
 def test_used_with_declared_entries_come_before_the_reverse_ones() -> None:
@@ -797,8 +860,8 @@ def test_used_with_eight_entries_are_one_node_each() -> None:
     assert len(nodes) == USED_WITH_MAX == 8
     assert all("↗<br/><small>" in node for node in nodes)
     assert [line for line in lines if line.startswith("click used__")] == [
-        *(f'click used__alpha__a{n} href "../alpha/a{n}.html"' for n in range(5)),
-        *(f'click used__beta__b{n} href "../beta/b{n}.html"' for n in range(3)),
+        *(f'click used__alpha__a{n} href "../alpha/a{n}.html" "A{n} · a{n}"' for n in range(5)),
+        *(f'click used__beta__b{n} href "../beta/b{n}.html" "B{n} · b{n}"' for n in range(3)),
     ]
 
 
@@ -849,6 +912,111 @@ def test_used_with_lists_the_operators_of_the_box_with_their_labels() -> None:
     assert [entry[0] for entry in nine] == ["alpha"] * 6 + ["beta"] * 3
 
 
+def crowd(forms: int, entries: int, blocks: int = 1) -> str:
+    """The diagram of an operator with ``forms`` forms that have no kind, used with ``entries``.
+
+    It links to ``entries`` operators, one link each, spread over ``blocks`` other blocks.
+    """
+    variants = tuple(make_variant(f"form_{n}", f"form {n}") for n in range(forms))
+    links = tuple(Link(f"other{n % blocks}.t{n}", "uses") for n in range(entries))
+    hub = make_operator("hub", "Hub", "hub", variants, links)
+    others = tuple(
+        Chapter(
+            f"other{block}",
+            f"Other {block}",
+            tuple(
+                make_operator(f"t{n}", f"T{n}", f"t{n}", (make_variant("v", "v"),))
+                for n in range(entries)
+                if n % blocks == block
+            ),
+        )
+        for block in range(blocks)
+    )
+    chapter = Chapter("numeric", "Numeric operators", (hub,))
+    return operator_diagram(chapter, hub, Catalogue((chapter, *others)), NOTHING_RUN)
+
+
+@pytest.mark.parametrize(
+    ("forms", "entries", "blocks", "left"),
+    [
+        # ``join.inner_join``: 22 forms and 7 entries. The box counts as 8 forms, 7 and its
+        # title, so 30 are to be shared: 15 on the left, and 7 and the box on the right.
+        (22, 7, 1, 15),
+        # A box shorter than the forms: 3 slots, so 9 are shared and the left side takes 5.
+        (6, 2, 1, 5),
+        (7, 2, 1, 5),
+        # A box longer than the forms: they all go to the left, and the box is alone on the right.
+        (2, 5, 1, 2),
+        (1, 7, 1, 1),
+        (0, 3, 1, 0),
+        # More than 8 entries: the box has a node for each block, 2 and its title are 3 slots.
+        (6, 9, 2, 5),
+        (4, 9, 2, 4),
+        # No box: half and half, with the extra form on the left.
+        (5, 0, 1, 3),
+        (4, 0, 1, 2),
+        (1, 0, 1, 1),
+    ],
+)
+def test_both_sides_with_a_used_with_box_balance_the_columns(
+    forms: int, entries: int, blocks: int, left: int
+) -> None:
+    text = crowd(forms, entries, blocks)
+    lines = body(text)
+    assert text.splitlines()[0] == "flowchart LR"
+    ids = [f"v_form_{n}" for n in range(forms)]
+    # The first forms are to the left, in order, and the others to the right.
+    assert [line.split()[0] for line in lines if line.endswith(" --- O")] == ids[:left]
+    assert [line.split()[-1] for line in lines if line.startswith("O --- ")] == ids[left:]
+    if entries == 0:
+        assert "G_use" not in text
+        return
+    # The box is under the forms on the right: it comes after all of them, and is joined last.
+    box = lines.index('subgraph G_use["Used with"]')
+    assert all(lines.index(f'{each}["form {n}"]') < box for n, each in enumerate(ids))
+    edges = [line for line in lines if " --- " in line or " -.- " in line]
+    assert edges[-1] == "O -.- G_use"
+
+
+def test_both_sides_with_a_used_with_box_layout() -> None:
+    # Five forms and one entry: 2 slots, so 7 are shared and the left side takes 4 forms. The
+    # fifth is on the right, over the box.
+    assert crowd(5, 1) == block_of(
+        "LR",
+        'O["Hub · hub"]',
+        'v_form_0["form 0"]',
+        'v_form_1["form 1"]',
+        'v_form_2["form 2"]',
+        'v_form_3["form 3"]',
+        'v_form_4["form 4"]',
+        'subgraph G_use["Used with"]',
+        "    direction LR",
+        '    used__other0__t0["t0 ↗<br/><small>uses</small>"]:::ext',
+        "end",
+        "v_form_0 --- O",
+        "v_form_1 --- O",
+        "v_form_2 --- O",
+        "v_form_3 --- O",
+        "O --- v_form_4",
+        "O -.- G_use",
+        f"style G_use {USED_WITH}",
+        'click v_form_0 href "#form-form-0"',
+        'click v_form_1 href "#form-form-1"',
+        'click v_form_2 href "#form-form-2"',
+        'click v_form_3 href "#form-form-3"',
+        'click v_form_4 href "#form-form-4"',
+        'click used__other0__t0 href "../other0/t0.html" "T0 · t0"',
+    )
+
+
+def test_the_boxes_layout_is_not_split_by_the_used_with_box() -> None:
+    # The balance is for both sides. Under the boxes, the box of "Used with" is one more box.
+    text = operator_diagram(STRING, CONCAT, CAT, INDEX)
+    assert text.splitlines()[0] == "flowchart TB"
+    assert "O -.- G_use" in body(text)
+    assert not [line for line in body(text) if line.endswith(" --- O")]
+
+
 def test_used_with_none_has_no_box() -> None:
     text = operator_diagram(NUMERIC, ROUND, ROUND_CAT, ROUND_INDEX)
     for word in ("G_use", "Used with", "-.-"):
@@ -865,9 +1033,7 @@ def test_a_link_to_an_unknown_target_raises() -> None:
 def test_a_label_with_no_reverse_raises_at_the_target_end() -> None:
     cat = linked("sees")
     # The end that declares the label shows it as it is; the other end needs its reverse.
-    assert 'used__beta__b["Beta · b ↗<br/><small>sees</small>"]:::ext' in diagram_of(
-        cat, "alpha", "a"
-    )
+    assert 'used__beta__b["b ↗<br/><small>sees</small>"]:::ext' in diagram_of(cat, "alpha", "a")
     with pytest.raises(ValueError, match="alpha.a: link label 'sees' has no reverse label"):
         diagram_of(cat, "beta", "b")
 
@@ -922,10 +1088,11 @@ def test_refused_class() -> None:
         variants={"c/o/v": "refused"}, operators={"c/o": "refused"}, chapters={"c": "refused"}
     )
     operator = body(operator_diagram(chapter, chapter.operators[0], cat, index))
-    assert 'O["🛡️ O · o<br/>🛡️1"]:::refused' in operator
-    assert 'v_v["🛡️ v()"]:::refused' in operator
-    assert 'c__o["🛡️ O · o<br/>🛡️1"]:::refused' in body(block_diagram(chapter, index))
-    assert 'chapter__c["🛡️ C<br/>1 operator · 🛡️1"]:::refused' in body(overview_block(cat, index))
+    # The class says it, and the shield is in the tallies: no node has it.
+    assert 'O["O · o<br/>🛡️1"]:::refused' in operator
+    assert 'v_v["v()"]:::refused' in operator
+    assert 'c__o["O · o<br/>🛡️1"]:::refused' in body(block_diagram(chapter, index))
+    assert 'chapter__c["C<br/>1 operator · 🛡️1"]:::refused' in body(overview_block(cat, index))
 
 
 def test_all_the_statuses_are_in_the_tally_in_the_order_of_the_legend() -> None:
@@ -937,7 +1104,36 @@ def test_all_the_statuses_are_in_the_tally_in_the_order_of_the_legend() -> None:
         operators={"numeric/op": "diverge"},
     )
     node = body(operator_diagram(chapter, operator, cat, index))[0]
-    assert node == 'O["🔵 Op · op<br/>🟢1 🟡1 🛡️1 🔴1 🔵1"]:::diverge'
+    assert node == 'O["Op · op<br/>🟢1 🟡1 🛡️1 🔴1 🔵1"]:::diverge'
+
+
+def test_a_node_has_no_emoji_of_its_status_but_the_tallies_do() -> None:
+    # The class says the status of a node: a refused node is the green of ok with a dotted
+    # border, with no shield. The emoji are in the tallies, which count them. A team decision is
+    # still pinned.
+    diagrams = [
+        overview_block(CAT, INDEX),
+        block_diagram(STRING, INDEX),
+        operator_diagram(NUMERIC, ROUND, ROUND_CAT, ROUND_INDEX),
+        operator_diagram(STRING, CONCAT, CAT, INDEX),
+        operator_diagram(CLAUSE, CALC, CAT, INDEX),
+    ]
+    emojis = tuple(EMOJI.values())
+    tallies = 0
+    pins = 0
+    for diagram in diagrams:
+        for line in body(diagram):
+            found = re.fullmatch(r'\w+\["([^"]*)"\](?::{3}\w+)?', line)
+            if found is None:
+                continue
+            first, _, second = found.group(1).partition("<br/>")
+            assert not any(emoji in first for emoji in emojis), line
+            tallies += any(emoji in second for emoji in emojis)
+            pins += "📌" in first
+    # Two blocks, an operator of the block diagram, and the three operators with a diagram.
+    assert tallies == 6
+    # The concatenation and its second form, in the block diagram and its own diagram.
+    assert pins == 3
 
 
 def test_missing_statuses_render_neutral() -> None:
@@ -977,7 +1173,7 @@ def test_the_pages_of_the_diagrams_are_html_pages_of_the_site() -> None:
     for diagram in diagrams:
         assert ".md" not in diagram
     clicks = [line for diagram in diagrams for line in body(diagram) if line.startswith("click ")]
-    found = [re.fullmatch(r'click \S+ href "([^"]+)"', line) for line in clicks]
+    found = [re.fullmatch(r'click \S+ href "([^"]+)"(?: "[^"]*")?', line) for line in clicks]
     assert sorted(match.group(1) for match in found if match is not None) == [
         "#form-comp-sc",
         "#form-ds-ds",
@@ -1006,9 +1202,9 @@ def test_the_titles_names_labels_and_forms_are_escaped() -> None:
     operator = diagram_of(cat, "numeric", "odd")
     assert 'O["Odd #quot;x#quot; #91;y#93; · a#124;b"]' in operator
     assert 'v_v["f(#35;1) #124; #123;2#125;#59; #60;3#62;"]' in operator
+    assert 'used__clause__c["Calc #123;z#125; ↗<br/><small>a#124;b</small>"]:::ext' in operator
     assert (
-        'used__clause__c["Calc #123;z#125; · c#60;#62; ↗<br/><small>a#124;b</small>"]:::ext'
-        in operator
+        'click used__clause__c href "../clause/c.html" "Calc #123;z#125; · c#60;#62;"' in operator
     )
     assert 'B["Numeric #35; operators"]:::block' in body(block_diagram(chapter, NOTHING_RUN))
     assert 'chapter__clause["Clause #35; operators<br/>1 operator"]' in body(
