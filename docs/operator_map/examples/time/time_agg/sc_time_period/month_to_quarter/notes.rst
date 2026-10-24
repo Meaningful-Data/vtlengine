@@ -1,0 +1,3 @@
+:Tests: ``time_agg("Q", cast("2012M01", time_period))``: January 2012 to its quarter, the page's Example 2 with a cast without mask, the scalar being a cast because VTL has no time_period literal.
+:Manual: `Time aggregation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Time%20aggregation/index.html>`__, Example 2: ``DS_r := time_agg ( "Q", cast ( "2012M01", time_period, "YYYY\\MMM" ) );`` "returns “2012Q1”".
+:Expected: ``DS_r = 2012Q1``, a Time_Period: vtlengine implements no cast mask, and the manual's default conversion from string to time_period (Type conversion) reads ``2012M01`` as January 2012 without one.

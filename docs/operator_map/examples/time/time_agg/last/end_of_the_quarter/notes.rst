@@ -1,0 +1,3 @@
+:Tests: ``time_agg("Q", cast("2012-02-13", date), last)``: a date to its quarter, represented by its end; the page's Example 3, with the date cast without a mask, in the default ``YYYY-MM-DD`` form, as vtlengine implements no cast mask.
+:Manual: `Time aggregation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Time%20aggregation/index.html>`__, Example 3: "The following example maps a *date* to quarter level, 2012 (end of the period)", ``DS_r := time_agg( “Q”, cast(“20120213”, date, “YYYYMMDD”), last );``, "and produces a *date* value corresponding to the *string* “20120331”".
+:Expected: ``DS_r = 2012-03-31``, a Date: 2012-02-13 is in the first quarter of 2012, which ends on March 31.
