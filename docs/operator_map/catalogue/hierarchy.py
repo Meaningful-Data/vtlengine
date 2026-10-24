@@ -8,6 +8,10 @@ on the variable ``Id_2``), so each expected output follows from the mode table o
 ``rule_priority`` variants also have ``minimal_2``: the same input with a C in ``DS_1`` where the
 rule computes a C that is not null. The manual examples differ only in their mode, with the
 default input and output, so each one goes to the grid variant of its mode.
+
+The ``condition`` variant also has ``minimal_2``: two rules whose conditions overlap compute the
+same code item for one data point, and agree on its value. The manual does not say what the
+result is; by the team decision of #1193 the data point is returned once.
 """
 
 from __future__ import annotations
@@ -20,6 +24,8 @@ _PAGE = "Hierarchical aggregation/Hierarchical roll-up"
 # ``rule_priority`` also runs on the grid input plus a C of ``DS_1`` where the rule computes a C
 # that is not null, so that the computed C coming first is told from the C of ``DS_1`` coming first.
 _PRECEDENCE: tuple[Example, ...] = (authored("minimal_2"),)
+# Two rules that compute the same code item for a data point, with the same value: once (#1193).
+_OVERLAP_DECISION = 1193
 
 
 def _grid(
@@ -80,7 +86,7 @@ HIERARCHY = Operator(
         Variant(
             id="condition",
             label="hierarchy(DS, HR condition C)",
-            examples=(authored(),),
+            examples=(authored(), authored("minimal_2", decision=_OVERLAP_DECISION)),
         ),
         Variant(
             id="valuedomain_rule",
