@@ -155,13 +155,14 @@ def compare_dataset(expected: ExpectedDataset, actual: ActualDataset) -> str | N
     The structure is compared first: the component names, then the roles (after
     ``normalize_role``), then the types (the actual type must be one of the expected ones, after
     ``normalize_type``), then the nullability (only where the expected structure states it).
-    The data points are compared only when the names, the roles and the nullability agree. A
-    type that differs does not stop it, so that a type problem does not hide what is wrong with
-    the data points. They are found by the identifier values, and every other column is compared
-    with ``values_equal``, as the type that the engine returned, or, in a column whose type is
-    not an allowed one, as the first type that is. At most three problems are reported, joined
-    with ``"; "``: the problems of the structure first, then those of the data points. The names
-    of the datasets are not compared: the caller pairs the outputs by name.
+    The data points are compared when the names and the roles agree. A type or a nullability
+    that differs does not stop it, so that such a problem does not hide what is wrong with the
+    data points. They are found by the identifier values, and every other column is compared
+    with ``values_equal``, as the type that the engine returned. In a column whose type is not an
+    allowed one, a value agrees when it does as any of the allowed types, so that the order in
+    which the expected file lists them cannot change what is reported. At most three problems are
+    reported, joined with ``"; "``: the problems of the structure first, then those of the data
+    points. The names of the datasets are not compared: the caller pairs the outputs by name.
     """
     return "; ".join(islice(_dataset_problems(expected, actual), _MAX_PROBLEMS)) or None
 
@@ -271,31 +272,47 @@ def _structure(dataset: ActualDataset) -> dict[str, tuple[str, str]]:
 def _dataset_problems(expected: ExpectedDataset, actual: ActualDataset) -> Iterator[str]:
     structure = list(_structure_problems(expected, actual))
     yield from (problem for _, problem in structure)
-    # A type that differs leaves the data points comparable; any other problem does not.
-    if any(kind != _TYPES for kind, _ in structure):
+    # A type or a nullability that differs leaves the data points comparable; a name or a role
+    # that differs does not.
+    if any(kind in (_NAMES, _ROLES) for kind, _ in structure):
         return
     ids = [
         name
         for name, component in expected.components.items()
         if normalize_role(component.role) == _IDENTIFIER
     ]
-    types = {
-        name: _value_type(component, actual.components[name])
+    options = {
+        name: _value_types(component, actual.components[name])
         for name, component in expected.components.items()
     }
-    yield from _row_problems(ids, types, expected.rows, actual.rows, _matches_printed_precision)
+    types = {name: _key_type(each) for name, each in options.items()}
+    yield from _row_problems(
+        ids, types, expected.rows, actual.rows, _matches_printed_precision, options
+    )
 
 
-def _value_type(expected: ExpectedComponent, actual: ActualComponent) -> str:
-    """The canonical type whose rules compare the values of a component.
+def _value_types(expected: ExpectedComponent, actual: ActualComponent) -> tuple[str, ...]:
+    """The canonical types whose rules may compare the values of a component.
 
     It is the type that the engine returned, when the expected structure allows it. When it does
-    not, the type is a problem of its own, and the values follow the expected type: the first
-    one that is allowed.
+    not, the type is a problem of its own, and a value agrees when it does under any of the
+    allowed types.
     """
     returned = normalize_type(actual.type)
-    allowed = [normalize_type(name) for name in expected.types]
-    return returned if returned in allowed or not allowed else allowed[0]
+    allowed = tuple(dict.fromkeys(normalize_type(name) for name in expected.types))
+    return (returned,) if returned in allowed or not allowed else allowed
+
+
+def _key_type(options: Sequence[str]) -> str:
+    """The type whose canonical form finds a data point by an identifier of this column.
+
+    It is the only type there is, or, when several are allowed and the engine returned none of
+    them, one that does not depend on the order of the expected file: Number, the most lenient
+    for a number, else the first by name.
+    """
+    if len(options) == 1:
+        return options[0]
+    return "Number" if "Number" in options else min(options)
 
 
 def _structure_problems(
@@ -334,12 +351,15 @@ def _row_problems(
     expected_rows: Sequence[Mapping[str, str | None]],
     actual_rows: Sequence[Mapping[str, str | None]],
     numbers: Callable[[str, str], bool],
+    options: Mapping[str, Sequence[str]] | None = None,
 ) -> Iterator[str]:
     """How ``actual_rows`` differ from ``expected_rows``, found by their ``ids`` columns.
 
     ``types`` is the canonical type of every column and ``numbers`` the rule that matches two
-    Number values, the expected one first. When a key occurs twice on either side, only those
-    duplicates are reported: the data points cannot be matched.
+    Number values, the expected one first. ``options`` has the types that may compare the values
+    of a column, where there are several: a value agrees when it does under any of them. When a
+    key occurs twice on either side, only those duplicates are reported: the data points cannot
+    be matched.
     """
     wanted, wanted_repeated = _index_rows(expected_rows, ids, types)
     got, got_repeated = _index_rows(actual_rows, ids, types)
@@ -349,7 +369,7 @@ def _row_problems(
         for row in got_repeated:
             yield f"duplicate identifier key {_key_text(ids, row) or '()'} in actual"
         return
-    yield from _matched_row_problems(ids, types, wanted, got, numbers)
+    yield from _matched_row_problems(ids, types, wanted, got, numbers, options)
 
 
 def _matched_row_problems(
@@ -358,6 +378,7 @@ def _matched_row_problems(
     wanted: Mapping[tuple[Hashable, ...], Mapping[str, str | None]],
     got: Mapping[tuple[Hashable, ...], Mapping[str, str | None]],
     numbers: Callable[[str, str], bool],
+    options: Mapping[str, Sequence[str]] | None = None,
 ) -> Iterator[str]:
     """How the data points ``got`` differ from ``wanted``, both indexed by ``_index_rows``."""
     others = [name for name in types if name not in ids]
@@ -367,7 +388,10 @@ def _matched_row_problems(
             yield f"missing {_label(ids, want)}"
             continue
         for name in others:
-            if not _same_value(types[name], want.get(name), have.get(name), numbers):
+            kinds = options[name] if options is not None else (types[name],)
+            if not any(
+                _same_value(kind, want.get(name), have.get(name), numbers) for kind in kinds
+            ):
                 yield (
                     f"{_label(ids, want)}: {name} expected {_show(want.get(name))} "
                     f"got {_show(have.get(name))}"

@@ -475,19 +475,34 @@ def test_structure_problems_come_in_a_fixed_order_and_skip_the_rows() -> None:
     )
 
 
-def test_rows_are_not_compared_when_the_structure_differs() -> None:
-    # One structure problem, so the cap does not hide whether the rows were compared as well.
+def test_rows_are_compared_despite_a_nullability_difference() -> None:
     nullable = {**ACTUAL_COMPONENTS, "Id_1": replace(ACTUAL_COMPONENTS["Id_1"], nullable=True)}
+    # One structure problem and agreeing data points: the nullability is the only problem.
+    message = compare_dataset(expected_dataset(), actual_dataset(components=nullable))
+    assert message == "nullable of Id_1 expected false got true"
+    # The nullability comes first, then what is wrong with the data points.
     rows = [row("1", "4", "a"), row("2", "5", None)]  # Me_1 differs
     message = compare_dataset(expected_dataset(), actual_dataset(rows=rows, components=nullable))
-    assert message == "nullable of Id_1 expected false got true"
+    assert message == "nullable of Id_1 expected false got true; row Id_1=1: Me_1 expected 3 got 4"
 
+
+def test_rows_are_not_compared_when_the_names_or_the_roles_differ() -> None:
+    rows = [row("1", "4", "a"), row("2", "5", None)]  # Me_1 differs
     # Rows of a dataset that lacks a component cannot be compared at all.
     without_me_2 = {name: ACTUAL_COMPONENTS[name] for name in ("Id_1", "Me_1")}
     message = compare_dataset(
         expected_dataset(), actual_dataset(rows=rows, components=without_me_2)
     )
     assert message == "missing components: Me_2"
+    # Nor those of a dataset that has another one, or a component with another role.
+    extra = {**ACTUAL_COMPONENTS, "Me_3": ActualComponent("Measure", "Integer", True)}
+    assert compare_dataset(expected_dataset(), actual_dataset(rows=rows, components=extra)) == (
+        "unexpected components: Me_3"
+    )
+    attribute = {**ACTUAL_COMPONENTS, "Me_1": replace(ACTUAL_COMPONENTS["Me_1"], role="Attribute")}
+    assert compare_dataset(expected_dataset(), actual_dataset(rows=rows, components=attribute)) == (
+        "role of Me_1 expected Measure got Attribute"
+    )
 
 
 LEVEL_EXPECTED = {
@@ -566,15 +581,54 @@ def test_a_type_difference_is_compared_with_the_value_rule_of_the_expected_type(
         )
         == "type of Me_2 expected String got Integer; row Id_1=1: Me_2 expected 05 got 5"
     )
-    # Where several types are allowed, the first one is the expected type.
+
+
+@pytest.mark.parametrize(
+    "allowed", [("Integer", "Number"), ("Number", "Integer")], ids=["Integer first", "Number first"]
+)
+def test_the_order_of_the_allowed_types_does_not_change_the_data_problems(
+    allowed: tuple[str, ...],
+) -> None:
+    wanted_components = {**EXPECTED_COMPONENTS, "Me_1": ExpectedComponent("Measure", allowed, None)}
     as_text = {**ACTUAL_COMPONENTS, "Me_1": ActualComponent("Measure", "String", True)}
-    rows_wanted, rows_got = [row("1", "5")], [row("1", "5.0000000001")]
-    assert compare_dataset(
-        expected_dataset(rows=rows_wanted), actual_dataset(rows=rows_got, components=as_text)
-    ) == (
-        "type of Me_1 expected Integer or Number got String; "
-        "row Id_1=1: Me_1 expected 5 got 5.0000000001"
+    type_problem = f"type of Me_1 expected {' or '.join(allowed)} got String"
+
+    def compare(wanted: str, got: str) -> str | None:
+        return compare_dataset(
+            expected_dataset(rows=[row("1", wanted, "a")], components=wanted_components),
+            actual_dataset(rows=[row("1", got, "a")], components=as_text),
+        )
+
+    # A value agrees when it does as any of the allowed types: 2.5 is 2.50 as a Number, although
+    # it is not as an Integer. The file lists them in either order, and the answer is the same.
+    assert compare("2.5", "2.50") == type_problem
+    assert compare("5", "5.0000000001") == type_problem
+    # A value that none of them accepts is a problem of the data points, whatever the order.
+    assert compare("2.5", "3") == f"{type_problem}; row Id_1=1: Me_1 expected 2.5 got 3"
+    assert compare("5", "5.5") == f"{type_problem}; row Id_1=1: Me_1 expected 5 got 5.5"
+
+
+@pytest.mark.parametrize(
+    "allowed", [("Integer", "Number"), ("Number", "Integer")], ids=["Integer first", "Number first"]
+)
+def test_the_order_of_the_allowed_types_does_not_change_how_identifiers_are_found(
+    allowed: tuple[str, ...],
+) -> None:
+    wanted = {**LEVEL_EXPECTED, "Id_1": ExpectedComponent("Identifier", allowed, False)}
+    got = {**LEVEL_ACTUAL, "Id_1": ActualComponent("Identifier", "String", False)}
+    got["errorlevel"] = ActualComponent("Measure", "Integer", True)
+    type_problem = f"type of Id_1 expected {' or '.join(allowed)} got String"
+    # 2.5 and 2.50 are the same key as a Number, and the file may list Integer first.
+    message = compare_dataset(
+        ExpectedDataset("DS_r", wanted, [level("2.5", "5")]),
+        ActualDataset("DS_r", got, [level("2.50", "5")]),
     )
+    assert message == type_problem
+    message = compare_dataset(
+        ExpectedDataset("DS_r", wanted, [level("2.5", "5")]),
+        ActualDataset("DS_r", got, [level("3", "5")]),
+    )
+    assert message == f"{type_problem}; missing row Id_1=2.5; unexpected row Id_1=3"
 
 
 def test_identifiers_of_a_different_type_are_still_matched_by_value() -> None:
@@ -590,14 +644,19 @@ def test_identifiers_of_a_different_type_are_still_matched_by_value() -> None:
     assert message == "type of Id_1 expected Integer got Number"
 
 
-def test_a_type_difference_does_not_unlock_the_rows_of_another_structure_problem() -> None:
-    # A role, a name or the nullability that differs is not a type: the rows stay unread.
+def test_a_type_and_a_nullability_difference_are_both_reported_before_the_data_points() -> None:
     nullable = {**LEVEL_ACTUAL, "Id_1": ActualComponent("Identifier", "Integer", True)}
     message = compare_dataset(
         ExpectedDataset("DS_r", LEVEL_EXPECTED, [level("1", "5")]),
         ActualDataset("DS_r", nullable, [level("1", "6")]),
     )
-    assert message == f"{LEVEL_TYPE}; nullable of Id_1 expected false got true"
+    assert message == (
+        f"{LEVEL_TYPE}; nullable of Id_1 expected false got true; "
+        "row Id_1=1: errorlevel expected 5 got 6"
+    )
+
+
+def test_a_type_difference_does_not_unlock_the_rows_of_a_role_that_differs() -> None:
     attribute = {**LEVEL_ACTUAL, "errorlevel": ActualComponent("Attribute", "Number", True)}
     message = compare_dataset(
         ExpectedDataset("DS_r", LEVEL_EXPECTED, [level("1", "5")]),
