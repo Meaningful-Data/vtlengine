@@ -7,11 +7,14 @@ are not join keys, ``inner_join`` takes ``using`` without them and ``cross_join`
 
 Each operator has one variant per form (join kind x clause), with the other parts of the body
 left out. The forms include each role of ``calc`` and ``aggr``, whether written or left out, and
-each grouping of ``aggr``. Every form takes data sets of any type and gives a data set whose
-types follow them (``any``), so no form has a kind: they all take and give data sets. A form
-also takes the expressions of its clauses, as the pages type them: a ``filter`` or ``having``
-condition is a boolean, a ``calc`` or ``aggr`` expression any scalar. The names of ``using``,
-``keep``, ``drop`` and ``rename``, and the data set expression of ``apply``, add no type.
+each grouping of ``aggr``. No form has a kind: no id carries a kind token, and every form works
+on data sets. Every form takes its operands, data sets of any type, as ``scalar``, and gives a
+data set whose types follow them (``any``). A form also takes the expressions of its clauses, as
+the pages type them: a ``filter`` or ``having`` condition is a boolean, a ``calc`` or ``aggr``
+expression any scalar. The names of ``using``, ``keep`` and ``drop``, and the data set expression
+of ``apply``, add no type. The join pages type the names of ``rename`` (``compFrom``,
+``compTo``) as ``component<scalar>``, and the map reads them as names: the form takes ``scalar``
+either way.
 
 Every variant has an authored example named after what it tests. Most forms of ``inner_join``,
 ``left_join`` and ``full_join`` share one pair of inputs. A form has inputs of its own when it
@@ -49,12 +52,13 @@ from tool.model import (
 )
 
 # What a form takes ("Input parameters type" of the four pages): its operands, data sets of any
-# type, and the expressions of its clauses.
-_DATA_SETS: Final = (ANY_TYPE,)
-_FILTER: Final = (ANY_TYPE, "boolean")  # filterCondition: component<boolean>
-_CALC: Final = (ANY_TYPE, ANY_SCALAR)  # calcExpr: component<scalar>
-_AGGR: Final = (ANY_TYPE, ANY_SCALAR)  # aggrExpr and conversionExpr: component<scalar>
-_HAVING: Final = (*_AGGR, "boolean")  # havingCondition: component<boolean>
+# type, as ``scalar`` (``any`` is only for what a form gives: its result follows its input), and
+# the expressions of its clauses.
+_DATA_SETS: Final = (ANY_SCALAR,)
+_FILTER: Final = (ANY_SCALAR, "boolean")  # filterCondition: component<boolean>
+_CALC: Final = (ANY_SCALAR,)  # calcExpr: component<scalar>
+_AGGR: Final = (ANY_SCALAR,)  # aggrExpr and conversionExpr: component<scalar>
+_HAVING: Final = (ANY_SCALAR, "boolean")  # havingCondition: component<boolean>
 
 
 def _form(variant_id: str, label: str, takes: tuple[str, ...], *examples: Example) -> Variant:
