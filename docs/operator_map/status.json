@@ -4496,7 +4496,7 @@
       },
       "status": "ok"
     },
-    "conditional/case/comp/minimal": {
+    "conditional/case/comp/smaller_of_two_components": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4528,7 +4528,7 @@
       },
       "status": "ok"
     },
-    "conditional/case/comp_multi_when/minimal": {
+    "conditional/case/comp_multi_when/overlapping_descending_thresholds": {
       "duckdb": {
         "detail": "row Id_1=3: Me_2 expected 10 got 1",
         "error_code": null,
@@ -4544,7 +4544,7 @@
       },
       "status": "partial"
     },
-    "conditional/case/ds/minimal": {
+    "conditional/case/ds/inline_dataset_condition": {
       "duckdb": {
         "detail": "ParserException: Parser Error: syntax error at or near \"SELECT\"",
         "error_code": null,
@@ -4560,7 +4560,7 @@
       },
       "status": "diverge"
     },
-    "conditional/case/ds/minimal_2": {
+    "conditional/case/ds/unmatched_data_point_left_out": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4576,7 +4576,7 @@
       },
       "status": "ok"
     },
-    "conditional/case/ds_multi_when/minimal": {
+    "conditional/case/ds_multi_when/overlapping_inline_conditions": {
       "duckdb": {
         "detail": "ParserException: Parser Error: syntax error at or near \"SELECT\"",
         "error_code": null,
@@ -4592,7 +4592,7 @@
       },
       "status": "diverge"
     },
-    "conditional/case/ds_multi_when/minimal_2": {
+    "conditional/case/ds_multi_when/overlapping_named_conditions": {
       "duckdb": {
         "detail": "row Id_1=3: Me_1 expected 300 got 3",
         "error_code": null,
@@ -4608,7 +4608,7 @@
       },
       "status": "partial"
     },
-    "conditional/case/ds_scalar_branch/minimal": {
+    "conditional/case/ds_scalar_branch/scalar_else_feeds_all_measures": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4624,7 +4624,7 @@
       },
       "status": "ok"
     },
-    "conditional/case/ds_scalar_branch/minimal_2": {
+    "conditional/case/ds_scalar_branch/scalar_then_feeds_all_measures": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4640,7 +4640,7 @@
       },
       "status": "ok"
     },
-    "conditional/case/sc/minimal": {
+    "conditional/case/sc/false_condition_gives_else_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4656,7 +4656,7 @@
       },
       "status": "ok"
     },
-    "conditional/case/sc/minimal_2": {
+    "conditional/case/sc/true_condition_gives_then_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4672,55 +4672,7 @@
       },
       "status": "ok"
     },
-    "conditional/case/sc_multi_when/minimal": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "conditional/case/sc_multi_when/minimal_2": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "conditional/case/sc_multi_when/minimal_3": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "conditional/case/sc_multi_when/minimal_4": {
+    "conditional/case/sc_multi_when/both_conditions_true": {
       "duckdb": {
         "detail": "value expected 10 got 1",
         "error_code": null,
@@ -4736,7 +4688,7 @@
       },
       "status": "partial"
     },
-    "conditional/if_then_else/comp/minimal": {
+    "conditional/case/sc_multi_when/first_condition_true": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4752,7 +4704,55 @@
       },
       "status": "ok"
     },
-    "conditional/if_then_else/comp_scalar_branch/minimal": {
+    "conditional/case/sc_multi_when/no_condition_true": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "conditional/case/sc_multi_when/second_condition_true": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "conditional/if_then_else/comp/larger_of_two_components": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "conditional/if_then_else/comp_scalar_branch/flag_from_a_threshold": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4784,7 +4784,7 @@
       },
       "status": "ok"
     },
-    "conditional/if_then_else/ds_scalar_branch/minimal": {
+    "conditional/if_then_else/ds_scalar_branch/scalar_else_feeds_all_measures": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4800,7 +4800,7 @@
       },
       "status": "ok"
     },
-    "conditional/if_then_else/ds_scalar_branch/minimal_2": {
+    "conditional/if_then_else/ds_scalar_branch/scalar_then_feeds_all_measures": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4816,7 +4816,7 @@
       },
       "status": "ok"
     },
-    "conditional/if_then_else/sc/minimal": {
+    "conditional/if_then_else/sc/false_condition_gives_else_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4832,7 +4832,7 @@
       },
       "status": "ok"
     },
-    "conditional/if_then_else/sc/minimal_2": {
+    "conditional/if_then_else/sc/true_condition_gives_then_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4848,7 +4848,7 @@
       },
       "status": "ok"
     },
-    "conditional/nvl/comp_comp/minimal": {
+    "conditional/nvl/comp_comp/second_component_fills_nulls": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4864,7 +4864,7 @@
       },
       "status": "ok"
     },
-    "conditional/nvl/comp_sc/minimal": {
+    "conditional/nvl/comp_sc/null_replaced_by_zero": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4880,7 +4880,7 @@
       },
       "status": "ok"
     },
-    "conditional/nvl/ds_ds/minimal": {
+    "conditional/nvl/ds_ds/partly_different_identifiers": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4912,7 +4912,7 @@
       },
       "status": "ok"
     },
-    "conditional/nvl/sc_comp/minimal": {
+    "conditional/nvl/sc_comp/non_null_scalar_first_operand": {
       "duckdb": {
         "detail": "SemanticError 1-1-9-2: At op None: The applicable operand cannot be a DataComponent when the operand is a Scalar. Please check transformation with output Dataset DS_r",
         "error_code": "1-1-9-2",
@@ -4928,7 +4928,7 @@
       },
       "status": "refused"
     },
-    "conditional/nvl/sc_ds/minimal": {
+    "conditional/nvl/sc_ds/non_null_scalar_first_operand": {
       "duckdb": {
         "detail": "SemanticError 1-1-9-2: At op None: The applicable operand cannot be a Dataset when the operand is a Scalar. Please check transformation with output Dataset DS_r",
         "error_code": "1-1-9-2",
@@ -4944,7 +4944,7 @@
       },
       "status": "refused"
     },
-    "conditional/nvl/sc_sc/minimal": {
+    "conditional/nvl/sc_sc/non_null_first_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4960,7 +4960,7 @@
       },
       "status": "ok"
     },
-    "conditional/nvl/sc_sc/minimal_2": {
+    "conditional/nvl/sc_sc/null_first_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4976,7 +4976,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_datapoint_ruleset/errorcode/code_on_the_invalid_point": {
+    "definitions/define_datapoint_ruleset/conditioned_rule/three_cases_of_the_implication": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4992,7 +4992,23 @@
       },
       "status": "ok"
     },
-    "definitions/define_datapoint_ruleset/errorlevel/level_on_the_invalid_point": {
+    "definitions/define_datapoint_ruleset/rule_options/errorcode_on_the_invalid_point": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_datapoint_ruleset/rule_options/errorlevel_on_the_invalid_point": {
       "duckdb": {
         "detail": "type of errorlevel expected Integer got Number",
         "error_code": null,
@@ -5008,7 +5024,7 @@
       },
       "status": "partial"
     },
-    "definitions/define_datapoint_ruleset/named/two_named_rules": {
+    "definitions/define_datapoint_ruleset/rule_options/rules_named_by_their_order": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5024,7 +5040,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_datapoint_ruleset/plain/consequent_alone": {
+    "definitions/define_datapoint_ruleset/rule_options/two_named_rules": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5040,7 +5056,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_datapoint_ruleset/unnamed/rules_named_by_their_order": {
+    "definitions/define_datapoint_ruleset/unconditioned_rule/consequent_alone": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5055,6 +5071,22 @@
         "outcome": "match"
       },
       "status": "ok"
+    },
+    "definitions/define_datapoint_ruleset/valuedomain/domain_aliases_in_the_rule": {
+      "duckdb": {
+        "detail": "SemanticError 1-1-1-10: Component F not found in Dataset DS_1. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-1-10",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-1-1-10: Component F not found in Dataset DS_1. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-1-10",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "refused"
     },
     "definitions/define_datapoint_ruleset/valuedomain/domains_bound_to_components": {
       "duckdb": {
@@ -5072,21 +5104,21 @@
       },
       "status": "refused"
     },
-    "definitions/define_datapoint_ruleset/valuedomain_alias/domain_aliases_in_the_rule": {
+    "definitions/define_datapoint_ruleset/variable/variable_aliases_in_the_rule": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-10: Component F not found in Dataset DS_1. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-10",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-10: Component F not found in Dataset DS_1. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-10",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "definitions/define_datapoint_ruleset/variable/variables_of_the_dataset": {
       "duckdb": {
@@ -5104,7 +5136,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_datapoint_ruleset/variable_alias/variable_aliases_in_the_rule": {
+    "definitions/define_hierarchical_ruleset/condition/aliased_conditioning_domain": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5120,7 +5152,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_datapoint_ruleset/when_then/three_cases_of_the_implication": {
+    "definitions/define_hierarchical_ruleset/condition/aliased_conditioning_variable": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5136,7 +5168,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_hierarchical_ruleset/errorcode/code_on_the_failed_rule": {
+    "definitions/define_hierarchical_ruleset/condition/conditioning_domain": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5152,7 +5184,183 @@
       },
       "status": "ok"
     },
-    "definitions/define_hierarchical_ruleset/errorlevel/level_on_the_failed_rule": {
+    "definitions/define_hierarchical_ruleset/condition/conditioning_variable": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_hierarchical_ruleset/conditioned_rule/false_condition_not_compared": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_hierarchical_ruleset/item_condition/item_left_out_by_condition": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_hierarchical_ruleset/relation/added_and_subtracted_items": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_hierarchical_ruleset/relation/equality_fails_on_unequal_values": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_hierarchical_ruleset/relation/greater_or_equal_holds_on_equal_values": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_hierarchical_ruleset/relation/greater_than_fails_on_equal_values": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_hierarchical_ruleset/relation/less_or_equal_holds_on_equal_values": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_hierarchical_ruleset/relation/less_than_fails_on_equal_values": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_hierarchical_ruleset/relation/sign_of_the_first_item": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_hierarchical_ruleset/rule_options/errorcode_on_the_failed_rule": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_hierarchical_ruleset/rule_options/errorlevel_on_the_failed_rule": {
       "duckdb": {
         "detail": "type of errorlevel expected Integer got Number",
         "error_code": null,
@@ -5168,7 +5376,7 @@
       },
       "status": "partial"
     },
-    "definitions/define_hierarchical_ruleset/named/two_named_rules": {
+    "definitions/define_hierarchical_ruleset/rule_options/rules_named_by_their_order": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5184,7 +5392,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_hierarchical_ruleset/plus_minus/added_and_subtracted_items": {
+    "definitions/define_hierarchical_ruleset/rule_options/two_named_rules": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5200,7 +5408,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_hierarchical_ruleset/plus_minus/sign_of_the_first_item": {
+    "definitions/define_hierarchical_ruleset/valuedomain/domain_bound_by_rule": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5216,7 +5424,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_hierarchical_ruleset/rel_eq/unequal_values_fail": {
+    "definitions/define_hierarchical_ruleset/variable/unbalanced_total": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5232,7 +5440,23 @@
       },
       "status": "ok"
     },
-    "definitions/define_hierarchical_ruleset/rel_ge/equal_values_hold": {
+    "definitions/define_operator/component/attribute_overwritten_in_calc": {
+      "duckdb": {
+        "detail": "role of At_1 expected Attribute got Measure",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "role of At_1 expected Attribute got Measure",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "status": "partial"
+    },
+    "definitions/define_operator/component/component_role_in_calc": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5248,7 +5472,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_hierarchical_ruleset/rel_gt/equal_values_fail": {
+    "definitions/define_operator/component/identifier_in_calc": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5264,7 +5488,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_hierarchical_ruleset/rel_le/equal_values_hold": {
+    "definitions/define_operator/component/measure_role_in_calc": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5280,7 +5504,71 @@
       },
       "status": "ok"
     },
-    "definitions/define_hierarchical_ruleset/rel_lt/equal_values_fail": {
+    "definitions/define_operator/component/viral_attribute_overwritten_in_calc": {
+      "duckdb": {
+        "detail": "role of At_1 expected Viral Attribute got Measure",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "role of At_1 expected Viral Attribute got Measure",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "status": "partial"
+    },
+    "definitions/define_operator/constrained_scalar/non_null_argument": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: not null in 'integer not null' (line 1, column 28).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: not null in 'integer not null' (line 1, column 28).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "definitions/define_operator/constrained_scalar/value_condition_holds": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: type constraint in 'integer [value >= 0]' (line 1, column 30).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: type constraint in 'integer [value >= 0]' (line 1, column 30).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "definitions/define_operator/constrained_scalar/value_in_the_list": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: type constraint in 'integer { 1, 2, 3 }' (line 1, column 30).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: type constraint in 'integer { 1, 2, 3 }' (line 1, column 30).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "definitions/define_operator/dataset/dataset_argument": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5296,7 +5584,23 @@
       },
       "status": "ok"
     },
-    "definitions/define_hierarchical_ruleset/right_condition/item_left_out_by_condition": {
+    "definitions/define_operator/dataset/exactly_one_measure": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _' (line 1, column 37).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _' (line 1, column 37).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "definitions/define_operator/dataset/named_components": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5312,133 +5616,37 @@
       },
       "status": "ok"
     },
-    "definitions/define_hierarchical_ruleset/unnamed/rules_named_by_their_order": {
+    "definitions/define_operator/dataset/one_or_more_measures": {
       "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _+' (line 1, column 37).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _+' (line 1, column 37).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
-      "status": "ok"
+      "status": "missing"
     },
-    "definitions/define_hierarchical_ruleset/valuedomain_condition/conditioning_domain": {
+    "definitions/define_operator/dataset/zero_or_more_measures": {
       "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _*' (line 1, column 37).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _*' (line 1, column 37).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
-      "status": "ok"
-    },
-    "definitions/define_hierarchical_ruleset/valuedomain_condition_alias/aliased_conditioning_domain": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_hierarchical_ruleset/valuedomain_rule/domain_bound_by_rule": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_hierarchical_ruleset/variable_condition/conditioning_variable": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_hierarchical_ruleset/variable_condition_alias/aliased_conditioning_variable": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_hierarchical_ruleset/variable_rule/unbalanced_total": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_hierarchical_ruleset/when_then/false_condition_not_compared": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
+      "status": "missing"
     },
     "definitions/define_operator/default_value/last_argument_omitted": {
       "duckdb": {
@@ -5472,7 +5680,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_operator/no_params/call_without_arguments": {
+    "definitions/define_operator/no_parameters/call_without_arguments": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -5487,502 +5695,6 @@
         "outcome": "match"
       },
       "status": "ok"
-    },
-    "definitions/define_operator/param_attribute/attribute_overwritten_in_calc": {
-      "duckdb": {
-        "detail": "role of At_1 expected Attribute got Measure",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "mismatch"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "role of At_1 expected Attribute got Measure",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "mismatch"
-      },
-      "status": "partial"
-    },
-    "definitions/define_operator/param_boolean/boolean_argument": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_operator/param_component/measure_in_calc": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_operator/param_constrained/value_condition_holds": {
-      "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: type constraint in 'integer [value >= 0]' (line 1, column 30).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: type constraint in 'integer [value >= 0]' (line 1, column 30).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
-    "definitions/define_operator/param_constrained/value_in_the_list": {
-      "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: type constraint in 'integer { 1, 2, 3 }' (line 1, column 30).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: type constraint in 'integer { 1, 2, 3 }' (line 1, column 30).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
-    "definitions/define_operator/param_dataset/dataset_argument": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_operator/param_dataset_constrained/exactly_one_measure": {
-      "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _' (line 1, column 37).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _' (line 1, column 37).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
-    "definitions/define_operator/param_dataset_constrained/named_components": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_operator/param_dataset_constrained/one_or_more_measures": {
-      "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _+' (line 1, column 37).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _+' (line 1, column 37).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
-    "definitions/define_operator/param_dataset_constrained/zero_or_more_measures": {
-      "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _*' (line 1, column 37).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _*' (line 1, column 37).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
-    "definitions/define_operator/param_date/date_argument": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_operator/param_duration/duration_argument": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_operator/param_identifier/identifier_in_calc": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_operator/param_integer/integer_argument": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_operator/param_measure/measure_in_calc": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_operator/param_not_null/non_null_argument": {
-      "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: not null in 'integer not null' (line 1, column 28).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: not null in 'integer not null' (line 1, column 28).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
-    "definitions/define_operator/param_number/number_argument": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_operator/param_ruleset_datapoint/datapoint_on_valuedomains_type": {
-      "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint_on_valuedomains' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint_on_valuedomains' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
-    "definitions/define_operator/param_ruleset_datapoint/datapoint_on_variables_type": {
-      "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint_on_variables' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint_on_variables' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
-    "definitions/define_operator/param_ruleset_datapoint/datapoint_type": {
-      "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
-    "definitions/define_operator/param_ruleset_datapoint/generic_ruleset_type": {
-      "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'ruleset' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'ruleset' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
-    "definitions/define_operator/param_ruleset_hierarchical/hierarchical_on_valuedomains_type": {
-      "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical_on_valuedomains' (line 5, column 45).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical_on_valuedomains' (line 5, column 45).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
-    "definitions/define_operator/param_ruleset_hierarchical/hierarchical_on_variables_type": {
-      "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical_on_variables' (line 5, column 45).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical_on_variables' (line 5, column 45).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
-    "definitions/define_operator/param_ruleset_hierarchical/hierarchical_type": {
-      "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical' (line 5, column 45).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical' (line 5, column 45).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
-    "definitions/define_operator/param_scalar/integer_keeps_its_type": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_operator/param_set/value_domain_as_the_set": {
-      "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: set type 'set<string>' (line 1, column 36).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: set type 'set<string>' (line 1, column 36).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
-    "definitions/define_operator/param_string/string_argument": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_operator/param_time/time_argument": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_operator/param_time_period/time_period_argument": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "definitions/define_operator/param_value_domain/string_value_of_the_domain": {
-      "duckdb": {
-        "detail": "InputValidationException 0-5-1-10: Invalid parameter type definition 'VD_1' (line 1, column 32).",
-        "error_code": "0-5-1-10",
-        "error_type": "InputValidationException",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "InputValidationException 0-5-1-10: Invalid parameter type definition 'VD_1' (line 1, column 32).",
-        "error_code": "0-5-1-10",
-        "error_type": "InputValidationException",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
-    "definitions/define_operator/param_viral_attribute/viral_attribute_overwritten_in_calc": {
-      "duckdb": {
-        "detail": "role of At_1 expected Viral Attribute got Measure",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "mismatch"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "role of At_1 expected Viral Attribute got Measure",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "mismatch"
-      },
-      "status": "partial"
     },
     "definitions/define_operator/returns_component/component_in_calc": {
       "duckdb": {
@@ -6048,7 +5760,119 @@
       },
       "status": "ok"
     },
-    "definitions/define_viral_propagation/aggregate_avg/across_two_operators": {
+    "definitions/define_operator/ruleset/datapoint_on_valuedomains_type": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint_on_valuedomains' (line 5, column 49).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint_on_valuedomains' (line 5, column 49).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "definitions/define_operator/ruleset/datapoint_on_variables_type": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint_on_variables' (line 5, column 49).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint_on_variables' (line 5, column 49).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "definitions/define_operator/ruleset/datapoint_type": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint' (line 5, column 49).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint' (line 5, column 49).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "definitions/define_operator/ruleset/generic_ruleset_type": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'ruleset' (line 5, column 49).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'ruleset' (line 5, column 49).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "definitions/define_operator/ruleset/hierarchical_on_valuedomains_type": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical_on_valuedomains' (line 5, column 45).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical_on_valuedomains' (line 5, column 45).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "definitions/define_operator/ruleset/hierarchical_on_variables_type": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical_on_variables' (line 5, column 45).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical_on_variables' (line 5, column 45).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "definitions/define_operator/ruleset/hierarchical_type": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical' (line 5, column 45).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical' (line 5, column 45).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "definitions/define_operator/scalar_type/boolean_argument": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6064,7 +5888,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_viral_propagation/aggregate_avg/mean_of_each_pair": {
+    "definitions/define_operator/scalar_type/date_argument": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6080,7 +5904,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_viral_propagation/aggregate_avg/within_one_operator": {
+    "definitions/define_operator/scalar_type/duration_argument": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6096,7 +5920,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_viral_propagation/aggregate_max/larger_of_each_pair": {
+    "definitions/define_operator/scalar_type/integer_argument": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6112,7 +5936,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_viral_propagation/aggregate_min/smaller_of_each_pair": {
+    "definitions/define_operator/scalar_type/number_argument": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6128,7 +5952,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_viral_propagation/aggregate_sum/sum_of_each_pair": {
+    "definitions/define_operator/scalar_type/scalar_argument_keeps_its_type": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6144,7 +5968,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_viral_propagation/at_aggregation/sum_grouped_by_identifier": {
+    "definitions/define_operator/scalar_type/string_argument": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6160,7 +5984,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_viral_propagation/at_binary_op/subtraction_of_two_datasets": {
+    "definitions/define_operator/scalar_type/time_argument": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6176,7 +6000,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_viral_propagation/at_hierarchy/computed_total": {
+    "definitions/define_operator/scalar_type/time_period_argument": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6192,7 +6016,39 @@
       },
       "status": "ok"
     },
-    "definitions/define_viral_propagation/at_join/viral_in_both_datasets": {
+    "definitions/define_operator/set/value_domain_as_the_set": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: set type 'set<string>' (line 1, column 36).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: set type 'set<string>' (line 1, column 36).",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "definitions/define_operator/value_domain/string_value_of_the_domain": {
+      "duckdb": {
+        "detail": "InputValidationException 0-5-1-10: Invalid parameter type definition 'VD_1' (line 1, column 32).",
+        "error_code": "0-5-1-10",
+        "error_type": "InputValidationException",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "InputValidationException 0-5-1-10: Invalid parameter type definition 'VD_1' (line 1, column 32).",
+        "error_code": "0-5-1-10",
+        "error_type": "InputValidationException",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "definitions/define_viral_propagation/aggregation/avg_across_two_operators": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6208,7 +6064,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_viral_propagation/binary/binary_clause_before_unary": {
+    "definitions/define_viral_propagation/aggregation/avg_of_each_pair": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6224,7 +6080,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_viral_propagation/else_clause/else_for_unlisted_pairs": {
+    "definitions/define_viral_propagation/aggregation/avg_within_one_operator": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6240,7 +6096,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_viral_propagation/named_clause/names_do_not_change_matching": {
+    "definitions/define_viral_propagation/aggregation/max_of_each_pair": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6256,7 +6112,7 @@
       },
       "status": "ok"
     },
-    "definitions/define_viral_propagation/no_else/null_for_unlisted_pairs": {
+    "definitions/define_viral_propagation/aggregation/min_of_each_pair": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6272,7 +6128,151 @@
       },
       "status": "ok"
     },
-    "definitions/define_viral_propagation/unary/first_clause_in_order_wins": {
+    "definitions/define_viral_propagation/aggregation/sum_of_each_pair": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_viral_propagation/enumerated/binary_clause_before_unary": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_viral_propagation/enumerated/else_for_unlisted_pairs": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_viral_propagation/enumerated/first_clause_in_order_wins": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_viral_propagation/enumerated/hierarchy_with_a_computed_total": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_viral_propagation/enumerated/inner_join_of_two_datasets": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_viral_propagation/enumerated/names_do_not_change_matching": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_viral_propagation/enumerated/null_for_unlisted_pairs": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_viral_propagation/enumerated/subtraction_of_two_datasets": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "definitions/define_viral_propagation/enumerated/sum_grouped_by_identifier": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -15026,11 +15026,11 @@
     }
   },
   "meta": {
-    "date": "2026-10-24",
+    "date": "2026-10-25",
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "140e946ed3f888951adb8bb66ea45030be84e2aa",
-    "vtlengine_commit": "7cd736c2",
+    "vtlengine_commit": "8a3e3f0d",
     "vtlengine_version": "1.9.6rc2"
   }
 }
