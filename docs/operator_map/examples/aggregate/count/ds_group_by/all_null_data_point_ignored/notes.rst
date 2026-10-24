@@ -1,0 +1,4 @@
+:Tests: which data points ``count`` counts when measures are null: in ``A``, 2020Q2 has both measures null and 2021Q1 only ``Me_2``.
+:Manual: `Counting the number of data points <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Counting%20the%20number%20of%20data%20points/index.html>`__: "The operator returns the number of the input Data Points", which counts 4 in ``A``; the `User Manual <https://sdmx-twg.github.io/vtl/v2.2/user_manual/operators.html>`__: "the input Data Points having a null value are in general not considered", which counts 2.
+:Expected: ``int_var`` = 3 for ``A``, without 2020Q2, and 2 for ``B``.
+:Team decision: `#1049 <https://github.com/Meaningful-Data/vtlengine/issues/1049>`__: "A Data Point whose Measures are all null is ignored; a Data Point holding at least one non-null Measure is counted", and the data set form "always returns a single Measure ``int_var`` of type Integer".
