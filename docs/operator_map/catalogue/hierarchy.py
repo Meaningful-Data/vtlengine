@@ -32,7 +32,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from tool.model import ANY_TYPE, Chapter, Example, Link, Operator, Variant, authored, manual
+from tool.model import ANY_TYPE, Chapter, Example, Operator, Variant, authored, manual
 
 _PAGE = "Hierarchical aggregation/Hierarchical roll-up"
 
@@ -125,7 +125,6 @@ HIERARCHY = Operator(
             gives=_GIVES,
         ),
     ),
-    links=(Link("definitions.define_hierarchical_ruleset", "uses"),),
 )
 
 CHAPTER = Chapter(id="hierarchy", title="Hierarchical aggregation", operators=(HIERARCHY,))
