@@ -4,8 +4,7 @@ A basic type has one variant, ``identity``: a dataset with a measure of the type
 another dataset. It shows that vtlengine loads, keeps and writes the values of the type. The
 abstract ``scalar`` and the structural hubs (``dataset``, ``set``, ``value_domain``, the
 rulesets, ``viral_propagation``, ``operator`` and ``external_routine``) have no example of their
-own: they link to the operator that introduces them (``TypeDef.see``), which is set once the
-chapters that hold those operators exist.
+own: they link to the operator that introduces them (``TypeDef.see``).
 """
 
 from __future__ import annotations

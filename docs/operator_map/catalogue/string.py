@@ -24,11 +24,12 @@ _CONCAT = Operator(
     ),
 )
 
-# trim, ltrim and rtrim share one manual page, and upper and lower share another one. The names
-# say the operator as well, so that the nodes of the type flows are told apart.
+# trim, ltrim and rtrim share one manual page, and upper and lower share another one. Each
+# operator gets its own descriptive name, as the comparison and time operators do, so that the
+# nodes of the type flows are told apart.
 _TRIM = Operator(
     id="trim",
-    name="Whitespace removal (trim)",
+    name="Whitespace removal",
     symbol="trim",
     page=f"{_PAGE}/Whitespace removal",
     accepts=("string",),
@@ -42,7 +43,7 @@ _TRIM = Operator(
 
 _LTRIM = Operator(
     id="ltrim",
-    name="Whitespace removal (ltrim)",
+    name="Leading whitespace removal",
     symbol="ltrim",
     page=f"{_PAGE}/Whitespace removal",
     accepts=("string",),
@@ -56,7 +57,7 @@ _LTRIM = Operator(
 
 _RTRIM = Operator(
     id="rtrim",
-    name="Whitespace removal (rtrim)",
+    name="Trailing whitespace removal",
     symbol="rtrim",
     page=f"{_PAGE}/Whitespace removal",
     accepts=("string",),
@@ -70,7 +71,7 @@ _RTRIM = Operator(
 
 _UPPER = Operator(
     id="upper",
-    name="Character case conversion (upper)",
+    name="Upper case conversion",
     symbol="upper",
     page=f"{_PAGE}/Character case conversion",
     accepts=("string",),
@@ -84,7 +85,7 @@ _UPPER = Operator(
 
 _LOWER = Operator(
     id="lower",
-    name="Character case conversion (lower)",
+    name="Lower case conversion",
     symbol="lower",
     page=f"{_PAGE}/Character case conversion",
     accepts=("string",),

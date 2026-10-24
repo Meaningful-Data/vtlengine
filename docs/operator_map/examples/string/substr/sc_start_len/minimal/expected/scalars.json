@@ -1,5 +1,5 @@
 {
   "scalars": [
-    {"name": "sc_r", "type": "String", "value": "efghijklmn"}
+    {"name": "SC_r", "type": "String", "value": "efghijklmn"}
   ]
 }
