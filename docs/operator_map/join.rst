@@ -4,7 +4,7 @@
 
 89 variants: 🟢 83 · 🟡 3 · 🔴 3 · 🔵 0
 
-← Back to :doc:`index` · vtlengine 1.9.6rc2 (851f56ae)
+← Back to :doc:`index` · vtlengine 1.9.6rc2 (b393f444) · pandas 3.0.6 · DuckDB 1.5.5
 
 .. mermaid::
 
@@ -361,224 +361,224 @@
      - Detail
      - Example
    * - | ``inner_join(DS, DS)``
-       | minimal
+       | `minimal <examples/join/inner_join/bare/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/bare/minimal/script.vtl>`__ · `input <examples/join/inner_join/bare/minimal/input/>`__ · `expected <examples/join/inner_join/bare/minimal/expected/>`__ · `notes <examples/join/inner_join/bare/minimal/notes.md>`__
    * - | ``inner_join(DS, DS)``
-       | minimal\_2
+       | `minimal\_2 <examples/join/inner_join/bare/minimal_2/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-13-11: At op inner\_join: Invalid subcase A, DS\_1 should be a superset but Id\_3 not found. Please check transformation with output Dataset DS\_r
      - `script <examples/join/inner_join/bare/minimal_2/script.vtl>`__ · `input <examples/join/inner_join/bare/minimal_2/input/>`__ · `expected <examples/join/inner_join/bare/minimal_2/expected/>`__ · `notes <examples/join/inner_join/bare/minimal_2/notes.md>`__
    * - | ``inner_join(DS as a, DS as b)``
-       | minimal
+       | `minimal <examples/join/inner_join/aliases/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/aliases/minimal/script.vtl>`__ · `input <examples/join/inner_join/aliases/minimal/input/>`__ · `expected <examples/join/inner_join/aliases/minimal/expected/>`__ · `notes <examples/join/inner_join/aliases/minimal/notes.md>`__
    * - | ``inner_join(DS as a, DS as b)``
-       | minimal\_2
+       | `minimal\_2 <examples/join/inner_join/aliases/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/aliases/minimal_2/script.vtl>`__ · `input <examples/join/inner_join/aliases/minimal_2/input/>`__ · `expected <examples/join/inner_join/aliases/minimal_2/expected/>`__ · `notes <examples/join/inner_join/aliases/minimal_2/notes.md>`__
    * - | ``inner_join(DS, DS using Id)``
-       | minimal
+       | `minimal <examples/join/inner_join/using/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/using/minimal/script.vtl>`__ · `input <examples/join/inner_join/using/minimal/input/>`__ · `expected <examples/join/inner_join/using/minimal/expected/>`__ · `notes <examples/join/inner_join/using/minimal/notes.md>`__
    * - | ``inner_join(DS, DS using Id)``
-       | minimal\_2
+       | `minimal\_2 <examples/join/inner_join/using/minimal_2/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-13-4: At op inner\_join: Using clause, using=[\'Id\_1\'], does not define all the Identifiers, of non reference Dataset d2. Please check transformation with output Dataset DS\_r
      - `script <examples/join/inner_join/using/minimal_2/script.vtl>`__ · `input <examples/join/inner_join/using/minimal_2/input/>`__ · `expected <examples/join/inner_join/using/minimal_2/expected/>`__ · `notes <examples/join/inner_join/using/minimal_2/notes.md>`__
    * - | ``inner_join(DS, DS filter cond)``
-       | minimal
+       | `minimal <examples/join/inner_join/filter/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/filter/minimal/script.vtl>`__ · `input <examples/join/inner_join/filter/minimal/input/>`__ · `expected <examples/join/inner_join/filter/minimal/expected/>`__ · `notes <examples/join/inner_join/filter/minimal/notes.md>`__
    * - | ``inner_join(DS, DS apply expr)``
-       | manual\_ex\_4
+       | `manual\_ex\_4 <examples/join/inner_join/apply/manual_ex_4/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/apply/manual_ex_4/script.vtl>`__ · `input <examples/join/inner_join/apply/manual_ex_4/input/>`__ · `expected <examples/join/inner_join/apply/manual_ex_4/expected/>`__ · `notes <examples/join/inner_join/apply/manual_ex_4/notes.md>`__ · *manual*
    * - | ``inner_join(DS, DS apply expr)``
-       | minimal
+       | `minimal <examples/join/inner_join/apply/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/apply/minimal/script.vtl>`__ · `input <examples/join/inner_join/apply/minimal/input/>`__ · `expected <examples/join/inner_join/apply/minimal/expected/>`__ · `notes <examples/join/inner_join/apply/minimal/notes.md>`__
    * - | ``inner_join(DS, DS calc C := expr)``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/join/inner_join/calc_default/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/calc_default/manual_ex_3/script.vtl>`__ · `input <examples/join/inner_join/calc_default/manual_ex_3/input/>`__ · `expected <examples/join/inner_join/calc_default/manual_ex_3/expected/>`__ · `notes <examples/join/inner_join/calc_default/manual_ex_3/notes.md>`__ · *manual*
    * - | ``inner_join(DS, DS calc C := expr)``
-       | minimal
+       | `minimal <examples/join/inner_join/calc_default/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/calc_default/minimal/script.vtl>`__ · `input <examples/join/inner_join/calc_default/minimal/input/>`__ · `expected <examples/join/inner_join/calc_default/minimal/expected/>`__ · `notes <examples/join/inner_join/calc_default/minimal/notes.md>`__
    * - | ``inner_join(DS, DS calc C := expr)``
-       | minimal\_2
+       | `minimal\_2 <examples/join/inner_join/calc_default/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/calc_default/minimal_2/script.vtl>`__ · `input <examples/join/inner_join/calc_default/minimal_2/input/>`__ · `expected <examples/join/inner_join/calc_default/minimal_2/expected/>`__ · `notes <examples/join/inner_join/calc_default/minimal_2/notes.md>`__
    * - | ``inner_join(DS, DS calc measure C := expr)``
-       | minimal
+       | `minimal <examples/join/inner_join/calc_measure/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/calc_measure/minimal/script.vtl>`__ · `input <examples/join/inner_join/calc_measure/minimal/input/>`__ · `expected <examples/join/inner_join/calc_measure/minimal/expected/>`__ · `notes <examples/join/inner_join/calc_measure/minimal/notes.md>`__
    * - | ``inner_join(DS, DS calc identifier C := expr)``
-       | minimal
+       | `minimal <examples/join/inner_join/calc_identifier/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/calc_identifier/minimal/script.vtl>`__ · `input <examples/join/inner_join/calc_identifier/minimal/input/>`__ · `expected <examples/join/inner_join/calc_identifier/minimal/expected/>`__ · `notes <examples/join/inner_join/calc_identifier/minimal/notes.md>`__
    * - | ``inner_join(DS, DS calc attribute C := expr)``
-       | minimal
+       | `minimal <examples/join/inner_join/calc_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/calc_attribute/minimal/script.vtl>`__ · `input <examples/join/inner_join/calc_attribute/minimal/input/>`__ · `expected <examples/join/inner_join/calc_attribute/minimal/expected/>`__ · `notes <examples/join/inner_join/calc_attribute/minimal/notes.md>`__
    * - | ``inner_join(DS, DS calc viral attribute C := expr)``
-       | minimal
+       | `minimal <examples/join/inner_join/calc_viral_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/calc_viral_attribute/minimal/script.vtl>`__ · `input <examples/join/inner_join/calc_viral_attribute/minimal/input/>`__ · `expected <examples/join/inner_join/calc_viral_attribute/minimal/expected/>`__ · `notes <examples/join/inner_join/calc_viral_attribute/minimal/notes.md>`__
    * - | ``inner_join(DS, DS aggr C := agg)``
-       | minimal
+       | `minimal <examples/join/inner_join/aggr_no_group/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/aggr_no_group/minimal/script.vtl>`__ · `input <examples/join/inner_join/aggr_no_group/minimal/input/>`__ · `expected <examples/join/inner_join/aggr_no_group/minimal/expected/>`__ · `notes <examples/join/inner_join/aggr_no_group/minimal/notes.md>`__
    * - | ``inner_join(DS, DS aggr C := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/inner_join/aggr_group_by/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/aggr_group_by/minimal/script.vtl>`__ · `input <examples/join/inner_join/aggr_group_by/minimal/input/>`__ · `expected <examples/join/inner_join/aggr_group_by/minimal/expected/>`__ · `notes <examples/join/inner_join/aggr_group_by/minimal/notes.md>`__
    * - | ``inner_join(DS, DS aggr C := agg group by Id)``
-       | minimal\_2
+       | `minimal\_2 <examples/join/inner_join/aggr_group_by/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/aggr_group_by/minimal_2/script.vtl>`__ · `input <examples/join/inner_join/aggr_group_by/minimal_2/input/>`__ · `expected <examples/join/inner_join/aggr_group_by/minimal_2/expected/>`__ · `notes <examples/join/inner_join/aggr_group_by/minimal_2/notes.md>`__
    * - | ``inner_join(DS, DS aggr C := agg group except Id)``
-       | minimal
+       | `minimal <examples/join/inner_join/aggr_group_except/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/aggr_group_except/minimal/script.vtl>`__ · `input <examples/join/inner_join/aggr_group_except/minimal/input/>`__ · `expected <examples/join/inner_join/aggr_group_except/minimal/expected/>`__ · `notes <examples/join/inner_join/aggr_group_except/minimal/notes.md>`__
    * - | ``inner_join(DS, DS aggr C := agg group all time_agg(p))``
-       | minimal
+       | `minimal <examples/join/inner_join/aggr_group_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/aggr_group_all/minimal/script.vtl>`__ · `input <examples/join/inner_join/aggr_group_all/minimal/input/>`__ · `expected <examples/join/inner_join/aggr_group_all/minimal/expected/>`__ · `notes <examples/join/inner_join/aggr_group_all/minimal/notes.md>`__
    * - | ``inner_join(DS, DS aggr C := agg group by Id having cond)``
-       | minimal
+       | `minimal <examples/join/inner_join/aggr_having/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/aggr_having/minimal/script.vtl>`__ · `input <examples/join/inner_join/aggr_having/minimal/input/>`__ · `expected <examples/join/inner_join/aggr_having/minimal/expected/>`__ · `notes <examples/join/inner_join/aggr_having/minimal/notes.md>`__
    * - | ``inner_join(DS, DS aggr measure C := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/inner_join/aggr_measure/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/aggr_measure/minimal/script.vtl>`__ · `input <examples/join/inner_join/aggr_measure/minimal/input/>`__ · `expected <examples/join/inner_join/aggr_measure/minimal/expected/>`__ · `notes <examples/join/inner_join/aggr_measure/minimal/notes.md>`__
    * - | ``inner_join(DS, DS aggr C := agg, attribute A := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/inner_join/aggr_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/aggr_attribute/minimal/script.vtl>`__ · `input <examples/join/inner_join/aggr_attribute/minimal/input/>`__ · `expected <examples/join/inner_join/aggr_attribute/minimal/expected/>`__ · `notes <examples/join/inner_join/aggr_attribute/minimal/notes.md>`__
    * - | ``inner_join(DS, DS aggr C := agg, viral attribute A := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/inner_join/aggr_viral_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/aggr_viral_attribute/minimal/script.vtl>`__ · `input <examples/join/inner_join/aggr_viral_attribute/minimal/input/>`__ · `expected <examples/join/inner_join/aggr_viral_attribute/minimal/expected/>`__ · `notes <examples/join/inner_join/aggr_viral_attribute/minimal/notes.md>`__
    * - | ``inner_join(DS, DS keep C)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/join/inner_join/keep/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/keep/manual_ex_1/script.vtl>`__ · `input <examples/join/inner_join/keep/manual_ex_1/input/>`__ · `expected <examples/join/inner_join/keep/manual_ex_1/expected/>`__ · `notes <examples/join/inner_join/keep/manual_ex_1/notes.md>`__ · *manual*
    * - | ``inner_join(DS, DS keep C)``
-       | minimal
+       | `minimal <examples/join/inner_join/keep/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/keep/minimal/script.vtl>`__ · `input <examples/join/inner_join/keep/minimal/input/>`__ · `expected <examples/join/inner_join/keep/minimal/expected/>`__ · `notes <examples/join/inner_join/keep/minimal/notes.md>`__
    * - | ``inner_join(DS, DS drop C)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/join/inner_join/drop/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/drop/manual_ex_2/script.vtl>`__ · `input <examples/join/inner_join/drop/manual_ex_2/input/>`__ · `expected <examples/join/inner_join/drop/manual_ex_2/expected/>`__ · `notes <examples/join/inner_join/drop/manual_ex_2/notes.md>`__ · *manual*
    * - | ``inner_join(DS, DS drop C)``
-       | minimal
+       | `minimal <examples/join/inner_join/drop/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/drop/minimal/script.vtl>`__ · `input <examples/join/inner_join/drop/minimal/input/>`__ · `expected <examples/join/inner_join/drop/minimal/expected/>`__ · `notes <examples/join/inner_join/drop/minimal/notes.md>`__
    * - | ``inner_join(DS, DS rename C to C2)``
-       | minimal
+       | `minimal <examples/join/inner_join/rename/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/inner_join/rename/minimal/script.vtl>`__ · `input <examples/join/inner_join/rename/minimal/input/>`__ · `expected <examples/join/inner_join/rename/minimal/expected/>`__ · `notes <examples/join/inner_join/rename/minimal/notes.md>`__
    * - | ``inner_join(DS, DS, DS)``
-       | manual\_ex\_5
+       | `manual\_ex\_5 <examples/join/inner_join/nary/manual_ex_5/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-13-11: At op inner\_join: Invalid subcase A, DS\_5 should be a superset but Id\_1 not found. Please check transformation with output Dataset IBSC
      - `script <examples/join/inner_join/nary/manual_ex_5/script.vtl>`__ · `input <examples/join/inner_join/nary/manual_ex_5/input/>`__ · `expected <examples/join/inner_join/nary/manual_ex_5/expected/>`__ · `notes <examples/join/inner_join/nary/manual_ex_5/notes.md>`__ · *manual* · erratum
    * - | ``inner_join(DS, DS, DS)``
-       | minimal
+       | `minimal <examples/join/inner_join/nary/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -601,196 +601,196 @@
      - Detail
      - Example
    * - | ``left_join(DS, DS)``
-       | minimal
+       | `minimal <examples/join/left_join/bare/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/bare/minimal/script.vtl>`__ · `input <examples/join/left_join/bare/minimal/input/>`__ · `expected <examples/join/left_join/bare/minimal/expected/>`__ · `notes <examples/join/left_join/bare/minimal/notes.md>`__
    * - | ``left_join(DS as a, DS as b)``
-       | minimal
+       | `minimal <examples/join/left_join/aliases/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/aliases/minimal/script.vtl>`__ · `input <examples/join/left_join/aliases/minimal/input/>`__ · `expected <examples/join/left_join/aliases/minimal/expected/>`__ · `notes <examples/join/left_join/aliases/minimal/notes.md>`__
    * - | ``left_join(DS as a, DS as b)``
-       | minimal\_2
+       | `minimal\_2 <examples/join/left_join/aliases/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/aliases/minimal_2/script.vtl>`__ · `input <examples/join/left_join/aliases/minimal_2/input/>`__ · `expected <examples/join/left_join/aliases/minimal_2/expected/>`__ · `notes <examples/join/left_join/aliases/minimal_2/notes.md>`__
    * - | ``left_join(DS, DS using Id)``
-       | minimal
+       | `minimal <examples/join/left_join/using/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/using/minimal/script.vtl>`__ · `input <examples/join/left_join/using/minimal/input/>`__ · `expected <examples/join/left_join/using/minimal/expected/>`__ · `notes <examples/join/left_join/using/minimal/notes.md>`__
    * - | ``left_join(DS, DS using Id, nvl(Id, c))``
-       | minimal
+       | `minimal <examples/join/left_join/using_nvl/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-13-4: At op left\_join: Using clause, using=[\'Id\_1\'], does not define all the Identifiers, of non reference Dataset DS\_2. Please check transformation with output Dataset DS\_r
      - `script <examples/join/left_join/using_nvl/minimal/script.vtl>`__ · `input <examples/join/left_join/using_nvl/minimal/input/>`__ · `expected <examples/join/left_join/using_nvl/minimal/expected/>`__ · `notes <examples/join/left_join/using_nvl/minimal/notes.md>`__
    * - | ``left_join(DS, DS using Id, nvl(Id, c))``
-       | minimal\_2
+       | `minimal\_2 <examples/join/left_join/using_nvl/minimal_2/>`__
      - 🔴
      - 💥
      - 💥
      - AttributeError: \'BinOp\' object has no attribute \'value\'
      - `script <examples/join/left_join/using_nvl/minimal_2/script.vtl>`__ · `input <examples/join/left_join/using_nvl/minimal_2/input/>`__ · `expected <examples/join/left_join/using_nvl/minimal_2/expected/>`__ · `notes <examples/join/left_join/using_nvl/minimal_2/notes.md>`__
    * - | ``left_join(DS, DS filter cond)``
-       | minimal
+       | `minimal <examples/join/left_join/filter/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/filter/minimal/script.vtl>`__ · `input <examples/join/left_join/filter/minimal/input/>`__ · `expected <examples/join/left_join/filter/minimal/expected/>`__ · `notes <examples/join/left_join/filter/minimal/notes.md>`__
    * - | ``left_join(DS, DS apply expr)``
-       | minimal
+       | `minimal <examples/join/left_join/apply/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/apply/minimal/script.vtl>`__ · `input <examples/join/left_join/apply/minimal/input/>`__ · `expected <examples/join/left_join/apply/minimal/expected/>`__ · `notes <examples/join/left_join/apply/minimal/notes.md>`__
    * - | ``left_join(DS, DS calc C := expr)``
-       | minimal
+       | `minimal <examples/join/left_join/calc_default/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/calc_default/minimal/script.vtl>`__ · `input <examples/join/left_join/calc_default/minimal/input/>`__ · `expected <examples/join/left_join/calc_default/minimal/expected/>`__ · `notes <examples/join/left_join/calc_default/minimal/notes.md>`__
    * - | ``left_join(DS, DS calc C := expr)``
-       | minimal\_2
+       | `minimal\_2 <examples/join/left_join/calc_default/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/calc_default/minimal_2/script.vtl>`__ · `input <examples/join/left_join/calc_default/minimal_2/input/>`__ · `expected <examples/join/left_join/calc_default/minimal_2/expected/>`__ · `notes <examples/join/left_join/calc_default/minimal_2/notes.md>`__
    * - | ``left_join(DS, DS calc measure C := expr)``
-       | minimal
+       | `minimal <examples/join/left_join/calc_measure/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/calc_measure/minimal/script.vtl>`__ · `input <examples/join/left_join/calc_measure/minimal/input/>`__ · `expected <examples/join/left_join/calc_measure/minimal/expected/>`__ · `notes <examples/join/left_join/calc_measure/minimal/notes.md>`__
    * - | ``left_join(DS, DS calc identifier C := expr)``
-       | minimal
+       | `minimal <examples/join/left_join/calc_identifier/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/calc_identifier/minimal/script.vtl>`__ · `input <examples/join/left_join/calc_identifier/minimal/input/>`__ · `expected <examples/join/left_join/calc_identifier/minimal/expected/>`__ · `notes <examples/join/left_join/calc_identifier/minimal/notes.md>`__
    * - | ``left_join(DS, DS calc attribute C := expr)``
-       | minimal
+       | `minimal <examples/join/left_join/calc_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/calc_attribute/minimal/script.vtl>`__ · `input <examples/join/left_join/calc_attribute/minimal/input/>`__ · `expected <examples/join/left_join/calc_attribute/minimal/expected/>`__ · `notes <examples/join/left_join/calc_attribute/minimal/notes.md>`__
    * - | ``left_join(DS, DS calc viral attribute C := expr)``
-       | minimal
+       | `minimal <examples/join/left_join/calc_viral_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/calc_viral_attribute/minimal/script.vtl>`__ · `input <examples/join/left_join/calc_viral_attribute/minimal/input/>`__ · `expected <examples/join/left_join/calc_viral_attribute/minimal/expected/>`__ · `notes <examples/join/left_join/calc_viral_attribute/minimal/notes.md>`__
    * - | ``left_join(DS, DS aggr C := agg)``
-       | minimal
+       | `minimal <examples/join/left_join/aggr_no_group/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/aggr_no_group/minimal/script.vtl>`__ · `input <examples/join/left_join/aggr_no_group/minimal/input/>`__ · `expected <examples/join/left_join/aggr_no_group/minimal/expected/>`__ · `notes <examples/join/left_join/aggr_no_group/minimal/notes.md>`__
    * - | ``left_join(DS, DS aggr C := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/left_join/aggr_group_by/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/aggr_group_by/minimal/script.vtl>`__ · `input <examples/join/left_join/aggr_group_by/minimal/input/>`__ · `expected <examples/join/left_join/aggr_group_by/minimal/expected/>`__ · `notes <examples/join/left_join/aggr_group_by/minimal/notes.md>`__
    * - | ``left_join(DS, DS aggr C := agg group by Id)``
-       | minimal\_2
+       | `minimal\_2 <examples/join/left_join/aggr_group_by/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/aggr_group_by/minimal_2/script.vtl>`__ · `input <examples/join/left_join/aggr_group_by/minimal_2/input/>`__ · `expected <examples/join/left_join/aggr_group_by/minimal_2/expected/>`__ · `notes <examples/join/left_join/aggr_group_by/minimal_2/notes.md>`__
    * - | ``left_join(DS, DS aggr C := agg group except Id)``
-       | minimal
+       | `minimal <examples/join/left_join/aggr_group_except/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/aggr_group_except/minimal/script.vtl>`__ · `input <examples/join/left_join/aggr_group_except/minimal/input/>`__ · `expected <examples/join/left_join/aggr_group_except/minimal/expected/>`__ · `notes <examples/join/left_join/aggr_group_except/minimal/notes.md>`__
    * - | ``left_join(DS, DS aggr C := agg group all time_agg(p))``
-       | minimal
+       | `minimal <examples/join/left_join/aggr_group_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/aggr_group_all/minimal/script.vtl>`__ · `input <examples/join/left_join/aggr_group_all/minimal/input/>`__ · `expected <examples/join/left_join/aggr_group_all/minimal/expected/>`__ · `notes <examples/join/left_join/aggr_group_all/minimal/notes.md>`__
    * - | ``left_join(DS, DS aggr C := agg group by Id having cond)``
-       | minimal
+       | `minimal <examples/join/left_join/aggr_having/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/aggr_having/minimal/script.vtl>`__ · `input <examples/join/left_join/aggr_having/minimal/input/>`__ · `expected <examples/join/left_join/aggr_having/minimal/expected/>`__ · `notes <examples/join/left_join/aggr_having/minimal/notes.md>`__
    * - | ``left_join(DS, DS aggr measure C := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/left_join/aggr_measure/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/aggr_measure/minimal/script.vtl>`__ · `input <examples/join/left_join/aggr_measure/minimal/input/>`__ · `expected <examples/join/left_join/aggr_measure/minimal/expected/>`__ · `notes <examples/join/left_join/aggr_measure/minimal/notes.md>`__
    * - | ``left_join(DS, DS aggr C := agg, attribute A := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/left_join/aggr_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/aggr_attribute/minimal/script.vtl>`__ · `input <examples/join/left_join/aggr_attribute/minimal/input/>`__ · `expected <examples/join/left_join/aggr_attribute/minimal/expected/>`__ · `notes <examples/join/left_join/aggr_attribute/minimal/notes.md>`__
    * - | ``left_join(DS, DS aggr C := agg, viral attribute A := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/left_join/aggr_viral_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/aggr_viral_attribute/minimal/script.vtl>`__ · `input <examples/join/left_join/aggr_viral_attribute/minimal/input/>`__ · `expected <examples/join/left_join/aggr_viral_attribute/minimal/expected/>`__ · `notes <examples/join/left_join/aggr_viral_attribute/minimal/notes.md>`__
    * - | ``left_join(DS, DS keep C)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/join/left_join/keep/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/keep/manual_ex_1/script.vtl>`__ · `input <examples/join/left_join/keep/manual_ex_1/input/>`__ · `expected <examples/join/left_join/keep/manual_ex_1/expected/>`__ · `notes <examples/join/left_join/keep/manual_ex_1/notes.md>`__ · *manual*
    * - | ``left_join(DS, DS keep C)``
-       | minimal
+       | `minimal <examples/join/left_join/keep/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/keep/minimal/script.vtl>`__ · `input <examples/join/left_join/keep/minimal/input/>`__ · `expected <examples/join/left_join/keep/minimal/expected/>`__ · `notes <examples/join/left_join/keep/minimal/notes.md>`__
    * - | ``left_join(DS, DS drop C)``
-       | minimal
+       | `minimal <examples/join/left_join/drop/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/drop/minimal/script.vtl>`__ · `input <examples/join/left_join/drop/minimal/input/>`__ · `expected <examples/join/left_join/drop/minimal/expected/>`__ · `notes <examples/join/left_join/drop/minimal/notes.md>`__
    * - | ``left_join(DS, DS rename C to C2)``
-       | minimal
+       | `minimal <examples/join/left_join/rename/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/left_join/rename/minimal/script.vtl>`__ · `input <examples/join/left_join/rename/minimal/input/>`__ · `expected <examples/join/left_join/rename/minimal/expected/>`__ · `notes <examples/join/left_join/rename/minimal/notes.md>`__
    * - | ``left_join(DS, DS, DS)``
-       | minimal
+       | `minimal <examples/join/left_join/nary/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -813,196 +813,196 @@
      - Detail
      - Example
    * - | ``full_join(DS, DS)``
-       | minimal
+       | `minimal <examples/join/full_join/bare/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/bare/minimal/script.vtl>`__ · `input <examples/join/full_join/bare/minimal/input/>`__ · `expected <examples/join/full_join/bare/minimal/expected/>`__ · `notes <examples/join/full_join/bare/minimal/notes.md>`__
    * - | ``full_join(DS as a, DS as b)``
-       | minimal
+       | `minimal <examples/join/full_join/aliases/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/aliases/minimal/script.vtl>`__ · `input <examples/join/full_join/aliases/minimal/input/>`__ · `expected <examples/join/full_join/aliases/minimal/expected/>`__ · `notes <examples/join/full_join/aliases/minimal/notes.md>`__
    * - | ``full_join(DS as a, DS as b)``
-       | minimal\_2
+       | `minimal\_2 <examples/join/full_join/aliases/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/aliases/minimal_2/script.vtl>`__ · `input <examples/join/full_join/aliases/minimal_2/input/>`__ · `expected <examples/join/full_join/aliases/minimal_2/expected/>`__ · `notes <examples/join/full_join/aliases/minimal_2/notes.md>`__
    * - | ``full_join(DS, DS using Id)``
-       | minimal
+       | `minimal <examples/join/full_join/using/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-13-8: At op full\_join: No available using clause. Please check transformation with output Dataset DS\_r
      - `script <examples/join/full_join/using/minimal/script.vtl>`__ · `input <examples/join/full_join/using/minimal/input/>`__ · `expected <examples/join/full_join/using/minimal/expected/>`__ · `notes <examples/join/full_join/using/minimal/notes.md>`__
    * - | ``full_join(DS, DS using Id, nvl(Id, c))``
-       | minimal
+       | `minimal <examples/join/full_join/using_nvl/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-13-8: At op full\_join: No available using clause. Please check transformation with output Dataset DS\_r
      - `script <examples/join/full_join/using_nvl/minimal/script.vtl>`__ · `input <examples/join/full_join/using_nvl/minimal/input/>`__ · `expected <examples/join/full_join/using_nvl/minimal/expected/>`__ · `notes <examples/join/full_join/using_nvl/minimal/notes.md>`__
    * - | ``full_join(DS, DS using Id, nvl(Id, c))``
-       | minimal\_2
+       | `minimal\_2 <examples/join/full_join/using_nvl/minimal_2/>`__
      - 🔴
      - 💥
      - 💥
      - AttributeError: \'BinOp\' object has no attribute \'value\'
      - `script <examples/join/full_join/using_nvl/minimal_2/script.vtl>`__ · `input <examples/join/full_join/using_nvl/minimal_2/input/>`__ · `expected <examples/join/full_join/using_nvl/minimal_2/expected/>`__ · `notes <examples/join/full_join/using_nvl/minimal_2/notes.md>`__
    * - | ``full_join(DS, DS filter cond)``
-       | minimal
+       | `minimal <examples/join/full_join/filter/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/filter/minimal/script.vtl>`__ · `input <examples/join/full_join/filter/minimal/input/>`__ · `expected <examples/join/full_join/filter/minimal/expected/>`__ · `notes <examples/join/full_join/filter/minimal/notes.md>`__
    * - | ``full_join(DS, DS apply expr)``
-       | minimal
+       | `minimal <examples/join/full_join/apply/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/apply/minimal/script.vtl>`__ · `input <examples/join/full_join/apply/minimal/input/>`__ · `expected <examples/join/full_join/apply/minimal/expected/>`__ · `notes <examples/join/full_join/apply/minimal/notes.md>`__
    * - | ``full_join(DS, DS calc C := expr)``
-       | minimal
+       | `minimal <examples/join/full_join/calc_default/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/calc_default/minimal/script.vtl>`__ · `input <examples/join/full_join/calc_default/minimal/input/>`__ · `expected <examples/join/full_join/calc_default/minimal/expected/>`__ · `notes <examples/join/full_join/calc_default/minimal/notes.md>`__
    * - | ``full_join(DS, DS calc C := expr)``
-       | minimal\_2
+       | `minimal\_2 <examples/join/full_join/calc_default/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/calc_default/minimal_2/script.vtl>`__ · `input <examples/join/full_join/calc_default/minimal_2/input/>`__ · `expected <examples/join/full_join/calc_default/minimal_2/expected/>`__ · `notes <examples/join/full_join/calc_default/minimal_2/notes.md>`__
    * - | ``full_join(DS, DS calc measure C := expr)``
-       | minimal
+       | `minimal <examples/join/full_join/calc_measure/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/calc_measure/minimal/script.vtl>`__ · `input <examples/join/full_join/calc_measure/minimal/input/>`__ · `expected <examples/join/full_join/calc_measure/minimal/expected/>`__ · `notes <examples/join/full_join/calc_measure/minimal/notes.md>`__
    * - | ``full_join(DS, DS calc identifier C := expr)``
-       | minimal
+       | `minimal <examples/join/full_join/calc_identifier/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/calc_identifier/minimal/script.vtl>`__ · `input <examples/join/full_join/calc_identifier/minimal/input/>`__ · `expected <examples/join/full_join/calc_identifier/minimal/expected/>`__ · `notes <examples/join/full_join/calc_identifier/minimal/notes.md>`__
    * - | ``full_join(DS, DS calc attribute C := expr)``
-       | minimal
+       | `minimal <examples/join/full_join/calc_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/calc_attribute/minimal/script.vtl>`__ · `input <examples/join/full_join/calc_attribute/minimal/input/>`__ · `expected <examples/join/full_join/calc_attribute/minimal/expected/>`__ · `notes <examples/join/full_join/calc_attribute/minimal/notes.md>`__
    * - | ``full_join(DS, DS calc viral attribute C := expr)``
-       | minimal
+       | `minimal <examples/join/full_join/calc_viral_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/calc_viral_attribute/minimal/script.vtl>`__ · `input <examples/join/full_join/calc_viral_attribute/minimal/input/>`__ · `expected <examples/join/full_join/calc_viral_attribute/minimal/expected/>`__ · `notes <examples/join/full_join/calc_viral_attribute/minimal/notes.md>`__
    * - | ``full_join(DS, DS aggr C := agg)``
-       | minimal
+       | `minimal <examples/join/full_join/aggr_no_group/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/aggr_no_group/minimal/script.vtl>`__ · `input <examples/join/full_join/aggr_no_group/minimal/input/>`__ · `expected <examples/join/full_join/aggr_no_group/minimal/expected/>`__ · `notes <examples/join/full_join/aggr_no_group/minimal/notes.md>`__
    * - | ``full_join(DS, DS aggr C := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/full_join/aggr_group_by/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/aggr_group_by/minimal/script.vtl>`__ · `input <examples/join/full_join/aggr_group_by/minimal/input/>`__ · `expected <examples/join/full_join/aggr_group_by/minimal/expected/>`__ · `notes <examples/join/full_join/aggr_group_by/minimal/notes.md>`__
    * - | ``full_join(DS, DS aggr C := agg group by Id)``
-       | minimal\_2
+       | `minimal\_2 <examples/join/full_join/aggr_group_by/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/aggr_group_by/minimal_2/script.vtl>`__ · `input <examples/join/full_join/aggr_group_by/minimal_2/input/>`__ · `expected <examples/join/full_join/aggr_group_by/minimal_2/expected/>`__ · `notes <examples/join/full_join/aggr_group_by/minimal_2/notes.md>`__
    * - | ``full_join(DS, DS aggr C := agg group except Id)``
-       | minimal
+       | `minimal <examples/join/full_join/aggr_group_except/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/aggr_group_except/minimal/script.vtl>`__ · `input <examples/join/full_join/aggr_group_except/minimal/input/>`__ · `expected <examples/join/full_join/aggr_group_except/minimal/expected/>`__ · `notes <examples/join/full_join/aggr_group_except/minimal/notes.md>`__
    * - | ``full_join(DS, DS aggr C := agg group all time_agg(p))``
-       | minimal
+       | `minimal <examples/join/full_join/aggr_group_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/aggr_group_all/minimal/script.vtl>`__ · `input <examples/join/full_join/aggr_group_all/minimal/input/>`__ · `expected <examples/join/full_join/aggr_group_all/minimal/expected/>`__ · `notes <examples/join/full_join/aggr_group_all/minimal/notes.md>`__
    * - | ``full_join(DS, DS aggr C := agg group by Id having cond)``
-       | minimal
+       | `minimal <examples/join/full_join/aggr_having/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/aggr_having/minimal/script.vtl>`__ · `input <examples/join/full_join/aggr_having/minimal/input/>`__ · `expected <examples/join/full_join/aggr_having/minimal/expected/>`__ · `notes <examples/join/full_join/aggr_having/minimal/notes.md>`__
    * - | ``full_join(DS, DS aggr measure C := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/full_join/aggr_measure/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/aggr_measure/minimal/script.vtl>`__ · `input <examples/join/full_join/aggr_measure/minimal/input/>`__ · `expected <examples/join/full_join/aggr_measure/minimal/expected/>`__ · `notes <examples/join/full_join/aggr_measure/minimal/notes.md>`__
    * - | ``full_join(DS, DS aggr C := agg, attribute A := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/full_join/aggr_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/aggr_attribute/minimal/script.vtl>`__ · `input <examples/join/full_join/aggr_attribute/minimal/input/>`__ · `expected <examples/join/full_join/aggr_attribute/minimal/expected/>`__ · `notes <examples/join/full_join/aggr_attribute/minimal/notes.md>`__
    * - | ``full_join(DS, DS aggr C := agg, viral attribute A := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/full_join/aggr_viral_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/aggr_viral_attribute/minimal/script.vtl>`__ · `input <examples/join/full_join/aggr_viral_attribute/minimal/input/>`__ · `expected <examples/join/full_join/aggr_viral_attribute/minimal/expected/>`__ · `notes <examples/join/full_join/aggr_viral_attribute/minimal/notes.md>`__
    * - | ``full_join(DS, DS keep C)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/join/full_join/keep/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/keep/manual_ex_1/script.vtl>`__ · `input <examples/join/full_join/keep/manual_ex_1/input/>`__ · `expected <examples/join/full_join/keep/manual_ex_1/expected/>`__ · `notes <examples/join/full_join/keep/manual_ex_1/notes.md>`__ · *manual*
    * - | ``full_join(DS, DS keep C)``
-       | minimal
+       | `minimal <examples/join/full_join/keep/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/keep/minimal/script.vtl>`__ · `input <examples/join/full_join/keep/minimal/input/>`__ · `expected <examples/join/full_join/keep/minimal/expected/>`__ · `notes <examples/join/full_join/keep/minimal/notes.md>`__
    * - | ``full_join(DS, DS drop C)``
-       | minimal
+       | `minimal <examples/join/full_join/drop/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/drop/minimal/script.vtl>`__ · `input <examples/join/full_join/drop/minimal/input/>`__ · `expected <examples/join/full_join/drop/minimal/expected/>`__ · `notes <examples/join/full_join/drop/minimal/notes.md>`__
    * - | ``full_join(DS, DS rename C to C2)``
-       | minimal
+       | `minimal <examples/join/full_join/rename/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/full_join/rename/minimal/script.vtl>`__ · `input <examples/join/full_join/rename/minimal/input/>`__ · `expected <examples/join/full_join/rename/minimal/expected/>`__ · `notes <examples/join/full_join/rename/minimal/notes.md>`__
    * - | ``full_join(DS, DS, DS)``
-       | minimal
+       | `minimal <examples/join/full_join/nary/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1025,175 +1025,175 @@
      - Detail
      - Example
    * - | ``cross_join(DS, DS)``
-       | minimal
+       | `minimal <examples/join/cross_join/bare/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/bare/minimal/script.vtl>`__ · `input <examples/join/cross_join/bare/minimal/input/>`__ · `expected <examples/join/cross_join/bare/minimal/expected/>`__ · `notes <examples/join/cross_join/bare/minimal/notes.md>`__
    * - | ``cross_join(DS as a, DS as b)``
-       | minimal
+       | `minimal <examples/join/cross_join/aliases/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/aliases/minimal/script.vtl>`__ · `input <examples/join/cross_join/aliases/minimal/input/>`__ · `expected <examples/join/cross_join/aliases/minimal/expected/>`__ · `notes <examples/join/cross_join/aliases/minimal/notes.md>`__
    * - | ``cross_join(DS as a, DS as b)``
-       | minimal\_2
+       | `minimal\_2 <examples/join/cross_join/aliases/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/aliases/minimal_2/script.vtl>`__ · `input <examples/join/cross_join/aliases/minimal_2/input/>`__ · `expected <examples/join/cross_join/aliases/minimal_2/expected/>`__ · `notes <examples/join/cross_join/aliases/minimal_2/notes.md>`__
    * - | ``cross_join(DS, DS filter cond)``
-       | minimal
+       | `minimal <examples/join/cross_join/filter/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/filter/minimal/script.vtl>`__ · `input <examples/join/cross_join/filter/minimal/input/>`__ · `expected <examples/join/cross_join/filter/minimal/expected/>`__ · `notes <examples/join/cross_join/filter/minimal/notes.md>`__
    * - | ``cross_join(DS, DS apply expr)``
-       | minimal
+       | `minimal <examples/join/cross_join/apply/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/apply/minimal/script.vtl>`__ · `input <examples/join/cross_join/apply/minimal/input/>`__ · `expected <examples/join/cross_join/apply/minimal/expected/>`__ · `notes <examples/join/cross_join/apply/minimal/notes.md>`__
    * - | ``cross_join(DS, DS calc C := expr)``
-       | minimal
+       | `minimal <examples/join/cross_join/calc_default/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/calc_default/minimal/script.vtl>`__ · `input <examples/join/cross_join/calc_default/minimal/input/>`__ · `expected <examples/join/cross_join/calc_default/minimal/expected/>`__ · `notes <examples/join/cross_join/calc_default/minimal/notes.md>`__
    * - | ``cross_join(DS, DS calc C := expr)``
-       | minimal\_2
+       | `minimal\_2 <examples/join/cross_join/calc_default/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/calc_default/minimal_2/script.vtl>`__ · `input <examples/join/cross_join/calc_default/minimal_2/input/>`__ · `expected <examples/join/cross_join/calc_default/minimal_2/expected/>`__ · `notes <examples/join/cross_join/calc_default/minimal_2/notes.md>`__
    * - | ``cross_join(DS, DS calc measure C := expr)``
-       | minimal
+       | `minimal <examples/join/cross_join/calc_measure/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/calc_measure/minimal/script.vtl>`__ · `input <examples/join/cross_join/calc_measure/minimal/input/>`__ · `expected <examples/join/cross_join/calc_measure/minimal/expected/>`__ · `notes <examples/join/cross_join/calc_measure/minimal/notes.md>`__
    * - | ``cross_join(DS, DS calc identifier C := expr)``
-       | minimal
+       | `minimal <examples/join/cross_join/calc_identifier/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/calc_identifier/minimal/script.vtl>`__ · `input <examples/join/cross_join/calc_identifier/minimal/input/>`__ · `expected <examples/join/cross_join/calc_identifier/minimal/expected/>`__ · `notes <examples/join/cross_join/calc_identifier/minimal/notes.md>`__
    * - | ``cross_join(DS, DS calc attribute C := expr)``
-       | minimal
+       | `minimal <examples/join/cross_join/calc_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/calc_attribute/minimal/script.vtl>`__ · `input <examples/join/cross_join/calc_attribute/minimal/input/>`__ · `expected <examples/join/cross_join/calc_attribute/minimal/expected/>`__ · `notes <examples/join/cross_join/calc_attribute/minimal/notes.md>`__
    * - | ``cross_join(DS, DS calc viral attribute C := expr)``
-       | minimal
+       | `minimal <examples/join/cross_join/calc_viral_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/calc_viral_attribute/minimal/script.vtl>`__ · `input <examples/join/cross_join/calc_viral_attribute/minimal/input/>`__ · `expected <examples/join/cross_join/calc_viral_attribute/minimal/expected/>`__ · `notes <examples/join/cross_join/calc_viral_attribute/minimal/notes.md>`__
    * - | ``cross_join(DS, DS aggr C := agg)``
-       | minimal
+       | `minimal <examples/join/cross_join/aggr_no_group/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/aggr_no_group/minimal/script.vtl>`__ · `input <examples/join/cross_join/aggr_no_group/minimal/input/>`__ · `expected <examples/join/cross_join/aggr_no_group/minimal/expected/>`__ · `notes <examples/join/cross_join/aggr_no_group/minimal/notes.md>`__
    * - | ``cross_join(DS, DS aggr C := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/cross_join/aggr_group_by/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/aggr_group_by/minimal/script.vtl>`__ · `input <examples/join/cross_join/aggr_group_by/minimal/input/>`__ · `expected <examples/join/cross_join/aggr_group_by/minimal/expected/>`__ · `notes <examples/join/cross_join/aggr_group_by/minimal/notes.md>`__
    * - | ``cross_join(DS, DS aggr C := agg group by Id)``
-       | minimal\_2
+       | `minimal\_2 <examples/join/cross_join/aggr_group_by/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/aggr_group_by/minimal_2/script.vtl>`__ · `input <examples/join/cross_join/aggr_group_by/minimal_2/input/>`__ · `expected <examples/join/cross_join/aggr_group_by/minimal_2/expected/>`__ · `notes <examples/join/cross_join/aggr_group_by/minimal_2/notes.md>`__
    * - | ``cross_join(DS, DS aggr C := agg group except Id)``
-       | minimal
+       | `minimal <examples/join/cross_join/aggr_group_except/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/aggr_group_except/minimal/script.vtl>`__ · `input <examples/join/cross_join/aggr_group_except/minimal/input/>`__ · `expected <examples/join/cross_join/aggr_group_except/minimal/expected/>`__ · `notes <examples/join/cross_join/aggr_group_except/minimal/notes.md>`__
    * - | ``cross_join(DS, DS aggr C := agg group all time_agg(p))``
-       | minimal
+       | `minimal <examples/join/cross_join/aggr_group_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/aggr_group_all/minimal/script.vtl>`__ · `input <examples/join/cross_join/aggr_group_all/minimal/input/>`__ · `expected <examples/join/cross_join/aggr_group_all/minimal/expected/>`__ · `notes <examples/join/cross_join/aggr_group_all/minimal/notes.md>`__
    * - | ``cross_join(DS, DS aggr C := agg group by Id having cond)``
-       | minimal
+       | `minimal <examples/join/cross_join/aggr_having/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/aggr_having/minimal/script.vtl>`__ · `input <examples/join/cross_join/aggr_having/minimal/input/>`__ · `expected <examples/join/cross_join/aggr_having/minimal/expected/>`__ · `notes <examples/join/cross_join/aggr_having/minimal/notes.md>`__
    * - | ``cross_join(DS, DS aggr measure C := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/cross_join/aggr_measure/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/aggr_measure/minimal/script.vtl>`__ · `input <examples/join/cross_join/aggr_measure/minimal/input/>`__ · `expected <examples/join/cross_join/aggr_measure/minimal/expected/>`__ · `notes <examples/join/cross_join/aggr_measure/minimal/notes.md>`__
    * - | ``cross_join(DS, DS aggr C := agg, attribute A := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/cross_join/aggr_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/aggr_attribute/minimal/script.vtl>`__ · `input <examples/join/cross_join/aggr_attribute/minimal/input/>`__ · `expected <examples/join/cross_join/aggr_attribute/minimal/expected/>`__ · `notes <examples/join/cross_join/aggr_attribute/minimal/notes.md>`__
    * - | ``cross_join(DS, DS aggr C := agg, viral attribute A := agg group by Id)``
-       | minimal
+       | `minimal <examples/join/cross_join/aggr_viral_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/aggr_viral_attribute/minimal/script.vtl>`__ · `input <examples/join/cross_join/aggr_viral_attribute/minimal/input/>`__ · `expected <examples/join/cross_join/aggr_viral_attribute/minimal/expected/>`__ · `notes <examples/join/cross_join/aggr_viral_attribute/minimal/notes.md>`__
    * - | ``cross_join(DS, DS keep C)``
-       | minimal
+       | `minimal <examples/join/cross_join/keep/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/keep/minimal/script.vtl>`__ · `input <examples/join/cross_join/keep/minimal/input/>`__ · `expected <examples/join/cross_join/keep/minimal/expected/>`__ · `notes <examples/join/cross_join/keep/minimal/notes.md>`__
    * - | ``cross_join(DS, DS drop C)``
-       | minimal
+       | `minimal <examples/join/cross_join/drop/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/drop/minimal/script.vtl>`__ · `input <examples/join/cross_join/drop/minimal/input/>`__ · `expected <examples/join/cross_join/drop/minimal/expected/>`__ · `notes <examples/join/cross_join/drop/minimal/notes.md>`__
    * - | ``cross_join(DS, DS rename C to C2)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/join/cross_join/rename/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/rename/manual_ex_1/script.vtl>`__ · `input <examples/join/cross_join/rename/manual_ex_1/input/>`__ · `expected <examples/join/cross_join/rename/manual_ex_1/expected/>`__ · `notes <examples/join/cross_join/rename/manual_ex_1/notes.md>`__ · *manual*
    * - | ``cross_join(DS, DS rename C to C2)``
-       | minimal
+       | `minimal <examples/join/cross_join/rename/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/join/cross_join/rename/minimal/script.vtl>`__ · `input <examples/join/cross_join/rename/minimal/input/>`__ · `expected <examples/join/cross_join/rename/minimal/expected/>`__ · `notes <examples/join/cross_join/rename/minimal/notes.md>`__
    * - | ``cross_join(DS, DS, DS)``
-       | minimal
+       | `minimal <examples/join/cross_join/nary/minimal/>`__
      - 🟢
      - ✅
      - ✅

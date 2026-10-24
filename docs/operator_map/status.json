@@ -5748,6 +5748,18 @@
       },
       "status": "ok"
     },
+    "hierarchy/hierarchy/condition/minimal_2": {
+      "duckdb": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
     "hierarchy/hierarchy/non_null_dataset_all/minimal": {
       "duckdb": {
         "detail": "",
@@ -11163,8 +11175,10 @@
   },
   "meta": {
     "date": "2026-10-24",
+    "duckdb_version": "1.5.5",
+    "pandas_version": "3.0.6",
     "spec_commit": "140e946ed3f888951adb8bb66ea45030be84e2aa",
-    "vtlengine_commit": "851f56ae",
+    "vtlengine_commit": "b393f444",
     "vtlengine_version": "1.9.6rc2"
   }
 }

@@ -4,7 +4,7 @@
 
 53 variants: 🟢 24 · 🟡 11 · 🔴 18 · 🔵 0
 
-← Back to :doc:`index` · vtlengine 1.9.6rc2 (851f56ae)
+← Back to :doc:`index` · vtlengine 1.9.6rc2 (b393f444) · pandas 3.0.6 · DuckDB 1.5.5
 
 .. mermaid::
 
@@ -226,56 +226,56 @@
      - Detail
      - Example
    * - | ``check_datapoint(DS, DPR)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/validation/check_datapoint/output_default/manual_ex_1/>`__
      - 🟡
      - ❌
      - ❌
      - type of errorlevel expected Integer got Number
      - `script <examples/validation/check_datapoint/output_default/manual_ex_1/script.vtl>`__ · `input <examples/validation/check_datapoint/output_default/manual_ex_1/input/>`__ · `expected <examples/validation/check_datapoint/output_default/manual_ex_1/expected/>`__ · `notes <examples/validation/check_datapoint/output_default/manual_ex_1/notes.md>`__ · *manual*
    * - | ``check_datapoint(DS, DPR invalid)``
-       | minimal
+       | `minimal <examples/validation/check_datapoint/invalid/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_datapoint/invalid/minimal/script.vtl>`__ · `input <examples/validation/check_datapoint/invalid/minimal/input/>`__ · `expected <examples/validation/check_datapoint/invalid/minimal/expected/>`__ · `notes <examples/validation/check_datapoint/invalid/minimal/notes.md>`__
    * - | ``check_datapoint(DS, DPR all)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/validation/check_datapoint/all/manual_ex_2/>`__
      - 🟡
      - ❌
      - ❌
      - type of errorlevel expected Integer got Number
      - `script <examples/validation/check_datapoint/all/manual_ex_2/script.vtl>`__ · `input <examples/validation/check_datapoint/all/manual_ex_2/input/>`__ · `expected <examples/validation/check_datapoint/all/manual_ex_2/expected/>`__ · `notes <examples/validation/check_datapoint/all/manual_ex_2/notes.md>`__ · *manual*
    * - | ``check_datapoint(DS, DPR all_measures)``
-       | minimal
+       | `minimal <examples/validation/check_datapoint/all_measures/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_datapoint/all_measures/minimal/script.vtl>`__ · `input <examples/validation/check_datapoint/all_measures/minimal/input/>`__ · `expected <examples/validation/check_datapoint/all_measures/minimal/expected/>`__ · `notes <examples/validation/check_datapoint/all_measures/minimal/notes.md>`__
    * - | ``check_datapoint(DS, DPR components C1, C2)``
-       | minimal
+       | `minimal <examples/validation/check_datapoint/components/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_datapoint/components/minimal/script.vtl>`__ · `input <examples/validation/check_datapoint/components/minimal/input/>`__ · `expected <examples/validation/check_datapoint/components/minimal/expected/>`__ · `notes <examples/validation/check_datapoint/components/minimal/notes.md>`__
    * - | ``check_datapoint(DS, DPR components C1, C2)``
-       | minimal\_2
+       | `minimal\_2 <examples/validation/check_datapoint/components/minimal_2/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-1-10: Component VD\_2 not found in Dataset DS\_1. Please check transformation with output Dataset DS\_r
      - `script <examples/validation/check_datapoint/components/minimal_2/script.vtl>`__ · `input <examples/validation/check_datapoint/components/minimal_2/input/>`__ · `expected <examples/validation/check_datapoint/components/minimal_2/expected/>`__ · `notes <examples/validation/check_datapoint/components/minimal_2/notes.md>`__
    * - | ``check_datapoint(DS, DPR all), rules with errorcode``
-       | minimal
+       | `minimal <examples/validation/check_datapoint/errorcode/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_datapoint/errorcode/minimal/script.vtl>`__ · `input <examples/validation/check_datapoint/errorcode/minimal/input/>`__ · `expected <examples/validation/check_datapoint/errorcode/minimal/expected/>`__ · `notes <examples/validation/check_datapoint/errorcode/minimal/notes.md>`__
    * - | ``check_datapoint(DS, DPR all), rules with errorlevel``
-       | minimal
+       | `minimal <examples/validation/check_datapoint/errorlevel/minimal/>`__
      - 🟡
      - ❌
      - ❌
@@ -298,294 +298,294 @@
      - Detail
      - Example
    * - | ``check_hierarchy(DS, HR non_null dataset invalid)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/non_null_dataset_invalid/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/non_null_dataset_invalid/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/non_null_dataset_invalid/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/non_null_dataset_invalid/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/non_null_dataset_invalid/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR non_null dataset all)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/non_null_dataset_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/non_null_dataset_all/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/non_null_dataset_all/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/non_null_dataset_all/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/non_null_dataset_all/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR non_null dataset all_measures)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/non_null_dataset_all_measures/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/non_null_dataset_all_measures/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/non_null_dataset_all_measures/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/non_null_dataset_all_measures/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/non_null_dataset_all_measures/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR non_null dataset_priority invalid)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/non_null_dataset_priority_invalid/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/non_null_dataset_priority_invalid/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/non_null_dataset_priority_invalid/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/non_null_dataset_priority_invalid/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/non_null_dataset_priority_invalid/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR non_null dataset_priority all)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/non_null_dataset_priority_all/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/non_null_dataset_priority_all/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/non_null_dataset_priority_all/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/non_null_dataset_priority_all/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/non_null_dataset_priority_all/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR non_null dataset_priority all_measures)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/non_null_dataset_priority_all_measures/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/non_null_dataset_priority_all_measures/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/non_null_dataset_priority_all_measures/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/non_null_dataset_priority_all_measures/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/non_null_dataset_priority_all_measures/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR non_zero dataset invalid)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/non_zero_dataset_invalid/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/non_zero_dataset_invalid/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/non_zero_dataset_invalid/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/non_zero_dataset_invalid/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/non_zero_dataset_invalid/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR non_zero dataset all)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/non_zero_dataset_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/non_zero_dataset_all/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/non_zero_dataset_all/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/non_zero_dataset_all/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/non_zero_dataset_all/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR non_zero dataset all_measures)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/non_zero_dataset_all_measures/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/non_zero_dataset_all_measures/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/non_zero_dataset_all_measures/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/non_zero_dataset_all_measures/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/non_zero_dataset_all_measures/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR non_zero dataset_priority invalid)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/non_zero_dataset_priority_invalid/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/non_zero_dataset_priority_invalid/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/non_zero_dataset_priority_invalid/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/non_zero_dataset_priority_invalid/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/non_zero_dataset_priority_invalid/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR non_zero dataset_priority all)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/non_zero_dataset_priority_all/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/non_zero_dataset_priority_all/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/non_zero_dataset_priority_all/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/non_zero_dataset_priority_all/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/non_zero_dataset_priority_all/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR non_zero dataset_priority all_measures)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/non_zero_dataset_priority_all_measures/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/non_zero_dataset_priority_all_measures/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/non_zero_dataset_priority_all_measures/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/non_zero_dataset_priority_all_measures/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/non_zero_dataset_priority_all_measures/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR partial_null dataset invalid)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/partial_null_dataset_invalid/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/partial_null_dataset_invalid/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/partial_null_dataset_invalid/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/partial_null_dataset_invalid/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/partial_null_dataset_invalid/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR partial_null dataset all)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/partial_null_dataset_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/partial_null_dataset_all/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/partial_null_dataset_all/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/partial_null_dataset_all/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/partial_null_dataset_all/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR partial_null dataset all_measures)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/partial_null_dataset_all_measures/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/partial_null_dataset_all_measures/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/partial_null_dataset_all_measures/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/partial_null_dataset_all_measures/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/partial_null_dataset_all_measures/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR partial_null dataset_priority invalid)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/partial_null_dataset_priority_invalid/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/partial_null_dataset_priority_invalid/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/partial_null_dataset_priority_invalid/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/partial_null_dataset_priority_invalid/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/partial_null_dataset_priority_invalid/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR partial_null dataset_priority all)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/partial_null_dataset_priority_all/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/partial_null_dataset_priority_all/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/partial_null_dataset_priority_all/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/partial_null_dataset_priority_all/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/partial_null_dataset_priority_all/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR partial_null dataset_priority all_measures)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/partial_null_dataset_priority_all_measures/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/partial_null_dataset_priority_all_measures/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/partial_null_dataset_priority_all_measures/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/partial_null_dataset_priority_all_measures/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/partial_null_dataset_priority_all_measures/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR partial_zero dataset invalid)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/partial_zero_dataset_invalid/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/partial_zero_dataset_invalid/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/partial_zero_dataset_invalid/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/partial_zero_dataset_invalid/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/partial_zero_dataset_invalid/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR partial_zero dataset all)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/partial_zero_dataset_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/partial_zero_dataset_all/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/partial_zero_dataset_all/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/partial_zero_dataset_all/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/partial_zero_dataset_all/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR partial_zero dataset all_measures)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/partial_zero_dataset_all_measures/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/partial_zero_dataset_all_measures/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/partial_zero_dataset_all_measures/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/partial_zero_dataset_all_measures/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/partial_zero_dataset_all_measures/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR partial_zero dataset_priority invalid)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/partial_zero_dataset_priority_invalid/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/partial_zero_dataset_priority_invalid/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/partial_zero_dataset_priority_invalid/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/partial_zero_dataset_priority_invalid/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/partial_zero_dataset_priority_invalid/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR partial_zero dataset_priority all)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/partial_zero_dataset_priority_all/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/partial_zero_dataset_priority_all/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/partial_zero_dataset_priority_all/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/partial_zero_dataset_priority_all/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/partial_zero_dataset_priority_all/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR partial_zero dataset_priority all_measures)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/partial_zero_dataset_priority_all_measures/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/partial_zero_dataset_priority_all_measures/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/partial_zero_dataset_priority_all_measures/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/partial_zero_dataset_priority_all_measures/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/partial_zero_dataset_priority_all_measures/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR always_null dataset invalid)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/always_null_dataset_invalid/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/always_null_dataset_invalid/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/always_null_dataset_invalid/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/always_null_dataset_invalid/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/always_null_dataset_invalid/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR always_null dataset all)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/always_null_dataset_all/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=1, Id\_2=Y, ruleid=R5
      - `script <examples/validation/check_hierarchy/always_null_dataset_all/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/always_null_dataset_all/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/always_null_dataset_all/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/always_null_dataset_all/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR always_null dataset all_measures)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/always_null_dataset_all_measures/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=1, Id\_2=Y, ruleid=R5
      - `script <examples/validation/check_hierarchy/always_null_dataset_all_measures/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/always_null_dataset_all_measures/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/always_null_dataset_all_measures/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/always_null_dataset_all_measures/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR always_null dataset_priority invalid)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/always_null_dataset_priority_invalid/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/always_null_dataset_priority_invalid/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/always_null_dataset_priority_invalid/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/always_null_dataset_priority_invalid/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/always_null_dataset_priority_invalid/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR always_null dataset_priority all)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/always_null_dataset_priority_all/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/always_null_dataset_priority_all/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/always_null_dataset_priority_all/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/always_null_dataset_priority_all/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/always_null_dataset_priority_all/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR always_null dataset_priority all_measures)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/always_null_dataset_priority_all_measures/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/always_null_dataset_priority_all_measures/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/always_null_dataset_priority_all_measures/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/always_null_dataset_priority_all_measures/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/always_null_dataset_priority_all_measures/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR always_zero dataset invalid)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/always_zero_dataset_invalid/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=1, Id\_2=Y, ruleid=R5
      - `script <examples/validation/check_hierarchy/always_zero_dataset_invalid/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/always_zero_dataset_invalid/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/always_zero_dataset_invalid/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/always_zero_dataset_invalid/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR always_zero dataset all)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/always_zero_dataset_all/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=1, Id\_2=Y, ruleid=R5
      - `script <examples/validation/check_hierarchy/always_zero_dataset_all/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/always_zero_dataset_all/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/always_zero_dataset_all/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/always_zero_dataset_all/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR always_zero dataset all_measures)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/always_zero_dataset_all_measures/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=1, Id\_2=Y, ruleid=R5
      - `script <examples/validation/check_hierarchy/always_zero_dataset_all_measures/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/always_zero_dataset_all_measures/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/always_zero_dataset_all_measures/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/always_zero_dataset_all_measures/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR always_zero dataset_priority invalid)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/always_zero_dataset_priority_invalid/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/always_zero_dataset_priority_invalid/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/always_zero_dataset_priority_invalid/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/always_zero_dataset_priority_invalid/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/always_zero_dataset_priority_invalid/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR always_zero dataset_priority all)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/always_zero_dataset_priority_all/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/always_zero_dataset_priority_all/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/always_zero_dataset_priority_all/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/always_zero_dataset_priority_all/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/always_zero_dataset_priority_all/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR always_zero dataset_priority all_measures)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/always_zero_dataset_priority_all_measures/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
      - `script <examples/validation/check_hierarchy/always_zero_dataset_priority_all_measures/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/always_zero_dataset_priority_all_measures/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/always_zero_dataset_priority_all_measures/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/always_zero_dataset_priority_all_measures/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR condition C)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/condition/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/condition/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/condition/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/condition/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/condition/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR condition C)``
-       | minimal\_2
+       | `minimal\_2 <examples/validation/check_hierarchy/condition/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/condition/minimal_2/script.vtl>`__ · `input <examples/validation/check_hierarchy/condition/minimal_2/input/>`__ · `expected <examples/validation/check_hierarchy/condition/minimal_2/expected/>`__ · `notes <examples/validation/check_hierarchy/condition/minimal_2/notes.md>`__
    * - | ``check_hierarchy(DS, HR rule C)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/validation/check_hierarchy/rule/manual_ex_1/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-2-3: At op hierarchy: Vtl Script contains Cycles, no DAG established. Nodes involved: {2: StatementDeps(inputs=[\'M\', \'N\', \'O\'], outputs=[\'B\'], persistent=[], unknown\_variables=[]), …
      - `script <examples/validation/check_hierarchy/rule/manual_ex_1/script.vtl>`__ · `input <examples/validation/check_hierarchy/rule/manual_ex_1/input/>`__ · `expected <examples/validation/check_hierarchy/rule/manual_ex_1/expected/>`__ · `notes <examples/validation/check_hierarchy/rule/manual_ex_1/notes.md>`__ · *manual* · erratum
    * - | ``check_hierarchy(DS, HR rule C)``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/rule/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/rule/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/rule/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/rule/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/rule/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR partial_zero dataset all), rules with errorcode``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/errorcode/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check_hierarchy/errorcode/minimal/script.vtl>`__ · `input <examples/validation/check_hierarchy/errorcode/minimal/input/>`__ · `expected <examples/validation/check_hierarchy/errorcode/minimal/expected/>`__ · `notes <examples/validation/check_hierarchy/errorcode/minimal/notes.md>`__
    * - | ``check_hierarchy(DS, HR partial_zero dataset all), rules with errorlevel``
-       | minimal
+       | `minimal <examples/validation/check_hierarchy/errorlevel/minimal/>`__
      - 🟡
      - ❌
      - ❌
@@ -608,42 +608,42 @@
      - Detail
      - Example
    * - | ``check(B)``
-       | minimal
+       | `minimal <examples/validation/check/bare/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check/bare/minimal/script.vtl>`__ · `input <examples/validation/check/bare/minimal/input/>`__ · `expected <examples/validation/check/bare/minimal/expected/>`__ · `notes <examples/validation/check/bare/minimal/notes.md>`__
    * - | ``check(B errorcode C)``
-       | minimal
+       | `minimal <examples/validation/check/errorcode/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check/errorcode/minimal/script.vtl>`__ · `input <examples/validation/check/errorcode/minimal/input/>`__ · `expected <examples/validation/check/errorcode/minimal/expected/>`__ · `notes <examples/validation/check/errorcode/minimal/notes.md>`__
    * - | ``check(B errorlevel L)``
-       | minimal
+       | `minimal <examples/validation/check/errorlevel/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check/errorlevel/minimal/script.vtl>`__ · `input <examples/validation/check/errorlevel/minimal/input/>`__ · `expected <examples/validation/check/errorlevel/minimal/expected/>`__ · `notes <examples/validation/check/errorlevel/minimal/notes.md>`__
    * - | ``check(B imbalance N)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/validation/check/imbalance/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check/imbalance/manual_ex_1/script.vtl>`__ · `input <examples/validation/check/imbalance/manual_ex_1/input/>`__ · `expected <examples/validation/check/imbalance/manual_ex_1/expected/>`__ · `notes <examples/validation/check/imbalance/manual_ex_1/notes.md>`__ · *manual*
    * - | ``check(B invalid)``
-       | minimal
+       | `minimal <examples/validation/check/invalid/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/validation/check/invalid/minimal/script.vtl>`__ · `input <examples/validation/check/invalid/minimal/input/>`__ · `expected <examples/validation/check/invalid/minimal/expected/>`__ · `notes <examples/validation/check/invalid/minimal/notes.md>`__
    * - | ``check(B all)``
-       | minimal
+       | `minimal <examples/validation/check/all/minimal/>`__
      - 🟢
      - ✅
      - ✅

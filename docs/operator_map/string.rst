@@ -4,7 +4,7 @@
 
 58 variants: 🟢 57 · 🟡 1 · 🔴 0 · 🔵 0
 
-← Back to :doc:`index` · vtlengine 1.9.6rc2 (851f56ae)
+← Back to :doc:`index` · vtlengine 1.9.6rc2 (b393f444) · pandas 3.0.6 · DuckDB 1.5.5
 
 .. mermaid::
 
@@ -17,8 +17,12 @@
        classDef ext stroke-dasharray: 5 5
        in_string(("string")):::type
        click in_string "examples/types/string/identity/minimal/"
+       in_dataset(("dataset")):::type
+       click in_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        out_string(("string")):::type
        click out_string "examples/types/string/identity/minimal/"
+       out_dataset(("dataset")):::type
+       click out_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        in_integer(("integer")):::type
        click in_integer "examples/types/integer/identity/minimal/"
        out_integer(("integer")):::type
@@ -41,7 +45,9 @@
        string__concat --- string__concat__sc_comp
        string__concat --- string__concat__sc_sc
        in_string --> string__concat
+       in_dataset --> string__concat
        string__concat --> out_string
+       string__concat --> out_dataset
        click string__concat "examples/string/concat/ds_ds/manual_ex_1/"
        click string__concat__ds_ds "examples/string/concat/ds_ds/manual_ex_1/"
        click string__concat__ds_sc "examples/string/concat/ds_sc/minimal/"
@@ -58,7 +64,9 @@
        string__trim --- string__trim__comp
        string__trim --- string__trim__sc
        in_string --> string__trim
+       in_dataset --> string__trim
        string__trim --> out_string
+       string__trim --> out_dataset
        click string__trim "examples/string/trim/ds/minimal/"
        click string__trim__ds "examples/string/trim/ds/minimal/"
        click string__trim__comp "examples/string/trim/comp/minimal/"
@@ -71,7 +79,9 @@
        string__ltrim --- string__ltrim__comp
        string__ltrim --- string__ltrim__sc
        in_string --> string__ltrim
+       in_dataset --> string__ltrim
        string__ltrim --> out_string
+       string__ltrim --> out_dataset
        click string__ltrim "examples/string/ltrim/ds/minimal/"
        click string__ltrim__ds "examples/string/ltrim/ds/minimal/"
        click string__ltrim__comp "examples/string/ltrim/comp/minimal/"
@@ -84,7 +94,9 @@
        string__rtrim --- string__rtrim__comp
        string__rtrim --- string__rtrim__sc
        in_string --> string__rtrim
+       in_dataset --> string__rtrim
        string__rtrim --> out_string
+       string__rtrim --> out_dataset
        click string__rtrim "examples/string/rtrim/ds/manual_ex_1/"
        click string__rtrim__ds "examples/string/rtrim/ds/manual_ex_1/"
        click string__rtrim__comp "examples/string/rtrim/comp/manual_ex_2/"
@@ -97,7 +109,9 @@
        string__upper --- string__upper__comp
        string__upper --- string__upper__sc
        in_string --> string__upper
+       in_dataset --> string__upper
        string__upper --> out_string
+       string__upper --> out_dataset
        click string__upper "examples/string/upper/ds/manual_ex_1/"
        click string__upper__ds "examples/string/upper/ds/manual_ex_1/"
        click string__upper__comp "examples/string/upper/comp/manual_ex_2/"
@@ -110,7 +124,9 @@
        string__lower --- string__lower__comp
        string__lower --- string__lower__sc
        in_string --> string__lower
+       in_dataset --> string__lower
        string__lower --> out_string
+       string__lower --> out_dataset
        click string__lower "examples/string/lower/ds/minimal/"
        click string__lower__ds "examples/string/lower/ds/minimal/"
        click string__lower__comp "examples/string/lower/comp/minimal/"
@@ -134,7 +150,9 @@
        string__substr --- string__substr__sc_start_len
        in_string --> string__substr
        in_integer --> string__substr
+       in_dataset --> string__substr
        string__substr --> out_string
+       string__substr --> out_dataset
        click string__substr "examples/string/substr/ds_start_len/manual_ex_2/"
        click string__substr__ds_start_len "examples/string/substr/ds_start_len/manual_ex_2/"
        click string__substr__ds_start "examples/string/substr/ds_start/manual_ex_1/"
@@ -158,7 +176,9 @@
        string__replace --- string__replace__comp_patterns
        string__replace --- string__replace__sc_two
        in_string --> string__replace
+       in_dataset --> string__replace
        string__replace --> out_string
+       string__replace --> out_dataset
        click string__replace "examples/string/replace/ds_two/manual_ex_1/"
        click string__replace__ds_two "examples/string/replace/ds_two/manual_ex_1/"
        click string__replace__ds_one "examples/string/replace/ds_one/minimal/"
@@ -185,7 +205,9 @@
        string__instr --- string__instr__sc_pattern
        in_string --> string__instr
        in_integer --> string__instr
+       in_dataset --> string__instr
        string__instr --> out_integer
+       string__instr --> out_dataset
        click string__instr "examples/string/instr/ds_pattern/manual_ex_1/"
        click string__instr__ds_pattern "examples/string/instr/ds_pattern/manual_ex_1/"
        click string__instr__ds_pattern_start "examples/string/instr/ds_pattern_start/minimal/"
@@ -203,7 +225,9 @@
        string__length --- string__length__comp
        string__length --- string__length__sc
        in_string --> string__length
+       in_dataset --> string__length
        string__length --> out_integer
+       string__length --> out_dataset
        click string__length "examples/string/length/ds/manual_ex_1/"
        click string__length__ds "examples/string/length/ds/manual_ex_1/"
        click string__length__comp "examples/string/length/comp/manual_ex_2/"
@@ -232,7 +256,9 @@
        string__string_distance --- string__string_distance__hamming_sc
        string__string_distance --- string__string_distance__jaro_winkler_sc
        in_string --> string__string_distance
+       in_dataset --> string__string_distance
        string__string_distance --> out_number
+       string__string_distance --> out_dataset
        click string__string_distance "examples/string/string_distance/levenshtein_ds_ds/manual_ex_1/"
        click string__string_distance__levenshtein_ds_ds "examples/string/string_distance/levenshtein_ds_ds/manual_ex_1/"
        click string__string_distance__levenshtein_ds_sc "examples/string/string_distance/levenshtein_ds_sc/minimal/"
@@ -262,49 +288,49 @@
      - Detail
      - Example
    * - | ``DS || DS``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/string/concat/ds_ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/concat/ds_ds/manual_ex_1/script.vtl>`__ · `input <examples/string/concat/ds_ds/manual_ex_1/input/>`__ · `expected <examples/string/concat/ds_ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS || sc``
-       | minimal
+       | `minimal <examples/string/concat/ds_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/concat/ds_sc/minimal/script.vtl>`__ · `input <examples/string/concat/ds_sc/minimal/input/>`__ · `expected <examples/string/concat/ds_sc/minimal/expected/>`__ · `notes <examples/string/concat/ds_sc/minimal/notes.md>`__
    * - | ``sc || DS``
-       | minimal
+       | `minimal <examples/string/concat/sc_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/concat/sc_ds/minimal/script.vtl>`__ · `input <examples/string/concat/sc_ds/minimal/input/>`__ · `expected <examples/string/concat/sc_ds/minimal/expected/>`__ · `notes <examples/string/concat/sc_ds/minimal/notes.md>`__
    * - | ``comp || comp``
-       | minimal
+       | `minimal <examples/string/concat/comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/concat/comp_comp/minimal/script.vtl>`__ · `input <examples/string/concat/comp_comp/minimal/input/>`__ · `expected <examples/string/concat/comp_comp/minimal/expected/>`__ · `notes <examples/string/concat/comp_comp/minimal/notes.md>`__
    * - | ``comp || sc``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/string/concat/comp_sc/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/concat/comp_sc/manual_ex_2/script.vtl>`__ · `input <examples/string/concat/comp_sc/manual_ex_2/input/>`__ · `expected <examples/string/concat/comp_sc/manual_ex_2/expected/>`__ · *manual*
    * - | ``sc || comp``
-       | minimal
+       | `minimal <examples/string/concat/sc_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/concat/sc_comp/minimal/script.vtl>`__ · `input <examples/string/concat/sc_comp/minimal/input/>`__ · `expected <examples/string/concat/sc_comp/minimal/expected/>`__ · `notes <examples/string/concat/sc_comp/minimal/notes.md>`__
    * - | ``sc || sc``
-       | minimal
+       | `minimal <examples/string/concat/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -327,21 +353,21 @@
      - Detail
      - Example
    * - | ``trim(DS)``
-       | minimal
+       | `minimal <examples/string/trim/ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/trim/ds/minimal/script.vtl>`__ · `input <examples/string/trim/ds/minimal/input/>`__ · `expected <examples/string/trim/ds/minimal/expected/>`__ · `notes <examples/string/trim/ds/minimal/notes.md>`__
    * - | ``trim(comp)``
-       | minimal
+       | `minimal <examples/string/trim/comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/trim/comp/minimal/script.vtl>`__ · `input <examples/string/trim/comp/minimal/input/>`__ · `expected <examples/string/trim/comp/minimal/expected/>`__ · `notes <examples/string/trim/comp/minimal/notes.md>`__
    * - | ``trim(sc)``
-       | minimal
+       | `minimal <examples/string/trim/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -364,21 +390,21 @@
      - Detail
      - Example
    * - | ``ltrim(DS)``
-       | minimal
+       | `minimal <examples/string/ltrim/ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/ltrim/ds/minimal/script.vtl>`__ · `input <examples/string/ltrim/ds/minimal/input/>`__ · `expected <examples/string/ltrim/ds/minimal/expected/>`__ · `notes <examples/string/ltrim/ds/minimal/notes.md>`__
    * - | ``ltrim(comp)``
-       | minimal
+       | `minimal <examples/string/ltrim/comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/ltrim/comp/minimal/script.vtl>`__ · `input <examples/string/ltrim/comp/minimal/input/>`__ · `expected <examples/string/ltrim/comp/minimal/expected/>`__ · `notes <examples/string/ltrim/comp/minimal/notes.md>`__
    * - | ``ltrim(sc)``
-       | minimal
+       | `minimal <examples/string/ltrim/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -401,21 +427,21 @@
      - Detail
      - Example
    * - | ``rtrim(DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/string/rtrim/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/rtrim/ds/manual_ex_1/script.vtl>`__ · `input <examples/string/rtrim/ds/manual_ex_1/input/>`__ · `expected <examples/string/rtrim/ds/manual_ex_1/expected/>`__ · `notes <examples/string/rtrim/ds/manual_ex_1/notes.md>`__ · *manual*
    * - | ``rtrim(comp)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/string/rtrim/comp/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/rtrim/comp/manual_ex_2/script.vtl>`__ · `input <examples/string/rtrim/comp/manual_ex_2/input/>`__ · `expected <examples/string/rtrim/comp/manual_ex_2/expected/>`__ · `notes <examples/string/rtrim/comp/manual_ex_2/notes.md>`__ · *manual*
    * - | ``rtrim(sc)``
-       | minimal
+       | `minimal <examples/string/rtrim/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -438,21 +464,21 @@
      - Detail
      - Example
    * - | ``upper(DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/string/upper/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/upper/ds/manual_ex_1/script.vtl>`__ · `input <examples/string/upper/ds/manual_ex_1/input/>`__ · `expected <examples/string/upper/ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``upper(comp)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/string/upper/comp/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/upper/comp/manual_ex_2/script.vtl>`__ · `input <examples/string/upper/comp/manual_ex_2/input/>`__ · `expected <examples/string/upper/comp/manual_ex_2/expected/>`__ · *manual*
    * - | ``upper(sc)``
-       | minimal
+       | `minimal <examples/string/upper/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -475,21 +501,21 @@
      - Detail
      - Example
    * - | ``lower(DS)``
-       | minimal
+       | `minimal <examples/string/lower/ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/lower/ds/minimal/script.vtl>`__ · `input <examples/string/lower/ds/minimal/input/>`__ · `expected <examples/string/lower/ds/minimal/expected/>`__ · `notes <examples/string/lower/ds/minimal/notes.md>`__
    * - | ``lower(comp)``
-       | minimal
+       | `minimal <examples/string/lower/comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/lower/comp/minimal/script.vtl>`__ · `input <examples/string/lower/comp/minimal/input/>`__ · `expected <examples/string/lower/comp/minimal/expected/>`__ · `notes <examples/string/lower/comp/minimal/notes.md>`__
    * - | ``lower(sc)``
-       | minimal
+       | `minimal <examples/string/lower/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -512,70 +538,70 @@
      - Detail
      - Example
    * - | ``substr(DS, start, length)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/string/substr/ds_start_len/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/substr/ds_start_len/manual_ex_2/script.vtl>`__ · `input <examples/string/substr/ds_start_len/manual_ex_2/input/>`__ · `expected <examples/string/substr/ds_start_len/manual_ex_2/expected/>`__ · *manual*
    * - | ``substr(DS, start)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/string/substr/ds_start/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/substr/ds_start/manual_ex_1/script.vtl>`__ · `input <examples/string/substr/ds_start/manual_ex_1/input/>`__ · `expected <examples/string/substr/ds_start/manual_ex_1/expected/>`__ · *manual*
    * - | ``substr(DS, start, _)``
-       | minimal
+       | `minimal <examples/string/substr/ds_start_placeholder/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/substr/ds_start_placeholder/minimal/script.vtl>`__ · `input <examples/string/substr/ds_start_placeholder/minimal/input/>`__ · `expected <examples/string/substr/ds_start_placeholder/minimal/expected/>`__ · `notes <examples/string/substr/ds_start_placeholder/minimal/notes.md>`__
    * - | ``substr(DS, _, length)``
-       | minimal
+       | `minimal <examples/string/substr/ds_placeholder_len/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/substr/ds_placeholder_len/minimal/script.vtl>`__ · `input <examples/string/substr/ds_placeholder_len/minimal/input/>`__ · `expected <examples/string/substr/ds_placeholder_len/minimal/expected/>`__ · `notes <examples/string/substr/ds_placeholder_len/minimal/notes.md>`__
    * - | ``substr(DS)``
-       | minimal
+       | `minimal <examples/string/substr/ds_noargs/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/substr/ds_noargs/minimal/script.vtl>`__ · `input <examples/string/substr/ds_noargs/minimal/input/>`__ · `expected <examples/string/substr/ds_noargs/minimal/expected/>`__ · `notes <examples/string/substr/ds_noargs/minimal/notes.md>`__
    * - | ``substr(comp, start, length)``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/string/substr/comp_start_len/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/substr/comp_start_len/manual_ex_3/script.vtl>`__ · `input <examples/string/substr/comp_start_len/manual_ex_3/input/>`__ · `expected <examples/string/substr/comp_start_len/manual_ex_3/expected/>`__ · *manual*
    * - | ``substr(comp, comp, comp)``
-       | minimal
+       | `minimal <examples/string/substr/comp_params/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/substr/comp_params/minimal/script.vtl>`__ · `input <examples/string/substr/comp_params/minimal/input/>`__ · `expected <examples/string/substr/comp_params/minimal/expected/>`__ · `notes <examples/string/substr/comp_params/minimal/notes.md>`__
    * - | ``substr(sc, start, length)``
-       | minimal
+       | `minimal <examples/string/substr/sc_start_len/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/substr/sc_start_len/minimal/script.vtl>`__ · `expected <examples/string/substr/sc_start_len/minimal/expected/>`__ · `notes <examples/string/substr/sc_start_len/minimal/notes.md>`__
    * - | ``substr(sc, start, length)``
-       | minimal\_2
+       | `minimal\_2 <examples/string/substr/sc_start_len/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/substr/sc_start_len/minimal_2/script.vtl>`__ · `expected <examples/string/substr/sc_start_len/minimal_2/expected/>`__ · `notes <examples/string/substr/sc_start_len/minimal_2/notes.md>`__
    * - | ``substr(sc, start, length)``
-       | minimal\_3
+       | `minimal\_3 <examples/string/substr/sc_start_len/minimal_3/>`__
      - 🟢
      - ✅
      - ✅
@@ -598,42 +624,42 @@
      - Detail
      - Example
    * - | ``replace(DS, pattern1, pattern2)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/string/replace/ds_two/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/replace/ds_two/manual_ex_1/script.vtl>`__ · `input <examples/string/replace/ds_two/manual_ex_1/input/>`__ · `expected <examples/string/replace/ds_two/manual_ex_1/expected/>`__ · *manual*
    * - | ``replace(DS, pattern1)``
-       | minimal
+       | `minimal <examples/string/replace/ds_one/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/replace/ds_one/minimal/script.vtl>`__ · `input <examples/string/replace/ds_one/minimal/input/>`__ · `expected <examples/string/replace/ds_one/minimal/expected/>`__ · `notes <examples/string/replace/ds_one/minimal/notes.md>`__
    * - | ``replace(DS, pattern1, _)``
-       | minimal
+       | `minimal <examples/string/replace/ds_one_placeholder/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/replace/ds_one_placeholder/minimal/script.vtl>`__ · `input <examples/string/replace/ds_one_placeholder/minimal/input/>`__ · `expected <examples/string/replace/ds_one_placeholder/minimal/expected/>`__ · `notes <examples/string/replace/ds_one_placeholder/minimal/notes.md>`__
    * - | ``replace(comp, pattern1, pattern2)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/string/replace/comp_two/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/replace/comp_two/manual_ex_2/script.vtl>`__ · `input <examples/string/replace/comp_two/manual_ex_2/input/>`__ · `expected <examples/string/replace/comp_two/manual_ex_2/expected/>`__ · *manual*
    * - | ``replace(comp, comp, comp)``
-       | minimal
+       | `minimal <examples/string/replace/comp_patterns/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/replace/comp_patterns/minimal/script.vtl>`__ · `input <examples/string/replace/comp_patterns/minimal/input/>`__ · `expected <examples/string/replace/comp_patterns/minimal/expected/>`__ · `notes <examples/string/replace/comp_patterns/minimal/notes.md>`__
    * - | ``replace(sc, pattern1, pattern2)``
-       | minimal
+       | `minimal <examples/string/replace/sc_two/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -656,70 +682,70 @@
      - Detail
      - Example
    * - | ``instr(DS, pattern)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/string/instr/ds_pattern/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/instr/ds_pattern/manual_ex_1/script.vtl>`__ · `input <examples/string/instr/ds_pattern/manual_ex_1/input/>`__ · `expected <examples/string/instr/ds_pattern/manual_ex_1/expected/>`__ · *manual*
    * - | ``instr(DS, pattern, start)``
-       | minimal
+       | `minimal <examples/string/instr/ds_pattern_start/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/instr/ds_pattern_start/minimal/script.vtl>`__ · `input <examples/string/instr/ds_pattern_start/minimal/input/>`__ · `expected <examples/string/instr/ds_pattern_start/minimal/expected/>`__ · `notes <examples/string/instr/ds_pattern_start/minimal/notes.md>`__
    * - | ``instr(DS, pattern, start, occurrence)``
-       | minimal
+       | `minimal <examples/string/instr/ds_pattern_start_occ/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/instr/ds_pattern_start_occ/minimal/script.vtl>`__ · `input <examples/string/instr/ds_pattern_start_occ/minimal/input/>`__ · `expected <examples/string/instr/ds_pattern_start_occ/minimal/expected/>`__ · `notes <examples/string/instr/ds_pattern_start_occ/minimal/notes.md>`__
    * - | ``instr(DS, pattern, _, occurrence)``
-       | minimal
+       | `minimal <examples/string/instr/ds_placeholder_occ/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/instr/ds_placeholder_occ/minimal/script.vtl>`__ · `input <examples/string/instr/ds_placeholder_occ/minimal/input/>`__ · `expected <examples/string/instr/ds_placeholder_occ/minimal/expected/>`__ · `notes <examples/string/instr/ds_placeholder_occ/minimal/notes.md>`__
    * - | ``instr(DS, pattern, start, _)``
-       | minimal
+       | `minimal <examples/string/instr/ds_pattern_start_placeholder/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/instr/ds_pattern_start_placeholder/minimal/script.vtl>`__ · `input <examples/string/instr/ds_pattern_start_placeholder/minimal/input/>`__ · `expected <examples/string/instr/ds_pattern_start_placeholder/minimal/expected/>`__ · `notes <examples/string/instr/ds_pattern_start_placeholder/minimal/notes.md>`__
    * - | ``instr(comp, pattern)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/string/instr/comp_pattern/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/instr/comp_pattern/manual_ex_2/script.vtl>`__ · `input <examples/string/instr/comp_pattern/manual_ex_2/input/>`__ · `expected <examples/string/instr/comp_pattern/manual_ex_2/expected/>`__ · *manual*
    * - | ``instr(comp, pattern)``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/string/instr/comp_pattern/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/instr/comp_pattern/manual_ex_3/script.vtl>`__ · `input <examples/string/instr/comp_pattern/manual_ex_3/input/>`__ · `expected <examples/string/instr/comp_pattern/manual_ex_3/expected/>`__ · *manual*
    * - | ``instr(comp, comp, comp, comp)``
-       | minimal
+       | `minimal <examples/string/instr/comp_params/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/instr/comp_params/minimal/script.vtl>`__ · `input <examples/string/instr/comp_params/minimal/input/>`__ · `expected <examples/string/instr/comp_params/minimal/expected/>`__ · `notes <examples/string/instr/comp_params/minimal/notes.md>`__
    * - | ``instr(comp, comp, comp, comp)``
-       | minimal\_2
+       | `minimal\_2 <examples/string/instr/comp_params/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/instr/comp_params/minimal_2/script.vtl>`__ · `input <examples/string/instr/comp_params/minimal_2/input/>`__ · `expected <examples/string/instr/comp_params/minimal_2/expected/>`__ · `notes <examples/string/instr/comp_params/minimal_2/notes.md>`__
    * - | ``instr(sc, pattern)``
-       | minimal
+       | `minimal <examples/string/instr/sc_pattern/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -742,35 +768,35 @@
      - Detail
      - Example
    * - | ``length(DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/string/length/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/length/ds/manual_ex_1/script.vtl>`__ · `input <examples/string/length/ds/manual_ex_1/input/>`__ · `expected <examples/string/length/ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``length(comp)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/string/length/comp/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/length/comp/manual_ex_2/script.vtl>`__ · `input <examples/string/length/comp/manual_ex_2/input/>`__ · `expected <examples/string/length/comp/manual_ex_2/expected/>`__ · *manual*
    * - | ``length(comp)``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/string/length/comp/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/length/comp/manual_ex_3/script.vtl>`__ · `input <examples/string/length/comp/manual_ex_3/input/>`__ · `expected <examples/string/length/comp/manual_ex_3/expected/>`__ · *manual*
    * - | ``length(sc)``
-       | minimal
+       | `minimal <examples/string/length/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/length/sc/minimal/script.vtl>`__ · `expected <examples/string/length/sc/minimal/expected/>`__ · `notes <examples/string/length/sc/minimal/notes.md>`__
    * - | ``length(sc)``
-       | minimal\_2
+       | `minimal\_2 <examples/string/length/sc/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
@@ -793,84 +819,84 @@
      - Detail
      - Example
    * - | ``string_distance(levenshtein, DS, DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/string/string_distance/levenshtein_ds_ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/string_distance/levenshtein_ds_ds/manual_ex_1/script.vtl>`__ · `input <examples/string/string_distance/levenshtein_ds_ds/manual_ex_1/input/>`__ · `expected <examples/string/string_distance/levenshtein_ds_ds/manual_ex_1/expected/>`__ · `notes <examples/string/string_distance/levenshtein_ds_ds/manual_ex_1/notes.md>`__ · *manual*
    * - | ``string_distance(levenshtein, DS, sc)``
-       | minimal
+       | `minimal <examples/string/string_distance/levenshtein_ds_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/string_distance/levenshtein_ds_sc/minimal/script.vtl>`__ · `input <examples/string/string_distance/levenshtein_ds_sc/minimal/input/>`__ · `expected <examples/string/string_distance/levenshtein_ds_sc/minimal/expected/>`__ · `notes <examples/string/string_distance/levenshtein_ds_sc/minimal/notes.md>`__
    * - | ``string_distance(levenshtein, sc, DS)``
-       | minimal
+       | `minimal <examples/string/string_distance/levenshtein_sc_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/string_distance/levenshtein_sc_ds/minimal/script.vtl>`__ · `input <examples/string/string_distance/levenshtein_sc_ds/minimal/input/>`__ · `expected <examples/string/string_distance/levenshtein_sc_ds/minimal/expected/>`__ · `notes <examples/string/string_distance/levenshtein_sc_ds/minimal/notes.md>`__
    * - | ``string_distance(levenshtein, comp, comp)``
-       | minimal
+       | `minimal <examples/string/string_distance/levenshtein_comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/string_distance/levenshtein_comp_comp/minimal/script.vtl>`__ · `input <examples/string/string_distance/levenshtein_comp_comp/minimal/input/>`__ · `expected <examples/string/string_distance/levenshtein_comp_comp/minimal/expected/>`__ · `notes <examples/string/string_distance/levenshtein_comp_comp/minimal/notes.md>`__
    * - | ``string_distance(levenshtein, sc, comp)``
-       | minimal
+       | `minimal <examples/string/string_distance/levenshtein_sc_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/string_distance/levenshtein_sc_comp/minimal/script.vtl>`__ · `input <examples/string/string_distance/levenshtein_sc_comp/minimal/input/>`__ · `expected <examples/string/string_distance/levenshtein_sc_comp/minimal/expected/>`__ · `notes <examples/string/string_distance/levenshtein_sc_comp/minimal/notes.md>`__
    * - | ``string_distance(levenshtein, sc, sc)``
-       | minimal
+       | `minimal <examples/string/string_distance/levenshtein_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/string_distance/levenshtein_sc/minimal/script.vtl>`__ · `expected <examples/string/string_distance/levenshtein_sc/minimal/expected/>`__ · `notes <examples/string/string_distance/levenshtein_sc/minimal/notes.md>`__
    * - | ``string_distance(damerau_levenshtein, DS, DS)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/string/string_distance/damerau_levenshtein_ds_ds/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/string_distance/damerau_levenshtein_ds_ds/manual_ex_2/script.vtl>`__ · `input <examples/string/string_distance/damerau_levenshtein_ds_ds/manual_ex_2/input/>`__ · `expected <examples/string/string_distance/damerau_levenshtein_ds_ds/manual_ex_2/expected/>`__ · `notes <examples/string/string_distance/damerau_levenshtein_ds_ds/manual_ex_2/notes.md>`__ · *manual*
    * - | ``string_distance(damerau_levenshtein, sc, sc)``
-       | minimal
+       | `minimal <examples/string/string_distance/damerau_levenshtein_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/string_distance/damerau_levenshtein_sc/minimal/script.vtl>`__ · `expected <examples/string/string_distance/damerau_levenshtein_sc/minimal/expected/>`__ · `notes <examples/string/string_distance/damerau_levenshtein_sc/minimal/notes.md>`__
    * - | ``string_distance(hamming, comp, sc)``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/string/string_distance/hamming_comp_sc/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/string_distance/hamming_comp_sc/manual_ex_3/script.vtl>`__ · `input <examples/string/string_distance/hamming_comp_sc/manual_ex_3/input/>`__ · `expected <examples/string/string_distance/hamming_comp_sc/manual_ex_3/expected/>`__ · `notes <examples/string/string_distance/hamming_comp_sc/manual_ex_3/notes.md>`__ · *manual*
    * - | ``string_distance(hamming, sc, sc)``
-       | minimal
+       | `minimal <examples/string/string_distance/hamming_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/string/string_distance/hamming_sc/minimal/script.vtl>`__ · `expected <examples/string/string_distance/hamming_sc/minimal/expected/>`__ · `notes <examples/string/string_distance/hamming_sc/minimal/notes.md>`__
    * - | ``string_distance(jaro_winkler, sc, sc)``
-       | minimal
+       | `minimal <examples/string/string_distance/jaro_winkler_sc/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - value expected 0 got 1.0
      - `script <examples/string/string_distance/jaro_winkler_sc/minimal/script.vtl>`__ · `expected <examples/string/string_distance/jaro_winkler_sc/minimal/expected/>`__ · `notes <examples/string/string_distance/jaro_winkler_sc/minimal/notes.md>`__
    * - | ``string_distance(jaro_winkler, sc, sc)``
-       | minimal\_2
+       | `minimal\_2 <examples/string/string_distance/jaro_winkler_sc/minimal_2/>`__
      - 🟡
      - ❌
      - ❌

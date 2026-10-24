@@ -4,7 +4,7 @@
 
 24 variants: 🟢 21 · 🟡 2 · 🔴 1 · 🔵 0
 
-← Back to :doc:`index` · vtlengine 1.9.6rc2 (851f56ae)
+← Back to :doc:`index` · vtlengine 1.9.6rc2 (b393f444) · pandas 3.0.6 · DuckDB 1.5.5
 
 .. mermaid::
 
@@ -18,7 +18,7 @@
        in_dataset(("dataset")):::type
        click in_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        in_scalar(("scalar")):::type
-       click in_scalar "examples/general/non_persistent_assignment/ds/manual_ex_1/"
+       click in_scalar "examples/general/non_persistent_assignment/sc/minimal/"
        out_dataset(("dataset")):::type
        click out_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        in_boolean(("boolean")):::type
@@ -152,70 +152,70 @@
      - Detail
      - Example
    * - | ``DS[calc Me := expr]``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/clause/calc/measure_default/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/calc/measure_default/manual_ex_1/script.vtl>`__ · `input <examples/clause/calc/measure_default/manual_ex_1/input/>`__ · `expected <examples/clause/calc/measure_default/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS[calc Me := expr]``
-       | minimal
+       | `minimal <examples/clause/calc/measure_default/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/calc/measure_default/minimal/script.vtl>`__ · `input <examples/clause/calc/measure_default/minimal/input/>`__ · `expected <examples/clause/calc/measure_default/minimal/expected/>`__ · `notes <examples/clause/calc/measure_default/minimal/notes.md>`__
    * - | ``DS[calc Me := expr]``
-       | minimal\_2
+       | `minimal\_2 <examples/clause/calc/measure_default/minimal_2/>`__
      - 🟡
      - ❌
      - ❌
      - role of At\_1 expected Attribute got Measure
      - `script <examples/clause/calc/measure_default/minimal_2/script.vtl>`__ · `input <examples/clause/calc/measure_default/minimal_2/input/>`__ · `expected <examples/clause/calc/measure_default/minimal_2/expected/>`__ · `notes <examples/clause/calc/measure_default/minimal_2/notes.md>`__
    * - | ``DS[calc measure Me := expr]``
-       | minimal
+       | `minimal <examples/clause/calc/measure_explicit/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/calc/measure_explicit/minimal/script.vtl>`__ · `input <examples/clause/calc/measure_explicit/minimal/input/>`__ · `expected <examples/clause/calc/measure_explicit/minimal/expected/>`__ · `notes <examples/clause/calc/measure_explicit/minimal/notes.md>`__
    * - | ``DS[calc measure Me := expr]``
-       | minimal\_2
+       | `minimal\_2 <examples/clause/calc/measure_explicit/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/calc/measure_explicit/minimal_2/script.vtl>`__ · `input <examples/clause/calc/measure_explicit/minimal_2/input/>`__ · `expected <examples/clause/calc/measure_explicit/minimal_2/expected/>`__ · `notes <examples/clause/calc/measure_explicit/minimal_2/notes.md>`__
    * - | ``DS[calc identifier Id := expr]``
-       | minimal
+       | `minimal <examples/clause/calc/identifier/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/calc/identifier/minimal/script.vtl>`__ · `input <examples/clause/calc/identifier/minimal/input/>`__ · `expected <examples/clause/calc/identifier/minimal/expected/>`__ · `notes <examples/clause/calc/identifier/minimal/notes.md>`__
    * - | ``DS[calc attribute At := expr]``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/clause/calc/attribute/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/calc/attribute/manual_ex_2/script.vtl>`__ · `input <examples/clause/calc/attribute/manual_ex_2/input/>`__ · `expected <examples/clause/calc/attribute/manual_ex_2/expected/>`__ · *manual*
    * - | ``DS[calc viral attribute At := expr]``
-       | minimal
+       | `minimal <examples/clause/calc/viral_attribute/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/calc/viral_attribute/minimal/script.vtl>`__ · `input <examples/clause/calc/viral_attribute/minimal/input/>`__ · `expected <examples/clause/calc/viral_attribute/minimal/expected/>`__ · `notes <examples/clause/calc/viral_attribute/minimal/notes.md>`__
    * - | ``DS[calc Me := expr, attribute At := expr]``
-       | minimal
+       | `minimal <examples/clause/calc/multiple/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/calc/multiple/minimal/script.vtl>`__ · `input <examples/clause/calc/multiple/minimal/input/>`__ · `expected <examples/clause/calc/multiple/minimal/expected/>`__ · `notes <examples/clause/calc/multiple/minimal/notes.md>`__
    * - | ``DS[calc Me := expr, attribute At := expr]``
-       | minimal\_2
+       | `minimal\_2 <examples/clause/calc/multiple/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
@@ -238,77 +238,77 @@
      - Detail
      - Example
    * - | ``DS[aggr Me := agg(Me)]``
-       | minimal
+       | `minimal <examples/clause/aggr/no_group/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/aggr/no_group/minimal/script.vtl>`__ · `input <examples/clause/aggr/no_group/minimal/input/>`__ · `expected <examples/clause/aggr/no_group/minimal/expected/>`__ · `notes <examples/clause/aggr/no_group/minimal/notes.md>`__
    * - | ``DS[aggr Me := agg(Me) group by Id]``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/clause/aggr/group_by/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/aggr/group_by/manual_ex_1/script.vtl>`__ · `input <examples/clause/aggr/group_by/manual_ex_1/input/>`__ · `expected <examples/clause/aggr/group_by/manual_ex_1/expected/>`__ · `notes <examples/clause/aggr/group_by/manual_ex_1/notes.md>`__ · *manual*
    * - | ``DS[aggr Me := agg(Me) group except Id]``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/clause/aggr/group_except/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/aggr/group_except/manual_ex_2/script.vtl>`__ · `input <examples/clause/aggr/group_except/manual_ex_2/input/>`__ · `expected <examples/clause/aggr/group_except/manual_ex_2/expected/>`__ · `notes <examples/clause/aggr/group_except/manual_ex_2/notes.md>`__ · *manual*
    * - | ``DS[aggr Me := agg(Me) group all time_agg("A")]``
-       | minimal
+       | `minimal <examples/clause/aggr/group_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/aggr/group_all/minimal/script.vtl>`__ · `input <examples/clause/aggr/group_all/minimal/input/>`__ · `expected <examples/clause/aggr/group_all/minimal/expected/>`__ · `notes <examples/clause/aggr/group_all/minimal/notes.md>`__
    * - | ``DS[aggr Me := agg(Me) group by Id having cond]``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/clause/aggr/having/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/aggr/having/manual_ex_3/script.vtl>`__ · `input <examples/clause/aggr/having/manual_ex_3/input/>`__ · `expected <examples/clause/aggr/having/manual_ex_3/expected/>`__ · `notes <examples/clause/aggr/having/manual_ex_3/notes.md>`__ · *manual*
    * - | ``DS[aggr measure Me := agg(Me) group by Id]``
-       | minimal
+       | `minimal <examples/clause/aggr/measure_role/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/aggr/measure_role/minimal/script.vtl>`__ · `input <examples/clause/aggr/measure_role/minimal/input/>`__ · `expected <examples/clause/aggr/measure_role/minimal/expected/>`__ · `notes <examples/clause/aggr/measure_role/minimal/notes.md>`__
    * - | ``DS[aggr attribute At := agg(Me) group by Id]``
-       | minimal
+       | `minimal <examples/clause/aggr/attribute_role/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/aggr/attribute_role/minimal/script.vtl>`__ · `input <examples/clause/aggr/attribute_role/minimal/input/>`__ · `expected <examples/clause/aggr/attribute_role/minimal/expected/>`__ · `notes <examples/clause/aggr/attribute_role/minimal/notes.md>`__
    * - | ``DS[aggr attribute At := agg(Me) group by Id]``
-       | minimal\_2
+       | `minimal\_2 <examples/clause/aggr/attribute_role/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/aggr/attribute_role/minimal_2/script.vtl>`__ · `input <examples/clause/aggr/attribute_role/minimal_2/input/>`__ · `expected <examples/clause/aggr/attribute_role/minimal_2/expected/>`__ · `notes <examples/clause/aggr/attribute_role/minimal_2/notes.md>`__
    * - | ``DS[aggr viral attribute At := agg(Me) group by Id]``
-       | minimal
+       | `minimal <examples/clause/aggr/viral_attribute_role/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/aggr/viral_attribute_role/minimal/script.vtl>`__ · `input <examples/clause/aggr/viral_attribute_role/minimal/input/>`__ · `expected <examples/clause/aggr/viral_attribute_role/minimal/expected/>`__ · `notes <examples/clause/aggr/viral_attribute_role/minimal/notes.md>`__
    * - | ``DS[aggr viral attribute At := agg(Me) group by Id]``
-       | minimal\_2
+       | `minimal\_2 <examples/clause/aggr/viral_attribute_role/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/aggr/viral_attribute_role/minimal_2/script.vtl>`__ · `input <examples/clause/aggr/viral_attribute_role/minimal_2/input/>`__ · `expected <examples/clause/aggr/viral_attribute_role/minimal_2/expected/>`__ · `notes <examples/clause/aggr/viral_attribute_role/minimal_2/notes.md>`__
    * - | ``DS[aggr At := agg(At) group by Id]``
-       | minimal
+       | `minimal <examples/clause/aggr/role_omitted_attribute/minimal/>`__
      - 🟡
      - ❌
      - ❌
@@ -331,14 +331,14 @@
      - Detail
      - Example
    * - | ``DS[filter cond]``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/clause/filter/basic/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/filter/basic/manual_ex_1/script.vtl>`__ · `input <examples/clause/filter/basic/manual_ex_1/input/>`__ · `expected <examples/clause/filter/basic/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS[filter cond]``
-       | minimal
+       | `minimal <examples/clause/filter/basic/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -361,7 +361,7 @@
      - Detail
      - Example
    * - | ``DS[keep comp]``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/clause/keep/basic/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
@@ -384,7 +384,7 @@
      - Detail
      - Example
    * - | ``DS[drop comp]``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/clause/drop/basic/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
@@ -407,21 +407,21 @@
      - Detail
      - Example
    * - | ``DS[rename comp to comp]``
-       | minimal
+       | `minimal <examples/clause/rename/basic/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/rename/basic/minimal/script.vtl>`__ · `input <examples/clause/rename/basic/minimal/input/>`__ · `expected <examples/clause/rename/basic/minimal/expected/>`__ · `notes <examples/clause/rename/basic/minimal/notes.md>`__
    * - | ``DS[rename comp to comp]``
-       | minimal\_2
+       | `minimal\_2 <examples/clause/rename/basic/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/rename/basic/minimal_2/script.vtl>`__ · `input <examples/clause/rename/basic/minimal_2/input/>`__ · `expected <examples/clause/rename/basic/minimal_2/expected/>`__ · `notes <examples/clause/rename/basic/minimal_2/notes.md>`__
    * - | ``DS[rename comp to comp, comp to comp]``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/clause/rename/multiple/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
@@ -444,14 +444,14 @@
      - Detail
      - Example
    * - | ``DS[pivot Id, Me]``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/clause/pivot/basic/manual_ex_1/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: pivot clause. Please check transformation with output Dataset DS\_r
      - `script <examples/clause/pivot/basic/manual_ex_1/script.vtl>`__ · `input <examples/clause/pivot/basic/manual_ex_1/input/>`__ · `expected <examples/clause/pivot/basic/manual_ex_1/expected/>`__ · `notes <examples/clause/pivot/basic/manual_ex_1/notes.md>`__ · *manual*
    * - | ``DS[pivot Id, Me]``
-       | minimal
+       | `minimal <examples/clause/pivot/basic/minimal/>`__
      - 🔴
      - 💥
      - 💥
@@ -474,21 +474,21 @@
      - Detail
      - Example
    * - | ``DS[unpivot Id, Me]``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/clause/unpivot/basic/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/unpivot/basic/manual_ex_1/script.vtl>`__ · `input <examples/clause/unpivot/basic/manual_ex_1/input/>`__ · `expected <examples/clause/unpivot/basic/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS[unpivot Id, Me]``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/clause/unpivot/basic/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/unpivot/basic/manual_ex_2/script.vtl>`__ · `input <examples/clause/unpivot/basic/manual_ex_2/input/>`__ · `expected <examples/clause/unpivot/basic/manual_ex_2/expected/>`__ · `notes <examples/clause/unpivot/basic/manual_ex_2/notes.md>`__ · *manual*
    * - | ``DS[unpivot Id, Me]``
-       | minimal
+       | `minimal <examples/clause/unpivot/basic/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -511,28 +511,28 @@
      - Detail
      - Example
    * - | ``DS[sub Id = value]``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/clause/sub/one_id/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/sub/one_id/manual_ex_3/script.vtl>`__ · `input <examples/clause/sub/one_id/manual_ex_3/input/>`__ · `expected <examples/clause/sub/one_id/manual_ex_3/expected/>`__ · *manual*
    * - | ``DS[sub Id = value]``
-       | minimal
+       | `minimal <examples/clause/sub/one_id/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/sub/one_id/minimal/script.vtl>`__ · `input <examples/clause/sub/one_id/minimal/input/>`__ · `expected <examples/clause/sub/one_id/minimal/expected/>`__ · `notes <examples/clause/sub/one_id/minimal/notes.md>`__
    * - | ``DS[sub Id = value, Id = value]``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/clause/sub/multi_id/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/clause/sub/multi_id/manual_ex_1/script.vtl>`__ · `input <examples/clause/sub/multi_id/manual_ex_1/input/>`__ · `expected <examples/clause/sub/multi_id/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS[sub Id = value, Id = value]``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/clause/sub/multi_id/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅

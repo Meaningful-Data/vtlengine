@@ -4,7 +4,7 @@
 
 54 variants: 🟢 44 · 🟡 4 · 🔴 6 · 🔵 0
 
-← Back to :doc:`index` · vtlengine 1.9.6rc2 (851f56ae)
+← Back to :doc:`index` · vtlengine 1.9.6rc2 (b393f444) · pandas 3.0.6 · DuckDB 1.5.5
 
 .. mermaid::
 
@@ -305,28 +305,28 @@
      - Detail
      - Example
    * - | ``period_indicator(DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/time/period_indicator/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/period_indicator/ds/manual_ex_1/script.vtl>`__ · `input <examples/time/period_indicator/ds/manual_ex_1/input/>`__ · `expected <examples/time/period_indicator/ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``filter period_indicator(comp)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/time/period_indicator/comp/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/period_indicator/comp/manual_ex_2/script.vtl>`__ · `input <examples/time/period_indicator/comp/manual_ex_2/input/>`__ · `expected <examples/time/period_indicator/comp/manual_ex_2/expected/>`__ · *manual*
    * - | ``period_indicator(sc)``
-       | minimal
+       | `minimal <examples/time/period_indicator/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/period_indicator/sc/minimal/script.vtl>`__ · `expected <examples/time/period_indicator/sc/minimal/expected/>`__ · `notes <examples/time/period_indicator/sc/minimal/notes.md>`__
    * - | ``filter period_indicator()``
-       | minimal
+       | `minimal <examples/time/period_indicator/in_filter_no_operand/minimal/>`__
      - 🔴
      - 💥
      - 💥
@@ -349,70 +349,70 @@
      - Detail
      - Example
    * - | ``fill_time_series(DS) on time_period``
-       | minimal
+       | `minimal <examples/time/fill_time_series/default_tp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/fill_time_series/default_tp/minimal/script.vtl>`__ · `input <examples/time/fill_time_series/default_tp/minimal/input/>`__ · `expected <examples/time/fill_time_series/default_tp/minimal/expected/>`__ · `notes <examples/time/fill_time_series/default_tp/minimal/notes.md>`__
    * - | ``fill_time_series(DS, single) on time_period``
-       | manual\_ex\_5
+       | `manual\_ex\_5 <examples/time/fill_time_series/single_tp/manual_ex_5/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/fill_time_series/single_tp/manual_ex_5/script.vtl>`__ · `input <examples/time/fill_time_series/single_tp/manual_ex_5/input/>`__ · `expected <examples/time/fill_time_series/single_tp/manual_ex_5/expected/>`__ · *manual*
    * - | ``fill_time_series(DS, single) on time_period``
-       | manual\_ex\_7
+       | `manual\_ex\_7 <examples/time/fill_time_series/single_tp/manual_ex_7/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/fill_time_series/single_tp/manual_ex_7/script.vtl>`__ · `input <examples/time/fill_time_series/single_tp/manual_ex_7/input/>`__ · `expected <examples/time/fill_time_series/single_tp/manual_ex_7/expected/>`__ · *manual*
    * - | ``fill_time_series(DS, all) on time_period``
-       | manual\_ex\_6
+       | `manual\_ex\_6 <examples/time/fill_time_series/all_tp/manual_ex_6/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/fill_time_series/all_tp/manual_ex_6/script.vtl>`__ · `input <examples/time/fill_time_series/all_tp/manual_ex_6/input/>`__ · `expected <examples/time/fill_time_series/all_tp/manual_ex_6/expected/>`__ · *manual*
    * - | ``fill_time_series(DS, all) on time_period``
-       | manual\_ex\_8
+       | `manual\_ex\_8 <examples/time/fill_time_series/all_tp/manual_ex_8/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/fill_time_series/all_tp/manual_ex_8/script.vtl>`__ · `input <examples/time/fill_time_series/all_tp/manual_ex_8/input/>`__ · `expected <examples/time/fill_time_series/all_tp/manual_ex_8/expected/>`__ · *manual*
    * - | ``fill_time_series(DS) on date``
-       | minimal
+       | `minimal <examples/time/fill_time_series/default_date/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/fill_time_series/default_date/minimal/script.vtl>`__ · `input <examples/time/fill_time_series/default_date/minimal/input/>`__ · `expected <examples/time/fill_time_series/default_date/minimal/expected/>`__ · `notes <examples/time/fill_time_series/default_date/minimal/notes.md>`__
    * - | ``fill_time_series(DS, single) on date``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/time/fill_time_series/single_date/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/fill_time_series/single_date/manual_ex_3/script.vtl>`__ · `input <examples/time/fill_time_series/single_date/manual_ex_3/input/>`__ · `expected <examples/time/fill_time_series/single_date/manual_ex_3/expected/>`__ · *manual*
    * - | ``fill_time_series(DS, all) on date``
-       | manual\_ex\_4
+       | `manual\_ex\_4 <examples/time/fill_time_series/all_date/manual_ex_4/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/fill_time_series/all_date/manual_ex_4/script.vtl>`__ · `input <examples/time/fill_time_series/all_date/manual_ex_4/input/>`__ · `expected <examples/time/fill_time_series/all_date/manual_ex_4/expected/>`__ · *manual*
    * - | ``fill_time_series(DS, single) on time``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/time/fill_time_series/single_time/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/fill_time_series/single_time/manual_ex_1/script.vtl>`__ · `input <examples/time/fill_time_series/single_time/manual_ex_1/input/>`__ · `expected <examples/time/fill_time_series/single_time/manual_ex_1/expected/>`__ · `notes <examples/time/fill_time_series/single_time/manual_ex_1/notes.md>`__ · *manual* · adapted
    * - | ``fill_time_series(DS, all) on time``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/time/fill_time_series/all_time/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
@@ -435,28 +435,28 @@
      - Detail
      - Example
    * - | ``flow_to_stock(DS) on time_period``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/time/flow_to_stock/time_period/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/flow_to_stock/time_period/manual_ex_3/script.vtl>`__ · `input <examples/time/flow_to_stock/time_period/manual_ex_3/input/>`__ · `expected <examples/time/flow_to_stock/time_period/manual_ex_3/expected/>`__ · *manual*
    * - | ``flow_to_stock(DS) on time_period``
-       | manual\_ex\_4
+       | `manual\_ex\_4 <examples/time/flow_to_stock/time_period/manual_ex_4/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/flow_to_stock/time_period/manual_ex_4/script.vtl>`__ · `input <examples/time/flow_to_stock/time_period/manual_ex_4/input/>`__ · `expected <examples/time/flow_to_stock/time_period/manual_ex_4/expected/>`__ · *manual*
    * - | ``flow_to_stock(DS) on date``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/time/flow_to_stock/date/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/flow_to_stock/date/manual_ex_2/script.vtl>`__ · `input <examples/time/flow_to_stock/date/manual_ex_2/input/>`__ · `expected <examples/time/flow_to_stock/date/manual_ex_2/expected/>`__ · *manual*
    * - | ``flow_to_stock(DS) on time``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/time/flow_to_stock/time/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
@@ -479,28 +479,28 @@
      - Detail
      - Example
    * - | ``stock_to_flow(DS) on time_period``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/time/stock_to_flow/time_period/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/stock_to_flow/time_period/manual_ex_3/script.vtl>`__ · `input <examples/time/stock_to_flow/time_period/manual_ex_3/input/>`__ · `expected <examples/time/stock_to_flow/time_period/manual_ex_3/expected/>`__ · *manual*
    * - | ``stock_to_flow(DS) on time_period``
-       | manual\_ex\_4
+       | `manual\_ex\_4 <examples/time/stock_to_flow/time_period/manual_ex_4/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/stock_to_flow/time_period/manual_ex_4/script.vtl>`__ · `input <examples/time/stock_to_flow/time_period/manual_ex_4/input/>`__ · `expected <examples/time/stock_to_flow/time_period/manual_ex_4/expected/>`__ · *manual*
    * - | ``stock_to_flow(DS) on date``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/time/stock_to_flow/date/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/stock_to_flow/date/manual_ex_2/script.vtl>`__ · `input <examples/time/stock_to_flow/date/manual_ex_2/input/>`__ · `expected <examples/time/stock_to_flow/date/manual_ex_2/expected/>`__ · *manual*
    * - | ``stock_to_flow(DS) on time``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/time/stock_to_flow/time/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
@@ -523,28 +523,28 @@
      - Detail
      - Example
    * - | ``timeshift(DS, n) on time_period``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/time/timeshift/time_period/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/timeshift/time_period/manual_ex_3/script.vtl>`__ · `input <examples/time/timeshift/time_period/manual_ex_3/input/>`__ · `expected <examples/time/timeshift/time_period/manual_ex_3/expected/>`__ · *manual*
    * - | ``timeshift(DS, n) on time_period``
-       | manual\_ex\_4
+       | `manual\_ex\_4 <examples/time/timeshift/time_period/manual_ex_4/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/timeshift/time_period/manual_ex_4/script.vtl>`__ · `input <examples/time/timeshift/time_period/manual_ex_4/input/>`__ · `expected <examples/time/timeshift/time_period/manual_ex_4/expected/>`__ · *manual*
    * - | ``timeshift(DS, n) on date``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/time/timeshift/date/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/timeshift/date/manual_ex_2/script.vtl>`__ · `input <examples/time/timeshift/date/manual_ex_2/input/>`__ · `expected <examples/time/timeshift/date/manual_ex_2/expected/>`__ · *manual*
    * - | ``timeshift(DS, n) on time``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/time/timeshift/time/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
@@ -567,56 +567,56 @@
      - Detail
      - Example
    * - | ``sum(DS group all time_agg(p))``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/time/time_agg/group_all/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/time_agg/group_all/manual_ex_1/script.vtl>`__ · `input <examples/time/time_agg/group_all/manual_ex_1/input/>`__ · `expected <examples/time/time_agg/group_all/manual_ex_1/expected/>`__ · `notes <examples/time/time_agg/group_all/manual_ex_1/notes.md>`__ · *manual*
    * - | ``time_agg(p, DS)``
-       | minimal
+       | `minimal <examples/time/time_agg/ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/time_agg/ds/minimal/script.vtl>`__ · `input <examples/time/time_agg/ds/minimal/input/>`__ · `expected <examples/time/time_agg/ds/minimal/expected/>`__ · `notes <examples/time/time_agg/ds/minimal/notes.md>`__
    * - | ``calc time_agg(p, comp)``
-       | minimal
+       | `minimal <examples/time/time_agg/comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/time_agg/comp/minimal/script.vtl>`__ · `input <examples/time/time_agg/comp/minimal/input/>`__ · `expected <examples/time/time_agg/comp/minimal/expected/>`__ · `notes <examples/time/time_agg/comp/minimal/notes.md>`__
    * - | ``time_agg(p, sc) on time_period``
-       | minimal
+       | `minimal <examples/time/time_agg/sc_time_period/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/time_agg/sc_time_period/minimal/script.vtl>`__ · `expected <examples/time/time_agg/sc_time_period/minimal/expected/>`__ · `notes <examples/time/time_agg/sc_time_period/minimal/notes.md>`__
    * - | ``time_agg(p, sc) on date``
-       | minimal
+       | `minimal <examples/time/time_agg/sc_date/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-19-11: At op time\_agg: If used over a Date, first/last parameter must be declared. Please check transformation with output Dataset DS\_r
      - `script <examples/time/time_agg/sc_date/minimal/script.vtl>`__ · `expected <examples/time/time_agg/sc_date/minimal/expected/>`__ · `notes <examples/time/time_agg/sc_date/minimal/notes.md>`__
    * - | ``time_agg(p, from, sc)``
-       | minimal
+       | `minimal <examples/time/time_agg/period_from/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/time_agg/period_from/minimal/script.vtl>`__ · `expected <examples/time/time_agg/period_from/minimal/expected/>`__ · `notes <examples/time/time_agg/period_from/minimal/notes.md>`__
    * - | ``time_agg(p, sc, first) on date``
-       | minimal
+       | `minimal <examples/time/time_agg/first/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/time_agg/first/minimal/script.vtl>`__ · `expected <examples/time/time_agg/first/minimal/expected/>`__ · `notes <examples/time/time_agg/first/minimal/notes.md>`__
    * - | ``time_agg(p, sc, last) on date``
-       | minimal
+       | `minimal <examples/time/time_agg/last/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -639,7 +639,7 @@
      - Detail
      - Example
    * - | ``current_date()``
-       | minimal
+       | `minimal <examples/time/current_date/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -662,28 +662,28 @@
      - Detail
      - Example
    * - | ``calc datediff(comp, comp)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/time/datediff/comp_comp/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/datediff/comp_comp/manual_ex_1/script.vtl>`__ · `input <examples/time/datediff/comp_comp/manual_ex_1/input/>`__ · `expected <examples/time/datediff/comp_comp/manual_ex_1/expected/>`__ · *manual*
    * - | ``datediff(date, date)``
-       | minimal
+       | `minimal <examples/time/datediff/sc_date/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/datediff/sc_date/minimal/script.vtl>`__ · `expected <examples/time/datediff/sc_date/minimal/expected/>`__ · `notes <examples/time/datediff/sc_date/minimal/notes.md>`__
    * - | ``datediff(time_period, time_period)``
-       | minimal
+       | `minimal <examples/time/datediff/sc_time_period/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/datediff/sc_time_period/minimal/script.vtl>`__ · `expected <examples/time/datediff/sc_time_period/minimal/expected/>`__ · `notes <examples/time/datediff/sc_time_period/minimal/notes.md>`__
    * - | ``datediff(time_period, date)``
-       | minimal
+       | `minimal <examples/time/datediff/sc_mixed/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -706,35 +706,35 @@
      - Detail
      - Example
    * - | ``dateadd(DS, n, p)``
-       | minimal
+       | `minimal <examples/time/dateadd/ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/dateadd/ds/minimal/script.vtl>`__ · `input <examples/time/dateadd/ds/minimal/input/>`__ · `expected <examples/time/dateadd/ds/minimal/expected/>`__ · `notes <examples/time/dateadd/ds/minimal/notes.md>`__
    * - | ``calc dateadd(comp, n, p)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/time/dateadd/comp/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/dateadd/comp/manual_ex_1/script.vtl>`__ · `input <examples/time/dateadd/comp/manual_ex_1/input/>`__ · `expected <examples/time/dateadd/comp/manual_ex_1/expected/>`__ · *manual*
    * - | ``dateadd(date, n, p)``
-       | minimal
+       | `minimal <examples/time/dateadd/sc_date/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/dateadd/sc_date/minimal/script.vtl>`__ · `expected <examples/time/dateadd/sc_date/minimal/expected/>`__ · `notes <examples/time/dateadd/sc_date/minimal/notes.md>`__
    * - | ``dateadd(date, n, p)``
-       | minimal\_2
+       | `minimal\_2 <examples/time/dateadd/sc_date/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/dateadd/sc_date/minimal_2/script.vtl>`__ · `expected <examples/time/dateadd/sc_date/minimal_2/expected/>`__ · `notes <examples/time/dateadd/sc_date/minimal_2/notes.md>`__ · adapted
    * - | ``dateadd(time_period, n, p)``
-       | minimal
+       | `minimal <examples/time/dateadd/sc_time_period/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -757,14 +757,14 @@
      - Detail
      - Example
    * - | ``calc getyear(comp)``
-       | minimal
+       | `minimal <examples/time/getyear/comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/getyear/comp/minimal/script.vtl>`__ · `input <examples/time/getyear/comp/minimal/input/>`__ · `expected <examples/time/getyear/comp/minimal/expected/>`__ · `notes <examples/time/getyear/comp/minimal/notes.md>`__
    * - | ``getyear(sc)``
-       | minimal
+       | `minimal <examples/time/getyear/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -787,14 +787,14 @@
      - Detail
      - Example
    * - | ``calc getmonth(comp)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/time/getmonth/comp/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/getmonth/comp/manual_ex_1/script.vtl>`__ · `input <examples/time/getmonth/comp/manual_ex_1/input/>`__ · `expected <examples/time/getmonth/comp/manual_ex_1/expected/>`__ · *manual*
    * - | ``getmonth(sc)``
-       | minimal
+       | `minimal <examples/time/getmonth/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -817,14 +817,14 @@
      - Detail
      - Example
    * - | ``calc dayofmonth(comp)``
-       | minimal
+       | `minimal <examples/time/dayofmonth/comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/dayofmonth/comp/minimal/script.vtl>`__ · `input <examples/time/dayofmonth/comp/minimal/input/>`__ · `expected <examples/time/dayofmonth/comp/minimal/expected/>`__ · `notes <examples/time/dayofmonth/comp/minimal/notes.md>`__
    * - | ``dayofmonth(sc)``
-       | minimal
+       | `minimal <examples/time/dayofmonth/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -847,14 +847,14 @@
      - Detail
      - Example
    * - | ``calc dayofyear(comp)``
-       | minimal
+       | `minimal <examples/time/dayofyear/comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/time/dayofyear/comp/minimal/script.vtl>`__ · `input <examples/time/dayofyear/comp/minimal/input/>`__ · `expected <examples/time/dayofyear/comp/minimal/expected/>`__ · `notes <examples/time/dayofyear/comp/minimal/notes.md>`__
    * - | ``dayofyear(sc)``
-       | minimal
+       | `minimal <examples/time/dayofyear/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -877,14 +877,14 @@
      - Detail
      - Example
    * - | ``calc daytoyear(comp)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/time/daytoyear/comp/manual_ex_1/>`__
      - 🟡
      - ❌
      - ❌
      - type of Me\_2 expected Duration got String
      - `script <examples/time/daytoyear/comp/manual_ex_1/script.vtl>`__ · `input <examples/time/daytoyear/comp/manual_ex_1/input/>`__ · `expected <examples/time/daytoyear/comp/manual_ex_1/expected/>`__ · `notes <examples/time/daytoyear/comp/manual_ex_1/notes.md>`__ · *manual* · erratum
    * - | ``daytoyear(sc)``
-       | minimal
+       | `minimal <examples/time/daytoyear/sc/minimal/>`__
      - 🟡
      - ❌
      - ❌
@@ -907,14 +907,14 @@
      - Detail
      - Example
    * - | ``calc daytomonth(comp)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/time/daytomonth/comp/manual_ex_2/>`__
      - 🟡
      - ❌
      - ❌
      - type of Me\_2 expected Duration got String
      - `script <examples/time/daytomonth/comp/manual_ex_2/script.vtl>`__ · `input <examples/time/daytomonth/comp/manual_ex_2/input/>`__ · `expected <examples/time/daytomonth/comp/manual_ex_2/expected/>`__ · `notes <examples/time/daytomonth/comp/manual_ex_2/notes.md>`__ · *manual* · erratum
    * - | ``daytomonth(sc)``
-       | minimal
+       | `minimal <examples/time/daytomonth/sc/minimal/>`__
      - 🟡
      - ❌
      - ❌
@@ -937,14 +937,14 @@
      - Detail
      - Example
    * - | ``calc yeartoday(comp)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/time/yeartoday/comp/manual_ex_1/>`__
      - 🔴
      - 💥
      - 💥
      - pandas: DataLoadError 0-3-1-6: On Dataset DS\_1 loading: not possible to cast column Me\_1 to Duration. Error found: \"Impossible to cast P2Y230D from type str to Duration.\" Please check loaded file DS\_…
      - `script <examples/time/yeartoday/comp/manual_ex_1/script.vtl>`__ · `input <examples/time/yeartoday/comp/manual_ex_1/input/>`__ · `expected <examples/time/yeartoday/comp/manual_ex_1/expected/>`__ · `notes <examples/time/yeartoday/comp/manual_ex_1/notes.md>`__ · *manual* · erratum
    * - | ``yeartoday(sc)``
-       | minimal
+       | `minimal <examples/time/yeartoday/sc/minimal/>`__
      - 🔴
      - 💥
      - 💥
@@ -967,14 +967,14 @@
      - Detail
      - Example
    * - | ``calc monthtoday(comp)``
-       | minimal
+       | `minimal <examples/time/monthtoday/comp/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - pandas: DataLoadError 0-3-1-6: On Dataset DS\_1 loading: not possible to cast column Me\_1 to Duration. Error found: \"Impossible to cast P2M5D from type str to Duration.\" Please check loaded file DS\_r;…
      - `script <examples/time/monthtoday/comp/minimal/script.vtl>`__ · `input <examples/time/monthtoday/comp/minimal/input/>`__ · `expected <examples/time/monthtoday/comp/minimal/expected/>`__ · `notes <examples/time/monthtoday/comp/minimal/notes.md>`__
    * - | ``monthtoday(sc)``
-       | minimal
+       | `minimal <examples/time/monthtoday/sc/minimal/>`__
      - 🔴
      - 💥
      - 💥

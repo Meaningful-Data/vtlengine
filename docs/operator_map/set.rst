@@ -4,7 +4,7 @@
 
 6 variants: 🟢 6 · 🟡 0 · 🔴 0 · 🔵 0
 
-← Back to :doc:`index` · vtlengine 1.9.6rc2 (851f56ae)
+← Back to :doc:`index` · vtlengine 1.9.6rc2 (b393f444) · pandas 3.0.6 · DuckDB 1.5.5
 
 .. mermaid::
 
@@ -70,28 +70,28 @@
      - Detail
      - Example
    * - | ``union(DS, DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/set/union/two/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/set/union/two/manual_ex_1/script.vtl>`__ · `input <examples/set/union/two/manual_ex_1/input/>`__ · `expected <examples/set/union/two/manual_ex_1/expected/>`__ · *manual*
    * - | ``union(DS, DS)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/set/union/two/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/set/union/two/manual_ex_2/script.vtl>`__ · `input <examples/set/union/two/manual_ex_2/input/>`__ · `expected <examples/set/union/two/manual_ex_2/expected/>`__ · *manual*
    * - | ``union(DS, DS)``
-       | minimal
+       | `minimal <examples/set/union/two/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/set/union/two/minimal/script.vtl>`__ · `input <examples/set/union/two/minimal/input/>`__ · `expected <examples/set/union/two/minimal/expected/>`__ · `notes <examples/set/union/two/minimal/notes.md>`__
    * - | ``union(DS, DS, ...)``
-       | minimal
+       | `minimal <examples/set/union/n/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -114,21 +114,21 @@
      - Detail
      - Example
    * - | ``intersect(DS, DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/set/intersect/two/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/set/intersect/two/manual_ex_1/script.vtl>`__ · `input <examples/set/intersect/two/manual_ex_1/input/>`__ · `expected <examples/set/intersect/two/manual_ex_1/expected/>`__ · *manual*
    * - | ``intersect(DS, DS)``
-       | minimal
+       | `minimal <examples/set/intersect/two/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/set/intersect/two/minimal/script.vtl>`__ · `input <examples/set/intersect/two/minimal/input/>`__ · `expected <examples/set/intersect/two/minimal/expected/>`__ · `notes <examples/set/intersect/two/minimal/notes.md>`__
    * - | ``intersect(DS, DS, ...)``
-       | minimal
+       | `minimal <examples/set/intersect/n/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -151,21 +151,21 @@
      - Detail
      - Example
    * - | ``setdiff(DS, DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/set/setdiff/two/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/set/setdiff/two/manual_ex_1/script.vtl>`__ · `input <examples/set/setdiff/two/manual_ex_1/input/>`__ · `expected <examples/set/setdiff/two/manual_ex_1/expected/>`__ · *manual*
    * - | ``setdiff(DS, DS)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/set/setdiff/two/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/set/setdiff/two/manual_ex_2/script.vtl>`__ · `input <examples/set/setdiff/two/manual_ex_2/input/>`__ · `expected <examples/set/setdiff/two/manual_ex_2/expected/>`__ · *manual*
    * - | ``setdiff(DS, DS)``
-       | minimal
+       | `minimal <examples/set/setdiff/two/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -188,14 +188,14 @@
      - Detail
      - Example
    * - | ``symdiff(DS, DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/set/symdiff/two/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/set/symdiff/two/manual_ex_1/script.vtl>`__ · `input <examples/set/symdiff/two/manual_ex_1/input/>`__ · `expected <examples/set/symdiff/two/manual_ex_1/expected/>`__ · *manual*
    * - | ``symdiff(DS, DS)``
-       | minimal
+       | `minimal <examples/set/symdiff/two/minimal/>`__
      - 🟢
      - ✅
      - ✅

@@ -4,7 +4,7 @@
 
 110 variants: 🟢 87 · 🟡 20 · 🔴 2 · 🔵 1
 
-← Back to :doc:`index` · vtlengine 1.9.6rc2 (851f56ae)
+← Back to :doc:`index` · vtlengine 1.9.6rc2 (b393f444) · pandas 3.0.6 · DuckDB 1.5.5
 
 .. mermaid::
 
@@ -26,9 +26,9 @@
        out_integer(("integer")):::type
        click out_integer "examples/types/integer/identity/minimal/"
        in_scalar(("scalar")):::type
-       click in_scalar "examples/general/non_persistent_assignment/ds/manual_ex_1/"
+       click in_scalar "examples/general/non_persistent_assignment/sc/minimal/"
        out_scalar(("scalar")):::type
-       click out_scalar "examples/general/non_persistent_assignment/ds/manual_ex_1/"
+       click out_scalar "examples/general/non_persistent_assignment/sc/minimal/"
        in_number(("number")):::type
        click in_number "examples/types/number/identity/minimal/"
        out_number(("number")):::type
@@ -103,6 +103,7 @@
        aggregate__count --- aggregate__count__analytic_comp
        in_dataset --> aggregate__count
        aggregate__count --> out_integer
+       aggregate__count --> out_dataset
        aggregate__count -. "used in" .-> ext_clause__aggr
        aggregate__count -. "used in over()" .-> ext_clause__calc
        click aggregate__count "examples/aggregate/count/ds_no_group/minimal/"
@@ -133,7 +134,9 @@
        aggregate__min --- aggregate__min__analytic_ds
        aggregate__min --- aggregate__min__analytic_comp
        in_scalar --> aggregate__min
+       in_dataset --> aggregate__min
        aggregate__min --> out_scalar
+       aggregate__min --> out_dataset
        aggregate__min -. "used in" .-> ext_clause__aggr
        aggregate__min -. "used in over()" .-> ext_clause__calc
        click aggregate__min "examples/aggregate/min/ds_no_group/minimal/"
@@ -163,7 +166,9 @@
        aggregate__max --- aggregate__max__analytic_ds
        aggregate__max --- aggregate__max__analytic_comp
        in_scalar --> aggregate__max
+       in_dataset --> aggregate__max
        aggregate__max --> out_scalar
+       aggregate__max --> out_dataset
        aggregate__max -. "used in" .-> ext_clause__aggr
        aggregate__max -. "used in over()" .-> ext_clause__calc
        click aggregate__max "examples/aggregate/max/ds_no_group/minimal/"
@@ -193,7 +198,9 @@
        aggregate__median --- aggregate__median__analytic_ds
        aggregate__median --- aggregate__median__analytic_comp
        in_number --> aggregate__median
+       in_dataset --> aggregate__median
        aggregate__median --> out_number
+       aggregate__median --> out_dataset
        aggregate__median -. "used in" .-> ext_clause__aggr
        aggregate__median -. "used in over()" .-> ext_clause__calc
        click aggregate__median "examples/aggregate/median/ds_no_group/minimal/"
@@ -223,7 +230,9 @@
        aggregate__sum --- aggregate__sum__analytic_ds
        aggregate__sum --- aggregate__sum__analytic_comp
        in_number --> aggregate__sum
+       in_dataset --> aggregate__sum
        aggregate__sum --> out_number
+       aggregate__sum --> out_dataset
        aggregate__sum -. "used in" .-> ext_clause__aggr
        aggregate__sum -. "used in over()" .-> ext_clause__calc
        click aggregate__sum "examples/aggregate/sum/ds_no_group/minimal/"
@@ -253,7 +262,9 @@
        aggregate__avg --- aggregate__avg__analytic_ds
        aggregate__avg --- aggregate__avg__analytic_comp
        in_number --> aggregate__avg
+       in_dataset --> aggregate__avg
        aggregate__avg --> out_number
+       aggregate__avg --> out_dataset
        aggregate__avg -. "used in" .-> ext_clause__aggr
        aggregate__avg -. "used in over()" .-> ext_clause__calc
        click aggregate__avg "examples/aggregate/avg/ds_no_group/minimal/"
@@ -283,7 +294,9 @@
        aggregate__stddev_pop --- aggregate__stddev_pop__analytic_ds
        aggregate__stddev_pop --- aggregate__stddev_pop__analytic_comp
        in_number --> aggregate__stddev_pop
+       in_dataset --> aggregate__stddev_pop
        aggregate__stddev_pop --> out_number
+       aggregate__stddev_pop --> out_dataset
        aggregate__stddev_pop -. "used in" .-> ext_clause__aggr
        aggregate__stddev_pop -. "used in over()" .-> ext_clause__calc
        click aggregate__stddev_pop "examples/aggregate/stddev_pop/ds_no_group/minimal/"
@@ -313,7 +326,9 @@
        aggregate__stddev_samp --- aggregate__stddev_samp__analytic_ds
        aggregate__stddev_samp --- aggregate__stddev_samp__analytic_comp
        in_number --> aggregate__stddev_samp
+       in_dataset --> aggregate__stddev_samp
        aggregate__stddev_samp --> out_number
+       aggregate__stddev_samp --> out_dataset
        aggregate__stddev_samp -. "used in" .-> ext_clause__aggr
        aggregate__stddev_samp -. "used in over()" .-> ext_clause__calc
        click aggregate__stddev_samp "examples/aggregate/stddev_samp/ds_no_group/minimal/"
@@ -343,7 +358,9 @@
        aggregate__var_pop --- aggregate__var_pop__analytic_ds
        aggregate__var_pop --- aggregate__var_pop__analytic_comp
        in_number --> aggregate__var_pop
+       in_dataset --> aggregate__var_pop
        aggregate__var_pop --> out_number
+       aggregate__var_pop --> out_dataset
        aggregate__var_pop -. "used in" .-> ext_clause__aggr
        aggregate__var_pop -. "used in over()" .-> ext_clause__calc
        click aggregate__var_pop "examples/aggregate/var_pop/ds_no_group/minimal/"
@@ -373,7 +390,9 @@
        aggregate__var_samp --- aggregate__var_samp__analytic_ds
        aggregate__var_samp --- aggregate__var_samp__analytic_comp
        in_number --> aggregate__var_samp
+       in_dataset --> aggregate__var_samp
        aggregate__var_samp --> out_number
+       aggregate__var_samp --> out_dataset
        aggregate__var_samp -. "used in" .-> ext_clause__aggr
        aggregate__var_samp -. "used in over()" .-> ext_clause__calc
        click aggregate__var_samp "examples/aggregate/var_samp/ds_no_group/minimal/"
@@ -391,7 +410,9 @@
        aggregate__first_value --- aggregate__first_value__analytic_ds
        aggregate__first_value --- aggregate__first_value__analytic_comp
        in_scalar --> aggregate__first_value
+       in_dataset --> aggregate__first_value
        aggregate__first_value --> out_scalar
+       aggregate__first_value --> out_dataset
        aggregate__first_value -. "used in over()" .-> ext_clause__calc
        click aggregate__first_value "examples/aggregate/first_value/analytic_ds/manual_ex_1/"
        click aggregate__first_value__analytic_ds "examples/aggregate/first_value/analytic_ds/manual_ex_1/"
@@ -402,7 +423,9 @@
        aggregate__last_value --- aggregate__last_value__analytic_ds
        aggregate__last_value --- aggregate__last_value__analytic_comp
        in_scalar --> aggregate__last_value
+       in_dataset --> aggregate__last_value
        aggregate__last_value --> out_scalar
+       aggregate__last_value --> out_dataset
        aggregate__last_value -. "used in over()" .-> ext_clause__calc
        click aggregate__last_value "examples/aggregate/last_value/analytic_ds/manual_ex_1/"
        click aggregate__last_value__analytic_ds "examples/aggregate/last_value/analytic_ds/manual_ex_1/"
@@ -417,7 +440,9 @@
        aggregate__lag --- aggregate__lag__ds_offset_default
        aggregate__lag --- aggregate__lag__comp_offset
        in_scalar --> aggregate__lag
+       in_dataset --> aggregate__lag
        aggregate__lag --> out_scalar
+       aggregate__lag --> out_dataset
        aggregate__lag -. "used in over()" .-> ext_clause__calc
        click aggregate__lag "examples/aggregate/lag/ds_no_offset/minimal/"
        click aggregate__lag__ds_no_offset "examples/aggregate/lag/ds_no_offset/minimal/"
@@ -434,7 +459,9 @@
        aggregate__lead --- aggregate__lead__ds_offset_default
        aggregate__lead --- aggregate__lead__comp_offset
        in_scalar --> aggregate__lead
+       in_dataset --> aggregate__lead
        aggregate__lead --> out_scalar
+       aggregate__lead --> out_dataset
        aggregate__lead -. "used in over()" .-> ext_clause__calc
        click aggregate__lead "examples/aggregate/lead/ds_no_offset/minimal/"
        click aggregate__lead__ds_no_offset "examples/aggregate/lead/ds_no_offset/minimal/"
@@ -458,7 +485,9 @@
        aggregate__ratio_to_report --- aggregate__ratio_to_report__ds
        aggregate__ratio_to_report --- aggregate__ratio_to_report__comp
        in_number --> aggregate__ratio_to_report
+       in_dataset --> aggregate__ratio_to_report
        aggregate__ratio_to_report --> out_number
+       aggregate__ratio_to_report --> out_dataset
        aggregate__ratio_to_report -. "used in over()" .-> ext_clause__calc
        click aggregate__ratio_to_report "examples/aggregate/ratio_to_report/ds/manual_ex_1/"
        click aggregate__ratio_to_report__ds "examples/aggregate/ratio_to_report/ds/manual_ex_1/"
@@ -480,28 +509,28 @@
      - Detail
      - Example
    * - | ``agg(DS group by Id)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/aggregate_invocation/group_by/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/aggregate_invocation/group_by/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/aggregate_invocation/group_by/manual_ex_1/input/>`__ · `expected <examples/aggregate/aggregate_invocation/group_by/manual_ex_1/expected/>`__ · `notes <examples/aggregate/aggregate_invocation/group_by/manual_ex_1/notes.md>`__ · *manual* · erratum
    * - | ``agg(DS group by Id, Id)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/aggregate/aggregate_invocation/group_by_two/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/aggregate_invocation/group_by_two/manual_ex_2/script.vtl>`__ · `input <examples/aggregate/aggregate_invocation/group_by_two/manual_ex_2/input/>`__ · `expected <examples/aggregate/aggregate_invocation/group_by_two/manual_ex_2/expected/>`__ · `notes <examples/aggregate/aggregate_invocation/group_by_two/manual_ex_2/notes.md>`__ · *manual*
    * - | ``agg(DS)``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/aggregate/aggregate_invocation/no_group/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/aggregate_invocation/no_group/manual_ex_3/script.vtl>`__ · `input <examples/aggregate/aggregate_invocation/no_group/manual_ex_3/input/>`__ · `expected <examples/aggregate/aggregate_invocation/no_group/manual_ex_3/expected/>`__ · *manual*
    * - | ``DS[aggr Me := agg(Me), Me := agg(Me) group by Id]``
-       | manual\_ex\_4
+       | `manual\_ex\_4 <examples/aggregate/aggregate_invocation/aggr_multiple/manual_ex_4/>`__
      - 🟢
      - ✅
      - ✅
@@ -524,70 +553,70 @@
      - Detail
      - Example
    * - | ``an(Me over (partition by Id))``
-       | minimal
+       | `minimal <examples/aggregate/analytic_invocation/partition_by/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/analytic_invocation/partition_by/minimal/script.vtl>`__ · `input <examples/aggregate/analytic_invocation/partition_by/minimal/input/>`__ · `expected <examples/aggregate/analytic_invocation/partition_by/minimal/expected/>`__ · `notes <examples/aggregate/analytic_invocation/partition_by/minimal/notes.md>`__
    * - | ``an(Me over (partition except Id))``
-       | minimal
+       | `minimal <examples/aggregate/analytic_invocation/partition_except/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/analytic_invocation/partition_except/minimal/script.vtl>`__ · `input <examples/aggregate/analytic_invocation/partition_except/minimal/input/>`__ · `expected <examples/aggregate/analytic_invocation/partition_except/minimal/expected/>`__ · `notes <examples/aggregate/analytic_invocation/partition_except/minimal/notes.md>`__
    * - | ``an(over (partition except all order by Id))``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-1-10: Component id\_1 not found in Dataset DS\_1. Please check transformation with output Dataset DS\_r
      - `script <examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/script.vtl>`__ · `input <examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/input/>`__ · `expected <examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/expected/>`__ · `notes <examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/notes.md>`__ · *manual* · erratum
    * - | ``an(over (partition except all order by Id))``
-       | minimal
+       | `minimal <examples/aggregate/analytic_invocation/partition_except_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/analytic_invocation/partition_except_all/minimal/script.vtl>`__ · `input <examples/aggregate/analytic_invocation/partition_except_all/minimal/input/>`__ · `expected <examples/aggregate/analytic_invocation/partition_except_all/minimal/expected/>`__ · `notes <examples/aggregate/analytic_invocation/partition_except_all/minimal/notes.md>`__
    * - | ``an(over (partition by Id order by Me asc))``
-       | minimal
+       | `minimal <examples/aggregate/analytic_invocation/order_asc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/analytic_invocation/order_asc/minimal/script.vtl>`__ · `input <examples/aggregate/analytic_invocation/order_asc/minimal/input/>`__ · `expected <examples/aggregate/analytic_invocation/order_asc/minimal/expected/>`__ · `notes <examples/aggregate/analytic_invocation/order_asc/minimal/notes.md>`__
    * - | ``an(over (partition by Id order by Me desc))``
-       | minimal
+       | `minimal <examples/aggregate/analytic_invocation/order_desc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/analytic_invocation/order_desc/minimal/script.vtl>`__ · `input <examples/aggregate/analytic_invocation/order_desc/minimal/input/>`__ · `expected <examples/aggregate/analytic_invocation/order_desc/minimal/expected/>`__ · `notes <examples/aggregate/analytic_invocation/order_desc/minimal/notes.md>`__
    * - | ``an(DS over (order by Id data points between n preceding and n following))``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/analytic_invocation/window_data_points/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/analytic_invocation/window_data_points/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/analytic_invocation/window_data_points/manual_ex_1/input/>`__ · `expected <examples/aggregate/analytic_invocation/window_data_points/manual_ex_1/expected/>`__ · `notes <examples/aggregate/analytic_invocation/window_data_points/manual_ex_1/notes.md>`__ · *manual*
    * - | ``an(Me over (partition by Id order by Me range between n preceding and n following))``
-       | minimal
+       | `minimal <examples/aggregate/analytic_invocation/window_range/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/analytic_invocation/window_range/minimal/script.vtl>`__ · `input <examples/aggregate/analytic_invocation/window_range/minimal/input/>`__ · `expected <examples/aggregate/analytic_invocation/window_range/minimal/expected/>`__ · `notes <examples/aggregate/analytic_invocation/window_range/minimal/notes.md>`__
    * - | ``an(Me over (... data points between unbounded preceding and unbounded following))``
-       | minimal
+       | `minimal <examples/aggregate/analytic_invocation/window_unbounded/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/analytic_invocation/window_unbounded/minimal/script.vtl>`__ · `input <examples/aggregate/analytic_invocation/window_unbounded/minimal/input/>`__ · `expected <examples/aggregate/analytic_invocation/window_unbounded/minimal/expected/>`__ · `notes <examples/aggregate/analytic_invocation/window_unbounded/minimal/notes.md>`__
    * - | ``an(Me over (... data points between n preceding and current data point))``
-       | minimal
+       | `minimal <examples/aggregate/analytic_invocation/window_current/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -610,77 +639,77 @@
      - Detail
      - Example
    * - | ``count(DS)``
-       | minimal
+       | `minimal <examples/aggregate/count/ds_no_group/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/count/ds_no_group/minimal/script.vtl>`__ · `input <examples/aggregate/count/ds_no_group/minimal/input/>`__ · `expected <examples/aggregate/count/ds_no_group/minimal/expected/>`__ · `notes <examples/aggregate/count/ds_no_group/minimal/notes.md>`__ · `📌 #1049 <https://github.com/Meaningful-Data/vtlengine/issues/1049>`__
    * - | ``count(DS group by Id)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/count/ds_group_by/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/count/ds_group_by/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/count/ds_group_by/manual_ex_1/input/>`__ · `expected <examples/aggregate/count/ds_group_by/manual_ex_1/expected/>`__ · `notes <examples/aggregate/count/ds_group_by/manual_ex_1/notes.md>`__ · *manual*
    * - | ``count(DS group by Id)``
-       | minimal\_2
+       | `minimal\_2 <examples/aggregate/count/ds_group_by/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/count/ds_group_by/minimal_2/script.vtl>`__ · `input <examples/aggregate/count/ds_group_by/minimal_2/input/>`__ · `expected <examples/aggregate/count/ds_group_by/minimal_2/expected/>`__ · `notes <examples/aggregate/count/ds_group_by/minimal_2/notes.md>`__ · `📌 #1049 <https://github.com/Meaningful-Data/vtlengine/issues/1049>`__
    * - | ``count(DS group except Id)``
-       | minimal
+       | `minimal <examples/aggregate/count/ds_group_except/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/count/ds_group_except/minimal/script.vtl>`__ · `input <examples/aggregate/count/ds_group_except/minimal/input/>`__ · `expected <examples/aggregate/count/ds_group_except/minimal/expected/>`__ · `notes <examples/aggregate/count/ds_group_except/minimal/notes.md>`__ · `📌 #1049 <https://github.com/Meaningful-Data/vtlengine/issues/1049>`__
    * - | ``count(DS group all time_agg("A"))``
-       | minimal
+       | `minimal <examples/aggregate/count/ds_group_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/count/ds_group_all/minimal/script.vtl>`__ · `input <examples/aggregate/count/ds_group_all/minimal/input/>`__ · `expected <examples/aggregate/count/ds_group_all/minimal/expected/>`__ · `notes <examples/aggregate/count/ds_group_all/minimal/notes.md>`__ · `📌 #1049 <https://github.com/Meaningful-Data/vtlengine/issues/1049>`__
    * - | ``count(DS group by Id having cond)``
-       | minimal
+       | `minimal <examples/aggregate/count/ds_having/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
      - `script <examples/aggregate/count/ds_having/minimal/script.vtl>`__ · `input <examples/aggregate/count/ds_having/minimal/input/>`__ · `expected <examples/aggregate/count/ds_having/minimal/expected/>`__ · `notes <examples/aggregate/count/ds_having/minimal/notes.md>`__ · `📌 #1049 <https://github.com/Meaningful-Data/vtlengine/issues/1049>`__
    * - | ``count(DS group by Id having cond)``
-       | minimal\_2
+       | `minimal\_2 <examples/aggregate/count/ds_having/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/count/ds_having/minimal_2/script.vtl>`__ · `input <examples/aggregate/count/ds_having/minimal_2/input/>`__ · `expected <examples/aggregate/count/ds_having/minimal_2/expected/>`__ · `notes <examples/aggregate/count/ds_having/minimal_2/notes.md>`__
    * - | ``count(DS group by Id having count() > n)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/aggregate/count/count_in_having/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/count/count_in_having/manual_ex_2/script.vtl>`__ · `input <examples/aggregate/count/count_in_having/manual_ex_2/input/>`__ · `expected <examples/aggregate/count/count_in_having/manual_ex_2/expected/>`__ · `notes <examples/aggregate/count/count_in_having/manual_ex_2/notes.md>`__ · *manual*
    * - | ``DS[aggr Me := count(Me) group by Id]``
-       | minimal
+       | `minimal <examples/aggregate/count/comp_in_aggr/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/count/comp_in_aggr/minimal/script.vtl>`__ · `input <examples/aggregate/count/comp_in_aggr/minimal/input/>`__ · `expected <examples/aggregate/count/comp_in_aggr/minimal/expected/>`__ · `notes <examples/aggregate/count/comp_in_aggr/minimal/notes.md>`__
    * - | ``count(DS over (partition by Id))``
-       | minimal
+       | `minimal <examples/aggregate/count/analytic_ds/minimal/>`__
      - 🔵
      - ❌
      - 💥
      - pandas: missing components: int\_var; unexpected components: Me\_1, Me\_2; DuckDB: KeyError: Me\_1
      - `script <examples/aggregate/count/analytic_ds/minimal/script.vtl>`__ · `input <examples/aggregate/count/analytic_ds/minimal/input/>`__ · `expected <examples/aggregate/count/analytic_ds/minimal/expected/>`__ · `notes <examples/aggregate/count/analytic_ds/minimal/notes.md>`__
    * - | ``DS[calc Me := count(Me over (partition by Id))]``
-       | minimal
+       | `minimal <examples/aggregate/count/analytic_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -703,70 +732,70 @@
      - Detail
      - Example
    * - | ``min(DS)``
-       | minimal
+       | `minimal <examples/aggregate/min/ds_no_group/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/min/ds_no_group/minimal/script.vtl>`__ · `input <examples/aggregate/min/ds_no_group/minimal/input/>`__ · `expected <examples/aggregate/min/ds_no_group/minimal/expected/>`__ · `notes <examples/aggregate/min/ds_no_group/minimal/notes.md>`__
    * - | ``min(DS group by Id)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/min/ds_group_by/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/min/ds_group_by/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/min/ds_group_by/manual_ex_1/input/>`__ · `expected <examples/aggregate/min/ds_group_by/manual_ex_1/expected/>`__ · *manual*
    * - | ``min(DS group by Id)``
-       | minimal\_2
+       | `minimal\_2 <examples/aggregate/min/ds_group_by/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/min/ds_group_by/minimal_2/script.vtl>`__ · `input <examples/aggregate/min/ds_group_by/minimal_2/input/>`__ · `expected <examples/aggregate/min/ds_group_by/minimal_2/expected/>`__ · `notes <examples/aggregate/min/ds_group_by/minimal_2/notes.md>`__
    * - | ``min(DS group except Id)``
-       | minimal
+       | `minimal <examples/aggregate/min/ds_group_except/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/min/ds_group_except/minimal/script.vtl>`__ · `input <examples/aggregate/min/ds_group_except/minimal/input/>`__ · `expected <examples/aggregate/min/ds_group_except/minimal/expected/>`__ · `notes <examples/aggregate/min/ds_group_except/minimal/notes.md>`__
    * - | ``min(DS group all time_agg("A"))``
-       | minimal
+       | `minimal <examples/aggregate/min/ds_group_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/min/ds_group_all/minimal/script.vtl>`__ · `input <examples/aggregate/min/ds_group_all/minimal/input/>`__ · `expected <examples/aggregate/min/ds_group_all/minimal/expected/>`__ · `notes <examples/aggregate/min/ds_group_all/minimal/notes.md>`__
    * - | ``min(DS group by Id having cond)``
-       | minimal
+       | `minimal <examples/aggregate/min/ds_having/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
      - `script <examples/aggregate/min/ds_having/minimal/script.vtl>`__ · `input <examples/aggregate/min/ds_having/minimal/input/>`__ · `expected <examples/aggregate/min/ds_having/minimal/expected/>`__ · `notes <examples/aggregate/min/ds_having/minimal/notes.md>`__
    * - | ``min(DS group by Id having cond)``
-       | minimal\_2
+       | `minimal\_2 <examples/aggregate/min/ds_having/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/min/ds_having/minimal_2/script.vtl>`__ · `input <examples/aggregate/min/ds_having/minimal_2/input/>`__ · `expected <examples/aggregate/min/ds_having/minimal_2/expected/>`__ · `notes <examples/aggregate/min/ds_having/minimal_2/notes.md>`__
    * - | ``DS[aggr Me := min(Me) group by Id]``
-       | minimal
+       | `minimal <examples/aggregate/min/comp_in_aggr/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/min/comp_in_aggr/minimal/script.vtl>`__ · `input <examples/aggregate/min/comp_in_aggr/minimal/input/>`__ · `expected <examples/aggregate/min/comp_in_aggr/minimal/expected/>`__ · `notes <examples/aggregate/min/comp_in_aggr/minimal/notes.md>`__
    * - | ``min(DS over (partition by Id))``
-       | minimal
+       | `minimal <examples/aggregate/min/analytic_ds/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 1 got 3.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 0.500000 got 1.5; row Id\_1=A, Id\_2=2020Q2: Me\_2 expected 0.500000 got 1.5
      - `script <examples/aggregate/min/analytic_ds/minimal/script.vtl>`__ · `input <examples/aggregate/min/analytic_ds/minimal/input/>`__ · `expected <examples/aggregate/min/analytic_ds/minimal/expected/>`__ · `notes <examples/aggregate/min/analytic_ds/minimal/notes.md>`__
    * - | ``DS[calc Me := min(Me over (partition by Id))]``
-       | minimal
+       | `minimal <examples/aggregate/min/analytic_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -789,70 +818,70 @@
      - Detail
      - Example
    * - | ``max(DS)``
-       | minimal
+       | `minimal <examples/aggregate/max/ds_no_group/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/max/ds_no_group/minimal/script.vtl>`__ · `input <examples/aggregate/max/ds_no_group/minimal/input/>`__ · `expected <examples/aggregate/max/ds_no_group/minimal/expected/>`__ · `notes <examples/aggregate/max/ds_no_group/minimal/notes.md>`__
    * - | ``max(DS group by Id)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/max/ds_group_by/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/max/ds_group_by/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/max/ds_group_by/manual_ex_1/input/>`__ · `expected <examples/aggregate/max/ds_group_by/manual_ex_1/expected/>`__ · *manual*
    * - | ``max(DS group by Id)``
-       | minimal\_2
+       | `minimal\_2 <examples/aggregate/max/ds_group_by/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/max/ds_group_by/minimal_2/script.vtl>`__ · `input <examples/aggregate/max/ds_group_by/minimal_2/input/>`__ · `expected <examples/aggregate/max/ds_group_by/minimal_2/expected/>`__ · `notes <examples/aggregate/max/ds_group_by/minimal_2/notes.md>`__
    * - | ``max(DS group except Id)``
-       | minimal
+       | `minimal <examples/aggregate/max/ds_group_except/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/max/ds_group_except/minimal/script.vtl>`__ · `input <examples/aggregate/max/ds_group_except/minimal/input/>`__ · `expected <examples/aggregate/max/ds_group_except/minimal/expected/>`__ · `notes <examples/aggregate/max/ds_group_except/minimal/notes.md>`__
    * - | ``max(DS group all time_agg("A"))``
-       | minimal
+       | `minimal <examples/aggregate/max/ds_group_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/max/ds_group_all/minimal/script.vtl>`__ · `input <examples/aggregate/max/ds_group_all/minimal/input/>`__ · `expected <examples/aggregate/max/ds_group_all/minimal/expected/>`__ · `notes <examples/aggregate/max/ds_group_all/minimal/notes.md>`__
    * - | ``max(DS group by Id having cond)``
-       | minimal
+       | `minimal <examples/aggregate/max/ds_having/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
      - `script <examples/aggregate/max/ds_having/minimal/script.vtl>`__ · `input <examples/aggregate/max/ds_having/minimal/input/>`__ · `expected <examples/aggregate/max/ds_having/minimal/expected/>`__ · `notes <examples/aggregate/max/ds_having/minimal/notes.md>`__
    * - | ``max(DS group by Id having cond)``
-       | minimal\_2
+       | `minimal\_2 <examples/aggregate/max/ds_having/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/max/ds_having/minimal_2/script.vtl>`__ · `input <examples/aggregate/max/ds_having/minimal_2/input/>`__ · `expected <examples/aggregate/max/ds_having/minimal_2/expected/>`__ · `notes <examples/aggregate/max/ds_having/minimal_2/notes.md>`__
    * - | ``DS[aggr Me := max(Me) group by Id]``
-       | minimal
+       | `minimal <examples/aggregate/max/comp_in_aggr/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/max/comp_in_aggr/minimal/script.vtl>`__ · `input <examples/aggregate/max/comp_in_aggr/minimal/input/>`__ · `expected <examples/aggregate/max/comp_in_aggr/minimal/expected/>`__ · `notes <examples/aggregate/max/comp_in_aggr/minimal/notes.md>`__
    * - | ``max(DS over (partition by Id))``
-       | minimal
+       | `minimal <examples/aggregate/max/analytic_ds/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 5 got 3.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 3.500000 got 1.5; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 5 got 3.0
      - `script <examples/aggregate/max/analytic_ds/minimal/script.vtl>`__ · `input <examples/aggregate/max/analytic_ds/minimal/input/>`__ · `expected <examples/aggregate/max/analytic_ds/minimal/expected/>`__ · `notes <examples/aggregate/max/analytic_ds/minimal/notes.md>`__
    * - | ``DS[calc Me := max(Me over (partition by Id))]``
-       | minimal
+       | `minimal <examples/aggregate/max/analytic_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -875,63 +904,63 @@
      - Detail
      - Example
    * - | ``median(DS)``
-       | minimal
+       | `minimal <examples/aggregate/median/ds_no_group/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/median/ds_no_group/minimal/script.vtl>`__ · `input <examples/aggregate/median/ds_no_group/minimal/input/>`__ · `expected <examples/aggregate/median/ds_no_group/minimal/expected/>`__ · `notes <examples/aggregate/median/ds_no_group/minimal/notes.md>`__
    * - | ``median(DS group by Id)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/median/ds_group_by/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/median/ds_group_by/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/median/ds_group_by/manual_ex_1/input/>`__ · `expected <examples/aggregate/median/ds_group_by/manual_ex_1/expected/>`__ · *manual*
    * - | ``median(DS group except Id)``
-       | minimal
+       | `minimal <examples/aggregate/median/ds_group_except/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/median/ds_group_except/minimal/script.vtl>`__ · `input <examples/aggregate/median/ds_group_except/minimal/input/>`__ · `expected <examples/aggregate/median/ds_group_except/minimal/expected/>`__ · `notes <examples/aggregate/median/ds_group_except/minimal/notes.md>`__
    * - | ``median(DS group all time_agg("A"))``
-       | minimal
+       | `minimal <examples/aggregate/median/ds_group_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/median/ds_group_all/minimal/script.vtl>`__ · `input <examples/aggregate/median/ds_group_all/minimal/input/>`__ · `expected <examples/aggregate/median/ds_group_all/minimal/expected/>`__ · `notes <examples/aggregate/median/ds_group_all/minimal/notes.md>`__
    * - | ``median(DS group by Id having cond)``
-       | minimal
+       | `minimal <examples/aggregate/median/ds_having/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
      - `script <examples/aggregate/median/ds_having/minimal/script.vtl>`__ · `input <examples/aggregate/median/ds_having/minimal/input/>`__ · `expected <examples/aggregate/median/ds_having/minimal/expected/>`__ · `notes <examples/aggregate/median/ds_having/minimal/notes.md>`__
    * - | ``median(DS group by Id having cond)``
-       | minimal\_2
+       | `minimal\_2 <examples/aggregate/median/ds_having/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/median/ds_having/minimal_2/script.vtl>`__ · `input <examples/aggregate/median/ds_having/minimal_2/input/>`__ · `expected <examples/aggregate/median/ds_having/minimal_2/expected/>`__ · `notes <examples/aggregate/median/ds_having/minimal_2/notes.md>`__
    * - | ``DS[aggr Me := median(Me) group by Id]``
-       | minimal
+       | `minimal <examples/aggregate/median/comp_in_aggr/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/median/comp_in_aggr/minimal/script.vtl>`__ · `input <examples/aggregate/median/comp_in_aggr/minimal/input/>`__ · `expected <examples/aggregate/median/comp_in_aggr/minimal/expected/>`__ · `notes <examples/aggregate/median/comp_in_aggr/minimal/notes.md>`__
    * - | ``median(DS over (partition by Id))``
-       | minimal
+       | `minimal <examples/aggregate/median/analytic_ds/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 2 got 3.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 2 got 1.5; row Id\_1=A, Id\_2=2020Q2: Me\_2 expected 2 got 2.5
      - `script <examples/aggregate/median/analytic_ds/minimal/script.vtl>`__ · `input <examples/aggregate/median/analytic_ds/minimal/input/>`__ · `expected <examples/aggregate/median/analytic_ds/minimal/expected/>`__ · `notes <examples/aggregate/median/analytic_ds/minimal/notes.md>`__
    * - | ``DS[calc Me := median(Me over (partition by Id))]``
-       | minimal
+       | `minimal <examples/aggregate/median/analytic_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -954,63 +983,63 @@
      - Detail
      - Example
    * - | ``sum(DS)``
-       | minimal
+       | `minimal <examples/aggregate/sum/ds_no_group/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/sum/ds_no_group/minimal/script.vtl>`__ · `input <examples/aggregate/sum/ds_no_group/minimal/input/>`__ · `expected <examples/aggregate/sum/ds_no_group/minimal/expected/>`__ · `notes <examples/aggregate/sum/ds_no_group/minimal/notes.md>`__
    * - | ``sum(DS group by Id)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/sum/ds_group_by/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/sum/ds_group_by/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/sum/ds_group_by/manual_ex_1/input/>`__ · `expected <examples/aggregate/sum/ds_group_by/manual_ex_1/expected/>`__ · `notes <examples/aggregate/sum/ds_group_by/manual_ex_1/notes.md>`__ · *manual*
    * - | ``sum(DS group except Id)``
-       | minimal
+       | `minimal <examples/aggregate/sum/ds_group_except/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/sum/ds_group_except/minimal/script.vtl>`__ · `input <examples/aggregate/sum/ds_group_except/minimal/input/>`__ · `expected <examples/aggregate/sum/ds_group_except/minimal/expected/>`__ · `notes <examples/aggregate/sum/ds_group_except/minimal/notes.md>`__
    * - | ``sum(DS group all time_agg("A"))``
-       | minimal
+       | `minimal <examples/aggregate/sum/ds_group_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/sum/ds_group_all/minimal/script.vtl>`__ · `input <examples/aggregate/sum/ds_group_all/minimal/input/>`__ · `expected <examples/aggregate/sum/ds_group_all/minimal/expected/>`__ · `notes <examples/aggregate/sum/ds_group_all/minimal/notes.md>`__
    * - | ``sum(DS group by Id having cond)``
-       | minimal
+       | `minimal <examples/aggregate/sum/ds_having/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
      - `script <examples/aggregate/sum/ds_having/minimal/script.vtl>`__ · `input <examples/aggregate/sum/ds_having/minimal/input/>`__ · `expected <examples/aggregate/sum/ds_having/minimal/expected/>`__ · `notes <examples/aggregate/sum/ds_having/minimal/notes.md>`__
    * - | ``sum(DS group by Id having cond)``
-       | minimal\_2
+       | `minimal\_2 <examples/aggregate/sum/ds_having/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/sum/ds_having/minimal_2/script.vtl>`__ · `input <examples/aggregate/sum/ds_having/minimal_2/input/>`__ · `expected <examples/aggregate/sum/ds_having/minimal_2/expected/>`__ · `notes <examples/aggregate/sum/ds_having/minimal_2/notes.md>`__
    * - | ``DS[aggr Me := sum(Me) group by Id]``
-       | minimal
+       | `minimal <examples/aggregate/sum/comp_in_aggr/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/sum/comp_in_aggr/minimal/script.vtl>`__ · `input <examples/aggregate/sum/comp_in_aggr/minimal/input/>`__ · `expected <examples/aggregate/sum/comp_in_aggr/minimal/expected/>`__ · `notes <examples/aggregate/sum/comp_in_aggr/minimal/notes.md>`__
    * - | ``sum(DS over (partition by Id))``
-       | minimal
+       | `minimal <examples/aggregate/sum/analytic_ds/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 10 got 3.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 8 got 1.5; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 10 got 4.0
      - `script <examples/aggregate/sum/analytic_ds/minimal/script.vtl>`__ · `input <examples/aggregate/sum/analytic_ds/minimal/input/>`__ · `expected <examples/aggregate/sum/analytic_ds/minimal/expected/>`__ · `notes <examples/aggregate/sum/analytic_ds/minimal/notes.md>`__
    * - | ``DS[calc Me := sum(Me over (partition by Id))]``
-       | minimal
+       | `minimal <examples/aggregate/sum/analytic_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1033,70 +1062,70 @@
      - Detail
      - Example
    * - | ``avg(DS)``
-       | minimal
+       | `minimal <examples/aggregate/avg/ds_no_group/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/avg/ds_no_group/minimal/script.vtl>`__ · `input <examples/aggregate/avg/ds_no_group/minimal/input/>`__ · `expected <examples/aggregate/avg/ds_no_group/minimal/expected/>`__ · `notes <examples/aggregate/avg/ds_no_group/minimal/notes.md>`__
    * - | ``avg(DS group by Id)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/avg/ds_group_by/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/avg/ds_group_by/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/avg/ds_group_by/manual_ex_1/input/>`__ · `expected <examples/aggregate/avg/ds_group_by/manual_ex_1/expected/>`__ · *manual*
    * - | ``avg(DS group by Id)``
-       | minimal\_2
+       | `minimal\_2 <examples/aggregate/avg/ds_group_by/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/avg/ds_group_by/minimal_2/script.vtl>`__ · `input <examples/aggregate/avg/ds_group_by/minimal_2/input/>`__ · `expected <examples/aggregate/avg/ds_group_by/minimal_2/expected/>`__ · `notes <examples/aggregate/avg/ds_group_by/minimal_2/notes.md>`__
    * - | ``avg(DS group except Id)``
-       | minimal
+       | `minimal <examples/aggregate/avg/ds_group_except/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/avg/ds_group_except/minimal/script.vtl>`__ · `input <examples/aggregate/avg/ds_group_except/minimal/input/>`__ · `expected <examples/aggregate/avg/ds_group_except/minimal/expected/>`__ · `notes <examples/aggregate/avg/ds_group_except/minimal/notes.md>`__
    * - | ``avg(DS group all time_agg("A"))``
-       | minimal
+       | `minimal <examples/aggregate/avg/ds_group_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/avg/ds_group_all/minimal/script.vtl>`__ · `input <examples/aggregate/avg/ds_group_all/minimal/input/>`__ · `expected <examples/aggregate/avg/ds_group_all/minimal/expected/>`__ · `notes <examples/aggregate/avg/ds_group_all/minimal/notes.md>`__
    * - | ``avg(DS group by Id having cond)``
-       | minimal
+       | `minimal <examples/aggregate/avg/ds_having/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
      - `script <examples/aggregate/avg/ds_having/minimal/script.vtl>`__ · `input <examples/aggregate/avg/ds_having/minimal/input/>`__ · `expected <examples/aggregate/avg/ds_having/minimal/expected/>`__ · `notes <examples/aggregate/avg/ds_having/minimal/notes.md>`__
    * - | ``avg(DS group by Id having cond)``
-       | minimal\_2
+       | `minimal\_2 <examples/aggregate/avg/ds_having/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/avg/ds_having/minimal_2/script.vtl>`__ · `input <examples/aggregate/avg/ds_having/minimal_2/input/>`__ · `expected <examples/aggregate/avg/ds_having/minimal_2/expected/>`__ · `notes <examples/aggregate/avg/ds_having/minimal_2/notes.md>`__
    * - | ``DS[aggr Me := avg(Me) group by Id]``
-       | minimal
+       | `minimal <examples/aggregate/avg/comp_in_aggr/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/avg/comp_in_aggr/minimal/script.vtl>`__ · `input <examples/aggregate/avg/comp_in_aggr/minimal/input/>`__ · `expected <examples/aggregate/avg/comp_in_aggr/minimal/expected/>`__ · `notes <examples/aggregate/avg/comp_in_aggr/minimal/notes.md>`__
    * - | ``avg(DS over (partition by Id))``
-       | minimal
+       | `minimal <examples/aggregate/avg/analytic_ds/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 2.500000 got 3.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 2 got 1.5; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 2.500000 got 2.0
      - `script <examples/aggregate/avg/analytic_ds/minimal/script.vtl>`__ · `input <examples/aggregate/avg/analytic_ds/minimal/input/>`__ · `expected <examples/aggregate/avg/analytic_ds/minimal/expected/>`__ · `notes <examples/aggregate/avg/analytic_ds/minimal/notes.md>`__
    * - | ``DS[calc Me := avg(Me over (partition by Id))]``
-       | minimal
+       | `minimal <examples/aggregate/avg/analytic_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1119,63 +1148,63 @@
      - Detail
      - Example
    * - | ``stddev_pop(DS)``
-       | minimal
+       | `minimal <examples/aggregate/stddev_pop/ds_no_group/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/stddev_pop/ds_no_group/minimal/script.vtl>`__ · `input <examples/aggregate/stddev_pop/ds_no_group/minimal/input/>`__ · `expected <examples/aggregate/stddev_pop/ds_no_group/minimal/expected/>`__ · `notes <examples/aggregate/stddev_pop/ds_no_group/minimal/notes.md>`__
    * - | ``stddev_pop(DS group by Id)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/stddev_pop/ds_group_by/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/stddev_pop/ds_group_by/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/stddev_pop/ds_group_by/manual_ex_1/input/>`__ · `expected <examples/aggregate/stddev_pop/ds_group_by/manual_ex_1/expected/>`__ · *manual*
    * - | ``stddev_pop(DS group except Id)``
-       | minimal
+       | `minimal <examples/aggregate/stddev_pop/ds_group_except/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/stddev_pop/ds_group_except/minimal/script.vtl>`__ · `input <examples/aggregate/stddev_pop/ds_group_except/minimal/input/>`__ · `expected <examples/aggregate/stddev_pop/ds_group_except/minimal/expected/>`__ · `notes <examples/aggregate/stddev_pop/ds_group_except/minimal/notes.md>`__
    * - | ``stddev_pop(DS group all time_agg("A"))``
-       | minimal
+       | `minimal <examples/aggregate/stddev_pop/ds_group_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/stddev_pop/ds_group_all/minimal/script.vtl>`__ · `input <examples/aggregate/stddev_pop/ds_group_all/minimal/input/>`__ · `expected <examples/aggregate/stddev_pop/ds_group_all/minimal/expected/>`__ · `notes <examples/aggregate/stddev_pop/ds_group_all/minimal/notes.md>`__
    * - | ``stddev_pop(DS group by Id having cond)``
-       | minimal
+       | `minimal <examples/aggregate/stddev_pop/ds_having/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
      - `script <examples/aggregate/stddev_pop/ds_having/minimal/script.vtl>`__ · `input <examples/aggregate/stddev_pop/ds_having/minimal/input/>`__ · `expected <examples/aggregate/stddev_pop/ds_having/minimal/expected/>`__ · `notes <examples/aggregate/stddev_pop/ds_having/minimal/notes.md>`__
    * - | ``stddev_pop(DS group by Id having cond)``
-       | minimal\_2
+       | `minimal\_2 <examples/aggregate/stddev_pop/ds_having/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/stddev_pop/ds_having/minimal_2/script.vtl>`__ · `input <examples/aggregate/stddev_pop/ds_having/minimal_2/input/>`__ · `expected <examples/aggregate/stddev_pop/ds_having/minimal_2/expected/>`__ · `notes <examples/aggregate/stddev_pop/ds_having/minimal_2/notes.md>`__
    * - | ``DS[aggr Me := stddev_pop(Me) group by Id]``
-       | minimal
+       | `minimal <examples/aggregate/stddev_pop/comp_in_aggr/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/stddev_pop/comp_in_aggr/minimal/script.vtl>`__ · `input <examples/aggregate/stddev_pop/comp_in_aggr/minimal/input/>`__ · `expected <examples/aggregate/stddev_pop/comp_in_aggr/minimal/expected/>`__ · `notes <examples/aggregate/stddev_pop/comp_in_aggr/minimal/notes.md>`__
    * - | ``stddev_pop(DS over (partition by Id))``
-       | minimal
+       | `minimal <examples/aggregate/stddev_pop/analytic_ds/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 1.658312 got 0.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 1.118034 got 0.0; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 1.658312 got 1.0
      - `script <examples/aggregate/stddev_pop/analytic_ds/minimal/script.vtl>`__ · `input <examples/aggregate/stddev_pop/analytic_ds/minimal/input/>`__ · `expected <examples/aggregate/stddev_pop/analytic_ds/minimal/expected/>`__ · `notes <examples/aggregate/stddev_pop/analytic_ds/minimal/notes.md>`__
    * - | ``DS[calc Me := stddev_pop(Me over (partition by Id))]``
-       | minimal
+       | `minimal <examples/aggregate/stddev_pop/analytic_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1198,63 +1227,63 @@
      - Detail
      - Example
    * - | ``stddev_samp(DS)``
-       | minimal
+       | `minimal <examples/aggregate/stddev_samp/ds_no_group/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/stddev_samp/ds_no_group/minimal/script.vtl>`__ · `input <examples/aggregate/stddev_samp/ds_no_group/minimal/input/>`__ · `expected <examples/aggregate/stddev_samp/ds_no_group/minimal/expected/>`__ · `notes <examples/aggregate/stddev_samp/ds_no_group/minimal/notes.md>`__
    * - | ``stddev_samp(DS group by Id)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/stddev_samp/ds_group_by/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/stddev_samp/ds_group_by/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/stddev_samp/ds_group_by/manual_ex_1/input/>`__ · `expected <examples/aggregate/stddev_samp/ds_group_by/manual_ex_1/expected/>`__ · *manual*
    * - | ``stddev_samp(DS group except Id)``
-       | minimal
+       | `minimal <examples/aggregate/stddev_samp/ds_group_except/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/stddev_samp/ds_group_except/minimal/script.vtl>`__ · `input <examples/aggregate/stddev_samp/ds_group_except/minimal/input/>`__ · `expected <examples/aggregate/stddev_samp/ds_group_except/minimal/expected/>`__ · `notes <examples/aggregate/stddev_samp/ds_group_except/minimal/notes.md>`__
    * - | ``stddev_samp(DS group all time_agg("A"))``
-       | minimal
+       | `minimal <examples/aggregate/stddev_samp/ds_group_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/stddev_samp/ds_group_all/minimal/script.vtl>`__ · `input <examples/aggregate/stddev_samp/ds_group_all/minimal/input/>`__ · `expected <examples/aggregate/stddev_samp/ds_group_all/minimal/expected/>`__ · `notes <examples/aggregate/stddev_samp/ds_group_all/minimal/notes.md>`__
    * - | ``stddev_samp(DS group by Id having cond)``
-       | minimal
+       | `minimal <examples/aggregate/stddev_samp/ds_having/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
      - `script <examples/aggregate/stddev_samp/ds_having/minimal/script.vtl>`__ · `input <examples/aggregate/stddev_samp/ds_having/minimal/input/>`__ · `expected <examples/aggregate/stddev_samp/ds_having/minimal/expected/>`__ · `notes <examples/aggregate/stddev_samp/ds_having/minimal/notes.md>`__
    * - | ``stddev_samp(DS group by Id having cond)``
-       | minimal\_2
+       | `minimal\_2 <examples/aggregate/stddev_samp/ds_having/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/stddev_samp/ds_having/minimal_2/script.vtl>`__ · `input <examples/aggregate/stddev_samp/ds_having/minimal_2/input/>`__ · `expected <examples/aggregate/stddev_samp/ds_having/minimal_2/expected/>`__ · `notes <examples/aggregate/stddev_samp/ds_having/minimal_2/notes.md>`__
    * - | ``DS[aggr Me := stddev_samp(Me) group by Id]``
-       | minimal
+       | `minimal <examples/aggregate/stddev_samp/comp_in_aggr/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/stddev_samp/comp_in_aggr/minimal/script.vtl>`__ · `input <examples/aggregate/stddev_samp/comp_in_aggr/minimal/input/>`__ · `expected <examples/aggregate/stddev_samp/comp_in_aggr/minimal/expected/>`__ · `notes <examples/aggregate/stddev_samp/comp_in_aggr/minimal/notes.md>`__
    * - | ``stddev_samp(DS over (partition by Id))``
-       | minimal
+       | `minimal <examples/aggregate/stddev_samp/analytic_ds/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 1.914854 got null; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 1.290994 got null; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 1.914854 got 1.4142135623730951
      - `script <examples/aggregate/stddev_samp/analytic_ds/minimal/script.vtl>`__ · `input <examples/aggregate/stddev_samp/analytic_ds/minimal/input/>`__ · `expected <examples/aggregate/stddev_samp/analytic_ds/minimal/expected/>`__ · `notes <examples/aggregate/stddev_samp/analytic_ds/minimal/notes.md>`__
    * - | ``DS[calc Me := stddev_samp(Me over (partition by Id))]``
-       | minimal
+       | `minimal <examples/aggregate/stddev_samp/analytic_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1277,63 +1306,63 @@
      - Detail
      - Example
    * - | ``var_pop(DS)``
-       | minimal
+       | `minimal <examples/aggregate/var_pop/ds_no_group/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/var_pop/ds_no_group/minimal/script.vtl>`__ · `input <examples/aggregate/var_pop/ds_no_group/minimal/input/>`__ · `expected <examples/aggregate/var_pop/ds_no_group/minimal/expected/>`__ · `notes <examples/aggregate/var_pop/ds_no_group/minimal/notes.md>`__
    * - | ``var_pop(DS group by Id)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/var_pop/ds_group_by/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/var_pop/ds_group_by/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/var_pop/ds_group_by/manual_ex_1/input/>`__ · `expected <examples/aggregate/var_pop/ds_group_by/manual_ex_1/expected/>`__ · *manual*
    * - | ``var_pop(DS group except Id)``
-       | minimal
+       | `minimal <examples/aggregate/var_pop/ds_group_except/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/var_pop/ds_group_except/minimal/script.vtl>`__ · `input <examples/aggregate/var_pop/ds_group_except/minimal/input/>`__ · `expected <examples/aggregate/var_pop/ds_group_except/minimal/expected/>`__ · `notes <examples/aggregate/var_pop/ds_group_except/minimal/notes.md>`__
    * - | ``var_pop(DS group all time_agg("A"))``
-       | minimal
+       | `minimal <examples/aggregate/var_pop/ds_group_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/var_pop/ds_group_all/minimal/script.vtl>`__ · `input <examples/aggregate/var_pop/ds_group_all/minimal/input/>`__ · `expected <examples/aggregate/var_pop/ds_group_all/minimal/expected/>`__ · `notes <examples/aggregate/var_pop/ds_group_all/minimal/notes.md>`__
    * - | ``var_pop(DS group by Id having cond)``
-       | minimal
+       | `minimal <examples/aggregate/var_pop/ds_having/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
      - `script <examples/aggregate/var_pop/ds_having/minimal/script.vtl>`__ · `input <examples/aggregate/var_pop/ds_having/minimal/input/>`__ · `expected <examples/aggregate/var_pop/ds_having/minimal/expected/>`__ · `notes <examples/aggregate/var_pop/ds_having/minimal/notes.md>`__
    * - | ``var_pop(DS group by Id having cond)``
-       | minimal\_2
+       | `minimal\_2 <examples/aggregate/var_pop/ds_having/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/var_pop/ds_having/minimal_2/script.vtl>`__ · `input <examples/aggregate/var_pop/ds_having/minimal_2/input/>`__ · `expected <examples/aggregate/var_pop/ds_having/minimal_2/expected/>`__ · `notes <examples/aggregate/var_pop/ds_having/minimal_2/notes.md>`__
    * - | ``DS[aggr Me := var_pop(Me) group by Id]``
-       | minimal
+       | `minimal <examples/aggregate/var_pop/comp_in_aggr/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/var_pop/comp_in_aggr/minimal/script.vtl>`__ · `input <examples/aggregate/var_pop/comp_in_aggr/minimal/input/>`__ · `expected <examples/aggregate/var_pop/comp_in_aggr/minimal/expected/>`__ · `notes <examples/aggregate/var_pop/comp_in_aggr/minimal/notes.md>`__
    * - | ``var_pop(DS over (partition by Id))``
-       | minimal
+       | `minimal <examples/aggregate/var_pop/analytic_ds/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 2.750000 got 0.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 1.250000 got 0.0; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 2.750000 got 1.0
      - `script <examples/aggregate/var_pop/analytic_ds/minimal/script.vtl>`__ · `input <examples/aggregate/var_pop/analytic_ds/minimal/input/>`__ · `expected <examples/aggregate/var_pop/analytic_ds/minimal/expected/>`__ · `notes <examples/aggregate/var_pop/analytic_ds/minimal/notes.md>`__
    * - | ``DS[calc Me := var_pop(Me over (partition by Id))]``
-       | minimal
+       | `minimal <examples/aggregate/var_pop/analytic_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1356,63 +1385,63 @@
      - Detail
      - Example
    * - | ``var_samp(DS)``
-       | minimal
+       | `minimal <examples/aggregate/var_samp/ds_no_group/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/var_samp/ds_no_group/minimal/script.vtl>`__ · `input <examples/aggregate/var_samp/ds_no_group/minimal/input/>`__ · `expected <examples/aggregate/var_samp/ds_no_group/minimal/expected/>`__ · `notes <examples/aggregate/var_samp/ds_no_group/minimal/notes.md>`__
    * - | ``var_samp(DS group by Id)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/var_samp/ds_group_by/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/var_samp/ds_group_by/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/var_samp/ds_group_by/manual_ex_1/input/>`__ · `expected <examples/aggregate/var_samp/ds_group_by/manual_ex_1/expected/>`__ · *manual*
    * - | ``var_samp(DS group except Id)``
-       | minimal
+       | `minimal <examples/aggregate/var_samp/ds_group_except/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/var_samp/ds_group_except/minimal/script.vtl>`__ · `input <examples/aggregate/var_samp/ds_group_except/minimal/input/>`__ · `expected <examples/aggregate/var_samp/ds_group_except/minimal/expected/>`__ · `notes <examples/aggregate/var_samp/ds_group_except/minimal/notes.md>`__
    * - | ``var_samp(DS group all time_agg("A"))``
-       | minimal
+       | `minimal <examples/aggregate/var_samp/ds_group_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/var_samp/ds_group_all/minimal/script.vtl>`__ · `input <examples/aggregate/var_samp/ds_group_all/minimal/input/>`__ · `expected <examples/aggregate/var_samp/ds_group_all/minimal/expected/>`__ · `notes <examples/aggregate/var_samp/ds_group_all/minimal/notes.md>`__
    * - | ``var_samp(DS group by Id having cond)``
-       | minimal
+       | `minimal <examples/aggregate/var_samp/ds_having/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
      - `script <examples/aggregate/var_samp/ds_having/minimal/script.vtl>`__ · `input <examples/aggregate/var_samp/ds_having/minimal/input/>`__ · `expected <examples/aggregate/var_samp/ds_having/minimal/expected/>`__ · `notes <examples/aggregate/var_samp/ds_having/minimal/notes.md>`__
    * - | ``var_samp(DS group by Id having cond)``
-       | minimal\_2
+       | `minimal\_2 <examples/aggregate/var_samp/ds_having/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/var_samp/ds_having/minimal_2/script.vtl>`__ · `input <examples/aggregate/var_samp/ds_having/minimal_2/input/>`__ · `expected <examples/aggregate/var_samp/ds_having/minimal_2/expected/>`__ · `notes <examples/aggregate/var_samp/ds_having/minimal_2/notes.md>`__
    * - | ``DS[aggr Me := var_samp(Me) group by Id]``
-       | minimal
+       | `minimal <examples/aggregate/var_samp/comp_in_aggr/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/var_samp/comp_in_aggr/minimal/script.vtl>`__ · `input <examples/aggregate/var_samp/comp_in_aggr/minimal/input/>`__ · `expected <examples/aggregate/var_samp/comp_in_aggr/minimal/expected/>`__ · `notes <examples/aggregate/var_samp/comp_in_aggr/minimal/notes.md>`__
    * - | ``var_samp(DS over (partition by Id))``
-       | minimal
+       | `minimal <examples/aggregate/var_samp/analytic_ds/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 3.666667 got null; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 1.666667 got null; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 3.666667 got 2.0
      - `script <examples/aggregate/var_samp/analytic_ds/minimal/script.vtl>`__ · `input <examples/aggregate/var_samp/analytic_ds/minimal/input/>`__ · `expected <examples/aggregate/var_samp/analytic_ds/minimal/expected/>`__ · `notes <examples/aggregate/var_samp/analytic_ds/minimal/notes.md>`__
    * - | ``DS[calc Me := var_samp(Me over (partition by Id))]``
-       | minimal
+       | `minimal <examples/aggregate/var_samp/analytic_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1435,14 +1464,14 @@
      - Detail
      - Example
    * - | ``first_value(DS over (partition by Id order by Id data points ...))``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/first_value/analytic_ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/first_value/analytic_ds/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/first_value/analytic_ds/manual_ex_1/input/>`__ · `expected <examples/aggregate/first_value/analytic_ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS[calc Me := first_value(Me over (partition by Id order by Id data points ...))]``
-       | minimal
+       | `minimal <examples/aggregate/first_value/analytic_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1465,14 +1494,14 @@
      - Detail
      - Example
    * - | ``last_value(DS over (partition by Id order by Id data points ...))``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/last_value/analytic_ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/last_value/analytic_ds/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/last_value/analytic_ds/manual_ex_1/input/>`__ · `expected <examples/aggregate/last_value/analytic_ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS[calc Me := last_value(Me over (partition by Id order by Id data points ...))]``
-       | minimal
+       | `minimal <examples/aggregate/last_value/analytic_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1495,28 +1524,28 @@
      - Detail
      - Example
    * - | ``lag(DS over (partition by Id order by Id))``
-       | minimal
+       | `minimal <examples/aggregate/lag/ds_no_offset/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-3: lag requires an offset parameter.
      - `script <examples/aggregate/lag/ds_no_offset/minimal/script.vtl>`__ · `input <examples/aggregate/lag/ds_no_offset/minimal/input/>`__ · `expected <examples/aggregate/lag/ds_no_offset/minimal/expected/>`__ · `notes <examples/aggregate/lag/ds_no_offset/minimal/notes.md>`__
    * - | ``lag(DS, n over (partition by Id order by Id))``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/lag/ds_offset/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/lag/ds_offset/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/lag/ds_offset/manual_ex_1/input/>`__ · `expected <examples/aggregate/lag/ds_offset/manual_ex_1/expected/>`__ · *manual*
    * - | ``lag(DS, n, default over (partition by Id order by Id))``
-       | minimal
+       | `minimal <examples/aggregate/lag/ds_offset_default/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/lag/ds_offset_default/minimal/script.vtl>`__ · `input <examples/aggregate/lag/ds_offset_default/minimal/input/>`__ · `expected <examples/aggregate/lag/ds_offset_default/minimal/expected/>`__ · `notes <examples/aggregate/lag/ds_offset_default/minimal/notes.md>`__
    * - | ``DS[calc Me := lag(Me, n over (partition by Id order by Id))]``
-       | minimal
+       | `minimal <examples/aggregate/lag/comp_offset/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1539,28 +1568,28 @@
      - Detail
      - Example
    * - | ``lead(DS over (partition by Id order by Id))``
-       | minimal
+       | `minimal <examples/aggregate/lead/ds_no_offset/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-3: lead requires an offset parameter.
      - `script <examples/aggregate/lead/ds_no_offset/minimal/script.vtl>`__ · `input <examples/aggregate/lead/ds_no_offset/minimal/input/>`__ · `expected <examples/aggregate/lead/ds_no_offset/minimal/expected/>`__ · `notes <examples/aggregate/lead/ds_no_offset/minimal/notes.md>`__
    * - | ``lead(DS, n over (partition by Id order by Id))``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/lead/ds_offset/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/lead/ds_offset/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/lead/ds_offset/manual_ex_1/input/>`__ · `expected <examples/aggregate/lead/ds_offset/manual_ex_1/expected/>`__ · *manual*
    * - | ``lead(DS, n, default over (partition by Id order by Id))``
-       | minimal
+       | `minimal <examples/aggregate/lead/ds_offset_default/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/lead/ds_offset_default/minimal/script.vtl>`__ · `input <examples/aggregate/lead/ds_offset_default/minimal/input/>`__ · `expected <examples/aggregate/lead/ds_offset_default/minimal/expected/>`__ · `notes <examples/aggregate/lead/ds_offset_default/minimal/notes.md>`__
    * - | ``DS[calc Me := lead(Me, n over (partition by Id order by Id))]``
-       | minimal
+       | `minimal <examples/aggregate/lead/comp_offset/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1583,14 +1612,14 @@
      - Detail
      - Example
    * - | ``DS[calc Me := rank(over (partition by Id order by Me))]``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/rank/partition_order/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/rank/partition_order/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/rank/partition_order/manual_ex_1/input/>`__ · `expected <examples/aggregate/rank/partition_order/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS[calc Me := rank(over (order by Id))]``
-       | minimal
+       | `minimal <examples/aggregate/rank/order_only/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1613,14 +1642,14 @@
      - Detail
      - Example
    * - | ``ratio_to_report(DS over (partition by Id))``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/aggregate/ratio_to_report/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/aggregate/ratio_to_report/ds/manual_ex_1/script.vtl>`__ · `input <examples/aggregate/ratio_to_report/ds/manual_ex_1/input/>`__ · `expected <examples/aggregate/ratio_to_report/ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS[calc Me := ratio_to_report(Me over (partition by Id))]``
-       | minimal
+       | `minimal <examples/aggregate/ratio_to_report/comp/minimal/>`__
      - 🟢
      - ✅
      - ✅

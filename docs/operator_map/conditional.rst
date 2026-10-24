@@ -4,7 +4,7 @@
 
 19 variants: 🟢 13 · 🟡 2 · 🔴 2 · 🔵 2
 
-← Back to :doc:`index` · vtlengine 1.9.6rc2 (851f56ae)
+← Back to :doc:`index` · vtlengine 1.9.6rc2 (b393f444) · pandas 3.0.6 · DuckDB 1.5.5
 
 .. mermaid::
 
@@ -18,11 +18,11 @@
        in_boolean(("boolean")):::type
        click in_boolean "examples/types/boolean/identity/minimal/"
        in_scalar(("scalar")):::type
-       click in_scalar "examples/general/non_persistent_assignment/ds/manual_ex_1/"
+       click in_scalar "examples/general/non_persistent_assignment/sc/minimal/"
        in_dataset(("dataset")):::type
        click in_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        out_scalar(("scalar")):::type
-       click out_scalar "examples/general/non_persistent_assignment/ds/manual_ex_1/"
+       click out_scalar "examples/general/non_persistent_assignment/sc/minimal/"
        out_dataset(("dataset")):::type
        click out_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        conditional__if_then_else["🟢 if-then-else if then else"]:::ok
@@ -119,49 +119,49 @@
      - Detail
      - Example
    * - | ``if DS then DS else DS``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/conditional/if_then_else/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/if_then_else/ds/manual_ex_1/script.vtl>`__ · `input <examples/conditional/if_then_else/ds/manual_ex_1/input/>`__ · `expected <examples/conditional/if_then_else/ds/manual_ex_1/expected/>`__ · `notes <examples/conditional/if_then_else/ds/manual_ex_1/notes.md>`__ · *manual*
    * - | ``if DS then DS|sc else sc|DS``
-       | minimal
+       | `minimal <examples/conditional/if_then_else/ds_scalar_branch/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/if_then_else/ds_scalar_branch/minimal/script.vtl>`__ · `input <examples/conditional/if_then_else/ds_scalar_branch/minimal/input/>`__ · `expected <examples/conditional/if_then_else/ds_scalar_branch/minimal/expected/>`__ · `notes <examples/conditional/if_then_else/ds_scalar_branch/minimal/notes.md>`__
    * - | ``if DS then DS|sc else sc|DS``
-       | minimal\_2
+       | `minimal\_2 <examples/conditional/if_then_else/ds_scalar_branch/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/if_then_else/ds_scalar_branch/minimal_2/script.vtl>`__ · `input <examples/conditional/if_then_else/ds_scalar_branch/minimal_2/input/>`__ · `expected <examples/conditional/if_then_else/ds_scalar_branch/minimal_2/expected/>`__ · `notes <examples/conditional/if_then_else/ds_scalar_branch/minimal_2/notes.md>`__
    * - | ``if comp then comp else comp``
-       | minimal
+       | `minimal <examples/conditional/if_then_else/comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/if_then_else/comp/minimal/script.vtl>`__ · `input <examples/conditional/if_then_else/comp/minimal/input/>`__ · `expected <examples/conditional/if_then_else/comp/minimal/expected/>`__ · `notes <examples/conditional/if_then_else/comp/minimal/notes.md>`__
    * - | ``if comp then sc else sc``
-       | minimal
+       | `minimal <examples/conditional/if_then_else/comp_scalar_branch/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/if_then_else/comp_scalar_branch/minimal/script.vtl>`__ · `input <examples/conditional/if_then_else/comp_scalar_branch/minimal/input/>`__ · `expected <examples/conditional/if_then_else/comp_scalar_branch/minimal/expected/>`__ · `notes <examples/conditional/if_then_else/comp_scalar_branch/minimal/notes.md>`__
    * - | ``if sc then sc else sc``
-       | minimal
+       | `minimal <examples/conditional/if_then_else/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/if_then_else/sc/minimal/script.vtl>`__ · `expected <examples/conditional/if_then_else/sc/minimal/expected/>`__ · `notes <examples/conditional/if_then_else/sc/minimal/notes.md>`__
    * - | ``if sc then sc else sc``
-       | minimal\_2
+       | `minimal\_2 <examples/conditional/if_then_else/sc/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
@@ -184,105 +184,105 @@
      - Detail
      - Example
    * - | ``case when DS then DS else DS``
-       | minimal
+       | `minimal <examples/conditional/case/ds/minimal/>`__
      - 🔵
      - ✅
      - 💥
      - DuckDB: ParserException: Parser Error: syntax error at or near \"SELECT\"
      - `script <examples/conditional/case/ds/minimal/script.vtl>`__ · `input <examples/conditional/case/ds/minimal/input/>`__ · `expected <examples/conditional/case/ds/minimal/expected/>`__ · `notes <examples/conditional/case/ds/minimal/notes.md>`__
    * - | ``case when DS then DS else DS``
-       | minimal\_2
+       | `minimal\_2 <examples/conditional/case/ds/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/case/ds/minimal_2/script.vtl>`__ · `input <examples/conditional/case/ds/minimal_2/input/>`__ · `expected <examples/conditional/case/ds/minimal_2/expected/>`__ · `notes <examples/conditional/case/ds/minimal_2/notes.md>`__
    * - | ``case when DS then DS|sc else sc|DS``
-       | minimal
+       | `minimal <examples/conditional/case/ds_scalar_branch/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/case/ds_scalar_branch/minimal/script.vtl>`__ · `input <examples/conditional/case/ds_scalar_branch/minimal/input/>`__ · `expected <examples/conditional/case/ds_scalar_branch/minimal/expected/>`__ · `notes <examples/conditional/case/ds_scalar_branch/minimal/notes.md>`__
    * - | ``case when DS then DS|sc else sc|DS``
-       | minimal\_2
+       | `minimal\_2 <examples/conditional/case/ds_scalar_branch/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/case/ds_scalar_branch/minimal_2/script.vtl>`__ · `input <examples/conditional/case/ds_scalar_branch/minimal_2/input/>`__ · `expected <examples/conditional/case/ds_scalar_branch/minimal_2/expected/>`__ · `notes <examples/conditional/case/ds_scalar_branch/minimal_2/notes.md>`__
    * - | ``case when DS then DS when DS then DS ... else DS``
-       | minimal
+       | `minimal <examples/conditional/case/ds_multi_when/minimal/>`__
      - 🔵
      - ❌
      - 💥
      - pandas: row Id\_1=3: Me\_1 expected 300 got 3; DuckDB: ParserException: Parser Error: syntax error at or near \"SELECT\"
      - `script <examples/conditional/case/ds_multi_when/minimal/script.vtl>`__ · `input <examples/conditional/case/ds_multi_when/minimal/input/>`__ · `expected <examples/conditional/case/ds_multi_when/minimal/expected/>`__ · `notes <examples/conditional/case/ds_multi_when/minimal/notes.md>`__
    * - | ``case when DS then DS when DS then DS ... else DS``
-       | minimal\_2
+       | `minimal\_2 <examples/conditional/case/ds_multi_when/minimal_2/>`__
      - 🟡
      - ❌
      - ❌
      - row Id\_1=3: Me\_1 expected 300 got 3
      - `script <examples/conditional/case/ds_multi_when/minimal_2/script.vtl>`__ · `input <examples/conditional/case/ds_multi_when/minimal_2/input/>`__ · `expected <examples/conditional/case/ds_multi_when/minimal_2/expected/>`__ · `notes <examples/conditional/case/ds_multi_when/minimal_2/notes.md>`__
    * - | ``case when comp then comp else comp``
-       | minimal
+       | `minimal <examples/conditional/case/comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/case/comp/minimal/script.vtl>`__ · `input <examples/conditional/case/comp/minimal/input/>`__ · `expected <examples/conditional/case/comp/minimal/expected/>`__ · `notes <examples/conditional/case/comp/minimal/notes.md>`__
    * - | ``case when comp then sc when comp then sc ... else sc``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/conditional/case/comp_multi_when/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/case/comp_multi_when/manual_ex_1/script.vtl>`__ · `input <examples/conditional/case/comp_multi_when/manual_ex_1/input/>`__ · `expected <examples/conditional/case/comp_multi_when/manual_ex_1/expected/>`__ · `notes <examples/conditional/case/comp_multi_when/manual_ex_1/notes.md>`__ · *manual*
    * - | ``case when comp then sc when comp then sc ... else sc``
-       | minimal
+       | `minimal <examples/conditional/case/comp_multi_when/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - row Id\_1=3: Me\_2 expected 10 got 1
      - `script <examples/conditional/case/comp_multi_when/minimal/script.vtl>`__ · `input <examples/conditional/case/comp_multi_when/minimal/input/>`__ · `expected <examples/conditional/case/comp_multi_when/minimal/expected/>`__ · `notes <examples/conditional/case/comp_multi_when/minimal/notes.md>`__
    * - | ``case when sc then sc else sc``
-       | minimal
+       | `minimal <examples/conditional/case/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/case/sc/minimal/script.vtl>`__ · `expected <examples/conditional/case/sc/minimal/expected/>`__ · `notes <examples/conditional/case/sc/minimal/notes.md>`__
    * - | ``case when sc then sc else sc``
-       | minimal\_2
+       | `minimal\_2 <examples/conditional/case/sc/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/case/sc/minimal_2/script.vtl>`__ · `expected <examples/conditional/case/sc/minimal_2/expected/>`__ · `notes <examples/conditional/case/sc/minimal_2/notes.md>`__
    * - | ``case when sc then sc when sc then sc ... else sc``
-       | minimal
+       | `minimal <examples/conditional/case/sc_multi_when/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/case/sc_multi_when/minimal/script.vtl>`__ · `expected <examples/conditional/case/sc_multi_when/minimal/expected/>`__ · `notes <examples/conditional/case/sc_multi_when/minimal/notes.md>`__
    * - | ``case when sc then sc when sc then sc ... else sc``
-       | minimal\_2
+       | `minimal\_2 <examples/conditional/case/sc_multi_when/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/case/sc_multi_when/minimal_2/script.vtl>`__ · `expected <examples/conditional/case/sc_multi_when/minimal_2/expected/>`__ · `notes <examples/conditional/case/sc_multi_when/minimal_2/notes.md>`__
    * - | ``case when sc then sc when sc then sc ... else sc``
-       | minimal\_3
+       | `minimal\_3 <examples/conditional/case/sc_multi_when/minimal_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/case/sc_multi_when/minimal_3/script.vtl>`__ · `expected <examples/conditional/case/sc_multi_when/minimal_3/expected/>`__ · `notes <examples/conditional/case/sc_multi_when/minimal_3/notes.md>`__
    * - | ``case when sc then sc when sc then sc ... else sc``
-       | minimal\_4
+       | `minimal\_4 <examples/conditional/case/sc_multi_when/minimal_4/>`__
      - 🟡
      - ❌
      - ❌
@@ -305,56 +305,56 @@
      - Detail
      - Example
    * - | ``nvl(DS, sc)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/conditional/nvl/ds_sc/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/nvl/ds_sc/manual_ex_1/script.vtl>`__ · `input <examples/conditional/nvl/ds_sc/manual_ex_1/input/>`__ · `expected <examples/conditional/nvl/ds_sc/manual_ex_1/expected/>`__ · `notes <examples/conditional/nvl/ds_sc/manual_ex_1/notes.md>`__ · *manual*
    * - | ``nvl(DS, DS)``
-       | minimal
+       | `minimal <examples/conditional/nvl/ds_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/nvl/ds_ds/minimal/script.vtl>`__ · `input <examples/conditional/nvl/ds_ds/minimal/input/>`__ · `expected <examples/conditional/nvl/ds_ds/minimal/expected/>`__ · `notes <examples/conditional/nvl/ds_ds/minimal/notes.md>`__
    * - | ``nvl(sc, DS)``
-       | minimal
+       | `minimal <examples/conditional/nvl/sc_ds/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-9-2: At op None: The applicable operand cannot be a Dataset when the operand is a Scalar. Please check transformation with output Dataset DS\_r
      - `script <examples/conditional/nvl/sc_ds/minimal/script.vtl>`__ · `input <examples/conditional/nvl/sc_ds/minimal/input/>`__ · `expected <examples/conditional/nvl/sc_ds/minimal/expected/>`__ · `notes <examples/conditional/nvl/sc_ds/minimal/notes.md>`__
    * - | ``nvl(comp, sc)``
-       | minimal
+       | `minimal <examples/conditional/nvl/comp_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/nvl/comp_sc/minimal/script.vtl>`__ · `input <examples/conditional/nvl/comp_sc/minimal/input/>`__ · `expected <examples/conditional/nvl/comp_sc/minimal/expected/>`__ · `notes <examples/conditional/nvl/comp_sc/minimal/notes.md>`__
    * - | ``nvl(comp, comp)``
-       | minimal
+       | `minimal <examples/conditional/nvl/comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/nvl/comp_comp/minimal/script.vtl>`__ · `input <examples/conditional/nvl/comp_comp/minimal/input/>`__ · `expected <examples/conditional/nvl/comp_comp/minimal/expected/>`__ · `notes <examples/conditional/nvl/comp_comp/minimal/notes.md>`__
    * - | ``nvl(sc, comp)``
-       | minimal
+       | `minimal <examples/conditional/nvl/sc_comp/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-9-2: At op None: The applicable operand cannot be a DataComponent when the operand is a Scalar. Please check transformation with output Dataset DS\_r
      - `script <examples/conditional/nvl/sc_comp/minimal/script.vtl>`__ · `input <examples/conditional/nvl/sc_comp/minimal/input/>`__ · `expected <examples/conditional/nvl/sc_comp/minimal/expected/>`__ · `notes <examples/conditional/nvl/sc_comp/minimal/notes.md>`__
    * - | ``nvl(sc, sc)``
-       | minimal
+       | `minimal <examples/conditional/nvl/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/conditional/nvl/sc_sc/minimal/script.vtl>`__ · `expected <examples/conditional/nvl/sc_sc/minimal/expected/>`__ · `notes <examples/conditional/nvl/sc_sc/minimal/notes.md>`__
    * - | ``nvl(sc, sc)``
-       | minimal\_2
+       | `minimal\_2 <examples/conditional/nvl/sc_sc/minimal_2/>`__
      - 🟢
      - ✅
      - ✅

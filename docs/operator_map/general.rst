@@ -4,7 +4,7 @@
 
 62 variants: 🟢 38 · 🟡 3 · 🔴 17 · 🔵 4
 
-← Back to :doc:`index` · vtlengine 1.9.6rc2 (851f56ae)
+← Back to :doc:`index` · vtlengine 1.9.6rc2 (b393f444) · pandas 3.0.6 · DuckDB 1.5.5
 
 .. mermaid::
 
@@ -16,11 +16,11 @@
        classDef type fill:#eeeeee,color:#000
        classDef ext stroke-dasharray: 5 5
        in_scalar(("scalar")):::type
-       click in_scalar "examples/general/non_persistent_assignment/ds/manual_ex_1/"
+       click in_scalar "examples/general/non_persistent_assignment/sc/minimal/"
        in_dataset(("dataset")):::type
        click in_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        out_scalar(("scalar")):::type
-       click out_scalar "examples/general/non_persistent_assignment/ds/manual_ex_1/"
+       click out_scalar "examples/general/non_persistent_assignment/sc/minimal/"
        out_dataset(("dataset")):::type
        click out_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        ext_definitions__define_operator["↗ define operator (definitions.html)"]:::ext
@@ -34,7 +34,7 @@
        in_string(("string")):::type
        click in_string "examples/types/string/identity/minimal/"
        in_value_domain(("value_domain")):::type
-       click in_value_domain "examples/comparison/in/ds_set/manual_ex_1/"
+       click in_value_domain "examples/comparison/in/ds_value_domain/manual_ex_3/"
        out_boolean(("boolean")):::type
        click out_boolean "examples/types/boolean/identity/minimal/"
        out_number(("number")):::type
@@ -233,6 +233,7 @@
        in_scalar --> general__cast
        in_string --> general__cast
        in_value_domain --> general__cast
+       in_dataset --> general__cast
        general__cast --> out_scalar
        general__cast__integer_to_boolean --> out_boolean
        general__cast__number_to_boolean --> out_boolean
@@ -332,28 +333,28 @@
      - Detail
      - Example
    * - | ``(DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/general/parentheses/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/parentheses/ds/manual_ex_1/script.vtl>`__ · `input <examples/general/parentheses/ds/manual_ex_1/input/>`__ · `expected <examples/general/parentheses/ds/manual_ex_1/expected/>`__ · `notes <examples/general/parentheses/ds/manual_ex_1/notes.md>`__ · *manual*
    * - | ``(comp)``
-       | minimal
+       | `minimal <examples/general/parentheses/comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/parentheses/comp/minimal/script.vtl>`__ · `input <examples/general/parentheses/comp/minimal/input/>`__ · `expected <examples/general/parentheses/comp/minimal/expected/>`__ · `notes <examples/general/parentheses/comp/minimal/notes.md>`__
    * - | ``(sc)``
-       | minimal
+       | `minimal <examples/general/parentheses/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/parentheses/sc/minimal/script.vtl>`__ · `expected <examples/general/parentheses/sc/minimal/expected/>`__ · `notes <examples/general/parentheses/sc/minimal/notes.md>`__
    * - | ``(sc)``
-       | minimal\_2
+       | `minimal\_2 <examples/general/parentheses/sc/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
@@ -376,21 +377,21 @@
      - Detail
      - Example
    * - | ``DS_r <- DS``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/general/persistent_assignment/identity/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/persistent_assignment/identity/manual_ex_1/script.vtl>`__ · `input <examples/general/persistent_assignment/identity/manual_ex_1/input/>`__ · `expected <examples/general/persistent_assignment/identity/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS_r <- expr``
-       | minimal
+       | `minimal <examples/general/persistent_assignment/expression/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/persistent_assignment/expression/minimal/script.vtl>`__ · `input <examples/general/persistent_assignment/expression/minimal/input/>`__ · `expected <examples/general/persistent_assignment/expression/minimal/expected/>`__ · `notes <examples/general/persistent_assignment/expression/minimal/notes.md>`__
    * - | ``SC_r <- sc``
-       | minimal
+       | `minimal <examples/general/persistent_assignment/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -413,14 +414,14 @@
      - Detail
      - Example
    * - | ``DS_r := DS``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/general/non_persistent_assignment/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/non_persistent_assignment/ds/manual_ex_1/script.vtl>`__ · `input <examples/general/non_persistent_assignment/ds/manual_ex_1/input/>`__ · `expected <examples/general/non_persistent_assignment/ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``SC_r := sc``
-       | minimal
+       | `minimal <examples/general/non_persistent_assignment/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -443,63 +444,63 @@
      - Detail
      - Example
    * - | ``DS#Id``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/general/membership/identifier/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/membership/identifier/manual_ex_2/script.vtl>`__ · `input <examples/general/membership/identifier/manual_ex_2/input/>`__ · `expected <examples/general/membership/identifier/manual_ex_2/expected/>`__ · *manual*
    * - | ``DS#Id``
-       | manual\_ex\_5
+       | `manual\_ex\_5 <examples/general/membership/identifier/manual_ex_5/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/membership/identifier/manual_ex_5/script.vtl>`__ · `input <examples/general/membership/identifier/manual_ex_5/input/>`__ · `expected <examples/general/membership/identifier/manual_ex_5/expected/>`__ · `notes <examples/general/membership/identifier/manual_ex_5/notes.md>`__ · *manual*
    * - | ``DS#Me``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/general/membership/measure/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/membership/measure/manual_ex_1/script.vtl>`__ · `input <examples/general/membership/measure/manual_ex_1/input/>`__ · `expected <examples/general/membership/measure/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS#Me``
-       | manual\_ex\_4
+       | `manual\_ex\_4 <examples/general/membership/measure/manual_ex_4/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/membership/measure/manual_ex_4/script.vtl>`__ · `input <examples/general/membership/measure/manual_ex_4/input/>`__ · `expected <examples/general/membership/measure/manual_ex_4/expected/>`__ · `notes <examples/general/membership/measure/manual_ex_4/notes.md>`__ · *manual*
    * - | ``DS#At``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/general/membership/attribute/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/membership/attribute/manual_ex_3/script.vtl>`__ · `input <examples/general/membership/attribute/manual_ex_3/input/>`__ · `expected <examples/general/membership/attribute/manual_ex_3/expected/>`__ · `notes <examples/general/membership/attribute/manual_ex_3/notes.md>`__ · *manual* · adapted
    * - | ``DS#At``
-       | minimal\_2
+       | `minimal\_2 <examples/general/membership/attribute/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/membership/attribute/minimal_2/script.vtl>`__ · `input <examples/general/membership/attribute/minimal_2/input/>`__ · `expected <examples/general/membership/attribute/minimal_2/expected/>`__ · `notes <examples/general/membership/attribute/minimal_2/notes.md>`__
    * - | ``DS#At (viral)``
-       | manual\_ex\_6
+       | `manual\_ex\_6 <examples/general/membership/viral_attribute/manual_ex_6/>`__
      - 🟡
      - ❌
      - ❌
      - missing components: str\_var
      - `script <examples/general/membership/viral_attribute/manual_ex_6/script.vtl>`__ · `input <examples/general/membership/viral_attribute/manual_ex_6/input/>`__ · `expected <examples/general/membership/viral_attribute/manual_ex_6/expected/>`__ · `notes <examples/general/membership/viral_attribute/manual_ex_6/notes.md>`__ · *manual* · adapted
    * - | ``DS#At (viral)``
-       | manual\_ex\_8
+       | `manual\_ex\_8 <examples/general/membership/viral_attribute/manual_ex_8/>`__
      - 🟡
      - ❌
      - ❌
      - missing components: str\_var
      - `script <examples/general/membership/viral_attribute/manual_ex_8/script.vtl>`__ · `input <examples/general/membership/viral_attribute/manual_ex_8/input/>`__ · `expected <examples/general/membership/viral_attribute/manual_ex_8/expected/>`__ · `notes <examples/general/membership/viral_attribute/manual_ex_8/notes.md>`__ · *manual* · erratum · adapted
    * - | ``agg(DS)#Me``
-       | manual\_ex\_7
+       | `manual\_ex\_7 <examples/general/membership/on_aggregate/manual_ex_7/>`__
      - 🟢
      - ✅
      - ✅
@@ -522,28 +523,28 @@
      - Detail
      - Example
    * - | ``op()``
-       | minimal
+       | `minimal <examples/general/udo_call/no_args/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/udo_call/no_args/minimal/script.vtl>`__ · `expected <examples/general/udo_call/no_args/minimal/expected/>`__ · `notes <examples/general/udo_call/no_args/minimal/notes.md>`__
    * - | ``op(a, b)``
-       | minimal
+       | `minimal <examples/general/udo_call/all_args/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/udo_call/all_args/minimal/script.vtl>`__ · `expected <examples/general/udo_call/all_args/minimal/expected/>`__ · `notes <examples/general/udo_call/all_args/minimal/notes.md>`__
    * - | ``op(a)``
-       | minimal
+       | `minimal <examples/general/udo_call/default_omitted/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/udo_call/default_omitted/minimal/script.vtl>`__ · `expected <examples/general/udo_call/default_omitted/minimal/expected/>`__ · `notes <examples/general/udo_call/default_omitted/minimal/notes.md>`__
    * - | ``op(a, _, c)``
-       | minimal
+       | `minimal <examples/general/udo_call/placeholder_arg/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -566,28 +567,28 @@
      - Detail
      - Example
    * - | ``eval(R(DS))``
-       | minimal
+       | `minimal <examples/general/eval/sql_dataset/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/eval/sql_dataset/minimal/script.vtl>`__ · `input <examples/general/eval/sql_dataset/minimal/input/>`__ · `expected <examples/general/eval/sql_dataset/minimal/expected/>`__ · `notes <examples/general/eval/sql_dataset/minimal/notes.md>`__
    * - | ``eval(R(DS, sc))``
-       | minimal
+       | `minimal <examples/general/eval/sql_dataset_scalar_arg/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-2-23: Eval operand must be a Dataset. Please check transformation with output Dataset DS\_r
      - `script <examples/general/eval/sql_dataset_scalar_arg/minimal/script.vtl>`__ · `input <examples/general/eval/sql_dataset_scalar_arg/minimal/input/>`__ · `expected <examples/general/eval/sql_dataset_scalar_arg/minimal/expected/>`__ · `notes <examples/general/eval/sql_dataset_scalar_arg/minimal/notes.md>`__
    * - | ``eval(R(DS) returns string)``
-       | minimal
+       | `minimal <examples/general/eval/scalar_return/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-2-1: Eval could not be called without a dataset output type definition. Please check transformation with output Dataset SC\_r
      - `script <examples/general/eval/scalar_return/minimal/script.vtl>`__ · `input <examples/general/eval/scalar_return/minimal/input/>`__ · `expected <examples/general/eval/scalar_return/minimal/expected/>`__ · `notes <examples/general/eval/scalar_return/minimal/notes.md>`__
    * - | ``DS[calc Me := eval(R(comp))]``
-       | minimal
+       | `minimal <examples/general/eval/comp/minimal/>`__
      - 🔴
      - 💥
      - 💥
@@ -610,294 +611,294 @@
      - Detail
      - Example
    * - | ``cast(comp<integer>, boolean)``
-       | minimal
+       | `minimal <examples/general/cast/integer_to_boolean/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/integer_to_boolean/minimal/script.vtl>`__ · `input <examples/general/cast/integer_to_boolean/minimal/input/>`__ · `expected <examples/general/cast/integer_to_boolean/minimal/expected/>`__ · `notes <examples/general/cast/integer_to_boolean/minimal/notes.md>`__
    * - | ``cast(comp<number>, boolean)``
-       | minimal
+       | `minimal <examples/general/cast/number_to_boolean/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/number_to_boolean/minimal/script.vtl>`__ · `input <examples/general/cast/number_to_boolean/minimal/input/>`__ · `expected <examples/general/cast/number_to_boolean/minimal/expected/>`__ · `notes <examples/general/cast/number_to_boolean/minimal/notes.md>`__
    * - | ``cast(comp<boolean>, integer)``
-       | minimal
+       | `minimal <examples/general/cast/boolean_to_integer/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/boolean_to_integer/minimal/script.vtl>`__ · `input <examples/general/cast/boolean_to_integer/minimal/input/>`__ · `expected <examples/general/cast/boolean_to_integer/minimal/expected/>`__ · `notes <examples/general/cast/boolean_to_integer/minimal/notes.md>`__
    * - | ``cast(comp<boolean>, number)``
-       | minimal
+       | `minimal <examples/general/cast/boolean_to_number/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/boolean_to_number/minimal/script.vtl>`__ · `input <examples/general/cast/boolean_to_number/minimal/input/>`__ · `expected <examples/general/cast/boolean_to_number/minimal/expected/>`__ · `notes <examples/general/cast/boolean_to_number/minimal/notes.md>`__
    * - | ``cast(comp<time>, date)``
-       | minimal
+       | `minimal <examples/general/cast/time_to_date/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/time_to_date/minimal/script.vtl>`__ · `input <examples/general/cast/time_to_date/minimal/input/>`__ · `expected <examples/general/cast/time_to_date/minimal/expected/>`__ · `notes <examples/general/cast/time_to_date/minimal/notes.md>`__
    * - | ``cast(comp<time>, time_period)``
-       | minimal
+       | `minimal <examples/general/cast/time_to_time_period/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/time_to_time_period/minimal/script.vtl>`__ · `input <examples/general/cast/time_to_time_period/minimal/input/>`__ · `expected <examples/general/cast/time_to_time_period/minimal/expected/>`__ · `notes <examples/general/cast/time_to_time_period/minimal/notes.md>`__
    * - | ``cast(comp<date>, time_period)``
-       | minimal
+       | `minimal <examples/general/cast/date_to_time_period/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/date_to_time_period/minimal/script.vtl>`__ · `input <examples/general/cast/date_to_time_period/minimal/input/>`__ · `expected <examples/general/cast/date_to_time_period/minimal/expected/>`__ · `notes <examples/general/cast/date_to_time_period/minimal/notes.md>`__
    * - | ``cast(comp<time_period>, date)``
-       | minimal
+       | `minimal <examples/general/cast/time_period_to_date/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/time_period_to_date/minimal/script.vtl>`__ · `input <examples/general/cast/time_period_to_date/minimal/input/>`__ · `expected <examples/general/cast/time_period_to_date/minimal/expected/>`__ · `notes <examples/general/cast/time_period_to_date/minimal/notes.md>`__
    * - | ``cast(comp<string>, boolean)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_boolean/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/string_to_boolean/minimal/script.vtl>`__ · `input <examples/general/cast/string_to_boolean/minimal/input/>`__ · `expected <examples/general/cast/string_to_boolean/minimal/expected/>`__ · `notes <examples/general/cast/string_to_boolean/minimal/notes.md>`__
    * - | ``cast(comp<string>, boolean)``
-       | minimal\_2
+       | `minimal\_2 <examples/general/cast/string_to_boolean/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/string_to_boolean/minimal_2/script.vtl>`__ · `input <examples/general/cast/string_to_boolean/minimal_2/input/>`__ · `expected <examples/general/cast/string_to_boolean/minimal_2/expected/>`__ · `notes <examples/general/cast/string_to_boolean/minimal_2/notes.md>`__
    * - | ``cast(comp<integer>, number)``
-       | minimal
+       | `minimal <examples/general/cast/integer_to_number/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/integer_to_number/minimal/script.vtl>`__ · `input <examples/general/cast/integer_to_number/minimal/input/>`__ · `expected <examples/general/cast/integer_to_number/minimal/expected/>`__ · `notes <examples/general/cast/integer_to_number/minimal/notes.md>`__
    * - | ``cast(comp<boolean>, string)``
-       | minimal
+       | `minimal <examples/general/cast/boolean_to_string/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - row Id\_1=1: Me\_2 expected true got True; row Id\_1=2: Me\_2 expected false got False
      - `script <examples/general/cast/boolean_to_string/minimal/script.vtl>`__ · `input <examples/general/cast/boolean_to_string/minimal/input/>`__ · `expected <examples/general/cast/boolean_to_string/minimal/expected/>`__ · `notes <examples/general/cast/boolean_to_string/minimal/notes.md>`__
    * - | ``cast(comp<date>, time)``
-       | minimal
+       | `minimal <examples/general/cast/date_to_time/minimal/>`__
      - 🔵
      - ✅
      - ❌
      - DuckDB: row Id\_1=1: Me\_2 expected 2020-01-15/2020-01-15 got 2020-01-15 00:00:00; row Id\_1=2: Me\_2 expected 2021-12-31/2021-12-31 got 2021-12-31 00:00:00
      - `script <examples/general/cast/date_to_time/minimal/script.vtl>`__ · `input <examples/general/cast/date_to_time/minimal/input/>`__ · `expected <examples/general/cast/date_to_time/minimal/expected/>`__ · `notes <examples/general/cast/date_to_time/minimal/notes.md>`__
    * - | ``cast(comp<time_period>, time)``
-       | minimal
+       | `minimal <examples/general/cast/time_period_to_time/minimal/>`__
      - 🔵
      - ✅
      - ❌
      - DuckDB: row Id\_1=1: Me\_2 expected 2020-01-01/2020-03-31 got 2020-Q1; row Id\_1=2: Me\_2 expected 2021-02-01/2021-02-28 got 2021-M02
      - `script <examples/general/cast/time_period_to_time/minimal/script.vtl>`__ · `input <examples/general/cast/time_period_to_time/minimal/input/>`__ · `expected <examples/general/cast/time_period_to_time/minimal/expected/>`__ · `notes <examples/general/cast/time_period_to_time/minimal/notes.md>`__
    * - | ``cast(comp<integer>, string)``
-       | minimal
+       | `minimal <examples/general/cast/integer_to_string/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/integer_to_string/minimal/script.vtl>`__ · `input <examples/general/cast/integer_to_string/minimal/input/>`__ · `expected <examples/general/cast/integer_to_string/minimal/expected/>`__ · `notes <examples/general/cast/integer_to_string/minimal/notes.md>`__
    * - | ``cast(comp<integer>, string, mask)``
-       | minimal
+       | `minimal <examples/general/cast/integer_to_string_mask/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD\". Please check transformation with output Dataset DS\_r
      - `script <examples/general/cast/integer_to_string_mask/minimal/script.vtl>`__ · `input <examples/general/cast/integer_to_string_mask/minimal/input/>`__ · `expected <examples/general/cast/integer_to_string_mask/minimal/expected/>`__ · `notes <examples/general/cast/integer_to_string_mask/minimal/notes.md>`__
    * - | ``cast(comp<number>, string)``
-       | minimal
+       | `minimal <examples/general/cast/number_to_string/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/number_to_string/minimal/script.vtl>`__ · `input <examples/general/cast/number_to_string/minimal/input/>`__ · `expected <examples/general/cast/number_to_string/minimal/expected/>`__ · `notes <examples/general/cast/number_to_string/minimal/notes.md>`__
    * - | ``cast(comp<number>, string, mask)``
-       | minimal
+       | `minimal <examples/general/cast/number_to_string_mask/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD.DDD\". Please check transformation with output Dataset DS\_r
      - `script <examples/general/cast/number_to_string_mask/minimal/script.vtl>`__ · `input <examples/general/cast/number_to_string_mask/minimal/input/>`__ · `expected <examples/general/cast/number_to_string_mask/minimal/expected/>`__ · `notes <examples/general/cast/number_to_string_mask/minimal/notes.md>`__
    * - | ``cast(comp<time>, string)``
-       | minimal
+       | `minimal <examples/general/cast/time_to_string/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/time_to_string/minimal/script.vtl>`__ · `input <examples/general/cast/time_to_string/minimal/input/>`__ · `expected <examples/general/cast/time_to_string/minimal/expected/>`__ · `notes <examples/general/cast/time_to_string/minimal/notes.md>`__
    * - | ``cast(comp<time>, string, mask)``
-       | minimal
+       | `minimal <examples/general/cast/time_to_string_mask/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY-MM-DD/YYYY-MM-DD\". Please check transformation with output Dataset DS\_r
      - `script <examples/general/cast/time_to_string_mask/minimal/script.vtl>`__ · `input <examples/general/cast/time_to_string_mask/minimal/input/>`__ · `expected <examples/general/cast/time_to_string_mask/minimal/expected/>`__ · `notes <examples/general/cast/time_to_string_mask/minimal/notes.md>`__
    * - | ``cast(comp<date>, string)``
-       | minimal
+       | `minimal <examples/general/cast/date_to_string/minimal/>`__
      - 🔵
      - ✅
      - ❌
      - DuckDB: row Id\_1=1: Me\_2 expected 2020-01-15 got 2020-01-15 00:00:00; row Id\_1=2: Me\_2 expected 2021-12-31 got 2021-12-31 00:00:00
      - `script <examples/general/cast/date_to_string/minimal/script.vtl>`__ · `input <examples/general/cast/date_to_string/minimal/input/>`__ · `expected <examples/general/cast/date_to_string/minimal/expected/>`__ · `notes <examples/general/cast/date_to_string/minimal/notes.md>`__
    * - | ``cast(comp<date>, string, mask)``
-       | minimal
+       | `minimal <examples/general/cast/date_to_string_mask/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYYMMDD\". Please check transformation with output Dataset DS\_r
      - `script <examples/general/cast/date_to_string_mask/minimal/script.vtl>`__ · `input <examples/general/cast/date_to_string_mask/minimal/input/>`__ · `expected <examples/general/cast/date_to_string_mask/minimal/expected/>`__ · `notes <examples/general/cast/date_to_string_mask/minimal/notes.md>`__
    * - | ``cast(comp<time_period>, string)``
-       | minimal
+       | `minimal <examples/general/cast/time_period_to_string/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - row Id\_1=1: Me\_2 expected 2020-01-01/2020-03-31 got 2020Q1; row Id\_1=2: Me\_2 expected 2021-02-01/2021-02-28 got 2021M2
      - `script <examples/general/cast/time_period_to_string/minimal/script.vtl>`__ · `input <examples/general/cast/time_period_to_string/minimal/input/>`__ · `expected <examples/general/cast/time_period_to_string/minimal/expected/>`__ · `notes <examples/general/cast/time_period_to_string/minimal/notes.md>`__
    * - | ``cast(comp<time_period>, string, mask)``
-       | minimal
+       | `minimal <examples/general/cast/time_period_to_string_mask/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY\\MMM\". Please check transformation with output Dataset DS\_r
      - `script <examples/general/cast/time_period_to_string_mask/minimal/script.vtl>`__ · `input <examples/general/cast/time_period_to_string_mask/minimal/input/>`__ · `expected <examples/general/cast/time_period_to_string_mask/minimal/expected/>`__ · `notes <examples/general/cast/time_period_to_string_mask/minimal/notes.md>`__
    * - | ``cast(comp<duration>, string)``
-       | minimal
+       | `minimal <examples/general/cast/duration_to_string/minimal/>`__
      - 🔵
      - ✅
      - ❌
      - DuckDB: row Id\_1=1: Me\_2 expected P1Y got A; row Id\_1=2: Me\_2 expected P1M got M; row Id\_1=3: Me\_2 expected P1D got D
      - `script <examples/general/cast/duration_to_string/minimal/script.vtl>`__ · `input <examples/general/cast/duration_to_string/minimal/input/>`__ · `expected <examples/general/cast/duration_to_string/minimal/expected/>`__ · `notes <examples/general/cast/duration_to_string/minimal/notes.md>`__
    * - | ``cast(comp<duration>, string, mask)``
-       | minimal
+       | `minimal <examples/general/cast/duration_to_string_mask/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"P\". Please check transformation with output Dataset DS\_r
      - `script <examples/general/cast/duration_to_string_mask/minimal/script.vtl>`__ · `input <examples/general/cast/duration_to_string_mask/minimal/input/>`__ · `expected <examples/general/cast/duration_to_string_mask/minimal/expected/>`__ · `notes <examples/general/cast/duration_to_string_mask/minimal/notes.md>`__
    * - | ``cast(comp<string>, integer)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_integer/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/string_to_integer/minimal/script.vtl>`__ · `input <examples/general/cast/string_to_integer/minimal/input/>`__ · `expected <examples/general/cast/string_to_integer/minimal/expected/>`__ · `notes <examples/general/cast/string_to_integer/minimal/notes.md>`__
    * - | ``cast(comp<string>, integer, mask)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_integer_mask/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD\". Please check transformation with output Dataset DS\_r
      - `script <examples/general/cast/string_to_integer_mask/minimal/script.vtl>`__ · `input <examples/general/cast/string_to_integer_mask/minimal/input/>`__ · `expected <examples/general/cast/string_to_integer_mask/minimal/expected/>`__ · `notes <examples/general/cast/string_to_integer_mask/minimal/notes.md>`__
    * - | ``cast(comp<string>, number)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_number/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/string_to_number/minimal/script.vtl>`__ · `input <examples/general/cast/string_to_number/minimal/input/>`__ · `expected <examples/general/cast/string_to_number/minimal/expected/>`__ · `notes <examples/general/cast/string_to_number/minimal/notes.md>`__
    * - | ``cast(comp<string>, number, mask)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_number_mask/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD.DDD\". Please check transformation with output Dataset DS\_r
      - `script <examples/general/cast/string_to_number_mask/minimal/script.vtl>`__ · `input <examples/general/cast/string_to_number_mask/minimal/input/>`__ · `expected <examples/general/cast/string_to_number_mask/minimal/expected/>`__ · `notes <examples/general/cast/string_to_number_mask/minimal/notes.md>`__
    * - | ``cast(comp<string>, time)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_time/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/string_to_time/minimal/script.vtl>`__ · `input <examples/general/cast/string_to_time/minimal/input/>`__ · `expected <examples/general/cast/string_to_time/minimal/expected/>`__ · `notes <examples/general/cast/string_to_time/minimal/notes.md>`__
    * - | ``cast(comp<string>, time, mask)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_time_mask/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY-MM-DD/YYYY-MM-DD\". Please check transformation with output Dataset DS\_r
      - `script <examples/general/cast/string_to_time_mask/minimal/script.vtl>`__ · `input <examples/general/cast/string_to_time_mask/minimal/input/>`__ · `expected <examples/general/cast/string_to_time_mask/minimal/expected/>`__ · `notes <examples/general/cast/string_to_time_mask/minimal/notes.md>`__
    * - | ``cast(comp<string>, date)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_date/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/string_to_date/minimal/script.vtl>`__ · `input <examples/general/cast/string_to_date/minimal/input/>`__ · `expected <examples/general/cast/string_to_date/minimal/expected/>`__ · `notes <examples/general/cast/string_to_date/minimal/notes.md>`__
    * - | ``cast(comp<string>, date, mask)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_date_mask/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY-MM-DD\". Please check transformation with output Dataset DS\_r
      - `script <examples/general/cast/string_to_date_mask/minimal/script.vtl>`__ · `input <examples/general/cast/string_to_date_mask/minimal/input/>`__ · `expected <examples/general/cast/string_to_date_mask/minimal/expected/>`__ · `notes <examples/general/cast/string_to_date_mask/minimal/notes.md>`__
    * - | ``cast(comp<string>, time_period)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_time_period/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/string_to_time_period/minimal/script.vtl>`__ · `input <examples/general/cast/string_to_time_period/minimal/input/>`__ · `expected <examples/general/cast/string_to_time_period/minimal/expected/>`__ · `notes <examples/general/cast/string_to_time_period/minimal/notes.md>`__
    * - | ``cast(comp<string>, time_period, mask)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_time_period_mask/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY\\QQ\". Please check transformation with output Dataset DS\_r
      - `script <examples/general/cast/string_to_time_period_mask/minimal/script.vtl>`__ · `input <examples/general/cast/string_to_time_period_mask/minimal/input/>`__ · `expected <examples/general/cast/string_to_time_period_mask/minimal/expected/>`__ · `notes <examples/general/cast/string_to_time_period_mask/minimal/notes.md>`__
    * - | ``cast(comp<string>, duration)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_duration/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/string_to_duration/minimal/script.vtl>`__ · `input <examples/general/cast/string_to_duration/minimal/input/>`__ · `expected <examples/general/cast/string_to_duration/minimal/expected/>`__ · `notes <examples/general/cast/string_to_duration/minimal/notes.md>`__
    * - | ``cast(comp<string>, duration, mask)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_duration_mask/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"P\". Please check transformation with output Dataset DS\_r
      - `script <examples/general/cast/string_to_duration_mask/minimal/script.vtl>`__ · `input <examples/general/cast/string_to_duration_mask/minimal/input/>`__ · `expected <examples/general/cast/string_to_duration_mask/minimal/expected/>`__ · `notes <examples/general/cast/string_to_duration_mask/minimal/notes.md>`__
    * - | ``cast(DS<string>, integer)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_integer_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/string_to_integer_ds/minimal/script.vtl>`__ · `input <examples/general/cast/string_to_integer_ds/minimal/input/>`__ · `expected <examples/general/cast/string_to_integer_ds/minimal/expected/>`__ · `notes <examples/general/cast/string_to_integer_ds/minimal/notes.md>`__
    * - | ``cast(sc<string>, integer)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_integer_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/general/cast/string_to_integer_sc/minimal/script.vtl>`__ · `expected <examples/general/cast/string_to_integer_sc/minimal/expected/>`__ · `notes <examples/general/cast/string_to_integer_sc/minimal/notes.md>`__
    * - | ``cast(comp<string>, VD)``
-       | minimal
+       | `minimal <examples/general/cast/string_to_value_domain/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-8: Value Domain \'VD\_1\' not available for cast operator or scalar type representation or rulesets.
      - `script <examples/general/cast/string_to_value_domain/minimal/script.vtl>`__ · `input <examples/general/cast/string_to_value_domain/minimal/input/>`__ · `expected <examples/general/cast/string_to_value_domain/minimal/expected/>`__ · `notes <examples/general/cast/string_to_value_domain/minimal/notes.md>`__
    * - | ``cast(comp<VD>, VD)``
-       | minimal
+       | `minimal <examples/general/cast/value_domain_to_value_domain/minimal/>`__
      - 🔴
      - 💥
      - 💥

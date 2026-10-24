@@ -4,7 +4,7 @@
 
 94 variants: 🟢 82 · 🟡 7 · 🔴 2 · 🔵 3
 
-← Back to :doc:`index` · vtlengine 1.9.6rc2 (851f56ae)
+← Back to :doc:`index` · vtlengine 1.9.6rc2 (b393f444) · pandas 3.0.6 · DuckDB 1.5.5
 
 .. mermaid::
 
@@ -17,8 +17,12 @@
        classDef ext stroke-dasharray: 5 5
        in_number(("number")):::type
        click in_number "examples/types/number/identity/minimal/"
+       in_dataset(("dataset")):::type
+       click in_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        out_number(("number")):::type
        click out_number "examples/types/number/identity/minimal/"
+       out_dataset(("dataset")):::type
+       click out_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        in_integer(("integer")):::type
        click in_integer "examples/types/integer/identity/minimal/"
        out_integer(("integer")):::type
@@ -31,7 +35,9 @@
        numeric__unary_plus --- numeric__unary_plus__comp
        numeric__unary_plus --- numeric__unary_plus__sc
        in_number --> numeric__unary_plus
+       in_dataset --> numeric__unary_plus
        numeric__unary_plus --> out_number
+       numeric__unary_plus --> out_dataset
        click numeric__unary_plus "examples/numeric/unary_plus/ds/manual_ex_1/"
        click numeric__unary_plus__ds "examples/numeric/unary_plus/ds/manual_ex_1/"
        click numeric__unary_plus__comp "examples/numeric/unary_plus/comp/manual_ex_2/"
@@ -44,7 +50,9 @@
        numeric__unary_minus --- numeric__unary_minus__comp
        numeric__unary_minus --- numeric__unary_minus__sc
        in_number --> numeric__unary_minus
+       in_dataset --> numeric__unary_minus
        numeric__unary_minus --> out_number
+       numeric__unary_minus --> out_dataset
        click numeric__unary_minus "examples/numeric/unary_minus/ds/manual_ex_1/"
        click numeric__unary_minus__ds "examples/numeric/unary_minus/ds/manual_ex_1/"
        click numeric__unary_minus__comp "examples/numeric/unary_minus/comp/manual_ex_2/"
@@ -65,7 +73,9 @@
        numeric__addition --- numeric__addition__sc_comp
        numeric__addition --- numeric__addition__sc_sc
        in_number --> numeric__addition
+       in_dataset --> numeric__addition
        numeric__addition --> out_number
+       numeric__addition --> out_dataset
        click numeric__addition "examples/numeric/addition/ds_ds/manual_ex_1/"
        click numeric__addition__ds_ds "examples/numeric/addition/ds_ds/manual_ex_1/"
        click numeric__addition__ds_sc "examples/numeric/addition/ds_sc/manual_ex_2/"
@@ -90,7 +100,9 @@
        numeric__subtraction --- numeric__subtraction__sc_comp
        numeric__subtraction --- numeric__subtraction__sc_sc
        in_number --> numeric__subtraction
+       in_dataset --> numeric__subtraction
        numeric__subtraction --> out_number
+       numeric__subtraction --> out_dataset
        click numeric__subtraction "examples/numeric/subtraction/ds_ds/manual_ex_1/"
        click numeric__subtraction__ds_ds "examples/numeric/subtraction/ds_ds/manual_ex_1/"
        click numeric__subtraction__ds_sc "examples/numeric/subtraction/ds_sc/manual_ex_2/"
@@ -115,7 +127,9 @@
        numeric__multiplication --- numeric__multiplication__sc_comp
        numeric__multiplication --- numeric__multiplication__sc_sc
        in_number --> numeric__multiplication
+       in_dataset --> numeric__multiplication
        numeric__multiplication --> out_number
+       numeric__multiplication --> out_dataset
        click numeric__multiplication "examples/numeric/multiplication/ds_ds/manual_ex_1/"
        click numeric__multiplication__ds_ds "examples/numeric/multiplication/ds_ds/manual_ex_1/"
        click numeric__multiplication__ds_sc "examples/numeric/multiplication/ds_sc/manual_ex_2/"
@@ -140,7 +154,9 @@
        numeric__division --- numeric__division__sc_comp
        numeric__division --- numeric__division__sc_sc
        in_number --> numeric__division
+       in_dataset --> numeric__division
        numeric__division --> out_number
+       numeric__division --> out_dataset
        click numeric__division "examples/numeric/division/ds_ds/manual_ex_1/"
        click numeric__division__ds_ds "examples/numeric/division/ds_ds/manual_ex_1/"
        click numeric__division__ds_sc "examples/numeric/division/ds_sc/manual_ex_2/"
@@ -165,7 +181,9 @@
        numeric__modulo --- numeric__modulo__sc_comp
        numeric__modulo --- numeric__modulo__sc_sc
        in_number --> numeric__modulo
+       in_dataset --> numeric__modulo
        numeric__modulo --> out_number
+       numeric__modulo --> out_dataset
        click numeric__modulo "examples/numeric/modulo/ds_ds/manual_ex_1/"
        click numeric__modulo__ds_ds "examples/numeric/modulo/ds_ds/manual_ex_1/"
        click numeric__modulo__ds_sc "examples/numeric/modulo/ds_sc/manual_ex_2/"
@@ -199,7 +217,9 @@
        numeric__round --- numeric__round__sc_placeholder
        in_number --> numeric__round
        in_integer --> numeric__round
+       in_dataset --> numeric__round
        numeric__round --> out_number
+       numeric__round --> out_dataset
        numeric__round__ds_no_digits --> out_integer
        numeric__round__ds_placeholder --> out_integer
        numeric__round__comp_no_digits --> out_integer
@@ -243,7 +263,9 @@
        numeric__trunc --- numeric__trunc__sc_placeholder
        in_number --> numeric__trunc
        in_integer --> numeric__trunc
+       in_dataset --> numeric__trunc
        numeric__trunc --> out_number
+       numeric__trunc --> out_dataset
        numeric__trunc__ds_no_digits --> out_integer
        numeric__trunc__ds_placeholder --> out_integer
        numeric__trunc__comp_no_digits --> out_integer
@@ -270,7 +292,9 @@
        numeric__ceil --- numeric__ceil__comp
        numeric__ceil --- numeric__ceil__sc
        in_number --> numeric__ceil
+       in_dataset --> numeric__ceil
        numeric__ceil --> out_integer
+       numeric__ceil --> out_dataset
        click numeric__ceil "examples/numeric/ceil/ds/manual_ex_1/"
        click numeric__ceil__ds "examples/numeric/ceil/ds/manual_ex_1/"
        click numeric__ceil__comp "examples/numeric/ceil/comp/manual_ex_2/"
@@ -283,7 +307,9 @@
        numeric__floor --- numeric__floor__comp
        numeric__floor --- numeric__floor__sc
        in_number --> numeric__floor
+       in_dataset --> numeric__floor
        numeric__floor --> out_integer
+       numeric__floor --> out_dataset
        click numeric__floor "examples/numeric/floor/ds/manual_ex_1/"
        click numeric__floor__ds "examples/numeric/floor/ds/manual_ex_1/"
        click numeric__floor__comp "examples/numeric/floor/comp/manual_ex_2/"
@@ -296,7 +322,9 @@
        numeric__abs --- numeric__abs__comp
        numeric__abs --- numeric__abs__sc
        in_number --> numeric__abs
+       in_dataset --> numeric__abs
        numeric__abs --> out_number
+       numeric__abs --> out_dataset
        click numeric__abs "examples/numeric/abs/ds/manual_ex_1/"
        click numeric__abs__ds "examples/numeric/abs/ds/manual_ex_1/"
        click numeric__abs__comp "examples/numeric/abs/comp/manual_ex_2/"
@@ -309,7 +337,9 @@
        numeric__exp --- numeric__exp__comp
        numeric__exp --- numeric__exp__sc
        in_number --> numeric__exp
+       in_dataset --> numeric__exp
        numeric__exp --> out_number
+       numeric__exp --> out_dataset
        click numeric__exp "examples/numeric/exp/ds/manual_ex_1/"
        click numeric__exp__ds "examples/numeric/exp/ds/manual_ex_1/"
        click numeric__exp__comp "examples/numeric/exp/comp/manual_ex_2/"
@@ -322,7 +352,9 @@
        numeric__ln --- numeric__ln__comp
        numeric__ln --- numeric__ln__sc
        in_number --> numeric__ln
+       in_dataset --> numeric__ln
        numeric__ln --> out_number
+       numeric__ln --> out_dataset
        click numeric__ln "examples/numeric/ln/ds/manual_ex_1/"
        click numeric__ln__ds "examples/numeric/ln/ds/manual_ex_1/"
        click numeric__ln__comp "examples/numeric/ln/comp/manual_ex_2/"
@@ -335,7 +367,9 @@
        numeric__sqrt --- numeric__sqrt__comp
        numeric__sqrt --- numeric__sqrt__sc
        in_number --> numeric__sqrt
+       in_dataset --> numeric__sqrt
        numeric__sqrt --> out_number
+       numeric__sqrt --> out_dataset
        click numeric__sqrt "examples/numeric/sqrt/ds/manual_ex_1/"
        click numeric__sqrt__ds "examples/numeric/sqrt/ds/manual_ex_1/"
        click numeric__sqrt__comp "examples/numeric/sqrt/comp/manual_ex_2/"
@@ -353,7 +387,9 @@
        numeric__power --- numeric__power__sc_sc
        in_number --> numeric__power
        in_integer --> numeric__power
+       in_dataset --> numeric__power
        numeric__power --> out_number
+       numeric__power --> out_dataset
        click numeric__power "examples/numeric/power/ds_sc/manual_ex_1/"
        click numeric__power__ds_sc "examples/numeric/power/ds_sc/manual_ex_1/"
        click numeric__power__comp_sc "examples/numeric/power/comp_sc/manual_ex_2/"
@@ -373,7 +409,9 @@
        numeric__log --- numeric__log__sc_sc
        in_number --> numeric__log
        in_integer --> numeric__log
+       in_dataset --> numeric__log
        numeric__log --> out_number
+       numeric__log --> out_dataset
        click numeric__log "examples/numeric/log/ds_sc/manual_ex_1/"
        click numeric__log__ds_sc "examples/numeric/log/ds_sc/manual_ex_1/"
        click numeric__log__comp_sc "examples/numeric/log/comp_sc/manual_ex_2/"
@@ -389,7 +427,9 @@
        numeric__random --- numeric__random__sc
        in_number --> numeric__random
        in_integer --> numeric__random
+       in_dataset --> numeric__random
        numeric__random --> out_number
+       numeric__random --> out_dataset
        click numeric__random "examples/numeric/random/ds/manual_ex_1/"
        click numeric__random__ds "examples/numeric/random/ds/manual_ex_1/"
        click numeric__random__comp "examples/numeric/random/comp/manual_ex_2/"
@@ -411,21 +451,21 @@
      - Detail
      - Example
    * - | ``+DS``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/unary_plus/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/unary_plus/ds/manual_ex_1/script.vtl>`__ · `input <examples/numeric/unary_plus/ds/manual_ex_1/input/>`__ · `expected <examples/numeric/unary_plus/ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``+comp``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/unary_plus/comp/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/unary_plus/comp/manual_ex_2/script.vtl>`__ · `input <examples/numeric/unary_plus/comp/manual_ex_2/input/>`__ · `expected <examples/numeric/unary_plus/comp/manual_ex_2/expected/>`__ · *manual*
    * - | ``+sc``
-       | minimal
+       | `minimal <examples/numeric/unary_plus/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -448,21 +488,21 @@
      - Detail
      - Example
    * - | ``-DS``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/unary_minus/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/unary_minus/ds/manual_ex_1/script.vtl>`__ · `input <examples/numeric/unary_minus/ds/manual_ex_1/input/>`__ · `expected <examples/numeric/unary_minus/ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``-comp``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/unary_minus/comp/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/unary_minus/comp/manual_ex_2/script.vtl>`__ · `input <examples/numeric/unary_minus/comp/manual_ex_2/input/>`__ · `expected <examples/numeric/unary_minus/comp/manual_ex_2/expected/>`__ · *manual*
    * - | ``-sc``
-       | minimal
+       | `minimal <examples/numeric/unary_minus/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -485,49 +525,49 @@
      - Detail
      - Example
    * - | ``DS + DS``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/addition/ds_ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/addition/ds_ds/manual_ex_1/script.vtl>`__ · `input <examples/numeric/addition/ds_ds/manual_ex_1/input/>`__ · `expected <examples/numeric/addition/ds_ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS + sc``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/addition/ds_sc/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/addition/ds_sc/manual_ex_2/script.vtl>`__ · `input <examples/numeric/addition/ds_sc/manual_ex_2/input/>`__ · `expected <examples/numeric/addition/ds_sc/manual_ex_2/expected/>`__ · *manual*
    * - | ``sc + DS``
-       | minimal
+       | `minimal <examples/numeric/addition/sc_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/addition/sc_ds/minimal/script.vtl>`__ · `input <examples/numeric/addition/sc_ds/minimal/input/>`__ · `expected <examples/numeric/addition/sc_ds/minimal/expected/>`__ · `notes <examples/numeric/addition/sc_ds/minimal/notes.md>`__
    * - | ``comp + comp``
-       | minimal
+       | `minimal <examples/numeric/addition/comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/addition/comp_comp/minimal/script.vtl>`__ · `input <examples/numeric/addition/comp_comp/minimal/input/>`__ · `expected <examples/numeric/addition/comp_comp/minimal/expected/>`__ · `notes <examples/numeric/addition/comp_comp/minimal/notes.md>`__
    * - | ``comp + sc``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/numeric/addition/comp_sc/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/addition/comp_sc/manual_ex_3/script.vtl>`__ · `input <examples/numeric/addition/comp_sc/manual_ex_3/input/>`__ · `expected <examples/numeric/addition/comp_sc/manual_ex_3/expected/>`__ · *manual*
    * - | ``sc + comp``
-       | minimal
+       | `minimal <examples/numeric/addition/sc_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/addition/sc_comp/minimal/script.vtl>`__ · `input <examples/numeric/addition/sc_comp/minimal/input/>`__ · `expected <examples/numeric/addition/sc_comp/minimal/expected/>`__ · `notes <examples/numeric/addition/sc_comp/minimal/notes.md>`__
    * - | ``sc + sc``
-       | minimal
+       | `minimal <examples/numeric/addition/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -550,49 +590,49 @@
      - Detail
      - Example
    * - | ``DS - DS``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/subtraction/ds_ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/subtraction/ds_ds/manual_ex_1/script.vtl>`__ · `input <examples/numeric/subtraction/ds_ds/manual_ex_1/input/>`__ · `expected <examples/numeric/subtraction/ds_ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS - sc``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/subtraction/ds_sc/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/subtraction/ds_sc/manual_ex_2/script.vtl>`__ · `input <examples/numeric/subtraction/ds_sc/manual_ex_2/input/>`__ · `expected <examples/numeric/subtraction/ds_sc/manual_ex_2/expected/>`__ · *manual*
    * - | ``sc - DS``
-       | minimal
+       | `minimal <examples/numeric/subtraction/sc_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/subtraction/sc_ds/minimal/script.vtl>`__ · `input <examples/numeric/subtraction/sc_ds/minimal/input/>`__ · `expected <examples/numeric/subtraction/sc_ds/minimal/expected/>`__ · `notes <examples/numeric/subtraction/sc_ds/minimal/notes.md>`__
    * - | ``comp - comp``
-       | minimal
+       | `minimal <examples/numeric/subtraction/comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/subtraction/comp_comp/minimal/script.vtl>`__ · `input <examples/numeric/subtraction/comp_comp/minimal/input/>`__ · `expected <examples/numeric/subtraction/comp_comp/minimal/expected/>`__ · `notes <examples/numeric/subtraction/comp_comp/minimal/notes.md>`__
    * - | ``comp - sc``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/numeric/subtraction/comp_sc/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/subtraction/comp_sc/manual_ex_3/script.vtl>`__ · `input <examples/numeric/subtraction/comp_sc/manual_ex_3/input/>`__ · `expected <examples/numeric/subtraction/comp_sc/manual_ex_3/expected/>`__ · *manual*
    * - | ``sc - comp``
-       | minimal
+       | `minimal <examples/numeric/subtraction/sc_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/subtraction/sc_comp/minimal/script.vtl>`__ · `input <examples/numeric/subtraction/sc_comp/minimal/input/>`__ · `expected <examples/numeric/subtraction/sc_comp/minimal/expected/>`__ · `notes <examples/numeric/subtraction/sc_comp/minimal/notes.md>`__
    * - | ``sc - sc``
-       | minimal
+       | `minimal <examples/numeric/subtraction/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -615,49 +655,49 @@
      - Detail
      - Example
    * - | ``DS * DS``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/multiplication/ds_ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/multiplication/ds_ds/manual_ex_1/script.vtl>`__ · `input <examples/numeric/multiplication/ds_ds/manual_ex_1/input/>`__ · `expected <examples/numeric/multiplication/ds_ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS * sc``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/multiplication/ds_sc/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/multiplication/ds_sc/manual_ex_2/script.vtl>`__ · `input <examples/numeric/multiplication/ds_sc/manual_ex_2/input/>`__ · `expected <examples/numeric/multiplication/ds_sc/manual_ex_2/expected/>`__ · *manual*
    * - | ``sc * DS``
-       | minimal
+       | `minimal <examples/numeric/multiplication/sc_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/multiplication/sc_ds/minimal/script.vtl>`__ · `input <examples/numeric/multiplication/sc_ds/minimal/input/>`__ · `expected <examples/numeric/multiplication/sc_ds/minimal/expected/>`__ · `notes <examples/numeric/multiplication/sc_ds/minimal/notes.md>`__
    * - | ``comp * comp``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/numeric/multiplication/comp_comp/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/multiplication/comp_comp/manual_ex_3/script.vtl>`__ · `input <examples/numeric/multiplication/comp_comp/manual_ex_3/input/>`__ · `expected <examples/numeric/multiplication/comp_comp/manual_ex_3/expected/>`__ · *manual*
    * - | ``comp * sc``
-       | minimal
+       | `minimal <examples/numeric/multiplication/comp_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/multiplication/comp_sc/minimal/script.vtl>`__ · `input <examples/numeric/multiplication/comp_sc/minimal/input/>`__ · `expected <examples/numeric/multiplication/comp_sc/minimal/expected/>`__ · `notes <examples/numeric/multiplication/comp_sc/minimal/notes.md>`__
    * - | ``sc * comp``
-       | minimal
+       | `minimal <examples/numeric/multiplication/sc_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/multiplication/sc_comp/minimal/script.vtl>`__ · `input <examples/numeric/multiplication/sc_comp/minimal/input/>`__ · `expected <examples/numeric/multiplication/sc_comp/minimal/expected/>`__ · `notes <examples/numeric/multiplication/sc_comp/minimal/notes.md>`__
    * - | ``sc * sc``
-       | minimal
+       | `minimal <examples/numeric/multiplication/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -680,49 +720,49 @@
      - Detail
      - Example
    * - | ``DS / DS``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/division/ds_ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/division/ds_ds/manual_ex_1/script.vtl>`__ · `input <examples/numeric/division/ds_ds/manual_ex_1/input/>`__ · `expected <examples/numeric/division/ds_ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS / sc``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/division/ds_sc/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/division/ds_sc/manual_ex_2/script.vtl>`__ · `input <examples/numeric/division/ds_sc/manual_ex_2/input/>`__ · `expected <examples/numeric/division/ds_sc/manual_ex_2/expected/>`__ · *manual*
    * - | ``sc / DS``
-       | minimal
+       | `minimal <examples/numeric/division/sc_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/division/sc_ds/minimal/script.vtl>`__ · `input <examples/numeric/division/sc_ds/minimal/input/>`__ · `expected <examples/numeric/division/sc_ds/minimal/expected/>`__ · `notes <examples/numeric/division/sc_ds/minimal/notes.md>`__
    * - | ``comp / comp``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/numeric/division/comp_comp/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/division/comp_comp/manual_ex_3/script.vtl>`__ · `input <examples/numeric/division/comp_comp/manual_ex_3/input/>`__ · `expected <examples/numeric/division/comp_comp/manual_ex_3/expected/>`__ · *manual*
    * - | ``comp / sc``
-       | minimal
+       | `minimal <examples/numeric/division/comp_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/division/comp_sc/minimal/script.vtl>`__ · `input <examples/numeric/division/comp_sc/minimal/input/>`__ · `expected <examples/numeric/division/comp_sc/minimal/expected/>`__ · `notes <examples/numeric/division/comp_sc/minimal/notes.md>`__
    * - | ``sc / comp``
-       | minimal
+       | `minimal <examples/numeric/division/sc_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/division/sc_comp/minimal/script.vtl>`__ · `input <examples/numeric/division/sc_comp/minimal/input/>`__ · `expected <examples/numeric/division/sc_comp/minimal/expected/>`__ · `notes <examples/numeric/division/sc_comp/minimal/notes.md>`__
    * - | ``sc / sc``
-       | minimal
+       | `minimal <examples/numeric/division/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -745,63 +785,63 @@
      - Detail
      - Example
    * - | ``mod(DS, DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/modulo/ds_ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/modulo/ds_ds/manual_ex_1/script.vtl>`__ · `input <examples/numeric/modulo/ds_ds/manual_ex_1/input/>`__ · `expected <examples/numeric/modulo/ds_ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``mod(DS, sc)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/modulo/ds_sc/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/modulo/ds_sc/manual_ex_2/script.vtl>`__ · `input <examples/numeric/modulo/ds_sc/manual_ex_2/input/>`__ · `expected <examples/numeric/modulo/ds_sc/manual_ex_2/expected/>`__ · *manual*
    * - | ``mod(sc, DS)``
-       | minimal
+       | `minimal <examples/numeric/modulo/sc_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/modulo/sc_ds/minimal/script.vtl>`__ · `input <examples/numeric/modulo/sc_ds/minimal/input/>`__ · `expected <examples/numeric/modulo/sc_ds/minimal/expected/>`__ · `notes <examples/numeric/modulo/sc_ds/minimal/notes.md>`__
    * - | ``mod(comp, comp)``
-       | minimal
+       | `minimal <examples/numeric/modulo/comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/modulo/comp_comp/minimal/script.vtl>`__ · `input <examples/numeric/modulo/comp_comp/minimal/input/>`__ · `expected <examples/numeric/modulo/comp_comp/minimal/expected/>`__ · `notes <examples/numeric/modulo/comp_comp/minimal/notes.md>`__
    * - | ``mod(comp, sc)``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/numeric/modulo/comp_sc/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/modulo/comp_sc/manual_ex_3/script.vtl>`__ · `input <examples/numeric/modulo/comp_sc/manual_ex_3/input/>`__ · `expected <examples/numeric/modulo/comp_sc/manual_ex_3/expected/>`__ · *manual*
    * - | ``mod(sc, comp)``
-       | minimal
+       | `minimal <examples/numeric/modulo/sc_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/modulo/sc_comp/minimal/script.vtl>`__ · `input <examples/numeric/modulo/sc_comp/minimal/input/>`__ · `expected <examples/numeric/modulo/sc_comp/minimal/expected/>`__ · `notes <examples/numeric/modulo/sc_comp/minimal/notes.md>`__
    * - | ``mod(sc, sc)``
-       | minimal
+       | `minimal <examples/numeric/modulo/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/modulo/sc_sc/minimal/script.vtl>`__ · `expected <examples/numeric/modulo/sc_sc/minimal/expected/>`__ · `notes <examples/numeric/modulo/sc_sc/minimal/notes.md>`__
    * - | ``mod(sc, sc)``
-       | minimal\_2
+       | `minimal\_2 <examples/numeric/modulo/sc_sc/minimal_2/>`__
      - 🟡
      - ❌
      - ❌
      - value expected -1 got 1
      - `script <examples/numeric/modulo/sc_sc/minimal_2/script.vtl>`__ · `expected <examples/numeric/modulo/sc_sc/minimal_2/expected/>`__ · `notes <examples/numeric/modulo/sc_sc/minimal_2/notes.md>`__
    * - | ``mod(sc, sc)``
-       | minimal\_3
+       | `minimal\_3 <examples/numeric/modulo/sc_sc/minimal_3/>`__
      - 🔴
      - 💥
      - 💥
@@ -824,84 +864,84 @@
      - Detail
      - Example
    * - | ``round(DS, n)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/round/ds_digits/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/round/ds_digits/manual_ex_1/script.vtl>`__ · `input <examples/numeric/round/ds_digits/manual_ex_1/input/>`__ · `expected <examples/numeric/round/ds_digits/manual_ex_1/expected/>`__ · *manual*
    * - | ``round(DS)``
-       | minimal
+       | `minimal <examples/numeric/round/ds_no_digits/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing components: Me\_1; unexpected components: int\_var
      - `script <examples/numeric/round/ds_no_digits/minimal/script.vtl>`__ · `input <examples/numeric/round/ds_no_digits/minimal/input/>`__ · `expected <examples/numeric/round/ds_no_digits/minimal/expected/>`__ · `notes <examples/numeric/round/ds_no_digits/minimal/notes.md>`__
    * - | ``round(DS)``
-       | minimal\_2
+       | `minimal\_2 <examples/numeric/round/ds_no_digits/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/round/ds_no_digits/minimal_2/script.vtl>`__ · `input <examples/numeric/round/ds_no_digits/minimal_2/input/>`__ · `expected <examples/numeric/round/ds_no_digits/minimal_2/expected/>`__ · `notes <examples/numeric/round/ds_no_digits/minimal_2/notes.md>`__
    * - | ``round(DS, _)``
-       | minimal
+       | `minimal <examples/numeric/round/ds_placeholder/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing components: Me\_1; unexpected components: int\_var
      - `script <examples/numeric/round/ds_placeholder/minimal/script.vtl>`__ · `input <examples/numeric/round/ds_placeholder/minimal/input/>`__ · `expected <examples/numeric/round/ds_placeholder/minimal/expected/>`__ · `notes <examples/numeric/round/ds_placeholder/minimal/notes.md>`__
    * - | ``round(comp, n)``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/numeric/round/comp_digits/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/round/comp_digits/manual_ex_3/script.vtl>`__ · `input <examples/numeric/round/comp_digits/manual_ex_3/input/>`__ · `expected <examples/numeric/round/comp_digits/manual_ex_3/expected/>`__ · *manual*
    * - | ``round(comp)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/round/comp_no_digits/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/round/comp_no_digits/manual_ex_2/script.vtl>`__ · `input <examples/numeric/round/comp_no_digits/manual_ex_2/input/>`__ · `expected <examples/numeric/round/comp_no_digits/manual_ex_2/expected/>`__ · *manual*
    * - | ``round(comp, _)``
-       | minimal
+       | `minimal <examples/numeric/round/comp_placeholder/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/round/comp_placeholder/minimal/script.vtl>`__ · `input <examples/numeric/round/comp_placeholder/minimal/input/>`__ · `expected <examples/numeric/round/comp_placeholder/minimal/expected/>`__ · `notes <examples/numeric/round/comp_placeholder/minimal/notes.md>`__
    * - | ``round(comp, comp)``
-       | minimal
+       | `minimal <examples/numeric/round/comp_comp_digits/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/round/comp_comp_digits/minimal/script.vtl>`__ · `input <examples/numeric/round/comp_comp_digits/minimal/input/>`__ · `expected <examples/numeric/round/comp_comp_digits/minimal/expected/>`__ · `notes <examples/numeric/round/comp_comp_digits/minimal/notes.md>`__
    * - | ``round(sc, comp)``
-       | minimal
+       | `minimal <examples/numeric/round/sc_comp_digits/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-15-8: At op round: round operator cannot have a DataComponent and an Scalar operand as parameter. Please check transformation with output Dataset DS\_r
      - `script <examples/numeric/round/sc_comp_digits/minimal/script.vtl>`__ · `input <examples/numeric/round/sc_comp_digits/minimal/input/>`__ · `expected <examples/numeric/round/sc_comp_digits/minimal/expected/>`__ · `notes <examples/numeric/round/sc_comp_digits/minimal/notes.md>`__
    * - | ``round(sc, n)``
-       | minimal
+       | `minimal <examples/numeric/round/sc_digits/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/round/sc_digits/minimal/script.vtl>`__ · `expected <examples/numeric/round/sc_digits/minimal/expected/>`__ · `notes <examples/numeric/round/sc_digits/minimal/notes.md>`__
    * - | ``round(sc)``
-       | minimal
+       | `minimal <examples/numeric/round/sc_no_digits/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/round/sc_no_digits/minimal/script.vtl>`__ · `expected <examples/numeric/round/sc_no_digits/minimal/expected/>`__ · `notes <examples/numeric/round/sc_no_digits/minimal/notes.md>`__
    * - | ``round(sc, _)``
-       | minimal
+       | `minimal <examples/numeric/round/sc_placeholder/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -924,84 +964,84 @@
      - Detail
      - Example
    * - | ``trunc(DS, n)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/trunc/ds_digits/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/trunc/ds_digits/manual_ex_1/script.vtl>`__ · `input <examples/numeric/trunc/ds_digits/manual_ex_1/input/>`__ · `expected <examples/numeric/trunc/ds_digits/manual_ex_1/expected/>`__ · *manual*
    * - | ``trunc(DS)``
-       | minimal
+       | `minimal <examples/numeric/trunc/ds_no_digits/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing components: Me\_1; unexpected components: int\_var
      - `script <examples/numeric/trunc/ds_no_digits/minimal/script.vtl>`__ · `input <examples/numeric/trunc/ds_no_digits/minimal/input/>`__ · `expected <examples/numeric/trunc/ds_no_digits/minimal/expected/>`__ · `notes <examples/numeric/trunc/ds_no_digits/minimal/notes.md>`__
    * - | ``trunc(DS)``
-       | minimal\_2
+       | `minimal\_2 <examples/numeric/trunc/ds_no_digits/minimal_2/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-1-4: At op trunc: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
      - `script <examples/numeric/trunc/ds_no_digits/minimal_2/script.vtl>`__ · `input <examples/numeric/trunc/ds_no_digits/minimal_2/input/>`__ · `expected <examples/numeric/trunc/ds_no_digits/minimal_2/expected/>`__ · `notes <examples/numeric/trunc/ds_no_digits/minimal_2/notes.md>`__
    * - | ``trunc(DS, _)``
-       | minimal
+       | `minimal <examples/numeric/trunc/ds_placeholder/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing components: Me\_1; unexpected components: int\_var
      - `script <examples/numeric/trunc/ds_placeholder/minimal/script.vtl>`__ · `input <examples/numeric/trunc/ds_placeholder/minimal/input/>`__ · `expected <examples/numeric/trunc/ds_placeholder/minimal/expected/>`__ · `notes <examples/numeric/trunc/ds_placeholder/minimal/notes.md>`__
    * - | ``trunc(comp, n)``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/numeric/trunc/comp_digits/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/trunc/comp_digits/manual_ex_3/script.vtl>`__ · `input <examples/numeric/trunc/comp_digits/manual_ex_3/input/>`__ · `expected <examples/numeric/trunc/comp_digits/manual_ex_3/expected/>`__ · *manual*
    * - | ``trunc(comp)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/trunc/comp_no_digits/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/trunc/comp_no_digits/manual_ex_2/script.vtl>`__ · `input <examples/numeric/trunc/comp_no_digits/manual_ex_2/input/>`__ · `expected <examples/numeric/trunc/comp_no_digits/manual_ex_2/expected/>`__ · *manual*
    * - | ``trunc(comp, _)``
-       | minimal
+       | `minimal <examples/numeric/trunc/comp_placeholder/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/trunc/comp_placeholder/minimal/script.vtl>`__ · `input <examples/numeric/trunc/comp_placeholder/minimal/input/>`__ · `expected <examples/numeric/trunc/comp_placeholder/minimal/expected/>`__ · `notes <examples/numeric/trunc/comp_placeholder/minimal/notes.md>`__
    * - | ``trunc(comp, comp)``
-       | minimal
+       | `minimal <examples/numeric/trunc/comp_comp_digits/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/trunc/comp_comp_digits/minimal/script.vtl>`__ · `input <examples/numeric/trunc/comp_comp_digits/minimal/input/>`__ · `expected <examples/numeric/trunc/comp_comp_digits/minimal/expected/>`__ · `notes <examples/numeric/trunc/comp_comp_digits/minimal/notes.md>`__
    * - | ``trunc(sc, comp)``
-       | minimal
+       | `minimal <examples/numeric/trunc/sc_comp_digits/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-15-8: At op trunc: trunc operator cannot have a DataComponent and an Scalar operand as parameter. Please check transformation with output Dataset DS\_r
      - `script <examples/numeric/trunc/sc_comp_digits/minimal/script.vtl>`__ · `input <examples/numeric/trunc/sc_comp_digits/minimal/input/>`__ · `expected <examples/numeric/trunc/sc_comp_digits/minimal/expected/>`__ · `notes <examples/numeric/trunc/sc_comp_digits/minimal/notes.md>`__
    * - | ``trunc(sc, n)``
-       | minimal
+       | `minimal <examples/numeric/trunc/sc_digits/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/trunc/sc_digits/minimal/script.vtl>`__ · `expected <examples/numeric/trunc/sc_digits/minimal/expected/>`__ · `notes <examples/numeric/trunc/sc_digits/minimal/notes.md>`__
    * - | ``trunc(sc)``
-       | minimal
+       | `minimal <examples/numeric/trunc/sc_no_digits/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/trunc/sc_no_digits/minimal/script.vtl>`__ · `expected <examples/numeric/trunc/sc_no_digits/minimal/expected/>`__ · `notes <examples/numeric/trunc/sc_no_digits/minimal/notes.md>`__
    * - | ``trunc(sc, _)``
-       | minimal
+       | `minimal <examples/numeric/trunc/sc_placeholder/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1024,28 +1064,28 @@
      - Detail
      - Example
    * - | ``ceil(DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/ceil/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/ceil/ds/manual_ex_1/script.vtl>`__ · `input <examples/numeric/ceil/ds/manual_ex_1/input/>`__ · `expected <examples/numeric/ceil/ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``ceil(DS)``
-       | minimal
+       | `minimal <examples/numeric/ceil/ds/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing components: Me\_1; unexpected components: int\_var
      - `script <examples/numeric/ceil/ds/minimal/script.vtl>`__ · `input <examples/numeric/ceil/ds/minimal/input/>`__ · `expected <examples/numeric/ceil/ds/minimal/expected/>`__ · `notes <examples/numeric/ceil/ds/minimal/notes.md>`__
    * - | ``ceil(comp)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/ceil/comp/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/ceil/comp/manual_ex_2/script.vtl>`__ · `input <examples/numeric/ceil/comp/manual_ex_2/input/>`__ · `expected <examples/numeric/ceil/comp/manual_ex_2/expected/>`__ · *manual*
    * - | ``ceil(sc)``
-       | minimal
+       | `minimal <examples/numeric/ceil/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1068,28 +1108,28 @@
      - Detail
      - Example
    * - | ``floor(DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/floor/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/floor/ds/manual_ex_1/script.vtl>`__ · `input <examples/numeric/floor/ds/manual_ex_1/input/>`__ · `expected <examples/numeric/floor/ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``floor(DS)``
-       | minimal
+       | `minimal <examples/numeric/floor/ds/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing components: Me\_1; unexpected components: int\_var
      - `script <examples/numeric/floor/ds/minimal/script.vtl>`__ · `input <examples/numeric/floor/ds/minimal/input/>`__ · `expected <examples/numeric/floor/ds/minimal/expected/>`__ · `notes <examples/numeric/floor/ds/minimal/notes.md>`__
    * - | ``floor(comp)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/floor/comp/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/floor/comp/manual_ex_2/script.vtl>`__ · `input <examples/numeric/floor/comp/manual_ex_2/input/>`__ · `expected <examples/numeric/floor/comp/manual_ex_2/expected/>`__ · *manual*
    * - | ``floor(sc)``
-       | minimal
+       | `minimal <examples/numeric/floor/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1112,21 +1152,21 @@
      - Detail
      - Example
    * - | ``abs(DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/abs/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/abs/ds/manual_ex_1/script.vtl>`__ · `input <examples/numeric/abs/ds/manual_ex_1/input/>`__ · `expected <examples/numeric/abs/ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``abs(comp)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/abs/comp/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/abs/comp/manual_ex_2/script.vtl>`__ · `input <examples/numeric/abs/comp/manual_ex_2/input/>`__ · `expected <examples/numeric/abs/comp/manual_ex_2/expected/>`__ · *manual*
    * - | ``abs(sc)``
-       | minimal
+       | `minimal <examples/numeric/abs/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1149,21 +1189,21 @@
      - Detail
      - Example
    * - | ``exp(DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/exp/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/exp/ds/manual_ex_1/script.vtl>`__ · `input <examples/numeric/exp/ds/manual_ex_1/input/>`__ · `expected <examples/numeric/exp/ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``exp(comp)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/exp/comp/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/exp/comp/manual_ex_2/script.vtl>`__ · `input <examples/numeric/exp/comp/manual_ex_2/input/>`__ · `expected <examples/numeric/exp/comp/manual_ex_2/expected/>`__ · *manual*
    * - | ``exp(sc)``
-       | minimal
+       | `minimal <examples/numeric/exp/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1186,21 +1226,21 @@
      - Detail
      - Example
    * - | ``ln(DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/ln/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/ln/ds/manual_ex_1/script.vtl>`__ · `input <examples/numeric/ln/ds/manual_ex_1/input/>`__ · `expected <examples/numeric/ln/ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``ln(comp)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/ln/comp/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/ln/comp/manual_ex_2/script.vtl>`__ · `input <examples/numeric/ln/comp/manual_ex_2/input/>`__ · `expected <examples/numeric/ln/comp/manual_ex_2/expected/>`__ · *manual*
    * - | ``ln(sc)``
-       | minimal
+       | `minimal <examples/numeric/ln/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1223,21 +1263,21 @@
      - Detail
      - Example
    * - | ``sqrt(DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/sqrt/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/sqrt/ds/manual_ex_1/script.vtl>`__ · `input <examples/numeric/sqrt/ds/manual_ex_1/input/>`__ · `expected <examples/numeric/sqrt/ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``sqrt(comp)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/sqrt/comp/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/sqrt/comp/manual_ex_2/script.vtl>`__ · `input <examples/numeric/sqrt/comp/manual_ex_2/input/>`__ · `expected <examples/numeric/sqrt/comp/manual_ex_2/expected/>`__ · *manual*
    * - | ``sqrt(sc)``
-       | minimal
+       | `minimal <examples/numeric/sqrt/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1260,35 +1300,35 @@
      - Detail
      - Example
    * - | ``power(DS, sc)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/power/ds_sc/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/power/ds_sc/manual_ex_1/script.vtl>`__ · `input <examples/numeric/power/ds_sc/manual_ex_1/input/>`__ · `expected <examples/numeric/power/ds_sc/manual_ex_1/expected/>`__ · *manual*
    * - | ``power(comp, sc)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/power/comp_sc/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/power/comp_sc/manual_ex_2/script.vtl>`__ · `input <examples/numeric/power/comp_sc/manual_ex_2/input/>`__ · `expected <examples/numeric/power/comp_sc/manual_ex_2/expected/>`__ · *manual*
    * - | ``power(comp, comp)``
-       | minimal
+       | `minimal <examples/numeric/power/comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/power/comp_comp/minimal/script.vtl>`__ · `input <examples/numeric/power/comp_comp/minimal/input/>`__ · `expected <examples/numeric/power/comp_comp/minimal/expected/>`__ · `notes <examples/numeric/power/comp_comp/minimal/notes.md>`__
    * - | ``power(sc, comp)``
-       | minimal
+       | `minimal <examples/numeric/power/sc_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/power/sc_comp/minimal/script.vtl>`__ · `input <examples/numeric/power/sc_comp/minimal/input/>`__ · `expected <examples/numeric/power/sc_comp/minimal/expected/>`__ · `notes <examples/numeric/power/sc_comp/minimal/notes.md>`__
    * - | ``power(sc, sc)``
-       | minimal
+       | `minimal <examples/numeric/power/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1311,35 +1351,35 @@
      - Detail
      - Example
    * - | ``log(DS, sc)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/log/ds_sc/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/log/ds_sc/manual_ex_1/script.vtl>`__ · `input <examples/numeric/log/ds_sc/manual_ex_1/input/>`__ · `expected <examples/numeric/log/ds_sc/manual_ex_1/expected/>`__ · `notes <examples/numeric/log/ds_sc/manual_ex_1/notes.md>`__ · *manual*
    * - | ``log(comp, sc)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/log/comp_sc/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/log/comp_sc/manual_ex_2/script.vtl>`__ · `input <examples/numeric/log/comp_sc/manual_ex_2/input/>`__ · `expected <examples/numeric/log/comp_sc/manual_ex_2/expected/>`__ · `notes <examples/numeric/log/comp_sc/manual_ex_2/notes.md>`__ · *manual*
    * - | ``log(comp, comp)``
-       | minimal
+       | `minimal <examples/numeric/log/comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/log/comp_comp/minimal/script.vtl>`__ · `input <examples/numeric/log/comp_comp/minimal/input/>`__ · `expected <examples/numeric/log/comp_comp/minimal/expected/>`__ · `notes <examples/numeric/log/comp_comp/minimal/notes.md>`__
    * - | ``log(sc, comp)``
-       | minimal
+       | `minimal <examples/numeric/log/sc_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/numeric/log/sc_comp/minimal/script.vtl>`__ · `input <examples/numeric/log/sc_comp/minimal/input/>`__ · `expected <examples/numeric/log/sc_comp/minimal/expected/>`__ · `notes <examples/numeric/log/sc_comp/minimal/notes.md>`__
    * - | ``log(sc, sc)``
-       | minimal
+       | `minimal <examples/numeric/log/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -1362,28 +1402,28 @@
      - Detail
      - Example
    * - | ``random(DS, n)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/numeric/random/ds/manual_ex_1/>`__
      - 🔵
      - ✅
      - ✅
      - the engines give different outputs
      - `script <examples/numeric/random/ds/manual_ex_1/script.vtl>`__ · `input <examples/numeric/random/ds/manual_ex_1/input/>`__ · `expected <examples/numeric/random/ds/manual_ex_1/expected/>`__ · `notes <examples/numeric/random/ds/manual_ex_1/notes.md>`__ · *manual* · adapted
    * - | ``random(comp, n)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/numeric/random/comp/manual_ex_2/>`__
      - 🔵
      - ✅
      - ✅
      - the engines give different outputs
      - `script <examples/numeric/random/comp/manual_ex_2/script.vtl>`__ · `input <examples/numeric/random/comp/manual_ex_2/input/>`__ · `expected <examples/numeric/random/comp/manual_ex_2/expected/>`__ · `notes <examples/numeric/random/comp/manual_ex_2/notes.md>`__ · *manual* · adapted
    * - | ``random(comp, n)``
-       | minimal
+       | `minimal <examples/numeric/random/comp/minimal/>`__
      - 🔵
      - ✅
      - ✅
      - the engines give different outputs
      - `script <examples/numeric/random/comp/minimal/script.vtl>`__ · `input <examples/numeric/random/comp/minimal/input/>`__ · `expected <examples/numeric/random/comp/minimal/expected/>`__ · `notes <examples/numeric/random/comp/minimal/notes.md>`__
    * - | ``random(sc, n)``
-       | minimal
+       | `minimal <examples/numeric/random/sc/minimal/>`__
      - 🔵
      - ✅
      - ✅

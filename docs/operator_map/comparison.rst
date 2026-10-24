@@ -4,7 +4,7 @@
 
 67 variants: 🟢 67 · 🟡 0 · 🔴 0 · 🔵 0
 
-← Back to :doc:`index` · vtlengine 1.9.6rc2 (851f56ae)
+← Back to :doc:`index` · vtlengine 1.9.6rc2 (b393f444) · pandas 3.0.6 · DuckDB 1.5.5
 
 .. mermaid::
 
@@ -16,19 +16,19 @@
        classDef type fill:#eeeeee,color:#000
        classDef ext stroke-dasharray: 5 5
        in_scalar(("scalar")):::type
-       click in_scalar "examples/general/non_persistent_assignment/ds/manual_ex_1/"
+       click in_scalar "examples/general/non_persistent_assignment/sc/minimal/"
+       in_dataset(("dataset")):::type
+       click in_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        out_boolean(("boolean")):::type
        click out_boolean "examples/types/boolean/identity/minimal/"
+       out_dataset(("dataset")):::type
+       click out_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        in_set(("set")):::type
        click in_set "examples/comparison/in/ds_set/manual_ex_1/"
        in_value_domain(("value_domain")):::type
-       click in_value_domain "examples/comparison/in/ds_set/manual_ex_1/"
+       click in_value_domain "examples/comparison/in/ds_value_domain/manual_ex_3/"
        in_string(("string")):::type
        click in_string "examples/types/string/identity/minimal/"
-       in_dataset(("dataset")):::type
-       click in_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
-       out_dataset(("dataset")):::type
-       click out_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        comparison__equal["🟢 Equal to ="]:::ok
        comparison__equal__ds_ds["🟢 DS = DS"]:::ok
        comparison__equal__ds_sc["🟢 DS = sc"]:::ok
@@ -45,7 +45,9 @@
        comparison__equal --- comparison__equal__sc_comp
        comparison__equal --- comparison__equal__sc_sc
        in_scalar --> comparison__equal
+       in_dataset --> comparison__equal
        comparison__equal --> out_boolean
+       comparison__equal --> out_dataset
        click comparison__equal "examples/comparison/equal/ds_ds/minimal/"
        click comparison__equal__ds_ds "examples/comparison/equal/ds_ds/minimal/"
        click comparison__equal__ds_sc "examples/comparison/equal/ds_sc/manual_ex_1/"
@@ -70,7 +72,9 @@
        comparison__not_equal --- comparison__not_equal__sc_comp
        comparison__not_equal --- comparison__not_equal__sc_sc
        in_scalar --> comparison__not_equal
+       in_dataset --> comparison__not_equal
        comparison__not_equal --> out_boolean
+       comparison__not_equal --> out_dataset
        click comparison__not_equal "examples/comparison/not_equal/ds_ds/manual_ex_1/"
        click comparison__not_equal__ds_ds "examples/comparison/not_equal/ds_ds/manual_ex_1/"
        click comparison__not_equal__ds_sc "examples/comparison/not_equal/ds_sc/minimal/"
@@ -95,7 +99,9 @@
        comparison__greater --- comparison__greater__sc_comp
        comparison__greater --- comparison__greater__sc_sc
        in_scalar --> comparison__greater
+       in_dataset --> comparison__greater
        comparison__greater --> out_boolean
+       comparison__greater --> out_dataset
        click comparison__greater "examples/comparison/greater/ds_ds/manual_ex_3/"
        click comparison__greater__ds_ds "examples/comparison/greater/ds_ds/manual_ex_3/"
        click comparison__greater__ds_sc "examples/comparison/greater/ds_sc/manual_ex_1/"
@@ -120,7 +126,9 @@
        comparison__greater_equal --- comparison__greater_equal__sc_comp
        comparison__greater_equal --- comparison__greater_equal__sc_sc
        in_scalar --> comparison__greater_equal
+       in_dataset --> comparison__greater_equal
        comparison__greater_equal --> out_boolean
+       comparison__greater_equal --> out_dataset
        click comparison__greater_equal "examples/comparison/greater_equal/ds_ds/minimal/"
        click comparison__greater_equal__ds_ds "examples/comparison/greater_equal/ds_ds/minimal/"
        click comparison__greater_equal__ds_sc "examples/comparison/greater_equal/ds_sc/minimal/"
@@ -145,7 +153,9 @@
        comparison__less --- comparison__less__sc_comp
        comparison__less --- comparison__less__sc_sc
        in_scalar --> comparison__less
+       in_dataset --> comparison__less
        comparison__less --> out_boolean
+       comparison__less --> out_dataset
        click comparison__less "examples/comparison/less/ds_ds/minimal/"
        click comparison__less__ds_ds "examples/comparison/less/ds_ds/minimal/"
        click comparison__less__ds_sc "examples/comparison/less/ds_sc/manual_ex_1/"
@@ -170,7 +180,9 @@
        comparison__less_equal --- comparison__less_equal__sc_comp
        comparison__less_equal --- comparison__less_equal__sc_sc
        in_scalar --> comparison__less_equal
+       in_dataset --> comparison__less_equal
        comparison__less_equal --> out_boolean
+       comparison__less_equal --> out_dataset
        click comparison__less_equal "examples/comparison/less_equal/ds_ds/minimal/"
        click comparison__less_equal__ds_ds "examples/comparison/less_equal/ds_ds/minimal/"
        click comparison__less_equal__ds_sc "examples/comparison/less_equal/ds_sc/minimal/"
@@ -189,7 +201,9 @@
        comparison__between --- comparison__between__comp_comp_comp
        comparison__between --- comparison__between__sc_sc_sc
        in_scalar --> comparison__between
+       in_dataset --> comparison__between
        comparison__between --> out_boolean
+       comparison__between --> out_dataset
        click comparison__between "examples/comparison/between/ds_sc_sc/manual_ex_1/"
        click comparison__between__ds_sc_sc "examples/comparison/between/ds_sc_sc/manual_ex_1/"
        click comparison__between__comp_sc_sc "examples/comparison/between/comp_sc_sc/minimal/"
@@ -209,7 +223,9 @@
        in_scalar --> comparison__in
        in_set --> comparison__in
        in_value_domain --> comparison__in
+       in_dataset --> comparison__in
        comparison__in --> out_boolean
+       comparison__in --> out_dataset
        click comparison__in "examples/comparison/in/ds_set/manual_ex_1/"
        click comparison__in__ds_set "examples/comparison/in/ds_set/manual_ex_1/"
        click comparison__in__comp_set "examples/comparison/in/comp_set/manual_ex_2/"
@@ -230,7 +246,9 @@
        in_scalar --> comparison__not_in
        in_set --> comparison__not_in
        in_value_domain --> comparison__not_in
+       in_dataset --> comparison__not_in
        comparison__not_in --> out_boolean
+       comparison__not_in --> out_dataset
        click comparison__not_in "examples/comparison/not_in/ds_set/minimal/"
        click comparison__not_in__ds_set "examples/comparison/not_in/ds_set/minimal/"
        click comparison__not_in__comp_set "examples/comparison/not_in/comp_set/minimal/"
@@ -247,7 +265,9 @@
        comparison__match_characters --- comparison__match_characters__comp_comp
        comparison__match_characters --- comparison__match_characters__sc_sc
        in_string --> comparison__match_characters
+       in_dataset --> comparison__match_characters
        comparison__match_characters --> out_boolean
+       comparison__match_characters --> out_dataset
        click comparison__match_characters "examples/comparison/match_characters/ds_sc/manual_ex_1/"
        click comparison__match_characters__ds_sc "examples/comparison/match_characters/ds_sc/manual_ex_1/"
        click comparison__match_characters__comp_sc "examples/comparison/match_characters/comp_sc/minimal/"
@@ -261,7 +281,9 @@
        comparison__isnull --- comparison__isnull__comp
        comparison__isnull --- comparison__isnull__sc
        in_scalar --> comparison__isnull
+       in_dataset --> comparison__isnull
        comparison__isnull --> out_boolean
+       comparison__isnull --> out_dataset
        click comparison__isnull "examples/comparison/isnull/ds/manual_ex_1/"
        click comparison__isnull__ds "examples/comparison/isnull/ds/manual_ex_1/"
        click comparison__isnull__comp "examples/comparison/isnull/comp/manual_ex_2/"
@@ -300,49 +322,49 @@
      - Detail
      - Example
    * - | ``DS = DS``
-       | minimal
+       | `minimal <examples/comparison/equal/ds_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/equal/ds_ds/minimal/script.vtl>`__ · `input <examples/comparison/equal/ds_ds/minimal/input/>`__ · `expected <examples/comparison/equal/ds_ds/minimal/expected/>`__ · `notes <examples/comparison/equal/ds_ds/minimal/notes.md>`__
    * - | ``DS = sc``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/comparison/equal/ds_sc/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/equal/ds_sc/manual_ex_1/script.vtl>`__ · `input <examples/comparison/equal/ds_sc/manual_ex_1/input/>`__ · `expected <examples/comparison/equal/ds_sc/manual_ex_1/expected/>`__ · *manual*
    * - | ``sc = DS``
-       | minimal
+       | `minimal <examples/comparison/equal/sc_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/equal/sc_ds/minimal/script.vtl>`__ · `input <examples/comparison/equal/sc_ds/minimal/input/>`__ · `expected <examples/comparison/equal/sc_ds/minimal/expected/>`__ · `notes <examples/comparison/equal/sc_ds/minimal/notes.md>`__
    * - | ``comp = comp``
-       | minimal
+       | `minimal <examples/comparison/equal/comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/equal/comp_comp/minimal/script.vtl>`__ · `input <examples/comparison/equal/comp_comp/minimal/input/>`__ · `expected <examples/comparison/equal/comp_comp/minimal/expected/>`__ · `notes <examples/comparison/equal/comp_comp/minimal/notes.md>`__
    * - | ``comp = sc``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/comparison/equal/comp_sc/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/equal/comp_sc/manual_ex_2/script.vtl>`__ · `input <examples/comparison/equal/comp_sc/manual_ex_2/input/>`__ · `expected <examples/comparison/equal/comp_sc/manual_ex_2/expected/>`__ · *manual*
    * - | ``sc = comp``
-       | minimal
+       | `minimal <examples/comparison/equal/sc_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/equal/sc_comp/minimal/script.vtl>`__ · `input <examples/comparison/equal/sc_comp/minimal/input/>`__ · `expected <examples/comparison/equal/sc_comp/minimal/expected/>`__ · `notes <examples/comparison/equal/sc_comp/minimal/notes.md>`__
    * - | ``sc = sc``
-       | minimal
+       | `minimal <examples/comparison/equal/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -365,49 +387,49 @@
      - Detail
      - Example
    * - | ``DS <> DS``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/comparison/not_equal/ds_ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/not_equal/ds_ds/manual_ex_1/script.vtl>`__ · `input <examples/comparison/not_equal/ds_ds/manual_ex_1/input/>`__ · `expected <examples/comparison/not_equal/ds_ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``DS <> sc``
-       | minimal
+       | `minimal <examples/comparison/not_equal/ds_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/not_equal/ds_sc/minimal/script.vtl>`__ · `input <examples/comparison/not_equal/ds_sc/minimal/input/>`__ · `expected <examples/comparison/not_equal/ds_sc/minimal/expected/>`__ · `notes <examples/comparison/not_equal/ds_sc/minimal/notes.md>`__
    * - | ``sc <> DS``
-       | minimal
+       | `minimal <examples/comparison/not_equal/sc_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/not_equal/sc_ds/minimal/script.vtl>`__ · `input <examples/comparison/not_equal/sc_ds/minimal/input/>`__ · `expected <examples/comparison/not_equal/sc_ds/minimal/expected/>`__ · `notes <examples/comparison/not_equal/sc_ds/minimal/notes.md>`__
    * - | ``comp <> comp``
-       | minimal
+       | `minimal <examples/comparison/not_equal/comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/not_equal/comp_comp/minimal/script.vtl>`__ · `input <examples/comparison/not_equal/comp_comp/minimal/input/>`__ · `expected <examples/comparison/not_equal/comp_comp/minimal/expected/>`__ · `notes <examples/comparison/not_equal/comp_comp/minimal/notes.md>`__
    * - | ``comp <> sc``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/comparison/not_equal/comp_sc/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/not_equal/comp_sc/manual_ex_2/script.vtl>`__ · `input <examples/comparison/not_equal/comp_sc/manual_ex_2/input/>`__ · `expected <examples/comparison/not_equal/comp_sc/manual_ex_2/expected/>`__ · *manual*
    * - | ``sc <> comp``
-       | minimal
+       | `minimal <examples/comparison/not_equal/sc_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/not_equal/sc_comp/minimal/script.vtl>`__ · `input <examples/comparison/not_equal/sc_comp/minimal/input/>`__ · `expected <examples/comparison/not_equal/sc_comp/minimal/expected/>`__ · `notes <examples/comparison/not_equal/sc_comp/minimal/notes.md>`__
    * - | ``sc <> sc``
-       | minimal
+       | `minimal <examples/comparison/not_equal/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -430,49 +452,49 @@
      - Detail
      - Example
    * - | ``DS > DS``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/comparison/greater/ds_ds/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/greater/ds_ds/manual_ex_3/script.vtl>`__ · `input <examples/comparison/greater/ds_ds/manual_ex_3/input/>`__ · `expected <examples/comparison/greater/ds_ds/manual_ex_3/expected/>`__ · *manual*
    * - | ``DS > sc``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/comparison/greater/ds_sc/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/greater/ds_sc/manual_ex_1/script.vtl>`__ · `input <examples/comparison/greater/ds_sc/manual_ex_1/input/>`__ · `expected <examples/comparison/greater/ds_sc/manual_ex_1/expected/>`__ · *manual*
    * - | ``sc > DS``
-       | minimal
+       | `minimal <examples/comparison/greater/sc_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/greater/sc_ds/minimal/script.vtl>`__ · `input <examples/comparison/greater/sc_ds/minimal/input/>`__ · `expected <examples/comparison/greater/sc_ds/minimal/expected/>`__ · `notes <examples/comparison/greater/sc_ds/minimal/notes.md>`__
    * - | ``comp > comp``
-       | minimal
+       | `minimal <examples/comparison/greater/comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/greater/comp_comp/minimal/script.vtl>`__ · `input <examples/comparison/greater/comp_comp/minimal/input/>`__ · `expected <examples/comparison/greater/comp_comp/minimal/expected/>`__ · `notes <examples/comparison/greater/comp_comp/minimal/notes.md>`__
    * - | ``comp > sc``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/comparison/greater/comp_sc/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/greater/comp_sc/manual_ex_2/script.vtl>`__ · `input <examples/comparison/greater/comp_sc/manual_ex_2/input/>`__ · `expected <examples/comparison/greater/comp_sc/manual_ex_2/expected/>`__ · *manual*
    * - | ``sc > comp``
-       | minimal
+       | `minimal <examples/comparison/greater/sc_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/greater/sc_comp/minimal/script.vtl>`__ · `input <examples/comparison/greater/sc_comp/minimal/input/>`__ · `expected <examples/comparison/greater/sc_comp/minimal/expected/>`__ · `notes <examples/comparison/greater/sc_comp/minimal/notes.md>`__
    * - | ``sc > sc``
-       | minimal
+       | `minimal <examples/comparison/greater/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -495,49 +517,49 @@
      - Detail
      - Example
    * - | ``DS >= DS``
-       | minimal
+       | `minimal <examples/comparison/greater_equal/ds_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/greater_equal/ds_ds/minimal/script.vtl>`__ · `input <examples/comparison/greater_equal/ds_ds/minimal/input/>`__ · `expected <examples/comparison/greater_equal/ds_ds/minimal/expected/>`__ · `notes <examples/comparison/greater_equal/ds_ds/minimal/notes.md>`__
    * - | ``DS >= sc``
-       | minimal
+       | `minimal <examples/comparison/greater_equal/ds_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/greater_equal/ds_sc/minimal/script.vtl>`__ · `input <examples/comparison/greater_equal/ds_sc/minimal/input/>`__ · `expected <examples/comparison/greater_equal/ds_sc/minimal/expected/>`__ · `notes <examples/comparison/greater_equal/ds_sc/minimal/notes.md>`__
    * - | ``sc >= DS``
-       | minimal
+       | `minimal <examples/comparison/greater_equal/sc_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/greater_equal/sc_ds/minimal/script.vtl>`__ · `input <examples/comparison/greater_equal/sc_ds/minimal/input/>`__ · `expected <examples/comparison/greater_equal/sc_ds/minimal/expected/>`__ · `notes <examples/comparison/greater_equal/sc_ds/minimal/notes.md>`__
    * - | ``comp >= comp``
-       | minimal
+       | `minimal <examples/comparison/greater_equal/comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/greater_equal/comp_comp/minimal/script.vtl>`__ · `input <examples/comparison/greater_equal/comp_comp/minimal/input/>`__ · `expected <examples/comparison/greater_equal/comp_comp/minimal/expected/>`__ · `notes <examples/comparison/greater_equal/comp_comp/minimal/notes.md>`__
    * - | ``comp >= sc``
-       | minimal
+       | `minimal <examples/comparison/greater_equal/comp_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/greater_equal/comp_sc/minimal/script.vtl>`__ · `input <examples/comparison/greater_equal/comp_sc/minimal/input/>`__ · `expected <examples/comparison/greater_equal/comp_sc/minimal/expected/>`__ · `notes <examples/comparison/greater_equal/comp_sc/minimal/notes.md>`__
    * - | ``sc >= comp``
-       | minimal
+       | `minimal <examples/comparison/greater_equal/sc_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/greater_equal/sc_comp/minimal/script.vtl>`__ · `input <examples/comparison/greater_equal/sc_comp/minimal/input/>`__ · `expected <examples/comparison/greater_equal/sc_comp/minimal/expected/>`__ · `notes <examples/comparison/greater_equal/sc_comp/minimal/notes.md>`__
    * - | ``sc >= sc``
-       | minimal
+       | `minimal <examples/comparison/greater_equal/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -560,49 +582,49 @@
      - Detail
      - Example
    * - | ``DS < DS``
-       | minimal
+       | `minimal <examples/comparison/less/ds_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/less/ds_ds/minimal/script.vtl>`__ · `input <examples/comparison/less/ds_ds/minimal/input/>`__ · `expected <examples/comparison/less/ds_ds/minimal/expected/>`__ · `notes <examples/comparison/less/ds_ds/minimal/notes.md>`__
    * - | ``DS < sc``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/comparison/less/ds_sc/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/less/ds_sc/manual_ex_1/script.vtl>`__ · `input <examples/comparison/less/ds_sc/manual_ex_1/input/>`__ · `expected <examples/comparison/less/ds_sc/manual_ex_1/expected/>`__ · *manual*
    * - | ``sc < DS``
-       | minimal
+       | `minimal <examples/comparison/less/sc_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/less/sc_ds/minimal/script.vtl>`__ · `input <examples/comparison/less/sc_ds/minimal/input/>`__ · `expected <examples/comparison/less/sc_ds/minimal/expected/>`__ · `notes <examples/comparison/less/sc_ds/minimal/notes.md>`__
    * - | ``comp < comp``
-       | minimal
+       | `minimal <examples/comparison/less/comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/less/comp_comp/minimal/script.vtl>`__ · `input <examples/comparison/less/comp_comp/minimal/input/>`__ · `expected <examples/comparison/less/comp_comp/minimal/expected/>`__ · `notes <examples/comparison/less/comp_comp/minimal/notes.md>`__
    * - | ``comp < sc``
-       | minimal
+       | `minimal <examples/comparison/less/comp_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/less/comp_sc/minimal/script.vtl>`__ · `input <examples/comparison/less/comp_sc/minimal/input/>`__ · `expected <examples/comparison/less/comp_sc/minimal/expected/>`__ · `notes <examples/comparison/less/comp_sc/minimal/notes.md>`__
    * - | ``sc < comp``
-       | minimal
+       | `minimal <examples/comparison/less/sc_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/less/sc_comp/minimal/script.vtl>`__ · `input <examples/comparison/less/sc_comp/minimal/input/>`__ · `expected <examples/comparison/less/sc_comp/minimal/expected/>`__ · `notes <examples/comparison/less/sc_comp/minimal/notes.md>`__
    * - | ``sc < sc``
-       | minimal
+       | `minimal <examples/comparison/less/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -625,49 +647,49 @@
      - Detail
      - Example
    * - | ``DS <= DS``
-       | minimal
+       | `minimal <examples/comparison/less_equal/ds_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/less_equal/ds_ds/minimal/script.vtl>`__ · `input <examples/comparison/less_equal/ds_ds/minimal/input/>`__ · `expected <examples/comparison/less_equal/ds_ds/minimal/expected/>`__ · `notes <examples/comparison/less_equal/ds_ds/minimal/notes.md>`__
    * - | ``DS <= sc``
-       | minimal
+       | `minimal <examples/comparison/less_equal/ds_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/less_equal/ds_sc/minimal/script.vtl>`__ · `input <examples/comparison/less_equal/ds_sc/minimal/input/>`__ · `expected <examples/comparison/less_equal/ds_sc/minimal/expected/>`__ · `notes <examples/comparison/less_equal/ds_sc/minimal/notes.md>`__
    * - | ``sc <= DS``
-       | minimal
+       | `minimal <examples/comparison/less_equal/sc_ds/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/less_equal/sc_ds/minimal/script.vtl>`__ · `input <examples/comparison/less_equal/sc_ds/minimal/input/>`__ · `expected <examples/comparison/less_equal/sc_ds/minimal/expected/>`__ · `notes <examples/comparison/less_equal/sc_ds/minimal/notes.md>`__
    * - | ``comp <= comp``
-       | minimal
+       | `minimal <examples/comparison/less_equal/comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/less_equal/comp_comp/minimal/script.vtl>`__ · `input <examples/comparison/less_equal/comp_comp/minimal/input/>`__ · `expected <examples/comparison/less_equal/comp_comp/minimal/expected/>`__ · `notes <examples/comparison/less_equal/comp_comp/minimal/notes.md>`__
    * - | ``comp <= sc``
-       | minimal
+       | `minimal <examples/comparison/less_equal/comp_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/less_equal/comp_sc/minimal/script.vtl>`__ · `input <examples/comparison/less_equal/comp_sc/minimal/input/>`__ · `expected <examples/comparison/less_equal/comp_sc/minimal/expected/>`__ · `notes <examples/comparison/less_equal/comp_sc/minimal/notes.md>`__
    * - | ``sc <= comp``
-       | minimal
+       | `minimal <examples/comparison/less_equal/sc_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/less_equal/sc_comp/minimal/script.vtl>`__ · `input <examples/comparison/less_equal/sc_comp/minimal/input/>`__ · `expected <examples/comparison/less_equal/sc_comp/minimal/expected/>`__ · `notes <examples/comparison/less_equal/sc_comp/minimal/notes.md>`__
    * - | ``sc <= sc``
-       | minimal
+       | `minimal <examples/comparison/less_equal/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -690,28 +712,28 @@
      - Detail
      - Example
    * - | ``between(DS, sc, sc)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/comparison/between/ds_sc_sc/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/between/ds_sc_sc/manual_ex_1/script.vtl>`__ · `input <examples/comparison/between/ds_sc_sc/manual_ex_1/input/>`__ · `expected <examples/comparison/between/ds_sc_sc/manual_ex_1/expected/>`__ · *manual*
    * - | ``between(comp, sc, sc)``
-       | minimal
+       | `minimal <examples/comparison/between/comp_sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/between/comp_sc_sc/minimal/script.vtl>`__ · `input <examples/comparison/between/comp_sc_sc/minimal/input/>`__ · `expected <examples/comparison/between/comp_sc_sc/minimal/expected/>`__ · `notes <examples/comparison/between/comp_sc_sc/minimal/notes.md>`__
    * - | ``between(comp, comp, comp)``
-       | minimal
+       | `minimal <examples/comparison/between/comp_comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/between/comp_comp_comp/minimal/script.vtl>`__ · `input <examples/comparison/between/comp_comp_comp/minimal/input/>`__ · `expected <examples/comparison/between/comp_comp_comp/minimal/expected/>`__ · `notes <examples/comparison/between/comp_comp_comp/minimal/notes.md>`__
    * - | ``between(sc, sc, sc)``
-       | minimal
+       | `minimal <examples/comparison/between/sc_sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -734,35 +756,35 @@
      - Detail
      - Example
    * - | ``DS in set``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/comparison/in/ds_set/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/in/ds_set/manual_ex_1/script.vtl>`__ · `input <examples/comparison/in/ds_set/manual_ex_1/input/>`__ · `expected <examples/comparison/in/ds_set/manual_ex_1/expected/>`__ · *manual*
    * - | ``comp in set``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/comparison/in/comp_set/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/in/comp_set/manual_ex_2/script.vtl>`__ · `input <examples/comparison/in/comp_set/manual_ex_2/input/>`__ · `expected <examples/comparison/in/comp_set/manual_ex_2/expected/>`__ · *manual*
    * - | ``sc in set``
-       | minimal
+       | `minimal <examples/comparison/in/sc_set/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/in/sc_set/minimal/script.vtl>`__ · `expected <examples/comparison/in/sc_set/minimal/expected/>`__ · `notes <examples/comparison/in/sc_set/minimal/notes.md>`__
    * - | ``DS in value domain``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/comparison/in/ds_value_domain/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/in/ds_value_domain/manual_ex_3/script.vtl>`__ · `input <examples/comparison/in/ds_value_domain/manual_ex_3/input/>`__ · `expected <examples/comparison/in/ds_value_domain/manual_ex_3/expected/>`__ · `notes <examples/comparison/in/ds_value_domain/manual_ex_3/notes.md>`__ · *manual*
    * - | ``comp in value domain``
-       | minimal
+       | `minimal <examples/comparison/in/comp_value_domain/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -785,35 +807,35 @@
      - Detail
      - Example
    * - | ``DS not_in set``
-       | minimal
+       | `minimal <examples/comparison/not_in/ds_set/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/not_in/ds_set/minimal/script.vtl>`__ · `input <examples/comparison/not_in/ds_set/minimal/input/>`__ · `expected <examples/comparison/not_in/ds_set/minimal/expected/>`__ · `notes <examples/comparison/not_in/ds_set/minimal/notes.md>`__
    * - | ``comp not_in set``
-       | minimal
+       | `minimal <examples/comparison/not_in/comp_set/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/not_in/comp_set/minimal/script.vtl>`__ · `input <examples/comparison/not_in/comp_set/minimal/input/>`__ · `expected <examples/comparison/not_in/comp_set/minimal/expected/>`__ · `notes <examples/comparison/not_in/comp_set/minimal/notes.md>`__
    * - | ``sc not_in set``
-       | minimal
+       | `minimal <examples/comparison/not_in/sc_set/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/not_in/sc_set/minimal/script.vtl>`__ · `expected <examples/comparison/not_in/sc_set/minimal/expected/>`__ · `notes <examples/comparison/not_in/sc_set/minimal/notes.md>`__
    * - | ``DS not_in value domain``
-       | minimal
+       | `minimal <examples/comparison/not_in/ds_value_domain/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/not_in/ds_value_domain/minimal/script.vtl>`__ · `input <examples/comparison/not_in/ds_value_domain/minimal/input/>`__ · `expected <examples/comparison/not_in/ds_value_domain/minimal/expected/>`__ · `notes <examples/comparison/not_in/ds_value_domain/minimal/notes.md>`__
    * - | ``comp not_in value domain``
-       | minimal
+       | `minimal <examples/comparison/not_in/comp_value_domain/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -836,28 +858,28 @@
      - Detail
      - Example
    * - | ``match_characters(DS, sc)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/comparison/match_characters/ds_sc/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/match_characters/ds_sc/manual_ex_1/script.vtl>`__ · `input <examples/comparison/match_characters/ds_sc/manual_ex_1/input/>`__ · `expected <examples/comparison/match_characters/ds_sc/manual_ex_1/expected/>`__ · *manual*
    * - | ``match_characters(comp, sc)``
-       | minimal
+       | `minimal <examples/comparison/match_characters/comp_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/match_characters/comp_sc/minimal/script.vtl>`__ · `input <examples/comparison/match_characters/comp_sc/minimal/input/>`__ · `expected <examples/comparison/match_characters/comp_sc/minimal/expected/>`__ · `notes <examples/comparison/match_characters/comp_sc/minimal/notes.md>`__
    * - | ``match_characters(comp, comp)``
-       | minimal
+       | `minimal <examples/comparison/match_characters/comp_comp/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/match_characters/comp_comp/minimal/script.vtl>`__ · `input <examples/comparison/match_characters/comp_comp/minimal/input/>`__ · `expected <examples/comparison/match_characters/comp_comp/minimal/expected/>`__ · `notes <examples/comparison/match_characters/comp_comp/minimal/notes.md>`__
    * - | ``match_characters(sc, sc)``
-       | minimal
+       | `minimal <examples/comparison/match_characters/sc_sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -880,28 +902,28 @@
      - Detail
      - Example
    * - | ``isnull(DS)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/comparison/isnull/ds/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/isnull/ds/manual_ex_1/script.vtl>`__ · `input <examples/comparison/isnull/ds/manual_ex_1/input/>`__ · `expected <examples/comparison/isnull/ds/manual_ex_1/expected/>`__ · *manual*
    * - | ``isnull(comp)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/comparison/isnull/comp/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/isnull/comp/manual_ex_2/script.vtl>`__ · `input <examples/comparison/isnull/comp/manual_ex_2/input/>`__ · `expected <examples/comparison/isnull/comp/manual_ex_2/expected/>`__ · *manual*
    * - | ``isnull(sc)``
-       | minimal
+       | `minimal <examples/comparison/isnull/sc/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/isnull/sc/minimal/script.vtl>`__ · `expected <examples/comparison/isnull/sc/minimal/expected/>`__ · `notes <examples/comparison/isnull/sc/minimal/notes.md>`__
    * - | ``isnull(sc)``
-       | minimal\_2
+       | `minimal\_2 <examples/comparison/isnull/sc/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
@@ -924,28 +946,28 @@
      - Detail
      - Example
    * - | ``exists_in(DS, DS)``
-       | minimal
+       | `minimal <examples/comparison/exists_in/retain_default/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/exists_in/retain_default/minimal/script.vtl>`__ · `input <examples/comparison/exists_in/retain_default/minimal/input/>`__ · `expected <examples/comparison/exists_in/retain_default/minimal/expected/>`__ · `notes <examples/comparison/exists_in/retain_default/minimal/notes.md>`__
    * - | ``exists_in(DS, DS, true)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/comparison/exists_in/retain_true/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/exists_in/retain_true/manual_ex_2/script.vtl>`__ · `input <examples/comparison/exists_in/retain_true/manual_ex_2/input/>`__ · `expected <examples/comparison/exists_in/retain_true/manual_ex_2/expected/>`__ · *manual*
    * - | ``exists_in(DS, DS, false)``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/comparison/exists_in/retain_false/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/comparison/exists_in/retain_false/manual_ex_3/script.vtl>`__ · `input <examples/comparison/exists_in/retain_false/manual_ex_3/input/>`__ · `expected <examples/comparison/exists_in/retain_false/manual_ex_3/expected/>`__ · *manual*
    * - | ``exists_in(DS, DS, all)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/comparison/exists_in/retain_all/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅

@@ -4,7 +4,7 @@
 
 71 variants: 🟢 56 · 🟡 5 · 🔴 10 · 🔵 0
 
-← Back to :doc:`index` · vtlengine 1.9.6rc2 (851f56ae)
+← Back to :doc:`index` · vtlengine 1.9.6rc2 (b393f444) · pandas 3.0.6 · DuckDB 1.5.5
 
 .. mermaid::
 
@@ -16,13 +16,13 @@
        classDef type fill:#eeeeee,color:#000
        classDef ext stroke-dasharray: 5 5
        in_scalar(("scalar")):::type
-       click in_scalar "examples/general/non_persistent_assignment/ds/manual_ex_1/"
+       click in_scalar "examples/general/non_persistent_assignment/sc/minimal/"
        in_dataset(("dataset")):::type
        click in_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        in_set(("set")):::type
        click in_set "examples/comparison/in/ds_set/manual_ex_1/"
        in_value_domain(("value_domain")):::type
-       click in_value_domain "examples/comparison/in/ds_set/manual_ex_1/"
+       click in_value_domain "examples/comparison/in/ds_value_domain/manual_ex_3/"
        in_datapoint_ruleset(("datapoint_ruleset")):::type
        click in_datapoint_ruleset "examples/definitions/define_datapoint_ruleset/valuedomain/minimal/"
        in_hierarchical_ruleset(("hierarchical_ruleset")):::type
@@ -308,266 +308,266 @@
      - Detail
      - Example
    * - | ``x integer``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_integer/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/param_integer/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/param_integer/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_integer/minimal/notes.md>`__
    * - | ``x number``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_number/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/param_number/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/param_number/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_number/minimal/notes.md>`__
    * - | ``x string``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_string/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/param_string/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/param_string/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_string/minimal/notes.md>`__
    * - | ``x boolean``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_boolean/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/param_boolean/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/param_boolean/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_boolean/minimal/notes.md>`__
    * - | ``x date``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_date/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/param_date/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/param_date/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_date/minimal/notes.md>`__
    * - | ``x time_period``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_time_period/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/param_time_period/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/param_time_period/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_time_period/minimal/notes.md>`__
    * - | ``x time``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_time/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/param_time/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/param_time/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_time/minimal/notes.md>`__
    * - | ``x duration``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_duration/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/param_duration/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/param_duration/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_duration/minimal/notes.md>`__
    * - | ``x scalar``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_scalar/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/param_scalar/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/param_scalar/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_scalar/minimal/notes.md>`__
    * - | ``x VD_1``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_value_domain/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - InputValidationException 0-5-1-10: Invalid parameter type definition \'VD\_1\' (line 1, column 32).
      - `script <examples/definitions/define_operator/param_value_domain/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/param_value_domain/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_value_domain/minimal/notes.md>`__
    * - | ``x integer [value >= 0]``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_constrained/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: type constraint in \'integer [value >= 0]\' (line 1, column 30).
      - `script <examples/definitions/define_operator/param_constrained/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/param_constrained/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_constrained/minimal/notes.md>`__
    * - | ``x integer [value >= 0]``
-       | minimal\_2
+       | `minimal\_2 <examples/definitions/define_operator/param_constrained/minimal_2/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: type constraint in \'integer { 1, 2, 3 }\' (line 1, column 30).
      - `script <examples/definitions/define_operator/param_constrained/minimal_2/script.vtl>`__ · `expected <examples/definitions/define_operator/param_constrained/minimal_2/expected/>`__ · `notes <examples/definitions/define_operator/param_constrained/minimal_2/notes.md>`__
    * - | ``x integer not null``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_not_null/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: not null in \'integer not null\' (line 1, column 28).
      - `script <examples/definitions/define_operator/param_not_null/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/param_not_null/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_not_null/minimal/notes.md>`__
    * - | ``s set<string>``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_set/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: set type \'set<string>\' (line 1, column 36).
      - `script <examples/definitions/define_operator/param_set/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/param_set/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_set/minimal/notes.md>`__
    * - | ``c component``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_component/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/param_component/minimal/script.vtl>`__ · `input <examples/definitions/define_operator/param_component/minimal/input/>`__ · `expected <examples/definitions/define_operator/param_component/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_component/minimal/notes.md>`__
    * - | ``c identifier<integer>``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_identifier/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/param_identifier/minimal/script.vtl>`__ · `input <examples/definitions/define_operator/param_identifier/minimal/input/>`__ · `expected <examples/definitions/define_operator/param_identifier/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_identifier/minimal/notes.md>`__
    * - | ``c measure<integer>``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_measure/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/param_measure/minimal/script.vtl>`__ · `input <examples/definitions/define_operator/param_measure/minimal/input/>`__ · `expected <examples/definitions/define_operator/param_measure/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_measure/minimal/notes.md>`__
    * - | ``c attribute<string>``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_attribute/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - role of At\_1 expected Attribute got Measure
      - `script <examples/definitions/define_operator/param_attribute/minimal/script.vtl>`__ · `input <examples/definitions/define_operator/param_attribute/minimal/input/>`__ · `expected <examples/definitions/define_operator/param_attribute/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_attribute/minimal/notes.md>`__
    * - | ``c viral attribute<string>``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_viral_attribute/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - role of At\_1 expected Viral Attribute got Measure
      - `script <examples/definitions/define_operator/param_viral_attribute/minimal/script.vtl>`__ · `input <examples/definitions/define_operator/param_viral_attribute/minimal/input/>`__ · `expected <examples/definitions/define_operator/param_viral_attribute/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_viral_attribute/minimal/notes.md>`__
    * - | ``ds dataset``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_dataset/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/param_dataset/minimal/script.vtl>`__ · `input <examples/definitions/define_operator/param_dataset/minimal/input/>`__ · `expected <examples/definitions/define_operator/param_dataset/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_dataset/minimal/notes.md>`__
    * - | ``ds dataset {...}``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_dataset_constrained/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/param_dataset_constrained/minimal/script.vtl>`__ · `input <examples/definitions/define_operator/param_dataset_constrained/minimal/input/>`__ · `expected <examples/definitions/define_operator/param_dataset_constrained/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_dataset_constrained/minimal/notes.md>`__
    * - | ``ds dataset {...}``
-       | minimal\_2
+       | `minimal\_2 <examples/definitions/define_operator/param_dataset_constrained/minimal_2/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in \'measure<integer> \_\' (line 1, column 37).
      - `script <examples/definitions/define_operator/param_dataset_constrained/minimal_2/script.vtl>`__ · `input <examples/definitions/define_operator/param_dataset_constrained/minimal_2/input/>`__ · `expected <examples/definitions/define_operator/param_dataset_constrained/minimal_2/expected/>`__ · `notes <examples/definitions/define_operator/param_dataset_constrained/minimal_2/notes.md>`__
    * - | ``ds dataset {...}``
-       | minimal\_3
+       | `minimal\_3 <examples/definitions/define_operator/param_dataset_constrained/minimal_3/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in \'measure<integer> \_+\' (line 1, column 37).
      - `script <examples/definitions/define_operator/param_dataset_constrained/minimal_3/script.vtl>`__ · `input <examples/definitions/define_operator/param_dataset_constrained/minimal_3/input/>`__ · `expected <examples/definitions/define_operator/param_dataset_constrained/minimal_3/expected/>`__ · `notes <examples/definitions/define_operator/param_dataset_constrained/minimal_3/notes.md>`__
    * - | ``ds dataset {...}``
-       | minimal\_4
+       | `minimal\_4 <examples/definitions/define_operator/param_dataset_constrained/minimal_4/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in \'measure<integer> \_\*\' (line 1, column 37).
      - `script <examples/definitions/define_operator/param_dataset_constrained/minimal_4/script.vtl>`__ · `input <examples/definitions/define_operator/param_dataset_constrained/minimal_4/input/>`__ · `expected <examples/definitions/define_operator/param_dataset_constrained/minimal_4/expected/>`__ · `notes <examples/definitions/define_operator/param_dataset_constrained/minimal_4/notes.md>`__
    * - | ``dpr datapoint``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_ruleset_datapoint/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: ruleset type \'datapoint\' (line 5, column 49).
      - `script <examples/definitions/define_operator/param_ruleset_datapoint/minimal/script.vtl>`__ · `input <examples/definitions/define_operator/param_ruleset_datapoint/minimal/input/>`__ · `expected <examples/definitions/define_operator/param_ruleset_datapoint/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_ruleset_datapoint/minimal/notes.md>`__
    * - | ``dpr datapoint``
-       | minimal\_2
+       | `minimal\_2 <examples/definitions/define_operator/param_ruleset_datapoint/minimal_2/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: ruleset type \'datapoint\_on\_variables\' (line 5, column 49).
      - `script <examples/definitions/define_operator/param_ruleset_datapoint/minimal_2/script.vtl>`__ · `input <examples/definitions/define_operator/param_ruleset_datapoint/minimal_2/input/>`__ · `expected <examples/definitions/define_operator/param_ruleset_datapoint/minimal_2/expected/>`__ · `notes <examples/definitions/define_operator/param_ruleset_datapoint/minimal_2/notes.md>`__
    * - | ``dpr datapoint``
-       | minimal\_3
+       | `minimal\_3 <examples/definitions/define_operator/param_ruleset_datapoint/minimal_3/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: ruleset type \'datapoint\_on\_valuedomains\' (line 5, column 49).
      - `script <examples/definitions/define_operator/param_ruleset_datapoint/minimal_3/script.vtl>`__ · `input <examples/definitions/define_operator/param_ruleset_datapoint/minimal_3/input/>`__ · `expected <examples/definitions/define_operator/param_ruleset_datapoint/minimal_3/expected/>`__ · `notes <examples/definitions/define_operator/param_ruleset_datapoint/minimal_3/notes.md>`__
    * - | ``dpr datapoint``
-       | minimal\_4
+       | `minimal\_4 <examples/definitions/define_operator/param_ruleset_datapoint/minimal_4/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: ruleset type \'ruleset\' (line 5, column 49).
      - `script <examples/definitions/define_operator/param_ruleset_datapoint/minimal_4/script.vtl>`__ · `input <examples/definitions/define_operator/param_ruleset_datapoint/minimal_4/input/>`__ · `expected <examples/definitions/define_operator/param_ruleset_datapoint/minimal_4/expected/>`__ · `notes <examples/definitions/define_operator/param_ruleset_datapoint/minimal_4/notes.md>`__
    * - | ``hr hierarchical``
-       | minimal
+       | `minimal <examples/definitions/define_operator/param_ruleset_hierarchical/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: ruleset type \'hierarchical\' (line 5, column 45).
      - `script <examples/definitions/define_operator/param_ruleset_hierarchical/minimal/script.vtl>`__ · `input <examples/definitions/define_operator/param_ruleset_hierarchical/minimal/input/>`__ · `expected <examples/definitions/define_operator/param_ruleset_hierarchical/minimal/expected/>`__ · `notes <examples/definitions/define_operator/param_ruleset_hierarchical/minimal/notes.md>`__
    * - | ``hr hierarchical``
-       | minimal\_2
+       | `minimal\_2 <examples/definitions/define_operator/param_ruleset_hierarchical/minimal_2/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: ruleset type \'hierarchical\_on\_variables\' (line 5, column 45).
      - `script <examples/definitions/define_operator/param_ruleset_hierarchical/minimal_2/script.vtl>`__ · `input <examples/definitions/define_operator/param_ruleset_hierarchical/minimal_2/input/>`__ · `expected <examples/definitions/define_operator/param_ruleset_hierarchical/minimal_2/expected/>`__ · `notes <examples/definitions/define_operator/param_ruleset_hierarchical/minimal_2/notes.md>`__
    * - | ``hr hierarchical``
-       | minimal\_3
+       | `minimal\_3 <examples/definitions/define_operator/param_ruleset_hierarchical/minimal_3/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-13: Unsupported VTL construct: ruleset type \'hierarchical\_on\_valuedomains\' (line 5, column 45).
      - `script <examples/definitions/define_operator/param_ruleset_hierarchical/minimal_3/script.vtl>`__ · `input <examples/definitions/define_operator/param_ruleset_hierarchical/minimal_3/input/>`__ · `expected <examples/definitions/define_operator/param_ruleset_hierarchical/minimal_3/expected/>`__ · `notes <examples/definitions/define_operator/param_ruleset_hierarchical/minimal_3/notes.md>`__
    * - | ``f ()``
-       | minimal
+       | `minimal <examples/definitions/define_operator/no_params/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/no_params/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/no_params/minimal/expected/>`__ · `notes <examples/definitions/define_operator/no_params/minimal/notes.md>`__
    * - | ``y integer default 10``
-       | minimal
+       | `minimal <examples/definitions/define_operator/default_value/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/default_value/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/default_value/minimal/expected/>`__ · `notes <examples/definitions/define_operator/default_value/minimal/notes.md>`__
    * - | ``y integer default 10``
-       | minimal\_2
+       | `minimal\_2 <examples/definitions/define_operator/default_value/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/default_value/minimal_2/script.vtl>`__ · `expected <examples/definitions/define_operator/default_value/minimal_2/expected/>`__ · `notes <examples/definitions/define_operator/default_value/minimal_2/notes.md>`__
    * - | ``no returns``
-       | minimal
+       | `minimal <examples/definitions/define_operator/returns_omitted/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-2-2: At op add\_one: User defined operator without returns is not implemented.
      - `script <examples/definitions/define_operator/returns_omitted/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/returns_omitted/minimal/expected/>`__ · `notes <examples/definitions/define_operator/returns_omitted/minimal/notes.md>`__
    * - | ``returns integer``
-       | minimal
+       | `minimal <examples/definitions/define_operator/returns_scalar/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/returns_scalar/minimal/script.vtl>`__ · `expected <examples/definitions/define_operator/returns_scalar/minimal/expected/>`__ · `notes <examples/definitions/define_operator/returns_scalar/minimal/notes.md>`__
    * - | ``returns component<integer>``
-       | minimal
+       | `minimal <examples/definitions/define_operator/returns_component/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_operator/returns_component/minimal/script.vtl>`__ · `input <examples/definitions/define_operator/returns_component/minimal/input/>`__ · `expected <examples/definitions/define_operator/returns_component/minimal/expected/>`__ · `notes <examples/definitions/define_operator/returns_component/minimal/notes.md>`__
    * - | ``returns dataset``
-       | minimal
+       | `minimal <examples/definitions/define_operator/returns_dataset/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -590,70 +590,70 @@
      - Detail
      - Example
    * - | ``valuedomain VD_FLOW, VD_AMOUNT``
-       | minimal
+       | `minimal <examples/definitions/define_datapoint_ruleset/valuedomain/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-1-10: Component VD\_FLOW not found in Dataset DS\_1. Please check transformation with output Dataset DS\_r
      - `script <examples/definitions/define_datapoint_ruleset/valuedomain/minimal/script.vtl>`__ · `input <examples/definitions/define_datapoint_ruleset/valuedomain/minimal/input/>`__ · `expected <examples/definitions/define_datapoint_ruleset/valuedomain/minimal/expected/>`__ · `notes <examples/definitions/define_datapoint_ruleset/valuedomain/minimal/notes.md>`__
    * - | ``valuedomain VD_FLOW as F, ...``
-       | minimal
+       | `minimal <examples/definitions/define_datapoint_ruleset/valuedomain_alias/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-1-1-10: Component F not found in Dataset DS\_1. Please check transformation with output Dataset DS\_r
      - `script <examples/definitions/define_datapoint_ruleset/valuedomain_alias/minimal/script.vtl>`__ · `input <examples/definitions/define_datapoint_ruleset/valuedomain_alias/minimal/input/>`__ · `expected <examples/definitions/define_datapoint_ruleset/valuedomain_alias/minimal/expected/>`__ · `notes <examples/definitions/define_datapoint_ruleset/valuedomain_alias/minimal/notes.md>`__
    * - | ``variable Id_2, Me_1``
-       | minimal
+       | `minimal <examples/definitions/define_datapoint_ruleset/variable/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_datapoint_ruleset/variable/minimal/script.vtl>`__ · `input <examples/definitions/define_datapoint_ruleset/variable/minimal/input/>`__ · `expected <examples/definitions/define_datapoint_ruleset/variable/minimal/expected/>`__ · `notes <examples/definitions/define_datapoint_ruleset/variable/minimal/notes.md>`__
    * - | ``variable Id_2 as F, ...``
-       | minimal
+       | `minimal <examples/definitions/define_datapoint_ruleset/variable_alias/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_datapoint_ruleset/variable_alias/minimal/script.vtl>`__ · `input <examples/definitions/define_datapoint_ruleset/variable_alias/minimal/input/>`__ · `expected <examples/definitions/define_datapoint_ruleset/variable_alias/minimal/expected/>`__ · `notes <examples/definitions/define_datapoint_ruleset/variable_alias/minimal/notes.md>`__
    * - | ``R_1 : rule``
-       | minimal
+       | `minimal <examples/definitions/define_datapoint_ruleset/named/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_datapoint_ruleset/named/minimal/script.vtl>`__ · `input <examples/definitions/define_datapoint_ruleset/named/minimal/input/>`__ · `expected <examples/definitions/define_datapoint_ruleset/named/minimal/expected/>`__ · `notes <examples/definitions/define_datapoint_ruleset/named/minimal/notes.md>`__
    * - | ``rule without a name``
-       | minimal
+       | `minimal <examples/definitions/define_datapoint_ruleset/unnamed/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_datapoint_ruleset/unnamed/minimal/script.vtl>`__ · `input <examples/definitions/define_datapoint_ruleset/unnamed/minimal/input/>`__ · `expected <examples/definitions/define_datapoint_ruleset/unnamed/minimal/expected/>`__ · `notes <examples/definitions/define_datapoint_ruleset/unnamed/minimal/notes.md>`__
    * - | ``when ... then ...``
-       | minimal
+       | `minimal <examples/definitions/define_datapoint_ruleset/when_then/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_datapoint_ruleset/when_then/minimal/script.vtl>`__ · `input <examples/definitions/define_datapoint_ruleset/when_then/minimal/input/>`__ · `expected <examples/definitions/define_datapoint_ruleset/when_then/minimal/expected/>`__ · `notes <examples/definitions/define_datapoint_ruleset/when_then/minimal/notes.md>`__
    * - | ``consequent only``
-       | minimal
+       | `minimal <examples/definitions/define_datapoint_ruleset/plain/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_datapoint_ruleset/plain/minimal/script.vtl>`__ · `input <examples/definitions/define_datapoint_ruleset/plain/minimal/input/>`__ · `expected <examples/definitions/define_datapoint_ruleset/plain/minimal/expected/>`__ · `notes <examples/definitions/define_datapoint_ruleset/plain/minimal/notes.md>`__
    * - | ``errorcode "NEG_CREDIT"``
-       | minimal
+       | `minimal <examples/definitions/define_datapoint_ruleset/errorcode/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_datapoint_ruleset/errorcode/minimal/script.vtl>`__ · `input <examples/definitions/define_datapoint_ruleset/errorcode/minimal/input/>`__ · `expected <examples/definitions/define_datapoint_ruleset/errorcode/minimal/expected/>`__ · `notes <examples/definitions/define_datapoint_ruleset/errorcode/minimal/notes.md>`__
    * - | ``errorlevel 5``
-       | minimal
+       | `minimal <examples/definitions/define_datapoint_ruleset/errorlevel/minimal/>`__
      - 🟡
      - ❌
      - ❌
@@ -676,133 +676,133 @@
      - Detail
      - Example
    * - | ``valuedomain rule VD_ITEM``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/valuedomain_rule/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/valuedomain_rule/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/valuedomain_rule/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/valuedomain_rule/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/valuedomain_rule/minimal/notes.md>`__
    * - | ``valuedomain condition VD_FLAG rule VD_ITEM``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/valuedomain_condition/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/valuedomain_condition/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/valuedomain_condition/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/valuedomain_condition/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/valuedomain_condition/minimal/notes.md>`__
    * - | ``condition VD_FLAG as F``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/valuedomain_condition_alias/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/valuedomain_condition_alias/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/valuedomain_condition_alias/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/valuedomain_condition_alias/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/valuedomain_condition_alias/minimal/notes.md>`__
    * - | ``variable rule Id_2``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/variable_rule/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/variable_rule/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/variable_rule/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/variable_rule/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/variable_rule/minimal/notes.md>`__
    * - | ``variable condition Id_1 rule Id_2``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/variable_condition/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/variable_condition/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/variable_condition/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/variable_condition/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/variable_condition/minimal/notes.md>`__
    * - | ``variable condition Id_1 as C``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/variable_condition_alias/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/variable_condition_alias/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/variable_condition_alias/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/variable_condition_alias/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/variable_condition_alias/minimal/notes.md>`__
    * - | ``A = B``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/rel_eq/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/rel_eq/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/rel_eq/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/rel_eq/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/rel_eq/minimal/notes.md>`__
    * - | ``A > B``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/rel_gt/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/rel_gt/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/rel_gt/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/rel_gt/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/rel_gt/minimal/notes.md>`__
    * - | ``A >= B``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/rel_ge/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/rel_ge/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/rel_ge/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/rel_ge/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/rel_ge/minimal/notes.md>`__
    * - | ``A < B``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/rel_lt/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/rel_lt/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/rel_lt/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/rel_lt/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/rel_lt/minimal/notes.md>`__
    * - | ``A <= B``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/rel_le/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/rel_le/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/rel_le/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/rel_le/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/rel_le/minimal/notes.md>`__
    * - | ``when ... then A = B``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/when_then/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/when_then/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/when_then/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/when_then/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/when_then/minimal/notes.md>`__
    * - | ``A = B + C - D``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/plus_minus/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/plus_minus/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/plus_minus/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/plus_minus/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/plus_minus/minimal/notes.md>`__
    * - | ``A = B + C - D``
-       | minimal\_2
+       | `minimal\_2 <examples/definitions/define_hierarchical_ruleset/plus_minus/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/plus_minus/minimal_2/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/plus_minus/minimal_2/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/plus_minus/minimal_2/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/plus_minus/minimal_2/notes.md>`__
    * - | ``A = B + C [condition]``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/right_condition/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/right_condition/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/right_condition/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/right_condition/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/right_condition/minimal/notes.md>`__
    * - | ``errorcode "E_AB"``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/errorcode/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/errorcode/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/errorcode/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/errorcode/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/errorcode/minimal/notes.md>`__
    * - | ``errorlevel 3``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/errorlevel/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - type of errorlevel expected Integer got Number
      - `script <examples/definitions/define_hierarchical_ruleset/errorlevel/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/errorlevel/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/errorlevel/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/errorlevel/minimal/notes.md>`__
    * - | ``R_1 : A = B``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/named/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_hierarchical_ruleset/named/minimal/script.vtl>`__ · `input <examples/definitions/define_hierarchical_ruleset/named/minimal/input/>`__ · `expected <examples/definitions/define_hierarchical_ruleset/named/minimal/expected/>`__ · `notes <examples/definitions/define_hierarchical_ruleset/named/minimal/notes.md>`__
    * - | ``rule without a name``
-       | minimal
+       | `minimal <examples/definitions/define_hierarchical_ruleset/unnamed/minimal/>`__
      - 🟢
      - ✅
      - ✅
@@ -825,119 +825,119 @@
      - Detail
      - Example
    * - | ``valuedomain CL_CONF``
-       | minimal
+       | `minimal <examples/definitions/define_viral_propagation/valuedomain/minimal/>`__
      - 🔴
      - 💥
      - 💥
      - SemanticError 1-3-3-8: Viral propagation definition VP\_1 is defined on value domain CL\_CONF, which is not supported yet; define it on a variable instead.
      - `script <examples/definitions/define_viral_propagation/valuedomain/minimal/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/valuedomain/minimal/input/>`__ · `expected <examples/definitions/define_viral_propagation/valuedomain/minimal/expected/>`__ · `notes <examples/definitions/define_viral_propagation/valuedomain/minimal/notes.md>`__
    * - | ``variable At_1``
-       | minimal
+       | `minimal <examples/definitions/define_viral_propagation/variable/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_viral_propagation/variable/minimal/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/variable/minimal/input/>`__ · `expected <examples/definitions/define_viral_propagation/variable/minimal/expected/>`__ · `notes <examples/definitions/define_viral_propagation/variable/minimal/notes.md>`__
    * - | ``when "N" then "N"``
-       | minimal
+       | `minimal <examples/definitions/define_viral_propagation/unary/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_viral_propagation/unary/minimal/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/unary/minimal/input/>`__ · `expected <examples/definitions/define_viral_propagation/unary/minimal/expected/>`__ · `notes <examples/definitions/define_viral_propagation/unary/minimal/notes.md>`__
    * - | ``when "C" and "M" then "N"``
-       | minimal
+       | `minimal <examples/definitions/define_viral_propagation/binary/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_viral_propagation/binary/minimal/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/binary/minimal/input/>`__ · `expected <examples/definitions/define_viral_propagation/binary/minimal/expected/>`__ · `notes <examples/definitions/define_viral_propagation/binary/minimal/notes.md>`__
    * - | ``R_C : when "C" then "C"``
-       | minimal
+       | `minimal <examples/definitions/define_viral_propagation/named_clause/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_viral_propagation/named_clause/minimal/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/named_clause/minimal/input/>`__ · `expected <examples/definitions/define_viral_propagation/named_clause/minimal/expected/>`__ · `notes <examples/definitions/define_viral_propagation/named_clause/minimal/notes.md>`__
    * - | ``else "F"``
-       | minimal
+       | `minimal <examples/definitions/define_viral_propagation/else_clause/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_viral_propagation/else_clause/minimal/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/else_clause/minimal/input/>`__ · `expected <examples/definitions/define_viral_propagation/else_clause/minimal/expected/>`__ · `notes <examples/definitions/define_viral_propagation/else_clause/minimal/notes.md>`__
    * - | ``no else``
-       | minimal
+       | `minimal <examples/definitions/define_viral_propagation/no_else/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_viral_propagation/no_else/minimal/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/no_else/minimal/input/>`__ · `expected <examples/definitions/define_viral_propagation/no_else/minimal/expected/>`__ · `notes <examples/definitions/define_viral_propagation/no_else/minimal/notes.md>`__
    * - | ``aggregate min``
-       | minimal
+       | `minimal <examples/definitions/define_viral_propagation/aggregate_min/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_viral_propagation/aggregate_min/minimal/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/aggregate_min/minimal/input/>`__ · `expected <examples/definitions/define_viral_propagation/aggregate_min/minimal/expected/>`__ · `notes <examples/definitions/define_viral_propagation/aggregate_min/minimal/notes.md>`__
    * - | ``aggregate max``
-       | minimal
+       | `minimal <examples/definitions/define_viral_propagation/aggregate_max/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_viral_propagation/aggregate_max/minimal/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/aggregate_max/minimal/input/>`__ · `expected <examples/definitions/define_viral_propagation/aggregate_max/minimal/expected/>`__ · `notes <examples/definitions/define_viral_propagation/aggregate_max/minimal/notes.md>`__
    * - | ``aggregate sum``
-       | minimal
+       | `minimal <examples/definitions/define_viral_propagation/aggregate_sum/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_viral_propagation/aggregate_sum/minimal/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/aggregate_sum/minimal/input/>`__ · `expected <examples/definitions/define_viral_propagation/aggregate_sum/minimal/expected/>`__ · `notes <examples/definitions/define_viral_propagation/aggregate_sum/minimal/notes.md>`__
    * - | ``aggregate avg``
-       | minimal
+       | `minimal <examples/definitions/define_viral_propagation/aggregate_avg/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_viral_propagation/aggregate_avg/minimal/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/aggregate_avg/minimal/input/>`__ · `expected <examples/definitions/define_viral_propagation/aggregate_avg/minimal/expected/>`__ · `notes <examples/definitions/define_viral_propagation/aggregate_avg/minimal/notes.md>`__
    * - | ``aggregate avg``
-       | minimal\_2
+       | `minimal\_2 <examples/definitions/define_viral_propagation/aggregate_avg/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_viral_propagation/aggregate_avg/minimal_2/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/aggregate_avg/minimal_2/input/>`__ · `expected <examples/definitions/define_viral_propagation/aggregate_avg/minimal_2/expected/>`__ · `notes <examples/definitions/define_viral_propagation/aggregate_avg/minimal_2/notes.md>`__ · `📌 #1175 <https://github.com/Meaningful-Data/vtlengine/issues/1175>`__
    * - | ``aggregate avg``
-       | minimal\_3
+       | `minimal\_3 <examples/definitions/define_viral_propagation/aggregate_avg/minimal_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_viral_propagation/aggregate_avg/minimal_3/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/aggregate_avg/minimal_3/input/>`__ · `expected <examples/definitions/define_viral_propagation/aggregate_avg/minimal_3/expected/>`__ · `notes <examples/definitions/define_viral_propagation/aggregate_avg/minimal_3/notes.md>`__ · `📌 #1175 <https://github.com/Meaningful-Data/vtlengine/issues/1175>`__
    * - | ``at DS_1 - DS_2``
-       | minimal
+       | `minimal <examples/definitions/define_viral_propagation/at_binary_op/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_viral_propagation/at_binary_op/minimal/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/at_binary_op/minimal/input/>`__ · `expected <examples/definitions/define_viral_propagation/at_binary_op/minimal/expected/>`__ · `notes <examples/definitions/define_viral_propagation/at_binary_op/minimal/notes.md>`__
    * - | ``at inner_join``
-       | minimal
+       | `minimal <examples/definitions/define_viral_propagation/at_join/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_viral_propagation/at_join/minimal/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/at_join/minimal/input/>`__ · `expected <examples/definitions/define_viral_propagation/at_join/minimal/expected/>`__ · `notes <examples/definitions/define_viral_propagation/at_join/minimal/notes.md>`__
    * - | ``at sum group by``
-       | minimal
+       | `minimal <examples/definitions/define_viral_propagation/at_aggregation/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/definitions/define_viral_propagation/at_aggregation/minimal/script.vtl>`__ · `input <examples/definitions/define_viral_propagation/at_aggregation/minimal/input/>`__ · `expected <examples/definitions/define_viral_propagation/at_aggregation/minimal/expected/>`__ · `notes <examples/definitions/define_viral_propagation/at_aggregation/minimal/notes.md>`__
    * - | ``at hierarchy``
-       | minimal
+       | `minimal <examples/definitions/define_viral_propagation/at_hierarchy/minimal/>`__
      - 🟢
      - ✅
      - ✅

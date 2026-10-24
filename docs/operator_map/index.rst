@@ -29,9 +29,9 @@ Generation
 --------------------
 
 - Generated on 2026-10-24.
-- Engine: vtlengine 1.9.6rc2, commit ``851f56ae``.
+- Engine: vtlengine 1.9.6rc2, commit ``b393f444``, with pandas 3.0.6 and DuckDB 1.5.5.
 - Manual: VTL 2.2 Reference Manual, `sdmx-twg/vtl @ 140e946ed3f8 <https://github.com/sdmx-twg/vtl/tree/140e946ed3f888951adb8bb66ea45030be84e2aa>`__.
-- To regenerate, run ``docs/operator_map/generate.py`` under ``systemd-run --user --scope -p MemoryMax=6G -p MemorySwapMax=0``.
+- To regenerate, run ``docs/operator_map/generate.py`` with a Python that can import vtlengine, with the compiled parser in ``src/`` (see *Building the C++ parser from source* in the contributing guide of the repository). Where systemd is available, run it under a memory cap: ``systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 python docs/operator_map/generate.py``. Elsewhere the cap is optional.
 
 Legend
 ------------
@@ -73,7 +73,7 @@ How to read
 - **Diagrams.** An operator shows its status, its name and its symbol, and a plain line joins it to its syntax variants. A solid arrow from a type to an operator means that the operator accepts the type, and from an operator to a type that it returns it. A dotted, labelled arrow joins an operator to one that it is used in or with, and a dashed box with an arrow is an operator of another chapter. Grey circles are data types.
 - **Status.** The colour of a node and its emoji say the same. A variant is 🟢 when both engines give the expected output on all of its examples, 🔵 when the engines differ on any of them, 🔴 when both engines fail on all of them, and 🟡 otherwise. An operator and a chapter take the status of their variants by the same rule, and the counts are over variants.
 - **Examples.** An example is a folder with a ``script.vtl``, its ``input/`` data and its ``expected/`` output. The expected outputs come from the manual, or are derived by hand from its semantics, and never from the output of an engine. A viewer may ignore the links of the diagrams: the tables are the reliable way to the files.
-- **Comparison.** Only the outputs that the example expects are compared: the components, their roles and types, and the data points, in any order. A number is compared to the digits written in the expected file, as far as a double holds them. ``random`` and ``current_date`` are checked by a property of their values (for ``random``, those of the columns that are empty in the expected file), and the two engines must still return the same values.
+- **Comparison.** Only the outputs that the example expects are compared: the components, their roles and types, and the data points, in any order. A number written with decimals matches a value within one unit of its last digit: an expected ``0.7`` accepts 0.6001–0.7999. The tolerance is never finer than what a double holds. A number written without decimals matches the same number, within a relative 1e-9, and one written with an exponent within a relative 1e-6. ``random`` and ``current_date`` are checked by a property of their values (for ``random``, those of the columns that are empty in the expected file), and the two engines must still return the same values.
 
 Overview
 ----------------
@@ -129,13 +129,16 @@ One node per chapter, with how many of its variants are in each status, and an a
        chapter__general --> type_duration
        chapter__join --> type_dataset
        chapter__string --> type_string
+       chapter__string --> type_dataset
        chapter__string --> type_integer
        chapter__string --> type_number
        chapter__numeric --> type_number
+       chapter__numeric --> type_dataset
        chapter__numeric --> type_integer
        chapter__comparison --> type_boolean
        chapter__comparison --> type_dataset
        chapter__boolean --> type_boolean
+       chapter__boolean --> type_dataset
        chapter__time --> type_duration
        chapter__time --> type_dataset
        chapter__time --> type_time
@@ -169,7 +172,7 @@ One node per chapter, with how many of its variants are in each status, and an a
        click chapter__conditional "conditional.html"
        click chapter__clause "clause.html"
        click chapter__definitions "definitions.html"
-       click type_scalar "examples/general/non_persistent_assignment/ds/manual_ex_1/"
+       click type_scalar "examples/general/non_persistent_assignment/sc/minimal/"
        click type_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        click type_string "examples/types/string/identity/minimal/"
        click type_integer "examples/types/integer/identity/minimal/"
@@ -352,7 +355,7 @@ An arrow reads *is a subtype of*. A type has the status of its own examples, whe
        type_date --> type_time
        type_time_period --> type_time
        type_duration --> type_scalar
-       click type_scalar "examples/general/non_persistent_assignment/ds/manual_ex_1/"
+       click type_scalar "examples/general/non_persistent_assignment/sc/minimal/"
        click type_number "examples/types/number/identity/minimal/"
        click type_integer "examples/types/integer/identity/minimal/"
        click type_string "examples/types/string/identity/minimal/"
@@ -363,7 +366,7 @@ An arrow reads *is a subtype of*. A type has the status of its own examples, whe
        click type_duration "examples/types/duration/identity/minimal/"
        click type_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        click type_set "examples/comparison/in/ds_set/manual_ex_1/"
-       click type_value_domain "examples/comparison/in/ds_set/manual_ex_1/"
+       click type_value_domain "examples/comparison/in/ds_value_domain/manual_ex_3/"
        click type_datapoint_ruleset "examples/definitions/define_datapoint_ruleset/valuedomain/minimal/"
        click type_hierarchical_ruleset "examples/definitions/define_hierarchical_ruleset/valuedomain_rule/minimal/"
        click type_viral_propagation "examples/definitions/define_viral_propagation/valuedomain/minimal/"
@@ -470,7 +473,7 @@ scalar
        t --> clause__calc
        t --> clause__sub
        t --> definitions__define_operator
-       click t "examples/general/non_persistent_assignment/ds/manual_ex_1/"
+       click t "examples/general/non_persistent_assignment/sc/minimal/"
        click sub_number "examples/types/number/identity/minimal/"
        click sub_string "examples/types/string/identity/minimal/"
        click sub_boolean "examples/types/boolean/identity/minimal/"
@@ -1067,7 +1070,51 @@ dataset
        join__left_join["🟡 Left Join"]:::partial
        join__full_join["🟡 Full Join"]:::partial
        join__cross_join["🟢 Cross Join"]:::ok
+       string__concat["🟢 String concatenation"]:::ok
+       string__trim["🟢 Whitespace removal"]:::ok
+       string__ltrim["🟢 Leading whitespace removal"]:::ok
+       string__rtrim["🟢 Trailing whitespace removal"]:::ok
+       string__upper["🟢 Upper case conversion"]:::ok
+       string__lower["🟢 Lower case conversion"]:::ok
+       string__substr["🟢 Sub-string extraction"]:::ok
+       string__replace["🟢 String pattern replacement"]:::ok
+       string__instr["🟢 String pattern location"]:::ok
+       string__length["🟢 String length"]:::ok
+       string__string_distance["🟡 String distances"]:::partial
+       numeric__unary_plus["🟢 Unary plus"]:::ok
+       numeric__unary_minus["🟢 Unary minus"]:::ok
+       numeric__addition["🟢 Addition"]:::ok
+       numeric__subtraction["🟢 Subtraction"]:::ok
+       numeric__multiplication["🟢 Multiplication"]:::ok
+       numeric__division["🟢 Division"]:::ok
+       numeric__modulo["🟡 Modulo"]:::partial
+       numeric__round["🟡 Rounding"]:::partial
+       numeric__trunc["🟡 Truncation"]:::partial
+       numeric__ceil["🟡 Ceiling"]:::partial
+       numeric__floor["🟡 Floor"]:::partial
+       numeric__abs["🟢 Absolute value"]:::ok
+       numeric__exp["🟢 Exponential"]:::ok
+       numeric__ln["🟢 Natural logarithm"]:::ok
+       numeric__sqrt["🟢 Square root"]:::ok
+       numeric__power["🟢 Power"]:::ok
+       numeric__log["🟢 Logarithm"]:::ok
+       numeric__random["🔵 Random"]:::diverge
+       comparison__equal["🟢 Equal to"]:::ok
+       comparison__not_equal["🟢 Not equal to"]:::ok
+       comparison__greater["🟢 Greater than"]:::ok
+       comparison__greater_equal["🟢 Greater than or equal to"]:::ok
+       comparison__less["🟢 Less than"]:::ok
+       comparison__less_equal["🟢 Less than or equal to"]:::ok
+       comparison__between["🟢 Between"]:::ok
+       comparison__in["🟢 Element of"]:::ok
+       comparison__not_in["🟢 Not element of"]:::ok
+       comparison__match_characters["🟢 Match characters"]:::ok
+       comparison__isnull["🟢 Is null"]:::ok
        comparison__exists_in["🟢 Exists in"]:::ok
+       boolean__and["🟢 Logical conjunction"]:::ok
+       boolean__or["🟢 Logical disjunction"]:::ok
+       boolean__xor["🟢 Exclusive disjunction"]:::ok
+       boolean__not["🟢 Logical negation"]:::ok
        time__period_indicator["🟡 Period indicator"]:::partial
        time__fill_time_series["🟢 Fill time series"]:::ok
        time__flow_to_stock["🟢 Flow to stock"]:::ok
@@ -1083,6 +1130,20 @@ dataset
        aggregate__aggregate_invocation["🟢 Aggregate invocation"]:::ok
        aggregate__analytic_invocation["🟡 Analytic invocation"]:::partial
        aggregate__count["🔵 Counting the number of data points"]:::diverge
+       aggregate__min["🟡 Minimum value"]:::partial
+       aggregate__max["🟡 Maximum value"]:::partial
+       aggregate__median["🟡 Median value"]:::partial
+       aggregate__sum["🟡 Sum"]:::partial
+       aggregate__avg["🟡 Average value"]:::partial
+       aggregate__stddev_pop["🟡 Population standard deviation"]:::partial
+       aggregate__stddev_samp["🟡 Sample standard deviation"]:::partial
+       aggregate__var_pop["🟡 Population variance"]:::partial
+       aggregate__var_samp["🟡 Sample variance"]:::partial
+       aggregate__first_value["🟢 First value"]:::ok
+       aggregate__last_value["🟢 Last value"]:::ok
+       aggregate__lag["🟡 Lag"]:::partial
+       aggregate__lead["🟡 Lead"]:::partial
+       aggregate__ratio_to_report["🟢 Ratio to report"]:::ok
        validation__check_datapoint["🟡 Check datapoint"]:::partial
        validation__check_hierarchy["🟡 Check hierarchy"]:::partial
        validation__check["🟢 Check"]:::ok
@@ -1110,7 +1171,51 @@ dataset
        join__left_join --> t
        join__full_join --> t
        join__cross_join --> t
+       string__concat --> t
+       string__trim --> t
+       string__ltrim --> t
+       string__rtrim --> t
+       string__upper --> t
+       string__lower --> t
+       string__substr --> t
+       string__replace --> t
+       string__instr --> t
+       string__length --> t
+       string__string_distance --> t
+       numeric__unary_plus --> t
+       numeric__unary_minus --> t
+       numeric__addition --> t
+       numeric__subtraction --> t
+       numeric__multiplication --> t
+       numeric__division --> t
+       numeric__modulo --> t
+       numeric__round --> t
+       numeric__trunc --> t
+       numeric__ceil --> t
+       numeric__floor --> t
+       numeric__abs --> t
+       numeric__exp --> t
+       numeric__ln --> t
+       numeric__sqrt --> t
+       numeric__power --> t
+       numeric__log --> t
+       numeric__random --> t
+       comparison__equal --> t
+       comparison__not_equal --> t
+       comparison__greater --> t
+       comparison__greater_equal --> t
+       comparison__less --> t
+       comparison__less_equal --> t
+       comparison__between --> t
+       comparison__in --> t
+       comparison__not_in --> t
+       comparison__match_characters --> t
+       comparison__isnull --> t
        comparison__exists_in --> t
+       boolean__and --> t
+       boolean__or --> t
+       boolean__xor --> t
+       boolean__not --> t
        time__period_indicator --> t
        time__fill_time_series --> t
        time__flow_to_stock --> t
@@ -1125,6 +1230,21 @@ dataset
        hierarchy__hierarchy --> t
        aggregate__aggregate_invocation --> t
        aggregate__analytic_invocation --> t
+       aggregate__count --> t
+       aggregate__min --> t
+       aggregate__max --> t
+       aggregate__median --> t
+       aggregate__sum --> t
+       aggregate__avg --> t
+       aggregate__stddev_pop --> t
+       aggregate__stddev_samp --> t
+       aggregate__var_pop --> t
+       aggregate__var_samp --> t
+       aggregate__first_value --> t
+       aggregate__last_value --> t
+       aggregate__lag --> t
+       aggregate__lead --> t
+       aggregate__ratio_to_report --> t
        validation__check_datapoint --> t
        validation__check_hierarchy --> t
        validation__check --> t
@@ -1146,11 +1266,56 @@ dataset
        t --> general__membership
        t --> general__udo_call
        t --> general__eval
+       t --> general__cast
        t --> join__inner_join
        t --> join__left_join
        t --> join__full_join
        t --> join__cross_join
+       t --> string__concat
+       t --> string__trim
+       t --> string__ltrim
+       t --> string__rtrim
+       t --> string__upper
+       t --> string__lower
+       t --> string__substr
+       t --> string__replace
+       t --> string__instr
+       t --> string__length
+       t --> string__string_distance
+       t --> numeric__unary_plus
+       t --> numeric__unary_minus
+       t --> numeric__addition
+       t --> numeric__subtraction
+       t --> numeric__multiplication
+       t --> numeric__division
+       t --> numeric__modulo
+       t --> numeric__round
+       t --> numeric__trunc
+       t --> numeric__ceil
+       t --> numeric__floor
+       t --> numeric__abs
+       t --> numeric__exp
+       t --> numeric__ln
+       t --> numeric__sqrt
+       t --> numeric__power
+       t --> numeric__log
+       t --> numeric__random
+       t --> comparison__equal
+       t --> comparison__not_equal
+       t --> comparison__greater
+       t --> comparison__greater_equal
+       t --> comparison__less
+       t --> comparison__less_equal
+       t --> comparison__between
+       t --> comparison__in
+       t --> comparison__not_in
+       t --> comparison__match_characters
+       t --> comparison__isnull
        t --> comparison__exists_in
+       t --> boolean__and
+       t --> boolean__or
+       t --> boolean__xor
+       t --> boolean__not
        t --> time__period_indicator
        t --> time__fill_time_series
        t --> time__flow_to_stock
@@ -1166,6 +1331,20 @@ dataset
        t --> aggregate__aggregate_invocation
        t --> aggregate__analytic_invocation
        t --> aggregate__count
+       t --> aggregate__min
+       t --> aggregate__max
+       t --> aggregate__median
+       t --> aggregate__sum
+       t --> aggregate__avg
+       t --> aggregate__stddev_pop
+       t --> aggregate__stddev_samp
+       t --> aggregate__var_pop
+       t --> aggregate__var_samp
+       t --> aggregate__first_value
+       t --> aggregate__last_value
+       t --> aggregate__lag
+       t --> aggregate__lead
+       t --> aggregate__ratio_to_report
        t --> validation__check_datapoint
        t --> validation__check_hierarchy
        t --> validation__check
@@ -1194,7 +1373,51 @@ dataset
        click join__left_join "examples/join/left_join/bare/minimal/"
        click join__full_join "examples/join/full_join/bare/minimal/"
        click join__cross_join "examples/join/cross_join/bare/minimal/"
+       click string__concat "examples/string/concat/ds_ds/manual_ex_1/"
+       click string__trim "examples/string/trim/ds/minimal/"
+       click string__ltrim "examples/string/ltrim/ds/minimal/"
+       click string__rtrim "examples/string/rtrim/ds/manual_ex_1/"
+       click string__upper "examples/string/upper/ds/manual_ex_1/"
+       click string__lower "examples/string/lower/ds/minimal/"
+       click string__substr "examples/string/substr/ds_start_len/manual_ex_2/"
+       click string__replace "examples/string/replace/ds_two/manual_ex_1/"
+       click string__instr "examples/string/instr/ds_pattern/manual_ex_1/"
+       click string__length "examples/string/length/ds/manual_ex_1/"
+       click string__string_distance "examples/string/string_distance/levenshtein_ds_ds/manual_ex_1/"
+       click numeric__unary_plus "examples/numeric/unary_plus/ds/manual_ex_1/"
+       click numeric__unary_minus "examples/numeric/unary_minus/ds/manual_ex_1/"
+       click numeric__addition "examples/numeric/addition/ds_ds/manual_ex_1/"
+       click numeric__subtraction "examples/numeric/subtraction/ds_ds/manual_ex_1/"
+       click numeric__multiplication "examples/numeric/multiplication/ds_ds/manual_ex_1/"
+       click numeric__division "examples/numeric/division/ds_ds/manual_ex_1/"
+       click numeric__modulo "examples/numeric/modulo/ds_ds/manual_ex_1/"
+       click numeric__round "examples/numeric/round/ds_digits/manual_ex_1/"
+       click numeric__trunc "examples/numeric/trunc/ds_digits/manual_ex_1/"
+       click numeric__ceil "examples/numeric/ceil/ds/manual_ex_1/"
+       click numeric__floor "examples/numeric/floor/ds/manual_ex_1/"
+       click numeric__abs "examples/numeric/abs/ds/manual_ex_1/"
+       click numeric__exp "examples/numeric/exp/ds/manual_ex_1/"
+       click numeric__ln "examples/numeric/ln/ds/manual_ex_1/"
+       click numeric__sqrt "examples/numeric/sqrt/ds/manual_ex_1/"
+       click numeric__power "examples/numeric/power/ds_sc/manual_ex_1/"
+       click numeric__log "examples/numeric/log/ds_sc/manual_ex_1/"
+       click numeric__random "examples/numeric/random/ds/manual_ex_1/"
+       click comparison__equal "examples/comparison/equal/ds_ds/minimal/"
+       click comparison__not_equal "examples/comparison/not_equal/ds_ds/manual_ex_1/"
+       click comparison__greater "examples/comparison/greater/ds_ds/manual_ex_3/"
+       click comparison__greater_equal "examples/comparison/greater_equal/ds_ds/minimal/"
+       click comparison__less "examples/comparison/less/ds_ds/minimal/"
+       click comparison__less_equal "examples/comparison/less_equal/ds_ds/minimal/"
+       click comparison__between "examples/comparison/between/ds_sc_sc/manual_ex_1/"
+       click comparison__in "examples/comparison/in/ds_set/manual_ex_1/"
+       click comparison__not_in "examples/comparison/not_in/ds_set/minimal/"
+       click comparison__match_characters "examples/comparison/match_characters/ds_sc/manual_ex_1/"
+       click comparison__isnull "examples/comparison/isnull/ds/manual_ex_1/"
        click comparison__exists_in "examples/comparison/exists_in/retain_default/minimal/"
+       click boolean__and "examples/boolean/and/ds_ds/manual_ex_1/"
+       click boolean__or "examples/boolean/or/ds_ds/manual_ex_1/"
+       click boolean__xor "examples/boolean/xor/ds_ds/manual_ex_1/"
+       click boolean__not "examples/boolean/not/ds/manual_ex_1/"
        click time__period_indicator "examples/time/period_indicator/ds/manual_ex_1/"
        click time__fill_time_series "examples/time/fill_time_series/default_tp/minimal/"
        click time__flow_to_stock "examples/time/flow_to_stock/time_period/manual_ex_3/"
@@ -1210,6 +1433,20 @@ dataset
        click aggregate__aggregate_invocation "examples/aggregate/aggregate_invocation/group_by/manual_ex_1/"
        click aggregate__analytic_invocation "examples/aggregate/analytic_invocation/partition_by/minimal/"
        click aggregate__count "examples/aggregate/count/ds_no_group/minimal/"
+       click aggregate__min "examples/aggregate/min/ds_no_group/minimal/"
+       click aggregate__max "examples/aggregate/max/ds_no_group/minimal/"
+       click aggregate__median "examples/aggregate/median/ds_no_group/minimal/"
+       click aggregate__sum "examples/aggregate/sum/ds_no_group/minimal/"
+       click aggregate__avg "examples/aggregate/avg/ds_no_group/minimal/"
+       click aggregate__stddev_pop "examples/aggregate/stddev_pop/ds_no_group/minimal/"
+       click aggregate__stddev_samp "examples/aggregate/stddev_samp/ds_no_group/minimal/"
+       click aggregate__var_pop "examples/aggregate/var_pop/ds_no_group/minimal/"
+       click aggregate__var_samp "examples/aggregate/var_samp/ds_no_group/minimal/"
+       click aggregate__first_value "examples/aggregate/first_value/analytic_ds/manual_ex_1/"
+       click aggregate__last_value "examples/aggregate/last_value/analytic_ds/manual_ex_1/"
+       click aggregate__lag "examples/aggregate/lag/ds_no_offset/minimal/"
+       click aggregate__lead "examples/aggregate/lead/ds_no_offset/minimal/"
+       click aggregate__ratio_to_report "examples/aggregate/ratio_to_report/ds/manual_ex_1/"
        click validation__check_datapoint "examples/validation/check_datapoint/output_default/manual_ex_1/"
        click validation__check_hierarchy "examples/validation/check_hierarchy/non_null_dataset_invalid/minimal/"
        click validation__check "examples/validation/check/bare/minimal/"
@@ -1232,6 +1469,7 @@ dataset
 
 Expected outputs that follow a recorded team decision. The notes of an example say what the manual says and how its output was derived.
 
+- `📌 #1193 <https://github.com/Meaningful-Data/vtlengine/issues/1193>`__ · :doc:`Hierarchical aggregation <hierarchy>` › Hierarchical roll-up › ``hierarchy(DS, HR condition C)`` (minimal\_2) · `manual <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Hierarchical%20aggregation/Hierarchical%20roll-up/index.html>`__ · `notes <examples/hierarchy/hierarchy/condition/minimal_2/notes.md>`__
 - `📌 #1049 <https://github.com/Meaningful-Data/vtlengine/issues/1049>`__ · :doc:`Aggregate and Analytic operators <aggregate>` › Counting the number of data points › ``count(DS)`` (minimal) · `manual <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Counting%20the%20number%20of%20data%20points/index.html>`__ · `notes <examples/aggregate/count/ds_no_group/minimal/notes.md>`__
 - `📌 #1049 <https://github.com/Meaningful-Data/vtlengine/issues/1049>`__ · :doc:`Aggregate and Analytic operators <aggregate>` › Counting the number of data points › ``count(DS group by Id)`` (minimal\_2) · `manual <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Counting%20the%20number%20of%20data%20points/index.html>`__ · `notes <examples/aggregate/count/ds_group_by/minimal_2/notes.md>`__
 - `📌 #1049 <https://github.com/Meaningful-Data/vtlengine/issues/1049>`__ · :doc:`Aggregate and Analytic operators <aggregate>` › Counting the number of data points › ``count(DS group except Id)`` (minimal) · `manual <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Counting%20the%20number%20of%20data%20points/index.html>`__ · `notes <examples/aggregate/count/ds_group_except/minimal/notes.md>`__

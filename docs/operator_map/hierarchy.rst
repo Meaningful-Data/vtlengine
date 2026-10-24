@@ -4,7 +4,7 @@
 
 38 variants: 🟢 26 · 🟡 12 · 🔴 0 · 🔵 0
 
-← Back to :doc:`index` · vtlengine 1.9.6rc2 (851f56ae)
+← Back to :doc:`index` · vtlengine 1.9.6rc2 (b393f444) · pandas 3.0.6 · DuckDB 1.5.5
 
 .. mermaid::
 
@@ -25,7 +25,7 @@
        click out_dataset "examples/general/non_persistent_assignment/ds/manual_ex_1/"
        ext_definitions__define_hierarchical_ruleset["↗ define hierarchical ruleset (definitions.html)"]:::ext
        click ext_definitions__define_hierarchical_ruleset "definitions.html"
-       hierarchy__hierarchy["🟡 Hierarchical roll-up hierarchy"]:::partial
+       hierarchy__hierarchy["🟡 Hierarchical roll-up hierarchy 📌"]:::partial
        hierarchy__hierarchy__non_null_dataset_computed["🟢 hierarchy(DS, HR non_null dataset computed)"]:::ok
        hierarchy__hierarchy__non_null_dataset_all["🟢 hierarchy(DS, HR non_null dataset all)"]:::ok
        hierarchy__hierarchy__non_null_rule_computed["🟢 hierarchy(DS, HR non_null rule computed)"]:::ok
@@ -62,7 +62,7 @@
        hierarchy__hierarchy__always_zero_rule_all["🟡 hierarchy(DS, HR always_zero rule all)"]:::partial
        hierarchy__hierarchy__always_zero_rule_priority_computed["🟡 hierarchy(DS, HR always_zero rule_priority computed)"]:::partial
        hierarchy__hierarchy__always_zero_rule_priority_all["🟡 hierarchy(DS, HR always_zero rule_priority all)"]:::partial
-       hierarchy__hierarchy__condition["🟢 hierarchy(DS, HR condition C)"]:::ok
+       hierarchy__hierarchy__condition["🟢 hierarchy(DS, HR condition C) 📌"]:::ok
        hierarchy__hierarchy__valuedomain_rule["🟢 hierarchy(DS, HR rule R)"]:::ok
        hierarchy__hierarchy --- hierarchy__hierarchy__non_null_dataset_computed
        hierarchy__hierarchy --- hierarchy__hierarchy__non_null_dataset_all
@@ -163,371 +163,378 @@
      - Detail
      - Example
    * - | ``hierarchy(DS, HR non_null dataset computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/non_null_dataset_computed/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_null_dataset_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_null_dataset_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/non_null_dataset_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_null_dataset_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR non_null dataset all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/non_null_dataset_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_null_dataset_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_null_dataset_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/non_null_dataset_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_null_dataset_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR non_null rule computed)``
-       | manual\_ex\_1
+       | `manual\_ex\_1 <examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/input/>`__ · `expected <examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/notes.md>`__ · *manual*
    * - | ``hierarchy(DS, HR non_null rule computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/non_null_rule_computed/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_null_rule_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_null_rule_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/non_null_rule_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_null_rule_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR non_null rule all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/non_null_rule_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_null_rule_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_null_rule_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/non_null_rule_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_null_rule_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR non_null rule_priority computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/non_null_rule_priority_computed/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_null_rule_priority_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_null_rule_priority_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/non_null_rule_priority_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_null_rule_priority_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR non_null rule_priority computed)``
-       | minimal\_2
+       | `minimal\_2 <examples/hierarchy/hierarchy/non_null_rule_priority_computed/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_null_rule_priority_computed/minimal_2/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_null_rule_priority_computed/minimal_2/input/>`__ · `expected <examples/hierarchy/hierarchy/non_null_rule_priority_computed/minimal_2/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_null_rule_priority_computed/minimal_2/notes.md>`__
    * - | ``hierarchy(DS, HR non_null rule_priority all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/non_null_rule_priority_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_null_rule_priority_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_null_rule_priority_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/non_null_rule_priority_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_null_rule_priority_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR non_null rule_priority all)``
-       | minimal\_2
+       | `minimal\_2 <examples/hierarchy/hierarchy/non_null_rule_priority_all/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_null_rule_priority_all/minimal_2/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_null_rule_priority_all/minimal_2/input/>`__ · `expected <examples/hierarchy/hierarchy/non_null_rule_priority_all/minimal_2/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_null_rule_priority_all/minimal_2/notes.md>`__
    * - | ``hierarchy(DS, HR non_zero dataset computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/non_zero_dataset_computed/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_zero_dataset_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_zero_dataset_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/non_zero_dataset_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_zero_dataset_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR non_zero dataset all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/non_zero_dataset_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_zero_dataset_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_zero_dataset_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/non_zero_dataset_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_zero_dataset_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR non_zero rule computed)``
-       | manual\_ex\_2
+       | `manual\_ex\_2 <examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/input/>`__ · `expected <examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/notes.md>`__ · *manual*
    * - | ``hierarchy(DS, HR non_zero rule computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/non_zero_rule_computed/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_zero_rule_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_zero_rule_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/non_zero_rule_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_zero_rule_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR non_zero rule all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/non_zero_rule_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_zero_rule_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_zero_rule_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/non_zero_rule_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_zero_rule_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR non_zero rule_priority computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/non_zero_rule_priority_computed/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_zero_rule_priority_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_zero_rule_priority_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/non_zero_rule_priority_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_zero_rule_priority_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR non_zero rule_priority computed)``
-       | minimal\_2
+       | `minimal\_2 <examples/hierarchy/hierarchy/non_zero_rule_priority_computed/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_zero_rule_priority_computed/minimal_2/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_zero_rule_priority_computed/minimal_2/input/>`__ · `expected <examples/hierarchy/hierarchy/non_zero_rule_priority_computed/minimal_2/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_zero_rule_priority_computed/minimal_2/notes.md>`__
    * - | ``hierarchy(DS, HR non_zero rule_priority all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/non_zero_rule_priority_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_zero_rule_priority_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_zero_rule_priority_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/non_zero_rule_priority_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_zero_rule_priority_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR non_zero rule_priority all)``
-       | minimal\_2
+       | `minimal\_2 <examples/hierarchy/hierarchy/non_zero_rule_priority_all/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/non_zero_rule_priority_all/minimal_2/script.vtl>`__ · `input <examples/hierarchy/hierarchy/non_zero_rule_priority_all/minimal_2/input/>`__ · `expected <examples/hierarchy/hierarchy/non_zero_rule_priority_all/minimal_2/expected/>`__ · `notes <examples/hierarchy/hierarchy/non_zero_rule_priority_all/minimal_2/notes.md>`__
    * - | ``hierarchy(DS, HR partial_null dataset computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/partial_null_dataset_computed/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_null_dataset_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_null_dataset_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_null_dataset_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_null_dataset_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR partial_null dataset all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/partial_null_dataset_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_null_dataset_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_null_dataset_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_null_dataset_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_null_dataset_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR partial_null rule computed)``
-       | manual\_ex\_3
+       | `manual\_ex\_3 <examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/notes.md>`__ · *manual*
    * - | ``hierarchy(DS, HR partial_null rule computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/partial_null_rule_computed/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_null_rule_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_null_rule_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_null_rule_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_null_rule_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR partial_null rule all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/partial_null_rule_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_null_rule_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_null_rule_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_null_rule_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_null_rule_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR partial_null rule_priority computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/partial_null_rule_priority_computed/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_null_rule_priority_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_null_rule_priority_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_null_rule_priority_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_null_rule_priority_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR partial_null rule_priority computed)``
-       | minimal\_2
+       | `minimal\_2 <examples/hierarchy/hierarchy/partial_null_rule_priority_computed/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_null_rule_priority_computed/minimal_2/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_null_rule_priority_computed/minimal_2/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_null_rule_priority_computed/minimal_2/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_null_rule_priority_computed/minimal_2/notes.md>`__
    * - | ``hierarchy(DS, HR partial_null rule_priority all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/partial_null_rule_priority_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_null_rule_priority_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_null_rule_priority_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_null_rule_priority_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_null_rule_priority_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR partial_null rule_priority all)``
-       | minimal\_2
+       | `minimal\_2 <examples/hierarchy/hierarchy/partial_null_rule_priority_all/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_null_rule_priority_all/minimal_2/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_null_rule_priority_all/minimal_2/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_null_rule_priority_all/minimal_2/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_null_rule_priority_all/minimal_2/notes.md>`__
    * - | ``hierarchy(DS, HR partial_zero dataset computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/partial_zero_dataset_computed/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_zero_dataset_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_zero_dataset_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_zero_dataset_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_zero_dataset_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR partial_zero dataset all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/partial_zero_dataset_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_zero_dataset_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_zero_dataset_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_zero_dataset_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_zero_dataset_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR partial_zero rule computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/partial_zero_rule_computed/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_zero_rule_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_zero_rule_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_zero_rule_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_zero_rule_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR partial_zero rule all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/partial_zero_rule_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_zero_rule_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_zero_rule_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_zero_rule_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_zero_rule_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR partial_zero rule_priority computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/partial_zero_rule_priority_computed/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_zero_rule_priority_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_zero_rule_priority_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_zero_rule_priority_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_zero_rule_priority_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR partial_zero rule_priority computed)``
-       | minimal\_2
+       | `minimal\_2 <examples/hierarchy/hierarchy/partial_zero_rule_priority_computed/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_zero_rule_priority_computed/minimal_2/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_zero_rule_priority_computed/minimal_2/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_zero_rule_priority_computed/minimal_2/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_zero_rule_priority_computed/minimal_2/notes.md>`__
    * - | ``hierarchy(DS, HR partial_zero rule_priority all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/partial_zero_rule_priority_all/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_zero_rule_priority_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_zero_rule_priority_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_zero_rule_priority_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_zero_rule_priority_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR partial_zero rule_priority all)``
-       | minimal\_2
+       | `minimal\_2 <examples/hierarchy/hierarchy/partial_zero_rule_priority_all/minimal_2/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/partial_zero_rule_priority_all/minimal_2/script.vtl>`__ · `input <examples/hierarchy/hierarchy/partial_zero_rule_priority_all/minimal_2/input/>`__ · `expected <examples/hierarchy/hierarchy/partial_zero_rule_priority_all/minimal_2/expected/>`__ · `notes <examples/hierarchy/hierarchy/partial_zero_rule_priority_all/minimal_2/notes.md>`__
    * - | ``hierarchy(DS, HR always_null dataset computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/always_null_dataset_computed/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_null_dataset_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_null_dataset_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/always_null_dataset_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_null_dataset_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR always_null dataset all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/always_null_dataset_all/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_null_dataset_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_null_dataset_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/always_null_dataset_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_null_dataset_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR always_null rule computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/always_null_rule_computed/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_null_rule_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_null_rule_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/always_null_rule_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_null_rule_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR always_null rule all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/always_null_rule_all/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_null_rule_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_null_rule_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/always_null_rule_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_null_rule_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR always_null rule_priority computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/always_null_rule_priority_computed/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_null_rule_priority_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_null_rule_priority_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/always_null_rule_priority_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_null_rule_priority_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR always_null rule_priority computed)``
-       | minimal\_2
+       | `minimal\_2 <examples/hierarchy/hierarchy/always_null_rule_priority_computed/minimal_2/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_null_rule_priority_computed/minimal_2/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_null_rule_priority_computed/minimal_2/input/>`__ · `expected <examples/hierarchy/hierarchy/always_null_rule_priority_computed/minimal_2/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_null_rule_priority_computed/minimal_2/notes.md>`__
    * - | ``hierarchy(DS, HR always_null rule_priority all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/always_null_rule_priority_all/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_null_rule_priority_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_null_rule_priority_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/always_null_rule_priority_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_null_rule_priority_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR always_null rule_priority all)``
-       | minimal\_2
+       | `minimal\_2 <examples/hierarchy/hierarchy/always_null_rule_priority_all/minimal_2/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_null_rule_priority_all/minimal_2/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_null_rule_priority_all/minimal_2/input/>`__ · `expected <examples/hierarchy/hierarchy/always_null_rule_priority_all/minimal_2/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_null_rule_priority_all/minimal_2/notes.md>`__
    * - | ``hierarchy(DS, HR always_zero dataset computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/always_zero_dataset_computed/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_zero_dataset_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_zero_dataset_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/always_zero_dataset_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_zero_dataset_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR always_zero dataset all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/always_zero_dataset_all/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_zero_dataset_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_zero_dataset_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/always_zero_dataset_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_zero_dataset_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR always_zero rule computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/always_zero_rule_computed/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_zero_rule_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_zero_rule_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/always_zero_rule_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_zero_rule_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR always_zero rule all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/always_zero_rule_all/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_zero_rule_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_zero_rule_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/always_zero_rule_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_zero_rule_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR always_zero rule_priority computed)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/always_zero_rule_priority_computed/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_zero_rule_priority_computed/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_zero_rule_priority_computed/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/always_zero_rule_priority_computed/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_zero_rule_priority_computed/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR always_zero rule_priority computed)``
-       | minimal\_2
+       | `minimal\_2 <examples/hierarchy/hierarchy/always_zero_rule_priority_computed/minimal_2/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_zero_rule_priority_computed/minimal_2/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_zero_rule_priority_computed/minimal_2/input/>`__ · `expected <examples/hierarchy/hierarchy/always_zero_rule_priority_computed/minimal_2/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_zero_rule_priority_computed/minimal_2/notes.md>`__
    * - | ``hierarchy(DS, HR always_zero rule_priority all)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/always_zero_rule_priority_all/minimal/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_zero_rule_priority_all/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_zero_rule_priority_all/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/always_zero_rule_priority_all/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_zero_rule_priority_all/minimal/notes.md>`__
    * - | ``hierarchy(DS, HR always_zero rule_priority all)``
-       | minimal\_2
+       | `minimal\_2 <examples/hierarchy/hierarchy/always_zero_rule_priority_all/minimal_2/>`__
      - 🟡
      - ❌
      - ❌
      - missing row Id\_1=3, Id\_2=C
      - `script <examples/hierarchy/hierarchy/always_zero_rule_priority_all/minimal_2/script.vtl>`__ · `input <examples/hierarchy/hierarchy/always_zero_rule_priority_all/minimal_2/input/>`__ · `expected <examples/hierarchy/hierarchy/always_zero_rule_priority_all/minimal_2/expected/>`__ · `notes <examples/hierarchy/hierarchy/always_zero_rule_priority_all/minimal_2/notes.md>`__
    * - | ``hierarchy(DS, HR condition C)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/condition/minimal/>`__
      - 🟢
      - ✅
      - ✅
      -
      - `script <examples/hierarchy/hierarchy/condition/minimal/script.vtl>`__ · `input <examples/hierarchy/hierarchy/condition/minimal/input/>`__ · `expected <examples/hierarchy/hierarchy/condition/minimal/expected/>`__ · `notes <examples/hierarchy/hierarchy/condition/minimal/notes.md>`__
+   * - | ``hierarchy(DS, HR condition C)``
+       | `minimal\_2 <examples/hierarchy/hierarchy/condition/minimal_2/>`__
+     - 🟢
+     - ✅
+     - ✅
+     -
+     - `script <examples/hierarchy/hierarchy/condition/minimal_2/script.vtl>`__ · `input <examples/hierarchy/hierarchy/condition/minimal_2/input/>`__ · `expected <examples/hierarchy/hierarchy/condition/minimal_2/expected/>`__ · `notes <examples/hierarchy/hierarchy/condition/minimal_2/notes.md>`__ · `📌 #1193 <https://github.com/Meaningful-Data/vtlengine/issues/1193>`__
    * - | ``hierarchy(DS, HR rule R)``
-       | minimal
+       | `minimal <examples/hierarchy/hierarchy/valuedomain_rule/minimal/>`__
      - 🟢
      - ✅
      - ✅
