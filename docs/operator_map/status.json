@@ -2800,7 +2800,7 @@
       },
       "status": "ok"
     },
-    "clause/aggr/attribute_role/minimal": {
+    "clause/aggr/attribute_role/attribute_next_to_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2816,7 +2816,7 @@
       },
       "status": "ok"
     },
-    "clause/aggr/attribute_role/minimal_2": {
+    "clause/aggr/attribute_role/attribute_without_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2832,7 +2832,7 @@
       },
       "status": "ok"
     },
-    "clause/aggr/group_all/minimal": {
+    "clause/aggr/group_all/quarters_to_years": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2896,7 +2896,7 @@
       },
       "status": "ok"
     },
-    "clause/aggr/measure_role/minimal": {
+    "clause/aggr/measure_role/only_the_new_measure_kept": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2912,7 +2912,7 @@
       },
       "status": "ok"
     },
-    "clause/aggr/no_group/minimal": {
+    "clause/aggr/no_group/single_group_no_identifiers": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2928,7 +2928,7 @@
       },
       "status": "ok"
     },
-    "clause/aggr/role_omitted_attribute/minimal": {
+    "clause/aggr/role_omitted_attribute/existing_attribute_keeps_role": {
       "duckdb": {
         "detail": "role of At_1 expected Attribute got Measure",
         "error_code": null,
@@ -2944,7 +2944,7 @@
       },
       "status": "partial"
     },
-    "clause/aggr/viral_attribute_role/minimal": {
+    "clause/aggr/viral_attribute_role/viral_attribute_next_to_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2960,7 +2960,7 @@
       },
       "status": "ok"
     },
-    "clause/aggr/viral_attribute_role/minimal_2": {
+    "clause/aggr/viral_attribute_role/viral_attribute_without_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2992,7 +2992,7 @@
       },
       "status": "ok"
     },
-    "clause/calc/identifier/minimal": {
+    "clause/calc/identifier/new_identifier_from_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3007,6 +3007,22 @@
         "outcome": "match"
       },
       "status": "ok"
+    },
+    "clause/calc/measure_default/existing_attribute_keeps_role": {
+      "duckdb": {
+        "detail": "role of At_1 expected Attribute got Measure",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "role of At_1 expected Attribute got Measure",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "status": "partial"
     },
     "clause/calc/measure_default/manual_ex_1": {
       "duckdb": {
@@ -3024,7 +3040,7 @@
       },
       "status": "ok"
     },
-    "clause/calc/measure_default/minimal": {
+    "clause/calc/measure_default/new_component_is_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3040,23 +3056,7 @@
       },
       "status": "ok"
     },
-    "clause/calc/measure_default/minimal_2": {
-      "duckdb": {
-        "detail": "role of At_1 expected Attribute got Measure",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "mismatch"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "role of At_1 expected Attribute got Measure",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "mismatch"
-      },
-      "status": "partial"
-    },
-    "clause/calc/measure_explicit/minimal": {
+    "clause/calc/measure_explicit/attribute_changed_to_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3072,7 +3072,7 @@
       },
       "status": "ok"
     },
-    "clause/calc/measure_explicit/minimal_2": {
+    "clause/calc/measure_explicit/explicit_role_on_new_component": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3088,7 +3088,7 @@
       },
       "status": "ok"
     },
-    "clause/calc/multiple/minimal": {
+    "clause/calc/multiple/default_and_explicit_roles": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3104,7 +3104,7 @@
       },
       "status": "ok"
     },
-    "clause/calc/multiple/minimal_2": {
+    "clause/calc/multiple/items_are_independent": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3120,7 +3120,7 @@
       },
       "status": "ok"
     },
-    "clause/calc/viral_attribute/minimal": {
+    "clause/calc/viral_attribute/constant_viral_attribute": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3168,7 +3168,7 @@
       },
       "status": "ok"
     },
-    "clause/filter/basic/minimal": {
+    "clause/filter/basic/null_condition_filtered_out": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3216,7 +3216,7 @@
       },
       "status": "missing"
     },
-    "clause/pivot/basic/minimal": {
+    "clause/pivot/basic/missing_combination_is_null": {
       "duckdb": {
         "detail": "SemanticError 1-3-13: Unsupported VTL construct: pivot clause. Please check transformation with output Dataset DS_r",
         "error_code": "1-3-13",
@@ -3232,7 +3232,7 @@
       },
       "status": "missing"
     },
-    "clause/rename/basic/minimal": {
+    "clause/rename/basic/identifier_renamed": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3248,7 +3248,7 @@
       },
       "status": "ok"
     },
-    "clause/rename/basic/minimal_2": {
+    "clause/rename/basic/measure_renamed": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3260,6 +3260,22 @@
         "detail": "",
         "error_code": null,
         "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "clause/rename/basic/new_name_already_in_operand": {
+      "duckdb": {
+        "detail": "",
+        "error_code": "1-1-6-8",
+        "error_type": "SemanticError",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": "1-1-6-8",
+        "error_type": "SemanticError",
         "outcome": "match"
       },
       "status": "ok"
@@ -3312,7 +3328,7 @@
       },
       "status": "ok"
     },
-    "clause/sub/one_id/manual_ex_3": {
+    "clause/sub/one_id/fixed_identifier_dropped": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3328,7 +3344,7 @@
       },
       "status": "ok"
     },
-    "clause/sub/one_id/minimal": {
+    "clause/sub/one_id/manual_ex_3": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3376,7 +3392,7 @@
       },
       "status": "ok"
     },
-    "clause/unpivot/basic/minimal": {
+    "clause/unpivot/basic/null_measure_skipped": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -7552,7 +7568,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/always_null_dataset_all/minimal": {
+    "hierarchy/hierarchy/always_null_dataset_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7568,7 +7584,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/always_null_dataset_computed/minimal": {
+    "hierarchy/hierarchy/always_null_dataset_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7584,7 +7600,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/always_null_rule_all/minimal": {
+    "hierarchy/hierarchy/always_null_rule_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7600,7 +7616,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/always_null_rule_computed/minimal": {
+    "hierarchy/hierarchy/always_null_rule_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7616,7 +7632,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/always_null_rule_priority_all/minimal": {
+    "hierarchy/hierarchy/always_null_rule_priority_all/computed_item_takes_precedence": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7632,7 +7648,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/always_null_rule_priority_all/minimal_2": {
+    "hierarchy/hierarchy/always_null_rule_priority_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7648,7 +7664,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/always_null_rule_priority_computed/minimal": {
+    "hierarchy/hierarchy/always_null_rule_priority_computed/computed_item_takes_precedence": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7664,7 +7680,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/always_null_rule_priority_computed/minimal_2": {
+    "hierarchy/hierarchy/always_null_rule_priority_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7680,7 +7696,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/always_zero_dataset_all/minimal": {
+    "hierarchy/hierarchy/always_zero_dataset_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7696,7 +7712,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/always_zero_dataset_computed/minimal": {
+    "hierarchy/hierarchy/always_zero_dataset_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7712,7 +7728,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/always_zero_rule_all/minimal": {
+    "hierarchy/hierarchy/always_zero_rule_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7728,7 +7744,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/always_zero_rule_computed/minimal": {
+    "hierarchy/hierarchy/always_zero_rule_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7744,7 +7760,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/always_zero_rule_priority_all/minimal": {
+    "hierarchy/hierarchy/always_zero_rule_priority_all/computed_item_takes_precedence": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7760,7 +7776,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/always_zero_rule_priority_all/minimal_2": {
+    "hierarchy/hierarchy/always_zero_rule_priority_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7776,7 +7792,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/always_zero_rule_priority_computed/minimal": {
+    "hierarchy/hierarchy/always_zero_rule_priority_computed/computed_item_takes_precedence": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7792,7 +7808,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/always_zero_rule_priority_computed/minimal_2": {
+    "hierarchy/hierarchy/always_zero_rule_priority_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "missing row Id_1=3, Id_2=C",
         "error_code": null,
@@ -7808,7 +7824,7 @@
       },
       "status": "partial"
     },
-    "hierarchy/hierarchy/condition/minimal": {
+    "hierarchy/hierarchy/condition/overlapping_rules_that_agree": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -7824,7 +7840,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/condition/minimal_2": {
+    "hierarchy/hierarchy/condition/rule_only_where_the_condition_holds": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -7840,7 +7856,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_null_dataset_all/minimal": {
+    "hierarchy/hierarchy/non_null_dataset_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -7856,7 +7872,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_null_dataset_computed/minimal": {
+    "hierarchy/hierarchy/non_null_dataset_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -7872,7 +7888,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_null_rule_all/minimal": {
+    "hierarchy/hierarchy/non_null_rule_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -7904,7 +7920,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_null_rule_computed/minimal": {
+    "hierarchy/hierarchy/non_null_rule_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -7920,7 +7936,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_null_rule_priority_all/minimal": {
+    "hierarchy/hierarchy/non_null_rule_priority_all/computed_item_takes_precedence": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -7936,7 +7952,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_null_rule_priority_all/minimal_2": {
+    "hierarchy/hierarchy/non_null_rule_priority_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -7952,7 +7968,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_null_rule_priority_computed/minimal": {
+    "hierarchy/hierarchy/non_null_rule_priority_computed/computed_item_takes_precedence": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -7968,7 +7984,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_null_rule_priority_computed/minimal_2": {
+    "hierarchy/hierarchy/non_null_rule_priority_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -7984,7 +8000,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_zero_dataset_all/minimal": {
+    "hierarchy/hierarchy/non_zero_dataset_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8000,7 +8016,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_zero_dataset_computed/minimal": {
+    "hierarchy/hierarchy/non_zero_dataset_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8016,7 +8032,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_zero_rule_all/minimal": {
+    "hierarchy/hierarchy/non_zero_rule_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8048,7 +8064,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_zero_rule_computed/minimal": {
+    "hierarchy/hierarchy/non_zero_rule_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8064,7 +8080,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_zero_rule_priority_all/minimal": {
+    "hierarchy/hierarchy/non_zero_rule_priority_all/computed_item_takes_precedence": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8080,7 +8096,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_zero_rule_priority_all/minimal_2": {
+    "hierarchy/hierarchy/non_zero_rule_priority_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8096,7 +8112,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_zero_rule_priority_computed/minimal": {
+    "hierarchy/hierarchy/non_zero_rule_priority_computed/computed_item_takes_precedence": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8112,7 +8128,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/non_zero_rule_priority_computed/minimal_2": {
+    "hierarchy/hierarchy/non_zero_rule_priority_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8128,7 +8144,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_null_dataset_all/minimal": {
+    "hierarchy/hierarchy/partial_null_dataset_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8144,7 +8160,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_null_dataset_computed/minimal": {
+    "hierarchy/hierarchy/partial_null_dataset_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8160,7 +8176,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_null_rule_all/minimal": {
+    "hierarchy/hierarchy/partial_null_rule_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8192,7 +8208,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_null_rule_computed/minimal": {
+    "hierarchy/hierarchy/partial_null_rule_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8208,7 +8224,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_null_rule_priority_all/minimal": {
+    "hierarchy/hierarchy/partial_null_rule_priority_all/computed_item_takes_precedence": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8224,7 +8240,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_null_rule_priority_all/minimal_2": {
+    "hierarchy/hierarchy/partial_null_rule_priority_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8240,7 +8256,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_null_rule_priority_computed/minimal": {
+    "hierarchy/hierarchy/partial_null_rule_priority_computed/computed_item_takes_precedence": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8256,7 +8272,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_null_rule_priority_computed/minimal_2": {
+    "hierarchy/hierarchy/partial_null_rule_priority_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8272,7 +8288,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_zero_dataset_all/minimal": {
+    "hierarchy/hierarchy/partial_zero_dataset_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8288,7 +8304,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_zero_dataset_computed/minimal": {
+    "hierarchy/hierarchy/partial_zero_dataset_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8304,7 +8320,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_zero_rule_all/minimal": {
+    "hierarchy/hierarchy/partial_zero_rule_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8320,7 +8336,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_zero_rule_computed/minimal": {
+    "hierarchy/hierarchy/partial_zero_rule_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8336,7 +8352,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_zero_rule_priority_all/minimal": {
+    "hierarchy/hierarchy/partial_zero_rule_priority_all/computed_item_takes_precedence": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8352,7 +8368,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_zero_rule_priority_all/minimal_2": {
+    "hierarchy/hierarchy/partial_zero_rule_priority_all/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8368,7 +8384,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_zero_rule_priority_computed/minimal": {
+    "hierarchy/hierarchy/partial_zero_rule_priority_computed/computed_item_takes_precedence": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8384,7 +8400,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/partial_zero_rule_priority_computed/minimal_2": {
+    "hierarchy/hierarchy/partial_zero_rule_priority_computed/missing_null_and_zero_items": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8400,7 +8416,7 @@
       },
       "status": "ok"
     },
-    "hierarchy/hierarchy/valuedomain_rule/minimal": {
+    "hierarchy/hierarchy/valuedomain_rule/domain_ruleset_bound_by_rule": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12112,7 +12128,7 @@
       },
       "status": "ok"
     },
-    "string/concat/comp_comp/minimal": {
+    "string/concat/comp_comp/null_right_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12160,7 +12176,7 @@
       },
       "status": "ok"
     },
-    "string/concat/ds_sc/minimal": {
+    "string/concat/ds_sc/suffix_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12176,7 +12192,7 @@
       },
       "status": "ok"
     },
-    "string/concat/sc_comp/minimal": {
+    "string/concat/sc_comp/prefix_and_null_component": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12192,7 +12208,7 @@
       },
       "status": "ok"
     },
-    "string/concat/sc_ds/minimal": {
+    "string/concat/sc_ds/prefix_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12208,7 +12224,7 @@
       },
       "status": "ok"
     },
-    "string/concat/sc_sc/minimal": {
+    "string/concat/sc_sc/two_string_literals": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12224,7 +12240,7 @@
       },
       "status": "ok"
     },
-    "string/instr/comp_params/minimal": {
+    "string/instr/comp_params/all_parameters_from_components": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12240,7 +12256,7 @@
       },
       "status": "ok"
     },
-    "string/instr/comp_params/minimal_2": {
+    "string/instr/comp_params/pattern_and_start_from_components": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12304,7 +12320,7 @@
       },
       "status": "ok"
     },
-    "string/instr/ds_pattern_start/minimal": {
+    "string/instr/ds_pattern_start/matches_before_start_skipped": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12320,7 +12336,7 @@
       },
       "status": "ok"
     },
-    "string/instr/ds_pattern_start_occ/minimal": {
+    "string/instr/ds_pattern_start_occ/second_occurrence_from_start": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12336,7 +12352,7 @@
       },
       "status": "ok"
     },
-    "string/instr/ds_pattern_start_placeholder/minimal": {
+    "string/instr/ds_pattern_start_placeholder/placeholder_for_occurrence": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12352,7 +12368,7 @@
       },
       "status": "ok"
     },
-    "string/instr/ds_placeholder_occ/minimal": {
+    "string/instr/ds_placeholder_occ/placeholder_for_start": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12368,7 +12384,7 @@
       },
       "status": "ok"
     },
-    "string/instr/sc_pattern/minimal": {
+    "string/instr/sc_pattern/pattern_at_the_third_position": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12432,7 +12448,7 @@
       },
       "status": "ok"
     },
-    "string/length/sc/minimal": {
+    "string/length/sc/empty_string": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12448,7 +12464,7 @@
       },
       "status": "ok"
     },
-    "string/length/sc/minimal_2": {
+    "string/length/sc/punctuation_and_space_counted": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12464,7 +12480,7 @@
       },
       "status": "ok"
     },
-    "string/lower/comp/minimal": {
+    "string/lower/comp/all_caps_and_mixed_case": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12480,7 +12496,7 @@
       },
       "status": "ok"
     },
-    "string/lower/ds/minimal": {
+    "string/lower/ds/all_caps_and_mixed_case": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12496,7 +12512,7 @@
       },
       "status": "ok"
     },
-    "string/lower/sc/minimal": {
+    "string/lower/sc/capitalised_word": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12512,7 +12528,7 @@
       },
       "status": "ok"
     },
-    "string/ltrim/comp/minimal": {
+    "string/ltrim/comp/leading_removed_trailing_kept": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12528,7 +12544,7 @@
       },
       "status": "ok"
     },
-    "string/ltrim/ds/minimal": {
+    "string/ltrim/ds/leading_removed_trailing_kept": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12544,7 +12560,7 @@
       },
       "status": "ok"
     },
-    "string/ltrim/sc/minimal": {
+    "string/ltrim/sc/leading_removed_trailing_kept": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12560,7 +12576,7 @@
       },
       "status": "ok"
     },
-    "string/replace/comp_patterns/minimal": {
+    "string/replace/comp_patterns/patterns_from_components": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12592,7 +12608,7 @@
       },
       "status": "ok"
     },
-    "string/replace/ds_one/minimal": {
+    "string/replace/ds_one/replacement_omitted": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12608,7 +12624,7 @@
       },
       "status": "ok"
     },
-    "string/replace/ds_one_placeholder/minimal": {
+    "string/replace/ds_one_placeholder/placeholder_for_replacement": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12640,7 +12656,7 @@
       },
       "status": "ok"
     },
-    "string/replace/sc_two/minimal": {
+    "string/replace/sc_two/leading_word_replaced": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12688,7 +12704,7 @@
       },
       "status": "ok"
     },
-    "string/rtrim/sc/minimal": {
+    "string/rtrim/sc/trailing_removed_leading_kept": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12720,7 +12736,7 @@
       },
       "status": "ok"
     },
-    "string/string_distance/damerau_levenshtein_sc/minimal": {
+    "string/string_distance/damerau_levenshtein_sc/adjacent_transposition_costs_one": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12752,7 +12768,7 @@
       },
       "status": "ok"
     },
-    "string/string_distance/hamming_sc/minimal": {
+    "string/string_distance/hamming_sc/three_differing_positions": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12768,23 +12784,7 @@
       },
       "status": "ok"
     },
-    "string/string_distance/jaro_winkler_sc/minimal": {
-      "duckdb": {
-        "detail": "value expected 0 got 1.0",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "mismatch"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "value expected 0 got 1.0",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "mismatch"
-      },
-      "status": "partial"
-    },
-    "string/string_distance/jaro_winkler_sc/minimal_2": {
+    "string/string_distance/jaro_winkler_sc/disjoint_strings": {
       "duckdb": {
         "detail": "value expected 1 got 0.0",
         "error_code": null,
@@ -12800,7 +12800,23 @@
       },
       "status": "partial"
     },
-    "string/string_distance/levenshtein_comp_comp/minimal": {
+    "string/string_distance/jaro_winkler_sc/identical_strings": {
+      "duckdb": {
+        "detail": "value expected 0 got 1.0",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "value expected 0 got 1.0",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "status": "partial"
+    },
+    "string/string_distance/levenshtein_comp_comp/kitten_sitting_and_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12832,7 +12848,7 @@
       },
       "status": "ok"
     },
-    "string/string_distance/levenshtein_ds_sc/minimal": {
+    "string/string_distance/levenshtein_ds_sc/equal_strings_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12848,7 +12864,7 @@
       },
       "status": "ok"
     },
-    "string/string_distance/levenshtein_sc/minimal": {
+    "string/string_distance/levenshtein_sc/one_deletion": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12864,7 +12880,7 @@
       },
       "status": "ok"
     },
-    "string/string_distance/levenshtein_sc_comp/minimal": {
+    "string/string_distance/levenshtein_sc_comp/adjacent_swap_costs_two": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12880,7 +12896,7 @@
       },
       "status": "ok"
     },
-    "string/string_distance/levenshtein_sc_ds/minimal": {
+    "string/string_distance/levenshtein_sc_ds/scalar_first_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12896,7 +12912,7 @@
       },
       "status": "ok"
     },
-    "string/substr/comp_params/minimal": {
+    "string/substr/comp_params/start_and_length_from_components": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12928,7 +12944,7 @@
       },
       "status": "ok"
     },
-    "string/substr/ds_noargs/minimal": {
+    "string/substr/ds_noargs/start_and_length_omitted": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12944,7 +12960,7 @@
       },
       "status": "ok"
     },
-    "string/substr/ds_placeholder_len/minimal": {
+    "string/substr/ds_placeholder_len/placeholder_for_start": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12992,7 +13008,7 @@
       },
       "status": "ok"
     },
-    "string/substr/ds_start_placeholder/minimal": {
+    "string/substr/ds_start_placeholder/placeholder_for_length": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13008,7 +13024,7 @@
       },
       "status": "ok"
     },
-    "string/substr/sc_start_len/minimal": {
+    "string/substr/sc_start_len/length_beyond_the_end": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13024,7 +13040,7 @@
       },
       "status": "ok"
     },
-    "string/substr/sc_start_len/minimal_2": {
+    "string/substr/sc_start_len/start_beyond_the_end": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13040,7 +13056,7 @@
       },
       "status": "ok"
     },
-    "string/substr/sc_start_len/minimal_3": {
+    "string/substr/sc_start_len/substring_inside_the_string": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13056,7 +13072,7 @@
       },
       "status": "ok"
     },
-    "string/trim/comp/minimal": {
+    "string/trim/comp/leading_and_trailing_spaces": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13072,7 +13088,7 @@
       },
       "status": "ok"
     },
-    "string/trim/ds/minimal": {
+    "string/trim/ds/leading_and_trailing_spaces": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13088,7 +13104,7 @@
       },
       "status": "ok"
     },
-    "string/trim/sc/minimal": {
+    "string/trim/sc/leading_and_trailing_spaces": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13136,7 +13152,7 @@
       },
       "status": "ok"
     },
-    "string/upper/sc/minimal": {
+    "string/upper/sc/capitalised_word": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13152,7 +13168,7 @@
       },
       "status": "ok"
     },
-    "time/current_date/sc/minimal": {
+    "time/current_date/sc/date_of_the_run": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13184,7 +13200,7 @@
       },
       "status": "ok"
     },
-    "time/dateadd/ds/minimal": {
+    "time/dateadd/ds/shifts_the_time_identifier": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13200,7 +13216,7 @@
       },
       "status": "ok"
     },
-    "time/dateadd/sc_date/minimal": {
+    "time/dateadd/sc_date/one_month_later": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13216,7 +13232,7 @@
       },
       "status": "ok"
     },
-    "time/dateadd/sc_date/minimal_2": {
+    "time/dateadd/sc_date/one_year_later": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13232,7 +13248,7 @@
       },
       "status": "ok"
     },
-    "time/dateadd/sc_time_period/minimal": {
+    "time/dateadd/sc_time_period/from_the_last_day_of_the_quarter": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13264,7 +13280,7 @@
       },
       "status": "ok"
     },
-    "time/datediff/sc_date/minimal": {
+    "time/datediff/sc_date/across_the_new_year": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13280,7 +13296,7 @@
       },
       "status": "ok"
     },
-    "time/datediff/sc_mixed/minimal": {
+    "time/datediff/sc_mixed/quarter_end_to_a_date": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13296,7 +13312,7 @@
       },
       "status": "ok"
     },
-    "time/datediff/sc_time_period/minimal": {
+    "time/datediff/sc_time_period/last_days_of_two_quarters": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13312,7 +13328,7 @@
       },
       "status": "ok"
     },
-    "time/dayofmonth/comp/minimal": {
+    "time/dayofmonth/comp/leap_day_and_month_end": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13328,7 +13344,7 @@
       },
       "status": "ok"
     },
-    "time/dayofmonth/sc/minimal": {
+    "time/dayofmonth/sc/mid_month_date": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13344,7 +13360,7 @@
       },
       "status": "ok"
     },
-    "time/dayofyear/comp/minimal": {
+    "time/dayofyear/comp/leap_and_common_years": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13360,7 +13376,7 @@
       },
       "status": "ok"
     },
-    "time/dayofyear/sc/minimal": {
+    "time/dayofyear/sc/april_in_a_leap_year": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13392,7 +13408,7 @@
       },
       "status": "partial"
     },
-    "time/daytomonth/sc/minimal": {
+    "time/daytomonth/sc/months_of_thirty_days": {
       "duckdb": {
         "detail": "type expected Duration got String",
         "error_code": null,
@@ -13424,7 +13440,7 @@
       },
       "status": "partial"
     },
-    "time/daytoyear/sc/minimal": {
+    "time/daytoyear/sc/years_of_365_days": {
       "duckdb": {
         "detail": "type expected Duration got String",
         "error_code": null,
@@ -13504,7 +13520,7 @@
       },
       "status": "ok"
     },
-    "time/fill_time_series/default_date/minimal": {
+    "time/fill_time_series/default_date/default_is_all": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13520,7 +13536,7 @@
       },
       "status": "ok"
     },
-    "time/fill_time_series/default_tp/minimal": {
+    "time/fill_time_series/default_tp/default_is_all": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13680,7 +13696,7 @@
       },
       "status": "ok"
     },
-    "time/getmonth/sc/minimal": {
+    "time/getmonth/sc/monthly_period": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13696,7 +13712,7 @@
       },
       "status": "ok"
     },
-    "time/getyear/comp/minimal": {
+    "time/getyear/comp/dates_of_three_years": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13712,7 +13728,7 @@
       },
       "status": "ok"
     },
-    "time/getyear/sc/minimal": {
+    "time/getyear/sc/quarterly_period": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13728,7 +13744,7 @@
       },
       "status": "ok"
     },
-    "time/monthtoday/comp/minimal": {
+    "time/monthtoday/comp/iso_month_and_day_durations": {
       "duckdb": {
         "detail": "DataLoadError 0-3-1-6: On Dataset DS_1 loading: not possible to cast column Me_1 to Duration. Error found: \"Invalid format: 'P2M5D'\" Please check loaded file DS_r",
         "error_code": "0-3-1-6",
@@ -13744,7 +13760,7 @@
       },
       "status": "refused"
     },
-    "time/monthtoday/sc/minimal": {
+    "time/monthtoday/sc/three_months_and_ten_days": {
       "duckdb": {
         "detail": "SemanticError 1-1-5-6: Impossible to cast P3M10D from type String to Duration. Please check transformation with output Dataset DS_r",
         "error_code": "1-1-5-6",
@@ -13792,7 +13808,7 @@
       },
       "status": "ok"
     },
-    "time/period_indicator/in_filter_no_operand/minimal": {
+    "time/period_indicator/in_filter_no_operand/keeps_the_quarterly_data_point": {
       "duckdb": {
         "detail": "IndexError: list index out of range",
         "error_code": null,
@@ -13808,7 +13824,7 @@
       },
       "status": "missing"
     },
-    "time/period_indicator/sc/minimal": {
+    "time/period_indicator/sc/quarterly_period": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13888,7 +13904,7 @@
       },
       "status": "ok"
     },
-    "time/time_agg/comp/minimal": {
+    "time/time_agg/comp/mixed_periods_to_years": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13904,7 +13920,7 @@
       },
       "status": "ok"
     },
-    "time/time_agg/ds/minimal": {
+    "time/time_agg/ds/monthly_measure_to_quarters": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13920,7 +13936,7 @@
       },
       "status": "ok"
     },
-    "time/time_agg/first/minimal": {
+    "time/time_agg/first/start_of_the_year": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13952,7 +13968,7 @@
       },
       "status": "ok"
     },
-    "time/time_agg/last/minimal": {
+    "time/time_agg/last/end_of_the_quarter": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13968,7 +13984,7 @@
       },
       "status": "ok"
     },
-    "time/time_agg/period_from/minimal": {
+    "time/time_agg/period_from/quarter_to_year": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13984,7 +14000,7 @@
       },
       "status": "ok"
     },
-    "time/time_agg/sc_date/minimal": {
+    "time/time_agg/sc_date/without_first_or_last": {
       "duckdb": {
         "detail": "SemanticError 1-1-19-11: At op time_agg: If used over a Date, first/last parameter must be declared. Please check transformation with output Dataset DS_r",
         "error_code": "1-1-19-11",
@@ -14000,7 +14016,7 @@
       },
       "status": "refused"
     },
-    "time/time_agg/sc_time_period/minimal": {
+    "time/time_agg/sc_time_period/month_to_quarter": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14096,7 +14112,7 @@
       },
       "status": "refused"
     },
-    "time/yeartoday/sc/minimal": {
+    "time/yeartoday/sc/one_year_and_twenty_days": {
       "duckdb": {
         "detail": "SemanticError 1-1-5-6: Impossible to cast P1Y20D from type String to Duration. Please check transformation with output Dataset DS_r",
         "error_code": "1-1-5-6",
@@ -14112,7 +14128,7 @@
       },
       "status": "refused"
     },
-    "validation/check/all/minimal": {
+    "validation/check/all/explicit_all_same_as_default": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14128,7 +14144,7 @@
       },
       "status": "ok"
     },
-    "validation/check/bare/minimal": {
+    "validation/check/bare/every_point_returned_by_default": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14144,7 +14160,7 @@
       },
       "status": "ok"
     },
-    "validation/check/errorcode/minimal": {
+    "validation/check/errorcode/code_only_on_the_false_point": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14160,7 +14176,7 @@
       },
       "status": "ok"
     },
-    "validation/check/errorlevel/minimal": {
+    "validation/check/errorlevel/level_only_on_the_false_point": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14192,7 +14208,7 @@
       },
       "status": "ok"
     },
-    "validation/check/invalid/minimal": {
+    "validation/check/invalid/only_the_false_point_returned": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14224,7 +14240,7 @@
       },
       "status": "partial"
     },
-    "validation/check_datapoint/all_measures/minimal": {
+    "validation/check_datapoint/all_measures/every_result_with_the_measures": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14240,7 +14256,7 @@
       },
       "status": "ok"
     },
-    "validation/check_datapoint/components/minimal": {
+    "validation/check_datapoint/components/listed_variables_change_nothing": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14256,7 +14272,7 @@
       },
       "status": "ok"
     },
-    "validation/check_datapoint/components/minimal_2": {
+    "validation/check_datapoint/components/value_domains_bound_to_components": {
       "duckdb": {
         "detail": "SemanticError 1-1-1-10: Component VD_2 not found in Dataset DS_1. Please check transformation with output Dataset DS_r",
         "error_code": "1-1-1-10",
@@ -14272,7 +14288,7 @@
       },
       "status": "refused"
     },
-    "validation/check_datapoint/errorcode/minimal": {
+    "validation/check_datapoint/errorcode/code_only_on_false_results": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14288,7 +14304,7 @@
       },
       "status": "ok"
     },
-    "validation/check_datapoint/errorlevel/minimal": {
+    "validation/check_datapoint/errorlevel/integer_level_on_false_results": {
       "duckdb": {
         "detail": "type of errorlevel expected Integer got Number",
         "error_code": null,
@@ -14304,7 +14320,7 @@
       },
       "status": "partial"
     },
-    "validation/check_datapoint/invalid/minimal": {
+    "validation/check_datapoint/invalid/false_results_with_the_measures": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14336,7 +14352,7 @@
       },
       "status": "partial"
     },
-    "validation/check_hierarchy/always_null_dataset_all/minimal": {
+    "validation/check_hierarchy/always_null_dataset_all/rule_with_no_item_found_is_null": {
       "duckdb": {
         "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
         "error_code": null,
@@ -14352,7 +14368,7 @@
       },
       "status": "partial"
     },
-    "validation/check_hierarchy/always_null_dataset_all_measures/minimal": {
+    "validation/check_hierarchy/always_null_dataset_all_measures/rule_with_no_item_found_is_null": {
       "duckdb": {
         "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
         "error_code": null,
@@ -14368,7 +14384,7 @@
       },
       "status": "partial"
     },
-    "validation/check_hierarchy/always_null_dataset_invalid/minimal": {
+    "validation/check_hierarchy/always_null_dataset_invalid/rule_with_no_item_found_is_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14384,7 +14400,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/always_null_dataset_priority_all/minimal": {
+    "validation/check_hierarchy/always_null_dataset_priority_all/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14400,7 +14416,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/always_null_dataset_priority_all_measures/minimal": {
+    "validation/check_hierarchy/always_null_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14416,7 +14432,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/always_null_dataset_priority_invalid/minimal": {
+    "validation/check_hierarchy/always_null_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14432,7 +14448,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/always_zero_dataset_all/minimal": {
+    "validation/check_hierarchy/always_zero_dataset_all/rule_with_no_item_found_is_false": {
       "duckdb": {
         "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
         "error_code": null,
@@ -14448,7 +14464,7 @@
       },
       "status": "partial"
     },
-    "validation/check_hierarchy/always_zero_dataset_all_measures/minimal": {
+    "validation/check_hierarchy/always_zero_dataset_all_measures/rule_with_no_item_found_is_false": {
       "duckdb": {
         "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
         "error_code": null,
@@ -14464,7 +14480,7 @@
       },
       "status": "partial"
     },
-    "validation/check_hierarchy/always_zero_dataset_invalid/minimal": {
+    "validation/check_hierarchy/always_zero_dataset_invalid/rule_with_no_item_found_is_false": {
       "duckdb": {
         "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
         "error_code": null,
@@ -14480,7 +14496,7 @@
       },
       "status": "partial"
     },
-    "validation/check_hierarchy/always_zero_dataset_priority_all/minimal": {
+    "validation/check_hierarchy/always_zero_dataset_priority_all/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14496,7 +14512,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/always_zero_dataset_priority_all_measures/minimal": {
+    "validation/check_hierarchy/always_zero_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14512,7 +14528,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/always_zero_dataset_priority_invalid/minimal": {
+    "validation/check_hierarchy/always_zero_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14528,7 +14544,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/condition/minimal": {
+    "validation/check_hierarchy/condition/conditioning_value_domain_bound": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14544,7 +14560,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/condition/minimal_2": {
+    "validation/check_hierarchy/condition/conditioning_variable_named": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14560,7 +14576,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/errorcode/minimal": {
+    "validation/check_hierarchy/errorcode/code_only_on_false_results": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14576,7 +14592,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/errorlevel/minimal": {
+    "validation/check_hierarchy/errorlevel/integer_level_on_false_results": {
       "duckdb": {
         "detail": "type of imbalance expected Integer got Number; type of errorlevel expected Integer got Number",
         "error_code": null,
@@ -14592,7 +14608,7 @@
       },
       "status": "partial"
     },
-    "validation/check_hierarchy/non_null_dataset_all/minimal": {
+    "validation/check_hierarchy/non_null_dataset_all/null_or_missing_item_drops_the_rule": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14608,7 +14624,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/non_null_dataset_all_measures/minimal": {
+    "validation/check_hierarchy/non_null_dataset_all_measures/null_or_missing_item_drops_the_rule": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14624,7 +14640,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/non_null_dataset_invalid/minimal": {
+    "validation/check_hierarchy/non_null_dataset_invalid/null_or_missing_item_drops_the_rule": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14640,7 +14656,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/non_null_dataset_priority_all/minimal": {
+    "validation/check_hierarchy/non_null_dataset_priority_all/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14656,7 +14672,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/non_null_dataset_priority_all_measures/minimal": {
+    "validation/check_hierarchy/non_null_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14672,7 +14688,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/non_null_dataset_priority_invalid/minimal": {
+    "validation/check_hierarchy/non_null_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14688,7 +14704,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/non_zero_dataset_all/minimal": {
+    "validation/check_hierarchy/non_zero_dataset_all/rule_with_no_nonzero_item_dropped": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14704,7 +14720,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/non_zero_dataset_all_measures/minimal": {
+    "validation/check_hierarchy/non_zero_dataset_all_measures/rule_with_no_nonzero_item_dropped": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14720,7 +14736,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/non_zero_dataset_invalid/minimal": {
+    "validation/check_hierarchy/non_zero_dataset_invalid/rule_with_no_nonzero_item_dropped": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14736,7 +14752,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/non_zero_dataset_priority_all/minimal": {
+    "validation/check_hierarchy/non_zero_dataset_priority_all/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14752,7 +14768,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/non_zero_dataset_priority_all_measures/minimal": {
+    "validation/check_hierarchy/non_zero_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14768,7 +14784,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/non_zero_dataset_priority_invalid/minimal": {
+    "validation/check_hierarchy/non_zero_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14784,7 +14800,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/partial_null_dataset_all/minimal": {
+    "validation/check_hierarchy/partial_null_dataset_all/missing_items_count_as_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14800,7 +14816,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/partial_null_dataset_all_measures/minimal": {
+    "validation/check_hierarchy/partial_null_dataset_all_measures/missing_items_count_as_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14816,7 +14832,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/partial_null_dataset_invalid/minimal": {
+    "validation/check_hierarchy/partial_null_dataset_invalid/missing_items_count_as_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14832,7 +14848,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/partial_null_dataset_priority_all/minimal": {
+    "validation/check_hierarchy/partial_null_dataset_priority_all/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14848,7 +14864,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/partial_null_dataset_priority_all_measures/minimal": {
+    "validation/check_hierarchy/partial_null_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14864,7 +14880,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/partial_null_dataset_priority_invalid/minimal": {
+    "validation/check_hierarchy/partial_null_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14880,7 +14896,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/partial_zero_dataset_all/minimal": {
+    "validation/check_hierarchy/partial_zero_dataset_all/missing_items_count_as_zero": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14896,7 +14912,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/partial_zero_dataset_all_measures/minimal": {
+    "validation/check_hierarchy/partial_zero_dataset_all_measures/missing_items_count_as_zero": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14912,7 +14928,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/partial_zero_dataset_invalid/minimal": {
+    "validation/check_hierarchy/partial_zero_dataset_invalid/missing_items_count_as_zero": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -14928,7 +14944,7 @@
       },
       "status": "ok"
     },
-    "validation/check_hierarchy/partial_zero_dataset_priority_all/minimal": {
+    "validation/check_hierarchy/partial_zero_dataset_priority_all/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14944,7 +14960,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/partial_zero_dataset_priority_all_measures/minimal": {
+    "validation/check_hierarchy/partial_zero_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14960,7 +14976,7 @@
       },
       "status": "missing"
     },
-    "validation/check_hierarchy/partial_zero_dataset_priority_invalid/minimal": {
+    "validation/check_hierarchy/partial_zero_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
       "duckdb": {
         "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
         "error_code": "0-5-1-9",
@@ -14992,7 +15008,7 @@
       },
       "status": "refused"
     },
-    "validation/check_hierarchy/rule/minimal": {
+    "validation/check_hierarchy/rule/value_domain_bound_to_identifier": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -15014,7 +15030,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "140e946ed3f888951adb8bb66ea45030be84e2aa",
-    "vtlengine_commit": "bc152f99",
+    "vtlengine_commit": "7cd736c2",
     "vtlengine_version": "1.9.6rc2"
   }
 }
