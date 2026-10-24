@@ -24,7 +24,7 @@
 
 /* The legend, and the key of the borders of the boxes of an operator diagram. */
 .om-legend { margin: 4px 0; }
-.om-legend .om-key { color: #444; font-size: 13px; }
+.om-legend .om-key { display: block; color: #444; font-size: 13px; }
 .om-box {
     display: inline-block;
     margin: 2px 4px;

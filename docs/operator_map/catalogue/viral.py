@@ -15,6 +15,13 @@ Left out, as the manual says:
   operators" (Typical behaviours, "Attribute propagation"), as the pages of Time shift and
   Stock to flow say too;
 * the set operators: "The automatic Attribute propagation is not applied" (their pages);
+* if-then-else and case: each Data Point of the result is a Data Point of one operand, so none is
+  combined with another. The page of if-then-else says that "the if-then-else operator returns
+  the Data Point from thenOperand when the Data Point of condition having the same Identifiers’
+  values evaluates to true, and returns the Data Point from elseOperand otherwise", and the page
+  of Case says the same of its operands. The inner join and the union that the "behaviour for
+  two Data Sets" goes through are only "procedurally explained", and neither page mentions the
+  attributes;
 * the operators on one data set, such as the unary operators, membership, ``cast``, ``eval``,
   the validation of a datapoint ruleset and the clauses but ``aggr``: the viral attributes of the
   operand are kept unchanged, "For each Data Point DP_1 and for each viral Attribute, the value
@@ -66,16 +73,6 @@ GROUPS: Final[tuple[ViralGroup, ...]] = (
             "boolean.xor",
             "conditional.nvl",
         ),
-    ),
-    ViralGroup(
-        "Conditional operators on data sets",
-        "Conditional operators/if-then-else",
-        "First the condition Data Set is evaluated, then its true Data Points are inner joined "
-        "with thenOperand and its false Data Points are inner joined with elseOperand, finally "
-        "the union is made of these two partial results",
-        # The Case page says the same. Neither page names the propagation: the operands are data
-        # sets that are joined, so their viral attributes are combined as in a join.
-        ("conditional.if_then_else", "conditional.case"),
     ),
     ViralGroup(
         "Aggregate invocations",

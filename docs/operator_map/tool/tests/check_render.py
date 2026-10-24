@@ -70,7 +70,9 @@ META = RunMeta(
     "2026-10-23", "abc1234", "9.9.9", SPEC, pandas_version="2.3.3", duckdb_version="1.5.5"
 )
 ERRATA_TITLE = "Manual errata (corrected expected outputs, scripts or inputs)"
-CSS = Path(__file__).resolve().parents[3] / "_static" / "operator_map.css"
+DOCS = Path(__file__).resolve().parents[3]
+CSS = DOCS / "_static" / "operator_map.css"
+CONF = DOCS / "conf.py"
 
 
 # --- Builders ---
@@ -357,6 +359,28 @@ def html_tables(text: str) -> list[tuple[str, list[list[str]]]]:
     return found
 
 
+def one_form_block(result: ExampleResult) -> str:
+    """The page of a block with one operator of one form, whose only example has ``result``."""
+    chapter = Chapter(
+        "c", "C", (operator("o", "O", "o", form("v", "v", NUMBER, NUMBER, authored("minimal"))),)
+    )
+    cat = Catalogue((chapter,))
+    return block_rst(chapter, cat, build_index(cat, {"c/o/v/minimal": result}), META)
+
+
+def detail_of(result: ExampleResult) -> str:
+    """The Detail cell of the row of the only form of ``one_form_block(result)``, not green."""
+    rows = table_rows(section(one_form_block(result), "Forms that are not green"))
+    assert len(rows) == 2, rows  # the header, and the form
+    return rows[1][6]
+
+
+def detail_cell(detail: str) -> str:
+    """The Detail cell of a form whose example both engines got wrong with ``detail``."""
+    verdict = EngineVerdict("mismatch", detail)
+    return detail_of(ExampleResult(verdict, verdict, True, "partial"))
+
+
 # --- Manual URLs ---
 
 
@@ -393,7 +417,10 @@ def test_legend_has_five_statuses(tmp_path: Path) -> None:
         ("missing", "🔴 not implemented or crash"),
         ("diverge", "🔵 engines differ"),
     ]
-    assert "✅ match · ❌ wrong result · 🛡 guarded error (code) · 💥 crash" in LEGEND_HTML
+    # The key of the marks, and of the pin that diagrams draw: a recorded team decision.
+    assert (
+        "✅ match · ❌ wrong result · 🛡 guarded error (code) · 💥 crash · 📌 team decision"
+    ) in LEGEND_HTML
     borders = re.findall(r'<span class="om-box (\w+)">([^<]*)</span>', BORDER_KEY_HTML)
     assert borders == [
         ("solid", "Dataset forms"),
@@ -660,7 +687,9 @@ def test_an_operator_that_applies_the_viral_rules_says_so_under_its_types(tmp_pa
     # Never in a diagram.
     assert "viral" not in blocks(text)[0].lower()
     # An operator that is in no group has no line.
-    ceil = operator_rst(NUMERIC, CEIL, VIRAL_MAP, VIRAL_INDEX, META, viral=GROUPS)
+    ceil = operator_rst(
+        NUMERIC, CEIL, VIRAL_MAP, VIRAL_INDEX, META, examples_root=tmp_path, viral=GROUPS
+    )
     assert "om-viral" not in ceil
     # Without the page of the definition, the line names it without a link.
     alone = operator_rst(NUMERIC, ROUND, MAP, INDEX, META, examples_root=tmp_path, viral=GROUPS)
@@ -668,7 +697,15 @@ def test_an_operator_that_applies_the_viral_rules_says_so_under_its_types(tmp_pa
 
 
 def test_the_viral_propagation_page_lists_the_operators_that_apply_it(tmp_path: Path) -> None:
-    text = operator_rst(DEFINITIONS, VIRAL_DEFINITION, VIRAL_MAP, VIRAL_INDEX, META, viral=GROUPS)
+    text = operator_rst(
+        DEFINITIONS,
+        VIRAL_DEFINITION,
+        VIRAL_MAP,
+        VIRAL_INDEX,
+        META,
+        examples_root=tmp_path,
+        viral=GROUPS,
+    )
     assert titles(text, "-") == ["Types", "Applied by", "Forms"]
     applied = section(text, "Applied by")
     # Each group, with the sentence of the manual and its page.
@@ -691,7 +728,10 @@ def test_the_viral_propagation_page_lists_the_operators_that_apply_it(tmp_path: 
     assert "x.y" not in applied
     assert ">y<" not in applied
     # Only the page of the definition has the section, and its diagram has none of them.
-    assert "Applied by" not in operator_rst(NUMERIC, MODULO, VIRAL_MAP, VIRAL_INDEX, META, viral=())
+    modulo = operator_rst(
+        NUMERIC, MODULO, VIRAL_MAP, VIRAL_INDEX, META, examples_root=tmp_path, viral=()
+    )
+    assert "Applied by" not in modulo
     assert "modulo" not in blocks(text)[0]
 
 
@@ -704,7 +744,8 @@ def test_the_viral_groups_name_operators_of_the_catalogue() -> None:
     assert len(listed) == len(set(listed))
     assert set(listed) <= addresses
     assert not [address for address in listed if address.startswith("definitions.")]
-    # What the manual leaves out: the time series and the set operators, and membership.
+    # What the manual leaves out: the time series and the set operators, membership, and
+    # if-then-else and case, whose result takes each data point from one operand.
     left_out = {
         "time.fill_time_series",
         "time.flow_to_stock",
@@ -715,6 +756,8 @@ def test_the_viral_groups_name_operators_of_the_catalogue() -> None:
         "set.setdiff",
         "set.symdiff",
         "general.membership",
+        "conditional.if_then_else",
+        "conditional.case",
     }
     assert not left_out & set(listed)
     # The joins, hierarchy and check_hierarchy, as the design lists them.
@@ -914,6 +957,154 @@ def test_index_without_blocks_has_no_toctree() -> None:
     assert ".. toctree::" not in text
 
 
+# --- Free text: what went wrong with an example, and the labels of the forms ---
+#
+# These run without docutils: they pin the text that the pages hold for what RST would read as
+# markup. The reading of the same texts by docutils is the check of the next section.
+
+
+def test_detail_is_one_line_escaped_and_cut_at_200_characters() -> None:
+    assert detail_cell("line one\nline two | pipe\r\nend\rlast") == (
+        "line one line two \\| pipe end last"
+    )
+    assert detail_cell("x" * 200) == "x" * 200
+    assert detail_cell("x" * 201) == "x" * 199 + "…"
+    # The markup is escaped after the cut: the 200 characters are the visible ones.
+    assert detail_cell("|" * 250) == "\\|" * 199 + "…"
+    assert detail_cell("_" * 250) == "\\_" * 199 + "…"
+    # A backslash that ends up last before the ellipsis is not read as escaping it.
+    assert detail_cell("a" * 198 + "\\\\b") == "a" * 198 + "\\\\…"
+
+
+@pytest.mark.parametrize(
+    ("detail", "cell"),
+    [
+        ("row Id_1=2: Me_1 expected 3 got 2.0", "row Id\\_1=2: Me\\_1 expected 3 got 2.0"),
+        ("a*b and **c**", "a\\*b and \\*\\*c\\*\\*"),
+        ("a|b|", "a\\|b\\|"),
+        ("`code` and ``more``", "\\`code\\` and \\`\\`more\\`\\`"),
+        ("back\\slash and \\* done", "back\\\\slash and \\\\\\* done"),
+        ("ends with _", "ends with \\_"),
+        ("a :role:`x` b", "a :role:\\`x\\` b"),
+        ("[1]_ and name_ and _`target`", "\\ [1]\\_ and name\\_ and \\_\\`target\\`"),
+        ("|sub| ref", "\\|sub\\| ref"),
+        # What Sphinx would typeset as it reads the text: quotes, runs of hyphens and ellipses.
+        ('Parser Error at or near "SELECT"', 'Parser Error at or near \\"SELECT\\"'),
+        ("it's a -- b --- c - d -> e", "it\\'s a \\-\\- b \\-\\-\\- c - d -> e"),
+        ("wait... then . . . and .. no", "wait\\.\\.\\. then \\. \\. \\. and .. no"),
+        ("2.5 and a.b and 1-1-1-1", "2.5 and a.b and 1-1-1-1"),
+        # A backslash right before a hyphen or a dot is lost under the smart quotes of docutils.
+        ("regex \\d+\\.\\d+ and \\-x", "regex \\\\d+\\\\\\.\\\\d+ and \\\\\\-x"),
+        ("a\\'b a\\\"b", "a\\\\\\'b a\\\\\\\"b"),
+    ],
+)
+def test_detail_escapes_what_rst_reads_as_markup(detail: str, cell: str) -> None:
+    assert detail_cell(detail) == cell
+
+
+@pytest.mark.parametrize(
+    ("detail", "cell"),
+    [
+        ("- item", "\\ - item"),
+        ("+ item", "\\ + item"),
+        ("• item", "\\ • item"),
+        ("1. item", "\\ 1. item"),
+        ("a) item", "\\ a) item"),
+        ("(i) item", "\\ (i) item"),
+        ("#. item", "\\ #. item"),
+        (":field: item", "\\ :field: item"),
+        (">>> item", "\\ >>> item"),
+        (".. comment", "\\ .. comment"),
+        ("----", "\\-\\-\\-\\-"),
+        ("==== ====", "\\ ==== ===="),
+        ("'quoted' text", "\\'quoted\\' text"),
+        ('"quoted" text', '\\"quoted\\" text'),
+        ("-- option", "\\-\\- option"),
+        (". . . dots", "\\. \\. \\. dots"),
+        ("* item", "\\* item"),
+        ("__ item", "\\_\\_ item"),
+        ("| item", "\\| item"),
+        ("see below::", "see below:\\:"),
+        ("\\\\", "\\ \\\\\\\\"),  # two backslashes would be four: a transition
+        ("not a list 1. item", "not a list 1. item"),
+        ("e.g. a value", "e.g. a value"),
+    ],
+)
+def test_detail_that_would_start_a_block_or_end_with_two_colons_is_guarded(
+    detail: str, cell: str
+) -> None:
+    assert detail_cell(detail) == cell
+
+
+def test_detail_names_the_engine_that_has_one() -> None:
+    error = EngineVerdict("error", "SemanticError 1-1-1-1: boom")
+    other = EngineVerdict("error", "RunTimeError 2-1-0-1: not implemented")
+    assert detail_of(ExampleResult(MATCH, error, False, "diverge")) == (
+        "DuckDB: SemanticError 1-1-1-1: boom"
+    )
+    assert detail_of(ExampleResult(error, MATCH, False, "diverge")) == (
+        "pandas: SemanticError 1-1-1-1: boom"
+    )
+    # Two errors that differ are both shown; two that are the same are shown once.
+    assert detail_of(ExampleResult(error, other, True, "missing")) == (
+        "pandas: SemanticError 1-1-1-1: boom; DuckDB: RunTimeError 2-1-0-1: not implemented"
+    )
+    assert detail_of(ExampleResult(error, error, True, "missing")) == (
+        "SemanticError 1-1-1-1: boom"
+    )
+    # An example that matches has nothing to say, and its form is not in the table.
+    assert "Every form is green." in one_form_block(OK)
+
+
+def test_engines_that_differ_with_the_same_verdict_say_so() -> None:
+    # Both match, or both fail the same way, and still give different outputs: nothing else says.
+    assert detail_of(ExampleResult(MATCH, MATCH, False, "diverge")) == (
+        "the engines give different outputs"
+    )
+    assert detail_of(ExampleResult(WRONG, WRONG, False, "diverge")) == (
+        "row Id\\_1=1: Me\\_1 expected \\'a\\' got \\'b\\'; the engines give different outputs"
+    )
+
+
+def test_a_label_that_a_literal_cannot_hold_is_escaped_text() -> None:
+    labels = {"tick": "a `b` c", "lines": "line one\nline two", "empty": "", "slash": "a\\"}
+    variants = tuple(
+        form(name, label, NUMBER, NUMBER, authored("minimal", erratum="e"))
+        for name, label in labels.items()
+    )
+    cat = Catalogue((Chapter("c", "C", (operator("o", "O", "o", *variants),)),))
+    errata = section(index_rst(cat, index_of(cat), META), ERRATA_TITLE).splitlines()
+
+    def item(variant: str, label: str) -> str:
+        return f"- `Minimal <c/o.html#ex-{variant}-minimal>`__ (C › O › {label}): e"
+
+    # Where a form is named the label is a literal, as it is: on one line, and a backslash last
+    # is fine. A backtick cannot be in a literal, and the label is escaped text then.
+    assert item("tick", "a \\`b\\` c") in errata
+    assert item("lines", "``line one line two``") in errata
+    assert item("empty", "") in errata
+    assert item("slash", "``a\\``") in errata
+
+
+def test_example_without_a_result_is_not_run(tmp_path: Path) -> None:
+    # The statuses of the operators and of the forms, and no result for any example.
+    no_results = StatusIndex({}, INDEX.variants, INDEX.operators, INDEX.chapters)
+    text = operator_rst(CONDITIONAL, NVL, MAP, no_results, META, examples_root=tmp_path)
+    summaries = re.findall(
+        r'<details class="om-example" id="([^"]+)"[^>]*><summary>(.*?)</summary>', text
+    )
+    # The title and a chip of no status that says it: no marks of the engines, and no line of
+    # what went wrong.
+    assert summaries == [
+        (
+            "ex-sc-sc-two-rows",
+            '<span class="om-ex-title">Two rows</span> <span class="om-chip">not run</span>',
+        )
+    ]
+    assert "om-marks" not in text
+    assert "om-detail" not in text
+
+
 # --- What a reader of RST makes of the pages ---
 
 
@@ -1057,6 +1248,12 @@ def test_the_pages_are_read_as_written_by_docutils(
 # --- What Sphinx makes of the pages ---
 
 
+def test_the_docs_conf_loads_the_stylesheet_of_the_map() -> None:
+    # The build below writes a conf of its own: this is the line of the real one that gives the
+    # pages of the map their stylesheet.
+    assert f'html_css_files += ["{CSS.name}"]' in CONF.read_text(encoding="utf-8")
+
+
 def test_docs_build_anchor_ids(tmp_path: Path) -> None:
     """A small tree of pages, built as the docs build them, with the settings of docs/conf.py.
 
@@ -1064,6 +1261,7 @@ def test_docs_build_anchor_ids(tmp_path: Path) -> None:
     every page of a binary operator): an anchor has to be unique on its page, never in the docs.
     """
     application = pytest.importorskip("sphinx.application")
+    docutils_namespace = pytest.importorskip("sphinx.util.docutils").docutils_namespace
     pytest.importorskip("sphinxcontrib.mermaid")
     pytest.importorskip("sphinx_rtd_theme")
     source = tmp_path / "src"
@@ -1115,17 +1313,21 @@ def test_docs_build_anchor_ids(tmp_path: Path) -> None:
     )
     warnings = io.StringIO()
     output = tmp_path / "html"
-    app = application.Sphinx(
-        str(source),
-        str(source),
-        str(output),
-        str(tmp_path / "doctrees"),
-        "html",
-        status=None,
-        warning=warnings,
-        freshenv=True,
-    )
-    app.build()
+    # The build registers directives, roles and settings of docutils in the process. They are
+    # undone when it ends, so that the checks that read RST (read_rst) see the docutils they
+    # had before, whatever the order of the checks.
+    with docutils_namespace():
+        app = application.Sphinx(
+            str(source),
+            str(source),
+            str(output),
+            str(tmp_path / "doctrees"),
+            "html",
+            status=None,
+            warning=warnings,
+            freshenv=True,
+        )
+        app.build()
     # No warning at all: no duplicate label, and the notes, with their quotes, stars, backticks,
     # pipe and colons, read cleanly.
     assert warnings.getvalue() == ""

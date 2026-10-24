@@ -135,7 +135,9 @@ _MEANING: Final[dict[str, str]] = {
     "missing": "not implemented or crash",
     "diverge": "engines differ",
 }
-_MARK_KEY: Final = "✅ match · ❌ wrong result · 🛡 guarded error (code) · 💥 crash"
+_MARK_KEY: Final = (
+    "✅ match · ❌ wrong result · 🛡 guarded error (code) · 💥 crash · 📌 team decision"
+)
 
 # The legend of the statuses and of the marks, above every diagram. A status is a chip of its
 # colour; ``refused`` is the green of ``ok`` with a dotted border, as in the diagrams.

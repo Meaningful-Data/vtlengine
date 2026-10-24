@@ -83,7 +83,9 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
 # The chips, lists, examples and diagrams of the operator map: every rule is scoped to its pages.
-html_css_files += ["operator_map.css"]
+# The multiversion build puts this conf on old tags, which have no such file: no dead link there.
+if (Path(__file__).parent / "_static" / "operator_map.css").exists():
+    html_css_files += ["operator_map.css"]
 
 # Copy CNAME file to output for GitHub Pages custom domain
 html_extra_path = ["CNAME"]
