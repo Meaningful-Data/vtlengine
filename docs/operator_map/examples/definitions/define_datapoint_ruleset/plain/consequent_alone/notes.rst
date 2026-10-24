@@ -1,0 +1,3 @@
+:Tests: a rule with no antecedent, ``Me_1 >= 0``.
+:Manual: `define datapoint ruleset <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/datapoint_rulesets.html>`__: "In case the antecedentCondition is absent then it is assumed to be always true, therefore the consequentCondition is expected to evaluate to true for all the Data Points".
+:Expected: ``ruleid`` 1, the order number of the unnamed rule, and ``bool_var`` true for 10 and false for -5. ``errorcode`` and ``errorlevel`` are null, ``ruleid`` and ``errorcode`` Strings as in the manual's examples, and ``errorlevel`` Integer or Number, as the manual does not fix its type.

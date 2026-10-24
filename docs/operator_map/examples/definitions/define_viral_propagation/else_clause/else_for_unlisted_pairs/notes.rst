@@ -1,0 +1,3 @@
+:Tests: ``when "C" then "C"; else "F"``.
+:Manual: `define viral propagation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/viral_attributes.html>`__: the default clause is "an optional fallback clause triggered after all other enumerated clauses when none of them matches".
+:Expected: ``At_1`` C for (C, N), and F for (N, N) and (N, A) by ``else``. The page calls the algorithm "reflexive", but the User Manual's reflexive law is about one operand, and the page's own examples turn two equal values into another one (``OBS_STATUS_default`` gives F for (E, E)), so (N, N) gives F as written.

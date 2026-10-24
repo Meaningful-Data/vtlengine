@@ -1,0 +1,3 @@
+:Tests: ``add(1)`` on ``add (x integer, y integer default 10)``: the last argument is left out.
+:Manual: `define operator <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html>`__: "If parameterDefaultValue is specified then the parameter is optional", and in the `call <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/User-defined%20operator%20call/index.html>`__ "One or more optional operands in the last positions can be simply omitted". The script ends with ``end operator``, as the page's examples do; its syntax line writes ``end define operator``.
+:Expected: ``SC_r = 11``, an Integer: ``y`` takes its default, ``1 + 10``.

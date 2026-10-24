@@ -1,0 +1,3 @@
+:Tests: ``when Id_2 = "CREDIT" then Me_1 >= 0 errorcode "NEG_CREDIT"``.
+:Manual: `define datapoint ruleset <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/datapoint_rulesets.html>`__: the error code is "a literal denoting the error code associated to the rule, to be assigned to the possible non-valid results", and in check_datapoint "if the Measure bool_var is true or null then errorcode is null".
+:Expected: ``ruleid`` 1 and ``bool_var`` true, false and true for (CREDIT, 10), (CREDIT, -5) and (DEBIT, -2), with ``errorcode`` ``NEG_CREDIT`` only on the false one. ``ruleid`` and ``errorcode`` are Strings as in the manual's examples, and the null ``errorlevel`` Integer or Number, as the manual does not fix its type.

@@ -1,0 +1,4 @@
+:Tests: a parameter of the ruleset type ``datapoint``, passed ``DPR_1`` and used in ``check_datapoint``.
+:Manual: `define operator <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html>`__: ``dpRuleset ::= datapoint | datapoint_on_valuedomains ... | datapoint_on_variables ...``, where ``datapoint`` is any datapoint ruleset. The script ends with ``end operator``, as the page's examples do; its syntax line writes ``end define operator``.
+:Expected: from ``check_datapoint`` with ``all``: ``ruleid`` 1, the unnamed rule's order number, ``bool_var`` true for 10 and false for -5, and null ``errorcode`` and ``errorlevel``. ``ruleid`` and ``errorcode`` are Strings as in the manual's examples, and ``errorlevel`` Integer or Number, as the manual does not fix its type.
+:Finding: both engines raise SemanticError ``1-3-13``, "Unsupported VTL construct: ruleset type 'datapoint'".

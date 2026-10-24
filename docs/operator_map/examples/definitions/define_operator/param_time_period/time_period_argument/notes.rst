@@ -1,0 +1,3 @@
+:Tests: a parameter of type ``time_period``, called with ``cast("2020Q1", time_period)``, the first quarter of 2020 in the manual's representation.
+:Manual: `define operator <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html>`__: a parameter type is "a VTL data type" (``basicScalarType ::= ... time_period ...``), and the User Manual says that these types "do not directly support literals". The script ends with ``end operator``, as the page's examples do; its syntax line writes ``end define operator``.
+:Expected: ``SC_r = 2020Q1``, a Time_Period: the body returns its argument.
