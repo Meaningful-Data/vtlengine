@@ -99,7 +99,8 @@ class TypeDef:
     id: str
     parents: tuple[str, ...]
     variants: tuple[Variant, ...] = ()
-    see: str | None = None  # ``chapter.operator`` whose first example the type hub links to
+    # ``chapter.operator``, or ``chapter.operator.variant``, whose first example the hub links to.
+    see: str | None = None
 
 
 @dataclass(frozen=True)
@@ -130,11 +131,14 @@ def load_catalogue() -> Catalogue:
 _ID_PATTERN: Final = re.compile(r"[a-z0-9_]+")
 _KNOWN_TYPES: Final = frozenset(TYPE_IDS)
 _DEFINITIONS: Final = "definitions"  # the chapter whose pages are ``DL_PAGES``
+_DATASET: Final = "dataset"
+_DATASET_PART: Final = "ds"  # a variant whose id has this part, split on ``_``, is on datasets
 
 
-def _bad_id(owner: str, item_id: str) -> Iterator[str]:
+def _bad_id(owner: str, item_id: str, what: str = "id") -> Iterator[str]:
+    """``item_id`` against the id rule: the ids, example names and manual refs name folders."""
     if _ID_PATTERN.fullmatch(item_id) is None:
-        yield f"{owner}: bad id '{item_id}'"
+        yield f"{owner}: bad {what} '{item_id}'"
 
 
 def _duplicate(owner: str, kind: str, item_id: str, seen: dict[str, int]) -> Iterator[str]:
@@ -167,7 +171,32 @@ def _variant_problems(owner: str, variants: Iterable[Variant]) -> Iterator[str]:
         yield from _unknown_types(variant_owner, variant.returns)
         seen_examples: dict[str, int] = {}
         for example in variant.examples:
+            # The name of an example names its folder, and so the target of a click.
+            yield from _bad_id(variant_owner, example.name, "example name")
             yield from _duplicate(variant_owner, "example", example.name, seen_examples)
+            if example.manual_ref is not None:
+                yield from _bad_id(variant_owner, example.manual_ref, "manual_ref")
+
+
+def _dataset_forms(variants: Iterable[Variant]) -> list[Variant]:
+    """The dataset forms: the variants whose id has the part ``ds`` (``ds_sc``, ``analytic_ds``)."""
+    return [variant for variant in variants if _DATASET_PART in variant.id.split("_")]
+
+
+def _dataset_flow_problems(owner: str, operator: Operator) -> Iterator[str]:
+    """What keeps an operator that has dataset forms out of the type flow of ``dataset``.
+
+    A dataset form takes a dataset, so ``accepts`` has ``dataset``. It gives one too: a form that
+    declares no ``returns`` of its own gives those of the operator, which then have ``dataset``.
+    """
+    forms = _dataset_forms(operator.variants)
+    if forms and _DATASET not in operator.accepts:
+        ids = ", ".join(form.id for form in forms)
+        yield f"{owner}: '{_DATASET}' is not in accepts, but its dataset forms take one: {ids}"
+    plain = [form for form in forms if not form.returns]
+    if plain and _DATASET not in operator.returns:
+        ids = ", ".join(form.id for form in plain)
+        yield f"{owner}: '{_DATASET}' is not in returns, but its dataset forms give one: {ids}"
 
 
 def _operator_problems(
@@ -181,6 +210,7 @@ def _operator_problems(
     if operator.page not in pages:
         yield f"{owner}: unknown page '{operator.page}'"
     yield from _unknown_types(owner, (*operator.accepts, *operator.returns))
+    yield from _dataset_flow_problems(owner, operator)
     for link in operator.links:
         if link.target not in targets:
             yield f"{owner}: link target '{link.target}' not found"
@@ -208,6 +238,13 @@ def _chapter_problems(
 
 
 def _typedef_problems(cat: Catalogue, targets: Collection[str]) -> Iterator[str]:
+    """The problems of the type definitions; a ``see`` names an operator or one of its variants."""
+    variants = {
+        f"{chapter.id}.{operator.id}.{variant.id}"
+        for chapter in cat.chapters
+        for operator in chapter.operators
+        for variant in operator.variants
+    }
     seen_types: dict[str, int] = {}
     for typedef in cat.types:
         owner = f"types.{typedef.id}"
@@ -215,8 +252,9 @@ def _typedef_problems(cat: Catalogue, targets: Collection[str]) -> Iterator[str]
             yield f"types: unknown type '{typedef.id}'"
         yield from _duplicate("types", "type", typedef.id, seen_types)
         yield from _unknown_types(owner, typedef.parents)
-        if typedef.see is not None and typedef.see not in targets:
-            yield f"{owner}: see target '{typedef.see}' not found"
+        see = typedef.see
+        if see is not None and see not in targets and see not in variants:
+            yield f"{owner}: see target '{see}' not found"
         yield from _variant_problems(owner, typedef.variants)
 
 
@@ -282,6 +320,11 @@ def validate_catalogue(
     (types, links, ``see`` targets, ids, duplicates, and the pages and manual examples the
     catalogue refers to) always cover the whole catalogue, against all of ``pages`` and
     ``manual_examples``.
+
+    Ids, example names and manual refs follow the id rule, ``[a-z0-9_]+``: they name folders
+    and the targets of the clicks of the diagrams. An operator with a dataset form, a variant
+    whose id has the token ``ds`` (split on ``_``), lists ``dataset`` in ``accepts``, and in
+    ``returns`` unless each such form declares ``returns`` of its own.
     """
     targets = {f"{chapter.id}.{op.id}" for chapter in cat.chapters for op in chapter.operators}
     known_pages = frozenset(pages)

@@ -58,7 +58,8 @@ _NUMBER: Final = re.compile(
 )
 
 # The spellings of a time period: ``2010``, ``2010Q1`` / ``2010-Q1`` / ``2010-Q-1`` (the number
-# may be missing) and ``2010-01`` for a month.
+# may be missing for the annual indicator ``A`` only: ``2010A`` is ``2010A1``) and ``2010-01`` for
+# a month.
 _YEAR: Final = re.compile(r"\d{4}", re.ASCII)
 _PERIOD: Final = re.compile(r"(\d{4})-?([ASQMWD])-?(\d{1,3})?", re.ASCII)
 _YEAR_MONTH: Final = re.compile(r"(\d{4})-(\d{2})", re.ASCII)
@@ -142,7 +143,8 @@ def values_equal(vtype: str, expected: str | None, actual: str | None) -> bool:
     * **Integer:** the same whole number, so ``10`` and ``10.0`` agree but ``10.5`` is never ten;
     * **Boolean** and **Duration:** ignoring case;
     * **Time_Period:** by ``(year, indicator, number)``, so ``2013-Q1`` is ``2013Q1`` and ``2010``
-      is ``2010A``; any other text is compared as written;
+      is ``2010A``. Only the annual indicator may leave out its number (``2010A`` is ``2010A1``):
+      ``2020Q`` is not a period. Any other text is compared as written;
     * **Time:** ignoring the whitespace around the parts split on ``/``;
     * every other type, Date and String included: exactly.
     """
@@ -507,7 +509,7 @@ def _period(text: str) -> tuple[int, str, int] | str:
     if _YEAR.fullmatch(text):
         return int(text), "A", 1
     period = _PERIOD.fullmatch(text)
-    if period:
+    if period and (period[3] is not None or period[2] == "A"):  # a number, or the year
         return int(period[1]), period[2], int(period[3] or 1)
     month = _YEAR_MONTH.fullmatch(text)
     if month:

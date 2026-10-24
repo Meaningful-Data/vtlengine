@@ -2,11 +2,22 @@
 
     generate.py [--only CHAPTER]... [--workers 4] [--timeout 120] [--check-only]
 
+It needs a Python that can import vtlengine, with the compiled parser in src/ ("Building the C++
+parser from source" in CONTRIBUTING.md says how to build it): every example runs in a child
+process that imports the engines of this worktree, and one child checks that it can before any
+example runs. Where systemd is available, run it under a memory cap, from the repository root:
+
+systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 python docs/operator_map/generate.py
+
+Elsewhere the cap is optional.
+
 1. The catalogue is checked against the index of the manual (``validate_catalogue``), and the
    example folders against the catalogue in both directions: a catalogue example needs a folder
    that loads, and a folder needs a catalogue example.
-2. Every example runs on the pandas and the DuckDB engine, each in a process of its own (see
-   ``tool.runner``). A ``random`` example runs twice, to see whether its values are stable.
+2. One child process imports vtlengine and both engines, and gives their versions (the
+   preflight of ``tool.runner``). Then every example runs on the pandas and the DuckDB engine,
+   each in a process of its own. A ``random`` example runs twice, to see whether its values are
+   stable.
 3. The status of each example comes from the two runs (``tool.status``), the statuses are rolled
    up, and ``index.rst``, one rst page per chapter and ``status.json`` are rendered. The pages are
    documents of the Sphinx docs of the repository (``docs/``), which copies the examples next to
@@ -22,14 +33,15 @@ the folders with no catalogue example always. Nothing is run or written with ``-
 stops after the checks, and does not ask for previous results.
 
 The exit code is 0 for a run that wrote its files, 1 for any problem (printed one per line, and
-nothing is written), and 2 for a run that was interrupted, wherever the interrupt came, or hit an
-internal error (one line: its type and message). Until every new file is in place, a failure or
-an interrupt leaves the files of the previous run as they were: the files that were moved are
-put back. Only when putting one back fails too, even by a second interrupt, the folder that has
-the old bytes is kept, and the line says where it is. After that point nothing can be undone:
-an interrupt or an error in the clean-up or in the summary leaves the new files, and the line
-says so, and names a ``.generate-*`` folder that the clean-up did not remove. This process never
-imports vtlengine or pandas: the engines run in the children of ``tool.runner``.
+nothing is written), and 2 for a run that was interrupted, wherever the interrupt came, that hit
+an internal error (one line: its type and message), or whose preflight child cannot import the
+engines (one line: the reason; nothing is run or written). Until every new file is in place, a
+failure or an interrupt leaves the files of the previous run as they were: the files that were
+moved are put back. Only when putting one back fails too, even by a second interrupt, the folder
+that has the old bytes is kept, and the line says where it is. After that point nothing can be
+undone: an interrupt or an error in the clean-up or in the summary leaves the new files, and the
+line says so, and names a ``.generate-*`` folder that the clean-up did not remove. This process
+never imports vtlengine or pandas: the engines run in the children of ``tool.runner``.
 """
 
 from __future__ import annotations
@@ -54,7 +66,7 @@ from tool.examples import ExampleError, ExampleFiles, example_dir, load_example,
 from tool.mermaid import MermaidLimitError, check_limits
 from tool.model import Catalogue, Example, Status, load_catalogue, validate_catalogue
 from tool.render import RunMeta, chapter_rst, index_rst, mermaid_blocks
-from tool.runner import Engine, RunOutput, run_all
+from tool.runner import Engine, EngineVersions, PreflightError, RunOutput, preflight, run_all
 from tool.status import (
     EMOJI,
     EngineVerdict,
@@ -75,6 +87,16 @@ _MAX_UNRUN: Final = 10  # the "no result" problems that are printed, one line ea
 _ENGINES: Final[tuple[Engine, ...]] = ("pandas", "duckdb")
 _VERSION: Final = re.compile(r"""^__version__\s*=\s*["']([^"']+)["']""", re.MULTILINE)
 _INDEX_FILE: Final = "index.rst"
+# How to run the generator, for ``--help``; the docstring and the index say the same.
+_HOW_TO_RUN: Final = """\
+It needs a Python that can import vtlengine, with the compiled parser in src/
+(see "Building the C++ parser from source" in CONTRIBUTING.md).
+
+Where systemd is available, run it under a memory cap, from the repository root:
+
+  systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 python docs/operator_map/generate.py
+
+Elsewhere the cap is optional."""
 
 
 class GenerateError(Exception):
@@ -179,7 +201,12 @@ def _generate(args: argparse.Namespace, progress: _Progress) -> int:
         print(f"ok: {len(todo)} examples checked, nothing was run")
         return 0
     try:
-        meta = _run_meta()
+        versions = preflight(args.timeout)
+    except PreflightError as exc:  # every run would crash: the pages must not take that
+        print(str(exc), file=sys.stderr)
+        return 2
+    try:
+        meta = _run_meta(versions)
     except GenerateError as exc:
         return _fail([str(exc)])
 
@@ -206,6 +233,8 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         prog="generate.py",
         description="Generate the VTL operator map: run every example on both engines, "
         "judge the results and write the Sphinx pages (rst) and status.json.",
+        epilog=_HOW_TO_RUN,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "--only",
@@ -425,12 +454,14 @@ def _today() -> str:
     return date.today().isoformat()
 
 
-def _run_meta() -> RunMeta:
+def _run_meta(versions: EngineVersions) -> RunMeta:
     return RunMeta(
         date=_today(),
         vtlengine_commit=_engine_commit(REPO),
         vtlengine_version=_engine_version(REPO),
         spec_commit=manual_index.MANUAL_COMMIT,
+        pandas_version=versions.pandas,
+        duckdb_version=versions.duckdb,
     )
 
 

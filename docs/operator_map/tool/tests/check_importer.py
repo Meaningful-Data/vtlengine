@@ -345,6 +345,16 @@ def test_import_refuses_data_that_does_not_match_its_structure(tmp_path: Path) -
     assert not (tmp_path / "out").exists()  # nothing is written when the example cannot be read
 
 
+@pytest.mark.parametrize("name", ["../DS_r", "DS_r/x", "DS-r", "DS.r", "DS r"])
+def test_import_refuses_a_result_name_that_cannot_name_a_file(tmp_path: Path, name: str) -> None:
+    # The name of the result names the files of ``expected/``: it must stay a plain name.
+    files = {**ADD_ONE, "ex_1.json": dataset(name, *ID_ME)}
+    spec = fake_manual(tmp_path / "spec", files)
+    with pytest.raises(ManualImportError, match="cannot name a file"):
+        import_example(spec, PAGE, "ex_1", tmp_path / "out" / "example")
+    assert not (tmp_path / "out").exists()  # nothing is written, inside the folder or next to it
+
+
 def test_import_names_an_input_after_its_file_when_it_declares_another_name(tmp_path: Path) -> None:
     # The manual's ds_2.json declares DS_1, a slip: the script and the page text say DS_2.
     files = {

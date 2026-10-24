@@ -16,11 +16,13 @@ import re
 import signal
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from textwrap import dedent
 from typing import Any
 
+import duckdb
 import pandas as pd
 import pytest
 
@@ -1009,7 +1011,9 @@ def test_run_all_cancels_the_jobs_that_have_not_started_when_one_raises(
 ) -> None:
     started: list[Path] = []
 
-    def stub(path: Path, engine: Engine, timeout_s: float, repeat: int = 1) -> RunOutput:
+    def stub(
+        path: Path, engine: Engine, timeout_s: float, repeat: int = 1, **_: object
+    ) -> RunOutput:
         started.append(path)
         if len(started) == 1:
             raise RuntimeError("interrupted")
@@ -1027,6 +1031,101 @@ def test_run_all_cancels_the_jobs_that_have_not_started_when_one_raises(
 
 def test_run_all_with_no_jobs() -> None:
     assert run_all([], workers=2, timeout_s=TIMEOUT) == {}
+
+
+def test_an_interrupt_of_run_all_kills_its_children_at_once_and_starts_no_other(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Each child writes a line when it starts, then hangs. Three of the six jobs run at a time,
+    # and the interrupt comes to the main thread, as a Ctrl-C does, once the three run.
+    log = tmp_path / "started.log"
+    hang = dedent(
+        f"""\
+        import sys, time
+
+        with open({str(log)!r}, "a") as handle:
+            handle.write(sys.argv[1] + "\\n")
+        time.sleep(60)
+        """
+    )
+    fake_child(monkeypatch, hang)
+
+    def started() -> int:
+        return len(log.read_text(encoding="utf-8").splitlines()) if log.exists() else 0
+
+    sent: list[float] = []
+
+    def interrupt_when_three_run() -> None:
+        deadline = time.monotonic() + 30
+        while started() < 3 and time.monotonic() < deadline:
+            time.sleep(0.01)
+        if started() == 3:  # never after run_all is over: the children hang far longer
+            sent.append(time.monotonic())
+            signal.pthread_kill(threading.main_thread().ident or 0, signal.SIGINT)
+
+    jobs: list[tuple[Path, Engine, int]] = [(tmp_path / str(n), "pandas", 1) for n in range(6)]
+    interrupter = threading.Thread(target=interrupt_when_three_run)
+    interrupter.start()
+    try:
+        with pytest.raises(KeyboardInterrupt):
+            run_all(jobs, workers=3, timeout_s=3.0)
+        surfaced = time.monotonic()
+    finally:
+        interrupter.join()
+
+    assert len(sent) == 1
+    time.sleep(0.5)
+    waited, children = surfaced - sent[0], started()
+    # The run does not wait for its children to time out (3 s each, then once more): it kills
+    # them. And no child starts after the interrupt: no second attempt, no job that was waiting.
+    assert (waited < 1.5, children) == (True, 3), f"{waited:.2f} s, {children} children"
+
+
+# --- The preflight ---
+
+
+def test_the_preflight_gives_the_versions_of_the_engines() -> None:
+    # A real child: the one that every run needs, with the engines of this worktree.
+    assert runner.preflight(TIMEOUT) == runner.EngineVersions(
+        pandas=pd.__version__, duckdb=duckdb.__version__
+    )
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        "import sys\nsys.stderr.write('Traceback\\nModuleNotFoundError: No module named "
+        "\\'vtlengine.AST.Grammar._cpp_parser.vtl_cpp_parser\\'\\n')\nsys.exit(1)\n",
+        "print('PREFLIGHT:not json')\n",
+        "print('nothing to say')\n",
+    ],
+    ids=["import error", "unreadable answer", "no answer"],
+)
+def test_a_preflight_child_that_fails_is_one_line_with_the_reason(
+    code: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(runner, "_preflight_command", lambda: [sys.executable, "-c", code])
+    with pytest.raises(runner.PreflightError) as failed:
+        runner.preflight(TIMEOUT)
+    message = str(failed.value)
+    assert "\n" not in message
+    assert message.startswith("preflight: a child process cannot import vtlengine and its engines")
+    assert message.endswith(
+        "run the generator with a Python that can import vtlengine: "
+        "the compiled parser must be in src/"
+    )
+    if "ModuleNotFoundError" in code:
+        assert (
+            "(ModuleNotFoundError: No module named 'vtlengine.AST.Grammar._cpp_parser." in message
+        )
+
+
+def test_a_preflight_child_that_hangs_is_killed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(runner, "_preflight_command", lambda: [sys.executable, "-c", HANG])
+    began = time.monotonic()
+    with pytest.raises(runner.PreflightError, match="no answer in 0.5 s"):
+        runner.preflight(0.5)
+    assert time.monotonic() - began < 10
 
 
 # --- Environment of the child ---

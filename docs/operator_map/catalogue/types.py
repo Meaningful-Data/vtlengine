@@ -4,7 +4,9 @@ A basic type has one variant, ``identity``: a dataset with a measure of the type
 another dataset. It shows that vtlengine loads, keeps and writes the values of the type. The
 abstract ``scalar`` and the structural hubs (``dataset``, ``set``, ``value_domain``, the
 rulesets, ``viral_propagation``, ``operator`` and ``external_routine``) have no example of their
-own: they link to the operator that introduces them (``TypeDef.see``).
+own: they link to the operator that introduces them, or to the variant of it that shows the type
+(``TypeDef.see``): ``scalar`` to the assignment of a scalar, ``value_domain`` to ``in`` a value
+domain.
 """
 
 from __future__ import annotations
@@ -17,7 +19,7 @@ def _identity() -> tuple[Variant, ...]:
 
 
 TYPES: tuple[TypeDef, ...] = (
-    TypeDef("scalar", (), see="general.non_persistent_assignment"),
+    TypeDef("scalar", (), see="general.non_persistent_assignment.sc"),
     TypeDef("number", ("scalar",), _identity()),
     TypeDef("integer", ("number",), _identity()),
     TypeDef("string", ("scalar",), _identity()),
@@ -28,7 +30,7 @@ TYPES: tuple[TypeDef, ...] = (
     TypeDef("duration", ("scalar",), _identity()),
     TypeDef("dataset", (), see="general.non_persistent_assignment"),
     TypeDef("set", (), see="comparison.in"),
-    TypeDef("value_domain", (), see="comparison.in"),
+    TypeDef("value_domain", (), see="comparison.in.ds_value_domain"),
     TypeDef("datapoint_ruleset", (), see="definitions.define_datapoint_ruleset"),
     TypeDef("hierarchical_ruleset", (), see="definitions.define_hierarchical_ruleset"),
     TypeDef("viral_propagation", (), see="definitions.define_viral_propagation"),

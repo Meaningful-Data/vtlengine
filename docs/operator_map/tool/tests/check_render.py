@@ -37,7 +37,9 @@ from tool.status import EngineVerdict, ExampleResult, StatusIndex, build_index
 BASE = "https://sdmx-twg.github.io/vtl/v2.2/reference_manual"
 ISSUES = "https://github.com/Meaningful-Data/vtlengine/issues"
 SPEC = "140e946ed3f888951adb8bb66ea45030be84e2aa"
-META = RunMeta("2026-10-23", "abc1234", "9.9.9", SPEC)
+META = RunMeta(
+    "2026-10-23", "abc1234", "9.9.9", SPEC, pandas_version="2.3.3", duckdb_version="1.5.5"
+)
 ERRATA_TITLE = "Manual errata (corrected expected outputs, scripts or inputs)"
 # The types that have a flow in the index: the basic ones and the dataset.
 FLOW_TYPES = (
@@ -274,7 +276,7 @@ def test_chapter_rst_layout(tmp_path: Path) -> None:
         "\n"
         "1 variant: 🟢 1 · 🟡 0 · 🔴 0 · 🔵 0\n"
         "\n"
-        "← Back to :doc:`index` · vtlengine 9.9.9 (abc1234)\n"
+        "← Back to :doc:`index` · vtlengine 9.9.9 (abc1234) · pandas 2.3.3 · DuckDB 1.5.5\n"
         "\n"
         ".. mermaid::\n"
         "\n"
@@ -297,7 +299,7 @@ def test_chapter_rst_layout(tmp_path: Path) -> None:
         "     - Detail\n"
         "     - Example\n"
         "   * - | ``length(Me_1)``\n"
-        "       | minimal\n"
+        f"       | `minimal <{folder}/>`__\n"
         "     - 🟢\n"
         "     - ✅\n"
         "     - ✅\n"
@@ -313,7 +315,9 @@ def test_chapter_rst_title_counts_and_operator_headings(tmp_path: Path) -> None:
     # The chapter is 🔵 (a variant diverges); the counts are over variants: 3, none of them 🟢.
     assert titles(text, "=") == ["🔵 String operators"]
     assert "3 variants: 🟢 0 · 🟡 1 · 🔴 1 · 🔵 1" in lines
-    assert "← Back to :doc:`index` · vtlengine 9.9.9 (abc1234)" in lines
+    assert (
+        "← Back to :doc:`index` · vtlengine 9.9.9 (abc1234) · pandas 2.3.3 · DuckDB 1.5.5" in lines
+    )
     assert titles(text, "-") == ["🔵 Concatenation ``||``", "🔴 String length ``length``"]
     link = f"`VTL 2.2 Reference Manual <{manual_url(CONCAT.page)}>`__"
     assert link in lines
@@ -339,8 +343,16 @@ def test_chapter_rst_has_directive_and_table_row_per_example(tmp_path: Path) -> 
 def test_the_row_of_an_example_shows_its_verdicts(tmp_path: Path) -> None:
     text = chapter_rst(STRING, CAT, INDEX, META, examples_root=tmp_path)
     first = row_with(text, "concat/ds_ds/manual_ex_1/script.vtl>")
-    # The label is a literal, as it is, and the example name sits under it, escaped.
-    assert first[:5] == ["| ``DS_1 || DS_2``\n| manual\\_ex\\_1", "🟢", "✅", "✅", ""]
+    # The label is a literal, as it is, and the example name sits under it, escaped: it links
+    # to the folder of the example, whose page shows every file of it.
+    folder = "examples/string/concat/ds_ds/manual_ex_1/"
+    assert first[:5] == [
+        f"| ``DS_1 || DS_2``\n| `manual\\_ex\\_1 <{folder}>`__",
+        "🟢",
+        "✅",
+        "✅",
+        "",
+    ]
     diverging = row_with(text, "concat/ds_ds/minimal/script.vtl>")
     assert diverging[1:5] == ["🔵", "✅", "💥", "DuckDB: SemanticError 1-1-1-1: boom"]
     wrong = row_with(text, "concat/comp_sc/minimal/script.vtl>")
@@ -354,12 +366,16 @@ def test_a_label_that_a_literal_cannot_hold_is_escaped_text(tmp_path: Path) -> N
     cat = Catalogue((Chapter("c", "C", (make_operator("o", "O", "o", variants),)),), ())
     index = build_index(cat, {f"c/o/{name}/minimal": OK for name in labels})
     text = chapter_rst(cat.chapters[0], cat, index, META, examples_root=tmp_path)
-    assert row_with(text, "c/o/tick/minimal/script.vtl>")[0] == "| a \\`b\\` c\n| minimal"
-    assert (
-        row_with(text, "c/o/lines/minimal/script.vtl>")[0] == "| ``line one line two``\n| minimal"
+
+    def name(variant: str) -> str:
+        return f"| `minimal <examples/c/o/{variant}/minimal/>`__"
+
+    assert row_with(text, "c/o/tick/minimal/script.vtl>")[0] == f"| a \\`b\\` c\n{name('tick')}"
+    assert row_with(text, "c/o/lines/minimal/script.vtl>")[0] == (
+        f"| ``line one line two``\n{name('lines')}"
     )
-    assert row_with(text, "c/o/empty/minimal/script.vtl>")[0] == "| minimal"
-    assert row_with(text, "c/o/slash/minimal/script.vtl>")[0] == "| ``a\\``\n| minimal"
+    assert row_with(text, "c/o/empty/minimal/script.vtl>")[0] == name("empty")
+    assert row_with(text, "c/o/slash/minimal/script.vtl>")[0] == f"| ``a\\``\n{name('slash')}"
 
 
 def test_detail_is_one_line_escaped_and_cut_at_200_characters(tmp_path: Path) -> None:
@@ -612,6 +628,10 @@ def test_index_metadata_and_legend(tmp_path: Path) -> None:
     generation = section(text, "Generation")
     for value in ("2026-10-23", "9.9.9", "abc1234", SPEC[:12]):
         assert value in generation
+    # The engines are named with their versions, next to the version of vtlengine.
+    assert "- Engine: vtlengine 9.9.9, commit ``abc1234``, with pandas 2.3.3 and DuckDB 1.5.5." in (
+        generation.splitlines()
+    )
     assert f"https://github.com/sdmx-twg/vtl/tree/{SPEC}" in generation
     legend = section(text, "Legend")
     for mark in ("🟢", "🟡", "🔴", "🔵", "📌", "✅", "❌", "💥"):
@@ -679,11 +699,33 @@ def test_index_overview_does_not_promise_that_a_click_works(tmp_path: Path) -> N
 
 
 def test_how_to_read_describes_the_comparison_as_it_is_made(tmp_path: Path) -> None:
-    how = section(index_rst(CAT, INDEX, META, examples_root=tmp_path), "How to read")
-    # A number is compared to the digits written, never finer than a double; a random example
-    # compares what its expected file has, and checks the columns that are empty there.
-    assert "written in the expected file, as far as a double holds them" in how
+    how = " ".join(
+        section(index_rst(CAT, INDEX, META, examples_root=tmp_path), "How to read").split()
+    )
+    # A number with decimals matches within one unit of its last digit, never finer than a
+    # double; a random example compares what its expected file has, and checks the columns that
+    # are empty there.
+    assert (
+        "A number written with decimals matches a value within one unit of its last digit: an "
+        "expected ``0.7`` accepts 0.6001–0.7999."
+    ) in how
+    assert "A number written without decimals matches the same number" in how
+    assert "as far as a double holds them" not in how
     assert "those of the columns that are empty in the expected file" in how
+
+
+def test_the_index_says_how_to_regenerate_the_map(tmp_path: Path) -> None:
+    generation = " ".join(
+        section(index_rst(CAT, INDEX, META, examples_root=tmp_path), "Generation").split()
+    )
+    # A Python that can import vtlengine with its compiled parser, under a memory cap where
+    # systemd can set one, and without one elsewhere.
+    assert "a Python that can import vtlengine, with the compiled parser in ``src/``" in generation
+    assert (
+        "``systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 python "
+        "docs/operator_map/generate.py``"
+    ) in generation
+    assert "Elsewhere the cap is optional." in generation
 
 
 def test_index_chapter_table_counts_variants(tmp_path: Path) -> None:

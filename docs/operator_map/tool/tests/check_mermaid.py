@@ -24,7 +24,17 @@ from tool.mermaid import (
     overview_block,
     type_flow_block,
 )
-from tool.model import Catalogue, Chapter, Link, Operator, Status, TypeDef, Variant, authored
+from tool.model import (
+    Catalogue,
+    Chapter,
+    Link,
+    Operator,
+    Status,
+    TypeDef,
+    Variant,
+    authored,
+    load_catalogue,
+)
 from tool.status import EMOJI, StatusIndex
 
 # What every block starts with: the diagram type and the classes of the statuses, types and stubs.
@@ -596,6 +606,30 @@ def test_lattice_see_to_an_unknown_operator_raises() -> None:
     cat = Catalogue((STRING,), (TypeDef("dataset", (), see="string.nope"),))
     with pytest.raises(ValueError, match="types.dataset: target 'string.nope' not found"):
         lattice_block(cat, NOTHING_RUN)
+
+
+def test_a_type_that_sees_a_variant_links_to_the_first_example_of_that_variant() -> None:
+    # ``concat`` starts with ``ds_ds``: the type opens the variant it names, not that one.
+    cat = Catalogue((STRING,), (TypeDef("scalar", (), see="string.concat.comp_sc"),))
+    assert lattice_block(cat, NOTHING_RUN) == block_of(
+        'type_scalar(("scalar")):::type',
+        'click type_scalar "examples/string/concat/comp_sc/minimal/"',
+    )
+
+
+@pytest.mark.parametrize("target", ["string.length.nope", "string.length.comp.minimal"])
+def test_lattice_see_to_an_unknown_variant_raises(target: str) -> None:
+    cat = Catalogue((STRING,), (TypeDef("dataset", (), see=target),))
+    with pytest.raises(ValueError, match=f"types.dataset: target '{target}' not found"):
+        lattice_block(cat, NOTHING_RUN)
+
+
+def test_the_scalar_and_value_domain_hubs_open_an_example_of_their_type() -> None:
+    # The scalar hub opens the scalar assignment, and the value domain hub ``in`` a value domain.
+    cat = load_catalogue()
+    lines = [line.strip() for line in lattice_block(cat, NOTHING_RUN).splitlines()]
+    assert 'click type_scalar "examples/general/non_persistent_assignment/sc/minimal/"' in lines
+    assert 'click type_value_domain "examples/comparison/in/ds_value_domain/manual_ex_3/"' in lines
 
 
 # --- Overview ---

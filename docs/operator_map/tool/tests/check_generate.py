@@ -24,6 +24,7 @@ import generate
 import pytest
 from catalogue import manual_index
 
+from tool import runner
 from tool.compare import ActualComponent, ActualDataset, ActualScalar
 from tool.mermaid import MermaidLimitError
 from tool.model import Catalogue, Chapter, Example, Operator, TypeDef, Variant, authored, manual
@@ -56,6 +57,9 @@ EXPECTED_STRUCTURE = {
 }
 EXPECTED_CSV = "Id_1,Me_1\n1,10.5\n2,20\n"
 EXPECTED_DATE = {"scalars": [{"name": "sc_r", "type": "Date", "value": None}]}
+# The engines that the preflight child of every run reports.
+PANDAS_VERSION = "2.3.3"
+DUCKDB_VERSION = "1.5.5"
 
 
 def make_operator(operator_id: str, name: str, page: str, *variants: Variant) -> Operator:
@@ -143,6 +147,11 @@ class World:
     calls: list[list[tuple[Path, Engine, int]]] = field(default_factory=list)
     settings: list[tuple[int, float]] = field(default_factory=list)
     interrupt: bool = False
+    preflights: list[float] = field(default_factory=list)  # the timeout of each preflight
+
+    def preflight(self, timeout_s: float) -> Any:
+        self.preflights.append(timeout_s)
+        return runner.EngineVersions(PANDAS_VERSION, DUCKDB_VERSION)
 
     def output(self, path: Path, engine: Engine) -> RunOutput:
         chapter = path.relative_to(self.root / "examples").parts[0]
@@ -216,6 +225,7 @@ def build_world(
     monkeypatch.setattr(generate, "REPO", repo)
     monkeypatch.setattr(generate, "load_catalogue", lambda: cat)
     monkeypatch.setattr(generate, "run_all", world.run_all)
+    monkeypatch.setattr(generate, "preflight", world.preflight, raising=False)
     monkeypatch.setattr(generate, "_today", lambda: TODAY)
     monkeypatch.setattr(generate, "_engine_commit", lambda _repo: "abc1234")
     monkeypatch.setattr(manual_index, "MANUAL_COMMIT", SPEC_COMMIT)
@@ -263,6 +273,7 @@ def test_failed_validation_writes_nothing(world: World, capsys: pytest.CaptureFi
     # and nothing was run.
     assert_untouched(world, old)
     assert world.calls == []
+    assert world.preflights == []  # no child starts for a run that cannot start
     assert "missing example folder: examples/beta/second/ds/minimal" in problems(capsys)
 
 
@@ -368,6 +379,7 @@ def test_check_only_checks_and_writes_nothing(
     assert generate.main(["--check-only"]) == 0
     assert capsys.readouterr().err == ""
     assert world.calls == []
+    assert world.preflights == []
     assert world.names() == ["examples"]
 
 
@@ -421,6 +433,28 @@ def test_jobs_are_every_example_on_both_engines_and_random_runs_twice(
 def test_workers_and_timeout_reach_the_runner(world: World) -> None:
     assert generate.main(["--workers", "2", "--timeout", "30"]) == 0
     assert world.settings == [(2, 30.0)]
+    assert world.preflights == [30.0]
+
+
+def test_a_child_that_cannot_import_the_engines_stops_the_run_before_it_starts(
+    world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # Every run would be a crash, which would roll up to 🔴 everywhere over the pages there are.
+    line = (
+        "preflight: a child process cannot import vtlengine and its engines (ModuleNotFoundError: "
+        "No module named 'vtlengine.AST.Grammar._cpp_parser.vtl_cpp_parser'); run the generator "
+        "with a Python that can import vtlengine: the compiled parser must be in src/"
+    )
+
+    def cannot_import(timeout_s: float) -> object:
+        raise runner.PreflightError(line)
+
+    monkeypatch.setattr(generate, "preflight", cannot_import, raising=False)
+    old = seed_outputs(world)
+    assert generate.main([]) == 2
+    assert problems(capsys) == [line]
+    assert world.calls == []
+    assert_untouched(world, old)
 
 
 def test_only_runs_the_jobs_of_the_chapters_named(world: World) -> None:
@@ -603,6 +637,7 @@ def test_the_run_writes_every_file_and_leaves_nothing_else(world: World) -> None
     assert ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   alpha\n   beta\n" in index
     assert "9.9.9" in index
     assert "abc1234" in index
+    assert f"with pandas {PANDAS_VERSION} and DuckDB {DUCKDB_VERSION}" in index
     assert f"(sdmx-twg/vtl @ {SPEC_COMMIT})" in index
     alpha = (world.root / "alpha.rst").read_text(encoding="utf-8")
     rule = "=" * 34  # twice the 17 characters of "🟢 Alpha operators"
@@ -619,6 +654,8 @@ def test_status_json_has_sorted_keys_the_meta_and_every_verdict(world: World) ->
     assert text == json.dumps(document, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
     assert document["meta"] == {
         "date": TODAY,
+        "duckdb_version": DUCKDB_VERSION,
+        "pandas_version": PANDAS_VERSION,
         "spec_commit": SPEC_COMMIT,
         "vtlengine_commit": "abc1234",
         "vtlengine_version": "9.9.9",
@@ -980,6 +1017,28 @@ def test_the_generator_does_not_import_the_engine_or_pandas() -> None:
     operator_map = str(Path(generate.__file__).resolve().parent)
     env = {**os.environ, "PYTHONPATH": operator_map}
     subprocess.run([sys.executable, "-c", code], env=env, check=True)  # noqa: S603
+
+
+@pytest.mark.parametrize("where", ["help", "docstring"])
+def test_the_help_and_the_docstring_say_how_to_run_the_generator(
+    where: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    if where == "help":
+        with pytest.raises(SystemExit) as stopped:
+            generate.main(["--help"])
+        assert stopped.value.code == 0
+        text = capsys.readouterr().out
+    else:
+        text = generate.__doc__ or ""
+    words = " ".join(text.split())
+    # A Python that can import vtlengine with its compiled parser, under a memory cap where
+    # systemd can set one, and without one elsewhere.
+    assert "a Python that can import vtlengine, with the compiled parser in src/" in words
+    assert (
+        "systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 python "
+        "docs/operator_map/generate.py"
+    ) in words
+    assert "Elsewhere the cap is optional." in words
 
 
 def test_the_default_folders_are_the_ones_of_this_worktree() -> None:

@@ -59,6 +59,8 @@ _ROLES: Final = frozenset(
 )
 
 _COMMIT: Final = re.compile(r"[0-9a-f]{40}")
+# The name of a result dataset names the files of ``expected/``.
+_FILE_NAME: Final = re.compile(r"\w+")
 _EXAMPLE_SCRIPT: Final = re.compile(r"ex_\d+\.vtl")
 
 # What the scripts are searched for, once ``_code`` has blanked their comments and strings.
@@ -405,6 +407,10 @@ def _plan_expected(plan: _Plan, folder: Path, ref: str) -> str:
     for component in dataset["DataStructure"]:
         del component["nullable"]  # the manual does not say
     name = str(dataset["name"])
+    if _FILE_NAME.fullmatch(name) is None:
+        raise ManualImportError(
+            f"{json_file}: the result name {name!r} cannot name a file (letters, digits and _)"
+        )
     plan.files[f"{_EXPECTED}/{name}.json"] = _json_text(structure)
     plan.files[f"{_EXPECTED}/{name}.csv"] = _read_data(csv_file, _types(dataset))
     return name

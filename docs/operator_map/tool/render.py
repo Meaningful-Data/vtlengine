@@ -3,9 +3,11 @@
 ``chapter_rst`` and ``index_rst`` take the catalogue and the ``StatusIndex`` of a run and return
 the text of a page. The diagrams come from ``tool.mermaid`` and sit in ``.. mermaid::``
 directives; every example has a row in a table, since a viewer may ignore the links of a
-diagram. Nothing here runs an engine. The only thing read from disk is whether the folder of an
-example has an ``input/`` folder and a ``notes.md`` to link, in ``examples_root``
-(``docs/operator_map/examples`` unless it is given).
+diagram. The name of an example in its row links to its folder, whose page in the built site
+shows the text of its files, and the Example cell links to the files themselves. Nothing here
+runs an engine. The only thing read from disk is whether the folder of an example has an
+``input/`` folder and a ``notes.md`` to link, in ``examples_root`` (``docs/operator_map/examples``
+unless it is given).
 
 The links to the files of the examples are relative to ``docs/operator_map``, where the pages are
 written: the docs build copies the examples next to the pages of the built site. The pages are
@@ -106,6 +108,8 @@ class RunMeta:
     vtlengine_commit: str
     vtlengine_version: str
     spec_commit: str  # the commit of the manual, in sdmx-twg/vtl
+    pandas_version: str  # the engines, as the children of the run imported them
+    duckdb_version: str
 
 
 def manual_url(page: str) -> str:
@@ -136,10 +140,11 @@ def chapter_rst(
     """
     title = _titled(index.chapters.get(chapter.id), _text(chapter.title))
     version, commit = _inline(meta.vtlengine_version), _inline(meta.vtlengine_commit)
+    engines = f"pandas {_inline(meta.pandas_version)} · DuckDB {_inline(meta.duckdb_version)}"
     parts = [
         _title(title, _PAGE, overline=True),
         _counts_line(_chapter_statuses(chapter, index)),
-        f"← Back to :doc:`{_INDEX_DOC}` · vtlengine {version} ({commit})",
+        f"← Back to :doc:`{_INDEX_DOC}` · vtlengine {version} ({commit}) · {engines}",
         *(_mermaid(block) for block in chapter_blocks(chapter, cat, index)),
         *(_operator_section(chapter, op, index, examples_root) for op in chapter.operators),
     ]
@@ -177,7 +182,10 @@ def _example_row(
     """The row of an example: its variant, its status, what each engine gave, and its files."""
     result = index.examples.get(f"{chapter_id}/{operator_id}/{variant.id}/{example.name}")
     # A line block: the variant, and under it the name of the example, as two lines of a cell.
-    lines = [_literal(variant.label), _inline(example.name)]
+    # The name links to the folder, whose page shows the text of every file of the example.
+    names = (chapter_id, operator_id, variant.id, example.name)
+    folder = quote(example_dir(_EXAMPLES, *names).as_posix())
+    lines = [_literal(variant.label), _link(example.name, f"{folder}/")]
     label = "\n".join(f"| {line}" for line in lines if line)
     files = _example_links(chapter_id, operator_id, variant.id, example, root)
     if result is None:  # the index of a run that did not cover it
@@ -295,10 +303,23 @@ status of their variants by the same rule, and the counts are over variants.
 semantics, and never from the output of an engine. A viewer may ignore the links of the \
 diagrams: the tables are the reliable way to the files.
 - **Comparison.** Only the outputs that the example expects are compared: the components, \
-their roles and types, and the data points, in any order. A number is compared to the digits \
-written in the expected file, as far as a double holds them. ``random`` and ``current_date`` are \
-checked by a property of their values (for ``random``, those of the columns that are empty in \
-the expected file), and the two engines must still return the same values."""
+their roles and types, and the data points, in any order. A number written with decimals matches \
+a value within one unit of its last digit: an expected ``0.7`` accepts 0.6001–0.7999. The \
+tolerance is never finer than what a double holds. A number written without decimals matches \
+the same number, within a relative 1e-9, and one written with an exponent within a relative \
+1e-6. ``random`` and ``current_date`` are checked by a property of their values (for \
+``random``, those of the columns that are empty in the expected file), and the two engines must \
+still return the same values."""
+
+# How to run the generator; ``generate.py --help`` and its docstring say the same.
+_REGENERATE: Final = (
+    "- To regenerate, run ``docs/operator_map/generate.py`` with a Python that can import "
+    "vtlengine, with the compiled parser in ``src/`` (see *Building the C++ parser from source* "
+    "in the contributing guide of the repository). Where systemd is available, run it under a "
+    "memory cap: "
+    "``systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 python "
+    "docs/operator_map/generate.py``. Elsewhere the cap is optional."
+)
 
 _OVERVIEW: Final = (
     "One node per chapter, with how many of its variants are in each status, and an arrow to "
@@ -367,10 +388,11 @@ def _generation(meta: RunMeta) -> str:
             [
                 f"- Generated on {_inline(meta.date)}.",
                 f"- Engine: vtlengine {_inline(meta.vtlengine_version)}, "
-                f"commit {_literal(meta.vtlengine_commit)}.",
+                f"commit {_literal(meta.vtlengine_commit)}, "
+                f"with pandas {_inline(meta.pandas_version)} "
+                f"and DuckDB {_inline(meta.duckdb_version)}.",
                 f"- Manual: VTL 2.2 Reference Manual, {spec}.",
-                "- To regenerate, run ``docs/operator_map/generate.py`` under "
-                "``systemd-run --user --scope -p MemoryMax=6G -p MemorySwapMax=0``.",
+                _REGENERATE,
             ]
         ),
     )

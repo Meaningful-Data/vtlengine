@@ -37,8 +37,8 @@ def make_operator(**changes: Any) -> Operator:
         name="Addition",
         symbol="+",
         page=ADD_PAGE,
-        accepts=("number",),
-        returns=("number",),
+        accepts=("number", "dataset"),
+        returns=("number", "dataset"),
         variants=(Variant(id="ds_ds", label="DS + DS", examples=(manual("ex_1"),)),),
     )
     return dataclasses.replace(operator, **changes)
@@ -58,8 +58,8 @@ def make_string_chapter(*variants: Variant) -> Chapter:
         name="String length",
         symbol="length",
         page=LENGTH_PAGE,
-        accepts=("string",),
-        returns=("integer",),
+        accepts=("string", "dataset"),
+        returns=("integer", "dataset"),
         variants=variants,
     )
     return Chapter(id="string", title="String operators", operators=(operator,))
@@ -78,12 +78,14 @@ def test_valid_catalogue_has_no_problems() -> None:
 
 
 def test_unknown_type() -> None:
-    cat = make_catalogue(make_operator(accepts=("numbr",)))
+    cat = make_catalogue(make_operator(accepts=("numbr", "dataset")))
     assert problems_for(cat) == ["numeric.addition: unknown type 'numbr'"]
 
 
 def test_unknown_type_is_reported_once_per_place() -> None:
-    cat = make_catalogue(make_operator(accepts=("numbr", "numbr"), returns=("numbr",)))
+    cat = make_catalogue(
+        make_operator(accepts=("numbr", "numbr", "dataset"), returns=("numbr", "dataset"))
+    )
     assert problems_for(cat) == ["numeric.addition: unknown type 'numbr'"]
 
 
@@ -209,9 +211,12 @@ def test_bad_and_duplicate_ids_at_every_level() -> None:
 def test_problems_follow_catalogue_order_then_sorted() -> None:
     minimal = (Variant("ds_ds", "DS - DS", (authored(),)),)
     second = make_operator(
-        id="subtraction", page="Numeric operators/Subtraction", accepts=("x",), variants=minimal
+        id="subtraction",
+        page="Numeric operators/Subtraction",
+        accepts=("x", "dataset"),
+        variants=minimal,
     )
-    first = make_operator(accepts=("y",))
+    first = make_operator(accepts=("y", "dataset"))
     cat = make_catalogue(first, second)
     pages = {ADD_PAGE, "Numeric operators/Subtraction", "Numeric operators/Floor", "A/B"}
     manual_examples = {ADD_EX_1, f"{ADD_PAGE}/ex_3", f"{ADD_PAGE}/ex_2"}
@@ -222,6 +227,87 @@ def test_problems_follow_catalogue_order_then_sorted() -> None:
         "page not covered: Numeric operators/Floor",
         f"manual example not mapped: {ADD_PAGE}/ex_2",
         f"manual example not mapped: {ADD_PAGE}/ex_3",
+    ]
+
+
+# --- Validation: the dataset forms ---
+
+
+def test_an_operator_with_a_dataset_form_takes_and_gives_a_dataset() -> None:
+    # The fixture's addition has the dataset form ``ds_ds`` and lists ``dataset`` on both sides.
+    assert problems_for(make_catalogue(make_operator())) == []
+    plain = make_operator(accepts=("number",), returns=("number",))
+    assert problems_for(make_catalogue(plain)) == [
+        "numeric.addition: 'dataset' is not in accepts, but its dataset forms take one: ds_ds",
+        "numeric.addition: 'dataset' is not in returns, but its dataset forms give one: ds_ds",
+    ]
+
+
+@pytest.mark.parametrize(
+    "variant_id", ["ds", "ds_sc", "sc_ds", "analytic_ds", "ds_group_by", "levenshtein_ds_ds"]
+)
+def test_a_dataset_form_is_a_variant_whose_id_has_the_part_ds(variant_id: str) -> None:
+    forms = (Variant(variant_id, "x", (manual("ex_1"),)),)
+    cat = make_catalogue(make_operator(accepts=("number",), returns=("number",), variants=forms))
+    owner = "numeric.addition"
+    assert problems_for(cat) == [
+        f"{owner}: 'dataset' is not in accepts, but its dataset forms take one: {variant_id}",
+        f"{owner}: 'dataset' is not in returns, but its dataset forms give one: {variant_id}",
+    ]
+
+
+@pytest.mark.parametrize(
+    "variant_id", ["sc_sc", "comp", "param_dataset", "non_null_dataset_all", "dsl", "ds2"]
+)
+def test_a_variant_without_the_token_ds_is_not_a_dataset_form(variant_id: str) -> None:
+    forms = (Variant(variant_id, "x", (manual("ex_1"),)),)
+    cat = make_catalogue(make_operator(accepts=("number",), returns=("number",), variants=forms))
+    assert problems_for(cat) == []
+
+
+def test_a_dataset_form_with_returns_of_its_own_gives_what_they_say() -> None:
+    own = (
+        Variant("ds_no_digits", "round(DS)", (manual("ex_1"),), returns=("integer",)),
+        Variant("string_to_integer_ds", "cast(DS, integer)", (authored(),), returns=("dataset",)),
+    )
+    assert problems_for(make_catalogue(make_operator(returns=("number",), variants=own))) == []
+    # A form without returns of its own gives the operator's, which then need ``dataset``.
+    mixed = (*own, Variant("ds_digits", "round(DS, n)", (authored(),)))
+    assert problems_for(make_catalogue(make_operator(returns=("number",), variants=mixed))) == [
+        "numeric.addition: 'dataset' is not in returns, but its dataset forms give one: ds_digits"
+    ]
+    # Whatever a form returns, it takes a dataset.
+    cat = make_catalogue(make_operator(accepts=("number",), returns=("number",), variants=own))
+    assert problems_for(cat) == [
+        "numeric.addition: 'dataset' is not in accepts, but its dataset forms take one: "
+        "ds_no_digits, string_to_integer_ds"
+    ]
+
+
+# --- Validation: the names of the examples ---
+
+
+def test_example_names_and_manual_refs_are_ids() -> None:
+    # They name folders and the targets of the clicks of the diagrams.
+    examples = (
+        Example(name="Minimal", source="authored"),
+        Example(name="../x", source="authored"),
+        manual("ex-1"),
+    )
+    cat = make_catalogue(make_operator(variants=(Variant("ds_ds", "DS + DS", examples),)))
+    assert problems_for(cat) == [
+        f"numeric.addition: unknown manual example '{ADD_PAGE}/ex-1'",
+        "numeric.addition.ds_ds: bad example name 'Minimal'",
+        "numeric.addition.ds_ds: bad example name '../x'",
+        "numeric.addition.ds_ds: bad example name 'manual_ex-1'",
+        "numeric.addition.ds_ds: bad manual_ref 'ex-1'",
+        f"manual example not mapped: {ADD_EX_1}",
+    ]
+    # The examples of a type definition are checked the same way.
+    identity = Variant("identity", "DS_r := DS_1", (authored("minimal 2"),))
+    types = (TypeDef("number", ("scalar",), variants=(identity,)),)
+    assert problems_for(make_catalogue(make_operator(), types=types)) == [
+        "types.number.identity: bad example name 'minimal 2'"
     ]
 
 
@@ -299,7 +385,7 @@ def test_scope_definitions_covers_dl_pages() -> None:
 
 
 def test_scope_does_not_limit_type_link_id_and_see_checks() -> None:
-    broken = make_operator(accepts=("numbr",), links=(Link("clause.aggr", "used in"),))
+    broken = make_operator(accepts=("numbr", "dataset"), links=(Link("clause.aggr", "used in"),))
     string_chapter = make_string_chapter(Variant("DS", "length(DS)", (authored(),)))
     types = (TypeDef("scalar", (), see="general.x"),)
     cat = Catalogue(chapters=(make_chapter(broken), string_chapter), types=types)
@@ -324,6 +410,20 @@ def test_typedef_see_target_must_exist() -> None:
 
     missing = make_catalogue(make_operator(), types=(TypeDef("scalar", (), see="general.x"),))
     assert problems_for(missing) == ["types.scalar: see target 'general.x' not found"]
+
+
+def test_typedef_see_may_name_a_variant_of_an_operator() -> None:
+    variant = TypeDef("scalar", (), see="numeric.addition.ds_ds")
+    assert problems_for(make_catalogue(make_operator(), types=(variant,))) == []
+    for target in (
+        "numeric.addition.sc_sc",
+        "numeric.addition.ds_ds.minimal",
+        "numeric.other.ds_ds",
+        "numeric",
+        "numeric.addition.",
+    ):
+        cat = make_catalogue(make_operator(), types=(TypeDef("scalar", (), see=target),))
+        assert problems_for(cat) == [f"types.scalar: see target '{target}' not found"], target
 
 
 def test_typedef_ids_and_parents_must_be_known_types() -> None:

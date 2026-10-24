@@ -18,7 +18,7 @@ operator or a variant links to the folder of its first example, a chapter or a l
 the page of the chapter, ``<chapter>`` and ``PAGE_SUFFIX``: the pages are part of the Sphinx
 docs, so that is the page of the built site. A type, wherever it is drawn (a hub, a subtype, a
 node of the lattice or of the overview), links to its first example, or to the first example of
-the operator it ``see``s, and has no link if it has neither.
+the operator or the variant it ``see``s, and has no link if it has neither.
 
 The output follows the order of the catalogue, so a rerun gives the same text.
 """
@@ -421,7 +421,7 @@ def lattice_block(cat: Catalogue, index: StatusIndex) -> str:
 def _type_folder(
     typedef: TypeDef | None, targets: Mapping[str, tuple[Chapter, Operator]]
 ) -> str | None:
-    """The folder a type links to: its first example, else that of the operator it ``see``s."""
+    """The folder a type links to: its first example, else that of what it ``see``s."""
     if typedef is None:
         return None
     own = _first_example(typedef.variants)
@@ -429,8 +429,26 @@ def _type_folder(
         return _folder("types", typedef.id, *own)
     if typedef.see is None:
         return None
-    chapter, operator = _resolve(targets, typedef.see, f"types.{typedef.id}")
-    return _operator_folder(chapter.id, operator)
+    return _seen_folder(targets, typedef.see, f"types.{typedef.id}")
+
+
+def _seen_folder(
+    targets: Mapping[str, tuple[Chapter, Operator]], address: str, owner: str
+) -> str | None:
+    """The folder of the first example of ``address``: ``chapter.operator`` or a variant of it.
+
+    A variant is ``chapter.operator.variant``. One that the operator does not have raises a
+    ``ValueError``, as an operator that is not in ``targets`` does.
+    """
+    parts = address.split(".")
+    chapter, operator = _resolve(targets, ".".join(parts[:2]), owner)
+    if len(parts) <= 2:
+        return _operator_folder(chapter.id, operator)
+    variant = next((each for each in operator.variants if [each.id] == parts[2:]), None)
+    if variant is None:
+        raise ValueError(f"{owner}: target '{address}' not found")
+    first = _first_example((variant,))
+    return None if first is None else _folder(chapter.id, operator.id, *first)
 
 
 def _type_folders(cat: Catalogue) -> Callable[[str], str | None]:

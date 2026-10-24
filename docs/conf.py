@@ -64,9 +64,10 @@ exclude_patterns = [
 
 # -- Options for the Mermaid diagrams (sphinxcontrib-mermaid) ----------------
 # The diagrams of the operator map link to the pages and the examples with ``click``. Mermaid
-# disables clicks at its default security level, "strict". The text of the diagrams is generated
-# by the repository, so "loose" is safe. ``startOnLoad`` stays off: the extension renders them.
-mermaid_init_config = {"startOnLoad": False, "securityLevel": "loose"}
+# disables clicks at its default security level, "strict". "antiscript" keeps the links of the
+# clicks and still removes any script from the text of a diagram. ``startOnLoad`` stays off: the
+# extension renders them.
+mermaid_init_config = {"startOnLoad": False, "securityLevel": "antiscript"}
 # The extension draws a diagram in a box of the width of the page and 500 px high. A diagram of a
 # chapter is tall (a row for each operator and each variant), and squeezed into 500 px it cannot
 # be read. Here a diagram is as high as its proportions make it, and as wide as the page, up to

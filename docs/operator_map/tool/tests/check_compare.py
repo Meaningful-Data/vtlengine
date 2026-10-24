@@ -271,6 +271,13 @@ def test_time_periods_with_the_same_canonical_form_are_equal(left: str, right: s
         ("2010-1", "2010M1"),  # not one of the three patterns: compared exactly
         ("2010q1", "2010Q1"),
         ("foo", "FOO"),
+        # Only the annual indicator may leave out its number: a quarter, a month... has one.
+        ("2020Q", "2020Q1"),
+        ("2020-Q", "2020Q1"),
+        ("2020M", "2020M1"),
+        ("2020S", "2020-S1"),
+        ("2020W", "2020W1"),
+        ("2020D", "2020D1"),
     ],
 )
 def test_time_periods_with_another_canonical_form_differ(left: str, right: str) -> None:
