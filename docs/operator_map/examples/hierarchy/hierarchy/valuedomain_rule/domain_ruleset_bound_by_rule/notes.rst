@@ -1,0 +1,3 @@
+:Tests: a ruleset on the value domain ``VD_1``, the codes A to E, bound by ``rule Id_2`` to the identifier that takes its values.
+:Manual: `Hierarchical roll-up <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Hierarchical%20aggregation/Hierarchical%20roll-up/index.html>`__: "If *hr* is defined on Value Domains then it is mandatory to specify the *condition* (if any) and the *rule* parameters", and *ruleComp* "is the Identifier of *op* to be associated to the rule Value Domain or Variable defined in *hr*".
+:Expected: with the defaults ``non_null``, ``rule`` and ``computed``, (1, A, 6) and (1, C, 5): C = D + E = 2 + 3, and A = B + C takes the computed C, 1 + 5; the input data points are left out.

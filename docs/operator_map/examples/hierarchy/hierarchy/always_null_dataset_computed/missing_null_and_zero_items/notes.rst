@@ -1,0 +1,4 @@
+:Tests: ``always_null dataset computed`` on the grid input, ``A = B + C; C = D + E`` on ``Id_2``: ``Id_1`` 1 has no C, 2 a null D beside C = 20, and 3 only B = 0.
+:Manual: `Hierarchical roll-up <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Hierarchical%20aggregation/Hierarchical%20roll-up/index.html>`__: ``always_null``: "the result Data Point is produced in any case", missing Data Points "having a Measure value equal to **null**"; ``dataset`` "takes the input Data Points exclusively from the operand *op*"; ``computed``: "only the set of Data Points computed according to the Ruleset".
+:Expected: A = B + C reads C from ``DS_1``: the result is (1, A) = 1 + null = null, (1, C) = 2 + 3 = 5, (2, A) = 4 + 20 = 24, (2, C) = null + 5 = null, (3, A) = 0 + null = null and (3, C) = null + null = null, as "in any case" covers ``Id_1`` 3, where neither D nor E is found.
+:Finding: both engines leave out (3, C), and so give what ``partial_null`` gives.
