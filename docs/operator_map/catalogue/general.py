@@ -229,7 +229,7 @@ CHAPTER = Chapter(
             name="Type conversion",
             symbol="cast",
             page=_page("Type conversion"),
-            accepts=("scalar", "string", "value_domain"),
+            accepts=("scalar", "string", "value_domain", "dataset"),
             returns=("scalar",),
             variants=_cast_variants(),
         ),

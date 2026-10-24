@@ -9,6 +9,9 @@ from __future__ import annotations
 
 from tool.model import Chapter, Operator, Variant, authored, manual
 
+# Every operator has a data set form (``DS``): it takes and gives a dataset as well as booleans.
+_BOOLEAN = ("boolean", "dataset")
+
 CHAPTER = Chapter(
     id="boolean",
     title="Boolean operators",
@@ -18,8 +21,8 @@ CHAPTER = Chapter(
             name="Logical conjunction",
             symbol="and",
             page="Boolean operators/Logical conjunction",
-            accepts=("boolean",),
-            returns=("boolean",),
+            accepts=_BOOLEAN,
+            returns=_BOOLEAN,
             variants=(
                 Variant("ds_ds", "DS and DS", (manual("ex_1"), authored())),
                 Variant("ds_sc", "DS and sc", (authored(), authored("minimal_2"))),
@@ -43,8 +46,8 @@ CHAPTER = Chapter(
             name="Logical disjunction",
             symbol="or",
             page="Boolean operators/Logical disjunction",
-            accepts=("boolean",),
-            returns=("boolean",),
+            accepts=_BOOLEAN,
+            returns=_BOOLEAN,
             variants=(
                 Variant("ds_ds", "DS or DS", (manual("ex_1"), authored())),
                 Variant("ds_sc", "DS or sc", (authored(), authored("minimal_2"))),
@@ -68,8 +71,8 @@ CHAPTER = Chapter(
             name="Exclusive disjunction",
             symbol="xor",
             page="Boolean operators/Exclusive disjunction",
-            accepts=("boolean",),
-            returns=("boolean",),
+            accepts=_BOOLEAN,
+            returns=_BOOLEAN,
             variants=(
                 Variant("ds_ds", "DS xor DS", (manual("ex_1"), authored())),
                 Variant("ds_sc", "DS xor sc", (authored(),)),
@@ -89,8 +92,8 @@ CHAPTER = Chapter(
             name="Logical negation",
             symbol="not",
             page="Boolean operators/Logical negation",
-            accepts=("boolean",),
-            returns=("boolean",),
+            accepts=_BOOLEAN,
+            returns=_BOOLEAN,
             variants=(
                 Variant("ds", "not DS", (manual("ex_1"), authored())),
                 Variant("comp", "not comp", (manual("ex_2"), authored())),

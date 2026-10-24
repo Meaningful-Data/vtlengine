@@ -10,8 +10,12 @@ from __future__ import annotations
 from tool.model import Chapter, Operator, Variant, authored, manual
 
 _CHAPTER = "Numeric operators"
-_NUMBER = ("number",)
-_INTEGER = ("integer",)
+# Every operator of the chapter has a data set form, ``op(DS)``: it takes and gives a dataset as
+# well as numbers, so it is in the type flow of ``dataset`` too.
+_NUMBER = ("number", "dataset")
+_NUMBER_OR_INTEGER = ("number", "integer", "dataset")  # an integer numDigit, exponent or seed
+_TO_INTEGER = ("integer", "dataset")  # ceil and floor
+_INTEGER = ("integer",)  # the result of a form with no numDigit, or with ``_``
 
 
 def _page(page: str) -> str:
@@ -157,7 +161,7 @@ _ROUND = Operator(
     name="Rounding",
     symbol="round",
     page=_page("Rounding"),
-    accepts=("number", "integer"),
+    accepts=_NUMBER_OR_INTEGER,
     returns=_NUMBER,
     variants=(
         Variant("ds_digits", "round(DS, n)", (manual("ex_1"),)),
@@ -184,7 +188,7 @@ _TRUNC = Operator(
     name="Truncation",
     symbol="trunc",
     page=_page("Truncation"),
-    accepts=("number", "integer"),
+    accepts=_NUMBER_OR_INTEGER,
     returns=_NUMBER,
     variants=(
         Variant("ds_digits", "trunc(DS, n)", (manual("ex_1"),)),
@@ -216,7 +220,7 @@ _CEIL = Operator(
     symbol="ceil",
     page=_page("Ceiling"),
     accepts=_NUMBER,
-    returns=_INTEGER,
+    returns=_TO_INTEGER,
     variants=(
         Variant("ds", "ceil(DS)", (manual("ex_1"), authored())),
         Variant("comp", "ceil(comp)", (manual("ex_2"),)),
@@ -230,7 +234,7 @@ _FLOOR = Operator(
     symbol="floor",
     page=_page("Floor"),
     accepts=_NUMBER,
-    returns=_INTEGER,
+    returns=_TO_INTEGER,
     variants=(
         Variant("ds", "floor(DS)", (manual("ex_1"), authored())),
         Variant("comp", "floor(comp)", (manual("ex_2"),)),
@@ -305,7 +309,7 @@ _POWER = Operator(
     name="Power",
     symbol="power",
     page=_page("Power"),
-    accepts=("number", "integer"),
+    accepts=_NUMBER_OR_INTEGER,
     returns=_NUMBER,
     variants=(
         Variant("ds_sc", "power(DS, sc)", (manual("ex_1"),)),
@@ -321,7 +325,7 @@ _LOG = Operator(
     name="Logarithm",
     symbol="log",
     page=_page("Logarithm"),
-    accepts=("number", "integer"),
+    accepts=_NUMBER_OR_INTEGER,
     returns=_NUMBER,
     variants=(
         Variant("ds_sc", "log(DS, sc)", (manual("ex_1"),)),
@@ -350,7 +354,7 @@ _RANDOM = Operator(
     name="Random",
     symbol="random",
     page=_page("Random"),
-    accepts=("number", "integer"),
+    accepts=_NUMBER_OR_INTEGER,
     returns=_NUMBER,
     variants=(
         Variant(

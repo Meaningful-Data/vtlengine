@@ -5,14 +5,18 @@ from __future__ import annotations
 from tool.model import Chapter, Operator, Variant, authored, manual
 
 _PAGE = "String operators"
+# Every operator of the chapter has a data set form (``DS``): it takes and gives a dataset as
+# well as strings, so it is in the type flow of ``dataset`` too.
+_STRING = ("string", "dataset")
+_STRING_AND_INTEGER = ("string", "integer", "dataset")  # substr and instr: positions, lengths
 
 _CONCAT = Operator(
     id="concat",
     name="String concatenation",
     symbol="||",
     page=f"{_PAGE}/String concatenation",
-    accepts=("string",),
-    returns=("string",),
+    accepts=_STRING,
+    returns=_STRING,
     variants=(
         Variant("ds_ds", "DS || DS", (manual("ex_1"),)),
         Variant("ds_sc", "DS || sc", (authored(),)),
@@ -32,8 +36,8 @@ _TRIM = Operator(
     name="Whitespace removal",
     symbol="trim",
     page=f"{_PAGE}/Whitespace removal",
-    accepts=("string",),
-    returns=("string",),
+    accepts=_STRING,
+    returns=_STRING,
     variants=(
         Variant("ds", "trim(DS)", (authored(),)),
         Variant("comp", "trim(comp)", (authored(),)),
@@ -46,8 +50,8 @@ _LTRIM = Operator(
     name="Leading whitespace removal",
     symbol="ltrim",
     page=f"{_PAGE}/Whitespace removal",
-    accepts=("string",),
-    returns=("string",),
+    accepts=_STRING,
+    returns=_STRING,
     variants=(
         Variant("ds", "ltrim(DS)", (authored(),)),
         Variant("comp", "ltrim(comp)", (authored(),)),
@@ -60,8 +64,8 @@ _RTRIM = Operator(
     name="Trailing whitespace removal",
     symbol="rtrim",
     page=f"{_PAGE}/Whitespace removal",
-    accepts=("string",),
-    returns=("string",),
+    accepts=_STRING,
+    returns=_STRING,
     variants=(
         Variant("ds", "rtrim(DS)", (manual("ex_1"),)),
         Variant("comp", "rtrim(comp)", (manual("ex_2"),)),
@@ -74,8 +78,8 @@ _UPPER = Operator(
     name="Upper case conversion",
     symbol="upper",
     page=f"{_PAGE}/Character case conversion",
-    accepts=("string",),
-    returns=("string",),
+    accepts=_STRING,
+    returns=_STRING,
     variants=(
         Variant("ds", "upper(DS)", (manual("ex_1"),)),
         Variant("comp", "upper(comp)", (manual("ex_2"),)),
@@ -88,8 +92,8 @@ _LOWER = Operator(
     name="Lower case conversion",
     symbol="lower",
     page=f"{_PAGE}/Character case conversion",
-    accepts=("string",),
-    returns=("string",),
+    accepts=_STRING,
+    returns=_STRING,
     variants=(
         Variant("ds", "lower(DS)", (authored(),)),
         Variant("comp", "lower(comp)", (authored(),)),
@@ -102,8 +106,8 @@ _SUBSTR = Operator(
     name="Sub-string extraction",
     symbol="substr",
     page=f"{_PAGE}/Sub-string extraction",
-    accepts=("string", "integer"),
-    returns=("string",),
+    accepts=_STRING_AND_INTEGER,
+    returns=_STRING,
     variants=(
         Variant("ds_start_len", "substr(DS, start, length)", (manual("ex_2"),)),
         Variant("ds_start", "substr(DS, start)", (manual("ex_1"),)),
@@ -129,8 +133,8 @@ _REPLACE = Operator(
     name="String pattern replacement",
     symbol="replace",
     page=f"{_PAGE}/String pattern replacement",
-    accepts=("string",),
-    returns=("string",),
+    accepts=_STRING,
+    returns=_STRING,
     variants=(
         Variant("ds_two", "replace(DS, pattern1, pattern2)", (manual("ex_1"),)),
         Variant("ds_one", "replace(DS, pattern1)", (authored(),)),
@@ -146,8 +150,8 @@ _INSTR = Operator(
     name="String pattern location",
     symbol="instr",
     page=f"{_PAGE}/String pattern location",
-    accepts=("string", "integer"),
-    returns=("integer",),
+    accepts=_STRING_AND_INTEGER,
+    returns=("integer", "dataset"),
     variants=(
         Variant("ds_pattern", "instr(DS, pattern)", (manual("ex_1"),)),
         Variant("ds_pattern_start", "instr(DS, pattern, start)", (authored(),)),
@@ -177,8 +181,8 @@ _LENGTH = Operator(
     name="String length",
     symbol="length",
     page=f"{_PAGE}/String length",
-    accepts=("string",),
-    returns=("integer",),
+    accepts=_STRING,
+    returns=("integer", "dataset"),
     variants=(
         Variant("ds", "length(DS)", (manual("ex_1"),)),
         Variant("comp", "length(comp)", (manual("ex_2"), manual("ex_3"))),
@@ -196,8 +200,8 @@ _STRING_DISTANCE = Operator(
     name="String distances",
     symbol="string_distance",
     page=f"{_PAGE}/String distances",
-    accepts=("string",),
-    returns=("number",),
+    accepts=_STRING,
+    returns=("number", "dataset"),
     variants=(
         Variant(
             "levenshtein_ds_ds",

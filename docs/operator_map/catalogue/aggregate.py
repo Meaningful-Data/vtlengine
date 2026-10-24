@@ -46,6 +46,11 @@ def _page(title: str) -> str:
     return f"{_CHAPTER_TITLE}/{title}"
 
 
+def _with_dataset(type_id: str) -> tuple[str, ...]:
+    """``type_id`` and ``dataset``: a function with a data set form takes and gives one too."""
+    return tuple(dict.fromkeys((type_id, "dataset")))
+
+
 def _aggregate_function(op_id: str, name: str, title: str, accepts: str, returns: str) -> Operator:
     """One of the ten aggregate functions, with its eight forms (nine for ``count``).
 
@@ -99,8 +104,8 @@ def _aggregate_function(op_id: str, name: str, title: str, accepts: str, returns
         name=name,
         symbol=op_id,
         page=_page(title),
-        accepts=(accepts,),
-        returns=(returns,),
+        accepts=_with_dataset(accepts),
+        returns=_with_dataset(returns),
         variants=variants,
         links=(_AGGR_LINK, _OVER_LINK),
     )
@@ -112,8 +117,8 @@ def _first_or_last(op_id: str, name: str) -> Operator:
         name=name,
         symbol=op_id,
         page=_page(name),
-        accepts=("scalar",),
-        returns=("scalar",),
+        accepts=("scalar", "dataset"),
+        returns=("scalar", "dataset"),
         variants=(
             Variant(
                 "analytic_ds",
@@ -136,8 +141,8 @@ def _lag_or_lead(op_id: str, name: str) -> Operator:
         name=name,
         symbol=op_id,
         page=_page(name),
-        accepts=("scalar",),
-        returns=("scalar",),
+        accepts=("scalar", "dataset"),
+        returns=("scalar", "dataset"),
         variants=(
             Variant(
                 "ds_no_offset", f"{op_id}(DS over (partition by Id order by Id))", (authored(),)
@@ -277,8 +282,8 @@ _RATIO_TO_REPORT = Operator(
     name="Ratio to report",
     symbol="ratio_to_report",
     page=_page("Ratio to report"),
-    accepts=("number",),
-    returns=("number",),
+    accepts=("number", "dataset"),
+    returns=("number", "dataset"),
     variants=(
         Variant("ds", "ratio_to_report(DS over (partition by Id))", (manual("ex_1"),)),
         Variant(

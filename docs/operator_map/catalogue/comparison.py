@@ -5,6 +5,10 @@ from __future__ import annotations
 from tool.model import Chapter, Operator, Variant, authored, manual
 
 _CHAPTER_TITLE = "Comparison operators"
+# Every operator but ``exists_in`` has a data set form (``DS``) next to its component and scalar
+# forms: it takes and gives a dataset as well as scalars and booleans.
+_SCALAR = ("scalar", "dataset")
+_BOOLEAN = ("boolean", "dataset")
 
 # The operand levels of a binary comparison, in the order of the variants: id, left, right.
 _PAIRS: tuple[tuple[str, str, str], ...] = (
@@ -53,8 +57,8 @@ def _binary(
         name=name,
         symbol=symbol,
         page=_page(page),
-        accepts=("scalar",),
-        returns=("boolean",),
+        accepts=_SCALAR,
+        returns=_BOOLEAN,
         variants=variants,
     )
 
@@ -70,8 +74,8 @@ def _element_of(operator_id: str, name: str, keyword: str, manual_refs: dict[str
         name=name,
         symbol=keyword,
         page=_page("Element of"),
-        accepts=("scalar", "set", "value_domain"),
-        returns=("boolean",),
+        accepts=("scalar", "set", "value_domain", "dataset"),
+        returns=_BOOLEAN,
         variants=variants,
     )
 
@@ -81,8 +85,8 @@ _BETWEEN = Operator(
     name="Between",
     symbol="between",
     page=_page("Between"),
-    accepts=("scalar",),
-    returns=("boolean",),
+    accepts=_SCALAR,
+    returns=_BOOLEAN,
     variants=(
         _variant("ds_sc_sc", "between(DS, sc, sc)", "ex_1"),
         _variant("comp_sc_sc", "between(comp, sc, sc)"),
@@ -96,8 +100,8 @@ _MATCH_CHARACTERS = Operator(
     name="Match characters",
     symbol="match_characters",
     page=_page("Match characters"),
-    accepts=("string",),
-    returns=("boolean",),
+    accepts=("string", "dataset"),
+    returns=_BOOLEAN,
     variants=(
         _variant("ds_sc", "match_characters(DS, sc)", "ex_1"),
         _variant("comp_sc", "match_characters(comp, sc)"),
@@ -111,8 +115,8 @@ _ISNULL = Operator(
     name="Is null",
     symbol="isnull",
     page=_page("Is null"),
-    accepts=("scalar",),
-    returns=("boolean",),
+    accepts=_SCALAR,
+    returns=_BOOLEAN,
     variants=(
         _variant("ds", "isnull(DS)", "ex_1"),
         _variant("comp", "isnull(comp)", "ex_2"),
