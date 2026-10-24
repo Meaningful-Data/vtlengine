@@ -44,6 +44,11 @@ def chapter_of(chapter_id: str, title: str, *operators: Operator) -> Chapter:
     return Chapter(chapter_id, title, operators)
 
 
+def find(chapter: Chapter, operator_id: str) -> Operator:
+    """The operator of ``chapter`` with this id: not the one at some position."""
+    return next(op for op in chapter.operators if op.id == operator_id)
+
+
 def index_of(cat: Catalogue, statuses: dict[str, Status] | None = None) -> StatusIndex:
     """An index with the status of every operator of ``cat``: ``ok`` unless ``statuses`` say."""
     operators: dict[str, Status] = {
@@ -164,6 +169,32 @@ def test_consumer_of_supertype_takes_subtype() -> None:
     assert ids(links_of("mod").goes_to["number"]) == ["round", "ceil"]
 
 
+def test_the_time_chain_follows_the_hierarchy() -> None:
+    # time is above date and above time_period, which are not above each other.
+    cat = Catalogue(
+        (
+            chapter_of(
+                "some",
+                "Some operators",
+                typed("today", (), ("date",)),
+                typed("period_of", (), ("time_period",)),
+                typed("from_time", (), ("time",)),
+                typed("as_time", ("time",), ("string",)),
+                typed("on_date", ("date",), ("string",)),
+            ),
+        )
+    )
+    # A date and a time period are times: both feed a taker of time. A taker of date is fed by a
+    # date only: not by a time period, nor by a time, which may be either.
+    assert ids(links_in(cat, "as_time").comes_from["time"]) == ["today", "period_of", "from_time"]
+    assert ids(links_in(cat, "on_date").comes_from["date"]) == ["today"]
+    # The other way round: a date goes to the takers of date and of time, a time period to the
+    # takers of time, and a time to the takers of time, not to those of date.
+    assert ids(links_in(cat, "today").goes_to["date"]) == ["as_time", "on_date"]
+    assert ids(links_in(cat, "period_of").goes_to["time_period"]) == ["as_time"]
+    assert ids(links_in(cat, "from_time").goes_to["time"]) == ["as_time"]
+
+
 def test_a_taker_of_scalar_is_fed_by_every_value() -> None:
     # Every value type is under scalar. The results that follow their input (nvl and
     # if_then_else) are in any_type, and the definitions give structures, not values.
@@ -246,11 +277,10 @@ def test_a_listed_operator_without_a_status_is_reported() -> None:
     statuses = {key: status for key, status in STATUSES.items() if key != "numeric/ceil"}
     index = StatusIndex({}, {}, statuses, {})
     with pytest.raises(ValueError, match="numeric/ceil"):
-        type_links(CAT, index, NUMERIC, NUMERIC.operators[1])
+        type_links(CAT, index, NUMERIC, find(NUMERIC, "mod"))
     # ceil is in no list of check_datapoint, so it needs no status there.
-    assert type_links(CAT, index, VALIDATION, VALIDATION.operators[0]).takes == (
-        "datapoint_ruleset",
-    )
+    check = find(VALIDATION, "check_datapoint")
+    assert type_links(CAT, index, VALIDATION, check).takes == ("datapoint_ruleset",)
 
 
 # --- Any scalar and any type ---
@@ -378,6 +408,32 @@ def test_a_form_that_takes_any_type_takes_any_scalar() -> None:
     assert ids(links.any_type) == ["follows"]
 
 
+def test_a_form_that_gives_scalar_is_matched_as_it_is() -> None:
+    # Only any follows its input. scalar is a type, above every value type and below none, so an
+    # operator that gives it feeds the takers of scalar, and no taker of a type under it. The
+    # takers give any, so that they do not feed one another by type.
+    cat = Catalogue(
+        (
+            chapter_of(
+                "some",
+                "Some operators",
+                typed("source", (), ("scalar",)),
+                typed("takes_scalar", ("scalar",), ("any",)),
+                typed("takes_number", ("number",), ("any",)),
+            ),
+        )
+    )
+    assert ids(links_in(cat, "takes_scalar").comes_from["scalar"]) == ["source"]
+    number = links_in(cat, "takes_number")
+    assert number.comes_from == {"number": ()}
+    # It does not follow its input: takes_scalar is in any_type, and source is not.
+    assert ids(number.any_type) == ["takes_scalar"]
+    # And it goes to the takers of scalar only, which are the ones that take any scalar.
+    source = links_in(cat, "source")
+    assert source.goes_to == {"scalar": ()}
+    assert ids(source.any_scalar) == ["takes_scalar"]
+
+
 # --- The structural types ---
 
 
@@ -487,6 +543,47 @@ def test_forms_without_types_have_those_of_the_operator() -> None:
     assert (old_links.takes, old_links.gives) == (("number",), ("integer",))
     # It feeds what takes a number, as an operator of its types does.
     assert ids(links_in(cat, "target").comes_from["number"]) == ["old"]
+
+
+def test_a_form_that_takes_nothing_is_not_given_the_accepts_of_its_operator() -> None:
+    # An empty takes is declared, it is not a missing one: Variant.takes is None when a form does
+    # not declare it. Both operators accept a number. The form of "nothing" declares that it
+    # takes nothing, as current_date() does, so nothing feeds it. The form of "fallback" does not
+    # declare takes, so it takes what its operator accepts.
+    accepts, returns = ("number", "dataset"), ("date", "dataset")
+    nothing = Operator(
+        "nothing",
+        "Nothing",
+        "nothing",
+        PAGE,
+        accepts,
+        returns,
+        (Variant("sc", "nothing()", (authored("what_it_tests"),), takes=()),),
+    )
+    fallback = Operator(
+        "fallback",
+        "Fallback",
+        "fallback",
+        PAGE,
+        accepts,
+        returns,
+        (Variant("sc", "fallback(sc)", (authored("what_it_tests"),)),),
+    )
+    chapter = chapter_of(
+        "some", "Some operators", typed("producer", (), ("number",)), nothing, fallback
+    )
+    cat = Catalogue((chapter,))
+    links = links_in(cat, "nothing")
+    assert (links.takes, links.gives) == ((), ("date",))
+    assert links.comes_from == {}
+    assert links.any_type == ()
+    fed = links_in(cat, "fallback")
+    assert fed.takes == ("number",)
+    assert ids(fed.comes_from["number"]) == ["producer"]
+    # The table reads the types of the forms the same way: nothing is "in" for "nothing".
+    columns, rows = block_types_table(chapter)
+    assert columns == ("number", "date")
+    assert [cells for _, cells in rows] == [("out", ""), ("", "out"), ("in", "out")]
 
 
 # --- The types table of a block ---

@@ -24,6 +24,12 @@ The operators that would be in the list of every type are folded into a list of 
   ``scalar``: it is in ``any_scalar``, and an operator that takes ``any`` is fed by what feeds
   one that takes ``scalar``.
 
+Only ``any`` follows its input. A form that gives ``scalar`` is matched as it is, like a form
+that gives any other type: ``scalar`` is above every value type and below none, so the operator
+feeds the operators that take ``scalar`` (and ``any``, which is the same) and none that takes a
+type under it, such as ``number``. It is not in ``any_type``, and the operators that take
+``scalar`` are in its ``any_scalar``, not in a list by type.
+
 On each side, a folded list leaves out the operators that the lists by type of that side have
 (``any_type`` those of ``comes_from``, ``any_scalar`` those of ``goes_to``), so that nothing is
 listed twice: an operator with a form that gives ``integer`` and one that gives ``any`` is a
@@ -153,8 +159,12 @@ def _fed_by(type_id: str) -> frozenset[str]:
 def _taken_as(type_id: str) -> frozenset[str]:
     """The types that an operator may take to consume a ``type_id``: it and its supertypes.
 
-    ``scalar`` is left out: an operator that takes it takes any value, and is folded into
-    ``any_scalar``. A type that is not in the hierarchy has no supertypes.
+    ``scalar`` is left out of the supertypes: an operator that takes it takes any value, and is
+    folded into ``any_scalar``. This function does not keep those operators out of the lists by
+    type, as it answers ``{"scalar"}`` for a ``scalar`` and ``{"any"}`` for an ``any``:
+    ``_candidate`` does, by leaving ``scalar`` and ``any`` out of the takes of a candidate
+    (``takes - _FOLDED_TAKES``), so that no candidate is ever matched on them. A type that is not
+    in the hierarchy has no supertypes.
     """
     return frozenset((type_id,)) | (_SUPERTYPES.get(type_id, frozenset()) - {ANY_SCALAR})
 
