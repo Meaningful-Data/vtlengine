@@ -1,9 +1,19 @@
 # ruff: noqa: S101
 """Checks for the import of the VTL 2.2 manual's examples.
 
-The checks on the real manual need a clone of ``sdmx-twg/vtl`` at the pinned commit: they look
-for it at ``SPEC`` (the ``VTL_MANUAL_SPEC`` environment variable overrides the path) and are
-skipped when it is not there.
+The checks on the real manual need a clone of ``sdmx-twg/vtl`` at the pinned commit. They read
+its path from the ``VTL_MANUAL_SPEC`` environment variable and are skipped when it is unset or
+the folder does not exist.
+
+To get the clone (a sparse checkout of ``v2.2/docs`` at the pinned commit)::
+
+    git clone -q --filter=blob:none --sparse https://github.com/sdmx-twg/vtl.git <dir>
+    git -C <dir> checkout -q 140e946ed3f888951adb8bb66ea45030be84e2aa
+    git -C <dir> sparse-checkout set v2.2/docs
+
+and pass the manual's folder::
+
+    VTL_MANUAL_SPEC=<dir>/v2.2/docs/reference_manual
 """
 
 from __future__ import annotations
@@ -26,17 +36,18 @@ from tool.importer import (
 )
 from tool.model import DL_PAGES, Chapter, Operator, Variant, authored, manual
 
-# The default is the clone of the build of the map (the environment variable overrides it).
-SPEC = Path(
-    os.environ.get(
-        "VTL_MANUAL_SPEC",
-        "/tmp/claude-1000/-home-javier-Programacion-vtlengine/0fb4dbad-9652-4513-b68f-d33bc0d0973c"  # noqa: S108
-        "/scratchpad/spec/vtl-spec/v2.2/docs/reference_manual",
-    )
-)
 COMMIT = "140e946ed3f888951adb8bb66ea45030be84e2aa"
 PAGE = "Fake chapter/Fake page"
-needs_spec = pytest.mark.skipif(not SPEC.is_dir(), reason=f"the manual is not at {SPEC}")
+
+
+@pytest.fixture
+def manual_spec() -> Path:
+    """The manual's folder, from ``VTL_MANUAL_SPEC``; the check is skipped without it."""
+    folder = os.environ.get("VTL_MANUAL_SPEC", "")
+    if not folder or not Path(folder).is_dir():
+        pytest.skip("set VTL_MANUAL_SPEC to a clone of sdmx-twg/vtl v2.2/docs/reference_manual")
+    return Path(folder)
+
 
 # What the importer reports on the manual at the pinned commit: the examples that need a hand,
 # each with a word of every warning. No other example of the 191 has a warning.
@@ -565,9 +576,8 @@ def test_build_index_source_needs_a_manual(tmp_path: Path) -> None:
         build_index_source(tmp_path, COMMIT)
 
 
-@needs_spec
-def test_index_counts() -> None:
-    index = parse_index(build_index_source(SPEC, COMMIT))
+def test_index_counts(manual_spec: Path) -> None:
+    index = parse_index(build_index_source(manual_spec, COMMIT))
     pages, examples = index["MANUAL_PAGES"], index["MANUAL_EXAMPLES"]
     assert index["MANUAL_COMMIT"] == COMMIT
     assert len(pages) == 104
@@ -579,15 +589,14 @@ def test_index_counts() -> None:
     assert "Clause operators/Unpivoting/ex_2" in examples
 
 
-@needs_spec
-def test_every_manual_example_imports_and_loads(tmp_path: Path) -> None:
-    index = parse_index(build_index_source(SPEC, COMMIT))
+def test_every_manual_example_imports_and_loads(manual_spec: Path, tmp_path: Path) -> None:
+    index = parse_index(build_index_source(manual_spec, COMMIT))
     unreadable: list[str] = []
     warned: dict[str, list[str]] = {}
     for key in index["MANUAL_EXAMPLES"]:
         page, ref = key.rsplit("/", 1)
         dest = tmp_path / key
-        warnings = import_example(SPEC, page, ref, dest)
+        warnings = import_example(manual_spec, page, ref, dest)
         if warnings:
             warned[key] = warnings
         try:
