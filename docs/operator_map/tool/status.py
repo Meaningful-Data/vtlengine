@@ -1,13 +1,30 @@
 """Verdicts of the engines on an example, the status they make, and the roll-up of statuses.
 
 ``verdict`` says what one engine gave for an example: ``match`` when it gave the expected
-outputs, ``mismatch`` when it ran but gave something else, ``error`` when it did not run.
+outputs, ``mismatch`` when it ran but gave something else, ``error`` when it did not run. A
+failed run is one of two things, which ``is_guarded`` tells apart. A guarded error is an error
+that vtlengine raised on purpose: one of its own classes (``VTL_ERRORS``), with a code. A crash
+is any other failure: an unhandled exception such as ``AttributeError`` or ``KeyError``, or a
+``Timeout`` or a ``Crash`` of the child. ``mark`` writes a verdict as a page shows it: ✅ for a
+match, ❌ for a wrong result, 🛡 with its code for a guarded error, and 💥 with its type for a
+crash.
+
+An example can expect an error instead of outputs (``ExampleFiles.expected_error``): a run of
+it matches when it raises a guarded error with exactly that code, and is a mismatch when it
+raises another one, or none. A crash is a crash there too, never a match.
+
 ``example_result`` puts the verdicts of the two engines together into the status of the example:
 
 * ``diverge``: the engines do not agree. Two engines agree when both fail, whatever their
-  messages, or when they have the same verdict and ``outputs_equal`` finds their outputs equal;
+  messages, or when they have the same verdict and ``outputs_equal`` finds their outputs equal.
+  An example that expects an error has no outputs to compare: its engines agree when they raised
+  the same code, or no error at all;
 * ``ok``: both engines match;
-* ``missing``: both engines fail;
+* ``refused``: both engines fail with a guarded error, and neither code says that something is
+  not implemented (``NOT_IMPLEMENTED``). Where the manual defines a result, the engines refuse
+  it on purpose;
+* ``missing``: both engines fail, and not in that way: with a crash, or with an error that says
+  that something is not implemented;
 * ``partial``: the engines agree and both give a wrong answer.
 
 Only the outputs that the expected files of the example name are looked at, on both sides. A
@@ -46,11 +63,49 @@ from tool.examples import ExampleFiles, ExpectedDataset, ExpectedScalar
 from tool.model import Catalogue, Example, Status, Variant
 from tool.runner import RunOutput
 
-EMOJI: Final[dict[str, str]] = {"ok": "🟢", "partial": "🟡", "missing": "🔴", "diverge": "🔵"}
+EMOJI: Final[dict[str, str]] = {
+    "ok": "🟢",
+    "partial": "🟡",
+    "refused": "🛡️",
+    "missing": "🔴",
+    "diverge": "🔵",
+}
 
 Outcome = Literal["match", "mismatch", "error"]
 
-_STATUSES: Final[tuple[Status, ...]] = ("ok", "partial", "missing", "diverge")
+# The classes of the errors that vtlengine raises on purpose. A failed run is a guarded error
+# when it is of one of them and has a code; any other failure is a crash.
+VTL_ERRORS: Final[frozenset[str]] = frozenset(
+    {"SemanticError", "RunTimeError", "InputValidationException", "DataLoadError", "VTLSyntaxError"}
+)
+
+# The codes of the errors that say that vtlengine does not implement something, each with its
+# message as ``docs/error_messages.rst`` writes it, placeholders included. The list is kept by
+# hand. A check of the tool builds the file of the messages from the catalogue of the engine, and
+# compares, so that a message that changes there does not go unnoticed here.
+NOT_IMPLEMENTED: Final[dict[str, str]] = {
+    "1-3-13": "Unsupported VTL construct: {construct}.",
+    "0-5-1-9": "Dataset Priority input mode on HR is not implemented",
+    "1-3-2-2": "At op ``{op}``: User defined operator without returns is not implemented.",
+    "1-3-2-5": (
+        "At op eval: Eval in component execution is not supported, it only applies to Data Sets."
+    ),
+    "1-3-3-8": (
+        "Viral propagation definition {name} is defined on value domain {value_domain}, "
+        "which is not supported yet; define it on a variable instead."
+    ),
+    "0-5-1-8": (
+        "Value Domain '{name}' not available for cast operator or scalar type representation "
+        "or rulesets."
+    ),
+    "0-5-1-10": "Invalid parameter type definition {definition}.",
+    "1-1-13-8": "At op ``{op}``: No available using clause.",
+    "1-3-2-1": "Eval could not be called without a {option} type definition.",
+}
+
+_STATUSES: Final[tuple[Status, ...]] = ("ok", "partial", "refused", "missing", "diverge")
+# The statuses that a group has when all its members have it, in the order that ``rollup`` asks.
+_UNIFORM: Final[tuple[Status, ...]] = ("ok", "refused", "missing")
 _TYPES: Final = "types"  # the chapter, in the index, of the type hubs
 _IDENTIFIER: Final = "Identifier"
 
@@ -60,10 +115,17 @@ _NUMBER: Final = re.compile(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", re
 
 @dataclass(frozen=True)
 class EngineVerdict:
-    """What an engine gave for an example; ``detail`` is empty for a ``match``."""
+    """What an engine gave for an example; ``detail`` is empty for a ``match``.
+
+    ``error_type`` and ``error_code`` are those of the error that the run raised, when it
+    raised one: the class of the exception and, for an error of vtlengine, its code. A run that
+    raised nothing has neither.
+    """
 
     outcome: Outcome
     detail: str
+    error_type: str | None = None
+    error_code: str | None = None
 
 
 @dataclass(frozen=True)
@@ -98,9 +160,19 @@ def verdict(example: Example, files: ExampleFiles, out: RunOutput, today: str) -
     """What the run ``out`` of ``example`` on an engine gave: a match, a mismatch or an error.
 
     A run that failed is an ``error``, whose detail is ``<type> <code>: <message>`` with the
-    parts that are missing left out. Otherwise every expected output must be in the run, by its
-    name (an output that is not named in the expected files is ignored), or the verdict is a
-    ``mismatch`` with the detail ``missing output <name>``. Then, by the ``check`` of the example:
+    parts that are missing left out; the type and the code are the ``error_type`` and the
+    ``error_code`` of the verdict too.
+
+    An example that expects an error (``files.expected_error``) is judged before anything else,
+    and has no outputs to look at. A run that raised a guarded error with that code is a
+    ``match``. One that raised another guarded error is a ``mismatch`` with the detail
+    ``expected error <code>, got <code>``, and one that did not fail is a ``mismatch`` with the
+    detail ``expected error <code>, ran without an error``. A failure that is not a guarded
+    error is an ``error``, a crash.
+
+    Otherwise every expected output must be in the run, by its name (an output that is not named
+    in the expected files is ignored), or the verdict is a ``mismatch`` with the detail
+    ``missing output <name>``. Then, by the ``check`` of the example:
 
     * ``exact``: every expected dataset and scalar must compare as equal, or the verdict is a
       ``mismatch`` and the detail is the first problem found, with the name of the output in
@@ -119,14 +191,41 @@ def verdict(example: Example, files: ExampleFiles, out: RunOutput, today: str) -
     compared) and the expected scalars their type (not their value), or the verdict is a
     ``mismatch`` with the first difference as detail.
     """
+    if files.expected_error is not None:
+        return _expected_error_verdict(files.expected_error, out)
     if not out.ok:
-        return EngineVerdict("error", _error_detail(out))
+        return _error_verdict(out)
     problem = _missing_output(files, out)
     if problem is None:
         problem = _check_problem(example, files, out, today)
     if problem is None:
         return EngineVerdict("match", "")
     return EngineVerdict("mismatch", problem)
+
+
+def is_guarded(v: EngineVerdict) -> bool:
+    """Whether the verdict is about an error that vtlengine raised on purpose.
+
+    That is an error of one of its own classes, ``VTL_ERRORS``, with a code. Any other failed
+    run is a crash, whatever its type, a ``Timeout`` or a ``Crash`` included.
+    """
+    return v.error_type in VTL_ERRORS and v.error_code is not None
+
+
+def mark(v: EngineVerdict) -> str:
+    """The mark of a verdict, as a page shows it.
+
+    ``✅`` is a match, ``❌`` is a wrong result, ``🛡 <code>`` is a guarded error with its code,
+    and ``💥 <type>`` is a crash with the type of its exception. A crash that has no type is
+    just ``💥``.
+    """
+    if v.outcome == "match":
+        return "✅"
+    if v.outcome == "mismatch":
+        return "❌"
+    if is_guarded(v):
+        return f"🛡 {v.error_code}"
+    return f"💥 {v.error_type}" if v.error_type else "💥"
 
 
 def example_result(
@@ -136,8 +235,11 @@ def example_result(
 
     The engines agree when both fail, and not when their verdicts differ. When both run to the
     same verdict they agree if the outputs that the example expects are equal on both
-    (``outputs_equal``). The status is ``diverge`` when they do not agree, ``ok`` when both
-    match, ``missing`` when both fail, and ``partial`` when both give the same wrong answer.
+    (``outputs_equal``); an example that expects an error has none, and its engines agree if they
+    raised the same code, or none. The status is ``diverge`` when they do not agree, ``ok`` when
+    both match, and ``partial`` when both give the same wrong answer. When both fail it is
+    ``refused`` if both errors are guarded and neither code is in ``NOT_IMPLEMENTED``, and
+    ``missing`` otherwise.
     """
     left = verdict(example, files, pandas, today)
     right = verdict(example, files, duckdb, today)
@@ -151,6 +253,27 @@ def _error_detail(out: RunOutput) -> str:
     if head and out.error_message:
         return f"{head}: {out.error_message}"
     return head or out.error_message or ""
+
+
+def _error_verdict(out: RunOutput) -> EngineVerdict:
+    """The ``error`` verdict of a failed run, which keeps the type and the code of its error."""
+    return EngineVerdict("error", _error_detail(out), out.error_type, out.error_code)
+
+
+def _expected_error_verdict(expected: str, out: RunOutput) -> EngineVerdict:
+    """The verdict of a run of an example that expects the error with the code ``expected``.
+
+    Only a guarded error counts: a crash stays an ``error``, whatever it says.
+    """
+    if out.ok:
+        return EngineVerdict("mismatch", f"expected error {expected}, ran without an error")
+    raised = _error_verdict(out)
+    if not is_guarded(raised):
+        return raised
+    if raised.error_code == expected:
+        return replace(raised, outcome="match", detail="")
+    detail = f"expected error {expected}, got {raised.error_code}"
+    return replace(raised, outcome="mismatch", detail=detail)
 
 
 def _missing_output(files: ExampleFiles, out: RunOutput) -> str | None:
@@ -378,21 +501,39 @@ def _engines_agree(
     pandas: RunOutput,
     duckdb: RunOutput,
 ) -> bool:
+    """Whether the engines agree: they do when both fail, and not when their outcomes differ.
+
+    When both run to the same outcome, the outputs that the example expects must be equal on
+    both. An example that expects an error has no outputs: its engines agree when they raised
+    the same code, which is the expected one when both match, or no code when neither failed.
+    """
     if left.outcome != right.outcome:
         return False
     if left.outcome == "error":
         return True
+    if files.expected_error is not None:
+        return left.error_code == right.error_code
     return outputs_equal(_expected_outputs(files, pandas), _expected_outputs(files, duckdb))
 
 
 def _status(left: EngineVerdict, right: EngineVerdict, agree: bool) -> Status:
+    """The status of an example from the verdicts of its engines, and whether they agree.
+
+    Two failures are ``refused`` when both are guarded errors and neither code says that
+    something is not implemented, and ``missing`` when either is a crash or such an error.
+    """
     if not agree:
         return "diverge"
     if left.outcome == "match" and right.outcome == "match":
         return "ok"
     if left.outcome == "error" and right.outcome == "error":
-        return "missing"
+        return "refused" if _refuses(left) and _refuses(right) else "missing"
     return "partial"
+
+
+def _refuses(v: EngineVerdict) -> bool:
+    """Whether a failure is an error that vtlengine raises on purpose, not a gap or a crash."""
+    return is_guarded(v) and v.error_code not in NOT_IMPLEMENTED
 
 
 # --- Roll-up ---
@@ -401,22 +542,22 @@ def _status(left: EngineVerdict, right: EngineVerdict, agree: bool) -> Status:
 def rollup(statuses: Sequence[Status]) -> Status:
     """The status of a group, such as the examples of a variant or the variants of an operator.
 
-    It is ``diverge`` if any member is, else ``ok`` if all are, else ``missing`` if all are,
-    else ``partial``. An empty group has no status: it raises ``ValueError``.
+    It is ``diverge`` if any member is, else ``ok`` if all are, else ``refused`` if all are, else
+    ``missing`` if all are, else ``partial``. An empty group has no status: it raises
+    ``ValueError``.
     """
     if not statuses:
         raise ValueError("nothing to roll up: no statuses")
     if "diverge" in statuses:
         return "diverge"
-    if all(status == "ok" for status in statuses):
-        return "ok"
-    if all(status == "missing" for status in statuses):
-        return "missing"
+    for uniform in _UNIFORM:
+        if all(status == uniform for status in statuses):
+            return uniform
     return "partial"
 
 
 def counts(statuses: Sequence[Status]) -> dict[Status, int]:
-    """How many of ``statuses`` are of each status: all four are keys, even with a zero."""
+    """How many of ``statuses`` are of each status: all five are keys, even with a zero."""
     tally = Counter(statuses)
     return {status: tally[status] for status in _STATUSES}
 

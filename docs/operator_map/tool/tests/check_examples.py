@@ -26,6 +26,7 @@ from tool.examples import (
 SCRIPT = "DS_r := DS_1 * 2;\n"
 TYPE_MESSAGE = "the type of Me_1 must be a string or a non-empty list of strings"
 SCALAR_MESSAGE = "the value of sc must be a string, a number, a boolean or null"
+ERROR_MESSAGE = "the code must be a string"
 
 
 def write(path: Path, text: str) -> None:
@@ -84,6 +85,27 @@ def build_scalar_example(path: Path) -> Path:
     return path
 
 
+def error_file(code: Any) -> str:
+    """The text of an ``expected/error.json`` file."""
+    return json.dumps({"code": code})
+
+
+def build_error_example(path: Path) -> Path:
+    """``DS_r := DS_1 / 0`` has an input and expects an error, so it has no expected output."""
+    write(path / "script.vtl", "DS_r := DS_1 / 0;\n")
+    write(
+        path / "input/DS_1.json",
+        structure(
+            "DS_1",
+            component("Id_1", "Identifier", "Integer", nullable=False),
+            component("Me_1", "Measure", "Integer"),
+        ),
+    )
+    write(path / "input/DS_1.csv", "Id_1,Me_1\n1,10\n")
+    write(path / "expected/error.json", error_file("2-1-15-6"))
+    return path
+
+
 def only_dataset(files: ExampleFiles) -> ExpectedDataset:
     assert len(files.expected_datasets) == 1
     return files.expected_datasets[0]
@@ -110,6 +132,7 @@ def test_load_minimal_example(tmp_path: Path) -> None:
     assert files.value_domains == []
     assert files.external_routines == []
     assert files.expected_scalars == []
+    assert files.expected_error is None
 
     assert files.expected_datasets[0].components["Me_1"].types == ("Integer", "Number")
     dataset = only_dataset(files)
@@ -236,6 +259,102 @@ def test_empty_expected_result_is_a_header_only_csv(tmp_path: Path) -> None:
     path = build_example(tmp_path / "ex")
     write(path / "expected/DS_r.csv", "Id_1,Me_1,At_1\n")
     assert only_dataset(load_example(path)).rows == []
+
+
+# --- Expected errors ---
+
+
+def test_error_json_loads(tmp_path: Path) -> None:
+    path = build_error_example(tmp_path / "ex")
+    files = load_example(path)
+
+    assert files.expected_error == "2-1-15-6"
+    # The error is the expected result: no expected output goes with it. ``error.json`` is not
+    # taken for the structure of a dataset either, which would want an ``error.csv``.
+    assert files.expected_datasets == []
+    assert files.expected_scalars == []
+    # The rest of the example is read as in any other.
+    assert files.script == "DS_r := DS_1 / 0;\n"
+    assert files.structures == [path / "input/DS_1.json"]
+    assert files.datapoints == {"DS_1": path / "input/DS_1.csv"}
+
+
+def test_an_example_that_expects_outputs_expects_no_error(tmp_path: Path) -> None:
+    assert load_example(build_example(tmp_path / "dataset")).expected_error is None
+    assert load_example(build_scalar_example(tmp_path / "scalar")).expected_error is None
+
+
+@pytest.mark.parametrize("code", ["2-1-15-6", "1-1-1-1", "0-5-1-9", "1-2-23", "2-3-6", "0-1"])
+def test_error_json_takes_a_code_of_the_form_of_those_of_vtlengine(
+    tmp_path: Path, code: str
+) -> None:
+    path = build_error_example(tmp_path / "ex")
+    write(path / "expected/error.json", error_file(code))
+    assert load_example(path).expected_error == code
+
+
+def test_error_json_may_start_with_a_byte_order_mark(tmp_path: Path) -> None:
+    path = build_error_example(tmp_path / "ex")
+    (path / "expected/error.json").write_text("\ufeff" + error_file("2-1-15-6"), encoding="utf-8")
+    assert load_example(path).expected_error == "2-1-15-6"
+
+
+def test_error_json_with_outputs_is_rejected(tmp_path: Path) -> None:
+    path = build_example(tmp_path / "ex")
+    write(path / "expected/error.json", error_file("2-1-15-6"))
+    with pytest.raises(ExampleError) as info:
+        load_example(path)
+    message = str(info.value)
+    # The message names the file that is out of place, and the outputs that it cannot go with.
+    assert str(path / "expected/error.json") in message
+    assert "expected/DS_r.json" in message
+
+    # Scalars are outputs too, and so is each file of an output that there is.
+    write(path / "expected/scalars.json", scalars(scalar("sc", "Integer", 1)))
+    with pytest.raises(ExampleError) as info:
+        load_example(path)
+    assert "expected/DS_r.json, expected/scalars.json" in str(info.value)
+
+    only_scalars = build_scalar_example(tmp_path / "scalars")
+    write(only_scalars / "expected/error.json", error_file("2-1-15-6"))
+    with pytest.raises(ExampleError) as info:
+        load_example(only_scalars)
+    assert "expected/scalars.json" in str(info.value)
+    assert str(only_scalars / "expected/error.json") in str(info.value)
+
+
+@pytest.mark.parametrize(
+    "code",
+    # The last one is written with the fullwidth digits U+FF12 and U+FF11: not ASCII digits.
+    [
+        "x",
+        "",
+        "2",
+        "2-",
+        "-2-1",
+        "2-1-",
+        "2-1-a",
+        " 2-1-15-6",
+        "2-1-15-6 ",
+        "2.1.15.6",
+        "\uff12-\uff11",
+    ],
+)
+def test_error_json_bad_code_is_rejected(tmp_path: Path, code: str) -> None:
+    path = build_error_example(tmp_path / "ex")
+    write(path / "expected/error.json", error_file(code))
+    with pytest.raises(ExampleError, match="not the code of a vtlengine error") as info:
+        load_example(path)
+    assert str(path / "expected/error.json") in str(info.value)
+    assert repr(code) in str(info.value)  # the message shows what was written
+
+
+def test_the_message_of_an_example_without_outputs_names_the_error_file(tmp_path: Path) -> None:
+    path = build_error_example(tmp_path / "ex")
+    (path / "expected/error.json").unlink()
+    with pytest.raises(ExampleError, match="no expected output") as info:
+        load_example(path)
+    assert "expected/error.json" in str(info.value)
 
 
 def test_utf8_bom_is_ignored_in_every_file(tmp_path: Path) -> None:
@@ -473,6 +592,14 @@ MALFORMED_FILES = [
     ),
     ("expected/scalars.json", scalars(scalar("sc", "Integer", [1])), SCALAR_MESSAGE),
     ("expected/scalars.json", scalars(scalar("sc", "Integer", {"a": 1})), SCALAR_MESSAGE),
+    # An error.json that cannot be read is reported as such, before it is found to be out of
+    # place next to the expected dataset that these examples have.
+    ("expected/error.json", "{not json", "invalid JSON"),
+    ("expected/error.json", "[]", "the document must be an object"),
+    ("expected/error.json", "{}", ERROR_MESSAGE),
+    ("expected/error.json", '{"code": 3}', ERROR_MESSAGE),
+    ("expected/error.json", '{"code": null}', ERROR_MESSAGE),
+    ("expected/error.json", '{"code": ["2-1-15-6"]}', ERROR_MESSAGE),
     # The datasets that the input structures declare are read to match the input CSVs.
     ("input/DS_1.json", "{not json", "invalid JSON"),
     ("input/DS_1.json", "[]", "the document must be an object"),

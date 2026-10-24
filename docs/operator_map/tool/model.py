@@ -8,7 +8,7 @@ from collections.abc import Callable, Collection, Iterable, Iterator
 from dataclasses import dataclass
 from typing import Any, Final, Literal
 
-Status = Literal["ok", "partial", "missing", "diverge"]
+Status = Literal["ok", "partial", "refused", "missing", "diverge"]
 Source = Literal["manual", "authored"]
 Check = Literal["exact", "random", "current_date"]
 

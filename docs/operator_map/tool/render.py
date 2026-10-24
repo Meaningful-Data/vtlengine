@@ -73,6 +73,7 @@ _GROUPS: Final[tuple[tuple[Status, str], ...]] = (
     ("diverge", "Engines diverge"),
     ("missing", "Not implemented"),
     ("partial", "Partially implemented"),
+    ("refused", "Refused with an error"),
 )
 _MARKS: Final = {"match": "✅", "mismatch": "❌", "error": "💥"}
 _NEWLINE: Final = re.compile(r"\r\n|\r|\n")

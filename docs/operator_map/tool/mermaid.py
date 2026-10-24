@@ -29,7 +29,7 @@ import re
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final, get_args
+from typing import Final
 
 from tool.examples import example_dir
 from tool.model import Catalogue, Chapter, Operator, Status, TypeDef, Variant
@@ -47,7 +47,9 @@ PAGE_SUFFIX: Final = ".html"
 _PIN: Final = "📌"  # a node whose expected output follows a recorded team decision
 _INDENT: Final = "    "
 _EXAMPLES: Final = Path("examples")
-_STATUSES: Final[tuple[Status, ...]] = get_args(Status)
+# The statuses of the tally of a node, which are the four that the classes below colour: the
+# diagrams do not know ``refused`` yet, and a tally that lists it would change every label.
+_STATUSES: Final[tuple[Status, ...]] = ("ok", "partial", "missing", "diverge")
 _EDGE_MARKS: Final = ("-->", "---", ".->")  # a line that has one of these is an edge
 
 # The text is black on the light fills, so that it also reads on a dark theme.

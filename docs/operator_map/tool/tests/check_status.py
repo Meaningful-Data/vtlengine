@@ -7,8 +7,11 @@ The runs are small hand-made ``RunOutput`` values and the expected files small h
 
 from __future__ import annotations
 
+import ast
 import dataclasses
+import importlib.util
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -24,17 +27,24 @@ from tool.model import Catalogue, Chapter, Operator, Status, TypeDef, Variant, a
 from tool.runner import RunOutput
 from tool.status import (
     EMOJI,
+    NOT_IMPLEMENTED,
+    VTL_ERRORS,
     EngineVerdict,
     ExampleResult,
     StatusIndex,
     build_index,
     counts,
     example_result,
+    is_guarded,
+    mark,
     rollup,
     verdict,
 )
 
 TODAY = "2026-10-23"
+ROOT = Path(__file__).resolve().parents[4]  # the worktree
+ENGINE_MESSAGES = ROOT / "src" / "vtlengine" / "Exceptions" / "messages.py"
+ERROR_DOCS_GENERATOR = ROOT / "docs" / "scripts" / "generate_error_docs.py"
 
 
 # --- Builders ---
@@ -146,11 +156,32 @@ def result(status: Status) -> ExampleResult:
     return ExampleResult(matched, matched, True, status)
 
 
+def error_files(code: str = "2-1-15-6") -> ExampleFiles:
+    """The files of an example that expects the error ``code``: it has no expected output."""
+    return dataclasses.replace(files(datasets=[]), expected_error=code)
+
+
+def division_by_zero() -> RunOutput:
+    """A run that raised the guarded error of a division by zero (what pandas raises)."""
+    return failed("RunTimeError", "2-1-15-6", "At op /: Scalar division by Zero.")
+
+
+def infinite_values() -> RunOutput:
+    """A run that raised another guarded error for it (what DuckDB raises)."""
+    return failed("RunTimeError", "2-1-3-1", "At op /: Division by zero produced infinite values.")
+
+
 # --- Roll-up and counts ---
 
 
 def test_emoji_by_status() -> None:
-    assert EMOJI == {"ok": "🟢", "partial": "🟡", "missing": "🔴", "diverge": "🔵"}
+    assert EMOJI == {
+        "ok": "🟢",
+        "partial": "🟡",
+        "refused": "🛡️",
+        "missing": "🔴",
+        "diverge": "🔵",
+    }
 
 
 def test_rollup_precedence() -> None:
@@ -158,6 +189,21 @@ def test_rollup_precedence() -> None:
     assert rollup(["ok", "ok"]) == "ok"
     assert rollup(["missing", "missing"]) == "missing"
     assert rollup(["ok", "missing"]) == "partial"
+
+
+def test_rollup_refused() -> None:
+    assert rollup(["refused", "refused"]) == "refused"
+    assert rollup(["ok", "refused"]) == "partial"
+    assert rollup(["refused", "diverge"]) == "diverge"
+
+
+def test_rollup_of_refused_with_the_other_statuses() -> None:
+    assert rollup(["refused"]) == "refused"
+    assert rollup(["refused", "missing"]) == "partial"
+    assert rollup(["refused", "partial"]) == "partial"
+    assert rollup(["ok", "refused", "missing"]) == "partial"
+    assert rollup(["diverge", "refused", "refused"]) == "diverge"
+    assert rollup(["refused", "refused", "diverge"]) == "diverge"
 
 
 def test_rollup_of_the_other_mixes() -> None:
@@ -176,12 +222,12 @@ def test_rollup_of_nothing_raises() -> None:
         rollup([])
 
 
-def test_counts_has_every_status_in_order() -> None:
-    tally = counts(["ok", "diverge", "ok", "missing"])
-    assert tally == {"ok": 2, "partial": 0, "missing": 1, "diverge": 1}
-    assert list(tally) == ["ok", "partial", "missing", "diverge"]
-    assert list(counts([]).values()) == [0, 0, 0, 0]
-    assert list(counts([]).keys()) == ["ok", "partial", "missing", "diverge"]
+def test_counts_has_five_keys() -> None:
+    tally = counts(["ok", "diverge", "ok", "missing", "refused"])
+    assert tally == {"ok": 2, "partial": 0, "refused": 1, "missing": 1, "diverge": 1}
+    assert list(tally) == ["ok", "partial", "refused", "missing", "diverge"]
+    assert list(counts([]).values()) == [0, 0, 0, 0, 0]
+    assert list(counts([]).keys()) == ["ok", "partial", "refused", "missing", "diverge"]
 
 
 # --- Verdicts: exact ---
@@ -295,7 +341,9 @@ def test_a_scalar_does_not_stand_for_an_expected_dataset() -> None:
 
 def test_error_detail_is_type_code_and_message() -> None:
     got = verdict(authored(), files(), failed("SemanticError", "1-1-1-1", "no operator"), TODAY)
-    assert got == EngineVerdict("error", "SemanticError 1-1-1-1: no operator")
+    assert got == EngineVerdict(
+        "error", "SemanticError 1-1-1-1: no operator", "SemanticError", "1-1-1-1"
+    )
 
 
 @pytest.mark.parametrize(
@@ -321,14 +369,145 @@ def test_error_detail_leaves_out_what_is_missing(
 ) -> None:
     out = failed(error_type, error_code, error_message)
     got = verdict(authored(), files(), out, TODAY)
-    assert got == EngineVerdict("error", detail)
+    assert got == EngineVerdict("error", detail, error_type, error_code)
     assert "None" not in got.detail
 
 
 def test_a_failed_run_is_an_error_whatever_the_check() -> None:
     for check in ("exact", "random", "current_date"):
         got = verdict(authored(check=check), files(), failed("Timeout", None, "late"), TODAY)
-        assert got == EngineVerdict("error", "Timeout: late")
+        assert got == EngineVerdict("error", "Timeout: late", "Timeout", None)
+
+
+# --- Verdicts: guarded errors and crashes ---
+
+
+def test_a_failed_run_keeps_its_error_type_and_code() -> None:
+    out = failed("RunTimeError", "2-1-15-6", "At op mod: Scalar division by Zero.")
+    got = verdict(authored(), files(), out, TODAY)
+    assert got == EngineVerdict(
+        "error",
+        "RunTimeError 2-1-15-6: At op mod: Scalar division by Zero.",
+        "RunTimeError",
+        "2-1-15-6",
+    )
+    crash = verdict(authored(), files(), failed("KeyError", None, "'Me_1'"), TODAY)
+    assert (crash.error_type, crash.error_code) == ("KeyError", None)
+    ran = verdict(authored(), files(), run(actual_dataset()), TODAY)
+    assert (ran.error_type, ran.error_code) == (None, None)
+    wrong = verdict(authored(), files(), run(numbers("9", "9")), TODAY)
+    assert (wrong.outcome, wrong.error_type, wrong.error_code) == ("mismatch", None, None)
+
+
+def test_the_errors_of_vtlengine() -> None:
+    assert set(VTL_ERRORS) == {
+        "SemanticError",
+        "RunTimeError",
+        "InputValidationException",
+        "DataLoadError",
+        "VTLSyntaxError",
+    }
+
+
+@pytest.mark.parametrize("error_type", sorted(VTL_ERRORS))
+def test_an_error_of_vtlengine_with_a_code_is_guarded(error_type: str) -> None:
+    assert is_guarded(EngineVerdict("error", "detail", error_type, "1-1-1-1"))
+
+
+@pytest.mark.parametrize(
+    ("error_type", "error_code"),
+    [
+        ("SemanticError", None),  # an error of vtlengine, but with no code
+        ("VTLSyntaxError", None),
+        ("Timeout", None),
+        ("Crash", None),
+        ("Cancelled", None),
+        ("AttributeError", None),
+        ("KeyError", None),
+        ("ParserException", None),
+        ("ValueError", "1-1-1-1"),  # a code, but not an error of vtlengine
+        (None, "1-1-1-1"),
+        (None, None),
+    ],
+)
+def test_any_other_failure_is_a_crash(error_type: str | None, error_code: str | None) -> None:
+    assert not is_guarded(EngineVerdict("error", "detail", error_type, error_code))
+
+
+def test_the_marks() -> None:
+    assert mark(EngineVerdict("match", "")) == "✅"
+    assert mark(EngineVerdict("mismatch", "row Id_1=2: Me_1 expected 4.0 got 5.0")) == "❌"
+    guarded = EngineVerdict("error", "RunTimeError 2-1-15-6: x", "RunTimeError", "2-1-15-6")
+    assert mark(guarded) == "🛡 2-1-15-6"
+    crash = EngineVerdict("error", "KeyError: 'Me_1'", "KeyError", None)
+    assert mark(crash) == "💥 KeyError"
+    assert mark(EngineVerdict("error", "Timeout: late", "Timeout", None)) == "💥 Timeout"
+    assert mark(EngineVerdict("error", "boom")) == "💥"  # a failure that says nothing about itself
+
+
+def test_the_marks_of_the_verdicts_of_a_run() -> None:
+    assert mark(verdict(authored(), files(), run(actual_dataset()), TODAY)) == "✅"
+    assert mark(verdict(authored(), files(), run(numbers("9", "9")), TODAY)) == "❌"
+    assert mark(verdict(authored(), files(), division_by_zero(), TODAY)) == "🛡 2-1-15-6"
+    assert mark(verdict(authored(), files(), failed("KeyError", None, "'a'"), TODAY)) == (
+        "💥 KeyError"
+    )
+
+
+def test_the_codes_that_say_not_implemented() -> None:
+    assert set(NOT_IMPLEMENTED) == {
+        "1-3-13",
+        "0-5-1-9",
+        "1-3-2-2",
+        "1-3-2-5",
+        "1-3-3-8",
+        "0-5-1-8",
+        "0-5-1-10",
+        "1-1-13-8",
+        "1-3-2-1",
+    }
+    assert all(message for message in NOT_IMPLEMENTED.values())
+
+
+def engine_catalogue() -> dict[str, Any]:
+    """``centralised_messages`` of vtlengine, read from its source: no engine is imported."""
+    tree = ast.parse(ENGINE_MESSAGES.read_text(encoding="utf-8"))
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "centralised_messages"
+            for target in node.targets
+        ):
+            return dict(ast.literal_eval(node.value))
+    raise AssertionError(f"no centralised_messages in {ENGINE_MESSAGES}")
+
+
+def written_messages(folder: Path) -> dict[str, str]:
+    """The message of each code as ``docs/error_messages.rst`` writes it.
+
+    The file is made by the generator of the docs, from the catalogue of the engine, as
+    ``docs/conf.py`` does when it builds the site: this is how the file reads.
+    """
+    spec = importlib.util.spec_from_file_location("generate_error_docs", ERROR_DOCS_GENERATOR)
+    assert spec is not None
+    assert spec.loader is not None
+    generator = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(generator)
+    target = folder / "error_messages.rst"
+    generator.generate_errors_rst(target, engine_catalogue())
+    lines = target.read_text(encoding="utf-8").splitlines()
+    return {
+        lines[n].removeprefix("   * - "): lines[n + 1].removeprefix("     - ")
+        for n in range(len(lines) - 1)
+        if lines[n].startswith("   * - ")
+    }
+
+
+def test_the_messages_of_the_not_implemented_codes_are_those_of_the_catalogue(
+    tmp_path: Path,
+) -> None:
+    written = written_messages(tmp_path)
+    assert set(NOT_IMPLEMENTED) <= set(written), "a code that the catalogue does not have"
+    assert {code: written[code] for code in NOT_IMPLEMENTED} == NOT_IMPLEMENTED
 
 
 # --- Verdicts: random ---
@@ -633,6 +812,133 @@ def test_an_unknown_check_is_an_error_of_the_catalogue() -> None:
         verdict(authored(check="randm"), files(), run(actual_dataset()), TODAY)
 
 
+# --- Verdicts: expected errors ---
+
+
+def test_expected_error_match() -> None:
+    out = division_by_zero()
+    got = example_result(authored(), error_files("2-1-15-6"), out, out, TODAY)
+    assert got.pandas.outcome == got.duckdb.outcome == "match"
+    assert got.engines_agree
+    assert got.status == "ok"
+    # The error that was expected is the result: a match, not a guarded error.
+    assert mark(got.pandas) == mark(got.duckdb) == "✅"
+
+
+def test_expected_error_other_code_diverges() -> None:
+    got = example_result(
+        authored(), error_files("2-1-15-6"), division_by_zero(), infinite_values(), TODAY
+    )
+    assert got.pandas.outcome == "match"
+    assert got.duckdb.outcome == "mismatch"
+    assert got.duckdb.detail == "expected error 2-1-15-6, got 2-1-3-1"
+    assert mark(got.duckdb) == "❌"
+    assert not got.engines_agree
+    assert got.status == "diverge"
+    # It does not matter which engine raises which code.
+    swapped = example_result(
+        authored(), error_files("2-1-15-6"), infinite_values(), division_by_zero(), TODAY
+    )
+    assert swapped.pandas.detail == "expected error 2-1-15-6, got 2-1-3-1"
+    assert swapped.duckdb.outcome == "match"
+    assert swapped.status == "diverge"
+
+
+def test_expected_error_no_error() -> None:
+    got = verdict(authored(), error_files("2-1-15-6"), run(actual_dataset()), TODAY)
+    assert got.outcome == "mismatch"
+    assert got.detail == "expected error 2-1-15-6, ran without an error"
+    assert mark(got) == "❌"
+    # A run that gave no output at all is a run without an error too.
+    assert verdict(authored(), error_files("2-1-15-6"), run(), TODAY).detail == (
+        "expected error 2-1-15-6, ran without an error"
+    )
+
+
+def test_expected_error_crash() -> None:
+    out = failed("KeyError", None, "'Me_1'")
+    got = example_result(authored(), error_files(), out, out, TODAY)
+    assert got.pandas.outcome == got.duckdb.outcome == "error"
+    assert mark(got.pandas).startswith("💥")
+    assert mark(got.duckdb).startswith("💥")
+    assert got.status == "missing"
+    # Neither a timeout nor a crash of the child is the error that was expected.
+    for crash in (failed("Timeout", None, "late"), failed("Crash", None, "exit 1")):
+        assert verdict(authored(), error_files(), crash, TODAY).outcome == "error"
+
+
+def test_expected_error_is_not_matched_by_a_failure_that_is_not_guarded() -> None:
+    # An error of vtlengine's classes without a code is a crash, whatever the code expected.
+    no_code = failed("RunTimeError", None, "Scalar division by Zero.")
+    assert verdict(authored(), error_files(), no_code, TODAY).outcome == "error"
+    # A code on an exception that is not vtlengine's is not a guarded error either.
+    foreign = failed("ValueError", "2-1-15-6", "Scalar division by Zero.")
+    got = verdict(authored(), error_files("2-1-15-6"), foreign, TODAY)
+    assert got.outcome == "error"
+    assert mark(got) == "💥 ValueError"
+
+
+def test_expected_error_with_a_crash_on_one_engine_is_not_green() -> None:
+    crash = failed("AttributeError", None, "'NoneType' object has no attribute 'data'")
+    for pandas, duckdb in ((division_by_zero(), crash), (crash, division_by_zero())):
+        got = example_result(authored(), error_files(), pandas, duckdb, TODAY)
+        assert not got.engines_agree
+        assert got.status == "diverge"
+
+
+def test_expected_error_matches_by_code_whatever_the_class_and_the_message() -> None:
+    other = failed("SemanticError", "2-1-15-6", "another text for the same code")
+    got = example_result(authored(), error_files("2-1-15-6"), division_by_zero(), other, TODAY)
+    assert got.pandas.outcome == got.duckdb.outcome == "match"
+    assert got.status == "ok"
+
+
+def test_expected_error_verdicts_keep_the_error_that_the_run_raised() -> None:
+    expected = verdict(authored(), error_files("2-1-15-6"), division_by_zero(), TODAY)
+    assert (expected.error_type, expected.error_code) == ("RunTimeError", "2-1-15-6")
+    wrong = verdict(authored(), error_files("2-1-15-6"), infinite_values(), TODAY)
+    assert (wrong.error_type, wrong.error_code) == ("RunTimeError", "2-1-3-1")
+    ran = verdict(authored(), error_files("2-1-15-6"), run(actual_dataset()), TODAY)
+    assert (ran.error_type, ran.error_code) == (None, None)
+
+
+def test_expected_error_is_judged_before_the_outputs_and_the_check() -> None:
+    # The example has no output to compare, whatever its check says.
+    for check in ("exact", "random", "current_date"):
+        got = verdict(authored(check=check), error_files(), division_by_zero(), TODAY)
+        assert got == EngineVerdict("match", "", "RunTimeError", "2-1-15-6")
+
+
+def test_expected_error_both_engines_wrong_in_the_same_way_is_partial() -> None:
+    ran = run(actual_dataset())
+    got = example_result(authored(), error_files(), ran, ran, TODAY)
+    assert got.pandas.outcome == got.duckdb.outcome == "mismatch"
+    assert got.engines_agree
+    assert got.status == "partial"
+    same = infinite_values()
+    got = example_result(authored(), error_files("2-1-15-6"), same, same, TODAY)
+    assert got.pandas.outcome == got.duckdb.outcome == "mismatch"
+    assert got.engines_agree
+    assert got.status == "partial"
+
+
+def test_expected_error_with_two_other_codes_diverges() -> None:
+    # Neither engine raises the code that was expected, and the two raise different ones: a
+    # parity gap, the same as when only one of them is off.
+    other = failed("SemanticError", "1-1-1-4", "another error")
+    got = example_result(authored(), error_files("2-1-15-6"), infinite_values(), other, TODAY)
+    assert got.pandas.outcome == got.duckdb.outcome == "mismatch"
+    assert not got.engines_agree
+    assert got.status == "diverge"
+    # An engine that raises another code and one that does not raise at all differ too.
+    got = example_result(
+        authored(), error_files("2-1-15-6"), infinite_values(), run(actual_dataset()), TODAY
+    )
+    assert got.pandas.outcome == got.duckdb.outcome == "mismatch"
+    assert not got.engines_agree
+    assert got.status == "diverge"
+
+
 # --- Example results ---
 
 
@@ -683,14 +989,95 @@ def test_same_wrong_answer_on_both_is_partial() -> None:
     assert differing.status == "diverge"
 
 
-def test_both_errors_are_missing_even_if_messages_differ() -> None:
+def test_both_errors_agree_even_if_messages_differ() -> None:
     pandas = failed("SemanticError", "1-1-1-1", "no such operator")
     duckdb = failed("RunTimeError", "2-3-6", "cannot cast")
     got = example_result(authored(), files(), pandas, duckdb, TODAY)
     assert got.pandas.outcome == got.duckdb.outcome == "error"
     assert got.pandas.detail != got.duckdb.detail
     assert got.engines_agree
+    assert got.status == "refused"  # both are errors of vtlengine, and neither says not implemented
+    crash = failed("AttributeError", None, "no attribute 'data'")
+    other = failed("KeyError", None, "'Me_1'")
+    got = example_result(authored(), files(), crash, other, TODAY)
+    assert got.engines_agree
     assert got.status == "missing"
+
+
+def test_guarded_both_not_in_list_is_refused() -> None:
+    out = failed("RunTimeError", "2-1-15-6", "At op mod: Scalar division by Zero.")
+    got = example_result(authored(), files(), out, out, TODAY)
+    assert got.pandas.outcome == got.duckdb.outcome == "error"
+    assert got.engines_agree
+    assert got.status == "refused"
+    assert mark(got.pandas) == mark(got.duckdb) == "🛡 2-1-15-6"
+
+
+def test_guarded_not_implemented_is_missing() -> None:
+    out = failed("SemanticError", "1-3-13", "Unsupported VTL construct: eval")
+    got = example_result(authored(), files(), out, out, TODAY)
+    assert got.pandas.outcome == got.duckdb.outcome == "error"
+    assert got.engines_agree
+    assert got.status == "missing"
+    assert mark(got.pandas) == "🛡 1-3-13"  # still a guarded error, which says so
+
+
+@pytest.mark.parametrize("code", sorted(NOT_IMPLEMENTED))
+def test_every_code_that_says_not_implemented_is_missing(code: str) -> None:
+    out = failed("SemanticError", code, "not implemented")
+    assert example_result(authored(), files(), out, out, TODAY).status == "missing"
+
+
+def test_a_code_that_is_not_in_the_list_is_refused_on_any_class_of_error() -> None:
+    for error_type in sorted(VTL_ERRORS):
+        out = failed(error_type, "1-1-1-1", "refused")
+        assert example_result(authored(), files(), out, out, TODAY).status == "refused"
+
+
+def test_refused_on_one_engine_and_not_implemented_on_the_other_is_missing() -> None:
+    refused = failed("RunTimeError", "2-1-15-6", "Scalar division by Zero.")
+    not_implemented = failed("SemanticError", "1-3-13", "Unsupported VTL construct: eval")
+    for pandas, duckdb in ((refused, not_implemented), (not_implemented, refused)):
+        got = example_result(authored(), files(), pandas, duckdb, TODAY)
+        assert got.engines_agree
+        assert got.status == "missing"
+
+
+def test_crash_is_missing() -> None:
+    out = failed("AttributeError", None, "'NoneType' object has no attribute 'data'")
+    got = example_result(authored(), files(), out, out, TODAY)
+    assert got.pandas.outcome == got.duckdb.outcome == "error"
+    assert got.engines_agree
+    assert got.status == "missing"
+    assert mark(got.pandas).startswith("💥")
+    assert mark(got.duckdb).startswith("💥")
+
+
+@pytest.mark.parametrize(
+    ("error_type", "error_code"),
+    [
+        ("Timeout", None),
+        ("Crash", None),
+        ("KeyError", None),
+        ("SemanticError", None),  # an error of vtlengine with no code is not a guarded one
+        ("ValueError", "1-1-1-1"),  # a code on an exception that is not vtlengine's neither
+    ],
+)
+def test_a_failure_that_is_not_guarded_is_missing(error_type: str, error_code: str | None) -> None:
+    out = failed(error_type, error_code, "it failed")
+    got = example_result(authored(), files(), out, out, TODAY)
+    assert got.status == "missing"
+    assert mark(got.pandas) == f"💥 {error_type}"
+
+
+def test_refused_and_crash_is_missing() -> None:
+    refused = failed("RunTimeError", "2-1-15-6", "Scalar division by Zero.")
+    crash = failed("AttributeError", None, "'NoneType' object has no attribute 'data'")
+    for pandas, duckdb in ((refused, crash), (crash, refused)):
+        got = example_result(authored(), files(), pandas, duckdb, TODAY)
+        assert got.pandas.outcome == got.duckdb.outcome == "error"
+        assert got.engines_agree
+        assert got.status == "missing"
 
 
 @pytest.mark.parametrize("pandas_first", [True, False])
@@ -842,6 +1229,31 @@ def test_build_index_rolls_the_statuses_up() -> None:
     index = build_index(cat, divergent)
     assert index.operators["numeric/subtraction"] == "diverge"
     assert index.chapters["numeric"] == "diverge"
+
+
+def test_build_index_rolls_the_refused_status_up() -> None:
+    cat = Catalogue((numeric(addition(), subtraction()),), ())
+    refused: dict[str, Status] = {
+        "numeric/addition/ds_ds/manual_ex_1": "refused",
+        "numeric/addition/ds_ds/minimal": "refused",
+        "numeric/addition/ds_scalar/minimal": "refused",
+    }
+    results = {
+        **addition_results(refused),
+        "numeric/subtraction/ds_ds/minimal": result("ok"),
+    }
+    index = build_index(cat, results)
+    assert index.variants == {
+        "numeric/addition/ds_ds": "refused",
+        "numeric/addition/ds_scalar": "refused",
+        "numeric/subtraction/ds_ds": "ok",
+    }
+    assert index.operators == {"numeric/addition": "refused", "numeric/subtraction": "ok"}
+    assert index.chapters == {"numeric": "partial"}  # ok and refused
+
+    both = {**results, "numeric/subtraction/ds_ds/minimal": result("refused")}
+    index = build_index(cat, both)
+    assert index.chapters == {"numeric": "refused"}
 
 
 def test_build_index_names_the_first_example_without_a_result() -> None:

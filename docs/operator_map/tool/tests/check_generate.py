@@ -29,6 +29,7 @@ from tool.compare import ActualComponent, ActualDataset, ActualScalar
 from tool.mermaid import MermaidLimitError
 from tool.model import Catalogue, Chapter, Example, Operator, TypeDef, Variant, authored, manual
 from tool.runner import Engine, RunOutput
+from tool.status import EngineVerdict
 
 TODAY = "2026-10-23"
 SPEC_COMMIT = "140e946ed3f888951adb8bb66ea45030be84e2aa"
@@ -143,7 +144,8 @@ class World:
     """The generator's folder, and what the canned runner did and is to do."""
 
     root: Path
-    modes: dict[str, str] = field(default_factory=dict)  # chapter -> good, wrong, error, diverge
+    # chapter -> good, wrong, error (not implemented), refused (on purpose), diverge
+    modes: dict[str, str] = field(default_factory=dict)
     calls: list[list[tuple[Path, Engine, int]]] = field(default_factory=list)
     settings: list[tuple[int, float]] = field(default_factory=list)
     interrupt: bool = False
@@ -156,7 +158,11 @@ class World:
     def output(self, path: Path, engine: Engine) -> RunOutput:
         chapter = path.relative_to(self.root / "examples").parts[0]
         mode = self.modes.get(chapter, "good")
-        if mode == "error" or (mode == "diverge" and engine == "duckdb"):
+        if mode == "error":  # a gap: the error says that the construct is not supported
+            return RunOutput(False, [], [], "SemanticError", "1-3-13", f"failed on {engine}")
+        if mode == "refused":  # on purpose: an error of the engine about the values
+            return RunOutput(False, [], [], "RunTimeError", "2-1-15-6", f"refused on {engine}")
+        if mode == "diverge" and engine == "duckdb":
             return RunOutput(False, [], [], "SemanticError", "1-1-1-1", f"failed on {engine}")
         if (path / "expected" / "scalars.json").is_file():
             return RunOutput(True, [], [ActualScalar("sc_r", "Date", TODAY)])
@@ -624,6 +630,181 @@ def test_only_prints_ten_no_result_lines_at_most_and_counts_the_rest(
     assert world.calls == []
 
 
+def test_only_upgrades_the_results_of_a_status_file_of_the_old_format(world: World) -> None:
+    world.modes = {"alpha": "refused"}
+    assert generate.main([]) == 0
+    document = world.status()
+    # What the tool before this one wrote: no fields for the error, and no refused status.
+    for entry in document["examples"].values():
+        for engine in ("pandas", "duckdb"):
+            del entry[engine]["error_type"]
+            del entry[engine]["error_code"]
+        if entry["status"] == "refused":
+            entry["status"] = "missing"
+    (world.root / "status.json").write_text(json.dumps(document), encoding="utf-8")
+
+    assert generate.main(["--only", "beta"]) == 0
+
+    examples = world.status()["examples"]
+    entry = examples["alpha/first/sc/minimal"]
+    assert entry["status"] == "refused"  # judged again, with the rules of this tool
+    assert entry["pandas"]["error_type"] == "RunTimeError"  # read from the detail
+    assert entry["pandas"]["error_code"] == "2-1-15-6"
+    assert examples["beta/second/ds/minimal"]["pandas"]["error_code"] is None
+
+
+def test_parse_verdict_old_file() -> None:
+    raw = {
+        "outcome": "error",
+        "detail": "RunTimeError 2-1-15-6: At op mod: Scalar division by Zero.",
+    }
+    got = generate._parse_verdict(raw)
+    assert got == EngineVerdict("error", raw["detail"], "RunTimeError", "2-1-15-6")
+
+
+@pytest.mark.parametrize(
+    ("detail", "error_type", "error_code"),
+    [
+        ("SemanticError 1-2-23: a code of three groups", "SemanticError", "1-2-23"),
+        (
+            "InputValidationException 0-5-1-9: not implemented",
+            "InputValidationException",
+            "0-5-1-9",
+        ),
+        ("DataLoadError 0-3-1-6: cannot load", "DataLoadError", "0-3-1-6"),
+        ("AttributeError: 'NoneType' object has no attribute 'data'", "AttributeError", None),
+        ("KeyError: 'Me_1'", "KeyError", None),
+        ("Timeout: no result in 120 s, 2 attempts", "Timeout", None),
+        ("Crash: exit 1: Segmentation fault", "Crash", None),
+        ("ParserException: Parser Error: syntax error at or near x", "ParserException", None),
+    ],
+)
+def test_parse_verdict_of_an_old_file_reads_the_error_of_its_detail(
+    detail: str, error_type: str, error_code: str | None
+) -> None:
+    got = generate._parse_verdict({"outcome": "error", "detail": detail})
+    assert got == EngineVerdict("error", detail, error_type, error_code)
+
+
+@pytest.mark.parametrize(
+    ("outcome", "detail"),
+    [
+        ("match", ""),
+        # Each of these starts like ``<type>:``, and none of them is an error.
+        ("mismatch", "DS_r: row Id_1=1: Me_1 expected 3 got 4"),
+        ("mismatch", "sc_r: type expected Number got Integer"),
+        ("mismatch", "missing output DS_r"),
+        ("mismatch", "expected error 2-1-15-6, got 2-1-3-1"),
+    ],
+)
+def test_parse_verdict_of_an_old_file_reads_no_error_from_what_is_not_one(
+    outcome: str, detail: str
+) -> None:
+    got = generate._parse_verdict({"outcome": outcome, "detail": detail})
+    assert (got.outcome, got.detail) == (outcome, detail)
+    assert (got.error_type, got.error_code) == (None, None)
+
+
+def test_parse_verdict_reads_the_fields_when_the_file_has_them() -> None:
+    raw: dict[str, Any] = {
+        "outcome": "error",
+        "detail": "d",
+        "error_type": "SemanticError",
+        "error_code": "1-1-1-4",
+    }
+    assert generate._parse_verdict(raw) == EngineVerdict("error", "d", "SemanticError", "1-1-1-4")
+    # What is stored is what is read, even where the detail says something else.
+    raw = {
+        "outcome": "error",
+        "detail": "RunTimeError 2-1-15-6: x",
+        "error_type": "KeyError",
+        "error_code": None,
+    }
+    assert generate._parse_verdict(raw) == EngineVerdict(
+        "error", "RunTimeError 2-1-15-6: x", "KeyError", None
+    )
+    # A mismatch of an example that expects an error has the error that the run raised.
+    raw = {
+        "outcome": "mismatch",
+        "detail": "expected error 2-1-15-6, got 2-1-3-1",
+        "error_type": "RunTimeError",
+        "error_code": "2-1-3-1",
+    }
+    assert generate._parse_verdict(raw) == EngineVerdict(
+        "mismatch", "expected error 2-1-15-6, got 2-1-3-1", "RunTimeError", "2-1-3-1"
+    )
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"error_type": 3, "error_code": None},
+        {"error_type": "SemanticError", "error_code": 1},
+        {"error_type": ["SemanticError"], "error_code": "1-1-1-1"},
+    ],
+)
+def test_parse_verdict_rejects_error_fields_that_are_not_texts(fields: dict[str, Any]) -> None:
+    with pytest.raises(ValueError, match="not a verdict"):
+        generate._parse_verdict({"outcome": "error", "detail": "d", **fields})
+
+
+def stored(
+    status: str, pandas: dict[str, str], duckdb: dict[str, str], agree: bool = True
+) -> dict[str, Any]:
+    """The entry of an example in a ``status.json`` of the old format: no error fields."""
+    return {"status": status, "engines_agree": agree, "pandas": pandas, "duckdb": duckdb}
+
+
+def test_a_stored_status_is_judged_again_with_the_rules_of_the_tool(tmp_path: Path) -> None:
+    refused = {"outcome": "error", "detail": "RunTimeError 2-1-15-6: Scalar division by Zero."}
+    gap = {"outcome": "error", "detail": "SemanticError 1-3-13: Unsupported VTL construct: eval"}
+    crash = {"outcome": "error", "detail": "AttributeError: 'NoneType' object has no attribute 'a'"}
+    matched = {"outcome": "match", "detail": ""}
+    wrong = {"outcome": "mismatch", "detail": "DS_r: row Id_1=1: Me_1 expected 3 got 4"}
+    entries = {
+        # The tool that wrote these called each of them what it knew: ok, missing or partial.
+        "refused": stored("missing", refused, refused),
+        "not_implemented": stored("missing", gap, gap),
+        "crash": stored("missing", crash, crash),
+        "refused_and_gap": stored("missing", refused, gap),
+        "refused_and_crash": stored("missing", refused, crash),
+        "match": stored("ok", matched, matched),
+        "wrong": stored("partial", wrong, wrong),
+        "diverge": stored("diverge", matched, refused, agree=False),
+        # A status that the file holds is not trusted: it is always worked out again.
+        "stale": stored("ok", refused, refused),
+    }
+    path = tmp_path / "status.json"
+    path.write_text(json.dumps({"meta": {}, "examples": entries}), encoding="utf-8")
+
+    previous = generate._load_previous(path)
+
+    assert {key: result.status for key, result in previous.items()} == {
+        "refused": "refused",
+        "not_implemented": "missing",
+        "crash": "missing",
+        "refused_and_gap": "missing",
+        "refused_and_crash": "missing",
+        "match": "ok",
+        "wrong": "partial",
+        "diverge": "diverge",
+        "stale": "refused",
+    }
+    assert previous["refused"].pandas == EngineVerdict(
+        "error", refused["detail"], "RunTimeError", "2-1-15-6"
+    )
+    assert previous["crash"].duckdb.error_type == "AttributeError"
+    assert previous["crash"].duckdb.error_code is None
+
+
+def test_a_stored_status_that_is_not_a_status_is_rejected(tmp_path: Path) -> None:
+    entry = stored("green", {"outcome": "match", "detail": ""}, {"outcome": "match", "detail": ""})
+    path = tmp_path / "status.json"
+    path.write_text(json.dumps({"meta": {}, "examples": {"a": entry}}), encoding="utf-8")
+    with pytest.raises(generate.GenerateError, match="cannot read the previous results"):
+        generate._load_previous(path)
+
+
 # --- What is written ---
 
 
@@ -662,12 +843,56 @@ def test_status_json_has_sorted_keys_the_meta_and_every_verdict(world: World) ->
     }
     assert sorted(document["examples"]) == sorted(KEYS)
     assert document["examples"]["alpha/first/sc/minimal"] == {
-        "duckdb": {"detail": "SemanticError 1-1-1-1: failed on duckdb", "outcome": "error"},
+        "duckdb": {
+            "detail": "SemanticError 1-1-1-1: failed on duckdb",
+            "error_code": "1-1-1-1",
+            "error_type": "SemanticError",
+            "outcome": "error",
+        },
         "engines_agree": False,
-        "pandas": {"detail": "", "outcome": "match"},
+        "pandas": {"detail": "", "error_code": None, "error_type": None, "outcome": "match"},
         "status": "diverge",
     }
     assert document["examples"]["beta/second/ds/minimal"]["status"] == "ok"
+
+
+def test_a_refused_example_is_written_and_read_back(world: World) -> None:
+    world.modes = {"alpha": "refused"}
+    assert generate.main([]) == 0
+    entry = world.status()["examples"]["alpha/first/sc/minimal"]
+    assert entry["status"] == "refused"
+    assert entry["engines_agree"] is True
+    for engine in ("pandas", "duckdb"):
+        assert entry[engine] == {
+            "detail": f"RunTimeError 2-1-15-6: refused on {engine}",
+            "error_code": "2-1-15-6",
+            "error_type": "RunTimeError",
+            "outcome": "error",
+        }
+    # Only beta runs now: the results of alpha come back from the file as they were written.
+    world.calls.clear()
+    assert generate.main(["--only", "beta"]) == 0
+    assert world.run_chapters() == {"beta"}
+    assert world.status()["examples"]["alpha/first/sc/minimal"] == entry
+    assert world.status()["examples"]["alpha/first/ds/minimal"]["status"] == "refused"
+
+
+def test_a_crash_is_written_with_its_type_and_no_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    world = build_world(tmp_path, monkeypatch)
+
+    def crash(_self: World, _path: Path, engine: Engine) -> RunOutput:
+        return RunOutput(False, [], [], "AttributeError", None, f"no attribute on {engine}")
+
+    monkeypatch.setattr(World, "output", crash)
+    assert generate.main([]) == 0
+    document = world.status()
+    entry = document["examples"]["alpha/first/sc/minimal"]
+    assert entry["status"] == "missing"
+    assert entry["pandas"]["error_type"] == "AttributeError"
+    assert entry["pandas"]["error_code"] is None
+    assert {each["status"] for each in document["examples"].values()} == {"missing"}
 
 
 def test_a_rerun_gives_the_same_files(world: World) -> None:

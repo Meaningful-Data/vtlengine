@@ -13,9 +13,12 @@ An example lives in ``examples/<chapter>/<operator>/<variant>/<example>/`` and h
   result is a header-only CSV;
 * ``expected/scalars.json``: the expected scalar results,
   ``{"scalars": [{"name": ..., "type": ..., "value": ...}]}``;
+* ``expected/error.json``: the error that the script is to raise, ``{"code": "2-1-15-6"}``, with
+  the code of a vtlengine error. It stands for the expected outputs: an example has the expected
+  outputs or the expected error, not both;
 * ``notes.md``: free text that the tool does not read.
 
-At least one expected output is required. Any problem of an example folder raises
+An expected output or an expected error is required. Any problem of an example folder raises
 ``ExampleError``.
 """
 
@@ -23,6 +26,7 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final, TypeVar
@@ -31,8 +35,12 @@ _SCRIPT: Final = "script.vtl"
 _INPUT: Final = "input"
 _EXPECTED: Final = "expected"
 _SCALARS: Final = "scalars.json"
+_ERROR: Final = "error.json"
 _VALUE_DOMAINS: Final = "value_domains"
 _EXTERNAL_ROUTINES: Final = "external_routines"
+
+# The code of a vtlengine error, such as ``1-1-1-1`` or ``2-3-6``: digits in two groups or more.
+_CODE: Final = re.compile(r"\d+(-\d+)+", re.ASCII)
 
 _T = TypeVar("_T")
 _KINDS: Final[dict[type, str]] = {
@@ -82,6 +90,9 @@ class ExampleFiles:
     external_routines: list[Path]  # ``external_routines/*.json``, sorted by name
     expected_datasets: list[ExpectedDataset]  # sorted by file name
     expected_scalars: list[ExpectedScalar]  # in file order
+    # The code of the error that the script is to raise, from ``expected/error.json``. An example
+    # that has it has no expected outputs, and one that has none of the two cannot be loaded.
+    expected_error: str | None = None
 
 
 class ExampleError(Exception):
@@ -127,10 +138,19 @@ def load_example(path: Path) -> ExampleFiles:
 
     datasets = _load_expected_datasets(path)
     scalars = _load_expected_scalars(path / _EXPECTED / _SCALARS)
-    if not datasets and not scalars:
+    error = _load_expected_error(path / _EXPECTED / _ERROR)
+    if error is not None and (datasets or scalars):
+        found = [f"{_EXPECTED}/{dataset.name}.json" for dataset in datasets]
+        found += [f"{_EXPECTED}/{_SCALARS}"] if scalars else []
+        raise ExampleError(
+            f"{path / _EXPECTED / _ERROR}: an example expects an error or outputs, not both "
+            f"(outputs found: {', '.join(found)})"
+        )
+    if error is None and not datasets and not scalars:
         raise ExampleError(
             f"{path}: no expected output (add {_EXPECTED}/<NAME>.json with "
-            f"{_EXPECTED}/<NAME>.csv, or {_EXPECTED}/{_SCALARS})"
+            f"{_EXPECTED}/<NAME>.csv, {_EXPECTED}/{_SCALARS}, or {_EXPECTED}/{_ERROR} for an "
+            "error)"
         )
     names = [dataset.name for dataset in datasets] + [scalar.name for scalar in scalars]
     for name in dict.fromkeys(names):
@@ -150,6 +170,7 @@ def load_example(path: Path) -> ExampleFiles:
         external_routines=_files(path / _EXTERNAL_ROUTINES, ".json"),
         expected_datasets=datasets,
         expected_scalars=scalars,
+        expected_error=error,
     )
 
 
@@ -218,7 +239,9 @@ def _expect(value: Any, kind: type[_T], file: Path, what: str) -> _T:
 def _load_expected_datasets(path: Path) -> list[ExpectedDataset]:
     """Every ``expected/<NAME>.json`` with its ``expected/<NAME>.csv``."""
     folder = path / _EXPECTED
-    structures = {file.stem: file for file in _files(folder, ".json") if file.name != _SCALARS}
+    # The other JSON files of ``expected/`` are not the structure of a dataset.
+    others = (_SCALARS, _ERROR)
+    structures = {file.stem: file for file in _files(folder, ".json") if file.name not in others}
     data = {file.stem: file for file in _files(folder, ".csv")}
     unpaired = sorted(structures.keys() ^ data.keys())
     if unpaired:
@@ -306,6 +329,20 @@ def _load_expected_scalars(file: Path) -> list[ExpectedScalar]:
             raise ExampleError(f"{file}: scalar '{name}' has no value (null is written null)")
         scalars.append(ExpectedScalar(name, type_, _scalar_value(item["value"], file, name)))
     return scalars
+
+
+def _load_expected_error(file: Path) -> str | None:
+    """The code of ``expected/error.json``, ``{"code": "2-1-15-6"}``; None without the file."""
+    if not file.is_file():
+        return None
+    document = _expect(_read_json(file), dict, file, "the document")
+    code = _expect(document.get("code"), str, file, "the code")
+    if _CODE.fullmatch(code) is None:
+        raise ExampleError(
+            f"{file}: {code!r} is not the code of a vtlengine error "
+            "(digits in groups joined by '-', such as 2-1-15-6)"
+        )
+    return code
 
 
 def _scalar_value(raw: Any, file: Path, name: str) -> str | None:

@@ -73,6 +73,7 @@ from tool.status import (
     ExampleResult,
     Outcome,
     StatusIndex,
+    _status,
     build_index,
     counts,
     example_result,
@@ -86,6 +87,9 @@ _STATUS_FILE: Final = "status.json"
 _MAX_UNRUN: Final = 10  # the "no result" problems that are printed, one line each
 _ENGINES: Final[tuple[Engine, ...]] = ("pandas", "duckdb")
 _VERSION: Final = re.compile(r"""^__version__\s*=\s*["']([^"']+)["']""", re.MULTILINE)
+# The start of the detail of a failed run, ``<type> <code>: <message>`` with the code optional.
+# A ``status.json`` of the tool before the fields ``error_type`` and ``error_code`` says them so.
+_ERROR_HEAD: Final = re.compile(r"^(\w+)(?: (\d+(?:-\d+)+))?:")
 _INDEX_FILE: Final = "index.rst"
 # How to run the generator, for ``--help``; the docstring and the index say the same.
 _HOW_TO_RUN: Final = """\
@@ -513,19 +517,44 @@ def _load_previous(path: Path) -> dict[str, ExampleResult]:
 
 
 def _parse_result(raw: Any) -> ExampleResult:
+    """The result of an example from its entry of ``status.json``.
+
+    The status that the file holds is only checked to be one: the rules that make a status change
+    from one version of the tool to the next (an error that the engines raise on purpose is
+    ``refused``, where it was ``missing``), so the status is worked out again from the verdicts.
+    """
     status, agree = raw["status"], raw["engines_agree"]
     if status not in get_args(Status) or not isinstance(agree, bool):
         raise ValueError(f"not a result: {raw!r}")
-    return ExampleResult(
-        _parse_verdict(raw["pandas"]), _parse_verdict(raw["duckdb"]), agree, status
-    )
+    pandas, duckdb = _parse_verdict(raw["pandas"]), _parse_verdict(raw["duckdb"])
+    return ExampleResult(pandas, duckdb, agree, _status(pandas, duckdb, agree))
 
 
 def _parse_verdict(raw: Any) -> EngineVerdict:
+    """The verdict of an engine from its entry of ``status.json``.
+
+    A file of the tool before the fields ``error_type`` and ``error_code`` has neither: they are
+    read from the detail of an ``error``, which started with them. Nothing else has them to read:
+    the detail of a ``mismatch`` is a problem of the outputs, which may start like an error does.
+    """
     outcome, detail = raw["outcome"], raw["detail"]
     if outcome not in get_args(Outcome) or not isinstance(detail, str):
         raise ValueError(f"not a verdict: {raw!r}")
-    return EngineVerdict(outcome, detail)
+    error_type: Any = None
+    error_code: Any = None
+    if "error_type" in raw:
+        error_type, error_code = raw["error_type"], raw.get("error_code")
+        if not all(field is None or isinstance(field, str) for field in (error_type, error_code)):
+            raise ValueError(f"not a verdict: {raw!r}")
+    elif outcome == "error":
+        error_type, error_code = _error_of(detail)
+    return EngineVerdict(outcome, detail, error_type, error_code)
+
+
+def _error_of(detail: str) -> tuple[str | None, str | None]:
+    """The type and the code of the error that the detail of a failed run starts with."""
+    found = _ERROR_HEAD.match(detail)
+    return (found.group(1), found.group(2)) if found else (None, None)
 
 
 # --- Output ---
@@ -551,7 +580,11 @@ def _render(
 
 
 def _status_json(meta: RunMeta, index: StatusIndex) -> str:
-    """The results of every example: sorted keys, so that a rerun gives a clean diff."""
+    """The results of every example: sorted keys, so that a rerun gives a clean diff.
+
+    A verdict is written with all its fields: the outcome, the detail, and the type and the code
+    of the error that the run raised (null where there is none).
+    """
     examples = {
         key: {
             "pandas": asdict(result.pandas),

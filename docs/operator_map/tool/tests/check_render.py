@@ -72,6 +72,10 @@ MISSING = ExampleResult(
     True,
     "missing",
 )
+GUARDED = EngineVerdict(
+    "error", "RunTimeError 2-1-15-6: Scalar division by Zero.", "RunTimeError", "2-1-15-6"
+)
+REFUSED = ExampleResult(GUARDED, GUARDED, True, "refused")
 
 
 def make_operator(
@@ -859,6 +863,24 @@ def test_a_diverging_variant_is_listed_with_the_example_that_diverges(tmp_path: 
     row = row_with(listing, "<numeric>")
     assert row[3] == "`minimal\\_2 <examples/numeric/plus/ds/minimal_2/>`__"
     assert titles(listing, "~") == ["🔵 Engines diverge (1)"]
+
+
+def test_index_lists_a_refused_variant_after_the_others(tmp_path: Path) -> None:
+    results = {**RESULTS, "clause/calc/measure/minimal": REFUSED}
+    listing = section(
+        index_rst(CAT, build_index(CAT, results), META, examples_root=tmp_path),
+        "Variants that are not green",
+    )
+    assert titles(listing, "~") == [
+        "🔵 Engines diverge (1)",
+        "🔴 Not implemented (1)",
+        "🟡 Partially implemented (1)",
+        "🛡️ Refused with an error (1)",
+    ]
+    refused = re.split(r"^[^\n]*\n~+\n", listing, flags=re.MULTILINE)[-1]
+    row = row_with(refused, "<clause>")
+    assert row[:3] == [":doc:`Clause operators <clause>`", "Calculation", "``calc Me_1 := 1``"]
+    assert row[4] == "RunTimeError 2-1-15-6: Scalar division by Zero."
 
 
 def test_index_lists_the_variants_of_a_type_that_are_not_green(tmp_path: Path) -> None:
