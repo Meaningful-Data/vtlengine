@@ -21,7 +21,6 @@ import argparse
 import inspect
 import json
 import os
-import re
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict
@@ -38,16 +37,13 @@ from tool.compare import (
     normalize_role,
     normalize_type,
 )
-from tool.examples import ExampleFiles, load_example
+from tool.examples import ERROR_CODE, ExampleFiles, load_example
 from vtlengine import run
 from vtlengine.Model import Dataset, Scalar
 
 RESULT_PREFIX: Final = "RESULT:"
 MAX_MESSAGE: Final = 300
 ENGINES: Final = ("pandas", "duckdb")
-
-# The code of a vtlengine error, such as ``1-1-1-1`` or ``2-3-6``: digits in two groups or more.
-_CODE: Final = re.compile(r"\d+(-\d+)+", re.ASCII)
 
 
 def serialise(results: Mapping[str, Any]) -> list[Output]:
@@ -98,7 +94,7 @@ def failure(exc: BaseException) -> dict[str, Any]:
         "ok": False,
         "error_type": type(exc).__name__,
         "error_code": next(
-            (arg for arg in exc.args if isinstance(arg, str) and _CODE.fullmatch(arg)), None
+            (arg for arg in exc.args if isinstance(arg, str) and ERROR_CODE.fullmatch(arg)), None
         ),
         "error_message": next((line for line in lines if line), "")[:MAX_MESSAGE],
     }

@@ -244,7 +244,7 @@ def example_result(
     left = verdict(example, files, pandas, today)
     right = verdict(example, files, duckdb, today)
     agree = _engines_agree(files, left, right, pandas, duckdb)
-    return ExampleResult(left, right, agree, _status(left, right, agree))
+    return ExampleResult(left, right, agree, judge(left, right, agree))
 
 
 def _error_detail(out: RunOutput) -> str:
@@ -516,11 +516,14 @@ def _engines_agree(
     return outputs_equal(_expected_outputs(files, pandas), _expected_outputs(files, duckdb))
 
 
-def _status(left: EngineVerdict, right: EngineVerdict, agree: bool) -> Status:
+def judge(left: EngineVerdict, right: EngineVerdict, agree: bool) -> Status:
     """The status of an example from the verdicts of its engines, and whether they agree.
 
-    Two failures are ``refused`` when both are guarded errors and neither code says that
-    something is not implemented, and ``missing`` when either is a crash or such an error.
+    It is ``diverge`` when the engines do not agree, and ``ok`` when both match. When both fail
+    it is ``refused`` if both errors are guarded and neither code says that something is not
+    implemented, and ``missing`` if either is a crash or such an error. Otherwise the engines
+    agree on a wrong answer, and it is ``partial``. ``example_result`` uses it, and so does the
+    reading of the ``status.json`` of an earlier run, which judges its verdicts again.
     """
     if not agree:
         return "diverge"

@@ -12,6 +12,7 @@ from typing import Any
 import pytest
 
 from tool.examples import (
+    ERROR_CODE,
     ExampleError,
     ExampleFiles,
     ExpectedComponent,
@@ -277,6 +278,27 @@ def test_error_json_loads(tmp_path: Path) -> None:
     assert files.script == "DS_r := DS_1 / 0;\n"
     assert files.structures == [path / "input/DS_1.json"]
     assert files.datapoints == {"DS_1": path / "input/DS_1.csv"}
+
+
+@pytest.mark.parametrize(
+    ("text", "is_a_code"),
+    [
+        ("2-1-15-6", True),
+        ("1-2-23", True),
+        ("0-1", True),
+        ("x", False),
+        ("", False),
+        ("2", False),
+        ("2-", False),
+        ("-2-1", False),
+        ("2-1-a", False),
+        (" 2-1-15-6", False),
+        ("2-1-15-6\n", False),  # the whole text is the code
+        ("\uff12-\uff11", False),  # fullwidth digits are not ASCII digits
+    ],
+)
+def test_error_code_is_digits_in_two_groups_or_more(text: str, is_a_code: bool) -> None:
+    assert (ERROR_CODE.fullmatch(text) is not None) is is_a_code
 
 
 def test_an_example_that_expects_outputs_expects_no_error(tmp_path: Path) -> None:

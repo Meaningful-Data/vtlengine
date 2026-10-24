@@ -36,6 +36,7 @@ from tool.status import (
     counts,
     example_result,
     is_guarded,
+    judge,
     mark,
     rollup,
     verdict,
@@ -1066,6 +1067,52 @@ def test_a_failure_that_is_not_guarded_is_missing(error_type: str, error_code: s
     got = example_result(authored(), files(), out, out, TODAY)
     assert got.status == "missing"
     assert mark(got.pandas) == f"💥 {error_type}"
+
+
+# The verdicts of an engine that the checks of ``judge`` put together.
+MATCHED = EngineVerdict("match", "")
+WRONG = EngineVerdict("mismatch", "row Id_1=1: Me_1 expected 3 got 4")
+REFUSAL = EngineVerdict("error", "RunTimeError 2-1-15-6: x", "RunTimeError", "2-1-15-6")
+GAP = EngineVerdict("error", "SemanticError 1-3-13: x", "SemanticError", "1-3-13")
+CRASH = EngineVerdict("error", "KeyError: 'Me_1'", "KeyError", None)
+
+
+@pytest.mark.parametrize(
+    ("left", "right", "agree", "expected"),
+    [
+        (MATCHED, MATCHED, True, "ok"),
+        (WRONG, WRONG, True, "partial"),
+        (REFUSAL, REFUSAL, True, "refused"),
+        (GAP, GAP, True, "missing"),
+        (CRASH, CRASH, True, "missing"),
+        (REFUSAL, GAP, True, "missing"),
+        (REFUSAL, CRASH, True, "missing"),
+        (CRASH, REFUSAL, True, "missing"),
+        (MATCHED, WRONG, False, "diverge"),
+        # Engines that do not agree diverge, whatever they gave.
+        (MATCHED, MATCHED, False, "diverge"),
+        (REFUSAL, REFUSAL, False, "diverge"),
+    ],
+)
+def test_judge_is_the_status_of_two_verdicts_and_whether_they_agree(
+    left: EngineVerdict, right: EngineVerdict, agree: bool, expected: str
+) -> None:
+    assert judge(left, right, agree) == expected
+
+
+@pytest.mark.parametrize(
+    "out",
+    [
+        run(actual_dataset()),
+        run(numbers("9", "9")),
+        division_by_zero(),
+        failed("KeyError", None, "'Me_1'"),
+    ],
+    ids=["match", "wrong", "refused", "crash"],
+)
+def test_the_status_of_an_example_is_the_judgement_of_its_verdicts(out: RunOutput) -> None:
+    got = example_result(authored(), files(), out, out, TODAY)
+    assert got.status == judge(got.pandas, got.duckdb, got.engines_agree)
 
 
 def test_refused_and_crash_is_missing() -> None:

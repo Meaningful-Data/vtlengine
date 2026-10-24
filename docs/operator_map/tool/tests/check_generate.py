@@ -677,6 +677,11 @@ def test_parse_verdict_old_file() -> None:
         ("Timeout: no result in 120 s, 2 attempts", "Timeout", None),
         ("Crash: exit 1: Segmentation fault", "Crash", None),
         ("ParserException: Parser Error: syntax error at or near x", "ParserException", None),
+        # A run that said no message has the head alone: its type, or its type and its code.
+        ("SemanticError 1-1-1-1", "SemanticError", "1-1-1-1"),
+        ("InputValidationException 0-5-1-9", "InputValidationException", "0-5-1-9"),
+        ("KeyError", "KeyError", None),
+        ("Crash", "Crash", None),
     ],
 )
 def test_parse_verdict_of_an_old_file_reads_the_error_of_its_detail(
@@ -684,6 +689,22 @@ def test_parse_verdict_of_an_old_file_reads_the_error_of_its_detail(
 ) -> None:
     got = generate._parse_verdict({"outcome": "error", "detail": detail})
     assert got == EngineVerdict("error", detail, error_type, error_code)
+
+
+@pytest.mark.parametrize(
+    "detail",
+    [
+        "no operator",  # a message with no type: a run that failed with only this to say
+        "1-1-1-1: no operator",  # a code with no type
+        "SemanticError 1-1-1-1 and more",  # not the head of an error: no colon, and not the end
+        "",
+    ],
+)
+def test_parse_verdict_of_an_old_file_reads_no_error_from_a_message_that_has_no_type(
+    detail: str,
+) -> None:
+    got = generate._parse_verdict({"outcome": "error", "detail": detail})
+    assert got == EngineVerdict("error", detail, None, None)
 
 
 @pytest.mark.parametrize(
@@ -759,6 +780,8 @@ def test_a_stored_status_is_judged_again_with_the_rules_of_the_tool(tmp_path: Pa
     refused = {"outcome": "error", "detail": "RunTimeError 2-1-15-6: Scalar division by Zero."}
     gap = {"outcome": "error", "detail": "SemanticError 1-3-13: Unsupported VTL construct: eval"}
     crash = {"outcome": "error", "detail": "AttributeError: 'NoneType' object has no attribute 'a'"}
+    bare_refused = {"outcome": "error", "detail": "RunTimeError 2-1-15-6"}  # it said no message
+    bare_crash = {"outcome": "error", "detail": "KeyError"}
     matched = {"outcome": "match", "detail": ""}
     wrong = {"outcome": "mismatch", "detail": "DS_r: row Id_1=1: Me_1 expected 3 got 4"}
     entries = {
@@ -768,6 +791,8 @@ def test_a_stored_status_is_judged_again_with_the_rules_of_the_tool(tmp_path: Pa
         "crash": stored("missing", crash, crash),
         "refused_and_gap": stored("missing", refused, gap),
         "refused_and_crash": stored("missing", refused, crash),
+        "bare_refused": stored("missing", bare_refused, bare_refused),
+        "bare_crash": stored("missing", bare_crash, bare_crash),
         "match": stored("ok", matched, matched),
         "wrong": stored("partial", wrong, wrong),
         "diverge": stored("diverge", matched, refused, agree=False),
@@ -785,6 +810,8 @@ def test_a_stored_status_is_judged_again_with_the_rules_of_the_tool(tmp_path: Pa
         "crash": "missing",
         "refused_and_gap": "missing",
         "refused_and_crash": "missing",
+        "bare_refused": "refused",
+        "bare_crash": "missing",
         "match": "ok",
         "wrong": "partial",
         "diverge": "diverge",
@@ -795,6 +822,10 @@ def test_a_stored_status_is_judged_again_with_the_rules_of_the_tool(tmp_path: Pa
     )
     assert previous["crash"].duckdb.error_type == "AttributeError"
     assert previous["crash"].duckdb.error_code is None
+    assert previous["bare_refused"].pandas == EngineVerdict(
+        "error", "RunTimeError 2-1-15-6", "RunTimeError", "2-1-15-6"
+    )
+    assert previous["bare_crash"].pandas == EngineVerdict("error", "KeyError", "KeyError", None)
 
 
 def test_a_stored_status_that_is_not_a_status_is_rejected(tmp_path: Path) -> None:

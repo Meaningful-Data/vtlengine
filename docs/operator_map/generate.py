@@ -73,10 +73,10 @@ from tool.status import (
     ExampleResult,
     Outcome,
     StatusIndex,
-    _status,
     build_index,
     counts,
     example_result,
+    judge,
 )
 
 ROOT = Path(__file__).resolve().parent  # docs/operator_map: where the files are written
@@ -87,9 +87,10 @@ _STATUS_FILE: Final = "status.json"
 _MAX_UNRUN: Final = 10  # the "no result" problems that are printed, one line each
 _ENGINES: Final[tuple[Engine, ...]] = ("pandas", "duckdb")
 _VERSION: Final = re.compile(r"""^__version__\s*=\s*["']([^"']+)["']""", re.MULTILINE)
-# The start of the detail of a failed run, ``<type> <code>: <message>`` with the code optional.
-# A ``status.json`` of the tool before the fields ``error_type`` and ``error_code`` says them so.
-_ERROR_HEAD: Final = re.compile(r"^(\w+)(?: (\d+(?:-\d+)+))?:")
+# The head of the detail of a failed run: ``<type> <code>: <message>`` with the code optional, or
+# only ``<type> <code>`` or ``<type>`` for a run that said no message. A ``status.json`` of the
+# tool before the fields ``error_type`` and ``error_code`` says them so.
+_ERROR_HEAD: Final = re.compile(r"^(\w+)(?: (\d+(?:-\d+)+))?(?::|$)")
 _INDEX_FILE: Final = "index.rst"
 # How to run the generator, for ``--help``; the docstring and the index say the same.
 _HOW_TO_RUN: Final = """\
@@ -527,7 +528,7 @@ def _parse_result(raw: Any) -> ExampleResult:
     if status not in get_args(Status) or not isinstance(agree, bool):
         raise ValueError(f"not a result: {raw!r}")
     pandas, duckdb = _parse_verdict(raw["pandas"]), _parse_verdict(raw["duckdb"])
-    return ExampleResult(pandas, duckdb, agree, _status(pandas, duckdb, agree))
+    return ExampleResult(pandas, duckdb, agree, judge(pandas, duckdb, agree))
 
 
 def _parse_verdict(raw: Any) -> EngineVerdict:
@@ -552,7 +553,10 @@ def _parse_verdict(raw: Any) -> EngineVerdict:
 
 
 def _error_of(detail: str) -> tuple[str | None, str | None]:
-    """The type and the code of the error that the detail of a failed run starts with."""
+    """The type and the code of the error that the detail of a failed run starts with.
+
+    The head ends at the colon before the message, or at the end of a detail that has none.
+    """
     found = _ERROR_HEAD.match(detail)
     return (found.group(1), found.group(2)) if found else (None, None)
 

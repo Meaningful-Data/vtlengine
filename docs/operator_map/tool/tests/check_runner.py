@@ -28,7 +28,7 @@ import pytest
 
 from tool import child, runner
 from tool.compare import ActualComponent, ActualDataset, ActualScalar, Output, compare_dataset
-from tool.examples import load_example
+from tool.examples import ERROR_CODE, load_example
 from tool.runner import Engine, RunOutput, child_env, run_all, run_example
 from vtlengine.DataTypes import Boolean, Integer, Null, Number, String, TimeInterval, TimePeriod
 from vtlengine.Exceptions import VTLEngineException
@@ -671,6 +671,29 @@ def test_error_code_is_the_first_argument_that_looks_like_one() -> None:
     assert code("text", "a-1") is None
     assert code("text", ("1-2-3",)) is None  # a code is a text, not a tuple that holds one
     assert code() is None
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "2-1-15-6",
+        "1-2-23",
+        "0-1",
+        "x",
+        "",
+        "2",
+        "2-",
+        "-2-1",
+        "2-1-a",
+        "2-1-15-6\n",
+        "\uff12-\uff11",
+    ],
+)
+def test_the_child_and_the_loader_take_the_same_codes(text: str) -> None:
+    # The child reads the code of an exception, and the loader checks the code of an
+    # ``expected/error.json``: both must call the same texts a code, so the code is written once.
+    from_the_child = child.failure(Exception("message", text))["error_code"] == text
+    assert from_the_child is (ERROR_CODE.fullmatch(text) is not None)
 
 
 def test_error_type_is_the_class_name() -> None:

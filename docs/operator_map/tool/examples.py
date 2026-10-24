@@ -40,7 +40,9 @@ _VALUE_DOMAINS: Final = "value_domains"
 _EXTERNAL_ROUTINES: Final = "external_routines"
 
 # The code of a vtlengine error, such as ``1-1-1-1`` or ``2-3-6``: digits in two groups or more.
-_CODE: Final = re.compile(r"\d+(-\d+)+", re.ASCII)
+# It is written once, here: the loader checks the code of ``expected/error.json`` with it, and the
+# child of the runner takes the code of an exception with it.
+ERROR_CODE: Final = re.compile(r"\d+(-\d+)+", re.ASCII)
 
 _T = TypeVar("_T")
 _KINDS: Final[dict[type, str]] = {
@@ -337,7 +339,7 @@ def _load_expected_error(file: Path) -> str | None:
         return None
     document = _expect(_read_json(file), dict, file, "the document")
     code = _expect(document.get("code"), str, file, "the code")
-    if _CODE.fullmatch(code) is None:
+    if ERROR_CODE.fullmatch(code) is None:
         raise ExampleError(
             f"{file}: {code!r} is not the code of a vtlengine error "
             "(digits in groups joined by '-', such as 2-1-15-6)"
