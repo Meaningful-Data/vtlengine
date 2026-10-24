@@ -38,6 +38,7 @@ BASE = "https://sdmx-twg.github.io/vtl/v2.2/reference_manual"
 ISSUES = "https://github.com/Meaningful-Data/vtlengine/issues"
 SPEC = "140e946ed3f888951adb8bb66ea45030be84e2aa"
 META = RunMeta("2026-10-23", "abc1234", "9.9.9", SPEC)
+ERRATA_TITLE = "Manual errata (corrected expected outputs, scripts or inputs)"
 # The types that have a flow in the index: the basic ones and the dataset.
 FLOW_TYPES = (
     "scalar",
@@ -391,7 +392,7 @@ def test_detail_is_one_line_escaped_and_cut_at_200_characters(tmp_path: Path) ->
         ("it's a -- b --- c - d -> e", "it\\'s a \\-\\- b \\-\\-\\- c - d -> e"),
         ("wait... then . . . and .. no", "wait\\.\\.\\. then \\. \\. \\. and .. no"),
         ("2.5 and a.b and 1-1-1-1", "2.5 and a.b and 1-1-1-1"),
-        # A backslash that comes right before a hyphen or a dot would be lost under Sphinx.
+        # A backslash right before a hyphen or a dot is lost under the smart quotes of docutils.
         ("regex \\d+\\.\\d+ and \\-x", "regex \\\\d+\\\\\\.\\\\d+ and \\\\\\-x"),
         ("a\\'b a\\\"b", "a\\\\\\'b a\\\\\\\"b"),
     ],
@@ -599,7 +600,7 @@ def test_index_sections_come_in_the_order_of_the_design(tmp_path: Path) -> None:
         "Type lattice",
         "Type flows",
         "📌 Team decisions",
-        "Manual errata (corrected expected outputs, scripts or inputs)",
+        ERRATA_TITLE,
         "Adaptations",
         "Variants that are not green",
         "Attribution",
@@ -636,15 +637,21 @@ def test_the_pin_legend_says_a_decision_is_recorded_not_that_the_manual_disagree
 
 def test_the_lists_of_the_index_say_what_they_list(tmp_path: Path) -> None:
     text = index_rst(CAT, INDEX, META, examples_root=tmp_path)
-    errata = section(text, "Manual errata (corrected expected outputs, scripts or inputs)")
+    errata = section(text, ERRATA_TITLE)
     assert "an expected output, a script or an input" in errata
     adaptations = section(text, "Adaptations")
+    # An input or an output name is rewritten, or values that no engine can reproduce are left
+    # out of the expected output (the random draws of the manual): both are adaptations.
     assert (
-        "Examples where the manual's representation of an input, or of the name of an output, "
-        "was rewritten"
+        "the manual's representation of an input or of an output name was rewritten to the "
+        "equivalent representation vtlengine documents"
     ) in adaptations
-    assert "equivalent representation that vtlengine documents" in adaptations
+    assert (
+        "or values that no engine can reproduce (the manual's illustrative random draws) were "
+        "left out of the expected output and are property-checked"
+    ) in adaptations
     assert "These are not errata." in adaptations
+    assert "The text of each item" not in adaptations
     assert "Manual inputs that vtlengine cannot load" not in adaptations
 
 
@@ -719,7 +726,7 @@ def test_index_lists_errata_adaptations_and_decisions(tmp_path: Path) -> None:
     decisions = section(text, "📌 Team decisions")
     assert f"`📌 #1049 <{ISSUES}/1049>`__" in decisions
     assert f'{where} › ``Me_1 || "x"`` (minimal)' in decisions
-    errata = section(text, "Manual errata (corrected expected outputs, scripts or inputs)")
+    errata = section(text, ERRATA_TITLE)
     # The quotes are escaped, so that Sphinx does not turn them into typographic ones.
     assert "the manual shows \\'ba\\' where \\'ab\\' is meant" in errata
     assert f"{where} › ``DS_1 || DS_2`` (manual\\_ex\\_1)" in errata
@@ -745,7 +752,7 @@ def test_index_escapes_the_free_text_of_the_lists(tmp_path: Path) -> None:
     index = build_index(cat, {"c/o/v/minimal": OK})
     errata = section(
         index_rst(cat, index, META, examples_root=tmp_path),
-        "Manual errata (corrected expected outputs, scripts or inputs)",
+        ERRATA_TITLE,
     )
     assert (
         "- :doc:`C <c>` › Some\\_op › ``f(x)`` (minimal): the \\*manual\\* prints a\\_b \\| c, "
@@ -758,7 +765,7 @@ def test_index_escapes_the_free_text_of_the_lists(tmp_path: Path) -> None:
     index = build_index(cat, {"c/o/v/minimal": OK})
     errata = section(
         index_rst(cat, index, META, examples_root=tmp_path),
-        "Manual errata (corrected expected outputs, scripts or inputs)",
+        ERRATA_TITLE,
     )
     assert (
         '(minimal): it\\\'s \\"a\\" \\-\\- b \\-\\-\\- c - d\\.\\.\\. e\\. \\. \\. f · `manual <'
@@ -771,9 +778,7 @@ def test_index_lists_the_notes_that_exist(tmp_path: Path) -> None:
     text = index_rst(CAT, INDEX, META, examples_root=tmp_path)
     decisions = section(text, "📌 Team decisions")
     assert "`notes <examples/string/concat/comp_sc/minimal/notes.md>`__" in decisions
-    assert "`notes <" not in section(
-        text, "Manual errata (corrected expected outputs, scripts or inputs)"
-    )
+    assert "`notes <" not in section(text, ERRATA_TITLE)
 
 
 def test_index_lists_variants_that_are_not_green_by_status(tmp_path: Path) -> None:
@@ -839,7 +844,7 @@ def test_index_empty_lists_say_so(tmp_path: Path) -> None:
     text = index_rst(cat, MINI_INDEX, META, examples_root=tmp_path)
     assert "None: no expected output follows a recorded team decision." in text
     assert "None: nothing in the manual's examples had to be corrected." in text
-    assert "None: no input or output name of the manual was rewritten." in text
+    assert "None: no example needed an adaptation." in text
     assert "Every variant is green." in text
     # No type has a variant, so there is no row for the types, and the blocks still render.
     assert "Data types" not in text

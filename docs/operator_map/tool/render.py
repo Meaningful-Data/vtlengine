@@ -88,7 +88,9 @@ _MARKUP: Final = re.compile(r"([\\*`|_])")
 # What the smart quotes of Sphinx would change in a text that is not a literal: the straight
 # quotes, a run of hyphens (a dash) and an ellipsis, ``...`` or ``. . .``. Every character of such
 # a sequence is escaped, which keeps it as it was written and leaves the rest of the text alone.
-# A hyphen or a dot after a backslash of the text is escaped too, or Sphinx drops the backslash.
+# A hyphen or a dot right after a backslash of the text is escaped too: the SmartQuotes of
+# docutils, which the checks parse with, drops that backslash otherwise (its ``get_tokens``
+# pattern). Sphinx's own transform keeps it, and the escape does no harm there.
 _TYPESET: Final = re.compile(r"""['"]|-{2,}|\.{3,}|\.(?: \.){2}|(?<=\\)[-.]""")
 _TYPESET_CHARACTER: Final = re.compile(r"""['".-]""")
 # A paragraph that starts like a list, a field, a table, a comment... is read as one, unless its
@@ -533,13 +535,13 @@ def _adaptations(entries: Sequence[_Entry], root: Path) -> str:
     ]
     return _list_section(
         "Adaptations",
-        "Examples where the manual's representation of an input, or of the name of an output, "
-        "was rewritten to the equivalent representation that vtlengine documents, such as the "
-        "``time`` values ``2010M1/2010M12`` of an input, or the default measure name "
-        "``string_var`` of an output, which vtlengine writes ``str_var``. The text of each item "
-        "says what was rewritten, and the notes of the example keep the original. These are not "
-        "errata.",
-        "None: no input or output name of the manual was rewritten.",
+        "Examples where the manual's representation of an input or of an output name was "
+        "rewritten to the equivalent representation vtlengine documents (such as the ``time`` "
+        "values ``2010M1/2010M12`` of an input, or the default measure name ``string_var`` of "
+        "an output, which vtlengine writes ``str_var``), or values that no engine can reproduce "
+        "(the manual's illustrative random draws) were left out of the expected output and are "
+        "property-checked. The notes of the example keep the original. These are not errata.",
+        "None: no example needed an adaptation.",
         items,
     )
 

@@ -43,8 +43,9 @@ class Example:
     manual_ref: str | None = None  # manual example on the operator's page, e.g. ``ex_1``
     # A slip of the manual that is corrected: in its script, its input or its expected output.
     erratum: str | None = None
-    # The manual's representation of an input, or of the name of an output, rewritten to the
-    # equivalent representation that vtlengine documents.
+    # The manual's representation of an input or of an output name rewritten to the equivalent
+    # representation vtlengine documents, or values that no engine can reproduce (the manual's
+    # illustrative random draws) left out of the expected output and property-checked.
     adaptation: str | None = None
     decision: int | None = None  # issue of a team decision the expected output follows
     check: Check = "exact"  # ``random`` and ``current_date`` are checked by property
