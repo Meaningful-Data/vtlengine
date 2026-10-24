@@ -251,7 +251,7 @@ def _lag_or_lead(op_id: str, name: str, comp_slug: str) -> Operator:
 
 
 # The invocation pages have no type of their own: their forms take any scalar, and give the type
-# of the function that they invoke.
+# of the function that they invoke. Their ids have no kind token, so each form says its kind.
 _INVOCATION_TAKES = (ANY_SCALAR,)
 _INVOCATION_GIVES = (ANY_TYPE,)
 
@@ -278,6 +278,7 @@ _AGGREGATE_INVOCATION = Operator(
             ),
             takes=_INVOCATION_TAKES,
             gives=_INVOCATION_GIVES,
+            kind="ds",
         ),
         Variant(
             "group_by_two",
@@ -285,6 +286,7 @@ _AGGREGATE_INVOCATION = Operator(
             (manual("ex_2"),),
             takes=_INVOCATION_TAKES,
             gives=_INVOCATION_GIVES,
+            kind="ds",
         ),
         Variant(
             "no_group",
@@ -292,6 +294,7 @@ _AGGREGATE_INVOCATION = Operator(
             (manual("ex_3"),),
             takes=_INVOCATION_TAKES,
             gives=_INVOCATION_GIVES,
+            kind="ds",
         ),
         Variant(
             "aggr_multiple",
@@ -308,6 +311,7 @@ _AGGREGATE_INVOCATION = Operator(
             ),
             takes=_INVOCATION_TAKES,
             gives=_INVOCATION_GIVES,
+            kind="comp",
         ),
     ),
     links=(_AGGR_LINK,),
@@ -327,6 +331,7 @@ _ANALYTIC_INVOCATION = Operator(
             (authored("sum_per_quarter"),),
             takes=_INVOCATION_TAKES,
             gives=_INVOCATION_GIVES,
+            kind="comp",
         ),
         Variant(
             "partition_except",
@@ -334,6 +339,7 @@ _ANALYTIC_INVOCATION = Operator(
             (authored("partition_by_unlisted_identifier"),),
             takes=_INVOCATION_TAKES,
             gives=_INVOCATION_GIVES,
+            kind="comp",
         ),
         Variant(
             "partition_except_all",
@@ -350,6 +356,7 @@ _ANALYTIC_INVOCATION = Operator(
             ),
             takes=_INVOCATION_TAKES,
             gives=_INVOCATION_GIVES,
+            kind="comp",
         ),
         Variant(
             "order_asc",
@@ -357,6 +364,7 @@ _ANALYTIC_INVOCATION = Operator(
             (authored("ascending_rank_with_tie"),),
             takes=_INVOCATION_TAKES,
             gives=_INVOCATION_GIVES,
+            kind="comp",
         ),
         Variant(
             "order_desc",
@@ -364,6 +372,7 @@ _ANALYTIC_INVOCATION = Operator(
             (authored("descending_rank_with_tie"),),
             takes=_INVOCATION_TAKES,
             gives=_INVOCATION_GIVES,
+            kind="comp",
         ),
         Variant(
             "window_data_points",
@@ -371,6 +380,7 @@ _ANALYTIC_INVOCATION = Operator(
             (manual("ex_1"),),
             takes=_INVOCATION_TAKES,
             gives=_INVOCATION_GIVES,
+            kind="ds",
         ),
         Variant(
             "window_range",
@@ -378,6 +388,7 @@ _ANALYTIC_INVOCATION = Operator(
             (authored("range_bounds_are_inclusive"),),
             takes=_INVOCATION_TAKES,
             gives=_INVOCATION_GIVES,
+            kind="comp",
         ),
         Variant(
             "window_unbounded",
@@ -385,6 +396,7 @@ _ANALYTIC_INVOCATION = Operator(
             (authored("unbounded_covers_whole_partition"),),
             takes=_INVOCATION_TAKES,
             gives=_INVOCATION_GIVES,
+            kind="comp",
         ),
         Variant(
             "window_current",
@@ -392,6 +404,7 @@ _ANALYTIC_INVOCATION = Operator(
             (authored("one_preceding_to_current"),),
             takes=_INVOCATION_TAKES,
             gives=_INVOCATION_GIVES,
+            kind="comp",
         ),
     ),
     links=(Link("clause.calc", "used in"),),
