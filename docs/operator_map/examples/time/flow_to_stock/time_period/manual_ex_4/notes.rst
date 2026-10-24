@@ -1,0 +1,3 @@
+:Tests: ``flow_to_stock(DS_4)`` on an annual and a quarterly series of the same phenomenon ``A``, each summed on its own.
+:Manual: `Flow to stock <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Flow%20to%20stock/index.html>`__, Example 4, output verbatim: "the operator perform the cumulative sum from the first Data Point of each time series to each other following Data Point of the same time series."
+:Expected: The years give 2, 9, 13, 26 and the quarters of 2010 give 2, -1, 6, 2. The manual writes the quarters with a ``-``, as in ``2010-Q1``, the same periods as ``2010Q1``.

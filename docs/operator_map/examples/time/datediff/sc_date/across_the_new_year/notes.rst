@@ -1,0 +1,3 @@
+:Tests: ``datediff`` of two scalar dates, the page's valid syntax ``datediff (2020-12-14,2021-04-20)``, with the dates cast from strings in the default ``YYYY-MM-DD`` form, as VTL has no date literal.
+:Manual: `Days between two dates <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Days%20between%20two%20dates/index.html>`__: "The operator datediff returns the number of days between two dates or time periods."
+:Expected: ``DS_r = 127``, an Integer: 17 days to the end of 2020, then 31, 28 (2021 is not a leap year), 31 and 20.

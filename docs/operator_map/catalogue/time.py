@@ -13,9 +13,29 @@ The other operators have the operand levels of their syntax, and ``time_agg`` th
 parameters (``periodIndFrom``, ``first``/``last``) and its use inside ``group all``. VTL has no
 time literals: a scalar date, time period or duration is written as a ``cast`` of a string, with
 no mask (vtlengine implements no cast mask).
+
+Every form declares the types it takes and gives, the finest that its page states:
+
+* a time series form takes and gives the type of its reference time Identifier, with the
+  ``number`` measures of ``flow_to_stock`` and ``stock_to_flow``, and the ``integer`` shift of
+  ``timeshift``;
+* ``time_agg`` takes a ``time``, or the ``date`` or ``time_period`` that its form names, and the
+  ``duration`` of its period indicators, and gives the type that it takes;
+* the pages of ``datediff``, ``dateadd`` and the extractions take "date or time_period" values,
+  so their forms take those two types, or the one that the form names. ``dateadd`` gives a
+  ``date``, except on a Data Set, whose time Identifier keeps its type;
+* ``period_indicator`` takes a ``time_period`` and gives a ``duration``, and the conversions
+  between numbers of days and durations go from ``integer`` to ``duration`` and back;
+* ``current_date()`` takes nothing and gives a ``date``.
+
+The forms of ``time_agg`` and ``period_indicator`` whose id has no kind say it: the ``group all``
+form ("a component version, for use in combination with an aggregation operator") and the
+operand left out in a clause are on components, the other ``time_agg`` forms on scalars.
 """
 
 from __future__ import annotations
+
+from typing import Final
 
 from tool.model import Chapter, Example, Link, Operator, Variant, authored, manual
 
@@ -27,9 +47,31 @@ _DUPLICATED_G = (
     "the expected output repeats Id_1 = G on the second data point, where the input has H"
 )
 
+_TIME: Final = "time"
+_DATE: Final = "date"
+_TIME_PERIOD: Final = "time_period"
+_DURATION: Final = "duration"
+_INTEGER: Final = "integer"
+_NUMBER: Final = "number"
+# What the pages of datediff, dateadd and the extractions take: "date or time_period" values.
+_DATE_OR_PERIOD: Final = (_DATE, _TIME_PERIOD)
 
-def _extract(operator_id: str, name: str, comp: Variant) -> Operator:
-    """An operator of the page "Extract time period": a component and a scalar variant."""
+
+def _comp_and_sc(
+    operator_id: str, takes: tuple[str, ...], gives: str, comp: Example, sc: Example
+) -> tuple[Variant, Variant]:
+    """The component form inside ``calc`` and the scalar form of an operator of one operand."""
+    return (
+        Variant("comp", f"calc {operator_id}(comp)", (comp,), takes=takes, gives=(gives,)),
+        Variant("sc", f"{operator_id}(sc)", (sc,), takes=takes, gives=(gives,)),
+    )
+
+
+def _extract(operator_id: str, name: str, comp: Example, sc: Example) -> Operator:
+    """An operator of the page "Extract time period": a component and a scalar variant.
+
+    Both take "one date or time_period value" and give an integer.
+    """
     return Operator(
         id=operator_id,
         name=name,
@@ -37,12 +79,12 @@ def _extract(operator_id: str, name: str, comp: Variant) -> Operator:
         page="Time operators/Extract time period",
         accepts=("time",),
         returns=("integer",),
-        variants=(comp, Variant("sc", f"{operator_id}(sc)", (authored(),))),
+        variants=_comp_and_sc(operator_id, _DATE_OR_PERIOD, _INTEGER, comp, sc),
     )
 
 
-def _days_to_duration(operator_id: str, name: str, comp: Variant) -> Operator:
-    """An operator of the page "Number days to duration"."""
+def _days_to_duration(operator_id: str, name: str, comp: Example, sc: Example) -> Operator:
+    """An operator of the page "Number days to duration": from an integer to a duration."""
     return Operator(
         id=operator_id,
         name=name,
@@ -50,12 +92,12 @@ def _days_to_duration(operator_id: str, name: str, comp: Variant) -> Operator:
         page="Time operators/Number days to duration",
         accepts=("integer",),
         returns=("duration",),
-        variants=(comp, Variant("sc", f"{operator_id}(sc)", (authored(),))),
+        variants=_comp_and_sc(operator_id, (_INTEGER,), _DURATION, comp, sc),
     )
 
 
-def _duration_to_days(operator_id: str, name: str, comp: Variant) -> Operator:
-    """An operator of the page "Duration to number days"."""
+def _duration_to_days(operator_id: str, name: str, comp: Example, sc: Example) -> Operator:
+    """An operator of the page "Duration to number days": from a duration to an integer."""
     return Operator(
         id=operator_id,
         name=name,
@@ -63,7 +105,28 @@ def _duration_to_days(operator_id: str, name: str, comp: Variant) -> Operator:
         page="Time operators/Duration to number days",
         accepts=("duration",),
         returns=("integer",),
-        variants=(comp, Variant("sc", f"{operator_id}(sc)", (authored(),))),
+        variants=_comp_and_sc(operator_id, (_DURATION,), _INTEGER, comp, sc),
+    )
+
+
+def _on_time(
+    variant_id: str,
+    label: str,
+    time_type: str,
+    examples: tuple[Example, ...],
+    takes: tuple[str, ...] = (),
+    gives: tuple[str, ...] = (),
+) -> Variant:
+    """A form of a time series operator on a reference time Identifier of ``time_type``.
+
+    It takes and gives the type of that Identifier, and the ``takes`` and ``gives`` besides it.
+    """
+    return Variant(
+        variant_id,
+        label,
+        examples,
+        takes=(time_type, *takes),
+        gives=(time_type, *gives),
     )
 
 
@@ -74,12 +137,16 @@ def _time_series(
     form: str,
     date: Example,
     time: Example,
+    *,
+    takes: tuple[str, ...],
+    gives: tuple[str, ...],
 ) -> Operator:
     """``flow_to_stock``, ``stock_to_flow`` or ``timeshift``: one variant per reference time type.
 
     On each of their pages ``ex_3`` (annual series) and ``ex_4`` (annual and quarterly series)
     are on a *time_period*, ``date`` (``ex_2``) on a *date* and ``time`` (``ex_1``) on a *time*
-    reference time Identifier. The page has the name of the operator.
+    reference time Identifier. The page has the name of the operator. Each form takes and gives
+    the type of its reference time Identifier, and ``takes`` and ``gives`` besides it.
     """
     return Operator(
         id=operator_id,
@@ -88,10 +155,13 @@ def _time_series(
         page=f"Time operators/{name}",
         accepts=accepts,
         returns=("dataset",),
-        variants=(
-            Variant("time_period", f"{form} on time_period", (manual("ex_3"), manual("ex_4"))),
-            Variant("date", f"{form} on date", (date,)),
-            Variant("time", f"{form} on time", (time,)),
+        variants=tuple(
+            _on_time(time_type, f"{form} on {time_type}", time_type, examples, takes, gives)
+            for time_type, examples in (
+                (_TIME_PERIOD, (manual("ex_3"), manual("ex_4"))),
+                (_DATE, (date,)),
+                (_TIME, (time,)),
+            )
         ),
     )
 
@@ -108,10 +178,36 @@ CHAPTER = Chapter(
             accepts=("time_period", "dataset"),
             returns=("duration", "dataset"),
             variants=(
-                Variant("ds", "period_indicator(DS)", (manual("ex_1"),)),
-                Variant("comp", "filter period_indicator(comp)", (manual("ex_2"),)),
-                Variant("sc", "period_indicator(sc)", (authored(),)),
-                Variant("in_filter_no_operand", "filter period_indicator()", (authored(),)),
+                Variant(
+                    "ds",
+                    "period_indicator(DS)",
+                    (manual("ex_1"),),
+                    takes=(_TIME_PERIOD,),
+                    gives=(_DURATION,),
+                ),
+                Variant(
+                    "comp",
+                    "filter period_indicator(comp)",
+                    (manual("ex_2"),),
+                    takes=(_TIME_PERIOD,),
+                    gives=(_DURATION,),
+                ),
+                Variant(
+                    "sc",
+                    "period_indicator(sc)",
+                    (authored("quarterly_period"),),
+                    takes=(_TIME_PERIOD,),
+                    gives=(_DURATION,),
+                ),
+                # The operand left out in a clause is the time_period Identifier of its Data Set.
+                Variant(
+                    "in_filter_no_operand",
+                    "filter period_indicator()",
+                    (authored("keeps_the_quarterly_data_point"),),
+                    takes=(_TIME_PERIOD,),
+                    gives=(_DURATION,),
+                    kind="comp",
+                ),
             ),
         ),
         Operator(
@@ -122,28 +218,52 @@ CHAPTER = Chapter(
             accepts=("dataset", "time"),
             returns=("dataset",),
             variants=(
-                Variant("default_tp", "fill_time_series(DS) on time_period", (authored(),)),
-                Variant(
+                _on_time(
+                    "default_tp",
+                    "fill_time_series(DS) on time_period",
+                    _TIME_PERIOD,
+                    (authored("default_is_all"),),
+                ),
+                _on_time(
                     "single_tp",
                     "fill_time_series(DS, single) on time_period",
+                    _TIME_PERIOD,
                     (manual("ex_5"), manual("ex_7")),
                 ),
-                Variant(
+                _on_time(
                     "all_tp",
                     "fill_time_series(DS, all) on time_period",
+                    _TIME_PERIOD,
                     (manual("ex_6"), manual("ex_8")),
                 ),
-                Variant("default_date", "fill_time_series(DS) on date", (authored(),)),
-                Variant("single_date", "fill_time_series(DS, single) on date", (manual("ex_3"),)),
-                Variant("all_date", "fill_time_series(DS, all) on date", (manual("ex_4"),)),
-                Variant(
+                _on_time(
+                    "default_date",
+                    "fill_time_series(DS) on date",
+                    _DATE,
+                    (authored("default_is_all"),),
+                ),
+                _on_time(
+                    "single_date",
+                    "fill_time_series(DS, single) on date",
+                    _DATE,
+                    (manual("ex_3"),),
+                ),
+                _on_time(
+                    "all_date",
+                    "fill_time_series(DS, all) on date",
+                    _DATE,
+                    (manual("ex_4"),),
+                ),
+                _on_time(
                     "single_time",
                     "fill_time_series(DS, single) on time",
+                    _TIME,
                     (manual("ex_1", adaptation=_TIME_ADAPTATION),),
                 ),
-                Variant(
+                _on_time(
                     "all_time",
                     "fill_time_series(DS, all) on time",
+                    _TIME,
                     (manual("ex_2", adaptation=_TIME_ADAPTATION),),
                 ),
             ),
@@ -162,6 +282,8 @@ CHAPTER = Chapter(
                     "Integer measure of DS_1"
                 ),
             ),
+            takes=(_NUMBER,),
+            gives=(_NUMBER,),
         ),
         _time_series(
             "stock_to_flow",
@@ -177,6 +299,8 @@ CHAPTER = Chapter(
                     "measure, and the values and the result are Numbers"
                 ),
             ),
+            takes=(_NUMBER,),
+            gives=(_NUMBER,),
         ),
         _time_series(
             "timeshift",
@@ -185,6 +309,8 @@ CHAPTER = Chapter(
             "timeshift(DS, n)",
             manual("ex_2"),
             manual("ex_1", adaptation=_TIME_ADAPTATION),
+            takes=(_INTEGER,),
+            gives=(),
         ),
         Operator(
             id="time_agg",
@@ -194,14 +320,67 @@ CHAPTER = Chapter(
             accepts=("time", "duration", "dataset"),
             returns=("time", "dataset"),
             variants=(
-                Variant("group_all", "sum(DS group all time_agg(p))", (manual("ex_1"),)),
-                Variant("ds", "time_agg(p, DS)", (authored(),)),
-                Variant("comp", "calc time_agg(p, comp)", (authored(),)),
-                Variant("sc_time_period", "time_agg(p, sc) on time_period", (authored(),)),
-                Variant("sc_date", "time_agg(p, sc) on date", (authored(),)),
-                Variant("period_from", "time_agg(p, from, sc)", (authored(),)),
-                Variant("first", "time_agg(p, sc, first) on date", (authored(),)),
-                Variant("last", "time_agg(p, sc, last) on date", (authored(),)),
+                # The component version "for use in combination with an aggregation operator".
+                Variant(
+                    "group_all",
+                    "sum(DS group all time_agg(p))",
+                    (manual("ex_1"),),
+                    takes=(_TIME, _DURATION),
+                    gives=(_TIME,),
+                    kind="comp",
+                ),
+                Variant(
+                    "ds",
+                    "time_agg(p, DS)",
+                    (authored("monthly_measure_to_quarters"),),
+                    takes=(_TIME, _DURATION),
+                    gives=(_TIME,),
+                ),
+                Variant(
+                    "comp",
+                    "calc time_agg(p, comp)",
+                    (authored("mixed_periods_to_years"),),
+                    takes=(_TIME, _DURATION),
+                    gives=(_TIME,),
+                ),
+                Variant(
+                    "sc_time_period",
+                    "time_agg(p, sc) on time_period",
+                    (authored("month_to_quarter"),),
+                    takes=(_TIME_PERIOD, _DURATION),
+                    gives=(_TIME_PERIOD,),
+                ),
+                Variant(
+                    "sc_date",
+                    "time_agg(p, sc) on date",
+                    (authored("without_first_or_last"),),
+                    takes=(_DATE, _DURATION),
+                    gives=(_DATE,),
+                ),
+                Variant(
+                    "period_from",
+                    "time_agg(p, from, sc)",
+                    (authored("quarter_to_year"),),
+                    takes=(_TIME, _DURATION),
+                    gives=(_TIME,),
+                    kind="sc",
+                ),
+                Variant(
+                    "first",
+                    "time_agg(p, sc, first) on date",
+                    (authored("start_of_the_year"),),
+                    takes=(_DATE, _DURATION),
+                    gives=(_DATE,),
+                    kind="sc",
+                ),
+                Variant(
+                    "last",
+                    "time_agg(p, sc, last) on date",
+                    (authored("end_of_the_quarter"),),
+                    takes=(_DATE, _DURATION),
+                    gives=(_DATE,),
+                    kind="sc",
+                ),
             ),
             links=(
                 Link("aggregate.aggregate_invocation", "used in group all"),
@@ -215,7 +394,15 @@ CHAPTER = Chapter(
             page="Time operators/Actual time",
             accepts=(),
             returns=("date",),
-            variants=(Variant("sc", "current_date()", (authored(check="current_date"),)),),
+            variants=(
+                Variant(
+                    "sc",
+                    "current_date()",
+                    (authored("date_of_the_run", check="current_date"),),
+                    takes=(),
+                    gives=(_DATE,),
+                ),
+            ),
         ),
         Operator(
             id="datediff",
@@ -225,10 +412,34 @@ CHAPTER = Chapter(
             accepts=("time",),
             returns=("integer",),
             variants=(
-                Variant("comp_comp", "calc datediff(comp, comp)", (manual("ex_1"),)),
-                Variant("sc_date", "datediff(date, date)", (authored(),)),
-                Variant("sc_time_period", "datediff(time_period, time_period)", (authored(),)),
-                Variant("sc_mixed", "datediff(time_period, date)", (authored(),)),
+                Variant(
+                    "comp_comp",
+                    "calc datediff(comp, comp)",
+                    (manual("ex_1"),),
+                    takes=_DATE_OR_PERIOD,
+                    gives=(_INTEGER,),
+                ),
+                Variant(
+                    "sc_date",
+                    "datediff(date, date)",
+                    (authored("across_the_new_year"),),
+                    takes=(_DATE,),
+                    gives=(_INTEGER,),
+                ),
+                Variant(
+                    "sc_time_period",
+                    "datediff(time_period, time_period)",
+                    (authored("last_days_of_two_quarters"),),
+                    takes=(_TIME_PERIOD,),
+                    gives=(_INTEGER,),
+                ),
+                Variant(
+                    "sc_mixed",
+                    "datediff(time_period, date)",
+                    (authored("quarter_end_to_a_date"),),
+                    takes=(_TIME_PERIOD, _DATE),
+                    gives=(_INTEGER,),
+                ),
             ),
         ),
         Operator(
@@ -239,15 +450,28 @@ CHAPTER = Chapter(
             accepts=("time", "integer", "duration", "dataset"),
             returns=("time", "dataset"),
             variants=(
-                Variant("ds", "dateadd(DS, n, p)", (authored(),)),
-                Variant("comp", "calc dateadd(comp, n, p)", (manual("ex_1"),)),
+                # A Data Set keeps its components, and so the type of its time Identifier.
+                Variant(
+                    "ds",
+                    "dateadd(DS, n, p)",
+                    (authored("shifts_the_time_identifier"),),
+                    takes=(_TIME, _INTEGER, _DURATION),
+                    gives=(_TIME,),
+                ),
+                Variant(
+                    "comp",
+                    "calc dateadd(comp, n, p)",
+                    (manual("ex_1"),),
+                    takes=(*_DATE_OR_PERIOD, _INTEGER, _DURATION),
+                    gives=(_DATE,),
+                ),
                 Variant(
                     "sc_date",
                     "dateadd(date, n, p)",
                     (
-                        authored(),
+                        authored("one_month_later"),
                         authored(
-                            "minimal_2",
+                            "one_year_later",
                             adaptation=(
                                 "the page writes the year period indicator “Y” (“for years the "
                                 "“Y” is used”); the example writes it A, the year duration of "
@@ -255,61 +479,71 @@ CHAPTER = Chapter(
                             ),
                         ),
                     ),
+                    takes=(_DATE, _INTEGER, _DURATION),
+                    gives=(_DATE,),
                 ),
-                Variant("sc_time_period", "dateadd(time_period, n, p)", (authored(),)),
+                Variant(
+                    "sc_time_period",
+                    "dateadd(time_period, n, p)",
+                    (authored("from_the_last_day_of_the_quarter"),),
+                    takes=(_TIME_PERIOD, _INTEGER, _DURATION),
+                    gives=(_DATE,),
+                ),
             ),
         ),
         _extract(
             "getyear",
             "Extract the year",
-            Variant("comp", "calc getyear(comp)", (authored(),)),
+            authored("dates_of_three_years"),
+            authored("quarterly_period"),
         ),
         _extract(
             "getmonth",
             "Extract the month",
-            Variant("comp", "calc getmonth(comp)", (manual("ex_1"),)),
+            manual("ex_1"),
+            authored("monthly_period"),
         ),
         _extract(
             "dayofmonth",
             "Extract the day of the month",
-            Variant("comp", "calc dayofmonth(comp)", (authored(),)),
+            authored("leap_day_and_month_end"),
+            authored("mid_month_date"),
         ),
         _extract(
             "dayofyear",
             "Extract the day of the year",
-            Variant("comp", "calc dayofyear(comp)", (authored(),)),
+            authored("leap_and_common_years"),
+            authored("april_in_a_leap_year"),
         ),
         _days_to_duration(
             "daytoyear",
             "Number of days to years and days",
-            Variant("comp", "calc daytoyear(comp)", (manual("ex_1", erratum=_DUPLICATED_G),)),
+            manual("ex_1", erratum=_DUPLICATED_G),
+            authored("years_of_365_days"),
         ),
         _days_to_duration(
             "daytomonth",
             "Number of days to months and days",
-            Variant("comp", "calc daytomonth(comp)", (manual("ex_2", erratum=_DUPLICATED_G),)),
+            manual("ex_2", erratum=_DUPLICATED_G),
+            authored("months_of_thirty_days"),
         ),
         _duration_to_days(
             "yeartoday",
             "Years and days to number of days",
-            Variant(
-                "comp",
-                "calc yeartoday(comp)",
-                (
-                    manual(
-                        "ex_1",
-                        erratum=(
-                            "the expected data points are those of Number days to duration "
-                            "ex_1 (Me_1 = 240, Me_2 = P0Y240D...), not yeartoday of DS_1"
-                        ),
-                    ),
+            manual(
+                "ex_1",
+                erratum=(
+                    "the expected data points are those of Number days to duration "
+                    "ex_1 (Me_1 = 240, Me_2 = P0Y240D...), not yeartoday of DS_1"
                 ),
             ),
+            authored("one_year_and_twenty_days"),
         ),
         _duration_to_days(
             "monthtoday",
             "Months and days to number of days",
-            Variant("comp", "calc monthtoday(comp)", (authored(),)),
+            authored("iso_month_and_day_durations"),
+            authored("three_months_and_ten_days"),
         ),
     ),
 )

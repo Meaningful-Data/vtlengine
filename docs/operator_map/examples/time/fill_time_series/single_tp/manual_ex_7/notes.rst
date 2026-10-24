@@ -1,0 +1,3 @@
+:Tests: ``fill_time_series(DS_4, single)`` on an annual and a quarterly series of the same phenomenon ``A``, told apart by their period.
+:Manual: `Fill time series <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Fill%20time%20series/index.html>`__, Example 7, output verbatim: "If *limitsMethod* is **single**, the time limits are determined with reference to each single time_series of the Data Set", and the reference time Identifier "is increased of one *period* at a time".
+:Expected: The annual series gets 2011, between 2010 and 2012, and the quarterly one 2010Q3 and 2011Q1, between 2010Q1 and 2011Q2, each with a null ``Me_1``.
