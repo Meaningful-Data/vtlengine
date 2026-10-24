@@ -1,0 +1,3 @@
+:Tests: the Hamming distance of two strings of the same length.
+:Manual: `String distances <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/String%20distances/index.html>`__: "Returns the Hamming distance, which is the number of positions at which the corresponding characters are different. Both strings must have the same length."
+:Expected: ``SC_r`` is 3, a Number: ``karolin`` and ``kathrin`` have 7 characters and differ at the 3rd (``r`` and ``t``), the 4th (``o`` and ``h``) and the 5th (``l`` and ``r``).

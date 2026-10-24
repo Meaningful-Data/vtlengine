@@ -1,0 +1,3 @@
+:Tests: ``lower`` of a component inside ``calc``, with an all-capitals value, a mixed-case one and a null.
+:Manual: `Character case conversion <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/Character%20case%20conversion/index.html>`__: "Converts the character case of a string in upper or lower case."
+:Expected: the new measure ``Me_2`` is ``hello`` for ``HELLO`` and ``hi there`` for ``Hi There``; ``Me_1`` is kept. A null operand gives a null result: "most of the scalar operations (arithmetic, logical, and others) return null when any of their arguments is null" (User Manual), as the manual's ``length`` and ``instr`` examples show.
