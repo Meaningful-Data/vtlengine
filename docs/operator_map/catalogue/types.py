@@ -18,7 +18,7 @@ def _identity() -> tuple[Variant, ...]:
 
 
 TYPES: tuple[TypeDef, ...] = (
-    TypeDef("scalar", ()),
+    TypeDef("scalar", (), see="general.non_persistent_assignment"),
     TypeDef("number", ("scalar",), _identity()),
     TypeDef("integer", ("number",), _identity()),
     TypeDef("string", ("scalar",), _identity()),
@@ -27,12 +27,12 @@ TYPES: tuple[TypeDef, ...] = (
     TypeDef("date", ("time",), _identity()),
     TypeDef("time_period", ("time",), _identity()),
     TypeDef("duration", ("scalar",), _identity()),
-    TypeDef("dataset", ()),
-    TypeDef("set", ()),
-    TypeDef("value_domain", ()),
-    TypeDef("datapoint_ruleset", ()),
-    TypeDef("hierarchical_ruleset", ()),
-    TypeDef("viral_propagation", ()),
-    TypeDef("operator", ()),
-    TypeDef("external_routine", ()),
+    TypeDef("dataset", (), see="general.non_persistent_assignment"),
+    TypeDef("set", (), see="comparison.in"),
+    TypeDef("value_domain", (), see="comparison.in"),
+    TypeDef("datapoint_ruleset", (), see="definitions.define_datapoint_ruleset"),
+    TypeDef("hierarchical_ruleset", (), see="definitions.define_hierarchical_ruleset"),
+    TypeDef("viral_propagation", (), see="definitions.define_viral_propagation"),
+    TypeDef("operator", (), see="definitions.define_operator"),
+    TypeDef("external_routine", (), see="general.eval"),
 )

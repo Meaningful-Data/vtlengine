@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tool.model import Chapter, Operator, Variant, authored, manual
+from tool.model import Chapter, Link, Operator, Variant, authored, manual
 
 _CHAPTER = "Data validation operators"
 
@@ -45,6 +45,7 @@ CHECK_DATAPOINT = Operator(
         Variant("errorcode", "check_datapoint(DS, DPR all), rules with errorcode", (authored(),)),
         Variant("errorlevel", "check_datapoint(DS, DPR all), rules with errorlevel", (authored(),)),
     ),
+    links=(Link("definitions.define_datapoint_ruleset", "uses"),),
 )
 
 CHECK_HIERARCHY = Operator(
@@ -86,6 +87,7 @@ CHECK_HIERARCHY = Operator(
             (authored(),),
         ),
     ),
+    links=(Link("definitions.define_hierarchical_ruleset", "uses"),),
 )
 
 CHECK = Operator(

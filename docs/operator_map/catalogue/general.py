@@ -19,7 +19,7 @@ also has a dataset and a scalar variant, and two variants cast to a value domain
 
 from __future__ import annotations
 
-from tool.model import Chapter, Operator, Variant, authored, manual
+from tool.model import Chapter, Link, Operator, Variant, authored, manual
 
 _CHAPTER = "General purpose operators"
 
@@ -198,6 +198,7 @@ CHAPTER = Chapter(
                 Variant("default_omitted", "op(a)", (authored(),)),
                 Variant("placeholder_arg", "op(a, _, c)", (authored(),)),
             ),
+            links=(Link("definitions.define_operator", "uses"),),
         ),
         Operator(
             id="eval",

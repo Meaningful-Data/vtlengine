@@ -17,7 +17,7 @@ no mask (vtlengine implements no cast mask).
 
 from __future__ import annotations
 
-from tool.model import Chapter, Example, Operator, Variant, authored, manual
+from tool.model import Chapter, Example, Link, Operator, Variant, authored, manual
 
 _TIME_ADAPTATION = (
     "the manual's time values YYYYMm/YYYYMm (e.g. 2010M1/2010M12), which vtlengine cannot load, "
@@ -202,6 +202,10 @@ CHAPTER = Chapter(
                 Variant("period_from", "time_agg(p, from, sc)", (authored(),)),
                 Variant("first", "time_agg(p, sc, first) on date", (authored(),)),
                 Variant("last", "time_agg(p, sc, last) on date", (authored(),)),
+            ),
+            links=(
+                Link("aggregate.aggregate_invocation", "used in group all"),
+                Link("clause.aggr", "used in group all"),
             ),
         ),
         Operator(

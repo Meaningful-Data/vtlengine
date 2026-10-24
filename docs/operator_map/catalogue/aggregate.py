@@ -29,13 +29,17 @@ notes of each example derive its expected output.
 
 from __future__ import annotations
 
-from tool.model import Chapter, Example, Operator, Variant, authored, manual
+from tool.model import Chapter, Example, Link, Operator, Variant, authored, manual
 
 _CHAPTER_TITLE = "Aggregate and Analytic operators"
 _COUNT_DECISION = 1049  # count over a data set returns the single measure int_var
 # The functions whose ``group by`` form has a second example, ``minimal_2``: nulls for ``count``
 # and ``avg``, a String measure for ``min`` and ``max``.
 _GROUP_BY_SECOND = ("count", "avg", "min", "max")
+# The clauses that the functions are used in: an aggregate function in ``aggr``, and any function
+# that takes ``over ( ... )``, the aggregate ones included, in ``calc``.
+_AGGR_LINK = Link("clause.aggr", "used in")
+_OVER_LINK = Link("clause.calc", "used in over()")
 
 
 def _page(title: str) -> str:
@@ -98,6 +102,7 @@ def _aggregate_function(op_id: str, name: str, title: str, accepts: str, returns
         accepts=(accepts,),
         returns=(returns,),
         variants=variants,
+        links=(_AGGR_LINK, _OVER_LINK),
     )
 
 
@@ -121,6 +126,7 @@ def _first_or_last(op_id: str, name: str) -> Operator:
                 (authored(),),
             ),
         ),
+        links=(_OVER_LINK,),
     )
 
 
@@ -152,6 +158,7 @@ def _lag_or_lead(op_id: str, name: str) -> Operator:
                 (authored(),),
             ),
         ),
+        links=(_OVER_LINK,),
     )
 
 
@@ -194,6 +201,7 @@ _AGGREGATE_INVOCATION = Operator(
             ),
         ),
     ),
+    links=(_AGGR_LINK,),
 )
 
 _ANALYTIC_INVOCATION = Operator(
@@ -243,6 +251,7 @@ _ANALYTIC_INVOCATION = Operator(
             (authored(),),
         ),
     ),
+    links=(Link("clause.calc", "used in"),),
 )
 
 _RANK = Operator(
@@ -260,6 +269,7 @@ _RANK = Operator(
         ),
         Variant("order_only", "DS[calc Me := rank(over (order by Id))]", (authored(),)),
     ),
+    links=(_OVER_LINK,),
 )
 
 _RATIO_TO_REPORT = Operator(
@@ -277,6 +287,7 @@ _RATIO_TO_REPORT = Operator(
             (authored(),),
         ),
     ),
+    links=(_OVER_LINK,),
 )
 
 CHAPTER = Chapter(
