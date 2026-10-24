@@ -449,15 +449,15 @@ def test_strict_forms_checks_the_forms_of_the_chapters_named(
     assert generate.main(["--check-only", "--strict-forms", "--only", "beta"]) == 1
     folder = world.root / "examples/beta/second/ds/minimal"
     assert problems(capsys) == [
-        "beta.second.ds: the form declares no takes",
-        "beta.second.ds: the form declares no gives",
+        "beta.second.ds: the form does not declare takes",
+        "beta.second.ds: the form does not declare gives",
         "beta.second.ds: example name 'minimal' does not say what the example tests",
         f"{folder}: missing notes.rst",
     ]
     # Without ``--only``, every chapter is checked; and a run stops before it starts.
     assert generate.main(["--strict-forms"]) == 1
     lines = problems(capsys)
-    assert "alpha.first.sc: the form declares no takes" in lines
+    assert "alpha.first.sc: the form does not declare takes" in lines
     assert f"{folder}: missing notes.rst" in lines
     assert world.calls == []
     assert world.names() == ["examples"]

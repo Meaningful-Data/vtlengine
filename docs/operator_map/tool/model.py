@@ -88,9 +88,10 @@ class Variant:
     """One syntax form of an operator.
 
     ``takes`` and ``gives`` are the types of the form, of ``VALUE_TYPES``, ``ANY_SCALAR``,
-    ``ANY_TYPE`` and ``STRUCTURAL_TYPES``. Whether it is on datasets, components or scalars is
-    its kind (``form_kind``), not a type. A form that does not declare its types has those of its
-    operator (``form_types``). ``kind`` says the kind of a form whose id has no token for it,
+    ``ANY_TYPE`` and ``STRUCTURAL_TYPES``. ``None`` is a side that is not declared, which has the
+    types of the operator (``form_types``); an empty ``takes`` is a form that takes nothing, such
+    as ``current_date()``. Whether a form is on datasets, components or scalars is its kind
+    (``form_kind``), not a type. ``kind`` says the kind of a form whose id has no token for it,
     such as the conversions of ``cast`` (``integer_to_boolean`` is on components).
     """
 
@@ -98,8 +99,8 @@ class Variant:
     label: str
     examples: tuple[Example, ...]
     returns: tuple[str, ...] = ()  # return types when they differ from the operator's
-    takes: tuple[str, ...] = ()
-    gives: tuple[str, ...] = ()
+    takes: tuple[str, ...] | None = None  # None: not declared; (): takes nothing
+    gives: tuple[str, ...] | None = None  # None: not declared
     kind: Kind | None = None  # the kind of its widest operand, when the id does not say it
 
 
@@ -184,13 +185,15 @@ def form_kind(v: Variant) -> Kind | None:
 def form_types(op: Operator, v: Variant) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """What the form ``v`` of ``op`` takes and gives: its own types, else those of ``op``.
 
-    Each side falls back on its own. A form that declares no ``takes`` takes the ``accepts`` of
-    its operator. One that declares no ``gives`` gives its own ``returns``, else the ``returns``
+    A side falls back only when the form does not declare it (``None``): a declared empty
+    ``takes`` takes nothing. A form that does not declare ``takes`` takes the ``accepts`` of its
+    operator. One that does not declare ``gives`` gives its own ``returns``, else the ``returns``
     of its operator. ``dataset`` is left out of these: it is the kind of a form, not a type.
     """
-    takes = v.takes or _without_dataset(op.accepts)
-    gives = v.gives or _without_dataset(v.returns) or _without_dataset(op.returns)
-    return takes, gives
+    takes = v.takes if v.takes is not None else _without_dataset(op.accepts)
+    if v.gives is not None:
+        return takes, v.gives
+    return takes, _without_dataset(v.returns) or _without_dataset(op.returns)
 
 
 def _without_dataset(types: tuple[str, ...]) -> tuple[str, ...]:
@@ -273,7 +276,8 @@ def _variant_problems(owner: str, variants: Iterable[Variant], strict: bool) -> 
         yield from _duplicate(owner, "variant", variant.id, seen)
         variant_owner = f"{owner}.{variant.id}"
         yield from _unknown_types(variant_owner, variant.returns, _OPERATOR_TYPES)
-        yield from _unknown_types(variant_owner, (*variant.takes, *variant.gives), _FORM_TYPES)
+        declared = (*(variant.takes or ()), *(variant.gives or ()))
+        yield from _unknown_types(variant_owner, declared, _FORM_TYPES)
         if strict:
             yield from _untyped(variant_owner, variant)
         seen_examples: dict[str, int] = {}
@@ -300,11 +304,17 @@ def _mixed_kinds(owner: str, variants: Iterable[Variant]) -> Iterator[str]:
 
 
 def _untyped(owner: str, variant: Variant) -> Iterator[str]:
-    """The types that a form does not declare: neither its ``returns`` nor its operator's count."""
-    if not variant.takes:
-        yield f"{owner}: the form declares no takes"
-    if not variant.gives:
-        yield f"{owner}: the form declares no gives"
+    """What a form misses of its types: neither its ``returns`` nor its operator's count.
+
+    It declares ``takes``, which may be empty for a form that takes nothing, and ``gives``,
+    which holds a type: every form gives something.
+    """
+    if variant.takes is None:
+        yield f"{owner}: the form does not declare takes"
+    if variant.gives is None:
+        yield f"{owner}: the form does not declare gives"
+    elif not variant.gives:
+        yield f"{owner}: the form gives nothing: gives needs a type"
 
 
 def _slug_problems(owner: str, name: str) -> Iterator[str]:
@@ -438,12 +448,12 @@ def validate_catalogue(
     ``returns`` of an operator, and the ``returns`` of a form, may name ``dataset`` as well. The
     label of every link has a reverse in ``REVERSE_LABELS``.
 
-    ``strict_forms`` turns on the strict checks of the forms: every form declares its ``takes``
-    and its ``gives``, the forms of an operator all have a kind (``form_kind``) or none has, and
-    every authored example is named after what it tests, with a slug that matches
-    ``[a-z][a-z0-9_]{0,39}`` and is neither ``minimal`` nor ``minimal_<n>``, nor the name of a
-    manual example, ``manual_ex_<n>``. The notes of the examples are checked with their folders,
-    by the generator.
+    ``strict_forms`` turns on the strict checks of the forms: every form declares its ``takes``,
+    empty for a form that takes nothing, and its ``gives``, with a type at least; the forms of an
+    operator all have a kind (``form_kind``) or none has; and every authored example is named
+    after what it tests, with a slug that matches ``[a-z][a-z0-9_]{0,39}`` and is neither
+    ``minimal`` nor ``minimal_<n>``, nor the name of a manual example, ``manual_ex_<n>``. The
+    notes of the examples are checked with their folders, by the generator.
     """
     targets = {f"{chapter.id}.{op.id}" for chapter in cat.chapters for op in chapter.operators}
     known_pages = frozenset(pages)

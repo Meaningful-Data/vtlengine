@@ -22,7 +22,7 @@ also has a dataset and a scalar variant, and two variants cast to a value domain
 
 from __future__ import annotations
 
-from tool.model import Chapter, Link, Operator, Variant, authored, manual
+from tool.model import VALUE_TYPES, Chapter, Link, Operator, Variant, authored, manual
 
 _CHAPTER = "General purpose operators"
 
@@ -61,19 +61,6 @@ _OPTIONAL_MASK = (  # "Optional mask": once without and once with a mask
 # The conversions with more than one example: the second holds the inputs that a rule of the
 # manual treats in its own way.
 _SECOND_EXAMPLE = frozenset({("string", "boolean")})
-
-
-# The basic types of VTL, each with an example of the dataset form of ``:=``, ``<type>_measure``.
-_BASIC_TYPES = (
-    "number",
-    "integer",
-    "string",
-    "boolean",
-    "time",
-    "date",
-    "time_period",
-    "duration",
-)
 
 
 # The manual's default measure name of a string, ``string_var``, is one that "can be personalised
@@ -169,7 +156,8 @@ CHAPTER = Chapter(
                 Variant(
                     "ds",
                     "DS_r := DS",
-                    (manual("ex_1"), *(authored(f"{type_id}_measure") for type_id in _BASIC_TYPES)),
+                    # An example for each basic type of VTL: ``<type>_measure``.
+                    (manual("ex_1"), *(authored(f"{type_id}_measure") for type_id in VALUE_TYPES)),
                 ),
                 Variant("sc", "SC_r := sc", (authored(),)),
             ),

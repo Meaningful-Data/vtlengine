@@ -45,6 +45,8 @@ def parse_messages(text: str, source: str = "notes.rst") -> list[str]:
 
 
 def test_all_notes_parse() -> None:
+    # A wrong path would find no notes and pass: the folder of the examples must be there.
+    assert EXAMPLES.is_dir(), EXAMPLES
     problems = {
         path.relative_to(EXAMPLES).as_posix(): messages
         for path in sorted(EXAMPLES.rglob("notes.rst"))

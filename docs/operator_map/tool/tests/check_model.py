@@ -317,11 +317,18 @@ def test_form_types_fallback() -> None:
     assert form_types(make_operator(), bare) == (("number",), ("number",))
     both = make_operator(accepts=("dataset", "string", "integer"), returns=("dataset", "integer"))
     assert form_types(both, bare) == (("string", "integer"), ("integer",))
-    # Each side falls back on its own.
+    # Each side falls back on its own, and only when it is not declared: ``takes=()`` is a form
+    # that takes nothing, such as ``current_date()``, and ``gives=()`` a form that gives nothing.
+    assert bare.takes is None
+    assert bare.gives is None
     takes_only = Variant("ds_ds", "x", (authored(),), takes=("integer",))
     assert form_types(make_operator(), takes_only) == (("integer",), ("number",))
     gives_only = Variant("ds_ds", "x", (authored(),), gives=("boolean",))
     assert form_types(make_operator(), gives_only) == (("number",), ("boolean",))
+    nothing = Variant("sc", "current_date()", (authored(),), takes=(), gives=("date",))
+    assert form_types(make_operator(), nothing) == ((), ("date",))
+    empty = Variant("sc", "x", (authored(),), returns=("integer",), takes=(), gives=())
+    assert form_types(make_operator(), empty) == ((), ())
     # What a form gives falls back on its own returns first, without ``dataset`` too, and on
     # those of the operator when they hold nothing else.
     rounded = Variant("ds_no_digits", "round(DS)", (authored(),), returns=("integer", "dataset"))
@@ -331,6 +338,30 @@ def test_form_types_fallback() -> None:
     # An operator on datasets only leaves nothing to fall back on.
     calc = make_operator(accepts=("dataset",), returns=("dataset",))
     assert form_types(calc, bare) == ((), ())
+
+
+def test_the_value_and_structural_types_keep_the_order_of_the_design() -> None:
+    # The columns of the types table of a block follow this order.
+    assert VALUE_TYPES == (
+        "number",
+        "integer",
+        "string",
+        "boolean",
+        "time",
+        "date",
+        "time_period",
+        "duration",
+    )
+    assert STRUCTURAL_TYPES == (
+        "set",
+        "value_domain",
+        "datapoint_ruleset",
+        "hierarchical_ruleset",
+        "viral_propagation",
+        "operator",
+        "external_routine",
+    )
+    assert (ANY_SCALAR, ANY_TYPE) == ("scalar", "any")
 
 
 def test_the_types_follow_the_hierarchy_of_the_design() -> None:
@@ -559,19 +590,25 @@ def test_strict_forms_requires_types() -> None:
     untyped = make_catalogue(make_operator())  # its form ``ds_ds`` declares no types
     assert problems_for(untyped) == []  # the strict checks are off by default
     assert strict_problems_for(untyped) == [
-        "numeric.addition.ds_ds: the form declares no takes",
-        "numeric.addition.ds_ds: the form declares no gives",
+        "numeric.addition.ds_ds: the form does not declare takes",
+        "numeric.addition.ds_ds: the form does not declare gives",
     ]
     half = Variant("ds_ds", "DS + DS", (manual("ex_1"),), takes=("number",))
     assert strict_problems_for(make_catalogue(make_operator(variants=(half,)))) == [
-        "numeric.addition.ds_ds: the form declares no gives"
+        "numeric.addition.ds_ds: the form does not declare gives"
     ]
     # Returns of its own, or types of the operator, do not make a form typed.
     legacy = Variant("ds_ds", "DS + DS", (manual("ex_1"),), returns=("integer",))
     assert strict_problems_for(make_catalogue(make_operator(variants=(legacy,)))) == [
-        "numeric.addition.ds_ds: the form declares no takes",
-        "numeric.addition.ds_ds: the form declares no gives",
+        "numeric.addition.ds_ds: the form does not declare takes",
+        "numeric.addition.ds_ds: the form does not declare gives",
     ]
+    # A form gives something: an empty ``gives`` is declared, and still a problem.
+    gives_nothing = Variant("ds_ds", "DS + DS", (manual("ex_1"),), takes=("number",), gives=())
+    assert strict_problems_for(make_catalogue(make_operator(variants=(gives_nothing,)))) == [
+        "numeric.addition.ds_ds: the form gives nothing: gives needs a type"
+    ]
+    assert problems_for(make_catalogue(make_operator(variants=(gives_nothing,)))) == []
     assert strict_problems_for(make_catalogue(make_operator(variants=(typed_form(),)))) == []
     # An unknown type is a problem under the strict checks too.
     odd = Variant("ds_ds", "DS + DS", (manual("ex_1"),), takes=("numbr",), gives=("dataset",))
@@ -581,17 +618,34 @@ def test_strict_forms_requires_types() -> None:
     ]
 
 
+def test_strict_forms_takes_nothing() -> None:
+    # ``current_date()`` takes no operand: an empty ``takes`` says so, and is not a problem.
+    def current_date(takes: tuple[str, ...] | None, gives: tuple[str, ...] | None) -> Catalogue:
+        form = Variant("sc", "current_date()", (manual("ex_1"),), takes=takes, gives=gives)
+        return make_catalogue(make_operator(variants=(form,)))
+
+    assert strict_problems_for(current_date((), ("date",))) == []
+    # Undeclared is not the same as nothing.
+    assert strict_problems_for(current_date(None, ("date",))) == [
+        "numeric.addition.sc: the form does not declare takes"
+    ]
+    # Taking nothing does not excuse giving nothing.
+    assert strict_problems_for(current_date((), ())) == [
+        "numeric.addition.sc: the form gives nothing: gives needs a type"
+    ]
+
+
 def test_strict_forms_are_checked_only_in_scope() -> None:
     string_chapter = make_string_chapter(Variant("ds", "length(DS)", (authored("minimal"),)))
     cat = Catalogue(chapters=(make_chapter(make_operator()), string_chapter))
     pages = {ADD_PAGE, LENGTH_PAGE}
     numeric = [
-        "numeric.addition.ds_ds: the form declares no takes",
-        "numeric.addition.ds_ds: the form declares no gives",
+        "numeric.addition.ds_ds: the form does not declare takes",
+        "numeric.addition.ds_ds: the form does not declare gives",
     ]
     string = [
-        "string.length.ds: the form declares no takes",
-        "string.length.ds: the form declares no gives",
+        "string.length.ds: the form does not declare takes",
+        "string.length.ds: the form does not declare gives",
         "string.length.ds: example name 'minimal' does not say what the example tests",
     ]
 
