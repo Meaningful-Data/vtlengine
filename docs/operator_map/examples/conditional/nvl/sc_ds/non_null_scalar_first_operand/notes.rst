@@ -1,0 +1,4 @@
+:Tests: ``nvl ( 5, DS_1 )``: a scalar as op1 and a data set as op2.
+:Manual: `Nvl <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Nvl/index.html>`__: "The operator has the typical behaviour of the operators applicable on two scalar values or Data Sets or Data Set Components"; there "DS_1 or DS_2 may be replaced by a Scalar value", and "An operand Scalar value is treated as a Data Point that couples with all the Data Points of the other operand" (Typical behaviours).
+:Expected: ``Me_1`` is 5 on every data point, also on id 2 where ``DS_1`` is null: op1 is not null, so op2 is not used. The identifiers are those of ``DS_1`` and ``Me_1`` is an Integer.
+:Finding: both engines refuse with SemanticError ``1-1-9-2``, "The applicable operand cannot be a Dataset when the operand is a Scalar".

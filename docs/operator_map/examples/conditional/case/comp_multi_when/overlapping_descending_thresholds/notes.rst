@@ -1,0 +1,4 @@
+:Tests: ``case when Me_1 > 10 then 10 when Me_1 > 1 then 1 else 0`` inside ``calc``: two conditions that overlap, the usual descending-threshold form, to tell the first true ``when`` from the last.
+:Manual: `Case <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Case/index.html>`__: "The **case** operator returns the first *thenOperand* whose corresponding *condition* evaluates to **true**, *elseOperand* if none of the **when** conditions evaluates to **true**." At Component level "the operation is applied for each Data Point of the unique input Data Set".
+:Expected: ``Me_2`` is 0, 1 and 10: for 15 both conditions hold, and the first gives 10, not 1. No recorded team decision applies, so the expected output follows the manual's "first".
+:Finding: both engines give 1 for 15: the last true condition wins ("last-match-wins" in the comment of ``visit_Case`` in the DuckDB transpiler).
