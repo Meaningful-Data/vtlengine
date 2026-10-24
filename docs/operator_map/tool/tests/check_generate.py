@@ -676,6 +676,8 @@ def test_parse_verdict_old_file() -> None:
         ("KeyError: 'Me_1'", "KeyError", None),
         ("Timeout: no result in 120 s, 2 attempts", "Timeout", None),
         ("Crash: exit 1: Segmentation fault", "Crash", None),
+        # An error of vtlengine with no code: the type is what says that it is a guarded one.
+        ("VTLSyntaxError: VTL syntax error at line 1, column 8: x", "VTLSyntaxError", None),
         ("ParserException: Parser Error: syntax error at or near x", "ParserException", None),
     ],
 )

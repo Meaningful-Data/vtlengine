@@ -3,15 +3,17 @@
 ``verdict`` says what one engine gave for an example: ``match`` when it gave the expected
 outputs, ``mismatch`` when it ran but gave something else, ``error`` when it did not run. A
 failed run is one of two things, which ``is_guarded`` tells apart. A guarded error is an error
-that vtlengine raised on purpose: one of its own classes (``VTL_ERRORS``), with a code. A crash
-is any other failure: an unhandled exception such as ``AttributeError`` or ``KeyError``, or a
+that vtlengine raised on purpose: one of its own classes (``VTL_ERRORS``), with a code or without
+one. A syntax error has none, and the parser reports it on purpose all the same. A crash is any
+other failure: an unhandled exception such as ``AttributeError`` or ``KeyError``, or a
 ``Timeout`` or a ``Crash`` of the child. ``mark`` writes a verdict as a page shows it: ✅ for a
-match, ❌ for a wrong result, 🛡 with its code for a guarded error, and 💥 with its type for a
-crash.
+match, ❌ for a wrong result, 🛡 for a guarded error with its code (with its class when it has no
+code), and 💥 with its type for a crash.
 
 An example can expect an error instead of outputs (``ExampleFiles.expected_error``): a run of
 it matches when it raises a guarded error with exactly that code, and is a mismatch when it
-raises another one, or none. A crash is a crash there too, never a match.
+raises another code, or none. A crash is a crash there too, never a match, and an error without
+a code, such as a syntax error, cannot be the one expected: it stays an error.
 
 ``example_result`` puts the verdicts of the two engines together into the status of the example:
 
@@ -20,11 +22,12 @@ raises another one, or none. A crash is a crash there too, never a match.
   An example that expects an error has no outputs to compare: its engines agree when they raised
   the same code, or no error at all;
 * ``ok``: both engines match;
-* ``refused``: both engines fail with a guarded error, and neither code says that something is
-  not implemented (``NOT_IMPLEMENTED``). Where the manual defines a result, the engines refuse
-  it on purpose;
-* ``missing``: both engines fail, and not in that way: with a crash, or with an error that says
-  that something is not implemented;
+* ``refused``: both engines fail with a guarded error that has a code, and neither code says
+  that something is not implemented (``NOT_IMPLEMENTED``). Where the manual defines a result,
+  the engines refuse it on purpose;
+* ``missing``: both engines fail, and not in that way: with a crash, with an error that says
+  that something is not implemented, or with a guarded error that has no code. A syntax error on
+  a valid script means that the grammar does not implement the syntax;
 * ``partial``: the engines agree and both give a wrong answer.
 
 Only the outputs that the expected files of the example name are looked at, on both sides. A
@@ -74,7 +77,8 @@ EMOJI: Final[dict[str, str]] = {
 Outcome = Literal["match", "mismatch", "error"]
 
 # The classes of the errors that vtlengine raises on purpose. A failed run is a guarded error
-# when it is of one of them and has a code; any other failure is a crash.
+# when it is of one of them, with a code or without one (a syntax error has none); any other
+# failure is a crash.
 VTL_ERRORS: Final[frozenset[str]] = frozenset(
     {"SemanticError", "RunTimeError", "InputValidationException", "DataLoadError", "VTLSyntaxError"}
 )
@@ -118,8 +122,8 @@ class EngineVerdict:
     """What an engine gave for an example; ``detail`` is empty for a ``match``.
 
     ``error_type`` and ``error_code`` are those of the error that the run raised, when it
-    raised one: the class of the exception and, for an error of vtlengine, its code. A run that
-    raised nothing has neither.
+    raised one: the class of the exception and, for an error of vtlengine that has one, its
+    code. A run that raised nothing has neither.
     """
 
     outcome: Outcome
@@ -165,10 +169,11 @@ def verdict(example: Example, files: ExampleFiles, out: RunOutput, today: str) -
 
     An example that expects an error (``files.expected_error``) is judged before anything else,
     and has no outputs to look at. A run that raised a guarded error with that code is a
-    ``match``. One that raised another guarded error is a ``mismatch`` with the detail
-    ``expected error <code>, got <code>``, and one that did not fail is a ``mismatch`` with the
-    detail ``expected error <code>, ran without an error``. A failure that is not a guarded
-    error is an ``error``, a crash.
+    ``match``. One that raised a guarded error with another code is a ``mismatch`` with the
+    detail ``expected error <code>, got <code>``, and one that did not fail is a ``mismatch``
+    with the detail ``expected error <code>, ran without an error``. Any other failure is an
+    ``error``: a crash, or an error without a code, such as a syntax error, which cannot be the
+    one expected.
 
     Otherwise every expected output must be in the run, by its name (an output that is not named
     in the expected files is ignored), or the verdict is a ``mismatch`` with the detail
@@ -206,25 +211,26 @@ def verdict(example: Example, files: ExampleFiles, out: RunOutput, today: str) -
 def is_guarded(v: EngineVerdict) -> bool:
     """Whether the verdict is about an error that vtlengine raised on purpose.
 
-    That is an error of one of its own classes, ``VTL_ERRORS``, with a code. Any other failed
-    run is a crash, whatever its type, a ``Timeout`` or a ``Crash`` included.
+    That is an error of one of its own classes, ``VTL_ERRORS``, with a code or without one: the
+    parser reports a syntax error on purpose, and it has no code. Any other failed run is a
+    crash, whatever its type, a ``Timeout`` or a ``Crash`` included.
     """
-    return v.error_type in VTL_ERRORS and v.error_code is not None
+    return v.error_type in VTL_ERRORS
 
 
 def mark(v: EngineVerdict) -> str:
     """The mark of a verdict, as a page shows it.
 
-    ``✅`` is a match, ``❌`` is a wrong result, ``🛡 <code>`` is a guarded error with its code,
-    and ``💥 <type>`` is a crash with the type of its exception. A crash that has no type is
-    just ``💥``.
+    ``✅`` is a match, ``❌`` is a wrong result, ``🛡 <code>`` is a guarded error with its code
+    (``🛡 VTLSyntaxError``, with its class, when it has none), and ``💥 <type>`` is a crash with
+    the type of its exception. A crash that has no type is just ``💥``.
     """
     if v.outcome == "match":
         return "✅"
     if v.outcome == "mismatch":
         return "❌"
     if is_guarded(v):
-        return f"🛡 {v.error_code}"
+        return f"🛡 {v.error_code or v.error_type}"
     return f"💥 {v.error_type}" if v.error_type else "💥"
 
 
@@ -238,8 +244,8 @@ def example_result(
     (``outputs_equal``); an example that expects an error has none, and its engines agree if they
     raised the same code, or none. The status is ``diverge`` when they do not agree, ``ok`` when
     both match, and ``partial`` when both give the same wrong answer. When both fail it is
-    ``refused`` if both errors are guarded and neither code is in ``NOT_IMPLEMENTED``, and
-    ``missing`` otherwise.
+    ``refused`` if both errors are guarded, have a code, and neither code is in
+    ``NOT_IMPLEMENTED``, and ``missing`` otherwise.
     """
     left = verdict(example, files, pandas, today)
     right = verdict(example, files, duckdb, today)
@@ -263,12 +269,13 @@ def _error_verdict(out: RunOutput) -> EngineVerdict:
 def _expected_error_verdict(expected: str, out: RunOutput) -> EngineVerdict:
     """The verdict of a run of an example that expects the error with the code ``expected``.
 
-    Only a guarded error counts: a crash stays an ``error``, whatever it says.
+    Only a guarded error with a code counts: a crash stays an ``error``, whatever it says, and
+    so does an error without a code, a syntax error, which no code can be expected of.
     """
     if out.ok:
         return EngineVerdict("mismatch", f"expected error {expected}, ran without an error")
     raised = _error_verdict(out)
-    if not is_guarded(raised):
+    if not (is_guarded(raised) and raised.error_code):
         return raised
     if raised.error_code == expected:
         return replace(raised, outcome="match", detail="")
@@ -519,8 +526,10 @@ def _engines_agree(
 def _status(left: EngineVerdict, right: EngineVerdict, agree: bool) -> Status:
     """The status of an example from the verdicts of its engines, and whether they agree.
 
-    Two failures are ``refused`` when both are guarded errors and neither code says that
-    something is not implemented, and ``missing`` when either is a crash or such an error.
+    Two failures are ``refused`` when both are guarded errors that have a code, and neither
+    code says that something is not implemented. They are ``missing`` when either is a crash, an
+    error without a code (a syntax error: the grammar does not have the syntax), or an error
+    that says not implemented.
     """
     if not agree:
         return "diverge"
@@ -532,8 +541,11 @@ def _status(left: EngineVerdict, right: EngineVerdict, agree: bool) -> Status:
 
 
 def _refuses(v: EngineVerdict) -> bool:
-    """Whether a failure is an error that vtlengine raises on purpose, not a gap or a crash."""
-    return is_guarded(v) and v.error_code not in NOT_IMPLEMENTED
+    """Whether a failure is an error that vtlengine raises on purpose, not a gap or a crash.
+
+    It is a guarded error with a code that does not say that something is not implemented.
+    """
+    return is_guarded(v) and bool(v.error_code) and v.error_code not in NOT_IMPLEMENTED
 
 
 # --- Roll-up ---
