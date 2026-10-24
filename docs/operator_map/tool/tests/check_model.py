@@ -85,7 +85,7 @@ def strict_problems_for(cat: Catalogue, scope: tuple[str, ...] | None = None) ->
     return validate_catalogue(cat, {ADD_PAGE}, {ADD_EX_1}, scope=scope, strict_forms=True)
 
 
-def typed_form(*examples: Example, variant_id: str = "ds_ds") -> Variant:
+def typed_form(*examples: Example, variant_id: str = "ds_ds", kind: Kind | None = None) -> Variant:
     """A form of the addition that declares its types, with ``examples`` (its manual example)."""
     return Variant(
         variant_id,
@@ -93,6 +93,7 @@ def typed_form(*examples: Example, variant_id: str = "ds_ds") -> Variant:
         examples or (manual("ex_1"),),
         takes=("number",),
         gives=("number",),
+        kind=kind,
     )
 
 
@@ -286,6 +287,22 @@ def test_problems_follow_catalogue_order_then_sorted() -> None:
 )
 def test_form_kind(variant_id: str, kind: Kind | None) -> None:
     assert form_kind(Variant(variant_id, "x", (authored(),))) == kind
+
+
+def test_form_kind_explicit_overrides_tokens() -> None:
+    def form(variant_id: str, kind: Kind | None = None) -> Variant:
+        return Variant(variant_id, "x", (authored(),), kind=kind)
+
+    # A form whose id has no token says its kind: the conversions of ``cast`` are on components.
+    assert form_kind(form("integer_to_boolean")) is None
+    assert form_kind(form("integer_to_boolean", "comp")) == "comp"
+    # What a form says wins over the tokens of its id, whichever they are.
+    assert form_kind(form("ds_ds", "sc")) == "sc"
+    assert form_kind(form("sc_comp_digits", "ds")) == "ds"
+    assert form_kind(form("comp", "comp")) == "comp"
+    # Without a kind of its own, the tokens decide.
+    assert form_kind(form("analytic_ds", None)) == "ds"
+    assert form_kind(form("identity")) is None
 
 
 def test_form_types_fallback() -> None:
@@ -628,6 +645,38 @@ def test_strict_forms_slug() -> None:
     # The manual examples keep their names, and the checks are off by default.
     assert strict_problems_for(named()) == []
     assert problems_for(named("minimal", "manual_ex_2", "x" * 41)) == []
+
+
+def test_strict_forms_mixed_kinds() -> None:
+    def form(variant_id: str, kind: Kind | None = None) -> Variant:
+        return typed_form(authored("one_row"), variant_id=variant_id, kind=kind)
+
+    def operator(*forms: Variant) -> Catalogue:
+        return make_catalogue(make_operator(variants=(typed_form(manual("ex_1")), *forms)))
+
+    # The form ``ds_ds`` has a kind; these two have none: the operator mixes them.
+    mixed = operator(form("integer_to_boolean"), form("sc_sc"), form("expression"))
+    assert strict_problems_for(mixed) == [
+        "numeric.addition: these forms have no kind, but other forms have one: "
+        "integer_to_boolean, expression"
+    ]
+    # A kind of their own settles them, and so does a kind from a token.
+    settled = operator(form("integer_to_boolean", "comp"), form("sc_sc"), form("expression", "sc"))
+    assert strict_problems_for(settled) == []
+    # Forms with no kind at all are fine: the operator has no boxes in its diagram.
+    kindless = make_catalogue(
+        make_operator(
+            variants=(
+                typed_form(manual("ex_1"), variant_id="identity"),
+                form("expression"),
+            )
+        )
+    )
+    assert strict_problems_for(kindless) == []
+    # The check is a strict one: off by default, and only for the chapters in scope.
+    assert problems_for(mixed) == []
+    assert strict_problems_for(mixed, scope=("string",)) == []
+    assert strict_problems_for(mixed, scope=("numeric",)) == strict_problems_for(mixed)
 
 
 # --- Model helpers ---

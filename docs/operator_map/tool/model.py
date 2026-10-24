@@ -90,7 +90,8 @@ class Variant:
     ``takes`` and ``gives`` are the types of the form, of ``VALUE_TYPES``, ``ANY_SCALAR``,
     ``ANY_TYPE`` and ``STRUCTURAL_TYPES``. Whether it is on datasets, components or scalars is
     its kind (``form_kind``), not a type. A form that does not declare its types has those of its
-    operator (``form_types``).
+    operator (``form_types``). ``kind`` says the kind of a form whose id has no token for it,
+    such as the conversions of ``cast`` (``integer_to_boolean`` is on components).
     """
 
     id: str
@@ -99,6 +100,7 @@ class Variant:
     returns: tuple[str, ...] = ()  # return types when they differ from the operator's
     takes: tuple[str, ...] = ()
     gives: tuple[str, ...] = ()
+    kind: Kind | None = None  # the kind of its widest operand, when the id does not say it
 
 
 @dataclass(frozen=True)
@@ -166,12 +168,15 @@ _MANUAL_NAME: Final = re.compile(r"manual_ex_(\d+)")  # the folder of the manual
 
 
 def form_kind(v: Variant) -> Kind | None:
-    """The kind of the widest operand of a form, from the tokens of its id split on ``_``.
+    """The kind of the widest operand of a form: its own ``kind``, else the tokens of its id.
 
-    Any ``ds`` makes a dataset form, else any ``comp`` a component form, else any ``sc`` a scalar
-    form: ``sc_comp_digits`` is ``comp`` and ``analytic_ds`` is ``ds``. An id that has none of
-    the three has no kind (``identity``, ``param_dataset``, ``ds2``).
+    A form that sets ``kind`` has it, whatever its id says. Otherwise the id is split on ``_``:
+    any ``ds`` makes a dataset form, else any ``comp`` a component form, else any ``sc`` a scalar
+    form, so ``sc_comp_digits`` is ``comp`` and ``analytic_ds`` is ``ds``. An id that has none of
+    the three gives no kind (``identity``, ``param_dataset``, ``ds2``).
     """
+    if v.kind is not None:
+        return v.kind
     tokens = v.id.split("_")
     return next((kind for kind in _KINDS if kind in tokens), None)
 
@@ -282,6 +287,18 @@ def _variant_problems(owner: str, variants: Iterable[Variant], strict: bool) -> 
                 yield from _slug_problems(variant_owner, example.name)
 
 
+def _mixed_kinds(owner: str, variants: Iterable[Variant]) -> Iterator[str]:
+    """The forms of an operator that have no kind, when others have one.
+
+    The forms of an operator all have a kind, or none has: a diagram puts each form in the box
+    of its kind, or has no boxes.
+    """
+    kinds = {variant.id: form_kind(variant) for variant in variants}
+    kindless = [variant_id for variant_id, kind in kinds.items() if kind is None]
+    if kindless and len(kindless) < len(kinds):
+        yield f"{owner}: these forms have no kind, but other forms have one: {', '.join(kindless)}"
+
+
 def _untyped(owner: str, variant: Variant) -> Iterator[str]:
     """The types that a form does not declare: neither its ``returns`` nor its operator's count."""
     if not variant.takes:
@@ -325,6 +342,8 @@ def _operator_problems(
     for key in _manual_keys(operator):
         if key not in manual_examples:
             yield f"{owner}: unknown manual example '{key}'"
+    if strict:
+        yield from _mixed_kinds(owner, operator.variants)
     yield from _variant_problems(owner, operator.variants, strict)
 
 
@@ -420,10 +439,11 @@ def validate_catalogue(
     label of every link has a reverse in ``REVERSE_LABELS``.
 
     ``strict_forms`` turns on the strict checks of the forms: every form declares its ``takes``
-    and its ``gives``, and every authored example is named after what it tests, with a slug that
-    matches ``[a-z][a-z0-9_]{0,39}`` and is neither ``minimal`` nor ``minimal_<n>``, nor the name
-    of a manual example, ``manual_ex_<n>``. The notes of the examples are checked with their
-    folders, by the generator.
+    and its ``gives``, the forms of an operator all have a kind (``form_kind``) or none has, and
+    every authored example is named after what it tests, with a slug that matches
+    ``[a-z][a-z0-9_]{0,39}`` and is neither ``minimal`` nor ``minimal_<n>``, nor the name of a
+    manual example, ``manual_ex_<n>``. The notes of the examples are checked with their folders,
+    by the generator.
     """
     targets = {f"{chapter.id}.{op.id}" for chapter in cat.chapters for op in chapter.operators}
     known_pages = frozenset(pages)

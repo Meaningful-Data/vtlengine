@@ -14,9 +14,10 @@ Elsewhere the cap is optional.
 1. The catalogue is checked against the index of the manual (``validate_catalogue``), and the
    example folders against the catalogue in both directions: a catalogue example needs a folder
    that loads, and a folder needs a catalogue example. With ``--strict-forms``, the forms of the
-   chapters checked must declare their types, their authored examples must be named after what
-   they test, and each of their folders needs a ``notes.rst`` in the fixed layout and no
-   ``notes.md`` (``tool.examples.notes_problems``). The strict checks are off without it.
+   chapters checked must declare their types, the forms of an operator must all have a kind or
+   none, their authored examples must be named after what they test, and each of their folders
+   needs a ``notes.rst`` in the fixed layout and no ``notes.md``
+   (``tool.examples.notes_problems``). The strict checks are off without it.
 2. One child process imports vtlengine and both engines, and gives their versions (the
    preflight of ``tool.runner``). Then every example runs on the pandas and the DuckDB engine,
    each in a process of its own. A ``random`` example runs twice, to see whether its values are
@@ -286,8 +287,9 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         "--strict-forms",
         action="store_true",
         help="check too that the forms of the chapters checked (all, or those of --only) declare "
-        "the types they take and give, that their authored examples are named after what they "
-        "test, and that their example folders have a notes.rst in the fixed layout and no notes.md",
+        "the types they take and give, that the forms of an operator all have a kind or none, "
+        "that their authored examples are named after what they test, and that their example "
+        "folders have a notes.rst in the fixed layout and no notes.md",
     )
     return parser.parse_args(argv)
 
