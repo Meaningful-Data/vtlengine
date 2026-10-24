@@ -1,16 +1,44 @@
 """Clause operators: the clauses written in square brackets after a data set, ``DS[...]``.
 
-Each clause takes one data set and returns a data set. ``calc``, ``aggr`` and ``filter`` hold
-expressions at component level; ``keep``, ``drop``, ``rename``, ``pivot`` and ``unpivot`` name
-components; ``sub`` fixes identifiers to scalar values. None of them applies to scalars.
+Each clause takes one data set and returns a data set; none of them applies to scalars. ``calc``,
+``aggr`` and ``filter`` hold expressions at component level; ``keep``, ``drop``, ``rename``,
+``pivot`` and ``unpivot`` name components; ``sub`` fixes identifiers to scalar values.
+
+Every form takes its operand, a data set of any type, as ``scalar``, and gives a data set whose
+types follow it (``any``). A form also takes the expressions of its clause, as the pages type
+them: a ``filter`` or ``having`` condition is a boolean; a ``calc`` or ``aggr`` expression, the
+``conversionExpr`` of ``group all`` and the ``value`` of ``sub`` are any scalar. The names of the
+components that a clause calculates, keeps, drops, renames, groups by or fixes, and the identifier
+and the measure of ``pivot`` and ``unpivot``, add no type. No form has a kind: no id carries a
+kind token, and every form works on a data set.
 
 ``calc identifier`` over an expression declared nullable raises 1-1-1-16 by the team decision
-of #1010, so the ``identifier`` example declares its expression non-nullable.
+of #1010, so the ``identifier`` example declares its expression non-nullable. The ``basic`` form
+of ``rename`` has an example that expects the error of the first error condition its page
+states: a new name that is already the name of a component of the operand.
 """
 
 from __future__ import annotations
 
-from tool.model import Chapter, Operator, Variant, authored, manual
+from typing import Final
+
+from tool.model import ANY_SCALAR, ANY_TYPE, Chapter, Example, Operator, Variant, authored, manual
+
+# What a form takes ("Input parameters type" of each page): its operand, a data set of any type,
+# as ``scalar`` (``any`` is only for what a form gives: its result follows its operand), and the
+# expressions of its clause.
+_OPERAND: Final = (ANY_SCALAR,)  # op: dataset
+_CALC: Final = (ANY_SCALAR,)  # calcExpr: component<scalar>
+_AGGR: Final = (ANY_SCALAR,)  # aggrExpr: component<scalar>; conversionExpr: identifier<scalar>
+_HAVING: Final = (ANY_SCALAR, "boolean")  # and the havingCondition: component<boolean>
+_FILTER: Final = (ANY_SCALAR, "boolean")  # filterCondition: component<boolean>
+_SUB: Final = (ANY_SCALAR,)  # value: scalar
+
+
+def _form(variant_id: str, label: str, takes: tuple[str, ...], *examples: Example) -> Variant:
+    """A form of a clause: it takes ``takes`` and gives a data set whose types follow its input."""
+    return Variant(id=variant_id, label=label, examples=examples, takes=takes, gives=(ANY_TYPE,))
+
 
 CHAPTER = Chapter(
     id="clause",
@@ -24,27 +52,40 @@ CHAPTER = Chapter(
             accepts=("dataset", "scalar"),
             returns=("dataset",),
             variants=(
-                Variant(
+                _form(
                     "measure_default",
                     "DS[calc Me := expr]",
-                    (manual("ex_1"), authored(), authored("minimal_2")),
+                    _CALC,
+                    manual("ex_1"),
+                    authored("new_component_is_measure"),
+                    authored("existing_attribute_keeps_role"),
                 ),
-                Variant(
+                _form(
                     "measure_explicit",
                     "DS[calc measure Me := expr]",
-                    (authored(), authored("minimal_2")),
+                    _CALC,
+                    authored("explicit_role_on_new_component"),
+                    authored("attribute_changed_to_measure"),
                 ),
-                Variant("identifier", "DS[calc identifier Id := expr]", (authored(),)),
-                Variant("attribute", "DS[calc attribute At := expr]", (manual("ex_2"),)),
-                Variant(
+                _form(
+                    "identifier",
+                    "DS[calc identifier Id := expr]",
+                    _CALC,
+                    authored("new_identifier_from_measure"),
+                ),
+                _form("attribute", "DS[calc attribute At := expr]", _CALC, manual("ex_2")),
+                _form(
                     "viral_attribute",
                     "DS[calc viral attribute At := expr]",
-                    (authored(),),
+                    _CALC,
+                    authored("constant_viral_attribute"),
                 ),
-                Variant(
+                _form(
                     "multiple",
                     "DS[calc Me := expr, attribute At := expr]",
-                    (authored(), authored("minimal_2")),
+                    _CALC,
+                    authored("default_and_explicit_roles"),
+                    authored("items_are_independent"),
                 ),
             ),
         ),
@@ -56,42 +97,56 @@ CHAPTER = Chapter(
             accepts=("dataset", "boolean"),
             returns=("dataset",),
             variants=(
-                Variant("no_group", "DS[aggr Me := agg(Me)]", (authored(),)),
-                Variant("group_by", "DS[aggr Me := agg(Me) group by Id]", (manual("ex_1"),)),
-                Variant(
+                _form(
+                    "no_group",
+                    "DS[aggr Me := agg(Me)]",
+                    _AGGR,
+                    authored("single_group_no_identifiers"),
+                ),
+                _form("group_by", "DS[aggr Me := agg(Me) group by Id]", _AGGR, manual("ex_1")),
+                _form(
                     "group_except",
                     "DS[aggr Me := agg(Me) group except Id]",
-                    (manual("ex_2"),),
+                    _AGGR,
+                    manual("ex_2"),
                 ),
-                Variant(
+                _form(
                     "group_all",
                     'DS[aggr Me := agg(Me) group all time_agg("A")]',
-                    (authored(),),
+                    _AGGR,
+                    authored("quarters_to_years"),
                 ),
-                Variant(
+                _form(
                     "having",
                     "DS[aggr Me := agg(Me) group by Id having cond]",
-                    (manual("ex_3"),),
+                    _HAVING,
+                    manual("ex_3"),
                 ),
-                Variant(
+                _form(
                     "measure_role",
                     "DS[aggr measure Me := agg(Me) group by Id]",
-                    (authored(),),
+                    _AGGR,
+                    authored("only_the_new_measure_kept"),
                 ),
-                Variant(
+                _form(
                     "attribute_role",
                     "DS[aggr attribute At := agg(Me) group by Id]",
-                    (authored(), authored("minimal_2")),
+                    _AGGR,
+                    authored("attribute_next_to_measure"),
+                    authored("attribute_without_measure"),
                 ),
-                Variant(
+                _form(
                     "viral_attribute_role",
                     "DS[aggr viral attribute At := agg(Me) group by Id]",
-                    (authored(), authored("minimal_2")),
+                    _AGGR,
+                    authored("viral_attribute_next_to_measure"),
+                    authored("viral_attribute_without_measure"),
                 ),
-                Variant(
+                _form(
                     "role_omitted_attribute",
                     "DS[aggr At := agg(At) group by Id]",
-                    (authored(),),
+                    _AGGR,
+                    authored("existing_attribute_keeps_role"),
                 ),
             ),
         ),
@@ -102,7 +157,15 @@ CHAPTER = Chapter(
             page="Clause operators/Filtering Data Points",
             accepts=("dataset", "boolean"),
             returns=("dataset",),
-            variants=(Variant("basic", "DS[filter cond]", (manual("ex_1"), authored())),),
+            variants=(
+                _form(
+                    "basic",
+                    "DS[filter cond]",
+                    _FILTER,
+                    manual("ex_1"),
+                    authored("null_condition_filtered_out"),
+                ),
+            ),
         ),
         Operator(
             id="keep",
@@ -111,7 +174,7 @@ CHAPTER = Chapter(
             page="Clause operators/Maintaining Components",
             accepts=("dataset",),
             returns=("dataset",),
-            variants=(Variant("basic", "DS[keep comp]", (manual("ex_1"),)),),
+            variants=(_form("basic", "DS[keep comp]", _OPERAND, manual("ex_1")),),
         ),
         Operator(
             id="drop",
@@ -120,7 +183,7 @@ CHAPTER = Chapter(
             page="Clause operators/Removal of Components",
             accepts=("dataset",),
             returns=("dataset",),
-            variants=(Variant("basic", "DS[drop comp]", (manual("ex_1"),)),),
+            variants=(_form("basic", "DS[drop comp]", _OPERAND, manual("ex_1")),),
         ),
         Operator(
             id="rename",
@@ -130,15 +193,19 @@ CHAPTER = Chapter(
             accepts=("dataset",),
             returns=("dataset",),
             variants=(
-                Variant(
+                _form(
                     "basic",
                     "DS[rename comp to comp]",
-                    (authored(), authored("minimal_2")),
+                    _OPERAND,
+                    authored("measure_renamed"),
+                    authored("identifier_renamed"),
+                    authored("new_name_already_in_operand"),
                 ),
-                Variant(
+                _form(
                     "multiple",
                     "DS[rename comp to comp, comp to comp]",
-                    (manual("ex_1"),),
+                    _OPERAND,
+                    manual("ex_1"),
                 ),
             ),
         ),
@@ -149,7 +216,15 @@ CHAPTER = Chapter(
             page="Clause operators/Pivoting",
             accepts=("dataset",),
             returns=("dataset",),
-            variants=(Variant("basic", "DS[pivot Id, Me]", (manual("ex_1"), authored())),),
+            variants=(
+                _form(
+                    "basic",
+                    "DS[pivot Id, Me]",
+                    _OPERAND,
+                    manual("ex_1"),
+                    authored("missing_combination_is_null"),
+                ),
+            ),
         ),
         Operator(
             id="unpivot",
@@ -159,10 +234,13 @@ CHAPTER = Chapter(
             accepts=("dataset",),
             returns=("dataset",),
             variants=(
-                Variant(
+                _form(
                     "basic",
                     "DS[unpivot Id, Me]",
-                    (manual("ex_1"), manual("ex_2"), authored()),
+                    _OPERAND,
+                    manual("ex_1"),
+                    manual("ex_2"),
+                    authored("null_measure_skipped"),
                 ),
             ),
         ),
@@ -174,11 +252,19 @@ CHAPTER = Chapter(
             accepts=("dataset", "scalar"),
             returns=("dataset",),
             variants=(
-                Variant("one_id", "DS[sub Id = value]", (manual("ex_3"), authored())),
-                Variant(
+                _form(
+                    "one_id",
+                    "DS[sub Id = value]",
+                    _SUB,
+                    manual("ex_3"),
+                    authored("fixed_identifier_dropped"),
+                ),
+                _form(
                     "multi_id",
                     "DS[sub Id = value, Id = value]",
-                    (manual("ex_1"), manual("ex_2")),
+                    _SUB,
+                    manual("ex_1"),
+                    manual("ex_2"),
                 ),
             ),
         ),
