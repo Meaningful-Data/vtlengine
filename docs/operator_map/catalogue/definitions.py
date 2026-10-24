@@ -4,9 +4,9 @@ The forms of a definition are the abstract parts of its syntax, never concrete c
 signature, the body and, for ``define operator``, the return type. A concrete case, such as a
 type, a comparison, an aggregate function, an alias, the text of a clause or the operator where a
 propagation applies, is an example under the form that it instantiates, and no diagram draws it.
-``SYNTAX_BOXES`` says in which box of its diagram each form is drawn: the "Signature", the "Body"
-or, for ``define operator``, the "Return type". The forms are listed box by box, the signature
-first, and the label of a form is its abstract syntax.
+``SYNTAX_BOXES`` says in which box of its diagram each form is drawn, its ``Variant.box``: the
+"Signature", the "Body" or, for ``define operator``, the "Return type". The forms are listed box
+by box, the signature first, and the label of a form is its abstract syntax.
 
 The VTL-DL sections of the manual have no examples of their own, so every form has authored
 examples, named after the concrete case that they test. Each example defines the construct and
@@ -41,6 +41,7 @@ the structural types, each in the order of ``tool.model``.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Final
 
 from tool.model import Chapter, Example, Operator, Variant, authored
@@ -433,13 +434,23 @@ DEFINE_VIRAL_PROPAGATION = Operator(
     ),
 )
 
+
+def _boxed(op: Operator) -> Operator:
+    """The operator with each form in the box of ``SYNTAX_BOXES``."""
+    boxes = SYNTAX_BOXES[op.id]
+    return replace(op, variants=tuple(replace(v, box=boxes[v.id]) for v in op.variants))
+
+
 CHAPTER = Chapter(
     id="definitions",
     title="Definitions (VTL-DL)",
-    operators=(
-        DEFINE_OPERATOR,
-        DEFINE_DATAPOINT_RULESET,
-        DEFINE_HIERARCHICAL_RULESET,
-        DEFINE_VIRAL_PROPAGATION,
+    operators=tuple(
+        _boxed(op)
+        for op in (
+            DEFINE_OPERATOR,
+            DEFINE_DATAPOINT_RULESET,
+            DEFINE_HIERARCHICAL_RULESET,
+            DEFINE_VIRAL_PROPAGATION,
+        )
     ),
 )
