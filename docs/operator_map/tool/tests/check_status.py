@@ -405,22 +405,18 @@ def test_the_errors_of_vtlengine() -> None:
         "RunTimeError",
         "InputValidationException",
         "DataLoadError",
-        "VTLSyntaxError",
     }
 
 
 @pytest.mark.parametrize("error_type", sorted(VTL_ERRORS))
-@pytest.mark.parametrize("error_code", ["1-1-1-1", None])
-def test_an_error_of_vtlengine_is_guarded_with_a_code_or_without(
-    error_type: str, error_code: str | None
-) -> None:
-    # A syntax error has no code, and the parser reports it on purpose: it is guarded all the same.
-    assert is_guarded(EngineVerdict("error", "detail", error_type, error_code))
+def test_an_error_of_vtlengine_with_a_code_is_guarded(error_type: str) -> None:
+    assert is_guarded(EngineVerdict("error", "detail", error_type, "1-1-1-1"))
 
 
 @pytest.mark.parametrize(
     ("error_type", "error_code"),
     [
+        ("SemanticError", None),  # an error of vtlengine, but with no code
         ("Timeout", None),
         ("Crash", None),
         ("Cancelled", None),
@@ -445,20 +441,6 @@ def test_the_marks() -> None:
     assert mark(crash) == "💥 KeyError"
     assert mark(EngineVerdict("error", "Timeout: late", "Timeout", None)) == "💥 Timeout"
     assert mark(EngineVerdict("error", "boom")) == "💥"  # a failure that says nothing about itself
-
-
-def test_syntax_error_mark() -> None:
-    message = "VTL syntax error at line 1, column 8: mismatched input"
-    got = verdict(authored(), files(), failed("VTLSyntaxError", None, message), TODAY)
-    assert got == EngineVerdict("error", f"VTLSyntaxError: {message}", "VTLSyntaxError", None)
-    assert is_guarded(got)
-    assert mark(got) == "🛡 VTLSyntaxError"  # it has no code to show: the class says what it is
-    # The same for any other error of vtlengine that comes without a code.
-    assert mark(EngineVerdict("error", "boom", "InputValidationException")) == (
-        "🛡 InputValidationException"
-    )
-    # When there is a code, it is the code that is shown.
-    assert mark(EngineVerdict("error", "boom", "SemanticError", "1-1-1-1")) == "🛡 1-1-1-1"
 
 
 def test_the_marks_of_the_verdicts_of_a_run() -> None:
@@ -884,29 +866,14 @@ def test_expected_error_crash() -> None:
 
 
 def test_expected_error_is_not_matched_by_a_failure_that_is_not_guarded() -> None:
-    # A code on an exception that is not vtlengine's is not a guarded error.
+    # An error of vtlengine's classes without a code is a crash, whatever the code expected.
+    no_code = failed("RunTimeError", None, "Scalar division by Zero.")
+    assert verdict(authored(), error_files(), no_code, TODAY).outcome == "error"
+    # A code on an exception that is not vtlengine's is not a guarded error either.
     foreign = failed("ValueError", "2-1-15-6", "Scalar division by Zero.")
     got = verdict(authored(), error_files("2-1-15-6"), foreign, TODAY)
     assert got.outcome == "error"
     assert mark(got) == "💥 ValueError"
-
-
-def test_expected_error_is_not_matched_by_an_error_without_a_code() -> None:
-    # The expected error has a code, which an error of vtlengine without one, such as a syntax
-    # error, cannot have: it stays an error, with what the parser said, and it is red as ever.
-    message = "VTL syntax error at line 1, column 8: mismatched input"
-    syntax = failed("VTLSyntaxError", None, message)
-    got = verdict(authored(), error_files("2-1-15-6"), syntax, TODAY)
-    assert got == EngineVerdict("error", f"VTLSyntaxError: {message}", "VTLSyntaxError", None)
-    assert mark(got) == "🛡 VTLSyntaxError"
-    both = example_result(authored(), error_files("2-1-15-6"), syntax, syntax, TODAY)
-    assert both.engines_agree
-    assert both.status == "missing"
-    # An engine that gets to raise the expected error is not like one that cannot parse the script.
-    other = example_result(authored(), error_files("2-1-15-6"), division_by_zero(), syntax, TODAY)
-    assert other.pandas.outcome == "match"
-    assert other.duckdb.outcome == "error"
-    assert other.status == "diverge"
 
 
 def test_expected_error_with_a_crash_on_one_engine_is_not_green() -> None:
@@ -1090,6 +1057,7 @@ def test_crash_is_missing() -> None:
         ("Timeout", None),
         ("Crash", None),
         ("KeyError", None),
+        ("SemanticError", None),  # an error of vtlengine with no code is not a guarded one
         ("ValueError", "1-1-1-1"),  # a code on an exception that is not vtlengine's neither
     ],
 )
@@ -1098,35 +1066,6 @@ def test_a_failure_that_is_not_guarded_is_missing(error_type: str, error_code: s
     got = example_result(authored(), files(), out, out, TODAY)
     assert got.status == "missing"
     assert mark(got.pandas) == f"💥 {error_type}"
-
-
-def test_syntax_error_status_is_missing() -> None:
-    # A syntax error on a valid script means that the grammar does not have the syntax: a gap.
-    out = failed("VTLSyntaxError", None, "VTL syntax error at line 1, column 8: mismatched input")
-    got = example_result(authored(), files(), out, out, TODAY)
-    assert got.pandas.outcome == got.duckdb.outcome == "error"
-    assert got.engines_agree
-    assert got.status == "missing"
-    assert mark(got.pandas) == mark(got.duckdb) == "🛡 VTLSyntaxError"
-
-
-@pytest.mark.parametrize("error_type", sorted(VTL_ERRORS))
-def test_a_guarded_error_without_a_code_is_missing(error_type: str) -> None:
-    out = failed(error_type, None, "no code to say that it is refused on purpose")
-    got = example_result(authored(), files(), out, out, TODAY)
-    assert is_guarded(got.pandas)
-    assert got.status == "missing"
-
-
-def test_refused_on_one_engine_and_a_syntax_error_on_the_other_is_missing() -> None:
-    refused = failed("RunTimeError", "2-1-15-6", "Scalar division by Zero.")
-    syntax = failed(
-        "VTLSyntaxError", None, "VTL syntax error at line 1, column 8: mismatched input"
-    )
-    for pandas, duckdb in ((refused, syntax), (syntax, refused)):
-        got = example_result(authored(), files(), pandas, duckdb, TODAY)
-        assert got.engines_agree
-        assert got.status == "missing"
 
 
 def test_refused_and_crash_is_missing() -> None:
