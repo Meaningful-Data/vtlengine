@@ -1,0 +1,3 @@
+:Tests: ``eval`` of a SQL routine on a dataset, with the structure of its result declared in ``returns``.
+:Manual: `Evaluation of an external routine <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Evaluation%20of%20an%20external%20routine/index.html>`__: "The **eval** operator invokes an external, non-VTL routine, and returns its result as a Data Set or a scalar", and "The result of an expression containing **eval** must be persistent", so the script uses ``<-``.
+:Expected: vtlengine reads the routine as the SQL query of ``external_routines/SQL_1.json``, ``SELECT Id_1, Me_1 * 2 AS Me_1 FROM DS_1``: the declared structure, with ``Me_1`` 20 and 40.
