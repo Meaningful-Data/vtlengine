@@ -1,3 +1,3 @@
 :Tests: ``log`` of a scalar number with the base in a component, inside ``calc``.
-:Manual: `Logarithm <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Logarithm/index.html>`__: "``log ( 1024, 2 )`` gives ``10``"; the page types the second operand as ``component<integer> | integer``, so it may be a component while the first is a scalar.
-:Expected: ``Me_2 = log(1024, Me_1)``: base 2 gives 10.0, base 4 gives 5.0 and base 32 gives 2.0, a Number although both operands are Integers; the other components are kept.
+:Manual: `Logarithm <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Logarithm/index.html>`__: "``log ( 1024, 2 )`` gives ``10``", although the page's table and its sentence "calculates the logarithm of *num* base *op*" put the base first. The page types the second operand as ``component<integer> | integer``, so that operand may be a component while the first is a scalar.
+:Expected: ``Me_2 = log(1024, Me_1)``, read as the page's examples read it: base 2 gives 10.0, base 4 gives 5.0 and base 32 gives 2.0, a Number although both operands are Integers; the other components are kept.

@@ -1,3 +1,3 @@
 :Tests: ``log`` with the number and the base both in components, inside ``calc``.
-:Manual: `Logarithm <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Logarithm/index.html>`__: "``log ( 1024, 2 )`` gives ``10``": the number is the first operand and the base the second.
-:Expected: ``Me_3 = log(Me_1, Me_2)``: base 2 of 8 is 3, base 10 of 100 is 2 and base 3 of 81 is 4, a Number although both operands are Integers; the other components are kept.
+:Manual: `Logarithm <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Logarithm/index.html>`__: "``log ( 1024, 2 )`` gives ``10``", although the page's table and its sentence "calculates the logarithm of *num* base *op*" put the base first.
+:Expected: ``Me_3 = log(Me_1, Me_2)``, read as the page's examples read it, the number first and the base second: base 2 of 8 is 3, base 10 of 100 is 2 and base 3 of 81 is 4, a Number although both operands are Integers; the other components are kept.

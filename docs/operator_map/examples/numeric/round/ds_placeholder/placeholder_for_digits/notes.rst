@@ -1,4 +1,4 @@
 :Tests: the placeholder ``_`` for ``numDigit``, on a dataset with one Number measure.
-:Manual: `Rounding <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Rounding/index.html>`__: "``round ( 12345.6, _ )`` gives ``12346``"; the result is typed ``dataset { measure<number> _+ }``, so the measure keeps its name.
-:Expected: the same as ``round(DS_1)``: ``Me_1`` keeps its name and becomes an Integer, 3, 3 and 12346.
+:Manual: `Rounding <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Rounding/index.html>`__: "``round ( 12345.6, _ )`` gives ``12346``"; the result is typed ``dataset { measure<number> _+ }``, and the unary operators give "homonymous Measures in DS_r". Only the pages that rename say so, such as String length and String pattern location: ``dataset { measure<integer[value >= 0]> int_var }``.
+:Expected: the placeholder stands for an omitted ``numDigit``, so ``Me_1`` keeps its name and becomes an Integer as with ``round(DS_1)``: 3, 3 and 12346. Ceiling and Floor Example 1 do the same, and nothing puts ``round`` among the "Operators changing the data type", which would rename the measure ``int_var``.
 :Finding: both engines return the measure as ``int_var``, not ``Me_1``.
