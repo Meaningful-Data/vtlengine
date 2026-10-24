@@ -811,8 +811,23 @@ def staging_folders(world: World) -> list[Path]:
     return [path for path in world.root.iterdir() if path.name.startswith(".generate-")]
 
 
+def failure(kind: type[BaseException]) -> BaseException:
+    """What a stubbed ``os.replace`` raises: a failure of the system, or an interrupt."""
+    return OSError(errno.EACCES, "no way") if kind is OSError else KeyboardInterrupt()
+
+
+@pytest.mark.parametrize(
+    "restore_fails", [OSError, KeyboardInterrupt], ids=["failed restore", "second interrupt"]
+)
+@pytest.mark.parametrize(
+    "replace_fails", [OSError, KeyboardInterrupt], ids=["failed replace", "interrupted replace"]
+)
 def test_a_restore_that_fails_keeps_the_staging_folder_and_the_others_are_still_tried(
-    world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    world: World,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    replace_fails: type[BaseException],
+    restore_fails: type[BaseException],
 ) -> None:
     old = seed_outputs(world)
     real_replace = os.replace
@@ -822,9 +837,12 @@ def test_a_restore_that_fails_keeps_the_staging_folder_and_the_others_are_still_
         file, folder = Path(source).name, Path(source).parent.name
         calls.append((file, folder))
         restores = [name for name, where in calls if where == "old"]
-        # The third file cannot be replaced, and the first file to be put back cannot be put back.
-        if len(calls) == 3 or (folder == "old" and len(restores) == 1):
-            raise OSError(errno.EACCES, "no way")
+        # The third file cannot be replaced, and the first file to be put back cannot be put back,
+        # for a failure of the system or because the run is interrupted again.
+        if len(calls) == 3:
+            raise failure(replace_fails)
+        if folder == "old" and len(restores) == 1:
+            raise failure(restore_fails)
         real_replace(source, target)
 
     monkeypatch.setattr(os, "replace", flaky)
@@ -843,6 +861,71 @@ def test_a_restore_that_fails_keeps_the_staging_folder_and_the_others_are_still_
     assert line.startswith("internal error: ")
     assert str(staging) in line
     assert failed in line
+
+
+def new_files_are_in_place(world: World, old: dict[str, bytes]) -> bool:
+    """Whether every output file is a new one: none has the old bytes."""
+    return all((world.root / name).read_bytes() != data for name, data in old.items())
+
+
+def test_an_interrupt_while_the_staging_folder_is_removed_says_that_the_files_are_written(
+    world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    old = seed_outputs(world)
+    monkeypatch.setattr(shutil, "rmtree", lambda *_a, **_k: interrupt())
+    assert run_main_interrupted() == 2
+    [line] = problems(capsys)
+    # Every new file was in place before the clean-up: nothing is as it was, and the line says
+    # so, and where the folder that the clean-up did not remove is.
+    assert new_files_are_in_place(world, old)
+    [staging] = staging_folders(world)
+    assert line == (
+        "interrupted after the files were written: every new file is in place; "
+        f"the folder {staging} was left over, remove it"
+    )
+
+
+def test_an_interrupt_in_the_summary_says_that_the_files_are_written(
+    world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    old = seed_outputs(world)
+    monkeypatch.setattr(generate, "counts", lambda *_a, **_k: interrupt())
+    assert run_main_interrupted() == 2
+    assert problems(capsys) == [
+        "interrupted after the files were written: every new file is in place"
+    ]
+    assert new_files_are_in_place(world, old)
+    assert staging_folders(world) == []
+
+
+def test_an_error_in_the_summary_says_that_the_files_are_written(
+    world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def broken(*_args: object, **_kwargs: object) -> object:
+        raise RuntimeError("boom")
+
+    old = seed_outputs(world)
+    monkeypatch.setattr(generate, "counts", broken)
+    assert generate.main([]) == 2
+    assert problems(capsys) == ["internal error: RuntimeError: boom; every new file is in place"]
+    assert new_files_are_in_place(world, old)
+
+
+def test_an_interrupt_while_the_folder_is_removed_after_a_rollback_names_the_folder_too(
+    world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The first interrupt is at the third move and the rollback works; the second one comes while
+    # the staging folder is removed. The old files are as they were, and a folder is left over.
+    old = seed_outputs(world)
+    interrupt_the_replace(3)(world, monkeypatch)
+    monkeypatch.setattr(shutil, "rmtree", lambda *_a, **_k: interrupt())
+    assert run_main_interrupted() == 2
+    [line] = problems(capsys)
+    [staging] = staging_folders(world)
+    assert {name: (world.root / name).read_bytes() for name in old} == old
+    assert line == (
+        f"interrupted: nothing was written; the folder {staging} was left over, remove it"
+    )
 
 
 def test_a_new_file_that_cannot_be_removed_keeps_the_staging_folder_too(

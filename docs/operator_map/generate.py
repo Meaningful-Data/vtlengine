@@ -23,10 +23,13 @@ stops after the checks, and does not ask for previous results.
 
 The exit code is 0 for a run that wrote its files, 1 for any problem (printed one per line, and
 nothing is written), and 2 for a run that was interrupted, wherever the interrupt came, or hit an
-internal error (one line: its type and message). Whatever the failure, the files of the previous
-run stay as they were. Only when putting them back fails too, the folder that has their old bytes
-is kept, and the line says where it is. This process never imports vtlengine or pandas: the
-engines run in the children of ``tool.runner``.
+internal error (one line: its type and message). Until every new file is in place, a failure or
+an interrupt leaves the files of the previous run as they were: the files that were moved are
+put back. Only when putting one back fails too, even by a second interrupt, the folder that has
+the old bytes is kept, and the line says where it is. After that point nothing can be undone:
+an interrupt or an error in the clean-up or in the summary leaves the new files, and the line
+says so, and names a ``.generate-*`` folder that the clean-up did not remove. This process never
+imports vtlengine or pandas: the engines run in the children of ``tool.runner``.
 """
 
 from __future__ import annotations
@@ -82,6 +85,18 @@ class RestoreError(Exception):
     """A write failed and some old files could not be put back: the staging folder keeps them."""
 
 
+@dataclass
+class _Progress:
+    """How far the write of the files has got, for the line of a run that stops.
+
+    ``written`` says that every new file is in place, after which nothing can undo it, and
+    ``leftover`` is a staging folder that exists and is meant to be removed.
+    """
+
+    written: bool = False
+    leftover: Path | None = None
+
+
 @dataclass(frozen=True)
 class _Item:
     """One example of the catalogue, with where it lives."""
@@ -106,19 +121,42 @@ class _Item:
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the generator; see the module docstring. Returns the exit code."""
     args = _parse_args(argv)
+    progress = _Progress()
     try:
-        return _generate(args)
-    except KeyboardInterrupt:  # while running, judging, rendering or writing: all or nothing
-        print("interrupted: nothing was written", file=sys.stderr)
+        return _generate(args, progress)
+    except KeyboardInterrupt:  # wherever it comes: the line says what the files are
+        print(_interrupted(progress), file=sys.stderr)
         return 2
-    except Exception as exc:  # whatever it is, one line and exit 2: the files are as they were
-        print(
-            f"internal error: {type(exc).__name__}: {' '.join(str(exc).split())}", file=sys.stderr
-        )
+    except Exception as exc:  # whatever it is, one line and exit 2
+        print(_internal_error(exc, progress), file=sys.stderr)
         return 2
 
 
-def _generate(args: argparse.Namespace) -> int:
+def _interrupted(progress: _Progress) -> str:
+    """The line of an interrupt: the files are as they were until every new file is in place."""
+    if progress.written:
+        head = "interrupted after the files were written: every new file is in place"
+    else:
+        head = "interrupted: nothing was written"
+    return head + _leftover(progress)
+
+
+def _internal_error(exc: Exception, progress: _Progress) -> str:
+    """The line of an internal error: its type and message, and what is on disk if it is new."""
+    line = f"internal error: {type(exc).__name__}: {' '.join(str(exc).split())}"
+    if progress.written:
+        line += "; every new file is in place"
+    return line + _leftover(progress)
+
+
+def _leftover(progress: _Progress) -> str:
+    """The end of a line that names the staging folder that the clean-up did not remove."""
+    if progress.leftover is None:
+        return ""
+    return f"; the folder {progress.leftover} was left over, remove it"
+
+
+def _generate(args: argparse.Namespace, progress: _Progress) -> int:
     """The run of ``main`` after the arguments: the exit codes 0 and 1."""
     cat = load_catalogue()
     only: list[str] = list(dict.fromkeys(args.only))
@@ -154,7 +192,7 @@ def _generate(args: argparse.Namespace) -> int:
         files = _render(cat, index, meta, examples_root)
     except MermaidLimitError as exc:
         return _fail([str(exc)])
-    _write_all(ROOT, files)
+    _write_all(ROOT, files, progress)
     summary = " · ".join(
         f"{EMOJI[status]} {number}"
         for status, number in counts([each.status for each in index.examples.values()]).items()
@@ -496,28 +534,35 @@ def _status_json(meta: RunMeta, index: StatusIndex) -> str:
     return json.dumps(document, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
 
 
-def _write_all(root: Path, files: Mapping[str, str]) -> None:
+def _write_all(root: Path, files: Mapping[str, str], progress: _Progress | None = None) -> None:
     """Write the files to a folder of their own, then move each over the one in ``root``.
 
     Everything is written before anything is replaced, so that a file that cannot be written
     leaves the old ones as they are. The folder is in ``root``: a move inside a filesystem
     replaces a file in one step. A move that fails puts back the files that were moved before it.
     The folder is removed at the end, unless an old file could not be put back: then it is kept,
-    and the ``RestoreError`` says where it is.
+    and the ``RestoreError`` says where it is. ``progress`` is told when every new file is in
+    place, and while a staging folder is there to be removed.
     """
+    progress = progress if progress is not None else _Progress()
     staging = Path(tempfile.mkdtemp(prefix=".generate-", dir=root))
+    progress.leftover = staging
     keep = False
     try:
         for name, text in files.items():
             with (staging / name).open("w", encoding="utf-8", newline="\n") as handle:
                 handle.write(text)
         _replace_all(root, staging, list(files))
+        progress.written = True
     except RestoreError:
         keep = True
+        progress.leftover = None  # it is kept on purpose, and the error says where it is
         raise
     finally:
         if not keep:
             shutil.rmtree(staging, ignore_errors=True)
+            if not staging.exists():
+                progress.leftover = None
 
 
 def _replace_all(root: Path, staging: Path, names: Sequence[str]) -> None:
@@ -552,8 +597,8 @@ def _replace_all(root: Path, staging: Path, names: Sequence[str]) -> None:
 def _put_back(root: Path, backups: Path, names: Sequence[str]) -> list[str]:
     """Give ``names`` their old bytes in ``root``, or remove them if they are new.
 
-    Every file is tried, whatever happened to the ones before it. The result is the ones that
-    could not be put back.
+    Every file is tried, whatever happened to the ones before it, a second interrupt included.
+    The result is the ones that could not be put back, or are not known to be.
     """
     lost: list[str] = []
     for name in names:
@@ -562,7 +607,7 @@ def _put_back(root: Path, backups: Path, names: Sequence[str]) -> list[str]:
                 os.replace(backups / name, root / name)
             else:
                 (root / name).unlink(missing_ok=True)
-        except Exception:  # one failure must not stop the others
+        except BaseException:  # a failure, or a second interrupt, must not stop the others
             lost.append(name)
     return lost
 
