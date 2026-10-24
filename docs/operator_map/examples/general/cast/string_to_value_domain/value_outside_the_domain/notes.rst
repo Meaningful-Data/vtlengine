@@ -1,4 +1,0 @@
-:Tests: ``cast(Me_1, VD_1)`` on a String measure with ``D``, which is not a value of ``VD_1``: the first error that the page states.
-:Manual: `Type conversion <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html>`__: "The external representation of the destination value domain then determines if the converted value is valid or not; when it isn't, an error is raised."
-:Expected: The error ``2-1-5-1``, "Impossible to cast ``{value}`` from type {type_1} to {type_2}.", as ``D`` is not one of ``A``, ``B`` and ``C``, the values of ``VD_1``: for a downcast "the resulting value must be one of the allowed values of that particular domain or subset; otherwise, an error is raised".
-:Finding: As in *Values in the domain*, both engines refuse the value domain itself with ``0-5-1-8``, a code that says it is not implemented.

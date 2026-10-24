@@ -17,9 +17,7 @@ level (``DS_1[calc Me_2 := cast(Me_1, <type>)]``): the explicit ones, the implic
 as an explicit cast, and each conversion with an optional mask both without and with a mask. The
 masks follow the manual's section "Type Conversion and Formatting Mask". ``string_to_integer``
 also has a dataset and a scalar variant, and two variants cast to a value domain
-(``value_domains/``): from a string, and from another value domain on the same basic type. The
-cast from a string to a value domain has a second example, which expects the first error that
-the page states: a value that is not one of those of the domain.
+(``value_domains/``): from a string, and from another value domain on the same basic type.
 
 Every form declares the types it takes and gives. A conversion takes its source type, and the
 string of its mask when it has one, and gives its target type; a cast to a value domain takes
@@ -59,7 +57,9 @@ _EXPLICIT: Final[tuple[tuple[str, str, tuple[str, ...]], ...]] = (  # "Explicit"
     ("time", "date", ("single_day_intervals",)),
     ("time", "time_period", ("year_quarter_and_month",)),
     ("date", "time_period", ("daily_periods",)),
-    ("time_period", "date", ("daily_periods",)),
+    # The second example expects the first error that the page states for a conversion between
+    # basic types: a period that is not a single day.
+    ("time_period", "date", ("daily_periods", "non_daily_period")),
     # The second example holds the strings that the rule of the manual sends to false.
     ("string", "boolean", ("true_in_any_case", "other_strings_are_false")),
 )
@@ -68,7 +68,7 @@ _IMPLICIT: Final[tuple[tuple[str, str, tuple[str, ...]], ...]] = (
     ("integer", "number", ("zero_decimal_part",)),
     ("boolean", "string", ("true_and_false",)),
     ("date", "time", ("same_start_and_end",)),
-    ("time_period", "time", ("same_start_and_end",)),
+    ("time_period", "time", ("start_and_end_of_the_period",)),
 )
 # "Optional mask": once without and once with a mask, each with the name of its example.
 _OPTIONAL_MASK: Final[tuple[tuple[str, str, str, str], ...]] = (
@@ -141,13 +141,14 @@ def _cast_variants() -> tuple[Variant, ...]:
         )
     )
     # A value domain is a scalar type, so a target of a cast. A value of the domain's basic type
-    # is cast to the domain, or one of a domain to another domain on the same basic type, whose
-    # result has the basic type of its operand.
+    # is cast to the domain, or one of a domain to another domain on the same basic type: the
+    # element of a domain is upcast to its basic type, whichever it is, and the result has the
+    # basic type of its operand.
     variants.append(
         Variant(
             "string_to_value_domain",
             "cast(comp<string>, VD)",
-            (authored("values_in_the_domain"), authored("value_outside_the_domain")),
+            (authored("values_in_the_domain"),),
             takes=(_STRING, "value_domain"),
             gives=(_STRING,),
             kind="comp",
@@ -158,7 +159,7 @@ def _cast_variants() -> tuple[Variant, ...]:
             "value_domain_to_value_domain",
             "cast(comp<VD>, VD)",
             (authored("values_in_both_domains"),),
-            takes=("value_domain",),
+            takes=(ANY_SCALAR, "value_domain"),
             gives=(ANY_TYPE,),
             kind="comp",
         )
