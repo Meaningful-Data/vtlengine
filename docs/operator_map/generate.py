@@ -76,7 +76,7 @@ from tool.examples import (
 )
 from tool.mermaid import MermaidLimitError, check_limits
 from tool.model import Catalogue, Example, Status, load_catalogue, validate_catalogue
-from tool.render import RunMeta, chapter_rst, index_rst, mermaid_blocks
+from tool.render import RunMeta, block_rst, index_rst, mermaid_blocks
 from tool.runner import Engine, EngineVersions, PreflightError, RunOutput, preflight, run_all
 from tool.status import (
     EMOJI,
@@ -592,12 +592,15 @@ def _error_of(detail: str) -> tuple[str | None, str | None]:
 def _render(
     cat: Catalogue, index: StatusIndex, meta: RunMeta, examples_root: Path
 ) -> dict[str, str]:
-    """The text of every file, with each diagram checked against the limits of Mermaid."""
-    files = {_INDEX_FILE: index_rst(cat, index, meta, examples_root=examples_root)}
+    """The text of every file, with each diagram checked against the limits of Mermaid.
+
+    For now each block page is written as ``<chapter>.rst``, and the pages of the operators are
+    not written: the tree of nested pages (``<chapter>/index.rst``, ``<chapter>/<op>.rst``) needs
+    the writer to make folders. ``examples_root`` is for the pages of the operators.
+    """
+    files = {_INDEX_FILE: index_rst(cat, index, meta)}
     for chapter in cat.chapters:
-        files[f"{chapter.id}.rst"] = chapter_rst(
-            chapter, cat, index, meta, examples_root=examples_root
-        )
+        files[f"{chapter.id}.rst"] = block_rst(chapter, cat, index, meta)
     for name, text in files.items():
         for block in mermaid_blocks(text):
             try:

@@ -405,15 +405,6 @@ def block_diagram(chapter: Chapter, index: StatusIndex) -> str:
     return _checked(_assemble(lines), chapter.id)
 
 
-def chapter_blocks(chapter: Chapter, cat: Catalogue, index: StatusIndex) -> list[str]:
-    """The diagram of ``chapter`` as the list of blocks that ``tool.render`` still asks for.
-
-    A chapter has one diagram, ``block_diagram``, so this is a list of it, or of nothing for a
-    chapter with no operators. ``cat`` is not used. Call ``block_diagram``, not this.
-    """
-    return [block_diagram(chapter, index)] if chapter.operators else []
-
-
 # --- The diagram of an operator ---
 
 
@@ -457,9 +448,9 @@ def operator_diagram(chapter: Chapter, op: Operator, cat: Catalogue, index: Stat
     parts = _Parts(nodes=[_node(_OPERATOR_ROOT, _lines(head, tally), status)])
     forms = _forms(chapter, op, index)
     shown = _shown(used_with(chapter, op, cat), cat)
-    if _has_boxes(op):
+    if has_boxes(op):
         direction = "TB"
-        _boxes(forms, parts)
+        _boxes(op, forms, parts)
     else:
         direction = "LR"
         left = _left(len(forms), len(shown) + 1 if shown else 0)
@@ -470,7 +461,7 @@ def operator_diagram(chapter: Chapter, op: Operator, cat: Catalogue, index: Stat
     return _checked(_assemble(parts.lines(), direction), f"{chapter.id}.{op.id}")
 
 
-def _has_boxes(op: Operator) -> bool:
+def has_boxes(op: Operator) -> bool:
     """Whether the diagram of ``op`` has boxes: only when its forms use two kinds or more.
 
     An operator whose forms have no kind, such as a join, or all have the same one, such as an
@@ -478,6 +469,20 @@ def _has_boxes(op: Operator) -> bool:
     none of the kinds.
     """
     return len({kind for kind in map(form_kind, op.variants) if kind is not None}) >= 2
+
+
+def forms_in_diagram_order(op: Operator) -> list[Variant]:
+    """The forms of ``op`` in the order that its diagram draws them.
+
+    With boxes (``has_boxes``), the forms of the dataset box come first, then those of the
+    component box and of the scalar box, and last the forms with no kind, which hang from the
+    operator; each in the order of the catalogue. Without boxes, the order of the catalogue: the
+    first forms are on the left of the operator and the others on its right.
+    """
+    if not has_boxes(op):
+        return list(op.variants)
+    rank: dict[Kind | None, int] = {kind: place for place, kind in enumerate(_KINDS)}
+    return sorted(op.variants, key=lambda variant: rank.get(form_kind(variant), len(_KINDS)))
 
 
 def _forms(chapter: Chapter, op: Operator, index: StatusIndex) -> list[_Form]:
@@ -491,14 +496,16 @@ def _forms(chapter: Chapter, op: Operator, index: StatusIndex) -> list[_Form]:
     return forms
 
 
-def _boxes(forms: Sequence[_Form], parts: _Parts) -> None:
+def _boxes(op: Operator, forms: Sequence[_Form], parts: _Parts) -> None:
     """The box of each kind that ``forms`` use, under the operator, with its forms in it.
 
-    A kind that no form has gets no box. A form that has no kind hangs from the operator.
+    The forms are drawn in the order of ``forms_in_diagram_order``. A kind that no form has gets
+    no box. A form that has no kind hangs from the operator.
     """
+    by_variant = {form.variant.id: form for form in forms}
     by_kind: dict[Kind | None, list[_Form]] = {}
-    for form in forms:
-        by_kind.setdefault(form_kind(form.variant), []).append(form)
+    for variant in forms_in_diagram_order(op):
+        by_kind.setdefault(form_kind(variant), []).append(by_variant[variant.id])
     for kind in _KINDS:
         members = by_kind.get(kind, [])
         if not members:

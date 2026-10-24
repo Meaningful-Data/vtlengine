@@ -186,10 +186,10 @@ class World:
         return json.loads((self.root / "status.json").read_text(encoding="utf-8"))
 
     def index_row(self, text: str) -> list[str]:
-        """The cells of the row of the chapter table of ``index.rst`` that holds ``text``."""
+        """The cells of the row of the block table of ``index.rst`` that holds ``text``."""
         page = (self.root / "index.rst").read_text(encoding="utf-8")
-        chapters = re.split(r"\nChapters\n-+\n", page, maxsplit=1)[1]
-        chapters = chapters.split("\n📌 Team decisions\n", 1)[0]
+        chapters = re.split(r"\nBlocks\n-+\n", page, maxsplit=1)[1]
+        chapters = chapters.split("\nNot implemented\n", 1)[0]
         rows: list[list[str]] = []
         for line in chapters.splitlines():
             if line.startswith("   * -"):
@@ -590,13 +590,16 @@ def test_keyboard_interrupt_exits_2_and_writes_nothing(
 def test_only_merges_previous_status(world: World) -> None:
     world.modes = {"beta": "wrong"}
     assert generate.main([]) == 0
-    beta = [":doc:`Beta operators <beta>`", "🟡", "1", "0", "1", "0", "0"]
-    assert world.index_row("<beta>") == beta
-    assert world.index_row("<alpha>") == [
-        ":doc:`Alpha operators <alpha>`",
+    # The block, its status, its operators, its forms, and its forms by status.
+    beta = [":doc:`Beta operators <beta/index>`", "🟡", "1", "1", "0", "1", "0", "0", "0"]
+    assert world.index_row("<beta/index>") == beta
+    assert world.index_row("<alpha/index>") == [
+        ":doc:`Alpha operators <alpha/index>`",
         "🟢",
+        "1",
         "2",
         "2",
+        "0",
         "0",
         "0",
         "0",
@@ -606,16 +609,18 @@ def test_only_merges_previous_status(world: World) -> None:
     world.calls.clear()
     assert generate.main(["--only", "alpha"]) == 0
     assert world.run_chapters() == {"alpha"}
-    assert world.index_row("<alpha>") == [
-        ":doc:`Alpha operators <alpha>`",
+    assert world.index_row("<alpha/index>") == [
+        ":doc:`Alpha operators <alpha/index>`",
         "🔴",
+        "1",
         "2",
+        "0",
         "0",
         "0",
         "2",
         "0",
     ]
-    assert world.index_row("<beta>") == beta
+    assert world.index_row("<beta/index>") == beta
     examples = world.status()["examples"]
     assert examples["beta/second/ds/minimal"]["status"] == "partial"
     assert examples["alpha/first/sc/minimal"]["status"] == "missing"
@@ -921,16 +926,20 @@ def test_the_run_writes_every_file_and_leaves_nothing_else(world: World) -> None
     index = (world.root / "index.rst").read_text(encoding="utf-8")
     rule = "=" * 40
     assert index.startswith(f"{rule}\nVTL 2.2 operator map\n{rule}\n")
-    assert ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   alpha\n   beta\n" in index
+    assert ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   alpha/index\n   beta/index\n" in index
     assert "9.9.9" in index
     assert "abc1234" in index
     assert f"with pandas {PANDAS_VERSION} and DuckDB {DUCKDB_VERSION}" in index
     assert f"(sdmx-twg/vtl @ {SPEC_COMMIT})" in index
     alpha = (world.root / "alpha.rst").read_text(encoding="utf-8")
-    rule = "=" * 34  # twice the 17 characters of "🟢 Alpha operators"
-    assert alpha.startswith(f"{rule}\n🟢 Alpha operators\n{rule}\n")
-    assert alpha.count("/script.vtl>`__") == 3
-    assert ".. mermaid::\n\n   flowchart LR\n" in alpha
+    rule = "=" * 30  # twice the 15 characters of "Alpha operators"
+    assert alpha.startswith(f"{rule}\nAlpha operators\n{rule}\n")
+    assert "🟢 1 of 1 operator all ok" in alpha
+    assert ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   first\n" in alpha
+    assert (
+        '.. mermaid::\n   :config: {"flowchart": {"useMaxWidth": false}}\n\n   flowchart LR\n'
+        in (alpha)
+    )
 
 
 def test_status_json_has_sorted_keys_the_meta_and_every_verdict(world: World) -> None:
@@ -1026,7 +1035,7 @@ def test_every_block_of_the_rendered_files_is_checked_against_the_limits(
 ) -> None:
     edges = "\n".join(f"       a{n} --> b{n}" for n in range(500))
     big = f"Chapter\n=======\n\n.. mermaid::\n\n   flowchart LR\n{edges}\n\ntext\n"
-    monkeypatch.setattr(generate, "chapter_rst", lambda *_args, **_kwargs: big)
+    monkeypatch.setattr(generate, "block_rst", lambda *_args, **_kwargs: big)
     old = seed_outputs(world)
     assert generate.main([]) == 1
     [line] = problems(capsys)
@@ -1054,7 +1063,7 @@ def test_an_internal_error_exits_2_with_one_line(
 
 def break_the_staging_write(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
     """A text that cannot be encoded: the write of the second file to be written raises."""
-    monkeypatch.setattr(generate, "chapter_rst", lambda *_a, **_k: "lone \udc80 surrogate\n")
+    monkeypatch.setattr(generate, "block_rst", lambda *_a, **_k: "lone \udc80 surrogate\n")
 
 
 def break_the_replace(nth: int) -> Callable[[World, pytest.MonkeyPatch], None]:
@@ -1114,7 +1123,7 @@ def interrupt_judging(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def interrupt_rendering(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(generate, "chapter_rst", lambda *_a, **_k: interrupt())
+    monkeypatch.setattr(generate, "block_rst", lambda *_a, **_k: interrupt())
 
 
 def interrupt_the_replace(

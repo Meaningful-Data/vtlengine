@@ -71,7 +71,8 @@ mermaid_init_config = {"startOnLoad": False, "securityLevel": "antiscript"}
 # The extension draws a diagram in a box of the width of the page and 500 px high. A diagram of a
 # chapter is tall (a row for each operator and each variant), and squeezed into 500 px it cannot
 # be read. Here a diagram is as high as its proportions make it, and as wide as the page, up to
-# 700 px, which is about the size that Mermaid draws it.
+# 700 px, which is about the size that Mermaid draws it. The pages of the operator map draw their
+# diagrams at their natural size instead, with the rules of ``operator_map.css``.
 mermaid_width = "min(100%, 700px)"
 mermaid_height = "auto"
 
@@ -81,6 +82,8 @@ mermaid_height = "auto"
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
+# The chips, lists, examples and diagrams of the operator map: every rule is scoped to its pages.
+html_css_files += ["operator_map.css"]
 
 # Copy CNAME file to output for GitHub Pages custom domain
 html_extra_path = ["CNAME"]

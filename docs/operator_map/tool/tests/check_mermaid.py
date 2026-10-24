@@ -22,11 +22,12 @@ from tool.mermaid import (
     USED_WITH_STYLE,
     MermaidLimitError,
     block_diagram,
-    chapter_blocks,
     check_limits,
     escape_label,
     example_anchor,
     form_anchor,
+    forms_in_diagram_order,
+    has_boxes,
     node_id,
     operator_diagram,
     overview_block,
@@ -1275,10 +1276,44 @@ def test_the_diagrams_of_the_size_of_the_real_map_are_under_the_limits() -> None
     check_limits(block_diagram(operators_of(18), NOTHING_RUN))
 
 
-# --- What ``render.py`` still calls ---
+# --- The order of the forms, for the pages ---
 
 
-def test_chapter_blocks_is_the_one_block_diagram_of_the_chapter() -> None:
-    assert chapter_blocks(STRING, CAT, INDEX) == [block_diagram(STRING, INDEX)]
-    empty = Chapter("empty", "Empty", ())
-    assert chapter_blocks(empty, Catalogue((empty,)), NOTHING_RUN) == []
+def test_has_boxes_needs_forms_of_two_kinds() -> None:
+    assert has_boxes(ROUND)  # a dataset, a component and a scalar form
+    assert has_boxes(CONCAT)  # a dataset and a component form
+    assert not has_boxes(CALC)  # a form with no kind
+    # Forms of one kind, and one with no kind, are not two kinds.
+    one_kind = make_operator(
+        "o", "O", "o", (make_variant("comp", "a"), make_variant("comp_sc", "b"))
+    )
+    assert not has_boxes(one_kind)
+    mixed = make_operator("o", "O", "o", (make_variant("comp", "a"), make_variant("free", "b")))
+    assert not has_boxes(mixed)
+
+
+def test_forms_in_diagram_order_are_the_boxes_in_order_then_the_forms_with_no_kind() -> None:
+    modulo = make_operator(
+        "modulo",
+        "Modulo",
+        "mod",
+        (
+            make_variant("sc_sc", "mod(1, 2)"),
+            make_variant("ds_ds", "mod(DS_1, DS_2)"),
+            make_variant("comp_sc", "mod(Me_1, 2)"),
+            make_variant("free", "mod()"),  # no kind: it hangs from the operator, after the boxes
+            make_variant("ds_sc", "mod(DS_1, 2)"),
+        ),
+    )
+    order = ["ds_ds", "ds_sc", "comp_sc", "sc_sc", "free"]
+    assert [variant.id for variant in forms_in_diagram_order(modulo)] == order
+    # The diagram draws its forms in that order.
+    numeric = Chapter("numeric", "Numeric operators", (modulo,))
+    diagram = operator_diagram(numeric, modulo, Catalogue((numeric,)), NOTHING_RUN)
+    places = [diagram.index(f"v_{variant_id}[") for variant_id in order]
+    assert places == sorted(places)
+    # Without boxes, the forms are drawn, and come, in the order of the catalogue.
+    both_sides = make_operator(
+        "o", "O", "o", (make_variant("b", "b"), make_variant("a", "a"), make_variant("c", "c"))
+    )
+    assert forms_in_diagram_order(both_sides) == list(both_sides.variants)
