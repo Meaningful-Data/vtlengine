@@ -1,0 +1,3 @@
+:Tests: ``2 = DS_1``, a scalar as the left operand, where one measure value equals it and one is null.
+:Manual: `Equal to <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Comparison%20operators/Equal%20to/index.html>`__: "The operator returns **true** if the left is equal to right, **false** otherwise." A null operand gives a null result, as in the output of the page's Example 1; the `User Manual <https://sdmx-twg.github.io/vtl/v2.2/user_manual/operators.html>`__ says: "most of the scalar operations (arithmetic, logical, and others) return **null** when any of their arguments is **null**".
+:Expected: ``bool_var``, the page's measure for a data set result, is false, true, false and null for ids 1 to 4: 2 = 2 is true, and the null measure gives null.
