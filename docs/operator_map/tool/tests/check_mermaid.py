@@ -279,8 +279,9 @@ def test_form_anchor_has_no_underscore() -> None:
 
 
 def test_form_anchors_are_what_docutils_makes_of_them() -> None:
-    # Sphinx writes the id of a target with ``make_id``: an anchor that it would change is a click
-    # that lands nowhere. It needs docutils, which the docs have: the check is skipped without it.
+    # The anchors are HTML ids that the pages write as they are, not RST targets, and they have
+    # the form of the ids of docutils: ``make_id`` leaves each one as it is. It needs docutils,
+    # which the docs have: the check is skipped without it.
     nodes = pytest.importorskip("docutils.nodes")
     for form_id in ("ds", "ds_group_by", "comp_2", "sc_null", "2d", "a_b_c_d"):
         anchor = form_anchor(make_variant(form_id, "x"))
@@ -948,11 +949,9 @@ def diagram_of(cat: Catalogue, chapter_id: str, operator_id: str) -> list[str]:
     ("declared", "reverse"),
     [
         ("uses", "used by"),
-        ("used by", "uses"),
         ("used in", "uses"),
         ("used in over()", "uses, in over()"),
         ("used in group all", "uses, in group all"),
-        ("propagates at", "propagation defined by"),
     ],
 )
 def test_used_with_reverse_labels(declared: str, reverse: str) -> None:
@@ -966,22 +965,17 @@ def test_used_with_reverse_labels(declared: str, reverse: str) -> None:
 
 
 def test_used_with_a_link_declared_at_both_ends_is_shown_once() -> None:
-    # The definitions say "used by" where the operators say "uses": at each end, the box has the
-    # other operator once, with one label.
-    back = make_operator(
-        "b", "Beta", "b", (make_variant("y", "b(1)"),), (Link("alpha.a", "used by"),)
-    )
+    # Each operator says "uses" of the other: at each end, the box has the other operator once,
+    # with the label of its own link and the reverse of the label of the other one.
+    back = make_operator("b", "Beta", "b", (make_variant("y", "b(1)"),), (Link("alpha.a", "uses"),))
     cat = Catalogue((linked("uses").chapters[0], Chapter("beta", "Beta operators", (back,))))
-    for chapter_id, operator_id, other, label in (
-        ("alpha", "a", "beta__b", "uses"),
-        ("beta", "b", "alpha__a", "used by"),
-    ):
+    for chapter_id, operator_id, other in (("alpha", "a", "beta__b"), ("beta", "b", "alpha__a")):
         entries = [
             line for line in diagram_of(cat, chapter_id, operator_id) if line.startswith("used__")
         ]
         assert len(entries) == 1
         assert entries[0].startswith(f"used__{other}[")
-        assert f"<small>{label}</small>" in entries[0]
+        assert "<small>uses · used by</small>" in entries[0]
 
 
 def test_used_with_two_labels_for_one_operator_are_one_entry() -> None:

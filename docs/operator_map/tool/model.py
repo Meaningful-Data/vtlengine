@@ -58,11 +58,9 @@ STRUCTURAL_TYPES: Final[tuple[str, ...]] = (
 # A link is shown at both of its ends: at its target, with the reverse of its label.
 REVERSE_LABELS: Final[dict[str, str]] = {
     "uses": "used by",
-    "used by": "uses",
     "used in": "uses",
     "used in over()": "uses, in over()",
     "used in group all": "uses, in group all",
-    "propagates at": "propagation defined by",
 }
 DL_PAGES: Final[tuple[str, ...]] = ("dl/udo", "dl/datapoint", "dl/hierarchical", "dl/viral")
 # The longest title of a light box that the forms of an operator name (``Variant.box``).
@@ -117,7 +115,13 @@ class Variant:
 
 @dataclass(frozen=True)
 class Link:
-    """A composition link to another operator, drawn as a labelled dotted edge."""
+    """A composition link to another operator, shown in the "Used with" box of two diagrams.
+
+    The operator that declares it lists its target in the box of its diagram with the label, and
+    the target lists that operator in the box of its own diagram with the reverse of the label
+    (``tool.mermaid.used_with``). A definition of the VTL-DL is never an end of a link: it is not
+    used inside an operator (``validate_catalogue``).
+    """
 
     target: str  # ``chapter.operator``
     label: str  # a key of ``REVERSE_LABELS``: the target shows the reverse
@@ -270,6 +274,7 @@ _FORM_TYPES: Final = frozenset((*VALUE_TYPES, *STRUCTURAL_TYPES, ANY_SCALAR, ANY
 # The types of an operator, and the ``returns`` of a form, may name ``dataset`` too.
 _OPERATOR_TYPES: Final = _FORM_TYPES | {_DATASET}
 _DEFINITIONS: Final = "definitions"  # the chapter whose pages are ``DL_PAGES``
+_DEFINITION_LINK: Final = "VTL-DL definitions are never linked from or to operators"
 
 
 def _bad_id(owner: str, item_id: str, what: str = "id") -> Iterator[str]:
@@ -409,6 +414,11 @@ def _operator_problems(
             yield f"{owner}: link target '{link.target}' not found"
         if link.label not in REVERSE_LABELS:
             yield f"{owner}: link label '{link.label}' has no reverse label"
+        # A link of a definition, or to one, or both: one line, as it is one link.
+        from_definition = chapter.id == _DEFINITIONS
+        to_definition = link.target.partition(".")[0] == _DEFINITIONS
+        if from_definition or to_definition:
+            yield f"{owner}: link target '{link.target}': {_DEFINITION_LINK}"
     for key in _manual_keys(operator):
         if key not in manual_examples:
             yield f"{owner}: unknown manual example '{key}'"
@@ -502,9 +512,11 @@ def validate_catalogue(
 
     Ids, example names and manual refs follow the id rule, ``[a-z0-9_]+``: they name folders
     and the targets of the clicks of the diagrams. The ``takes`` and ``gives`` of a form are of
-    ``VALUE_TYPES``, ``STRUCTURAL_TYPES``, ``ANY_SCALAR`` and ``ANY_TYPE``; the ``accepts`` and
-    ``returns`` of an operator, and the ``returns`` of a form, may name ``dataset`` as well. The
-    label of every link has a reverse in ``REVERSE_LABELS``.
+    ``VALUE_TYPES``, ``STRUCTURAL_TYPES`` and ``ANY_SCALAR``, and its ``gives`` may be ``ANY_TYPE``
+    too; the ``accepts`` and ``returns`` of an operator, and the ``returns`` of a form, may name
+    ``dataset`` as well. The label of every link has a reverse in ``REVERSE_LABELS``, and no link
+    goes from or to an operator of the definitions chapter: the definitions of the VTL-DL are not
+    used inside an operator.
 
     The forms are checked too: every form declares its ``takes``, empty for a form that takes
     nothing, and its ``gives``, with a type at least; ``ANY_TYPE`` is only for ``gives``, a value

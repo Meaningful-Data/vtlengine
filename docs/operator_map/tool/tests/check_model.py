@@ -9,6 +9,7 @@ from typing import Any
 
 import catalogue
 import pytest
+from catalogue import manual_index
 
 from tool.model import (
     ANY_SCALAR,
@@ -146,6 +147,92 @@ def test_link_target_may_point_to_another_chapter() -> None:
     cat = Catalogue(chapters=(make_chapter(linked), clause))
     pages = {ADD_PAGE, "Clause operators/Aggr"}
     assert validate_catalogue(cat, pages, {ADD_EX_1}) == []
+
+
+# --- Validation: the definitions of the VTL-DL are never linked ---
+
+
+def definition(op_id: str, page: str, *links: Link) -> Operator:
+    """A definition of the VTL-DL that has ``links``: one form with one authored example."""
+    form = typed_form(authored("one_row"), variant_id="scalar_param", label="x")
+    return make_operator(id=op_id, page=page, variants=(form,), links=links)
+
+
+def definition_problems(addition: Operator, *definitions: Operator) -> list[str]:
+    """The problems of the addition and the ``definitions`` chapter, whose pages are all known."""
+    chapter = Chapter(id="definitions", title="Definitions", operators=definitions)
+    cat = Catalogue(chapters=(make_chapter(addition), chapter))
+    pages = {ADD_PAGE, *(each.page for each in definitions)}
+    return validate_catalogue(cat, pages, {ADD_EX_1})
+
+
+NEVER_LINKED = "VTL-DL definitions are never linked from or to operators"
+
+
+def test_a_definition_with_no_link_is_not_a_problem() -> None:
+    udo = definition("define_operator", "dl/udo")
+    assert definition_problems(make_operator(), udo) == []
+    # An operator may link to the other operators, as the others do.
+    assert definition_problems(make_operator(links=(Link("numeric.addition", "uses"),)), udo) == []
+
+
+def test_a_link_from_a_definition_is_a_problem() -> None:
+    owner = "definitions.define_operator"
+    linking = definition("define_operator", "dl/udo", Link("numeric.addition", "uses"))
+    assert definition_problems(make_operator(), linking) == [
+        f"{owner}: link target 'numeric.addition': {NEVER_LINKED}"
+    ]
+    # Any label does it, and each link has a problem of its own.
+    for label in REVERSE_LABELS:
+        labelled = definition("define_operator", "dl/udo", Link("numeric.addition", label))
+        assert len(definition_problems(make_operator(), labelled)) == 1, label
+    twice = definition(
+        "define_operator",
+        "dl/udo",
+        Link("numeric.addition", "uses"),
+        Link("numeric.addition", "used in"),
+    )
+    assert len(definition_problems(make_operator(), twice)) == 2
+
+
+def test_a_link_to_a_definition_is_a_problem() -> None:
+    udo = definition("define_operator", "dl/udo")
+    linking = make_operator(links=(Link("definitions.define_operator", "uses"),))
+    assert definition_problems(linking, udo) == [
+        f"numeric.addition: link target 'definitions.define_operator': {NEVER_LINKED}"
+    ]
+    for label in REVERSE_LABELS:
+        labelled = make_operator(links=(Link("definitions.define_operator", label),))
+        assert len(definition_problems(labelled, udo)) == 1, label
+
+
+def test_a_link_between_two_definitions_is_one_problem() -> None:
+    # It goes from a definition and to one, and is one link: one line.
+    link = Link("definitions.define_datapoint_ruleset", "uses")
+    first = definition("define_operator", "dl/udo", link)
+    second = definition("define_datapoint_ruleset", "dl/datapoint")
+    assert definition_problems(make_operator(), first, second) == [
+        "definitions.define_operator: link target 'definitions.define_datapoint_ruleset': "
+        + NEVER_LINKED
+    ]
+
+
+def test_the_links_of_a_definition_are_checked_whatever_the_scope() -> None:
+    linking = definition("define_operator", "dl/udo", Link("numeric.addition", "uses"))
+    chapter = Chapter(id="definitions", title="Definitions", operators=(linking,))
+    cat = Catalogue(chapters=(make_chapter(make_operator()), chapter))
+    pages = {ADD_PAGE, "dl/udo"}
+    expected = [f"definitions.define_operator: link target 'numeric.addition': {NEVER_LINKED}"]
+    for scope in (None, ("numeric",), ("string",), ("definitions",), ()):
+        assert validate_catalogue(cat, pages, {ADD_EX_1}, scope=scope) == expected, scope
+
+
+def test_the_real_catalogue_links_no_definition() -> None:
+    cat = load_catalogue()
+    # The guard goes by the id of the chapter of the definitions: it is there to guard.
+    assert "definitions" in {chapter.id for chapter in cat.chapters}
+    problems = validate_catalogue(cat, manual_index.MANUAL_PAGES, manual_index.MANUAL_EXAMPLES)
+    assert problems == []
 
 
 def test_page_not_covered() -> None:
@@ -385,11 +472,9 @@ def test_reverse_label_known_and_unknown() -> None:
     # A link is shown at both of its ends: at its target, with the reverse of its label.
     reverses = {
         "uses": "used by",
-        "used by": "uses",
         "used in": "uses",
         "used in over()": "uses, in over()",
         "used in group all": "uses, in group all",
-        "propagates at": "propagation defined by",
     }
     for label, reverse in reverses.items():
         assert reverse_label(label) == reverse, label
@@ -398,6 +483,11 @@ def test_reverse_label_known_and_unknown() -> None:
         reverse_label("feeds")
     with pytest.raises(KeyError):
         reverse_label("Uses")
+    # Two labels that no link of the catalogue declares are gone: they were for the links of the
+    # definitions of the VTL-DL, which the catalogue no longer has.
+    for gone in ("used by", "propagates at"):
+        with pytest.raises(KeyError):
+            reverse_label(gone)
     # A link whose label has no reverse could not be shown at its target: the catalogue is wrong.
     unknown = make_operator(links=(Link("numeric.addition", "feeds"),))
     assert problems_for(make_catalogue(unknown)) == [

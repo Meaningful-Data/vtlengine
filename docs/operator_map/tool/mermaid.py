@@ -213,8 +213,10 @@ def _checked(block: str, what: str) -> str:
 def form_anchor(v: Variant) -> str:
     """The anchor of the section of a form on the page of its operator: ``form-<id>``.
 
-    The underscores of the id are dashes. Sphinx writes the identifier of a target with dashes,
-    so the click of a diagram and the target of the page name the same one.
+    It is an HTML id that the page writes before the heading of the form (``tool.render``), and
+    the click of the form in the diagram points at it. The underscores of the id are dashes. The
+    anchors of the forms and the examples of an operator are all different, which the generator
+    checks (``generate.py``): the same id twice on a page sends a link to the wrong place.
     """
     return "form-" + v.id.replace("_", "-")
 
@@ -222,7 +224,9 @@ def form_anchor(v: Variant) -> str:
 def example_anchor(v: Variant, e: Example) -> str:
     """The anchor of an example on the page of its operator: ``ex-<form id>-<example name>``.
 
-    As in ``form_anchor``, the underscores are dashes.
+    As in ``form_anchor``, it is an HTML id and the underscores are dashes, so the dash that joins
+    the form to the example is one of them: the form ``a_b`` with the example ``c`` and the form
+    ``a`` with the example ``b_c`` are both ``ex-a-b-c``, and the generator refuses that.
     """
     return f"ex-{v.id}-{e.name}".replace("_", "-")
 

@@ -329,7 +329,7 @@ def import_example(
     the inputs the script uses in ``input/`` and the result in ``expected/``. A destination that
     already has any of them is left as it is unless ``force`` is set, so that the corrections
     made by hand survive a second import. Then the three are replaced, and the rest of the
-    folder (``notes.md``, ``value_domains/``...) is kept. The result is the list of warnings, or
+    folder (``notes.rst``, ``value_domains/``...) is kept. The result is the list of warnings, or
     the reason an existing destination was skipped. Nothing is written when the example cannot
     be read.
     """

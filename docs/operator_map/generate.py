@@ -17,8 +17,10 @@ Elsewhere the cap is optional.
    (``tool.examples.notes_problems``), and a folder needs a catalogue example. The forms must
    declare the types they take and give (``any`` is only for what a form gives), the forms of an
    operator must all have a kind or none (unless they name boxes) and all name a light box or
-   none (``Variant.box``, with a title of 1 to 30 characters), and their authored examples must
-   be named after what they test.
+   none (``Variant.box``, with a title of 1 to 30 characters), their authored examples must
+   be named after what they test, and no two forms or examples of an operator may have the same
+   anchor on its page (``form_anchor``, ``example_anchor``). No link of the catalogue goes from
+   or to a definition of the VTL-DL.
 2. One child process imports vtlengine and both engines, and gives their versions (the
    preflight of ``tool.runner``). Then every example runs on the pandas and the DuckDB engine,
    each in a process of its own. A ``random`` example runs twice, to see whether its values are
@@ -73,7 +75,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from datetime import date
 from pathlib import Path
@@ -88,10 +90,11 @@ from tool.examples import (
     notes_problems,
     scan_example_dirs,
 )
-from tool.mermaid import MermaidLimitError, check_limits, example_anchor
+from tool.mermaid import MermaidLimitError, check_limits, example_anchor, form_anchor
 from tool.model import (
     Catalogue,
     Example,
+    Operator,
     Status,
     example_title,
     load_catalogue,
@@ -277,7 +280,7 @@ def _generate(args: argparse.Namespace, progress: _Progress) -> int:
     pages = sum(1 for name in files if name.endswith(".rst"))
     print(
         f"wrote {pages} pages, {_STATUS_FILE}, {_EXAMPLE_PAGES_FILE} and {_MANIFEST}; "
-        f"removed {len(removed)} stale files ({summary} examples)"
+        f"removed {len(removed)} stale files. Examples: {summary}"
     )
     return 0
 
@@ -286,7 +289,7 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="generate.py",
         description="Generate the VTL operator map: run every example on both engines, "
-        "judge the results and write the Sphinx pages (rst) and status.json.",
+        "judge the results and write the Sphinx pages (rst), status.json and example_pages.json.",
         epilog=_HOW_TO_RUN,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -434,7 +437,31 @@ def _catalogue_problems(cat: Catalogue, only: Sequence[str]) -> list[str]:
                 for variant in operator.variants
                 if not variant.examples
             )
+            problems.extend(_anchor_problems(f"{chapter.id}.{operator.id}", operator))
     return list(dict.fromkeys(problems))
+
+
+def _anchor_problems(owner: str, operator: Operator) -> Iterator[str]:
+    """The anchors that two forms or examples of ``operator`` share on its page.
+
+    The anchors are ids of one HTML page (``form_anchor``, ``example_anchor``), and the
+    underscores of the ids are dashes in them: the example ``c`` of the form ``a_b`` and the
+    example ``b_c`` of the form ``a`` are both ``ex-a-b-c``. A shared id sends the click of a
+    diagram, the links of a block or of the index and the back link of the page of an example to
+    the wrong one. One line for each shared anchor, naming everything that has it. A form or an
+    example that is declared twice is a duplicate that ``validate_catalogue`` reports: it is not
+    named twice, and shares its anchor with no one else.
+    """
+    owners: dict[str, list[str]] = {}
+    for variant in operator.variants:
+        owners.setdefault(form_anchor(variant), []).append(f"form '{variant.id}'")
+        for example in variant.examples:
+            name = f"example '{variant.id}/{example.name}'"
+            owners.setdefault(example_anchor(variant, example), []).append(name)
+    for anchor, names in owners.items():
+        distinct = list(dict.fromkeys(names))
+        if len(distinct) > 1:
+            yield f"{owner}: the anchor '{anchor}' is shared by {', '.join(distinct)}"
 
 
 def _folder_problems(

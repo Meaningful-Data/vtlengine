@@ -27,7 +27,16 @@ from catalogue import manual_index
 from tool import runner
 from tool.compare import ActualComponent, ActualDataset, ActualScalar
 from tool.mermaid import MermaidLimitError
-from tool.model import Catalogue, Chapter, Example, Operator, Variant, authored, manual
+from tool.model import (
+    Catalogue,
+    Chapter,
+    Example,
+    Operator,
+    Variant,
+    authored,
+    load_catalogue,
+    manual,
+)
 from tool.runner import Engine, RunOutput
 from tool.status import EngineVerdict
 
@@ -557,6 +566,93 @@ def test_the_notes_of_every_chapter_are_checked(
         assert generate.main(["--check-only", *only]) == 1
         assert problems(capsys) == expected
     assert world.calls == []
+
+
+# --- The anchors of the forms and the examples of an operator ---
+
+
+def test_two_examples_that_share_an_anchor_stop_every_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The anchors write the underscores of the ids as dashes: the example ``c`` of the form
+    # ``a_b`` and the example ``b_c`` of the form ``a`` are both ``ex-a-b-c``. A duplicate HTML id
+    # sends the click of a diagram, the links of a block and of the index and the back link of the
+    # page of an example to the wrong example.
+    clash = make_operator(
+        "clash",
+        "Clash",
+        "Alpha operators/Clash",
+        form("a_b", "clash(a_b)", authored("c")),
+        form("a", "clash(a)", authored("b_c")),
+    )
+    cat = Catalogue((Chapter("alpha", "Alpha operators", (*ALPHA.operators, clash)), BETA))
+    world = build_world(tmp_path, monkeypatch, cat, pages=(*PAGES, "Alpha operators/Clash"))
+    old = seed_outputs(world)
+    expected = ["alpha.clash: the anchor 'ex-a-b-c' is shared by example 'a_b/c', example 'a/b_c'"]
+    # Every chapter is checked, whatever ``--only`` says, and the check is the one of every run.
+    for only in ([], ["--only", "alpha"], ["--only", "beta"]):
+        assert generate.main(["--check-only", *only]) == 1
+        assert problems(capsys) == expected
+    assert generate.main([]) == 1
+    assert problems(capsys) == expected
+    # Nothing ran, no child started, and no file was written.
+    assert world.calls == []
+    assert world.preflights == []
+    assert_untouched(world, old)
+
+
+def anchor_lines(*forms: Variant) -> list[str]:
+    """The problems about the anchors of an operator ``alpha.first`` that has ``forms``."""
+    operator = make_operator("first", "First", "Alpha operators/First", *forms)
+    return list(generate._anchor_problems("alpha.first", operator))
+
+
+def test_every_anchor_that_is_shared_is_one_line_naming_all_that_have_it() -> None:
+    three = anchor_lines(
+        form("a_b_c", "x", authored("d"), authored("e_f")),
+        form("a_b", "y", authored("c_d"), authored("c_e_f")),
+        form("a", "z", authored("b_c_d"), authored("only_one")),
+    )
+    assert three == [
+        "alpha.first: the anchor 'ex-a-b-c-d' is shared by "
+        "example 'a_b_c/d', example 'a_b/c_d', example 'a/b_c_d'",
+        "alpha.first: the anchor 'ex-a-b-c-e-f' is shared by example 'a_b_c/e_f', "
+        "example 'a_b/c_e_f'",
+    ]
+
+
+def test_the_anchors_of_the_forms_are_compared_with_those_of_the_examples() -> None:
+    # An id with a dash is no id (``validate_catalogue`` says so), and its anchor is the one of
+    # the id with an underscore there: the anchors of the forms are in the comparison too.
+    assert anchor_lines(form("a_b", "x", authored("c")), form("a-b", "y", authored("d"))) == [
+        "alpha.first: the anchor 'form-a-b' is shared by form 'a_b', form 'a-b'"
+    ]
+
+
+def test_an_anchor_is_not_shared_by_a_duplicate_that_is_reported_already() -> None:
+    # A form or an example that is declared twice is a duplicate, which ``validate_catalogue``
+    # reports, and it is no other form or example that shares its anchor.
+    assert anchor_lines(form("a", "x", authored("b")), form("a", "y", authored("b"))) == []
+    assert anchor_lines(form("a", "x", authored("b"), authored("b"))) == []
+
+
+def test_the_same_example_name_in_two_forms_is_no_shared_anchor() -> None:
+    # The anchor of an example has the id of its form: ``ex-ds-one-row`` and ``ex-sc-one-row``.
+    assert (
+        anchor_lines(form("ds", "x", authored("one_row")), form("sc", "y", authored("one_row")))
+        == []
+    )
+
+
+def test_the_real_catalogue_shares_no_anchor() -> None:
+    cat = load_catalogue()
+    shared = [
+        line
+        for chapter in cat.chapters
+        for operator in chapter.operators
+        for line in generate._anchor_problems(f"{chapter.id}.{operator.id}", operator)
+    ]
+    assert shared == []
 
 
 def remove_the_script(folder: Path) -> None:
@@ -1488,16 +1584,32 @@ def test_a_rerun_gives_the_same_files(world: World) -> None:
     assert sorted(first) == sorted([*OUTPUTS, MANIFEST])
 
 
+def test_the_summary_says_the_stale_files_and_the_example_statuses_apart(
+    world: World, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seed_outputs(world)  # three files that no run generates: they are the stale ones
+    world.modes = {"beta": "error"}  # one example is 🔴, and the other three are 🟢
+    assert generate.main([]) == 0
+    lines = capsys.readouterr().out.splitlines()
+    assert lines[0] == f"running {len(KEYS)} examples on both engines (4 at a time)"
+    # The number of files that were removed, then the statuses of the examples, each as a
+    # statement of its own: the counts of the statuses are not read as counts of stale files.
+    assert lines[1:] == [
+        "wrote 5 pages, status.json, example_pages.json and .generated; removed 3 stale files. "
+        "Examples: 🟢 3 · 🟡 0 · 🛡️ 0 · 🔴 1 · 🔵 0"
+    ]
+
+
 def test_a_block_over_a_limit_exits_1_and_writes_nothing(
     world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     def too_big(*_args: object, **_kwargs: object) -> str:
-        raise MermaidLimitError("type flow of dataset: 501 edges, and a block needs fewer than 500")
+        raise MermaidLimitError("overview: 501 edges, and a block needs fewer than 500")
 
     monkeypatch.setattr(generate, "index_rst", too_big)
     old = seed_outputs(world)
     assert generate.main([]) == 1
-    assert problems(capsys) == ["type flow of dataset: 501 edges, and a block needs fewer than 500"]
+    assert problems(capsys) == ["overview: 501 edges, and a block needs fewer than 500"]
     assert_untouched(world, old)
 
 
@@ -1951,6 +2063,15 @@ def test_the_help_and_the_docstring_say_how_to_run_the_generator(
         "docs/operator_map/generate.py"
     ) in words
     assert "Elsewhere the cap is optional." in words
+
+
+def test_the_help_names_every_file_that_a_run_writes_besides_the_pages(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit):
+        generate.main(["--help"])
+    words = " ".join(capsys.readouterr().out.split())
+    assert f"{generate._STATUS_FILE} and {generate._EXAMPLE_PAGES_FILE}." in words
 
 
 @pytest.mark.parametrize("where", ["help", "docstring"])
