@@ -35,8 +35,9 @@ Elsewhere the cap is optional.
    of the run, one path per line, sorted, and is read by the next run: a file that it lists and
    the next run does not generate (the page of an operator that was renamed or removed, or of a
    block that is gone) is removed, with its folder if it is left empty. A file that it does not
-   list is never touched, and nor is a path that it lists outside the generated pages. The
-   manifest is written last, after the removals.
+   list is never touched, and nor is a path that it lists outside the generated pages: a line
+   that is not the name of a generated file, or that goes through a symbolic link, is a problem
+   (``_read_manifest``). The manifest is written last, after the removals.
 
 With ``--only`` just the named chapters run. The other chapters keep their results from the
 ``status.json`` of the previous run: an example that is not run and has no result there is a
@@ -117,6 +118,11 @@ _STATUS_FILE: Final = "status.json"
 _EXAMPLE_PAGES_FILE: Final = "example_pages.json"
 # The manifest: the paths that a run generated, one on each line, sorted. It is not one of them.
 _MANIFEST: Final = ".generated"
+# The paths that a run generates: the index, ``status.json`` and ``example_pages.json`` in the
+# folder of the map, and the pages of a block in the folder of its chapter, all named by the rule
+# of the ids of the catalogue. The folders that people keep in the map are never a block's.
+_GENERATED_PATH: Final = re.compile(r"[a-z0-9_]+\.(?:rst|json)|[a-z0-9_]+/[a-z0-9_]+\.rst")
+_KEPT_FOLDERS: Final = frozenset({"catalogue", "examples", "tool"})
 # The folders of the staging folder: the new files, as they will be in the folder of the map, and
 # the old bytes of every file that the move replaces or removes. Two folders, so that no name of
 # a generated page can be the name of the other.
@@ -426,7 +432,16 @@ def _catalogue_problems(cat: Catalogue, only: Sequence[str], strict_forms: bool)
     for chapter in cat.chapters:
         if not chapter.operators:
             problems.append(f"{chapter.id}: no operator")
+        if chapter.id in _KEPT_FOLDERS:
+            problems.append(
+                f"{chapter.id}: its pages would go in the folder {chapter.id}/ of the map"
+            )
         for operator in chapter.operators:
+            if f"{operator.id}.rst" == _INDEX_FILE:
+                problems.append(
+                    f"{chapter.id}.{operator.id}: its page would be the page of the block, "
+                    f"{chapter.id}/{_INDEX_FILE}"
+                )
             if not operator.variants:
                 problems.append(f"{chapter.id}.{operator.id}: no variant")
             problems.extend(
@@ -711,7 +726,8 @@ def _read_manifest(root: Path) -> list[str]:
 
     A line that is not the path of a generated page raises ``GenerateError``: the manifest says
     what a run may remove, so a path outside the folder (``..``, an absolute path), in the
-    examples, or hidden is not taken on trust.
+    examples, hidden, or of a file that people keep is not taken on trust. Nor is a path that goes
+    through a symbolic link, whose file can be anywhere.
     """
     path = root / _MANIFEST
     try:
@@ -728,23 +744,24 @@ def _read_manifest(root: Path) -> list[str]:
                 f"{_MANIFEST}: line {number} is not the path of a generated file: {line!r}; "
                 f"fix the manifest, or remove it to start from an empty one"
             )
+        if (root / line).resolve() != root.resolve() / line:
+            raise GenerateError(
+                f"{_MANIFEST}: line {number} goes through a symbolic link: {line!r}; "
+                f"fix the manifest, or remove it to start from an empty one"
+            )
     return lines
 
 
 def _is_generated_path(text: str) -> bool:
     """Whether ``text`` can be the path of a file that a run generated, in the folder of the map.
 
-    It is a relative path of plain names with ``/`` between them: no empty part, no ``.`` or
-    ``..``, nothing hidden (a name that starts with a dot is the manifest or a staging folder) and
-    no backslash or control character. The examples are not generated.
+    It is ``index.rst``, ``status.json`` or ``example_pages.json`` in the folder of the map, or a
+    page in the folder of a block: lower-case letters, digits and ``_`` (the rule of the ids of
+    the catalogue), with ``.rst`` or ``.json``, and no folder that people keep in the map (the
+    examples, the tool and the catalogue). So nothing else can match: no ``..``, no absolute or
+    hidden path (the manifest, a staging folder), no source file of the tool.
     """
-    parts = text.split("/")
-    if parts[0] == "examples":
-        return False
-    return all(
-        part and not part.startswith(".") and not any(c == "\\" or c < " " for c in part)
-        for part in parts
-    )
+    return bool(_GENERATED_PATH.fullmatch(text)) and text.split("/")[0] not in _KEPT_FOLDERS
 
 
 def _manifest_text(names: Iterable[str]) -> str:

@@ -1145,6 +1145,12 @@ def test_a_renamed_operator_loses_its_old_page(
         ".generated",
         "alpha\\first.rst",
         "",
+        "generate.py",
+        "catalogue/numeric.py",
+        "tool/render.rst",
+        "alpha/deep/first.rst",
+        "Alpha/first.rst",
+        "alpha/status.json",
     ],
     ids=[
         "up",
@@ -1156,6 +1162,12 @@ def test_a_renamed_operator_loses_its_old_page(
         "manifest",
         "backslash",
         "empty",
+        "source",
+        "catalogue",
+        "kept folder",
+        "too deep",
+        "upper case",
+        "json in a block",
     ],
 )
 def test_a_manifest_that_names_a_path_outside_the_pages_is_a_problem(
@@ -1178,6 +1190,66 @@ def test_a_manifest_that_names_a_path_outside_the_pages_is_a_problem(
     assert_untouched(world, old)
 
 
+def test_a_manifest_line_through_a_symbolic_link_is_a_problem(
+    world: World, capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    # A folder of the map that links elsewhere: the line has the shape of a page, but its file is
+    # outside the pages, so nothing is run and nothing is removed.
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "victim.rst").write_text("Not mine.\n", encoding="utf-8")
+    seed_outputs(world)
+    (world.root / "linked").symlink_to(outside, target_is_directory=True)
+    manifest = (world.root / MANIFEST).read_text(encoding="utf-8") + "linked/victim.rst\n"
+    (world.root / MANIFEST).write_text(manifest, encoding="utf-8")
+    assert generate.main([]) == 1
+    [message] = problems(capsys)
+    number = len(manifest.splitlines())
+    assert message.startswith(f"{MANIFEST}: line {number} goes through a symbolic link")
+    assert world.calls == []
+    assert (outside / "victim.rst").read_text(encoding="utf-8") == "Not mine.\n"
+    assert (world.root / MANIFEST).read_text(encoding="utf-8") == manifest
+
+
+def test_a_page_name_that_another_file_needs_is_a_problem(
+    world: World, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # An operator called ``index`` would overwrite the page of its block, and a chapter called
+    # ``tool`` would write its pages into the tool: neither runs.
+    index_op = make_operator(
+        "index", "Index", "Alpha operators/First", Variant("ds", "first(DS_1)", (authored(),))
+    )
+    cat = Catalogue(
+        (
+            Chapter("alpha", "Alpha operators", (index_op,)),
+            Chapter("tool", "Beta operators", BETA.operators),
+        )
+    )
+    monkeypatch.setattr(generate, "load_catalogue", lambda: cat)
+    assert generate.main([]) == 1
+    found = problems(capsys)
+    assert "alpha.index: its page would be the page of the block, alpha/index.rst" in found
+    assert "tool: its pages would go in the folder tool/ of the map" in found
+    assert world.calls == []
+
+
+def test_only_removes_the_stale_files_and_keeps_the_other_pages(world: World) -> None:
+    # A run of one chapter renders every page: the pages of the chapter it leaves out stay as the
+    # full run wrote them and the manifest still lists them, while the stale files are removed.
+    assert generate.main([]) == 0
+    alpha = {name: (world.root / name).read_bytes() for name in OUTPUTS if name[:6] == "alpha/"}
+    for name in STALE:
+        (world.root / name).parent.mkdir(parents=True, exist_ok=True)
+        (world.root / name).write_text("Stale.\n", encoding="utf-8")
+    lines = sorted([*OUTPUTS, *STALE])
+    (world.root / MANIFEST).write_text("".join(f"{name}\n" for name in lines), encoding="utf-8")
+    assert generate.main(["--only", "beta"]) == 0
+    assert not any((world.root / name).exists() for name in STALE)
+    assert not (world.root / "gone").exists()
+    assert {name: (world.root / name).read_bytes() for name in alpha} == alpha
+    assert (world.root / MANIFEST).read_text(encoding="utf-8").splitlines() == sorted(OUTPUTS)
+
+
 def test_a_manifest_that_cannot_be_read_is_a_problem(
     world: World, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -1189,13 +1261,13 @@ def test_a_manifest_that_cannot_be_read_is_a_problem(
 
 
 def test_a_stale_path_that_is_gone_or_is_a_folder_is_left_alone(world: World) -> None:
-    # The manifest names a file that someone removed, and a folder: neither is an error, and a
-    # folder is never removed, with what it holds.
-    (world.root / "alpha/kept").mkdir(parents=True)
-    (world.root / "alpha/kept/note.txt").write_text("Kept.\n", encoding="utf-8")
-    (world.root / MANIFEST).write_text("alpha/gone.rst\nalpha/kept\n", encoding="utf-8")
+    # The manifest names a file that someone removed, and a folder with the name of a page:
+    # neither is an error, and a folder is never removed, with what it holds.
+    (world.root / "alpha/kept.rst").mkdir(parents=True)
+    (world.root / "alpha/kept.rst/note.txt").write_text("Kept.\n", encoding="utf-8")
+    (world.root / MANIFEST).write_text("alpha/gone.rst\nalpha/kept.rst\n", encoding="utf-8")
     assert generate.main([]) == 0
-    assert (world.root / "alpha/kept/note.txt").read_text(encoding="utf-8") == "Kept.\n"
+    assert (world.root / "alpha/kept.rst/note.txt").read_text(encoding="utf-8") == "Kept.\n"
     assert not (world.root / "alpha/gone.rst").exists()
 
 
