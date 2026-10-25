@@ -1,0 +1,3 @@
+:Tests: ``setdiff ( DS_1, DS_2 )``: five of the six data points of ``DS_1`` are also in ``DS_2``, with the same measures, and ``DS_2`` has one that ``DS_1`` lacks.
+:Manual: `Set difference <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Set%20operators/Set%20difference/index.html>`__, Example 1, output verbatim: the operator returns a Data Set "containing the Data Points that appear in the first Data Set but not in the second".
+:Expected: the page's one data point, (2012, B, Total, Total) with the measure 10. The (2011, B, Total, Total) of ``DS_2`` is not in ``DS_1``, so it adds nothing.

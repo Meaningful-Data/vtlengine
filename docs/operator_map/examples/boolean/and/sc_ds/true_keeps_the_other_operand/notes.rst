@@ -1,0 +1,3 @@
+:Tests: ``true and DS_1``: the boolean scalar true on the left, and a data set with ``Me_1`` true, false and null.
+:Manual: `Logical conjunction <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Boolean%20operators/Logical%20conjunction/index.html>`__: "``false and null`` gives ``false``", "``true and null`` gives ``null``" and "``null and null`` gives ``null``"; the page's sentence "returns **true** if both operands are **true**, otherwise **false**" conflicts with its null rows (``true and null`` is null, not false), and the listed rows govern.
+:Expected: ``Me_1`` is true, false and null, as in ``DS_1``: ``true`` leaves the other operand as it is, and null stays null (``true and null`` is null).

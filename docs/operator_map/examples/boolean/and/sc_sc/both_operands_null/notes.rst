@@ -1,0 +1,3 @@
+:Tests: ``null and null``: both operands null.
+:Manual: `Logical conjunction <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Boolean%20operators/Logical%20conjunction/index.html>`__: "``false and null`` gives ``false``", "``true and null`` gives ``null``" and "``null and null`` gives ``null``"; the page's sentence "returns **true** if both operands are **true**, otherwise **false**" conflicts with its null rows (``true and null`` is null, not false), and the listed rows govern.
+:Expected: ``SC_r`` is null, a Boolean, as in the row "``null and null`` gives ``null``".
