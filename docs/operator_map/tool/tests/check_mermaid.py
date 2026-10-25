@@ -978,6 +978,19 @@ def test_used_with_a_link_declared_at_both_ends_is_shown_once() -> None:
         assert "<small>uses · used by</small>" in entries[0]
 
 
+def test_used_with_a_label_that_arrives_twice_is_shown_once() -> None:
+    # alpha.a "uses" beta.b, and beta.b is "used in" alpha.a: at alpha.a both links give "uses",
+    # which is shown once; at beta.b the two labels differ, and both are shown.
+    back = make_operator(
+        "b", "Beta", "b", (make_variant("y", "b(1)"),), (Link("alpha.a", "used in"),)
+    )
+    cat = Catalogue((linked("uses").chapters[0], Chapter("beta", "Beta operators", (back,))))
+    [source] = [line for line in diagram_of(cat, "alpha", "a") if line.startswith("used__")]
+    [target] = [line for line in diagram_of(cat, "beta", "b") if line.startswith("used__")]
+    assert "<small>uses</small>" in source
+    assert "<small>used in · used by</small>" in target
+
+
 def test_used_with_two_labels_for_one_operator_are_one_entry() -> None:
     source = make_operator(
         "a",
