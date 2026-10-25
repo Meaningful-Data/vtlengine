@@ -1,0 +1,3 @@
+:Tests: ``match_characters("AX123", "[A-Za-z]{2}[0-9]{3}")``: a string that matches a pattern of two letters and three digits.
+:Manual: `Match characters <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Comparison%20operators/Match%20characters/index.html>`__: "**match_characters** returns **true** if *op* matches the regular expression *regexp*, **false** otherwise." The pattern is "an Extended Regular Expression as described in the POSIX standard", and the page warns that implementations "may behave in slightly different ways": each string here matches in full or has no match at all, so matching the whole string and searching inside it agree.
+:Expected: ``SC_r = true``, a Boolean: ``AX123`` is two letters followed by three digits.
