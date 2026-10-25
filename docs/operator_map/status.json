@@ -2000,7 +2000,7 @@
       },
       "status": "ok"
     },
-    "boolean/and/comp_comp/minimal": {
+    "boolean/and/comp_comp/all_four_boolean_combinations": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2016,7 +2016,23 @@
       },
       "status": "ok"
     },
-    "boolean/and/comp_comp/minimal_2": {
+    "boolean/and/comp_comp/null_on_either_side": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "boolean/and/comp_sc/false_decides_even_over_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2048,23 +2064,7 @@
       },
       "status": "ok"
     },
-    "boolean/and/comp_sc/minimal": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "boolean/and/comp_sc/minimal_2": {
+    "boolean/and/comp_sc/true_keeps_the_other_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2096,7 +2096,7 @@
       },
       "status": "ok"
     },
-    "boolean/and/ds_ds/minimal": {
+    "boolean/and/ds_ds/null_operands_and_uncoupled_point": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2112,7 +2112,7 @@
       },
       "status": "ok"
     },
-    "boolean/and/ds_sc/minimal": {
+    "boolean/and/ds_sc/false_decides_even_over_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2128,7 +2128,7 @@
       },
       "status": "ok"
     },
-    "boolean/and/ds_sc/minimal_2": {
+    "boolean/and/ds_sc/true_keeps_the_other_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2144,7 +2144,7 @@
       },
       "status": "ok"
     },
-    "boolean/and/sc_comp/minimal": {
+    "boolean/and/sc_comp/false_decides_even_over_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2160,7 +2160,7 @@
       },
       "status": "ok"
     },
-    "boolean/and/sc_comp/minimal_2": {
+    "boolean/and/sc_comp/true_keeps_the_other_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2176,7 +2176,7 @@
       },
       "status": "ok"
     },
-    "boolean/and/sc_ds/minimal": {
+    "boolean/and/sc_ds/false_decides_even_over_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2192,7 +2192,7 @@
       },
       "status": "ok"
     },
-    "boolean/and/sc_ds/minimal_2": {
+    "boolean/and/sc_ds/true_keeps_the_other_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2208,7 +2208,7 @@
       },
       "status": "ok"
     },
-    "boolean/and/sc_sc/minimal": {
+    "boolean/and/sc_sc/all_four_boolean_combinations": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2224,7 +2224,7 @@
       },
       "status": "ok"
     },
-    "boolean/and/sc_sc/minimal_2": {
+    "boolean/and/sc_sc/both_operands_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2240,7 +2240,7 @@
       },
       "status": "ok"
     },
-    "boolean/and/sc_sc/minimal_3": {
+    "boolean/and/sc_sc/one_null_operand_on_either_side": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2272,7 +2272,7 @@
       },
       "status": "ok"
     },
-    "boolean/not/comp/minimal": {
+    "boolean/not/comp/true_false_and_null_values": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2304,7 +2304,7 @@
       },
       "status": "ok"
     },
-    "boolean/not/ds/minimal": {
+    "boolean/not/ds/true_false_and_null_values": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2320,7 +2320,7 @@
       },
       "status": "ok"
     },
-    "boolean/not/sc/minimal": {
+    "boolean/not/sc/null_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2336,7 +2336,7 @@
       },
       "status": "ok"
     },
-    "boolean/not/sc/minimal_2": {
+    "boolean/not/sc/true_and_false_operands": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2352,7 +2352,7 @@
       },
       "status": "ok"
     },
-    "boolean/or/comp_comp/minimal": {
+    "boolean/or/comp_comp/all_four_boolean_combinations": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2368,7 +2368,23 @@
       },
       "status": "ok"
     },
-    "boolean/or/comp_comp/minimal_2": {
+    "boolean/or/comp_comp/null_on_either_side": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "boolean/or/comp_sc/false_keeps_the_other_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2400,23 +2416,7 @@
       },
       "status": "ok"
     },
-    "boolean/or/comp_sc/minimal": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "boolean/or/comp_sc/minimal_2": {
+    "boolean/or/comp_sc/true_decides_even_over_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2448,7 +2448,7 @@
       },
       "status": "ok"
     },
-    "boolean/or/ds_ds/minimal": {
+    "boolean/or/ds_ds/null_operands_and_uncoupled_point": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2464,7 +2464,7 @@
       },
       "status": "ok"
     },
-    "boolean/or/ds_sc/minimal": {
+    "boolean/or/ds_sc/false_keeps_the_other_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2480,7 +2480,7 @@
       },
       "status": "ok"
     },
-    "boolean/or/ds_sc/minimal_2": {
+    "boolean/or/ds_sc/true_decides_even_over_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2496,7 +2496,7 @@
       },
       "status": "ok"
     },
-    "boolean/or/sc_comp/minimal": {
+    "boolean/or/sc_comp/false_keeps_the_other_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2512,7 +2512,7 @@
       },
       "status": "ok"
     },
-    "boolean/or/sc_comp/minimal_2": {
+    "boolean/or/sc_comp/true_decides_even_over_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2528,7 +2528,7 @@
       },
       "status": "ok"
     },
-    "boolean/or/sc_ds/minimal": {
+    "boolean/or/sc_ds/false_keeps_the_other_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2544,7 +2544,7 @@
       },
       "status": "ok"
     },
-    "boolean/or/sc_ds/minimal_2": {
+    "boolean/or/sc_ds/true_decides_even_over_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2560,7 +2560,7 @@
       },
       "status": "ok"
     },
-    "boolean/or/sc_sc/minimal": {
+    "boolean/or/sc_sc/all_four_boolean_combinations": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2576,7 +2576,7 @@
       },
       "status": "ok"
     },
-    "boolean/or/sc_sc/minimal_2": {
+    "boolean/or/sc_sc/both_operands_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2592,7 +2592,7 @@
       },
       "status": "ok"
     },
-    "boolean/or/sc_sc/minimal_3": {
+    "boolean/or/sc_sc/one_null_operand_on_either_side": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2608,7 +2608,7 @@
       },
       "status": "ok"
     },
-    "boolean/xor/comp_comp/minimal": {
+    "boolean/xor/comp_comp/all_four_boolean_combinations": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2624,7 +2624,7 @@
       },
       "status": "ok"
     },
-    "boolean/xor/comp_comp/minimal_2": {
+    "boolean/xor/comp_comp/null_on_either_side": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2656,7 +2656,7 @@
       },
       "status": "ok"
     },
-    "boolean/xor/comp_sc/minimal": {
+    "boolean/xor/comp_sc/true_flips_and_keeps_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2688,7 +2688,7 @@
       },
       "status": "ok"
     },
-    "boolean/xor/ds_ds/minimal": {
+    "boolean/xor/ds_ds/null_operands_and_uncoupled_point": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2704,7 +2704,7 @@
       },
       "status": "ok"
     },
-    "boolean/xor/ds_sc/minimal": {
+    "boolean/xor/ds_sc/true_flips_and_keeps_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2720,7 +2720,7 @@
       },
       "status": "ok"
     },
-    "boolean/xor/sc_comp/minimal": {
+    "boolean/xor/sc_comp/true_flips_and_keeps_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2736,7 +2736,7 @@
       },
       "status": "ok"
     },
-    "boolean/xor/sc_ds/minimal": {
+    "boolean/xor/sc_ds/true_flips_and_keeps_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2752,7 +2752,7 @@
       },
       "status": "ok"
     },
-    "boolean/xor/sc_sc/minimal": {
+    "boolean/xor/sc_sc/all_four_boolean_combinations": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2768,7 +2768,7 @@
       },
       "status": "ok"
     },
-    "boolean/xor/sc_sc/minimal_2": {
+    "boolean/xor/sc_sc/both_operands_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -2784,7 +2784,7 @@
       },
       "status": "ok"
     },
-    "boolean/xor/sc_sc/minimal_3": {
+    "boolean/xor/sc_sc/one_null_operand_on_either_side": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3408,7 +3408,7 @@
       },
       "status": "ok"
     },
-    "comparison/between/comp_comp_comp/minimal": {
+    "comparison/between/comp_comp_comp/component_limits_and_null_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3424,7 +3424,7 @@
       },
       "status": "ok"
     },
-    "comparison/between/comp_sc_sc/minimal": {
+    "comparison/between/comp_sc_sc/limits_included_and_null_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3456,7 +3456,7 @@
       },
       "status": "ok"
     },
-    "comparison/between/sc_sc_sc/minimal": {
+    "comparison/between/sc_sc_sc/upper_limit_included": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3472,7 +3472,7 @@
       },
       "status": "ok"
     },
-    "comparison/equal/comp_comp/minimal": {
+    "comparison/equal/comp_comp/two_measures_and_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3504,7 +3504,7 @@
       },
       "status": "ok"
     },
-    "comparison/equal/ds_ds/minimal": {
+    "comparison/equal/ds_ds/reordered_data_points_and_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3536,7 +3536,7 @@
       },
       "status": "ok"
     },
-    "comparison/equal/sc_comp/minimal": {
+    "comparison/equal/sc_comp/scalar_first_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3552,7 +3552,7 @@
       },
       "status": "ok"
     },
-    "comparison/equal/sc_ds/minimal": {
+    "comparison/equal/sc_ds/scalar_first_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3568,7 +3568,7 @@
       },
       "status": "ok"
     },
-    "comparison/equal/sc_sc/minimal": {
+    "comparison/equal/sc_sc/different_numbers": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3600,7 +3600,7 @@
       },
       "status": "ok"
     },
-    "comparison/exists_in/retain_default/minimal": {
+    "comparison/exists_in/retain_default/identifier_found_with_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3648,7 +3648,7 @@
       },
       "status": "ok"
     },
-    "comparison/greater/comp_comp/minimal": {
+    "comparison/greater/comp_comp/two_measures_and_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3712,7 +3712,7 @@
       },
       "status": "ok"
     },
-    "comparison/greater/sc_comp/minimal": {
+    "comparison/greater/sc_comp/scalar_first_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3728,7 +3728,7 @@
       },
       "status": "ok"
     },
-    "comparison/greater/sc_ds/minimal": {
+    "comparison/greater/sc_ds/scalar_first_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3744,7 +3744,7 @@
       },
       "status": "ok"
     },
-    "comparison/greater/sc_sc/minimal": {
+    "comparison/greater/sc_sc/alphabetical_string_order": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3760,7 +3760,7 @@
       },
       "status": "ok"
     },
-    "comparison/greater_equal/comp_comp/minimal": {
+    "comparison/greater_equal/comp_comp/two_measures_and_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3776,7 +3776,7 @@
       },
       "status": "ok"
     },
-    "comparison/greater_equal/comp_sc/minimal": {
+    "comparison/greater_equal/comp_sc/equal_value_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3792,7 +3792,7 @@
       },
       "status": "ok"
     },
-    "comparison/greater_equal/ds_ds/minimal": {
+    "comparison/greater_equal/ds_ds/reordered_data_points_and_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3808,7 +3808,7 @@
       },
       "status": "ok"
     },
-    "comparison/greater_equal/ds_sc/minimal": {
+    "comparison/greater_equal/ds_sc/equal_value_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3824,7 +3824,7 @@
       },
       "status": "ok"
     },
-    "comparison/greater_equal/sc_comp/minimal": {
+    "comparison/greater_equal/sc_comp/scalar_first_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3840,7 +3840,7 @@
       },
       "status": "ok"
     },
-    "comparison/greater_equal/sc_ds/minimal": {
+    "comparison/greater_equal/sc_ds/scalar_first_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3856,7 +3856,7 @@
       },
       "status": "ok"
     },
-    "comparison/greater_equal/sc_sc/minimal": {
+    "comparison/greater_equal/sc_sc/equal_numbers": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3888,7 +3888,7 @@
       },
       "status": "ok"
     },
-    "comparison/in/comp_value_domain/minimal": {
+    "comparison/in/comp_value_domain/members_and_null_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3936,7 +3936,7 @@
       },
       "status": "ok"
     },
-    "comparison/in/sc_set/minimal": {
+    "comparison/in/sc_set/member_of_a_set_literal": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3984,7 +3984,7 @@
       },
       "status": "ok"
     },
-    "comparison/isnull/sc/minimal": {
+    "comparison/isnull/sc/non_null_string_literal": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4000,7 +4000,7 @@
       },
       "status": "ok"
     },
-    "comparison/isnull/sc/minimal_2": {
+    "comparison/isnull/sc/null_literal": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4016,7 +4016,7 @@
       },
       "status": "ok"
     },
-    "comparison/less/comp_comp/minimal": {
+    "comparison/less/comp_comp/two_measures_and_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4032,7 +4032,7 @@
       },
       "status": "ok"
     },
-    "comparison/less/comp_sc/minimal": {
+    "comparison/less/comp_sc/equal_value_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4048,7 +4048,7 @@
       },
       "status": "ok"
     },
-    "comparison/less/ds_ds/minimal": {
+    "comparison/less/ds_ds/reordered_data_points_and_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4080,7 +4080,7 @@
       },
       "status": "ok"
     },
-    "comparison/less/sc_comp/minimal": {
+    "comparison/less/sc_comp/scalar_first_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4096,7 +4096,7 @@
       },
       "status": "ok"
     },
-    "comparison/less/sc_ds/minimal": {
+    "comparison/less/sc_ds/scalar_first_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4112,7 +4112,7 @@
       },
       "status": "ok"
     },
-    "comparison/less/sc_sc/minimal": {
+    "comparison/less/sc_sc/alphabetical_string_order": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4128,7 +4128,7 @@
       },
       "status": "ok"
     },
-    "comparison/less_equal/comp_comp/minimal": {
+    "comparison/less_equal/comp_comp/two_measures_and_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4144,7 +4144,7 @@
       },
       "status": "ok"
     },
-    "comparison/less_equal/comp_sc/minimal": {
+    "comparison/less_equal/comp_sc/equal_value_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4160,7 +4160,7 @@
       },
       "status": "ok"
     },
-    "comparison/less_equal/ds_ds/minimal": {
+    "comparison/less_equal/ds_ds/reordered_data_points_and_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4176,7 +4176,7 @@
       },
       "status": "ok"
     },
-    "comparison/less_equal/ds_sc/minimal": {
+    "comparison/less_equal/ds_sc/equal_value_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4192,7 +4192,7 @@
       },
       "status": "ok"
     },
-    "comparison/less_equal/sc_comp/minimal": {
+    "comparison/less_equal/sc_comp/scalar_first_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4208,7 +4208,7 @@
       },
       "status": "ok"
     },
-    "comparison/less_equal/sc_ds/minimal": {
+    "comparison/less_equal/sc_ds/scalar_first_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4224,7 +4224,7 @@
       },
       "status": "ok"
     },
-    "comparison/less_equal/sc_sc/minimal": {
+    "comparison/less_equal/sc_sc/equal_numbers": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4240,7 +4240,7 @@
       },
       "status": "ok"
     },
-    "comparison/match_characters/comp_comp/minimal": {
+    "comparison/match_characters/comp_comp/pattern_from_a_component_and_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4256,7 +4256,7 @@
       },
       "status": "ok"
     },
-    "comparison/match_characters/comp_sc/minimal": {
+    "comparison/match_characters/comp_sc/matches_and_null_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4288,7 +4288,7 @@
       },
       "status": "ok"
     },
-    "comparison/match_characters/sc_sc/minimal": {
+    "comparison/match_characters/sc_sc/matching_string_literal": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4304,7 +4304,7 @@
       },
       "status": "ok"
     },
-    "comparison/not_equal/comp_comp/minimal": {
+    "comparison/not_equal/comp_comp/two_measures_and_null": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4352,7 +4352,7 @@
       },
       "status": "ok"
     },
-    "comparison/not_equal/ds_sc/minimal": {
+    "comparison/not_equal/ds_sc/equal_value_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4368,7 +4368,7 @@
       },
       "status": "ok"
     },
-    "comparison/not_equal/sc_comp/minimal": {
+    "comparison/not_equal/sc_comp/scalar_first_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4384,7 +4384,7 @@
       },
       "status": "ok"
     },
-    "comparison/not_equal/sc_ds/minimal": {
+    "comparison/not_equal/sc_ds/scalar_first_and_null_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4400,7 +4400,7 @@
       },
       "status": "ok"
     },
-    "comparison/not_equal/sc_sc/minimal": {
+    "comparison/not_equal/sc_sc/different_numbers": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4416,7 +4416,7 @@
       },
       "status": "ok"
     },
-    "comparison/not_in/comp_set/minimal": {
+    "comparison/not_in/comp_set/members_and_null_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4432,7 +4432,7 @@
       },
       "status": "ok"
     },
-    "comparison/not_in/comp_value_domain/minimal": {
+    "comparison/not_in/comp_value_domain/members_and_null_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4448,7 +4448,7 @@
       },
       "status": "ok"
     },
-    "comparison/not_in/ds_set/minimal": {
+    "comparison/not_in/ds_set/members_and_null_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4464,7 +4464,7 @@
       },
       "status": "ok"
     },
-    "comparison/not_in/ds_value_domain/minimal": {
+    "comparison/not_in/ds_value_domain/members_and_null_operand": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4480,7 +4480,7 @@
       },
       "status": "ok"
     },
-    "comparison/not_in/sc_set/minimal": {
+    "comparison/not_in/sc_set/member_of_a_set_literal": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -11936,7 +11936,23 @@
       },
       "status": "ok"
     },
-    "set/intersect/n/minimal": {
+    "set/intersect/n/point_in_all_three_operands": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "set/intersect/two/leftmost_wins_when_measures_differ": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -11953,22 +11969,6 @@
       "status": "ok"
     },
     "set/intersect/two/manual_ex_1": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "set/intersect/two/minimal": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12016,7 +12016,7 @@
       },
       "status": "ok"
     },
-    "set/setdiff/two/minimal": {
+    "set/setdiff/two/matched_by_identifiers_not_measures": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12048,7 +12048,7 @@
       },
       "status": "ok"
     },
-    "set/symdiff/two/minimal": {
+    "set/symdiff/two/matched_by_identifiers_not_measures": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12064,7 +12064,23 @@
       },
       "status": "ok"
     },
-    "set/union/n/minimal": {
+    "set/union/n/leftmost_of_three_operands_wins": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "set/union/two/leftmost_wins_when_measures_differ": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12097,22 +12113,6 @@
       "status": "ok"
     },
     "set/union/two/manual_ex_2": {
-      "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
-      },
-      "status": "ok"
-    },
-    "set/union/two/minimal": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -15030,7 +15030,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "140e946ed3f888951adb8bb66ea45030be84e2aa",
-    "vtlengine_commit": "8a3e3f0d",
+    "vtlengine_commit": "63759cae",
     "vtlengine_version": "1.9.6rc2"
   }
 }
