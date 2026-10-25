@@ -12,7 +12,8 @@ type" of its page:
 * ``in`` and ``not_in`` take a value of any type and a collection, ``set<scalar> |
   name<value_domain>``, so the type of the collection is ``set`` or ``value_domain``;
 * ``exists_in`` takes data sets, ``dataset``, whatever the types of their measures;
-* every form gives ``dataset { measure<boolean> bool_var } | component<boolean> | boolean``.
+* every form gives ``boolean``: the result is ``dataset { measure<boolean> bool_var } |
+  component<boolean> | boolean``, and only the data set for ``exists_in``.
 """
 
 from __future__ import annotations
