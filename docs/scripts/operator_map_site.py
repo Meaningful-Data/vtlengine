@@ -195,10 +195,12 @@ def _notes(folder: Path) -> str:
         # Imported here: ``conf.py`` imports this script for every version of the docs, and the
         # checks of the map load it where docutils may be missing. Sphinx brings docutils.
         from docutils.core import publish_parts
+        from docutils.writers import get_writer_class
 
+        # The writer is passed made: docutils 0.22 warns on ``writer_name``, which it will drop.
         parts = publish_parts(
             rst.read_text(encoding="utf-8-sig"),
-            writer_name="html5",
+            writer=get_writer_class("html5")(),
             settings_overrides={"docinfo_xform": False, "report_level": 5},
         )
         return f'<div class="notes">\n{parts["body"]}</div>\n'
