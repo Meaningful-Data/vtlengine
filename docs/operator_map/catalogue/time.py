@@ -18,12 +18,15 @@ Every form declares the types it takes and gives, the finest that its page state
 
 * a time series form takes and gives the type of its reference time Identifier, with the
   ``number`` measures of ``flow_to_stock`` and ``stock_to_flow``, and the ``integer`` shift of
-  ``timeshift``;
+  ``timeshift``. The pages of ``fill_time_series`` and ``timeshift`` leave the measures of their
+  Data Sets untyped, and their results keep those of the operand ("the same Identifier, Measure
+  and Attribute Components"): their forms give ``any`` too, as the result follows the input;
 * ``time_agg`` takes a ``time``, or the ``date`` or ``time_period`` that its form names, and the
   ``duration`` of its period indicators, and gives the type that it takes;
 * the pages of ``datediff``, ``dateadd`` and the extractions take "date or time_period" values,
   so their forms take those two types, or the one that the form names. ``dateadd`` gives a
-  ``date``, except on a Data Set, whose time Identifier keeps its type;
+  ``date``, except on a Data Set, whose time Identifier keeps its type and whose measures are
+  kept, untyped: that form gives ``any`` too;
 * ``period_indicator`` takes a ``time_period`` and gives a ``duration``, and the conversions
   between numbers of days and durations go from ``integer`` to ``duration`` and back;
 * ``current_date()`` takes nothing and gives a ``date``.
@@ -37,7 +40,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from tool.model import Chapter, Example, Link, Operator, Variant, authored, manual
+from tool.model import ANY_TYPE, Chapter, Example, Link, Operator, Variant, authored, manual
 
 _TIME_ADAPTATION = (
     "the manual's time values YYYYMm/YYYYMm (e.g. 2010M1/2010M12), which vtlengine cannot load, "
@@ -55,6 +58,9 @@ _INTEGER: Final = "integer"
 _NUMBER: Final = "number"
 # What the pages of datediff, dateadd and the extractions take: "date or time_period" values.
 _DATE_OR_PERIOD: Final = (_DATE, _TIME_PERIOD)
+# What a form gives besides its reference time Identifier, when its result has the measures of
+# its operand and the page does not type them: the result follows the input.
+_KEEPS_THE_MEASURES: Final = (ANY_TYPE,)
 
 
 def _comp_and_sc(
@@ -223,48 +229,56 @@ CHAPTER = Chapter(
                     "fill_time_series(DS) on time_period",
                     _TIME_PERIOD,
                     (authored("default_is_all"),),
+                    gives=_KEEPS_THE_MEASURES,
                 ),
                 _on_time(
                     "single_tp",
                     "fill_time_series(DS, single) on time_period",
                     _TIME_PERIOD,
                     (manual("ex_5"), manual("ex_7")),
+                    gives=_KEEPS_THE_MEASURES,
                 ),
                 _on_time(
                     "all_tp",
                     "fill_time_series(DS, all) on time_period",
                     _TIME_PERIOD,
                     (manual("ex_6"), manual("ex_8")),
+                    gives=_KEEPS_THE_MEASURES,
                 ),
                 _on_time(
                     "default_date",
                     "fill_time_series(DS) on date",
                     _DATE,
                     (authored("default_is_all"),),
+                    gives=_KEEPS_THE_MEASURES,
                 ),
                 _on_time(
                     "single_date",
                     "fill_time_series(DS, single) on date",
                     _DATE,
                     (manual("ex_3"),),
+                    gives=_KEEPS_THE_MEASURES,
                 ),
                 _on_time(
                     "all_date",
                     "fill_time_series(DS, all) on date",
                     _DATE,
                     (manual("ex_4"),),
+                    gives=_KEEPS_THE_MEASURES,
                 ),
                 _on_time(
                     "single_time",
                     "fill_time_series(DS, single) on time",
                     _TIME,
                     (manual("ex_1", adaptation=_TIME_ADAPTATION),),
+                    gives=_KEEPS_THE_MEASURES,
                 ),
                 _on_time(
                     "all_time",
                     "fill_time_series(DS, all) on time",
                     _TIME,
                     (manual("ex_2", adaptation=_TIME_ADAPTATION),),
+                    gives=_KEEPS_THE_MEASURES,
                 ),
             ),
         ),
@@ -310,7 +324,7 @@ CHAPTER = Chapter(
             manual("ex_2"),
             manual("ex_1", adaptation=_TIME_ADAPTATION),
             takes=(_INTEGER,),
-            gives=(),
+            gives=_KEEPS_THE_MEASURES,
         ),
         Operator(
             id="time_agg",
@@ -450,13 +464,13 @@ CHAPTER = Chapter(
             accepts=("time", "integer", "duration", "dataset"),
             returns=("time", "dataset"),
             variants=(
-                # A Data Set keeps its components, and so the type of its time Identifier.
+                # A Data Set keeps its components: its time Identifier, and its untyped measures.
                 Variant(
                     "ds",
                     "dateadd(DS, n, p)",
                     (authored("shifts_the_time_identifier"),),
                     takes=(_TIME, _INTEGER, _DURATION),
-                    gives=(_TIME,),
+                    gives=(_TIME, *_KEEPS_THE_MEASURES),
                 ),
                 Variant(
                     "comp",
