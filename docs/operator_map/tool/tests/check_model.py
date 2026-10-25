@@ -42,8 +42,32 @@ ADD_EX_1 = f"{ADD_PAGE}/ex_1"
 LENGTH_PAGE = "String operators/Length"
 
 
+def typed_form(
+    *examples: Example,
+    variant_id: str = "ds_ds",
+    label: str = "DS + DS",
+    kind: Kind | None = None,
+    box: str | None = None,
+) -> Variant:
+    """A form of the addition that declares its types, with ``examples`` (its manual example)."""
+    return Variant(
+        variant_id,
+        label,
+        examples or (manual("ex_1"),),
+        takes=("number",),
+        gives=("number",),
+        kind=kind,
+        box=box,
+    )
+
+
+def untyped_form(*examples: Example) -> Variant:
+    """A form of the addition that declares no types, with ``examples`` (its manual example)."""
+    return Variant("ds_ds", "DS + DS", examples or (manual("ex_1"),))
+
+
 def make_operator(**changes: Any) -> Operator:
-    """Addition with one variant mapped to its first manual example; ``changes`` override."""
+    """Addition with one typed form mapped to its first manual example; ``changes`` override."""
     operator = Operator(
         id="addition",
         name="Addition",
@@ -51,7 +75,7 @@ def make_operator(**changes: Any) -> Operator:
         page=ADD_PAGE,
         accepts=("number", "dataset"),
         returns=("number", "dataset"),
-        variants=(Variant(id="ds_ds", label="DS + DS", examples=(manual("ex_1"),)),),
+        variants=(typed_form(),),
     )
     return dataclasses.replace(operator, **changes)
 
@@ -77,32 +101,9 @@ def make_string_chapter(*variants: Variant) -> Chapter:
     return Chapter(id="string", title="String operators", operators=(operator,))
 
 
-def problems_for(cat: Catalogue) -> list[str]:
+def problems_for(cat: Catalogue, scope: tuple[str, ...] | None = None) -> list[str]:
     """Validate against the Addition page and its first manual example only."""
-    return validate_catalogue(cat, {ADD_PAGE}, {ADD_EX_1})
-
-
-def strict_problems_for(cat: Catalogue, scope: tuple[str, ...] | None = None) -> list[str]:
-    """``problems_for`` with the strict checks of the forms, for the chapters of ``scope``."""
-    return validate_catalogue(cat, {ADD_PAGE}, {ADD_EX_1}, scope=scope, strict_forms=True)
-
-
-def typed_form(
-    *examples: Example,
-    variant_id: str = "ds_ds",
-    kind: Kind | None = None,
-    box: str | None = None,
-) -> Variant:
-    """A form of the addition that declares its types, with ``examples`` (its manual example)."""
-    return Variant(
-        variant_id,
-        "DS + DS",
-        examples or (manual("ex_1"),),
-        takes=("number",),
-        gives=("number",),
-        kind=kind,
-        box=box,
-    )
+    return validate_catalogue(cat, {ADD_PAGE}, {ADD_EX_1}, scope=scope)
 
 
 # --- Validation: types, links, ids and coverage ---
@@ -125,7 +126,7 @@ def test_unknown_type_is_reported_once_per_place() -> None:
 
 
 def test_unknown_type_in_returns() -> None:
-    variant = Variant("ds_ds", "DS + DS", (manual("ex_1"),), returns=("intger",))
+    variant = dataclasses.replace(typed_form(), returns=("intger",))
     cat = make_catalogue(make_operator(returns=("numbr",), variants=(variant,)))
     assert problems_for(cat) == [
         "numeric.addition: unknown type 'numbr'",
@@ -154,8 +155,8 @@ def test_page_not_covered() -> None:
 
 
 def test_unknown_page() -> None:
-    minimal = (Variant("ds_ds", "DS + DS", (authored(),)),)
-    cat = make_catalogue(make_operator(page="Numeric operators/Addtion", variants=minimal))
+    variants = (typed_form(authored("one_row")),)
+    cat = make_catalogue(make_operator(page="Numeric operators/Addtion", variants=variants))
     assert validate_catalogue(cat, {ADD_PAGE}, set()) == [
         "numeric.addition: unknown page 'Numeric operators/Addtion'",
         f"page not covered: {ADD_PAGE}",
@@ -169,8 +170,8 @@ def test_unknown_page() -> None:
 def test_manual_example_mapped_twice_or_never() -> None:
     twice = make_operator(
         variants=(
-            Variant("ds_ds", "DS + DS", (manual("ex_1"),)),
-            Variant("sc_sc", "sc + sc", (manual("ex_1"),)),
+            typed_form(),
+            typed_form(variant_id="sc_sc", label="sc + sc"),
         )
     )
     problems = validate_catalogue(make_catalogue(twice), {ADD_PAGE}, {ADD_EX_1})
@@ -182,7 +183,7 @@ def test_manual_example_mapped_twice_or_never() -> None:
 
 
 def test_unknown_manual_example() -> None:
-    variant = Variant("ds_ds", "DS + DS", (manual("ex_1"), manual("ex_9")))
+    variant = typed_form(manual("ex_1"), manual("ex_9"))
     cat = make_catalogue(make_operator(variants=(variant,)))
     unknown = [f"numeric.addition: unknown manual example '{ADD_PAGE}/ex_9'"]
     assert problems_for(cat) == unknown
@@ -194,8 +195,8 @@ def test_unknown_manual_example() -> None:
 def test_duplicate_and_malformed_ids() -> None:
     duplicated = make_operator(
         variants=(
-            Variant("ds_ds", "DS + DS", (manual("ex_1"),)),
-            Variant("ds_ds", "DS + DS again", (authored(),)),
+            typed_form(),
+            typed_form(authored("one_row"), label="DS + DS again"),
         )
     )
     assert problems_for(make_catalogue(duplicated)) == [
@@ -207,19 +208,19 @@ def test_duplicate_and_malformed_ids() -> None:
 
 
 def test_duplicate_example_in_one_variant() -> None:
-    twice = Variant("ds_ds", "DS + DS", (manual("ex_1"), authored(), authored()))
+    twice = typed_form(manual("ex_1"), authored("one_row"), authored("one_row"))
     cat = make_catalogue(make_operator(variants=(twice,)))
-    assert problems_for(cat) == ["numeric.addition.ds_ds: duplicate example 'minimal'"]
+    assert problems_for(cat) == ["numeric.addition.ds_ds: duplicate example 'one_row'"]
 
-    # Every variant has its own ``minimal``: the same name in two variants is not a duplicate.
-    first = Variant("ds_ds", "DS + DS", (manual("ex_1"), authored()))
-    second = Variant("sc_sc", "sc + sc", (authored(),))
+    # Every variant has its own ``one_row``: the same name in two variants is not a duplicate.
+    first = typed_form(manual("ex_1"), authored("one_row"))
+    second = typed_form(authored("one_row"), variant_id="sc_sc", label="sc + sc")
     assert problems_for(make_catalogue(make_operator(variants=(first, second)))) == []
 
 
 def test_bad_and_duplicate_ids_at_every_level() -> None:
     def variant(variant_id: str) -> Variant:
-        return Variant(variant_id, "x", (authored(),))
+        return typed_form(authored("one_row"), variant_id=variant_id, label="x")
 
     first = make_operator(variants=(variant("DS_DS"), variant("a"), variant("a"), variant("a")))
     second = make_operator(variants=(variant("trailing\n"),))
@@ -238,12 +239,12 @@ def test_bad_and_duplicate_ids_at_every_level() -> None:
 
 
 def test_problems_follow_catalogue_order_then_sorted() -> None:
-    minimal = (Variant("ds_ds", "DS - DS", (authored(),)),)
+    variants = (typed_form(authored("one_row"), label="DS - DS"),)
     second = make_operator(
         id="subtraction",
         page="Numeric operators/Subtraction",
         accepts=("x", "dataset"),
-        variants=minimal,
+        variants=variants,
     )
     first = make_operator(accepts=("y", "dataset"))
     cat = make_catalogue(first, second)
@@ -313,39 +314,29 @@ def test_form_kind_explicit_overrides_tokens() -> None:
     assert form_kind(form("identity")) is None
 
 
-def test_form_types_fallback() -> None:
-    # A form that declares its types has them, whatever its operator and its returns say.
+def test_form_types_are_the_ones_the_form_declares() -> None:
+    # A form has the types that it declares, whatever its returns say.
     typed = Variant(
         "sc_sc", "x", (authored(),), returns=("number",), takes=("string",), gives=("integer",)
     )
-    assert form_types(make_operator(), typed) == (("string",), ("integer",))
-    # A form that declares none has those of its operator, without ``dataset``: whether a form
-    # is on datasets is its kind, not one of its types.
+    assert form_types(typed) == (("string",), ("integer",))
+    # And no other: a form that declares none has none, whatever its operator accepts and
+    # returns (``validate_catalogue`` refuses such a form). Whether a form is on datasets is its
+    # kind, not one of its types.
     bare = Variant("ds_ds", "DS + DS", (manual("ex_1"),))
-    assert form_types(make_operator(), bare) == (("number",), ("number",))
-    both = make_operator(accepts=("dataset", "string", "integer"), returns=("dataset", "integer"))
-    assert form_types(both, bare) == (("string", "integer"), ("integer",))
-    # Each side falls back on its own, and only when it is not declared: ``takes=()`` is a form
-    # that takes nothing, such as ``current_date()``, and ``gives=()`` a form that gives nothing.
     assert bare.takes is None
     assert bare.gives is None
+    assert form_types(bare) == ((), ())
+    # Each side on its own: ``takes=()`` is a form that takes nothing, such as ``current_date()``.
     takes_only = Variant("ds_ds", "x", (authored(),), takes=("integer",))
-    assert form_types(make_operator(), takes_only) == (("integer",), ("number",))
+    assert form_types(takes_only) == (("integer",), ())
     gives_only = Variant("ds_ds", "x", (authored(),), gives=("boolean",))
-    assert form_types(make_operator(), gives_only) == (("number",), ("boolean",))
+    assert form_types(gives_only) == ((), ("boolean",))
     nothing = Variant("sc", "current_date()", (authored(),), takes=(), gives=("date",))
-    assert form_types(make_operator(), nothing) == ((), ("date",))
-    empty = Variant("sc", "x", (authored(),), returns=("integer",), takes=(), gives=())
-    assert form_types(make_operator(), empty) == ((), ())
-    # What a form gives falls back on its own returns first, without ``dataset`` too, and on
-    # those of the operator when they hold nothing else.
+    assert form_types(nothing) == ((), ("date",))
+    # Its own ``returns`` do not give it types either.
     rounded = Variant("ds_no_digits", "round(DS)", (authored(),), returns=("integer", "dataset"))
-    assert form_types(make_operator(), rounded) == (("number",), ("integer",))
-    on_datasets = Variant("ds", "cast(DS, integer)", (authored(),), returns=("dataset",))
-    assert form_types(make_operator(), on_datasets) == (("number",), ("number",))
-    # An operator on datasets only leaves nothing to fall back on.
-    calc = make_operator(accepts=("dataset",), returns=("dataset",))
-    assert form_types(calc, bare) == ((), ())
+    assert form_types(rounded) == ((), ())
 
 
 def test_the_value_and_structural_types_keep_the_order_of_the_design() -> None:
@@ -442,7 +433,7 @@ def test_example_names_and_manual_refs_are_ids() -> None:
         Example(name="../x", source="authored"),
         manual("ex-1"),
     )
-    cat = make_catalogue(make_operator(variants=(Variant("ds_ds", "DS + DS", examples),)))
+    cat = make_catalogue(make_operator(variants=(typed_form(*examples),)))
     assert problems_for(cat) == [
         f"numeric.addition: unknown manual example '{ADD_PAGE}/ex-1'",
         "numeric.addition.ds_ds: bad example name 'Minimal'",
@@ -458,8 +449,8 @@ def test_example_names_and_manual_refs_are_ids() -> None:
 
 def test_scope_limits_coverage_checks() -> None:
     string_chapter = make_string_chapter(
-        Variant("ds", "length(DS)", (manual("ex_1"),)),
-        Variant("sc", "length(sc)", (manual("ex_1"),)),
+        typed_form(manual("ex_1"), variant_id="ds", label="length(DS)"),
+        typed_form(manual("ex_1"), variant_id="sc", label="length(sc)"),
     )
     cat = Catalogue(chapters=(make_chapter(make_operator()), string_chapter))
     pages = {ADD_PAGE, "Numeric operators/Floor", LENGTH_PAGE, "String operators/Substr"}
@@ -515,7 +506,7 @@ def test_scope_definitions_covers_dl_pages() -> None:
     udo = make_operator(
         id="define_operator",
         page="dl/udo",
-        variants=(Variant("scalar_param", "x", (authored(),)),),
+        variants=(typed_form(authored("one_row"), variant_id="scalar_param", label="x"),),
     )
     definitions = Chapter(id="definitions", title="Definitions", operators=(udo,))
     cat = Catalogue(chapters=(make_chapter(make_operator()), definitions))
@@ -529,7 +520,9 @@ def test_scope_definitions_covers_dl_pages() -> None:
 def test_scope_does_not_limit_type_link_and_id_checks() -> None:
     links = (Link("clause.aggr", "used in"), Link("numeric.addition", "feeds"))
     broken = make_operator(accepts=("numbr", "dataset"), links=links)
-    string_chapter = make_string_chapter(Variant("DS", "length(DS)", (authored(),)))
+    string_chapter = make_string_chapter(
+        typed_form(authored("one_row"), variant_id="DS", label="length(DS)")
+    )
     cat = Catalogue(chapters=(make_chapter(broken), string_chapter))
     pages = {ADD_PAGE, "Numeric operators/Floor", LENGTH_PAGE}
     problems = validate_catalogue(cat, pages, {ADD_EX_1}, scope=("string",))
@@ -561,9 +554,9 @@ def test_the_types_of_a_form_are_known_types() -> None:
             "time_period",
             "duration",
             "scalar",
-            "any",
         ),
         gives=(
+            "any",
             "set",
             "value_domain",
             "datapoint_ruleset",
@@ -586,7 +579,7 @@ def test_the_types_of_a_form_are_known_types() -> None:
         "numeric.addition.ds_ds: unknown type 'numbr'",
         "numeric.addition.ds_ds: unknown type 'Number'",
     ]
-    # Whatever the strict checks and the scope say: the whole catalogue is checked.
+    # Whatever the scope says: the whole catalogue is checked.
     cat = make_catalogue(make_operator(variants=(unknown,)))
     assert problems_for(cat) == expected
     assert validate_catalogue(cat, {ADD_PAGE}, {ADD_EX_1}, scope=("string",)) == expected
@@ -594,81 +587,106 @@ def test_the_types_of_a_form_are_known_types() -> None:
     assert problems_for(make_catalogue(make_operator())) == []
 
 
-def test_strict_forms_requires_types() -> None:
-    untyped = make_catalogue(make_operator())  # its form ``ds_ds`` declares no types
-    assert problems_for(untyped) == []  # the strict checks are off by default
-    assert strict_problems_for(untyped) == [
+def test_a_form_declares_the_types_it_takes_and_gives() -> None:
+    untyped = make_catalogue(make_operator(variants=(untyped_form(),)))  # it declares no types
+    assert problems_for(untyped) == [
         "numeric.addition.ds_ds: the form does not declare takes",
         "numeric.addition.ds_ds: the form does not declare gives",
     ]
     half = Variant("ds_ds", "DS + DS", (manual("ex_1"),), takes=("number",))
-    assert strict_problems_for(make_catalogue(make_operator(variants=(half,)))) == [
+    assert problems_for(make_catalogue(make_operator(variants=(half,)))) == [
         "numeric.addition.ds_ds: the form does not declare gives"
     ]
     # Returns of its own, or types of the operator, do not make a form typed.
     legacy = Variant("ds_ds", "DS + DS", (manual("ex_1"),), returns=("integer",))
-    assert strict_problems_for(make_catalogue(make_operator(variants=(legacy,)))) == [
+    assert problems_for(make_catalogue(make_operator(variants=(legacy,)))) == [
         "numeric.addition.ds_ds: the form does not declare takes",
         "numeric.addition.ds_ds: the form does not declare gives",
     ]
     # A form gives something: an empty ``gives`` is declared, and still a problem.
     gives_nothing = Variant("ds_ds", "DS + DS", (manual("ex_1"),), takes=("number",), gives=())
-    assert strict_problems_for(make_catalogue(make_operator(variants=(gives_nothing,)))) == [
+    assert problems_for(make_catalogue(make_operator(variants=(gives_nothing,)))) == [
         "numeric.addition.ds_ds: the form gives nothing: gives needs a type"
     ]
-    assert problems_for(make_catalogue(make_operator(variants=(gives_nothing,)))) == []
-    assert strict_problems_for(make_catalogue(make_operator(variants=(typed_form(),)))) == []
-    # An unknown type is a problem under the strict checks too.
+    assert problems_for(make_catalogue(make_operator(variants=(typed_form(),)))) == []
+    # An unknown type is a problem too.
     odd = Variant("ds_ds", "DS + DS", (manual("ex_1"),), takes=("numbr",), gives=("dataset",))
-    assert strict_problems_for(make_catalogue(make_operator(variants=(odd,)))) == [
+    assert problems_for(make_catalogue(make_operator(variants=(odd,)))) == [
         "numeric.addition.ds_ds: unknown type 'numbr'",
         "numeric.addition.ds_ds: unknown type 'dataset'",
     ]
 
 
-def test_strict_forms_takes_nothing() -> None:
+def test_a_form_does_not_take_any() -> None:
+    # ``any`` is for what a form gives: the result follows the input. A form that takes a value
+    # of any type takes ``scalar``.
+    owner = "numeric.addition.ds_ds"
+    problem = (
+        f"{owner}: the form takes 'any': any is only for gives, so a value of any type takes "
+        "'scalar'"
+    )
+
+    def with_types(takes: tuple[str, ...], gives: tuple[str, ...]) -> list[str]:
+        form = dataclasses.replace(typed_form(), takes=takes, gives=gives)
+        return problems_for(make_catalogue(make_operator(variants=(form,))))
+
+    assert with_types(("any",), ("number",)) == [problem]
+    # One problem for the form, wherever it takes ``any`` and however many times.
+    assert with_types(("number", "any", "any", "string"), ("number",)) == [problem]
+    # ``scalar`` is what a value of any type is, and ``any`` is what a result that follows its
+    # input gives, alone or with other types.
+    assert with_types(("scalar",), ("any",)) == []
+    assert with_types(("scalar",), ("number", "any")) == []
+    # The other problems of the form are reported too, the unknown types first.
+    assert with_types(("any", "numbr"), ("number",)) == [f"{owner}: unknown type 'numbr'", problem]
+    # Each form that takes it has a problem of its own, which names it.
+    second = dataclasses.replace(
+        typed_form(authored("one_row"), variant_id="sc_sc", label="sc + sc"), takes=("any",)
+    )
+    first = dataclasses.replace(typed_form(), takes=("any",))
+    assert problems_for(make_catalogue(make_operator(variants=(first, second)))) == [
+        problem,
+        problem.replace(".ds_ds:", ".sc_sc:"),
+    ]
+
+
+def test_a_form_may_take_nothing_but_not_give_nothing() -> None:
     # ``current_date()`` takes no operand: an empty ``takes`` says so, and is not a problem.
     def current_date(takes: tuple[str, ...] | None, gives: tuple[str, ...] | None) -> Catalogue:
         form = Variant("sc", "current_date()", (manual("ex_1"),), takes=takes, gives=gives)
         return make_catalogue(make_operator(variants=(form,)))
 
-    assert strict_problems_for(current_date((), ("date",))) == []
+    assert problems_for(current_date((), ("date",))) == []
     # Undeclared is not the same as nothing.
-    assert strict_problems_for(current_date(None, ("date",))) == [
+    assert problems_for(current_date(None, ("date",))) == [
         "numeric.addition.sc: the form does not declare takes"
     ]
     # Taking nothing does not excuse giving nothing.
-    assert strict_problems_for(current_date((), ())) == [
+    assert problems_for(current_date((), ())) == [
         "numeric.addition.sc: the form gives nothing: gives needs a type"
     ]
 
 
-def test_strict_forms_are_checked_only_in_scope() -> None:
+def test_the_checks_of_the_forms_cover_every_chapter_whatever_the_scope() -> None:
     string_chapter = make_string_chapter(Variant("ds", "length(DS)", (authored("minimal"),)))
-    cat = Catalogue(chapters=(make_chapter(make_operator()), string_chapter))
+    cat = Catalogue(
+        chapters=(make_chapter(make_operator(variants=(untyped_form(),))), string_chapter)
+    )
     pages = {ADD_PAGE, LENGTH_PAGE}
-    numeric = [
+    expected = [
         "numeric.addition.ds_ds: the form does not declare takes",
         "numeric.addition.ds_ds: the form does not declare gives",
-    ]
-    string = [
         "string.length.ds: the form does not declare takes",
         "string.length.ds: the form does not declare gives",
         "string.length.ds: example name 'minimal' does not say what the example tests",
     ]
-
-    def strict(scope: tuple[str, ...] | None) -> list[str]:
-        return validate_catalogue(cat, pages, {ADD_EX_1}, scope=scope, strict_forms=True)
-
-    assert strict(None) == [*numeric, *string]
-    assert strict(("numeric", "string")) == [*numeric, *string]
-    assert strict(("string",)) == string
-    assert strict(("numeric",)) == numeric
-    assert strict(()) == []
-    assert validate_catalogue(cat, pages, {ADD_EX_1}, scope=("string",)) == []
+    # A run that is limited to some chapters renders the pages of all of them, so nothing turns
+    # these checks off, nor limits them: the scope is for the coverage of the pages.
+    for scope in (None, ("numeric", "string"), ("string",), ("numeric",), ()):
+        assert validate_catalogue(cat, pages, {ADD_EX_1}, scope=scope) == expected, scope
 
 
-def test_strict_forms_slug() -> None:
+def test_authored_examples_are_named_after_what_they_test() -> None:
     def named(*names: str) -> Catalogue:
         examples = tuple(authored(name) for name in names)
         return make_catalogue(make_operator(variants=(typed_form(manual("ex_1"), *examples),)))
@@ -676,40 +694,37 @@ def test_strict_forms_slug() -> None:
     owner = "numeric.addition.ds_ds"
     # Named after what it tests: a letter, then up to 39 letters, digits and underscores.
     good = named("zero_divisor", "a", "null_operand", "two_rows_2", "x" * 40)
-    assert strict_problems_for(good) == []
+    assert problems_for(good) == []
     # The names of the first version of the map say nothing about what they test.
-    assert strict_problems_for(named("minimal", "minimal_2", "minimal_13")) == [
+    assert problems_for(named("minimal", "minimal_2", "minimal_13")) == [
         f"{owner}: example name 'minimal' does not say what the example tests",
         f"{owner}: example name 'minimal_2' does not say what the example tests",
         f"{owner}: example name 'minimal_13' does not say what the example tests",
     ]
     slug = "a letter, then up to 39 letters, digits or underscores"
-    assert strict_problems_for(named("x" * 41, "2_rows", "_rows")) == [
+    assert problems_for(named("x" * 41, "2_rows", "_rows")) == [
         f"{owner}: example name '{'x' * 41}' is not a slug ({slug})",
         f"{owner}: example name '2_rows' is not a slug ({slug})",
         f"{owner}: example name '_rows' is not a slug ({slug})",
     ]
     # The name of a manual example is for a manual example: an authored one would pass for it.
-    assert strict_problems_for(named("manual_ex_2")) == [
+    assert problems_for(named("manual_ex_2")) == [
         f"{owner}: example name 'manual_ex_2' is the name of a manual example"
     ]
     # A name that is not an id is reported once, by the rule of the ids.
-    assert strict_problems_for(named("Zero_divisor")) == [
-        f"{owner}: bad example name 'Zero_divisor'"
-    ]
+    assert problems_for(named("Zero_divisor")) == [f"{owner}: bad example name 'Zero_divisor'"]
     # The names are unique within a form, and each form has its own.
-    assert strict_problems_for(named("zero_divisor", "zero_divisor")) == [
+    assert problems_for(named("zero_divisor", "zero_divisor")) == [
         f"{owner}: duplicate example 'zero_divisor'"
     ]
     other = typed_form(authored("zero_divisor"), variant_id="sc_sc")
     first = typed_form(manual("ex_1"), authored("zero_divisor"))
-    assert strict_problems_for(make_catalogue(make_operator(variants=(first, other)))) == []
-    # The manual examples keep their names, and the checks are off by default.
-    assert strict_problems_for(named()) == []
-    assert problems_for(named("minimal", "manual_ex_2", "x" * 41)) == []
+    assert problems_for(make_catalogue(make_operator(variants=(first, other)))) == []
+    # The manual examples keep their names.
+    assert problems_for(named()) == []
 
 
-def test_strict_forms_mixed_kinds() -> None:
+def test_the_forms_of_an_operator_all_have_a_kind_or_none() -> None:
     def form(variant_id: str, kind: Kind | None = None) -> Variant:
         return typed_form(authored("one_row"), variant_id=variant_id, kind=kind)
 
@@ -718,13 +733,13 @@ def test_strict_forms_mixed_kinds() -> None:
 
     # The form ``ds_ds`` has a kind; these two have none: the operator mixes them.
     mixed = operator(form("integer_to_boolean"), form("sc_sc"), form("expression"))
-    assert strict_problems_for(mixed) == [
+    assert problems_for(mixed) == [
         "numeric.addition: these forms have no kind, but other forms have one: "
         "integer_to_boolean, expression"
     ]
     # A kind of their own settles them, and so does a kind from a token.
     settled = operator(form("integer_to_boolean", "comp"), form("sc_sc"), form("expression", "sc"))
-    assert strict_problems_for(settled) == []
+    assert problems_for(settled) == []
     # Forms with no kind at all are fine: the operator has no boxes in its diagram.
     kindless = make_catalogue(
         make_operator(
@@ -734,11 +749,9 @@ def test_strict_forms_mixed_kinds() -> None:
             )
         )
     )
-    assert strict_problems_for(kindless) == []
-    # The check is a strict one: off by default, and only for the chapters in scope.
-    assert problems_for(mixed) == []
-    assert strict_problems_for(mixed, scope=("string",)) == []
-    assert strict_problems_for(mixed, scope=("numeric",)) == strict_problems_for(mixed)
+    assert problems_for(kindless) == []
+    # The scope does not limit it: it is for the coverage of the pages.
+    assert problems_for(mixed, scope=("string",)) == problems_for(mixed)
 
 
 def boxed_operator(*boxes: str | None, ids: tuple[str, ...] = ()) -> Catalogue:
@@ -765,76 +778,72 @@ def test_a_form_names_its_box_and_the_default_is_none() -> None:
     assert not has_titled_boxes(make_operator())
     assert has_titled_boxes(make_operator(variants=(typed_form(box="Body"),)))
     # One form that names a box is enough for the operator to have them, which is what the
-    # diagram goes by: the strict checks are what asks for all of them.
+    # diagram goes by: the checks of the catalogue are what asks for all of them.
     one_of_two = (typed_form(), typed_form(variant_id="sc_sc", box="Body"))
     assert has_titled_boxes(make_operator(variants=one_of_two))
     assert not has_titled_boxes(make_operator(variants=()))
 
 
-def test_strict_forms_boxes_are_all_or_none() -> None:
+def test_the_forms_of_an_operator_all_name_a_box_or_none() -> None:
     owner = "numeric.addition"
     # Every form names a box: fine, whether the boxes are one or many, in any order.
-    assert (
-        strict_problems_for(boxed_operator("Signature", "Body", "Signature", "Return type")) == []
-    )
-    assert strict_problems_for(boxed_operator("Body")) == []
+    assert problems_for(boxed_operator("Signature", "Body", "Signature", "Return type")) == []
+    assert problems_for(boxed_operator("Body")) == []
     # No form names one: fine too, as it always was.
-    assert strict_problems_for(boxed_operator(None, None, None)) == []
+    assert problems_for(boxed_operator(None, None, None)) == []
     # Some do and some do not: the forms that do not are the problem, in the order of the
     # catalogue, whichever form comes first.
-    assert strict_problems_for(boxed_operator("Signature", None, "Body", None)) == [
+    assert problems_for(boxed_operator("Signature", None, "Body", None)) == [
         f"{owner}: these forms have no box, but other forms have one: two, four"
     ]
-    assert strict_problems_for(boxed_operator(None, None, "Body")) == [
+    assert problems_for(boxed_operator(None, None, "Body")) == [
         f"{owner}: these forms have no box, but other forms have one: one, two"
     ]
 
 
-def test_strict_forms_boxes_are_a_strict_check_for_the_chapters_in_scope() -> None:
+def test_the_checks_of_the_boxes_cover_every_chapter_whatever_the_scope() -> None:
     partial = boxed_operator("Signature", None)
-    assert problems_for(partial) == []  # off by default
-    assert strict_problems_for(partial, scope=("string",)) == []
-    assert strict_problems_for(partial, scope=("numeric",)) == strict_problems_for(partial)
-    assert len(strict_problems_for(partial)) == 1
+    assert len(problems_for(partial)) == 1
+    assert problems_for(partial, scope=("string",)) == problems_for(partial)
+    assert problems_for(partial, scope=("numeric",)) == problems_for(partial)
     too_long = boxed_operator("x" * (BOX_TITLE_MAX + 1))
-    assert problems_for(too_long) == []
-    assert strict_problems_for(too_long, scope=("string",)) == []
-    assert len(strict_problems_for(too_long, scope=("numeric",))) == 1
+    assert len(problems_for(too_long)) == 1
+    assert problems_for(too_long, scope=("string",)) == problems_for(too_long)
 
 
-def test_strict_forms_box_titles() -> None:
+def test_a_box_title_is_not_empty_and_has_at_most_30_characters() -> None:
     owner = "numeric.addition"
     assert BOX_TITLE_MAX == 30
     # A title is for a box: some words, at most 30 characters.
-    assert strict_problems_for(boxed_operator("Signature", "Return type", "x", "y" * 30)) == []
-    assert strict_problems_for(boxed_operator("y" * 30)) == []
+    assert problems_for(boxed_operator("Signature", "Return type", "x", "y" * 30)) == []
+    assert problems_for(boxed_operator("y" * 30)) == []
     long = "y" * 31
-    assert strict_problems_for(boxed_operator(long)) == [
+    assert problems_for(boxed_operator(long)) == [
         f"{owner}.one: box title '{long}' is longer than 30 characters"
     ]
     # It is not empty, and a blank title is empty.
-    assert strict_problems_for(boxed_operator("")) == [f"{owner}.one: the box title is empty"]
-    assert strict_problems_for(boxed_operator("   ")) == [f"{owner}.one: the box title is empty"]
+    assert problems_for(boxed_operator("")) == [f"{owner}.one: the box title is empty"]
+    assert problems_for(boxed_operator("   ")) == [f"{owner}.one: the box title is empty"]
     # Each form is checked, so a title that is wrong is reported at its form.
-    assert strict_problems_for(boxed_operator("Body", "", "Body", long)) == [
+    assert problems_for(boxed_operator("Body", "", "Body", long)) == [
         f"{owner}.two: the box title is empty",
         f"{owner}.four: box title '{long}' is longer than 30 characters",
     ]
     # The length is the length of the title, as it is written.
-    assert strict_problems_for(boxed_operator("é" * 30, "é" * 31)) == [
+    assert problems_for(boxed_operator("é" * 30, "é" * 31)) == [
         f"{owner}.two: box title '{'é' * 31}' is longer than 30 characters"
     ]
 
 
-def test_strict_forms_the_kinds_of_forms_in_boxes_say_nothing() -> None:
+def test_the_kinds_of_forms_in_boxes_say_nothing() -> None:
     # ``ds_ds`` has a kind and ``plain`` has none: without boxes that is a mixture...
     ids = ("ds_ds", "plain", "sc_sc")
     mixture = "numeric.addition: these forms have no kind, but other forms have one: plain"
-    assert strict_problems_for(boxed_operator(None, None, None, ids=ids)) == [mixture]
+    assert problems_for(boxed_operator(None, None, None, ids=ids)) == [mixture]
     # ...and with boxes, where no box is drawn by kind, it is not.
-    assert strict_problems_for(boxed_operator("Signature", "Body", "Body", ids=ids)) == []
+    assert problems_for(boxed_operator("Signature", "Body", "Body", ids=ids)) == []
     # A form that names no box is the problem then, and the kinds are still not looked at.
-    assert strict_problems_for(boxed_operator("Signature", None, "Body", ids=ids)) == [
+    assert problems_for(boxed_operator("Signature", None, "Body", ids=ids)) == [
         "numeric.addition: these forms have no box, but other forms have one: plain"
     ]
 

@@ -738,7 +738,7 @@ def test_boxes_that_the_forms_name_are_drawn_whatever_the_kinds() -> None:
 
 
 def test_a_form_that_names_no_box_among_forms_that_do_hangs_from_the_operator() -> None:
-    # The strict checks of the catalogue refuse this mixture, but a diagram never drops a form.
+    # The checks of the catalogue refuse this mixture, but a diagram never drops a form.
     forms = (
         make_variant("a", "a", box="Signature"),
         make_variant("other", "o"),
@@ -821,7 +821,7 @@ def test_operator_diagram_both_sides_layout() -> None:
 
 
 def test_a_form_with_no_kind_among_forms_of_two_kinds_hangs_from_the_operator() -> None:
-    # The strict checks of the catalogue refuse this mixture, but a diagram never drops a form.
+    # The checks of the catalogue refuse this mixture, but a diagram never drops a form.
     chapter, operator, cat = lone(
         (make_variant("ds", "a"), make_variant("comp", "b"), make_variant("other", "c"))
     )

@@ -18,7 +18,8 @@ Kind = Literal["ds", "comp", "sc"]
 # of VTL are matched along their hierarchy, ``TYPE_PARENTS``: a form that gives an ``integer``
 # gives a ``number``. ``scalar`` is any value type, for a form that takes any of them (``=``,
 # ``isnull``, ``nvl``...), and ``any`` is any type at all, for a form whose result follows its
-# input (``nvl``, ``if-then-else``, the joins, the clauses...). The structural types are not
+# input (``nvl``, ``if-then-else``, the joins, the clauses...): it is only for what a form
+# gives, as a form that takes a value of any type takes ``scalar``. The structural types are not
 # values: each one matches only itself.
 VALUE_TYPES: Final[tuple[str, ...]] = (
     "number",
@@ -89,24 +90,25 @@ class Example:
 class Variant:
     """One syntax form of an operator.
 
-    ``takes`` and ``gives`` are the types of the form, of ``VALUE_TYPES``, ``ANY_SCALAR``,
-    ``ANY_TYPE`` and ``STRUCTURAL_TYPES``. ``None`` is a side that is not declared, which has the
-    types of the operator (``form_types``); an empty ``takes`` is a form that takes nothing, such
-    as ``current_date()``. Whether a form is on datasets, components or scalars is its kind
+    ``takes`` and ``gives`` are the types of the form, of ``VALUE_TYPES``, ``ANY_SCALAR`` and
+    ``STRUCTURAL_TYPES``, and ``ANY_TYPE`` too for ``gives``. Every form declares both
+    (``validate_catalogue``): ``None`` is a side that is not declared, which has no types
+    (``form_types``) and is a problem; an empty ``takes`` is a form that takes nothing, such as
+    ``current_date()``. Whether a form is on datasets, components or scalars is its kind
     (``form_kind``), not a type. ``kind`` says the kind of a form whose id has no token for it,
     such as the conversions of ``cast`` (``integer_to_boolean`` is on components).
 
     ``box`` is the title of the light box that the diagram of the operator draws the form in, for
     forms that stand for a part of a syntax, such as the "Signature", the "Body" and the "Return
     type" of a definition of the VTL-DL. The forms of an operator all have a ``box`` or none has
-    (the strict checks), and a title is not empty and at most ``BOX_TITLE_MAX`` characters. An
+    (``validate_catalogue``), and a title is not empty and at most ``BOX_TITLE_MAX`` characters. An
     operator whose forms have boxes is drawn in those boxes, whatever the kinds of its forms.
     """
 
     id: str
     label: str
     examples: tuple[Example, ...]
-    returns: tuple[str, ...] = ()  # return types when they differ from the operator's
+    returns: tuple[str, ...] = ()  # not the types of the form, which are its ``gives``
     takes: tuple[str, ...] | None = None  # None: not declared; (): takes nothing
     gives: tuple[str, ...] | None = None  # None: not declared
     kind: Kind | None = None  # the kind of its widest operand, when the id does not say it
@@ -218,27 +220,19 @@ def has_titled_boxes(op: Operator) -> bool:
     """Whether the forms of ``op`` name the light boxes that they are drawn in (``Variant.box``).
 
     One form that names a box is enough: the diagram of the operator then has those boxes, and the
-    kinds of its forms say nothing. The strict checks want all the forms to name one, or none.
+    kinds of its forms say nothing. ``validate_catalogue`` wants all the forms to name one, or none.
     """
     return any(variant.box is not None for variant in op.variants)
 
 
-def form_types(op: Operator, v: Variant) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    """What the form ``v`` of ``op`` takes and gives: its own types, else those of ``op``.
+def form_types(v: Variant) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """What the form ``v`` takes and gives: the types that it declares, and no others.
 
-    A side falls back only when the form does not declare it (``None``): a declared empty
-    ``takes`` takes nothing. A form that does not declare ``takes`` takes the ``accepts`` of its
-    operator. One that does not declare ``gives`` gives its own ``returns``, else the ``returns``
-    of its operator. ``dataset`` is left out of these: it is the kind of a form, not a type.
+    A side that the form does not declare (``None``) has none, whatever its operator accepts and
+    returns: ``validate_catalogue`` refuses a form that does not declare both. A declared empty
+    ``takes`` takes nothing, as ``current_date()`` does.
     """
-    takes = v.takes if v.takes is not None else _without_dataset(op.accepts)
-    if v.gives is not None:
-        return takes, v.gives
-    return takes, _without_dataset(v.returns) or _without_dataset(op.returns)
-
-
-def _without_dataset(types: tuple[str, ...]) -> tuple[str, ...]:
-    return tuple(type_id for type_id in types if type_id != _DATASET)
+    return v.takes or (), v.gives or ()
 
 
 def reverse_label(label: str) -> str:
@@ -267,8 +261,8 @@ def example_title(e: Example) -> str:
 
 
 _ID_PATTERN: Final = re.compile(r"[a-z0-9_]+")
-# The name of an authored example, under the strict checks: a slug of what it tests, which is
-# not one of the names that the first version of the map gave them (``minimal``, ``minimal_2``).
+# The name of an authored example: a slug of what it tests, which is not one of the names that
+# the first version of the map gave them (``minimal``, ``minimal_2``).
 _SLUG: Final = re.compile(r"[a-z][a-z0-9_]{0,39}")
 _SLUG_RULE: Final = "a letter, then up to 39 letters, digits or underscores"
 _PLACEHOLDER: Final = re.compile(r"minimal(?:_\d+)?")
@@ -305,11 +299,11 @@ def _manual_keys(operator: Operator) -> Iterator[str]:
                 yield f"{operator.page}/{example.manual_ref}"
 
 
-def _variant_problems(owner: str, variants: Iterable[Variant], strict: bool) -> Iterator[str]:
+def _variant_problems(owner: str, variants: Iterable[Variant]) -> Iterator[str]:
     """The problems of the variants of ``owner`` and of their examples.
 
-    ``strict`` adds the strict checks of the forms: each declares the types it takes and gives,
-    and each authored example has a slug of what it tests for a name.
+    Each form declares the types it takes and gives, and each authored example has a slug of what
+    it tests for a name.
     """
     seen: dict[str, int] = {}
     for variant in variants:
@@ -319,8 +313,7 @@ def _variant_problems(owner: str, variants: Iterable[Variant], strict: bool) -> 
         yield from _unknown_types(variant_owner, variant.returns, _OPERATOR_TYPES)
         declared = (*(variant.takes or ()), *(variant.gives or ()))
         yield from _unknown_types(variant_owner, declared, _FORM_TYPES)
-        if strict:
-            yield from _untyped(variant_owner, variant)
+        yield from _type_problems(variant_owner, variant)
         seen_examples: dict[str, int] = {}
         for example in variant.examples:
             # The name of an example names its folder, and so the target of a click.
@@ -328,7 +321,7 @@ def _variant_problems(owner: str, variants: Iterable[Variant], strict: bool) -> 
             yield from _duplicate(variant_owner, "example", example.name, seen_examples)
             if example.manual_ref is not None:
                 yield from _bad_id(variant_owner, example.manual_ref, "manual_ref")
-            if strict and example.source == "authored":
+            if example.source == "authored":
                 yield from _slug_problems(variant_owner, example.name)
 
 
@@ -365,14 +358,20 @@ def _box_problems(owner: str, variants: Sequence[Variant]) -> Iterator[str]:
             yield f"{owner}.{variant.id}: {problem}"
 
 
-def _untyped(owner: str, variant: Variant) -> Iterator[str]:
-    """What a form misses of its types: neither its ``returns`` nor its operator's count.
+def _type_problems(owner: str, variant: Variant) -> Iterator[str]:
+    """What is wrong with the types of a form: neither its ``returns`` nor its operator's count.
 
     It declares ``takes``, which may be empty for a form that takes nothing, and ``gives``,
-    which holds a type: every form gives something.
+    which holds a type: every form gives something. It does not take ``any``, which is for what a
+    form gives (the result follows the input): a value of any type is a ``scalar``.
     """
     if variant.takes is None:
         yield f"{owner}: the form does not declare takes"
+    elif ANY_TYPE in variant.takes:
+        yield (
+            f"{owner}: the form takes '{ANY_TYPE}': {ANY_TYPE} is only for gives, so a value of "
+            f"any type takes '{ANY_SCALAR}'"
+        )
     if variant.gives is None:
         yield f"{owner}: the form does not declare gives"
     elif not variant.gives:
@@ -400,7 +399,6 @@ def _operator_problems(
     targets: Collection[str],
     pages: frozenset[str],
     manual_examples: frozenset[str],
-    strict: bool,
 ) -> Iterator[str]:
     owner = f"{chapter.id}.{operator.id}"
     if operator.page not in pages:
@@ -414,12 +412,11 @@ def _operator_problems(
     for key in _manual_keys(operator):
         if key not in manual_examples:
             yield f"{owner}: unknown manual example '{key}'"
-    if strict:
-        yield from _box_problems(owner, operator.variants)
-        # The kinds of forms that are in boxes of their own say nothing: no box is drawn by kind.
-        if not has_titled_boxes(operator):
-            yield from _mixed_kinds(owner, operator.variants)
-    yield from _variant_problems(owner, operator.variants, strict)
+    yield from _box_problems(owner, operator.variants)
+    # The kinds of forms that are in boxes of their own say nothing: no box is drawn by kind.
+    if not has_titled_boxes(operator):
+        yield from _mixed_kinds(owner, operator.variants)
+    yield from _variant_problems(owner, operator.variants)
 
 
 def _chapter_problems(
@@ -427,9 +424,8 @@ def _chapter_problems(
     targets: Collection[str],
     pages: frozenset[str],
     manual_examples: frozenset[str],
-    strict: Callable[[str], bool],
 ) -> Iterator[str]:
-    """The problems of every chapter, with the strict checks for those that ``strict`` names."""
+    """The problems of every chapter."""
     seen_chapters: dict[str, int] = {}
     for chapter in cat.chapters:
         yield from _bad_id("catalogue", chapter.id)
@@ -438,9 +434,7 @@ def _chapter_problems(
         for operator in chapter.operators:
             yield from _bad_id(chapter.id, operator.id)
             yield from _duplicate(chapter.id, "operator", operator.id, seen_operators)
-            yield from _operator_problems(
-                chapter, operator, targets, pages, manual_examples, strict(chapter.id)
-            )
+            yield from _operator_problems(chapter, operator, targets, pages, manual_examples)
 
 
 def _in_scope(cat: Catalogue, scope: Collection[str] | None) -> Callable[[str], bool]:
@@ -493,7 +487,6 @@ def validate_catalogue(
     manual_examples: Collection[str],
     *,
     scope: Collection[str] | None = None,
-    strict_forms: bool = False,
 ) -> list[str]:
     """Return the problems of ``cat``, such as unknown types, pages or manual examples.
 
@@ -502,10 +495,10 @@ def validate_catalogue(
     ``<page>/<example>`` keys.
 
     ``scope`` is a collection of chapter ids. When given, the page coverage and the manual
-    example mapping are checked only for the pages of those chapters, and the strict checks only
-    for those chapters. All the other checks (types, links, ids, duplicates, and the pages and
-    manual examples the catalogue refers to) always cover the whole catalogue, against all of
-    ``pages`` and ``manual_examples``.
+    example mapping are checked only for the pages of those chapters. All the other checks (types,
+    links, ids, duplicates, the forms, and the pages and manual examples the catalogue refers to)
+    always cover the whole catalogue, against all of ``pages`` and ``manual_examples``: a run that
+    is limited to some chapters renders the pages of all of them.
 
     Ids, example names and manual refs follow the id rule, ``[a-z0-9_]+``: they name folders
     and the targets of the clicks of the diagrams. The ``takes`` and ``gives`` of a form are of
@@ -513,24 +506,20 @@ def validate_catalogue(
     ``returns`` of an operator, and the ``returns`` of a form, may name ``dataset`` as well. The
     label of every link has a reverse in ``REVERSE_LABELS``.
 
-    ``strict_forms`` turns on the strict checks of the forms: every form declares its ``takes``,
-    empty for a form that takes nothing, and its ``gives``, with a type at least; the forms of an
-    operator all have a kind (``form_kind``) or none has, unless they name light boxes; the forms
-    of an operator all name a box (``Variant.box``) or none does, and the title of a box is not
-    empty and has at most ``BOX_TITLE_MAX`` characters; and every authored example is named
-    after what it tests, with a slug that matches ``[a-z][a-z0-9_]{0,39}`` and is neither
-    ``minimal`` nor ``minimal_<n>``, nor the name of a manual example, ``manual_ex_<n>``. The
-    notes of the examples are checked with their folders, by the generator.
+    The forms are checked too: every form declares its ``takes``, empty for a form that takes
+    nothing, and its ``gives``, with a type at least; ``ANY_TYPE`` is only for ``gives``, a value
+    of any type being taken as ``ANY_SCALAR``; the forms of an operator all have a kind
+    (``form_kind``) or none has, unless they name light boxes; the forms of an operator all name a
+    box (``Variant.box``) or none does, and the title of a box is not empty and has at most
+    ``BOX_TITLE_MAX`` characters; and every authored example is named after what it tests, with a
+    slug that matches ``[a-z][a-z0-9_]{0,39}`` and is neither ``minimal`` nor ``minimal_<n>``, nor
+    the name of a manual example, ``manual_ex_<n>``. The notes of the examples are checked with
+    their folders, by the generator.
     """
     targets = {f"{chapter.id}.{op.id}" for chapter in cat.chapters for op in chapter.operators}
     known_pages = frozenset(pages)
     known_examples = frozenset(manual_examples)
-    chosen = None if scope is None else frozenset(scope)
-
-    def strict(chapter_id: str) -> bool:
-        return strict_forms and (chosen is None or chapter_id in chosen)
-
     return [
-        *_chapter_problems(cat, targets, known_pages, known_examples, strict),
+        *_chapter_problems(cat, targets, known_pages, known_examples),
         *_coverage_problems(cat, known_pages, known_examples, scope),
     ]

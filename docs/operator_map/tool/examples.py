@@ -22,8 +22,8 @@ An example lives in ``examples/<chapter>/<operator>/<variant>/<example>/`` and h
   ``notes.md``, the free text of the first version of the map, which the tool does not read.
 
 An expected output or an expected error is required. Any problem of an example folder raises
-``ExampleError``. The notes are not part of what ``load_example`` loads: the strict checks of the
-generator ask for them, with ``notes_problems``.
+``ExampleError``. The notes are not part of what ``load_example`` loads: the generator asks for
+them, with ``notes_problems``.
 """
 
 from __future__ import annotations

@@ -571,7 +571,7 @@ def _form_section(
     diagram.
     """
     status = index.variants.get(f"{chapter.id}/{op.id}/{variant.id}")
-    takes, gives = form_types(op, variant)
+    takes, gives = form_types(variant)
     emoji = f" {EMOJI[status]}" if status is not None else ""
     heading = f"{_text(variant.label)}{emoji} · {_type_list(takes)} → {_type_list(gives)}"
     parts = [

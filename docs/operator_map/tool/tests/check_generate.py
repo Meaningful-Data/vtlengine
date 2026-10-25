@@ -58,6 +58,8 @@ EXPECTED_STRUCTURE = {
 }
 EXPECTED_CSV = "Id_1,Me_1\n1,10.5\n2,20\n"
 EXPECTED_DATE = {"scalars": [{"name": "sc_r", "type": "Date", "value": None}]}
+# The notes of an example in the fixed layout.
+NOTES = ":Tests: What it tests.\n:Manual: The rule.\n:Expected: The result.\n"
 # The engines that the preflight child of every run reports.
 PANDAS_VERSION = "2.3.3"
 DUCKDB_VERSION = "1.5.5"
@@ -65,6 +67,11 @@ DUCKDB_VERSION = "1.5.5"
 
 def make_operator(operator_id: str, name: str, page: str, *variants: Variant) -> Operator:
     return Operator(operator_id, name, operator_id, page, ("dataset",), ("dataset",), variants)
+
+
+def form(variant_id: str, label: str, *examples: Example) -> Variant:
+    """A form that declares the types it takes and gives, as the checks of the catalogue ask."""
+    return Variant(variant_id, label, examples, takes=("number",), gives=("number",))
 
 
 ALPHA = Chapter(
@@ -75,8 +82,8 @@ ALPHA = Chapter(
             "first",
             "First",
             "Alpha operators/First",
-            Variant("ds", "first(DS_1)", (manual("ex_1"), authored())),
-            Variant("sc", "first(1)", (authored(),)),
+            form("ds", "first(DS_1)", manual("ex_1"), authored("two_rows")),
+            form("sc", "first(1)", authored("one_value")),
         ),
     ),
 )
@@ -88,7 +95,7 @@ BETA = Chapter(
             "second",
             "Second",
             "Beta operators/Second",
-            Variant("ds", "second(DS_1)", (authored(),)),
+            form("ds", "second(DS_1)", authored("two_rows")),
         ),
     ),
 )
@@ -97,9 +104,9 @@ PAGES = ("Alpha operators/First", "Beta operators/Second")
 MANUAL_EXAMPLES = ("Alpha operators/First/ex_1",)
 KEYS = [
     "alpha/first/ds/manual_ex_1",
-    "alpha/first/ds/minimal",
-    "alpha/first/sc/minimal",
-    "beta/second/ds/minimal",
+    "alpha/first/ds/two_rows",
+    "alpha/first/sc/one_value",
+    "beta/second/ds/two_rows",
 ]
 
 
@@ -116,11 +123,12 @@ def examples_of(cat: Catalogue) -> Iterator[tuple[str, Example]]:
 
 
 def write_examples(root: Path, cat: Catalogue) -> None:
-    """The example folders of ``cat``: a script and an expected dataset (or Date scalar)."""
+    """The example folders of ``cat``: a script, its notes, and an expected dataset (or scalar)."""
     for key, example in examples_of(cat):
         folder = root / "examples" / key
         (folder / "expected").mkdir(parents=True)
         (folder / "script.vtl").write_text("DS_r := DS_1;\n", encoding="utf-8")
+        (folder / "notes.rst").write_text(NOTES, encoding="utf-8")
         if example.check == "current_date":
             text = json.dumps(EXPECTED_DATE)
             (folder / "expected" / "scalars.json").write_text(text, encoding="utf-8")
@@ -323,27 +331,27 @@ def staged(source: Any) -> tuple[str, str] | None:
 
 def test_failed_validation_writes_nothing(world: World, capsys: pytest.CaptureFixture[str]) -> None:
     old = seed_outputs(world)
-    shutil.rmtree(world.root / "examples/beta/second/ds/minimal")
+    shutil.rmtree(world.root / "examples/beta/second/ds/two_rows")
     assert generate.main([]) == 1
     # Every output file is as it was, nothing else was written, not even a temporary folder,
     # and nothing was run.
     assert_untouched(world, old)
     assert world.calls == []
     assert world.preflights == []  # no child starts for a run that cannot start
-    assert "missing example folder: examples/beta/second/ds/minimal" in problems(capsys)
+    assert "missing example folder: examples/beta/second/ds/two_rows" in problems(capsys)
 
 
 def test_problems_of_the_catalogue_are_printed_one_per_line(
     world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    bad = make_operator("odd", "Odd", "Alpha operators/Odd", Variant("ds", "odd", (authored(),)))
+    bad = make_operator("odd", "Odd", "Alpha operators/Odd", form("ds", "odd", authored("one_row")))
     cat = Catalogue((Chapter("alpha", "Alpha operators", (*ALPHA.operators, bad)), BETA))
     monkeypatch.setattr(generate, "load_catalogue", lambda: cat)
     assert generate.main([]) == 1
     lines = problems(capsys)
     assert "alpha.odd: unknown page 'Alpha operators/Odd'" in lines
     # The folder of the new example is missing too: every problem is on a line of its own.
-    assert "missing example folder: examples/alpha/odd/ds/minimal" in lines
+    assert "missing example folder: examples/alpha/odd/ds/one_row" in lines
     assert all(line for line in lines)
     assert world.names() == ["examples"]
 
@@ -351,7 +359,7 @@ def test_problems_of_the_catalogue_are_printed_one_per_line(
 def test_example_folder_that_is_malformed_is_a_problem(
     world: World, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    (world.root / "examples/beta/second/ds/minimal/expected/DS_r.csv").unlink()
+    (world.root / "examples/beta/second/ds/two_rows/expected/DS_r.csv").unlink()
     assert generate.main([]) == 1
     assert any("DS_r.csv" in line for line in problems(capsys))
     assert world.calls == []
@@ -360,7 +368,7 @@ def test_example_folder_that_is_malformed_is_a_problem(
 def test_example_folder_without_a_script_is_not_called_missing(
     world: World, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    (world.root / "examples/beta/second/ds/minimal/script.vtl").unlink()
+    (world.root / "examples/beta/second/ds/two_rows/script.vtl").unlink()
     assert generate.main([]) == 1
     [line] = problems(capsys)
     assert "missing script.vtl" in line
@@ -376,7 +384,7 @@ def test_orphan_example_folder_fails(world: World, capsys: pytest.CaptureFixture
         folder.mkdir(parents=True)
         (folder / "script.vtl").write_text("DS_r := DS_1;\n", encoding="utf-8")
     # A folder that is not an example (deeper, or with no script) is not an orphan.
-    (world.root / "examples/alpha/first/ds/minimal/extra").mkdir()
+    (world.root / "examples/alpha/first/ds/two_rows/extra").mkdir()
     (world.root / "examples/alpha/first/ds/empty").mkdir()
     orphans = [
         "example folder not in the catalogue: examples/alpha/first/ds/stray",
@@ -391,14 +399,16 @@ def test_orphan_example_folder_fails(world: World, capsys: pytest.CaptureFixture
     assert world.names() == ["examples"]
 
 
-def test_missing_folders_are_checked_only_for_the_chapters_named(
+def test_missing_folders_are_checked_for_every_chapter(
     world: World, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    shutil.rmtree(world.root / "examples/beta/second/ds/minimal")
-    assert generate.main(["--only", "alpha", "--check-only"]) == 0
-    capsys.readouterr()
-    assert generate.main(["--only", "beta", "--check-only"]) == 1
-    assert problems(capsys) == ["missing example folder: examples/beta/second/ds/minimal"]
+    # Every run renders the pages of every chapter from their folders: ``--only`` leaves none of
+    # them out of the checks.
+    shutil.rmtree(world.root / "examples/beta/second/ds/two_rows")
+    missing = ["missing example folder: examples/beta/second/ds/two_rows"]
+    for only in ([], ["--only", "alpha"], ["--only", "beta"]):
+        assert generate.main(["--check-only", *only]) == 1
+        assert problems(capsys) == missing
 
 
 def test_only_limits_the_page_coverage_to_the_chapters_named(
@@ -461,35 +471,26 @@ def test_workers_and_timeout_must_be_finite_numbers_above_zero(option: str, valu
     assert stopped.value.code == 2
 
 
-# --- The strict checks of the forms ---
+# --- The checks of the forms, the names and the notes: every run, every chapter ---
 
 
-# The notes of an example in the fixed layout.
-NOTES = ":Tests: What it tests.\n:Manual: The rule.\n:Expected: The result.\n"
 LAYOUT = (
     "they must be Tests, Manual, Expected, then any of Finding, Erratum, Adaptation, "
     "Team decision, in this order and once each"
 )
 
 
-def strict_catalogue() -> Catalogue:
-    """The map of ``CAT`` with typed forms, and authored examples named after what they test."""
-
-    def form(variant_id: str, label: str, *examples: Example) -> Variant:
-        return Variant(variant_id, label, examples, takes=("number",), gives=("number",))
-
+def untyped_catalogue() -> Catalogue:
+    """The map of ``CAT`` as it was first written: untyped forms, examples named ``minimal``."""
     first = make_operator(
         "first",
         "First",
         "Alpha operators/First",
-        form("ds", "first(DS_1)", manual("ex_1"), authored("two_rows")),
-        form("sc", "first(1)", authored("one_value")),
+        Variant("ds", "first(DS_1)", (manual("ex_1"), authored())),
+        Variant("sc", "first(1)", (authored(),)),
     )
     second = make_operator(
-        "second",
-        "Second",
-        "Beta operators/Second",
-        form("ds", "second(DS_1)", authored("two_rows")),
+        "second", "Second", "Beta operators/Second", Variant("ds", "second(DS_1)", (authored(),))
     )
     return Catalogue(
         (
@@ -499,57 +500,130 @@ def strict_catalogue() -> Catalogue:
     )
 
 
-def test_strict_forms_checks_the_forms_of_the_chapters_named(
-    world: World, capsys: pytest.CaptureFixture[str]
-) -> None:
-    # The map of every check has untyped forms, examples named ``minimal`` and no notes: the
-    # strict checks are off unless they are asked for.
-    assert generate.main(["--check-only"]) == 0
-    capsys.readouterr()
-    assert generate.main(["--check-only", "--strict-forms", "--only", "beta"]) == 1
-    folder = world.root / "examples/beta/second/ds/minimal"
-    assert problems(capsys) == [
-        "beta.second.ds: the form does not declare takes",
-        "beta.second.ds: the form does not declare gives",
-        "beta.second.ds: example name 'minimal' does not say what the example tests",
-        f"{folder}: missing notes.rst",
-    ]
-    # Without ``--only``, every chapter is checked; and a run stops before it starts.
-    assert generate.main(["--strict-forms"]) == 1
-    lines = problems(capsys)
-    assert "alpha.first.sc: the form does not declare takes" in lines
-    assert f"{folder}: missing notes.rst" in lines
-    assert world.calls == []
-    assert world.names() == ["examples"]
-
-
-def test_strict_forms_notes(
+def test_the_forms_the_names_and_the_notes_are_checked_on_every_run(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    cat = strict_catalogue()
+    # A map with untyped forms, examples named ``minimal`` and no notes: no option asks for the
+    # checks and none turns them off, and a run of one chapter, which renders the pages of all of
+    # them, checks all of them.
+    cat = untyped_catalogue()
     world = build_world(tmp_path, monkeypatch, cat)
     examples = world.root / "examples"
     for key, _ in examples_of(cat):
-        (examples / key / "notes.rst").write_text(NOTES, encoding="utf-8")
-    assert generate.main(["--check-only", "--strict-forms"]) == 0
+        (examples / key / "notes.rst").unlink()
+    expected = [
+        "alpha.first.ds: the form does not declare takes",
+        "alpha.first.ds: the form does not declare gives",
+        "alpha.first.ds: example name 'minimal' does not say what the example tests",
+        "alpha.first.sc: the form does not declare takes",
+        "alpha.first.sc: the form does not declare gives",
+        "alpha.first.sc: example name 'minimal' does not say what the example tests",
+        "beta.second.ds: the form does not declare takes",
+        "beta.second.ds: the form does not declare gives",
+        "beta.second.ds: example name 'minimal' does not say what the example tests",
+        *(f"{examples / key}: missing notes.rst" for key, _ in examples_of(cat)),
+    ]
+    for only in ([], ["--only", "alpha"], ["--only", "beta"]):
+        assert generate.main(["--check-only", *only]) == 1
+        assert problems(capsys) == expected
+    # A run stops before it starts, and writes nothing. With ``--only`` it asks for the results
+    # of the chapters that it leaves out too, after these.
+    assert generate.main([]) == 1
+    assert problems(capsys) == expected
+    assert generate.main(["--only", "beta"]) == 1
+    assert problems(capsys)[: len(expected)] == expected
+    assert world.calls == []
+    assert world.preflights == []
+    assert world.names() == ["examples"]
+
+
+def test_the_notes_of_every_chapter_are_checked(
+    world: World, capsys: pytest.CaptureFixture[str]
+) -> None:
+    examples = world.root / "examples"
+    assert generate.main(["--check-only"]) == 0
     capsys.readouterr()
-    # A folder of a chapter that is checked: notes.md, a missing notes.rst, a notes.rst that is
-    # not in the layout.
+    # In both chapters: notes.md, a missing notes.rst, a notes.rst that is not in the layout.
     (examples / "alpha/first/ds/two_rows/notes.md").write_text("Old notes.\n", encoding="utf-8")
     (examples / "alpha/first/sc/one_value/notes.rst").unlink()
     (examples / "beta/second/ds/two_rows/notes.rst").write_text(":Tests: T.\n", encoding="utf-8")
-    assert generate.main(["--check-only", "--strict-forms", "--only", "alpha"]) == 1
-    assert problems(capsys) == [
+    expected = [
         f"{examples / 'alpha/first/ds/two_rows/notes.md'}: the notes go in notes.rst, "
         "not in notes.md",
         f"{examples / 'alpha/first/sc/one_value'}: missing notes.rst",
+        f"{examples / 'beta/second/ds/two_rows/notes.rst'}: the fields are Tests: {LAYOUT}",
     ]
-    assert generate.main(["--check-only", "--strict-forms", "--only", "beta"]) == 1
-    assert problems(capsys) == [
-        f"{examples / 'beta/second/ds/two_rows/notes.rst'}: the fields are Tests: {LAYOUT}"
-    ]
-    # Off by default, whatever the notes are.
-    assert generate.main(["--check-only"]) == 0
+    for only in ([], ["--only", "alpha"], ["--only", "beta"]):
+        assert generate.main(["--check-only", *only]) == 1
+        assert problems(capsys) == expected
+    assert world.calls == []
+
+
+def remove_the_script(folder: Path) -> None:
+    (folder / "script.vtl").unlink()
+
+
+def malform_the_expected_structure(folder: Path) -> None:
+    (folder / "expected/DS_r.json").write_text("{not json", encoding="utf-8")
+
+
+def remove_the_notes(folder: Path) -> None:
+    (folder / "notes.rst").unlink()
+
+
+def remove_the_folder(folder: Path) -> None:
+    shutil.rmtree(folder)
+
+
+@pytest.mark.parametrize("only", [[], ["--check-only"]], ids=["a run", "check only"])
+@pytest.mark.parametrize(
+    ("damage", "problem"),
+    [
+        (remove_the_script, "missing script.vtl"),
+        (malform_the_expected_structure, "DS_r.json: invalid JSON"),
+        (remove_the_notes, "missing notes.rst"),
+        (remove_the_folder, "missing example folder: examples/alpha/first/ds/two_rows"),
+    ],
+    ids=["no script", "malformed json", "no notes", "no folder"],
+)
+def test_a_run_of_one_chapter_checks_the_folders_of_the_others(
+    world: World,
+    capsys: pytest.CaptureFixture[str],
+    damage: Callable[[Path], None],
+    problem: str,
+    only: list[str],
+) -> None:
+    # ``--only`` limits which examples run, not what is checked: every run renders the pages of
+    # every chapter from their folders. A folder of a chapter that it leaves out that is broken
+    # is a problem line and exit 1, as one of a chapter that it runs: nothing is rendered from it.
+    assert generate.main([]) == 0
+    written = world.files()
+    world.calls.clear()
+    world.preflights.clear()
+    capsys.readouterr()
+    damage(world.root / "examples/alpha/first/ds/two_rows")
+    assert generate.main(["--only", "beta", *only]) == 1
+    [line] = problems(capsys)
+    assert problem in line
+    # Nothing ran, no child started, and every file is as the full run left it.
+    assert world.calls == []
+    assert world.preflights == []
+    assert world.files() == written
+
+
+def test_check_only_counts_every_example_that_it_checked(
+    world: World, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # ``--only`` limits what runs, and nothing runs here: all the folders were checked.
+    assert generate.main(["--check-only", "--only", "beta"]) == 0
+    assert capsys.readouterr().out == f"ok: {len(KEYS)} examples checked, nothing was run\n"
+
+
+def test_the_flag_strict_forms_is_gone(world: World, capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as stopped:
+        generate.main(["--strict-forms"])
+    assert stopped.value.code == 2
+    assert "unrecognized arguments: --strict-forms" in capsys.readouterr().err
     assert world.calls == []
 
 
@@ -563,7 +637,7 @@ def test_jobs_are_every_example_on_both_engines_and_random_runs_twice(
         "rnd",
         "Random",
         "Alpha operators/Random",
-        Variant("ds", "random(DS_1, 1)", (authored(check="random"),)),
+        form("ds", "random(DS_1, 1)", authored("random_draw", check="random")),
     )
     alpha = Chapter("alpha", "Alpha operators", (*ALPHA.operators, extra))
     cat = Catalogue((alpha, BETA))
@@ -572,8 +646,8 @@ def test_jobs_are_every_example_on_both_engines_and_random_runs_twice(
     base = world.root / "examples"
     [jobs] = world.calls
     assert jobs == [
-        (base / folder, engine, 2 if folder == "alpha/rnd/ds/minimal" else 1)
-        for folder in (*KEYS[:3], "alpha/rnd/ds/minimal", *KEYS[3:])
+        (base / folder, engine, 2 if folder == "alpha/rnd/ds/random_draw" else 1)
+        for folder in (*KEYS[:3], "alpha/rnd/ds/random_draw", *KEYS[3:])
         for engine in ("pandas", "duckdb")
     ]
     assert world.settings == [(4, 120.0)]
@@ -622,16 +696,22 @@ def test_current_date_is_checked_against_the_day_of_the_run(
         "now",
         "Now",
         "Alpha operators/Now",
-        Variant("sc", "current_date()", (authored(check="current_date"),)),
+        Variant(
+            "sc",
+            "current_date()",
+            (authored("date_of_the_run", check="current_date"),),
+            takes=(),
+            gives=("date",),
+        ),
     )
     cat = Catalogue((Chapter("alpha", "Alpha operators", (today,)),))
     world = build_world(tmp_path, monkeypatch, cat, ("Alpha operators/Now",), ())
     assert generate.main([]) == 0
-    assert world.status()["examples"]["alpha/now/sc/minimal"]["status"] == "ok"
+    assert world.status()["examples"]["alpha/now/sc/date_of_the_run"]["status"] == "ok"
     # The same output on another day is not today.
     monkeypatch.setattr(generate, "_today", lambda: "2026-10-24")
     assert generate.main([]) == 0
-    assert world.status()["examples"]["alpha/now/sc/minimal"]["status"] == "partial"
+    assert world.status()["examples"]["alpha/now/sc/date_of_the_run"]["status"] == "partial"
 
 
 def test_keyboard_interrupt_exits_2_and_writes_nothing(
@@ -682,8 +762,8 @@ def test_only_merges_previous_status(world: World) -> None:
     ]
     assert world.index_row("<beta/index>") == beta
     examples = world.status()["examples"]
-    assert examples["beta/second/ds/minimal"]["status"] == "partial"
-    assert examples["alpha/first/sc/minimal"]["status"] == "missing"
+    assert examples["beta/second/ds/two_rows"]["status"] == "partial"
+    assert examples["alpha/first/sc/one_value"]["status"] == "missing"
     assert sorted(examples) == sorted(KEYS)
     assert (world.root / "beta/index.rst").is_file()
 
@@ -691,7 +771,7 @@ def test_only_merges_previous_status(world: World) -> None:
 def test_only_drops_the_results_of_examples_that_left_the_catalogue(world: World) -> None:
     assert generate.main([]) == 0
     document = world.status()
-    document["examples"]["beta/second/ds/gone"] = document["examples"]["beta/second/ds/minimal"]
+    document["examples"]["beta/second/ds/gone"] = document["examples"]["beta/second/ds/two_rows"]
     (world.root / "status.json").write_text(json.dumps(document), encoding="utf-8")
     assert generate.main(["--only", "alpha"]) == 0
     assert sorted(world.status()["examples"]) == sorted(KEYS)
@@ -702,7 +782,7 @@ def test_only_without_a_previous_result_is_a_validation_problem(
 ) -> None:
     assert generate.main(["--only", "alpha"]) == 1
     lines = problems(capsys)
-    assert [line.split(":")[0] for line in lines] == ["no result for beta/second/ds/minimal"]
+    assert [line.split(":")[0] for line in lines] == ["no result for beta/second/ds/two_rows"]
     assert world.calls == []
     assert world.names() == ["examples"]
 
@@ -732,7 +812,7 @@ def test_only_reads_the_previous_results_when_a_chapter_with_examples_is_left_ou
         "Gamma operators",
         (
             make_operator(
-                "third", "Third", "Gamma operators/Third", Variant("ds", "t", (authored(),))
+                "third", "Third", "Gamma operators/Third", form("ds", "t", authored("one_row"))
             ),
         ),
     )
@@ -752,14 +832,14 @@ def test_only_prints_ten_no_result_lines_at_most_and_counts_the_rest(
     variants: int,
     more: int | None,
 ) -> None:
-    forms = tuple(Variant(f"v{n}", f"many(DS_{n})", (authored(),)) for n in range(variants))
+    forms = tuple(form(f"v{n}", f"many(DS_{n})", authored("one_row")) for n in range(variants))
     many = make_operator("many", "Many", "Gamma operators/Many", *forms)
     cat = Catalogue((ALPHA, BETA, Chapter("gamma", "Gamma operators", (many,))))
     world = build_world(tmp_path, monkeypatch, cat, (*PAGES, "Gamma operators/Many"))
     assert generate.main(["--only", "alpha"]) == 1
     lines = problems(capsys)
     # Beta and the variants of gamma have no result: 1 + ``variants`` examples.
-    expected = ["beta/second/ds/minimal", *(f"gamma/many/v{n}/minimal" for n in range(variants))]
+    expected = ["beta/second/ds/two_rows", *(f"gamma/many/v{n}/one_row" for n in range(variants))]
     assert [line.split(":")[0] for line in lines[:10]] == [
         f"no result for {x}" for x in expected[:10]
     ]
@@ -786,11 +866,11 @@ def test_only_upgrades_the_results_of_a_status_file_of_the_old_format(world: Wor
     assert generate.main(["--only", "beta"]) == 0
 
     examples = world.status()["examples"]
-    entry = examples["alpha/first/sc/minimal"]
+    entry = examples["alpha/first/sc/one_value"]
     assert entry["status"] == "refused"  # judged again, with the rules of this tool
     assert entry["pandas"]["error_type"] == "RunTimeError"  # read from the detail
     assert entry["pandas"]["error_code"] == "2-1-15-6"
-    assert examples["beta/second/ds/minimal"]["pandas"]["error_code"] is None
+    assert examples["beta/second/ds/two_rows"]["pandas"]["error_code"] is None
 
 
 def test_parse_verdict_old_file() -> None:
@@ -1021,8 +1101,8 @@ def test_nested_write_creates_dirs(world: World) -> None:
     scripts = re.findall(r"^\.\. literalinclude:: (\S+)$", operator, flags=re.MULTILINE)
     assert sorted(scripts) == [
         "../examples/alpha/first/ds/manual_ex_1/script.vtl",
-        "../examples/alpha/first/ds/minimal/script.vtl",
-        "../examples/alpha/first/sc/minimal/script.vtl",
+        "../examples/alpha/first/ds/two_rows/script.vtl",
+        "../examples/alpha/first/sc/one_value/script.vtl",
     ]
     assert all((world.root / "alpha" / script).resolve().is_file() for script in scripts)
     # The second run finds the folders there, and leaves them as they are.
@@ -1061,7 +1141,7 @@ def test_stale_file_removed(world: World) -> None:
     manifest = (world.root / MANIFEST).read_text(encoding="utf-8")
     assert manifest.splitlines() == sorted(OUTPUTS)
     # The examples of the map are never touched.
-    assert (world.root / "examples/alpha/first/ds/minimal/script.vtl").is_file()
+    assert (world.root / "examples/alpha/first/ds/two_rows/script.vtl").is_file()
 
 
 def test_the_manifest_is_moved_last_after_the_removals(
@@ -1106,8 +1186,8 @@ def test_a_renamed_operator_loses_its_old_page(
         "renamed",
         "Renamed",
         "Alpha operators/First",
-        Variant("ds", "first(DS_1)", (manual("ex_1"), authored())),
-        Variant("sc", "first(1)", (authored(),)),
+        form("ds", "first(DS_1)", manual("ex_1"), authored("two_rows")),
+        form("sc", "first(1)", authored("one_value")),
     )
     cat = Catalogue((Chapter("alpha", "Alpha operators", (renamed,)), BETA))
     shutil.rmtree(world.root / "examples/alpha/first")
@@ -1139,7 +1219,7 @@ def test_a_renamed_operator_loses_its_old_page(
         "../outside.rst",
         "alpha/../../outside.rst",
         "/etc/passwd",
-        "examples/alpha/first/ds/minimal/script.vtl",
+        "examples/alpha/first/ds/two_rows/script.vtl",
         "alpha//first.rst",
         "./first.rst",
         ".generated",
@@ -1217,7 +1297,7 @@ def test_a_page_name_that_another_file_needs_is_a_problem(
     # An operator called ``index`` would overwrite the page of its block, and a chapter called
     # ``tool`` would write its pages into the tool: neither runs.
     index_op = make_operator(
-        "index", "Index", "Alpha operators/First", Variant("ds", "first(DS_1)", (authored(),))
+        "index", "Index", "Alpha operators/First", form("ds", "first(DS_1)", authored("one_row"))
     )
     cat = Catalogue(
         (
@@ -1287,21 +1367,21 @@ def test_example_pages_json(world: World) -> None:
         "operator_page": "alpha/first.html",
         "anchor": "ex-ds-manual-ex-1",
     }
-    assert pages["alpha/first/sc/minimal"] == {
-        "title": "Minimal",
+    assert pages["alpha/first/sc/one_value"] == {
+        "title": "One value",
         "status": "diverge",
         "pandas": "✅",
         "duckdb": "🛡 1-1-1-1",
         "operator_page": "alpha/first.html",
-        "anchor": "ex-sc-minimal",
+        "anchor": "ex-sc-one-value",
     }
-    assert pages["beta/second/ds/minimal"] == {
-        "title": "Minimal",
+    assert pages["beta/second/ds/two_rows"] == {
+        "title": "Two rows",
         "status": "ok",
         "pandas": "✅",
         "duckdb": "✅",
         "operator_page": "beta/second.html",
-        "anchor": "ex-ds-minimal",
+        "anchor": "ex-ds-two-rows",
     }
     # Every entry is the example of its key, on the page that it names, under the anchor that it
     # names: the page of the operator has the example as an id, and the page is a file.
@@ -1327,7 +1407,7 @@ def test_example_pages_json_marks_guarded_errors_and_crashes(
     monkeypatch.setattr(World, "output", outputs)
     assert generate.main([]) == 0
     pages = json.loads((world.root / "example_pages.json").read_text(encoding="utf-8"))
-    entry = pages["beta/second/ds/minimal"]
+    entry = pages["beta/second/ds/two_rows"]
     assert (entry["pandas"], entry["duckdb"]) == ("💥 AttributeError", "🛡 2-1-15-6")
     assert entry["status"] == "missing"
 
@@ -1347,7 +1427,7 @@ def test_status_json_has_sorted_keys_the_meta_and_every_verdict(world: World) ->
         "vtlengine_version": "9.9.9",
     }
     assert sorted(document["examples"]) == sorted(KEYS)
-    assert document["examples"]["alpha/first/sc/minimal"] == {
+    assert document["examples"]["alpha/first/sc/one_value"] == {
         "duckdb": {
             "detail": "SemanticError 1-1-1-1: failed on duckdb",
             "error_code": "1-1-1-1",
@@ -1358,13 +1438,13 @@ def test_status_json_has_sorted_keys_the_meta_and_every_verdict(world: World) ->
         "pandas": {"detail": "", "error_code": None, "error_type": None, "outcome": "match"},
         "status": "diverge",
     }
-    assert document["examples"]["beta/second/ds/minimal"]["status"] == "ok"
+    assert document["examples"]["beta/second/ds/two_rows"]["status"] == "ok"
 
 
 def test_a_refused_example_is_written_and_read_back(world: World) -> None:
     world.modes = {"alpha": "refused"}
     assert generate.main([]) == 0
-    entry = world.status()["examples"]["alpha/first/sc/minimal"]
+    entry = world.status()["examples"]["alpha/first/sc/one_value"]
     assert entry["status"] == "refused"
     assert entry["engines_agree"] is True
     for engine in ("pandas", "duckdb"):
@@ -1378,8 +1458,8 @@ def test_a_refused_example_is_written_and_read_back(world: World) -> None:
     world.calls.clear()
     assert generate.main(["--only", "beta"]) == 0
     assert world.run_chapters() == {"beta"}
-    assert world.status()["examples"]["alpha/first/sc/minimal"] == entry
-    assert world.status()["examples"]["alpha/first/ds/minimal"]["status"] == "refused"
+    assert world.status()["examples"]["alpha/first/sc/one_value"] == entry
+    assert world.status()["examples"]["alpha/first/ds/two_rows"]["status"] == "refused"
 
 
 def test_a_crash_is_written_with_its_type_and_no_code(
@@ -1393,7 +1473,7 @@ def test_a_crash_is_written_with_its_type_and_no_code(
     monkeypatch.setattr(World, "output", crash)
     assert generate.main([]) == 0
     document = world.status()
-    entry = document["examples"]["alpha/first/sc/minimal"]
+    entry = document["examples"]["alpha/first/sc/one_value"]
     assert entry["status"] == "missing"
     assert entry["pandas"]["error_type"] == "AttributeError"
     assert entry["pandas"]["error_code"] is None
@@ -1871,6 +1951,21 @@ def test_the_help_and_the_docstring_say_how_to_run_the_generator(
         "docs/operator_map/generate.py"
     ) in words
     assert "Elsewhere the cap is optional." in words
+
+
+@pytest.mark.parametrize("where", ["help", "docstring"])
+def test_the_help_and_the_docstring_say_that_every_chapter_is_checked(
+    where: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    if where == "help":
+        with pytest.raises(SystemExit):
+            generate.main(["--help"])
+        text = capsys.readouterr().out
+    else:
+        text = generate.__doc__ or ""
+    words = " ".join(text.split())
+    # Every run checks the catalogue and the example folders of every chapter, whatever --only says.
+    assert "every chapter" in words
 
 
 def test_the_default_folders_are_the_ones_of_this_worktree() -> None:

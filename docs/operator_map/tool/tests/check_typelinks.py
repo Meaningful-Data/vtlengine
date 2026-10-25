@@ -2,8 +2,8 @@
 """Checks for the type links: what feeds an operator, what it feeds, and the types of a block.
 
 The catalogues and the statuses are small hand-made values: no engine runs here, and the real
-catalogue is not read, as its forms are typed chapter by chapter. The expected lists are worked
-out by hand from the matching rules of ``tool.typelinks``.
+catalogue is not read. The expected lists are worked out by hand from the matching rules of
+``tool.typelinks``.
 """
 
 from __future__ import annotations
@@ -524,9 +524,9 @@ def test_a_type_that_is_not_known_comes_last() -> None:
     assert links_in(cat, "odd").takes == ("string", "mystery")
 
 
-def test_forms_without_types_have_those_of_the_operator() -> None:
-    # A form that declares no types takes the accepts of its operator and gives its returns,
-    # without the dataset: this is what a chapter that is not typed yet looks like.
+def test_a_form_without_types_has_none_whatever_its_operator_accepts() -> None:
+    # The accepts and the returns of an operator are not the types of its forms: a form that does
+    # not declare its types takes and gives nothing (the checks of the catalogue refuse it).
     old = Operator(
         "old",
         "Old",
@@ -540,50 +540,35 @@ def test_forms_without_types_have_those_of_the_operator() -> None:
         (chapter_of("some", "Some operators", old, typed("target", ("number",), ("string",))),)
     )
     old_links = links_in(cat, "old")
-    assert (old_links.takes, old_links.gives) == (("number",), ("integer",))
-    # It feeds what takes a number, as an operator of its types does.
-    assert ids(links_in(cat, "target").comes_from["number"]) == ["old"]
+    assert (old_links.takes, old_links.gives) == ((), ())
+    # It feeds nothing, and nothing feeds it.
+    assert links_in(cat, "target").comes_from["number"] == ()
+    assert old_links.comes_from == {}
+    assert old_links.goes_to == {}
 
 
-def test_a_form_that_takes_nothing_is_not_given_the_accepts_of_its_operator() -> None:
-    # An empty takes is declared, it is not a missing one: Variant.takes is None when a form does
-    # not declare it. Both operators accept a number. The form of "nothing" declares that it
-    # takes nothing, as current_date() does, so nothing feeds it. The form of "fallback" does not
-    # declare takes, so it takes what its operator accepts.
-    accepts, returns = ("number", "dataset"), ("date", "dataset")
+def test_a_form_that_takes_nothing_is_fed_by_nothing() -> None:
+    # An empty takes is a form that takes nothing, as current_date() does: nothing feeds it, and
+    # it is in no column of the types table for what it takes.
     nothing = Operator(
         "nothing",
         "Nothing",
         "nothing",
         PAGE,
-        accepts,
-        returns,
-        (Variant("sc", "nothing()", (authored("what_it_tests"),), takes=()),),
+        ("number", "dataset"),
+        ("date", "dataset"),
+        (Variant("sc", "nothing()", (authored("what_it_tests"),), takes=(), gives=("date",)),),
     )
-    fallback = Operator(
-        "fallback",
-        "Fallback",
-        "fallback",
-        PAGE,
-        accepts,
-        returns,
-        (Variant("sc", "fallback(sc)", (authored("what_it_tests"),)),),
-    )
-    chapter = chapter_of(
-        "some", "Some operators", typed("producer", (), ("number",)), nothing, fallback
-    )
+    chapter = chapter_of("some", "Some operators", typed("producer", (), ("number",)), nothing)
     cat = Catalogue((chapter,))
     links = links_in(cat, "nothing")
     assert (links.takes, links.gives) == ((), ("date",))
     assert links.comes_from == {}
     assert links.any_type == ()
-    fed = links_in(cat, "fallback")
-    assert fed.takes == ("number",)
-    assert ids(fed.comes_from["number"]) == ["producer"]
     # The table reads the types of the forms the same way: nothing is "in" for "nothing".
     columns, rows = block_types_table(chapter)
     assert columns == ("number", "date")
-    assert [cells for _, cells in rows] == [("out", ""), ("", "out"), ("in", "out")]
+    assert [cells for _, cells in rows] == [("out", ""), ("", "out")]
 
 
 # --- The types table of a block ---

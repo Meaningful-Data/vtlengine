@@ -1,6 +1,6 @@
 """Generate the operator map: validate, run every example on both engines, judge, write.
 
-    generate.py [--only CHAPTER]... [--workers 4] [--timeout 120] [--check-only] [--strict-forms]
+    generate.py [--only CHAPTER]... [--workers 4] [--timeout 120] [--check-only]
 
 It needs a Python that can import vtlengine, with the compiled parser in src/ ("Building the C++
 parser from source" in CONTRIBUTING.md says how to build it): every example runs in a child
@@ -13,12 +13,12 @@ Elsewhere the cap is optional.
 
 1. The catalogue is checked against the index of the manual (``validate_catalogue``), and the
    example folders against the catalogue in both directions: a catalogue example needs a folder
-   that loads, and a folder needs a catalogue example. With ``--strict-forms``, the forms of the
-   chapters checked must declare their types, the forms of an operator must all have a kind or
-   none (unless they name boxes) and all name a light box or none (``Variant.box``, with a title
-   of 1 to 30 characters), their authored examples must be named after what they test, and each
-   of their folders needs a ``notes.rst`` in the fixed layout and no ``notes.md``
-   (``tool.examples.notes_problems``). The strict checks are off without it.
+   that loads, with a ``notes.rst`` in the fixed layout and no ``notes.md``
+   (``tool.examples.notes_problems``), and a folder needs a catalogue example. The forms must
+   declare the types they take and give (``any`` is only for what a form gives), the forms of an
+   operator must all have a kind or none (unless they name boxes) and all name a light box or
+   none (``Variant.box``, with a title of 1 to 30 characters), and their authored examples must
+   be named after what they test.
 2. One child process imports vtlengine and both engines, and gives their versions (the
    preflight of ``tool.runner``). Then every example runs on the pandas and the DuckDB engine,
    each in a process of its own. A ``random`` example runs twice, to see whether its values are
@@ -41,10 +41,11 @@ Elsewhere the cap is optional.
 
 With ``--only`` just the named chapters run. The other chapters keep their results from the
 ``status.json`` of the previous run: an example that is not run and has no result there is a
-problem. That file is read only when a chapter with examples is left out of ``--only``. The
-folders that are missing, and the strict checks, are checked only for the chapters named, and the
-folders with no catalogue example always. Nothing is run or written with ``--check-only``: it
-stops after the checks, and does not ask for previous results.
+problem. That file is read only when a chapter with examples is left out of ``--only``. Every run
+renders every page, from the folders of every chapter, so the checks of step 1 cover every
+chapter whatever ``--only`` says: it limits which examples run, and the page coverage and the
+manual example mapping to the pages of the chapters named. Nothing is run or written with
+``--check-only``: it stops after the checks, and does not ask for previous results.
 
 The exit code is 0 for a run that wrote its files, 1 for any problem (printed one per line, and
 nothing is written), and 2 for a run that was interrupted, wherever the interrupt came, that hit
@@ -242,20 +243,13 @@ def _generate(args: argparse.Namespace, progress: _Progress) -> int:
         )
 
     items = _items(cat)
-    checked = _check(
-        cat,
-        items,
-        only,
-        ROOT,
-        with_previous=not args.check_only,
-        strict_forms=args.strict_forms,
-    )
+    checked = _check(cat, items, only, ROOT, with_previous=not args.check_only)
     if checked.problems:
         return _fail(checked.problems)
-    todo = [item for item in items if not only or item.group in only]
     if args.check_only:
-        print(f"ok: {len(todo)} examples checked, nothing was run")
+        print(f"ok: {len(items)} examples checked, nothing was run")
         return 0
+    todo = [item for item in items if not only or item.group in only]
     try:
         versions = preflight(args.timeout)
     except PreflightError as exc:  # every run would crash: the pages must not take that
@@ -302,7 +296,8 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         default=[],
         metavar="CHAPTER",
         help="run only this chapter, and keep the results of the others from the previous run; "
-        "repeat it to name several chapters",
+        "repeat it to name several chapters. The catalogue and the example folders of every "
+        "chapter are checked either way",
     )
     parser.add_argument(
         "--workers",
@@ -320,15 +315,6 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         "--check-only",
         action="store_true",
         help="check the catalogue and the example folders, then stop: nothing is run or written",
-    )
-    parser.add_argument(
-        "--strict-forms",
-        action="store_true",
-        help="check too that the forms of the chapters checked (all, or those of --only) declare "
-        "the types they take and give, that the forms of an operator all have a kind or none "
-        "(unless they name boxes), that they all name a light box or none, that their authored "
-        "examples are named after what they test, and that their example folders have a "
-        "notes.rst in the fixed layout and no notes.md",
     )
     return parser.parse_args(argv)
 
@@ -363,7 +349,7 @@ class _Checked:
     """What the checks found: the problems, and what a run needs when there are none."""
 
     problems: list[str]
-    loaded: dict[str, ExampleFiles]  # the examples that are to run, by key
+    loaded: dict[str, ExampleFiles]  # every example, by key: the ones that are to run are in it
     previous: dict[str, ExampleResult]  # the results of the previous run, with ``--only``
 
 
@@ -374,19 +360,18 @@ def _check(
     root: Path,
     *,
     with_previous: bool,
-    strict_forms: bool = False,
 ) -> _Checked:
     """Check the catalogue and the example folders, and read the previous results if wanted.
 
+    Every chapter is checked, whatever ``only`` says: a run renders the pages of all of them.
     The previous results are read only when ``only`` leaves out a chapter that has examples, and
     an example that is not run and has none is a problem. They are not needed to check, so
     ``with_previous`` leaves them out. It leaves out too the manifest of the previous run, which
     a run that writes reads, and a line of it that is not the path of a generated page is a
-    problem here, before anything runs. ``strict_forms`` adds the strict checks of the forms, for
-    the chapters of ``only`` (all of them without it).
+    problem here, before anything runs.
     """
-    problems = _catalogue_problems(cat, only, strict_forms)
-    folder_problems, loaded = _folder_problems(items, only, root, strict_forms)
+    problems = _catalogue_problems(cat, only)
+    folder_problems, loaded = _folder_problems(items, root)
     problems.extend(folder_problems)
     if with_previous:
         try:
@@ -420,14 +405,14 @@ def _items(cat: Catalogue) -> list[_Item]:
     ]
 
 
-def _catalogue_problems(cat: Catalogue, only: Sequence[str], strict_forms: bool) -> list[str]:
-    """The problems of the catalogue against the manual, and what cannot be rolled up."""
+def _catalogue_problems(cat: Catalogue, only: Sequence[str]) -> list[str]:
+    """The problems of the catalogue against the manual, and what cannot be rolled up.
+
+    ``only`` limits the coverage of the pages and of the manual examples to its chapters, and
+    nothing else.
+    """
     problems = validate_catalogue(
-        cat,
-        manual_index.MANUAL_PAGES,
-        manual_index.MANUAL_EXAMPLES,
-        scope=only or None,
-        strict_forms=strict_forms,
+        cat, manual_index.MANUAL_PAGES, manual_index.MANUAL_EXAMPLES, scope=only or None
     )
     for chapter in cat.chapters:
         if not chapter.operators:
@@ -453,21 +438,19 @@ def _catalogue_problems(cat: Catalogue, only: Sequence[str], strict_forms: bool)
 
 
 def _folder_problems(
-    items: Sequence[_Item], only: Sequence[str], root: Path, strict_forms: bool = False
+    items: Sequence[_Item], root: Path
 ) -> tuple[list[str], dict[str, ExampleFiles]]:
     """The folders of the examples against the catalogue, and the examples that were loaded.
 
-    A catalogue example needs a folder that loads, but only for the chapters named by ``only``
-    (all of them without it), and with ``strict_forms`` the notes of that folder too. A folder
-    with no catalogue example is a problem whatever ``only`` says.
+    A catalogue example needs a folder that loads, with its notes, and a folder with no catalogue
+    example is a problem. This is so for every chapter: every run renders the pages of all of
+    them from their folders, whichever chapters it runs.
     """
     examples_root = root / "examples"
     on_disk = scan_example_dirs(examples_root)
     problems: list[str] = []
     loaded: dict[str, ExampleFiles] = {}
     for item in items:
-        if only and item.group not in only:
-            continue
         path = example_dir(examples_root, *item.parts)
         if not path.is_dir():
             problems.append(f"missing example folder: {path.relative_to(root).as_posix()}")
@@ -476,8 +459,7 @@ def _folder_problems(
             loaded[item.key] = load_example(path)
         except ExampleError as exc:
             problems.append(str(exc))
-        if strict_forms:
-            problems.extend(notes_problems(path, item.example))
+        problems.extend(notes_problems(path, item.example))
     wanted = {item.parts for item in items}
     for orphan in sorted(on_disk - wanted):
         path = example_dir(examples_root, *orphan)

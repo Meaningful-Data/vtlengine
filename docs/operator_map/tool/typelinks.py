@@ -20,7 +20,8 @@ The operators that would be in the list of every type are folded into a list of 
 * ``any_type``: the operators that give ``any``, whose result is the type of their input. They
   can feed whatever is taken, so no list by type has them.
 * ``any_scalar``: the operators that take ``scalar``, which is any value. No list by type has
-  them either. A form that takes ``any`` takes any value too, and is the same as one that takes
+  them either. The checks of the catalogue refuse a form that takes ``any``, which is for what a
+  form gives; one that did would take any value too, and be the same as one that takes
   ``scalar``: it is in ``any_scalar``, and an operator that takes ``any`` is fed by what feeds
   one that takes ``scalar``.
 
@@ -177,7 +178,7 @@ def _types(op: Operator) -> tuple[frozenset[str], frozenset[str]]:
     takes: set[str] = set()
     gives: set[str] = set()
     for variant in op.variants:
-        form_takes, form_gives = form_types(op, variant)
+        form_takes, form_gives = form_types(variant)
         takes.update(form_takes)
         gives.update(form_gives)
     return frozenset(takes), frozenset(gives)

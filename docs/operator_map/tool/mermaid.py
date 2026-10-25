@@ -20,7 +20,7 @@ types (``tool.model.form_types``).
   sides" and no boxes: its forms to the left of it and to the right, half and half, and the
   "Used with" box under the forms on the right. The columns are balanced: the box counts as one
   form more than it has nodes (``_left``). A form with no kind among forms that have one is a
-  mixture that the strict checks of the catalogue refuse, but it is still drawn: it hangs from the
+  mixture that the checks of the catalogue refuse, but it is still drawn: it hangs from the
   operator, outside the boxes.
 
   Forms can name the box that they are in instead (``Variant.box``): the forms of the definitions
@@ -29,7 +29,8 @@ types (``tool.model.form_types``).
   the kinds, which it ignores: one box for each title, in the order in which the titles first
   appear (``G_b1``, ``G_b2``...), with a thin solid border (``LIGHT_BOX_STYLE``), and the forms in
   the order of the catalogue inside each. The layout is the one of the boxes of the kinds, and a
-  form that names no box, a mixture that the strict checks refuse, hangs from the operator.
+  form that names no box, a mixture that the checks of the catalogue refuse, hangs from the
+  operator.
 
 The "Used with" box of an operator diagram holds the operators that this one is combined with,
 from the links of the whole catalogue. A link is shown at both of its ends: the operator that
