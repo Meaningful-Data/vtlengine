@@ -24,11 +24,19 @@ Elsewhere the cap is optional.
    each in a process of its own. A ``random`` example runs twice, to see whether its values are
    stable.
 3. The status of each example comes from the two runs (``tool.status``), the statuses are rolled
-   up, and ``index.rst``, one rst page per chapter and ``status.json`` are rendered. The pages are
-   documents of the Sphinx docs of the repository (``docs/``), which copies the examples next to
-   them when it builds the site.
+   up, and the files are rendered: ``index.rst``, a page for each block (``<chapter>/index.rst``)
+   and for each operator (``<chapter>/<operator>.rst``), ``status.json`` and
+   ``example_pages.json``, which says for each example its title, status, marks and where it is
+   on the page of its operator. The pages are documents of the Sphinx docs of the repository
+   (``docs/``), which copies the examples next to them when it builds the site.
 4. Only when every file has been rendered, and every diagram is within the limits of Mermaid, are
-   the files written: first to a folder of their own, then moved over the old ones.
+   the files written: first to a folder of their own, then moved over the old ones, in the
+   folders of the blocks, which are made as needed. The manifest ``.generated`` lists the files
+   of the run, one path per line, sorted, and is read by the next run: a file that it lists and
+   the next run does not generate (the page of an operator that was renamed or removed, or of a
+   block that is gone) is removed, with its folder if it is left empty. A file that it does not
+   list is never touched, and nor is a path that it lists outside the generated pages. The
+   manifest is written last, after the removals.
 
 With ``--only`` just the named chapters run. The other chapters keep their results from the
 ``status.json`` of the previous run: an example that is not run and has no result there is a
@@ -42,16 +50,19 @@ nothing is written), and 2 for a run that was interrupted, wherever the interrup
 an internal error (one line: its type and message), or whose preflight child cannot import the
 engines (one line: the reason; nothing is run or written). Until every new file is in place, a
 failure or an interrupt leaves the files of the previous run as they were: the files that were
-moved are put back. Only when putting one back fails too, even by a second interrupt, the folder
-that has the old bytes is kept, and the line says where it is. After that point nothing can be
-undone: an interrupt or an error in the clean-up or in the summary leaves the new files, and the
-line says so, and names a ``.generate-*`` folder that the clean-up did not remove. This process
-never imports vtlengine or pandas: the engines run in the children of ``tool.runner``.
+moved are put back, the stale files that were removed are put back too, the old manifest is
+still the manifest, and the folders that the run made are removed. Only when putting one back
+fails too, even by a second interrupt, the folder that has the old bytes is kept, and the line
+says where it is. After that point nothing can be undone: an interrupt or an error in the
+clean-up or in the summary leaves the new files, and the line says so, and names a
+``.generate-*`` folder that the clean-up did not remove. This process never imports vtlengine or
+pandas: the engines run in the children of ``tool.runner``.
 """
 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import os
@@ -60,7 +71,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from datetime import date
 from pathlib import Path
@@ -75,9 +86,16 @@ from tool.examples import (
     notes_problems,
     scan_example_dirs,
 )
-from tool.mermaid import MermaidLimitError, check_limits
-from tool.model import Catalogue, Example, Status, load_catalogue, validate_catalogue
-from tool.render import RunMeta, block_rst, index_rst, mermaid_blocks
+from tool.mermaid import MermaidLimitError, check_limits, example_anchor
+from tool.model import (
+    Catalogue,
+    Example,
+    Status,
+    example_title,
+    load_catalogue,
+    validate_catalogue,
+)
+from tool.render import RunMeta, block_rst, index_rst, mermaid_blocks, operator_rst
 from tool.runner import Engine, EngineVersions, PreflightError, RunOutput, preflight, run_all
 from tool.status import (
     EMOJI,
@@ -89,12 +107,21 @@ from tool.status import (
     counts,
     example_result,
     judge,
+    mark,
 )
 
 ROOT = Path(__file__).resolve().parent  # docs/operator_map: where the files are written
 REPO = ROOT.parents[1]  # the worktree: its git commit and vtlengine version are the engine's
 
 _STATUS_FILE: Final = "status.json"
+_EXAMPLE_PAGES_FILE: Final = "example_pages.json"
+# The manifest: the paths that a run generated, one on each line, sorted. It is not one of them.
+_MANIFEST: Final = ".generated"
+# The folders of the staging folder: the new files, as they will be in the folder of the map, and
+# the old bytes of every file that the move replaces or removes. Two folders, so that no name of
+# a generated page can be the name of the other.
+_NEW: Final = "new"
+_OLD: Final = "old"
 _MAX_UNRUN: Final = 10  # the "no result" problems that are printed, one line each
 _ENGINES: Final[tuple[Engine, ...]] = ("pandas", "duckdb")
 _VERSION: Final = re.compile(r"""^__version__\s*=\s*["']([^"']+)["']""", re.MULTILINE)
@@ -242,12 +269,16 @@ def _generate(args: argparse.Namespace, progress: _Progress) -> int:
         files = _render(cat, index, meta, examples_root)
     except MermaidLimitError as exc:
         return _fail([str(exc)])
-    _write_all(ROOT, files, progress)
+    removed = _write_all(ROOT, files, progress)
     summary = " · ".join(
         f"{EMOJI[status]} {number}"
         for status, number in counts([each.status for each in index.examples.values()]).items()
     )
-    print(f"wrote {', '.join(sorted(files))} ({summary} examples)")
+    pages = sum(1 for name in files if name.endswith(".rst"))
+    print(
+        f"wrote {pages} pages, {_STATUS_FILE}, {_EXAMPLE_PAGES_FILE} and {_MANIFEST}; "
+        f"removed {len(removed)} stale files ({summary} examples)"
+    )
     return 0
 
 
@@ -343,12 +374,19 @@ def _check(
 
     The previous results are read only when ``only`` leaves out a chapter that has examples, and
     an example that is not run and has none is a problem. They are not needed to check, so
-    ``with_previous`` leaves them out. ``strict_forms`` adds the strict checks of the forms, for
+    ``with_previous`` leaves them out. It leaves out too the manifest of the previous run, which
+    a run that writes reads, and a line of it that is not the path of a generated page is a
+    problem here, before anything runs. ``strict_forms`` adds the strict checks of the forms, for
     the chapters of ``only`` (all of them without it).
     """
     problems = _catalogue_problems(cat, only, strict_forms)
     folder_problems, loaded = _folder_problems(items, only, root, strict_forms)
     problems.extend(folder_problems)
+    if with_previous:
+        try:
+            _read_manifest(root)
+        except GenerateError as exc:
+            problems.append(str(exc))
     previous: dict[str, ExampleResult] = {}
     if with_previous and _needs_previous(items, only):
         try:
@@ -594,15 +632,20 @@ def _error_of(detail: str) -> tuple[str | None, str | None]:
 def _render(
     cat: Catalogue, index: StatusIndex, meta: RunMeta, examples_root: Path
 ) -> dict[str, str]:
-    """The text of every file, with each diagram checked against the limits of Mermaid.
+    """The text of every file by its path in the folder of the map, each diagram checked.
 
-    For now each block page is written as ``<chapter>.rst``, and the pages of the operators are
-    not written: the tree of nested pages (``<chapter>/index.rst``, ``<chapter>/<op>.rst``) needs
-    the writer to make folders. ``examples_root`` is for the pages of the operators.
+    ``index.rst`` is the entry page, ``<chapter>/index.rst`` the page of a block, and
+    ``<chapter>/<operator>.rst`` the page of an operator, which reads the folders of its examples
+    in ``examples_root``; ``status.json`` and ``example_pages.json`` come after the pages. The
+    diagrams of the pages are checked against the limits of Mermaid, and the error names the page.
     """
     files = {_INDEX_FILE: index_rst(cat, index, meta)}
     for chapter in cat.chapters:
-        files[f"{chapter.id}.rst"] = block_rst(chapter, cat, index, meta)
+        files[f"{chapter.id}/{_INDEX_FILE}"] = block_rst(chapter, cat, index, meta)
+        for op in chapter.operators:
+            files[f"{chapter.id}/{op.id}.rst"] = operator_rst(
+                chapter, op, cat, index, meta, examples_root=examples_root
+            )
     for name, text in files.items():
         for block in mermaid_blocks(text):
             try:
@@ -610,6 +653,7 @@ def _render(
             except MermaidLimitError as exc:
                 raise MermaidLimitError(f"{name}: {exc}") from exc
     files[_STATUS_FILE] = _status_json(meta, index)
+    files[_EXAMPLE_PAGES_FILE] = _example_pages_json(cat, index)
     return files
 
 
@@ -632,26 +676,116 @@ def _status_json(meta: RunMeta, index: StatusIndex) -> str:
     return json.dumps(document, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
 
 
-def _write_all(root: Path, files: Mapping[str, str], progress: _Progress | None = None) -> None:
+def _example_pages_json(cat: Catalogue, index: StatusIndex) -> str:
+    """What the page of an example folder in the built site shows, for every example.
+
+    It maps ``<chapter>/<operator>/<variant>/<example>`` to the title of the example, its status
+    (``ok``, ``partial``, ``refused``, ``missing`` or ``diverge``), the mark of each engine as
+    ``tool.status.mark`` gives it, the page of its operator relative to the folder of the map
+    (``<chapter>/<operator>.html``) and the id of the example on that page, so that the page of
+    the example can link back to it. The keys are sorted, as in ``status.json``.
+    """
+    pages = {}
+    for chapter in cat.chapters:
+        for op in chapter.operators:
+            for variant in op.variants:
+                for example in variant.examples:
+                    key = f"{chapter.id}/{op.id}/{variant.id}/{example.name}"
+                    result = index.examples[key]
+                    pages[key] = {
+                        "title": example_title(example),
+                        "status": result.status,
+                        "pandas": mark(result.pandas),
+                        "duckdb": mark(result.duckdb),
+                        "operator_page": f"{chapter.id}/{op.id}.html",
+                        "anchor": example_anchor(variant, example),
+                    }
+    return json.dumps(pages, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+
+
+# --- The manifest ---
+
+
+def _read_manifest(root: Path) -> list[str]:
+    """The paths that the previous run generated, from the manifest in ``root``; none if no file.
+
+    A line that is not the path of a generated page raises ``GenerateError``: the manifest says
+    what a run may remove, so a path outside the folder (``..``, an absolute path), in the
+    examples, or hidden is not taken on trust.
+    """
+    path = root / _MANIFEST
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return []
+    except (OSError, UnicodeDecodeError) as exc:
+        raise GenerateError(
+            f"{_MANIFEST}: cannot read the files of the previous run ({type(exc).__name__}: {exc})"
+        ) from exc
+    for number, line in enumerate(lines, 1):
+        if not _is_generated_path(line):
+            raise GenerateError(
+                f"{_MANIFEST}: line {number} is not the path of a generated file: {line!r}; "
+                f"fix the manifest, or remove it to start from an empty one"
+            )
+    return lines
+
+
+def _is_generated_path(text: str) -> bool:
+    """Whether ``text`` can be the path of a file that a run generated, in the folder of the map.
+
+    It is a relative path of plain names with ``/`` between them: no empty part, no ``.`` or
+    ``..``, nothing hidden (a name that starts with a dot is the manifest or a staging folder) and
+    no backslash or control character. The examples are not generated.
+    """
+    parts = text.split("/")
+    if parts[0] == "examples":
+        return False
+    return all(
+        part and not part.startswith(".") and not any(c == "\\" or c < " " for c in part)
+        for part in parts
+    )
+
+
+def _manifest_text(names: Iterable[str]) -> str:
+    """The manifest of a run that generated ``names``: one path per line, sorted."""
+    return "".join(f"{name}\n" for name in sorted(names))
+
+
+# --- Writing ---
+
+
+def _write_all(
+    root: Path, files: Mapping[str, str], progress: _Progress | None = None
+) -> list[str]:
     """Write the files to a folder of their own, then move each over the one in ``root``.
 
-    Everything is written before anything is replaced, so that a file that cannot be written
-    leaves the old ones as they are. The folder is in ``root``: a move inside a filesystem
-    replaces a file in one step. A move that fails puts back the files that were moved before it.
-    The folder is removed at the end, unless an old file could not be put back: then it is kept,
-    and the ``RestoreError`` says where it is. ``progress`` is told when every new file is in
-    place, and while a staging folder is there to be removed.
+    The names are paths in ``root``, such as ``alpha/index.rst``: the folders that they need are
+    made, in the folder of their own and in ``root``. The files that the manifest of the previous
+    run lists and that ``files`` does not have are removed, and the manifest of this run is moved
+    last (its path is not one of ``files``). Everything is written before anything is replaced or
+    removed, so that a file that cannot be written leaves the old ones as they are. The folder is
+    in ``root``: a move inside a filesystem replaces a file in one step. A move or a removal that
+    fails puts back the files that were moved or removed before it, and removes the folders that
+    were made. The folder of their own is removed at the end, unless an old file could not be put
+    back: then it is kept, and the ``RestoreError`` says where it is. ``progress`` is told when
+    every new file is in place, and while a staging folder is there to be removed. The result is
+    the stale files that were removed, in order, as paths in ``root``.
     """
     progress = progress if progress is not None else _Progress()
+    stale = sorted(
+        name for name in set(_read_manifest(root)) - set(files) if (root / name).is_file()
+    )
     staging = Path(tempfile.mkdtemp(prefix=".generate-", dir=root))
     progress.leftover = staging
     keep = False
     try:
         for name, text in files.items():
-            with (staging / name).open("w", encoding="utf-8", newline="\n") as handle:
-                handle.write(text)
-        _replace_all(root, staging, list(files))
+            _write_staged(staging / _NEW / name, text)
+        _write_staged(staging / _NEW / _MANIFEST, _manifest_text(files))
+        _replace_all(root, staging, list(files), stale)
         progress.written = True
+        _remove_empty_folders(root, stale)
     except RestoreError:
         keep = True
         progress.leftover = None  # it is kept on purpose, and the error says where it is
@@ -661,28 +795,43 @@ def _write_all(root: Path, files: Mapping[str, str], progress: _Progress | None 
             shutil.rmtree(staging, ignore_errors=True)
             if not staging.exists():
                 progress.leftover = None
+    return stale
 
 
-def _replace_all(root: Path, staging: Path, names: Sequence[str]) -> None:
-    """Move ``names`` from ``staging`` over the files of ``root``, all or none.
+def _write_staged(path: Path, text: str) -> None:
+    """Write ``text`` to ``path`` in the staging folder, making the folders of its name."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(text)
 
-    The old bytes of a file are copied aside before it is replaced, and the file is noted before
-    the move, so that a move that is cut short, even by an interrupt right after it, is undone
-    too. If anything goes wrong, the files that were noted get their old bytes back, or are
-    removed if they were new, and the error goes on. When a file cannot be put back, the others
+
+def _replace_all(root: Path, staging: Path, names: Sequence[str], stale: Sequence[str]) -> None:
+    """Move ``names`` from ``staging`` over the files of ``root``, remove ``stale``, all or none.
+
+    The files are moved first, then the stale files are removed, and the manifest is moved last:
+    a run that is killed in between leaves the old manifest, which still lists every file that
+    the next run is to remove. The old bytes of a file are copied aside before it is replaced or
+    removed, and the file is noted before the move, so that a move that is cut short, even by an
+    interrupt right after it, is undone too. If anything goes wrong, the files that were noted
+    get their old bytes back, or are removed if they were new, the folders that the run made are
+    removed if they are empty, and the error goes on. When a file cannot be put back, the others
     still are, and the ``RestoreError`` that follows names the ones that could not.
     """
-    backups = staging / "old"
+    backups = staging / _OLD
     backups.mkdir()
-    replaced: list[str] = []
+    touched: list[str] = []
+    made: list[Path] = []
     try:
         for name in names:
-            if (root / name).is_file():
-                shutil.copy2(root / name, backups / name)
-            replaced.append(name)
-            os.replace(staging / name, root / name)
+            _move(root, staging, name, touched, made)
+        for name in stale:
+            _back_up(root, backups, name)
+            touched.append(name)
+            (root / name).unlink(missing_ok=True)
+        _move(root, staging, _MANIFEST, touched, made)
     except BaseException as exc:
-        lost = _put_back(root, backups, replaced)
+        lost = _put_back(root, backups, touched)
+        _remove_folders(made)
         if lost:
             cause = f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__
             raise RestoreError(
@@ -690,6 +839,33 @@ def _replace_all(root: Path, staging: Path, names: Sequence[str]) -> None:
                 f"is kept, the old files are in its folder {backups.name}"
             ) from exc
         raise
+
+
+def _move(root: Path, staging: Path, name: str, touched: list[str], made: list[Path]) -> None:
+    """Move ``name`` from the new files of ``staging`` over the file of ``root``.
+
+    The old bytes of the file are copied aside, and the file is noted in ``touched`` before the
+    move. The folders of its name that ``root`` does not have are made first, and noted in
+    ``made`` before each is made.
+    """
+    _back_up(root, staging / _OLD, name)
+    touched.append(name)
+    missing: list[Path] = []
+    folder = (root / name).parent
+    while folder != root and not folder.exists():
+        missing.append(folder)
+        folder = folder.parent
+    for folder in reversed(missing):
+        made.append(folder)
+        folder.mkdir()
+    os.replace(staging / _NEW / name, root / name)
+
+
+def _back_up(root: Path, backups: Path, name: str) -> None:
+    """Copy the file ``name`` of ``root``, if it is there, to the same name in ``backups``."""
+    if (root / name).is_file():
+        (backups / name).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(root / name, backups / name)
 
 
 def _put_back(root: Path, backups: Path, names: Sequence[str]) -> list[str]:
@@ -708,6 +884,34 @@ def _put_back(root: Path, backups: Path, names: Sequence[str]) -> list[str]:
         except BaseException:  # a failure, or a second interrupt, must not stop the others
             lost.append(name)
     return lost
+
+
+def _remove_folders(folders: Sequence[Path]) -> None:
+    """Remove the folders that a run made, the last one first, if they are empty.
+
+    A folder that cannot be removed is left: it is empty or holds a file that could not be put
+    back, and the others are still tried, a second interrupt included.
+    """
+    for folder in reversed(folders):
+        with contextlib.suppress(BaseException):  # not empty, not there, or a second interrupt
+            folder.rmdir()
+
+
+def _remove_empty_folders(root: Path, names: Sequence[str]) -> None:
+    """Remove the folders that removing ``names`` left empty, up to ``root`` and not it.
+
+    The folder of a block that is gone is empty once its pages are removed, and so is the folder
+    above it when it held nothing else. A folder that is not empty is kept, and so is every folder
+    above it.
+    """
+    for name in names:
+        folder = (root / name).parent
+        while folder != root:
+            try:
+                folder.rmdir()
+            except OSError:  # not empty, or already removed with the one before it
+                break
+            folder = folder.parent
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ import re
 import shutil
 import subprocess
 import sys
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -178,8 +178,26 @@ class World:
         }
 
     def names(self) -> list[str]:
-        """What is in the generator's folder."""
+        """What is in the generator's folder, at its top level."""
         return sorted(path.name for path in self.root.iterdir())
+
+    def tree(self) -> list[str]:
+        """Everything under the generator's folder but the examples, as paths: folders end in /.
+
+        A staging folder that was left over is in it too, with what it holds.
+        """
+        found = []
+        for path in self.root.rglob("*"):
+            relative = path.relative_to(self.root).as_posix()
+            if relative != "examples" and not relative.startswith("examples/"):
+                found.append(relative + "/" if path.is_dir() else relative)
+        return sorted(found)
+
+    def files(self) -> dict[str, bytes]:
+        """The bytes of every file that ``tree`` lists."""
+        return {
+            name: (self.root / name).read_bytes() for name in self.tree() if not name.endswith("/")
+        }
 
     def status(self) -> Any:
         """The document of ``status.json``."""
@@ -240,22 +258,64 @@ def problems(capsys: pytest.CaptureFixture[str]) -> list[str]:
     return capsys.readouterr().err.splitlines()
 
 
-# Every file that a run of the map ``CAT`` writes, in the order it writes them.
-OUTPUTS = ["index.rst", "alpha.rst", "beta.rst", "status.json"]
+# Every file that a run of the map ``CAT`` writes, in the order it writes them, and then the
+# manifest that lists them, which it writes last.
+OUTPUTS = [
+    "index.rst",
+    "alpha/index.rst",
+    "alpha/first.rst",
+    "beta/index.rst",
+    "beta/second.rst",
+    "status.json",
+    "example_pages.json",
+]
+MANIFEST = ".generated"
+# The files of an old run that no run of ``CAT`` generates: one in the folder of an operator that
+# is still there, and two in a folder that is gone.
+STALE = ["alpha/removed.rst", "gone/index.rst", "gone/page.rst"]
+
+
+def folders_of(names: Iterable[str]) -> list[str]:
+    """The folders that hold ``names``, each as ``tree`` lists it."""
+    return sorted(
+        {
+            "/".join(parts[:n]) + "/"
+            for parts in (name.split("/") for name in names)
+            for n in range(1, len(parts))
+        }
+    )
 
 
 def seed_outputs(world: World) -> dict[str, bytes]:
-    """Old versions of every output file, with bytes that no run could give."""
-    old = {name: f"old {name}, not a run \u00e9\n".encode() for name in OUTPUTS}
+    """Old versions of every output file, and old files that no run writes any more.
+
+    The bytes are such that no run could give them, and the old manifest lists every file.
+    """
+    old = {name: f"old {name}, not a run \u00e9\n".encode() for name in [*OUTPUTS, *STALE]}
+    old[MANIFEST] = "".join(f"{name}\n" for name in sorted([*OUTPUTS, *STALE])).encode()
     for name, data in old.items():
+        (world.root / name).parent.mkdir(parents=True, exist_ok=True)
         (world.root / name).write_bytes(data)
     return old
 
 
 def assert_untouched(world: World, old: dict[str, bytes]) -> None:
-    """Every old file is as it was, and nothing else (a staging folder) is left."""
+    """Every old file is as it was, and nothing else is left: no file, no folder, no staging."""
     assert {name: (world.root / name).read_bytes() for name in old} == old
-    assert world.names() == sorted([*old, "examples"])
+    assert world.tree() == sorted([*old, *folders_of(old)])
+
+
+def staged(source: Any) -> tuple[str, str] | None:
+    """Where a file that is moved is in the staging folder: ``("new" or "old", its name)``.
+
+    A name has the folders of a block in it (``alpha/index.rst``); a file that is not in a
+    staging folder gives None.
+    """
+    parts = Path(source).parts
+    for place, part in enumerate(parts):
+        if part.startswith(".generate-"):
+            return parts[place + 1], "/".join(parts[place + 2 :])
+    return None
 
 
 # --- Validation ---
@@ -625,7 +685,7 @@ def test_only_merges_previous_status(world: World) -> None:
     assert examples["beta/second/ds/minimal"]["status"] == "partial"
     assert examples["alpha/first/sc/minimal"]["status"] == "missing"
     assert sorted(examples) == sorted(KEYS)
-    assert (world.root / "beta.rst").is_file()
+    assert (world.root / "beta/index.rst").is_file()
 
 
 def test_only_drops_the_results_of_examples_that_left_the_catalogue(world: World) -> None:
@@ -921,8 +981,9 @@ def test_a_stored_status_that_is_not_a_status_is_rejected(tmp_path: Path) -> Non
 
 def test_the_run_writes_every_file_and_leaves_nothing_else(world: World) -> None:
     assert generate.main([]) == 0
-    # Sphinx pages and the results, and no Markdown file.
-    assert world.names() == ["alpha.rst", "beta.rst", "examples", "index.rst", "status.json"]
+    # Sphinx pages in a folder for each block, the results and the manifest: no flat page for a
+    # block, and no Markdown file.
+    assert world.tree() == sorted([MANIFEST, "alpha/", "beta/", *OUTPUTS])
     index = (world.root / "index.rst").read_text(encoding="utf-8")
     rule = "=" * 40
     assert index.startswith(f"{rule}\nVTL 2.2 operator map\n{rule}\n")
@@ -931,7 +992,7 @@ def test_the_run_writes_every_file_and_leaves_nothing_else(world: World) -> None
     assert "abc1234" in index
     assert f"with pandas {PANDAS_VERSION} and DuckDB {DUCKDB_VERSION}" in index
     assert f"(sdmx-twg/vtl @ {SPEC_COMMIT})" in index
-    alpha = (world.root / "alpha.rst").read_text(encoding="utf-8")
+    alpha = (world.root / "alpha/index.rst").read_text(encoding="utf-8")
     rule = "=" * 30  # twice the 15 characters of "Alpha operators"
     assert alpha.startswith(f"{rule}\nAlpha operators\n{rule}\n")
     assert "🟢 1 of 1 operator all ok" in alpha
@@ -940,6 +1001,263 @@ def test_the_run_writes_every_file_and_leaves_nothing_else(world: World) -> None
         '.. mermaid::\n   :config: {"flowchart": {"useMaxWidth": false}}\n\n   flowchart LR\n'
         in (alpha)
     )
+
+
+def test_nested_write_creates_dirs(world: World) -> None:
+    # The folder has no folder of a block: the run makes them, and the pages in them are the ones
+    # that the hidden toctrees name, each relative to the page that holds it.
+    assert not (world.root / "alpha").exists()
+    assert generate.main([]) == 0
+    for name in OUTPUTS:
+        assert (world.root / name).is_file(), name
+    block = (world.root / "alpha/index.rst").read_text(encoding="utf-8")
+    operator = (world.root / "alpha/first.rst").read_text(encoding="utf-8")
+    assert "   first\n" in block
+    title = "First · ``first``"  # the name, and the symbol, which a test operator has as its id
+    rule = "=" * (2 * len(title))
+    assert operator.startswith(f"{rule}\n{title}\n{rule}\n")
+    # The page of an operator links to the files of its examples relative to its own folder, and
+    # every link is to a file that is there.
+    scripts = re.findall(r"^\.\. literalinclude:: (\S+)$", operator, flags=re.MULTILINE)
+    assert sorted(scripts) == [
+        "../examples/alpha/first/ds/manual_ex_1/script.vtl",
+        "../examples/alpha/first/ds/minimal/script.vtl",
+        "../examples/alpha/first/sc/minimal/script.vtl",
+    ]
+    assert all((world.root / "alpha" / script).resolve().is_file() for script in scripts)
+    # The second run finds the folders there, and leaves them as they are.
+    assert generate.main([]) == 0
+    assert world.tree() == sorted([MANIFEST, "alpha/", "beta/", *OUTPUTS])
+
+
+def test_the_manifest_lists_every_generated_path_sorted(world: World) -> None:
+    assert generate.main([]) == 0
+    text = (world.root / MANIFEST).read_text(encoding="utf-8")
+    # One path per line, sorted, with the folders of the blocks, and not the manifest itself.
+    assert text.splitlines() == sorted(OUTPUTS)
+    assert text.endswith("\n")
+    assert MANIFEST not in text.splitlines()
+    # A run that leaves out a chapter writes the same pages and the same manifest.
+    assert generate.main(["--only", "beta"]) == 0
+    assert (world.root / MANIFEST).read_text(encoding="utf-8") == text
+    assert all((world.root / name).is_file() for name in OUTPUTS)
+
+
+def test_stale_file_removed(world: World) -> None:
+    old = seed_outputs(world)
+    # A page that a person wrote in a folder of the map is not in the manifest: it stays.
+    hand_written = world.root / "alpha/hand_written.rst"
+    hand_written.write_text("Mine.\n", encoding="utf-8")
+    assert generate.main([]) == 0
+    # The pages of the manifest that this run does not generate are gone, and the folder that
+    # they were alone in is gone too; the folder of a block that is still there is not.
+    for name in STALE:
+        assert not (world.root / name).exists(), name
+    assert not (world.root / "gone").exists()
+    assert hand_written.read_text(encoding="utf-8") == "Mine.\n"
+    assert world.tree() == sorted([MANIFEST, "alpha/", "alpha/hand_written.rst", "beta/", *OUTPUTS])
+    # Every file that this run generates is new, and the manifest no longer lists the stale ones.
+    assert all((world.root / name).read_bytes() != old[name] for name in OUTPUTS)
+    manifest = (world.root / MANIFEST).read_text(encoding="utf-8")
+    assert manifest.splitlines() == sorted(OUTPUTS)
+    # The examples of the map are never touched.
+    assert (world.root / "examples/alpha/first/ds/minimal/script.vtl").is_file()
+
+
+def test_the_manifest_is_moved_last_after_the_removals(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A run that is killed half way (no rollback) leaves the old manifest, which still lists the
+    # files that the next run is to remove: so the files come first, then the removals, and the
+    # manifest last.
+    old = seed_outputs(world)
+    events: list[tuple[str, str]] = []
+    real_replace, real_unlink = os.replace, Path.unlink
+
+    def replace(source: Any, target: Any) -> None:
+        place = staged(source)
+        if place is not None and place[0] == "new":
+            events.append(("move", Path(target).relative_to(world.root).as_posix()))
+        real_replace(source, target)
+
+    def unlink(self: Path, missing_ok: bool = False) -> None:
+        if self.relative_to(world.root).as_posix() in STALE:
+            events.append(("remove", self.relative_to(world.root).as_posix()))
+        real_unlink(self, missing_ok=missing_ok)
+
+    monkeypatch.setattr(os, "replace", replace)
+    monkeypatch.setattr(Path, "unlink", unlink)
+    assert generate.main([]) == 0
+    assert events == [
+        *(("move", name) for name in OUTPUTS),
+        *(("remove", name) for name in STALE),
+        ("move", MANIFEST),
+    ]
+    assert (world.root / MANIFEST).read_bytes() != old[MANIFEST]
+
+
+def test_a_renamed_operator_loses_its_old_page(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    assert generate.main([]) == 0
+    assert (world.root / "alpha/first.rst").is_file()
+    # ``first`` becomes ``renamed``: its examples move with it.
+    renamed = make_operator(
+        "renamed",
+        "Renamed",
+        "Alpha operators/First",
+        Variant("ds", "first(DS_1)", (manual("ex_1"), authored())),
+        Variant("sc", "first(1)", (authored(),)),
+    )
+    cat = Catalogue((Chapter("alpha", "Alpha operators", (renamed,)), BETA))
+    shutil.rmtree(world.root / "examples/alpha/first")
+    write_examples(world.root, Catalogue((Chapter("alpha", "Alpha operators", (renamed,)),)))
+    monkeypatch.setattr(generate, "load_catalogue", lambda: cat)
+    assert generate.main([]) == 0
+    assert not (world.root / "alpha/first.rst").exists()
+    assert (world.root / "alpha/renamed.rst").is_file()
+    assert "   renamed\n" in (world.root / "alpha/index.rst").read_text(encoding="utf-8")
+    manifest = (world.root / MANIFEST).read_text(encoding="utf-8").splitlines()
+    assert "alpha/first.rst" not in manifest
+    assert "alpha/renamed.rst" in manifest
+    assert manifest == sorted(manifest)
+    # A chapter that is gone takes its folder with it.
+    monkeypatch.setattr(generate, "load_catalogue", lambda: Catalogue((ALPHA,)))
+    shutil.rmtree(world.root / "examples/alpha/renamed")
+    shutil.rmtree(world.root / "examples/beta")
+    write_examples(world.root, Catalogue((ALPHA,)))
+    monkeypatch.setattr(manual_index, "MANUAL_PAGES", PAGES[:1])
+    assert generate.main([]) == 0
+    assert not (world.root / "beta").exists()
+    assert not (world.root / "alpha/renamed.rst").exists()
+    assert (world.root / "alpha/first.rst").is_file()
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "../outside.rst",
+        "alpha/../../outside.rst",
+        "/etc/passwd",
+        "examples/alpha/first/ds/minimal/script.vtl",
+        "alpha//first.rst",
+        "./first.rst",
+        ".generated",
+        "alpha\\first.rst",
+        "",
+    ],
+    ids=[
+        "up",
+        "up inside",
+        "absolute",
+        "example",
+        "empty part",
+        "dot",
+        "manifest",
+        "backslash",
+        "empty",
+    ],
+)
+def test_a_manifest_that_names_a_path_outside_the_pages_is_a_problem(
+    world: World, capsys: pytest.CaptureFixture[str], tmp_path: Path, line: str
+) -> None:
+    # A manifest that was edited, or cut short, must never make a run delete what it did not
+    # write: nothing is run, nothing is removed, and the problem says which line.
+    outside = tmp_path / "outside.rst"
+    outside.write_text("Not mine.\n", encoding="utf-8")
+    old = seed_outputs(world)
+    manifest = (world.root / MANIFEST).read_text(encoding="utf-8") + f"{line}\n"
+    (world.root / MANIFEST).write_text(manifest, encoding="utf-8")
+    old[MANIFEST] = manifest.encode()
+    assert generate.main([]) == 1
+    [message] = problems(capsys)
+    number = len(manifest.splitlines())
+    assert message.startswith(f"{MANIFEST}: line {number} is not the path of a generated file")
+    assert world.calls == []
+    assert outside.read_text(encoding="utf-8") == "Not mine.\n"
+    assert_untouched(world, old)
+
+
+def test_a_manifest_that_cannot_be_read_is_a_problem(
+    world: World, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (world.root / MANIFEST).write_bytes(b"alpha/first.rst\n\xff\xfe\n")
+    assert generate.main([]) == 1
+    [message] = problems(capsys)
+    assert message.startswith(f"{MANIFEST}: cannot read the files of the previous run")
+    assert world.calls == []
+
+
+def test_a_stale_path_that_is_gone_or_is_a_folder_is_left_alone(world: World) -> None:
+    # The manifest names a file that someone removed, and a folder: neither is an error, and a
+    # folder is never removed, with what it holds.
+    (world.root / "alpha/kept").mkdir(parents=True)
+    (world.root / "alpha/kept/note.txt").write_text("Kept.\n", encoding="utf-8")
+    (world.root / MANIFEST).write_text("alpha/gone.rst\nalpha/kept\n", encoding="utf-8")
+    assert generate.main([]) == 0
+    assert (world.root / "alpha/kept/note.txt").read_text(encoding="utf-8") == "Kept.\n"
+    assert not (world.root / "alpha/gone.rst").exists()
+
+
+def test_example_pages_json(world: World) -> None:
+    world.modes = {"alpha": "diverge"}
+    assert generate.main([]) == 0
+    text = (world.root / "example_pages.json").read_text(encoding="utf-8")
+    pages = json.loads(text)
+    # Sorted keys and no escaped emoji, as ``status.json`` is written, and a line feed at the end.
+    assert text == json.dumps(pages, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+    assert sorted(pages) == sorted(KEYS)
+    assert pages["alpha/first/ds/manual_ex_1"] == {
+        "title": "Manual example 1",
+        "status": "diverge",
+        "pandas": "✅",
+        "duckdb": "🛡 1-1-1-1",
+        "operator_page": "alpha/first.html",
+        "anchor": "ex-ds-manual-ex-1",
+    }
+    assert pages["alpha/first/sc/minimal"] == {
+        "title": "Minimal",
+        "status": "diverge",
+        "pandas": "✅",
+        "duckdb": "🛡 1-1-1-1",
+        "operator_page": "alpha/first.html",
+        "anchor": "ex-sc-minimal",
+    }
+    assert pages["beta/second/ds/minimal"] == {
+        "title": "Minimal",
+        "status": "ok",
+        "pandas": "✅",
+        "duckdb": "✅",
+        "operator_page": "beta/second.html",
+        "anchor": "ex-ds-minimal",
+    }
+    # Every entry is the example of its key, on the page that it names, under the anchor that it
+    # names: the page of the operator has the example as an id, and the page is a file.
+    for key, entry in pages.items():
+        assert set(entry) == {"title", "status", "pandas", "duckdb", "operator_page", "anchor"}
+        chapter, operator, variant, example = key.split("/")
+        assert entry["operator_page"] == f"{chapter}/{operator}.html"
+        page = (world.root / entry["operator_page"].removesuffix(".html")).with_suffix(".rst")
+        assert f'id="{entry["anchor"]}"' in page.read_text(encoding="utf-8"), key
+        assert entry["anchor"] == f"ex-{variant}-{example}".replace("_", "-")
+
+
+def test_example_pages_json_marks_guarded_errors_and_crashes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    world = build_world(tmp_path, monkeypatch)
+
+    def outputs(_self: World, _path: Path, engine: Engine) -> RunOutput:
+        if engine == "pandas":
+            return RunOutput(False, [], [], "AttributeError", None, "no attribute on pandas")
+        return RunOutput(False, [], [], "RunTimeError", "2-1-15-6", "refused on duckdb")
+
+    monkeypatch.setattr(World, "output", outputs)
+    assert generate.main([]) == 0
+    pages = json.loads((world.root / "example_pages.json").read_text(encoding="utf-8"))
+    entry = pages["beta/second/ds/minimal"]
+    assert (entry["pandas"], entry["duckdb"]) == ("💥 AttributeError", "🛡 2-1-15-6")
+    assert entry["status"] == "missing"
 
 
 def test_status_json_has_sorted_keys_the_meta_and_every_verdict(world: World) -> None:
@@ -1012,9 +1330,10 @@ def test_a_crash_is_written_with_its_type_and_no_code(
 
 def test_a_rerun_gives_the_same_files(world: World) -> None:
     assert generate.main([]) == 0
-    first = {name: (world.root / name).read_bytes() for name in world.names() if name != "examples"}
+    first = world.files()
     assert generate.main([]) == 0
-    assert {name: (world.root / name).read_bytes() for name in first} == first
+    assert world.files() == first
+    assert sorted(first) == sorted([*OUTPUTS, MANIFEST])
 
 
 def test_a_block_over_a_limit_exits_1_and_writes_nothing(
@@ -1039,7 +1358,21 @@ def test_every_block_of_the_rendered_files_is_checked_against_the_limits(
     old = seed_outputs(world)
     assert generate.main([]) == 1
     [line] = problems(capsys)
-    assert line.startswith("alpha.rst: ")
+    assert line.startswith("alpha/index.rst: ")
+    assert "500 edges" in line
+    assert_untouched(world, old)
+
+
+def test_a_diagram_of_an_operator_page_is_checked_against_the_limits_too(
+    world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    edges = "\n".join(f"       a{n} --> b{n}" for n in range(500))
+    big = f"Operator\n========\n\n.. mermaid::\n\n   flowchart LR\n{edges}\n\ntext\n"
+    monkeypatch.setattr(generate, "operator_rst", lambda *_args, **_kwargs: big)
+    old = seed_outputs(world)
+    assert generate.main([]) == 1
+    [line] = problems(capsys)
+    assert line.startswith("alpha/first.rst: ")
     assert "500 edges" in line
     assert_untouched(world, old)
 
@@ -1158,6 +1491,8 @@ def interrupt_the_replace(
         interrupt_the_replace(3),
         interrupt_the_replace(1, after=True),
         interrupt_the_replace(3, after=True),
+        interrupt_the_replace(len(OUTPUTS) + 1),
+        interrupt_the_replace(len(OUTPUTS) + 1, after=True),
     ],
     ids=[
         "judging",
@@ -1166,6 +1501,8 @@ def interrupt_the_replace(
         "third replace",
         "right after the first replace",
         "right after the third replace",
+        "manifest",
+        "right after the manifest",
     ],
 )
 def test_an_interrupt_at_any_stage_exits_2_and_leaves_the_old_files(
@@ -1183,6 +1520,62 @@ def test_an_interrupt_at_any_stage_exits_2_and_leaves_the_old_files(
     assert_untouched(world, old)
 
 
+def interrupt_the_unlink(
+    name: str, *, after: bool = False
+) -> Callable[[World, pytest.MonkeyPatch], None]:
+    """The removal of the stale file ``name`` is interrupted: before it, or right after it."""
+
+    def inject(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
+        real_unlink = Path.unlink
+        target = world.root / name
+
+        def flaky(self: Path, missing_ok: bool = False) -> None:
+            if self == target and not after:
+                interrupt()
+            real_unlink(self, missing_ok=missing_ok)
+            if self == target:
+                interrupt()
+
+        monkeypatch.setattr(Path, "unlink", flaky)
+
+    return inject
+
+
+@pytest.mark.parametrize(
+    "inject",
+    [
+        interrupt_the_unlink(STALE[0]),
+        interrupt_the_unlink(STALE[0], after=True),
+        interrupt_the_unlink(STALE[-1]),
+        interrupt_the_unlink(STALE[-1], after=True),
+        interrupt_the_replace(len(OUTPUTS) + 1),
+        interrupt_the_replace(len(OUTPUTS) + 1, after=True),
+    ],
+    ids=[
+        "first stale file",
+        "right after the first stale file",
+        "last stale file",
+        "right after the last stale file",
+        "manifest",
+        "right after the manifest",
+    ],
+)
+def test_interrupt_keeps_old_tree(
+    world: World,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    inject: Callable[[World, pytest.MonkeyPatch], None],
+) -> None:
+    # The old tree has stale files in a folder that stays and in one that goes. An interrupt in
+    # the removal of any of them, or in the move of the manifest after them, leaves every file,
+    # the old manifest and the stale files as they were, and no folder is made or removed.
+    old = seed_outputs(world)
+    inject(world, monkeypatch)
+    assert run_main_interrupted() == 2
+    assert capsys.readouterr().err.strip() == "interrupted: nothing was written"
+    assert_untouched(world, old)
+
+
 def staging_folders(world: World) -> list[Path]:
     """The staging folders of the generator that are left in its folder."""
     return [path for path in world.root.iterdir() if path.name.startswith(".generate-")]
@@ -1193,46 +1586,72 @@ def failure(kind: type[BaseException]) -> BaseException:
     return OSError(errno.EACCES, "no way") if kind is OSError else KeyboardInterrupt()
 
 
+# The move of a new file that fails (the nth), and the file that cannot be put back after it: a
+# file of the first block, at the top level and in the folder of a block; and, when the move of
+# the manifest fails after the stale files were removed, a stale file in a folder that was going
+# to be removed. The third is the names that the run noted for putting back.
+RESTORE_CASES = [
+    (3, "index.rst", OUTPUTS[:3]),
+    (3, "alpha/index.rst", OUTPUTS[:3]),
+    (len(OUTPUTS) + 1, "gone/page.rst", [*OUTPUTS, *STALE, MANIFEST]),
+]
+
+
 @pytest.mark.parametrize(
     "restore_fails", [OSError, KeyboardInterrupt], ids=["failed restore", "second interrupt"]
 )
 @pytest.mark.parametrize(
     "replace_fails", [OSError, KeyboardInterrupt], ids=["failed replace", "interrupted replace"]
 )
-def test_a_restore_that_fails_keeps_the_staging_folder_and_the_others_are_still_tried(
+@pytest.mark.parametrize(
+    ("nth", "failed", "touched"),
+    RESTORE_CASES,
+    ids=["top level", "in a folder", "stale file"],
+)
+def test_restore_with_subdirs(
     world: World,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
+    nth: int,
+    failed: str,
+    touched: list[str],
     replace_fails: type[BaseException],
     restore_fails: type[BaseException],
 ) -> None:
     old = seed_outputs(world)
     real_replace = os.replace
-    calls: list[tuple[str, str]] = []  # (the name of the file, the folder it comes from)
+    calls: list[tuple[str, str]] = []  # (new or old, the name of the file) of every move
 
     def flaky(source: Any, target: Any) -> None:
-        file, folder = Path(source).name, Path(source).parent.name
-        calls.append((file, folder))
-        restores = [name for name, where in calls if where == "old"]
-        # The third file cannot be replaced, and the first file to be put back cannot be put back,
-        # for a failure of the system or because the run is interrupted again.
-        if len(calls) == 3:
+        place = staged(source)
+        if place is None:
+            real_replace(source, target)
+            return
+        calls.append(place)
+        moves = sum(1 for where, _ in calls if where == "new")
+        # The nth file that is moved cannot be moved, and one file cannot be put back, for a
+        # failure of the system or because the run is interrupted again.
+        if place[0] == "new" and moves == nth:
             raise failure(replace_fails)
-        if folder == "old" and len(restores) == 1:
+        if place == ("old", failed):
             raise failure(restore_fails)
         real_replace(source, target)
 
     monkeypatch.setattr(os, "replace", flaky)
     assert generate.main([]) == 2
     [line] = problems(capsys)
-    failed = next(name for name, where in calls if where == "old")
-    # Every file that was replaced, the one that could not be replaced too, was tried.
-    assert sorted(name for name, where in calls if where == "old") == sorted(OUTPUTS[:3])
-    # The file that could not be put back has the new bytes; the staging folder has the old ones.
+    # Every file that the run noted, the one that could not be moved too, and every stale file
+    # that it had removed, was tried, whatever happened to the ones before it.
+    assert sorted(name for where, name in calls if where == "old") == sorted(touched)
+    # The staging folder has the old bytes of the file that could not be put back, in the folders
+    # of its name. The run left it as it was (the new bytes, or none for a stale file that it
+    # had removed), and every other file is as it was.
     [staging] = staging_folders(world)
     assert (staging / "old" / failed).read_bytes() == old[failed]
-    assert (world.root / failed).read_bytes() != old[failed]
-    # The other files are as they were, and the line says where the old files are.
+    if failed in STALE:
+        assert not (world.root / failed).exists()
+    else:
+        assert (world.root / failed).read_bytes() != old[failed]
     others = {name: data for name, data in old.items() if name != failed}
     assert {name: (world.root / name).read_bytes() for name in others} == others
     assert line.startswith("internal error: ")
@@ -1241,8 +1660,9 @@ def test_a_restore_that_fails_keeps_the_staging_folder_and_the_others_are_still_
 
 
 def new_files_are_in_place(world: World, old: dict[str, bytes]) -> bool:
-    """Whether every output file is a new one: none has the old bytes."""
-    return all((world.root / name).read_bytes() != data for name, data in old.items())
+    """Whether every output file is a new one, the manifest too, and the stale files are gone."""
+    written = all((world.root / name).read_bytes() != old[name] for name in [*OUTPUTS, MANIFEST])
+    return written and not any((world.root / name).exists() for name in STALE)
 
 
 def test_an_interrupt_while_the_staging_folder_is_removed_says_that_the_files_are_written(
