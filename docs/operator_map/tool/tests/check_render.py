@@ -60,6 +60,8 @@ from tool.render import (
     manual_url,
     mermaid_blocks,
     operator_rst,
+    operators_rst,
+    overview_rst,
 )
 from tool.status import NOT_IMPLEMENTED, EngineVerdict, ExampleResult, StatusIndex, build_index
 
@@ -473,10 +475,13 @@ def test_legend_has_five_statuses(tmp_path: Path) -> None:
         ("dashed", "Component forms"),
         ("dotted", "Scalar forms"),
     ]
-    # Every page has the legend; the border key is on the pages of operators with boxes only.
+    # Every page but the index has the legend; the border key is on the pages of operators with
+    # boxes only.
     write_modulo(tmp_path)
+    assert LEGEND_HTML not in index_rst(MAP, INDEX, META)
     for page in (
-        index_rst(MAP, INDEX, META),
+        overview_rst(MAP, INDEX, META),
+        operators_rst(MAP, INDEX),
         block_rst(NUMERIC, MAP, INDEX, META),
         operator_rst(NUMERIC, MODULO, MAP, INDEX, META, examples_root=tmp_path),
         operator_rst(NUMERIC, ROUND, MAP, INDEX, META, examples_root=tmp_path),
@@ -695,7 +700,8 @@ def test_mermaid_blocks_reads_back_the_blocks_of_a_page(tmp_path: Path) -> None:
     text = operator_rst(NUMERIC, ROUND, MAP, INDEX, META, examples_root=tmp_path)
     assert mermaid_blocks(text) == [operator_diagram(NUMERIC, ROUND, MAP, INDEX)]
     assert mermaid_blocks(block_rst(NUMERIC, MAP, INDEX, META)) == [block_diagram(NUMERIC, INDEX)]
-    assert mermaid_blocks(index_rst(MAP, INDEX, META)) == [overview_block(MAP, INDEX)]
+    assert mermaid_blocks(overview_rst(MAP, INDEX, META)) == [overview_block(MAP, INDEX)]
+    assert mermaid_blocks(index_rst(MAP, INDEX, META)) == []
 
 
 # --- The boxes that the forms name ---
@@ -995,21 +1001,68 @@ def test_block_page_lists_the_forms_that_are_not_green_with_their_reason() -> No
     assert "Every form is green." in block_rst(STRING, MAP, index_of(MAP), META)
 
 
-# --- The index ---
+# --- The index, the overview and the page of the operators ---
 
 
 def test_index_structure() -> None:
     text = index_rst(MAP, INDEX, META)
     rule = "=" * 40  # twice the 20 characters of the title
     assert text.startswith(f"{rule}\nVTL 2.2 operator map\n{rule}\n\n")
-    toctree = (
-        ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n"
-        "   numeric/index\n   string/index\n   conditional/index\n"
-    )
+    # The parts of the map are on one level of the sidebar: the map has no definitions.
+    toctree = ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   overview\n   operators\n"
     assert toctree in text
+    assert titles(text, "-") == []
+    assert text.index(toctree) < text.index("Generated on 2026-10-23")
+    assert (
+        "Generated on 2026-10-23 from vtlengine 9.9.9 (commit ``abc1234``), with pandas 2.3.3 and "
+        "DuckDB 1.5.5"
+    ) in " ".join(text.split())
+    assert f"https://github.com/sdmx-twg/vtl/tree/{SPEC}" in text
+    parts = [line for line in text.splitlines() if line.startswith("- :doc:")]
+    assert [line.split(": ", 1)[0] for line in parts] == [
+        "- :doc:`Overview <overview>`",
+        "- :doc:`Operators <operators>`",
+    ]
+    assert "the 3 blocks of operators" in parts[1]
+    assert blocks(text) == []
+    assert ".md" not in text
+
+
+def test_the_definitions_are_a_part_of_their_own() -> None:
+    cat = Catalogue((NUMERIC, DEFINE_CHAPTER))
+    index = index_of(cat)
+    text = index_rst(cat, index, META)
+    assert (
+        ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n"
+        "   overview\n   operators\n   definitions/index\n"
+    ) in text
+    assert "- :doc:`Definitions <definitions/index>`: the definitions of the VTL-DL" in text
+    # The page of the operators has the blocks of operators only, in its table and its toctree.
+    operators = operators_rst(cat, index)
+    assert ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   numeric/index\n" in operators
+    assert "definitions" not in operators
+    # The overview has every block, the definitions too.
+    assert ":doc:`Definitions <definitions/index>`" in section(
+        overview_rst(cat, index, META), "Blocks"
+    )
+
+
+def test_index_without_blocks_has_only_the_overview() -> None:
+    empty = Catalogue(())
+    text = index_rst(empty, StatusIndex({}, {}, {}, {}), META)
+    assert ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   overview\n" in text
+    assert "   overview\n   operators" not in text
+    assert ":doc:`Operators <operators>`" not in text
+    assert ".. toctree::" not in operators_rst(empty, StatusIndex({}, {}, {}, {}))
+
+
+def test_overview_structure() -> None:
+    text = overview_rst(MAP, INDEX, META)
+    rule = "=" * 16  # twice the 8 characters of the title
+    assert text.startswith(f"{rule}\nOverview\n{rule}\n\n")
     assert titles(text, "-") == [
         "How to read",
-        "Overview",
+        "Overview diagram",
         "Blocks",
         "Not implemented",
         "📌 Team decisions",
@@ -1017,24 +1070,32 @@ def test_index_structure() -> None:
         "Adaptations",
         "Attribution",
     ]
-    head = text.split("\nHow to read\n", 1)[0]
-    assert head.index(toctree) < head.index("Generated on 2026-10-23") < head.index(LEGEND_HTML)
-    assert (
-        "Generated on 2026-10-23 from vtlengine 9.9.9 (commit ``abc1234``), with pandas 2.3.3 and "
-        "DuckDB 1.5.5"
-    ) in " ".join(head.split())
-    assert f"https://github.com/sdmx-twg/vtl/tree/{SPEC}" in head
-    assert blocks(section(text, "Overview")) == [overview_block(MAP, INDEX)]
+    assert text.split("\nHow to read\n", 1)[0].count(LEGEND_HTML) == 1
+    assert ".. toctree::" not in text
+    assert blocks(section(text, "Overview diagram")) == [overview_block(MAP, INDEX)]
     assert len(blocks(text)) == 1
     how = " ".join(section(text, "How to read").split())
     for words in ("✅", "❌", "🛡", "💥", "solid", "dashed", "dotted", "Used with", "0.6001–0.7999"):
         assert words in how, words
+    assert "three parts: this overview, the operators and the definitions" in how
     assert "Elsewhere the cap is optional." in how
     assert ".md" not in text
 
 
-def test_index_block_table_counts_the_forms() -> None:
-    rows = table_rows(section(index_rst(MAP, INDEX, META), "Blocks"))
+def test_operators_page_structure() -> None:
+    text = operators_rst(MAP, INDEX)
+    rule = "=" * 18  # twice the 9 characters of the title
+    assert text.startswith(f"{rule}\nOperators\n{rule}\n\n")
+    assert text.count(LEGEND_HTML) == 1
+    assert (
+        ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n"
+        "   numeric/index\n   string/index\n   conditional/index\n"
+    ) in text
+    assert table_rows(text)[1][0] == ":doc:`Numeric operators <numeric/index>`"
+
+
+def test_overview_block_table_counts_the_forms() -> None:
+    rows = table_rows(section(overview_rst(MAP, INDEX, META), "Blocks"))
     assert rows == [
         ["Block", "Status", "Operators", "Forms", "🟢", "🟡", "🛡️", "🔴", "🔵"],
         [":doc:`Numeric operators <numeric/index>`", "🔵", "3", "6", "4", "1", "0", "0", "1"],
@@ -1052,33 +1113,35 @@ def test_index_block_table_counts_the_forms() -> None:
         ],
         ["**Total**", "🔵", "5", "8", "5", "2", "0", "0", "1"],
     ]
+    # The page of the operators has the same rows for the same blocks.
+    assert table_rows(operators_rst(MAP, INDEX)) == rows
 
 
-def test_index_lists_the_codes_that_are_not_implemented() -> None:
-    rows = table_rows(section(index_rst(MAP, INDEX, META), "Not implemented"))
+def test_overview_lists_the_codes_that_are_not_implemented() -> None:
+    rows = table_rows(section(overview_rst(MAP, INDEX, META), "Not implemented"))
     assert rows[0] == ["Code", "Message"]
     assert rows[1:] == [[f"``{code}``", message] for code, message in NOT_IMPLEMENTED.items()]
 
 
-def test_index_lists_link_to_anchors() -> None:
-    text = index_rst(MAP, INDEX, META)
+def test_overview_lists_link_to_anchors_by_operator_and_example() -> None:
+    text = overview_rst(MAP, INDEX, META)
     decisions = section(text, "📌 Team decisions")
     assert (
         f"- `📌 #1049 <{ISSUES}/1049>`__ · "
-        "`Two components <numeric/modulo.html#ex-comp-comp-two-components>`__ "
-        "(Numeric operators › Modulo › ``mod(comp, comp)``)"
+        "`Modulo · Two components <numeric/modulo.html#ex-comp-comp-two-components>`__ "
+        "(Numeric operators › ``mod(comp, comp)``)"
     ) in decisions.splitlines()
     errata = section(text, ERRATA_TITLE)
     # The quotes are escaped, so that Sphinx does not turn them into typographic ones.
     assert (
-        "- `Manual example 1 <numeric/modulo.html#ex-ds-ds-manual-ex-1>`__ "
-        "(Numeric operators › Modulo › ``mod(DS, DS)``): "
+        "- `Modulo · Manual example 1 <numeric/modulo.html#ex-ds-ds-manual-ex-1>`__ "
+        "(Numeric operators › ``mod(DS, DS)``): "
         "the manual shows \\'ba\\' where \\'ab\\' is meant"
     ) in errata.splitlines()
     adaptations = section(text, "Adaptations")
     assert (
-        "- `Plain <string/length.html#ex-sc-plain>`__ "
-        "(String operators › String length › ``length(sc)``): the time values were rewritten"
+        "- `String length · Plain <string/length.html#ex-sc-plain>`__ "
+        "(String operators › ``length(sc)``): the time values were rewritten"
     ) in adaptations.splitlines()
     # Each anchor is the one of the example on its page.
     assert example_anchor(MODULO.variants[1], MODULO.variants[1].examples[0]) in errata
@@ -1086,45 +1149,40 @@ def test_index_lists_link_to_anchors() -> None:
         assert [line[:2] for line in body.splitlines() if line.strip()][-1] == "- "
 
 
-def test_index_lists_say_what_they_list_and_when_they_are_empty() -> None:
-    text = index_rst(MAP, INDEX, META)
+def test_overview_lists_say_what_they_list_and_when_they_are_empty() -> None:
+    text = overview_rst(MAP, INDEX, META)
     assert "an expected output, a script or an input" in section(text, ERRATA_TITLE)
     assert "These are not errata." in section(text, "Adaptations")
     empty = Catalogue((CONDITIONAL,))
-    text = index_rst(empty, index_of(empty), META)
+    text = overview_rst(empty, index_of(empty), META)
     assert "None: no expected output follows a recorded team decision." in text
     assert "None: nothing in the manual's examples had to be corrected." in text
     assert "None: no example needed an adaptation." in text
 
 
-def test_index_escapes_the_free_text_of_the_lists() -> None:
+def test_overview_escapes_the_free_text_of_the_lists() -> None:
     erratum = "the *manual* prints a_b | c, `x` and \\ and ends with ::"
     variant = form("v", "f(x)", NUMBER, NUMBER, authored("case", erratum=erratum))
     cat = Catalogue((Chapter("c", "C", (operator("o", "Some_op", "f", variant),)),))
-    errata = section(index_rst(cat, index_of(cat), META), ERRATA_TITLE)
+    errata = section(overview_rst(cat, index_of(cat), META), ERRATA_TITLE)
     assert (
-        "- `Case <c/o.html#ex-v-case>`__ (C › Some\\_op › ``f(x)``): the \\*manual\\* prints "
+        "- `Some\\_op · Case <c/o.html#ex-v-case>`__ (C › ``f(x)``): the \\*manual\\* prints "
         "a\\_b \\| c, \\`x\\` and \\\\ and ends with :\\:"
     ) in errata.splitlines()
     typeset = 'it\'s "a" -- b --- c - d... e. . . f'
     variant = form("v", "f(x)", NUMBER, NUMBER, authored("case", erratum=typeset))
     cat = Catalogue((Chapter("c", "C", (operator("o", "Some_op", "f", variant),)),))
-    errata = section(index_rst(cat, index_of(cat), META), ERRATA_TITLE)
+    errata = section(overview_rst(cat, index_of(cat), META), ERRATA_TITLE)
     assert ': it\\\'s \\"a\\" \\-\\- b \\-\\-\\- c - d\\.\\.\\. e\\. \\. \\. f' in errata
 
 
-def test_index_attribution_sentence_is_verbatim() -> None:
-    attribution = section(index_rst(MAP, INDEX, META), "Attribution")
+def test_overview_attribution_sentence_is_verbatim() -> None:
+    attribution = section(overview_rst(MAP, INDEX, META), "Attribution")
     assert (
         "Examples marked *manual* are taken from the VTL 2.2 Reference Manual "
         f"(sdmx-twg/vtl @ {SPEC}), converted to the vtlengine format."
     ) in attribution
     assert f"`sdmx-twg.github.io/vtl/v2.2 <{BASE}/index.html>`__" in attribution
-
-
-def test_index_without_blocks_has_no_toctree() -> None:
-    text = index_rst(Catalogue(()), StatusIndex({}, {}, {}, {}), META)
-    assert ".. toctree::" not in text
 
 
 # --- Free text: what went wrong with an example, and the labels of the forms ---
@@ -1243,10 +1301,10 @@ def test_a_label_that_a_literal_cannot_hold_is_escaped_text() -> None:
         for name, label in labels.items()
     )
     cat = Catalogue((Chapter("c", "C", (operator("o", "O", "o", *variants),)),))
-    errata = section(index_rst(cat, index_of(cat), META), ERRATA_TITLE).splitlines()
+    errata = section(overview_rst(cat, index_of(cat), META), ERRATA_TITLE).splitlines()
 
     def item(variant: str, label: str) -> str:
-        return f"- `Minimal <c/o.html#ex-{variant}-minimal>`__ (C › O › {label}): e"
+        return f"- `O · Minimal <c/o.html#ex-{variant}-minimal>`__ (C › {label}): e"
 
     # Where a form is named the label is a literal, as it is: on one line, and a backslash last
     # is fine. A backtick cannot be in a literal, and the label is escaped text then.
@@ -1407,12 +1465,14 @@ def test_the_pages_are_read_as_written_by_docutils(
     not_green = [row for row in rows if len(row) == 7]
     assert [row[6] for row in not_green[1:]] == HOSTILE
 
-    listing = read_rst(index_rst(cat, index, META), tmp_path / "index.rst", monkeypatch)
+    listing = read_rst(overview_rst(cat, index, META), tmp_path / "overview.rst", monkeypatch)
     items = [item.astext() for item in listing.findall(nodes.list_item)]
     for detail in HOSTILE:
         # Once as the erratum and once as the adaptation of its form, as typed.
         assert sum(item.endswith(f": {detail}") for item in items) == 2, detail
     read_rst(index_rst(MAP, INDEX, META), tmp_path / "index.rst", monkeypatch)
+    read_rst(overview_rst(MAP, INDEX, META), tmp_path / "overview.rst", monkeypatch)
+    read_rst(operators_rst(MAP, INDEX), tmp_path / "operators.rst", monkeypatch)
 
 
 # --- What Sphinx makes of the pages ---
@@ -1453,6 +1513,8 @@ def test_docs_build_anchor_ids(tmp_path: Path) -> None:
     write_example(examples, "numeric/addition/sc_sc/two_numbers", {"expected/DS_r.csv": "A\n"})
     pages = {
         "index.rst": index_rst(cat, index, META),
+        "overview.rst": overview_rst(cat, index, META),
+        "operators.rst": operators_rst(cat, index),
         "numeric/index.rst": block_rst(chapter, cat, index, META),
         **{
             f"numeric/{op.id}.rst": operator_rst(

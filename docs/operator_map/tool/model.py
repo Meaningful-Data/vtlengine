@@ -273,7 +273,7 @@ _PLACEHOLDER: Final = re.compile(r"minimal(?:_\d+)?")
 _FORM_TYPES: Final = frozenset((*VALUE_TYPES, *STRUCTURAL_TYPES, ANY_SCALAR, ANY_TYPE))
 # The types of an operator, and the ``returns`` of a form, may name ``dataset`` too.
 _OPERATOR_TYPES: Final = _FORM_TYPES | {_DATASET}
-_DEFINITIONS: Final = "definitions"  # the chapter whose pages are ``DL_PAGES``
+DEFINITIONS: Final = "definitions"  # the chapter whose pages are ``DL_PAGES``
 _DEFINITION_LINK: Final = "VTL-DL definitions are never linked from or to operators"
 
 
@@ -415,8 +415,8 @@ def _operator_problems(
         if link.label not in REVERSE_LABELS:
             yield f"{owner}: link label '{link.label}' has no reverse label"
         # A link of a definition, or to one, or both: one line, as it is one link.
-        from_definition = chapter.id == _DEFINITIONS
-        to_definition = link.target.partition(".")[0] == _DEFINITIONS
+        from_definition = chapter.id == DEFINITIONS
+        to_definition = link.target.partition(".")[0] == DEFINITIONS
         if from_definition or to_definition:
             yield f"{owner}: link target '{link.target}': {_DEFINITION_LINK}"
     for key in _manual_keys(operator):
@@ -457,9 +457,9 @@ def _in_scope(cat: Catalogue, scope: Collection[str] | None) -> Callable[[str], 
         return lambda _item: True
     ids = frozenset(scope)
     title_prefixes = tuple(
-        f"{c.title}/" for c in cat.chapters if c.id in ids and c.id != _DEFINITIONS
+        f"{c.title}/" for c in cat.chapters if c.id in ids and c.id != DEFINITIONS
     )
-    with_dl_pages = _DEFINITIONS in ids
+    with_dl_pages = DEFINITIONS in ids
 
     def in_scope(item: str) -> bool:
         if item.startswith(title_prefixes):

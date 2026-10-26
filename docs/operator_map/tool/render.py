@@ -1,9 +1,12 @@
-"""reStructuredText of the operator map: the index, a page per block and a page per operator.
+"""reStructuredText of the operator map: the index, its parts, a page per block and per operator.
 
-``index_rst``, ``block_rst`` and ``operator_rst`` take the catalogue and the ``StatusIndex`` of a
-run and return the text of a page. The index is ``docs/operator_map/index.rst``, the page of a
-block is ``<chapter>/index.rst`` and the page of an operator ``<chapter>/<operator>.rst``: each is
-in the hidden ``toctree`` of the page above it, so every operator has a URL of its own. Nothing
+``index_rst``, ``overview_rst``, ``operators_rst``, ``block_rst`` and ``operator_rst`` take the
+catalogue and the ``StatusIndex`` of a run and return the text of a page. The index is
+``docs/operator_map/index.rst``, next to the overview (``overview.rst``) and the page of the
+blocks of operators (``operators.rst``); the page of a block is ``<chapter>/index.rst`` and the
+page of an operator ``<chapter>/<operator>.rst``. Each is in the hidden ``toctree`` of the page
+above it (the block of the definitions is a part of the index), so every operator has a URL of
+its own. Nothing
 here runs an engine. The page of an operator reads the files of its examples, in
 ``examples_root`` (``docs/operator_map/examples`` unless it is given): which there are, and the
 data of their CSV and JSON files.
@@ -40,11 +43,18 @@ target is a label of Sphinx, which is global to the docs, and the same form ids 
 its operators, a table of the types that they take and give, the forms that are not green with
 the example that shows why, and the hidden ``toctree`` of the pages of its operators.
 
-**Index.** The title and the introduction, the hidden ``toctree`` of the block pages, a line on
-how the results were made, the legend, how to read the map, the overview diagram, a table of the
-blocks, the codes that say that something is not implemented (``NOT_IMPLEMENTED``), the lists of
-team decisions, errata and adaptations, which link to the examples on the pages of their
-operators, and the attribution.
+**Index.** The title and the introduction, a line on how the results were made, and the parts of
+the map, in its hidden ``toctree`` and in a list: the overview, the operators and the definitions
+of the VTL-DL. So the sidebar has the parts on one level, the blocks below them and the operators
+below their blocks.
+
+**Overview** (``overview.rst``). The legend, how to read the map, the overview diagram, a table
+of the blocks, the codes that say that something is not implemented (``NOT_IMPLEMENTED``), the
+lists of team decisions, errata and adaptations, which link to the examples on the pages of their
+operators as ``Operator · title``, and the attribution.
+
+**Operators** (``operators.rst``). The legend, a table of the blocks of operators, and the hidden
+``toctree`` of their pages. The block of the definitions is a part of its own, under the index.
 
 **Diagrams.** They come from ``tool.mermaid``, in ``.. mermaid::`` directives that ask Mermaid
 for their natural size (``useMaxWidth`` off), inside an ``om-diagram`` block. The docs set a
@@ -87,6 +97,7 @@ from tool.mermaid import (
 from tool.model import (
     ANY_SCALAR,
     ANY_TYPE,
+    DEFINITIONS,
     STRUCTURAL_TYPES,
     Catalogue,
     Chapter,
@@ -890,9 +901,10 @@ _REGENERATE: Final = (
 
 _HOW_TO_READ: Final = (
     """\
-- **Pages.** This page, then a page for each block (a chapter of the manual, or its \
-definitions), then a page for each operator. The sidebar, the tables and the diagrams lead to \
-them.
+- **Pages.** The map has three parts: this overview, the operators and the definitions of the \
+VTL-DL. The operators have a page for each block (a chapter of the manual), and the blocks a \
+page for each operator; the definitions have a page for each definition. The sidebar, the \
+tables and the diagrams lead to them.
 - **Diagrams.** The overview and the page of a block have the map or the block in the middle, \
 and its blocks or its operators on both sides. The page of an operator has the operator on top. \
 When its forms use two kinds of operands or more, they are in a light box for each kind: a \
@@ -941,6 +953,10 @@ _OVERVIEW: Final = (
     "the blocks below is the reliable way to every block page."
 )
 _BLOCKS: Final = "The counts are over the forms of the operators of each block."
+_OPERATORS: Final = (
+    "The blocks of operators, one for each chapter of operators of the manual. The counts are "
+    "over the forms of the operators of each block."
+)
 _NOT_IMPLEMENTED: Final = (
     "The codes of the errors of vtlengine that say that it does not implement something. A form "
     "whose examples fail with one of them on both engines is 🔴, not implemented, rather than "
@@ -950,20 +966,71 @@ _NOT_IMPLEMENTED: Final = (
 
 
 def index_rst(cat: Catalogue, index: StatusIndex, meta: RunMeta) -> str:
-    """The index page: the legend, the overview, the blocks and the lists of the whole map.
+    """The entry page: the introduction, how the results were made, and the parts of the map.
 
-    It has a hidden ``toctree`` of the block pages. It raises ``MermaidLimitError`` when the
-    overview cannot fit the limits of Mermaid.
+    Its hidden ``toctree`` has the parts, so that the sidebar shows them on one level: the
+    overview (``overview_rst``), the blocks of operators (``operators_rst``) and the definitions
+    of the VTL-DL (the page of their block). The blocks, and their operators, are below them.
+    """
+    parts = _parts(cat)
+    return (
+        "\n\n".join(
+            [
+                _title("VTL 2.2 operator map", _PAGE, overline=True),
+                _INTRO,
+                _toctree(name for name, _, _ in parts),
+                _generation(meta),
+                "\n".join(f"- {_doc(title, name)}: {text}" for name, title, text in parts),
+            ]
+        )
+        + "\n"
+    )
+
+
+def _parts(cat: Catalogue) -> list[tuple[str, str, str]]:
+    """The pages of the parts of the map, under the index: the name, the title and what is there.
+
+    The page of the operators is there when the map has a block of operators, and the page of
+    the definitions when it has their block.
+    """
+    parts = [
+        (
+            "overview",
+            "Overview",
+            "how to read the map, the overview of its blocks, the codes that say that something "
+            "is not implemented, and the team decisions, errata and adaptations of the examples.",
+        )
+    ]
+    if blocks := _operator_chapters(cat):
+        what = f"the {_count(len(blocks), 'block')} of operators, with a page for each operator."
+        parts.append(("operators", "Operators", what))
+    if definitions := _definitions_chapter(cat):
+        what = "the definitions of the VTL-DL, with a page for each."
+        parts.append((f"{definitions.id}/index", definitions.title, what))
+    return parts
+
+
+def _operator_chapters(cat: Catalogue) -> tuple[Chapter, ...]:
+    """The blocks of operators: every chapter but the definitions of the VTL-DL."""
+    return tuple(chapter for chapter in cat.chapters if chapter.id != DEFINITIONS)
+
+
+def _definitions_chapter(cat: Catalogue) -> Chapter | None:
+    """The block of the definitions of the VTL-DL, if the map has it."""
+    return next((chapter for chapter in cat.chapters if chapter.id == DEFINITIONS), None)
+
+
+def overview_rst(cat: Catalogue, index: StatusIndex, meta: RunMeta) -> str:
+    """The overview: the legend, how to read, the overview diagram, the blocks and the lists.
+
+    It raises ``MermaidLimitError`` when the overview cannot fit the limits of Mermaid.
     """
     entries = list(_entries(cat))
     parts = [
-        _title("VTL 2.2 operator map", _PAGE, overline=True),
-        _INTRO,
-        *([_toctree(f"{chapter.id}/index" for chapter in cat.chapters)] if cat.chapters else []),
-        _generation(meta),
+        _title("Overview", _PAGE, overline=True),
         _raw(LEGEND_HTML),
         _section("How to read", _HOW_TO_READ),
-        _section("Overview", _OVERVIEW, _diagram(overview_block(cat, index))),
+        _section("Overview diagram", _OVERVIEW, _diagram(overview_block(cat, index))),
         _section("Blocks", _BLOCKS, _block_table(cat, index)),
         _section("Not implemented", _NOT_IMPLEMENTED, _not_implemented_table()),
         _decisions(entries),
@@ -971,6 +1038,24 @@ def index_rst(cat: Catalogue, index: StatusIndex, meta: RunMeta) -> str:
         _adaptations(entries),
         _attribution(meta),
     ]
+    return "\n\n".join(parts) + "\n"
+
+
+def operators_rst(cat: Catalogue, index: StatusIndex) -> str:
+    """The page of the blocks of operators: the legend, their table, and their pages.
+
+    Its hidden ``toctree`` has the pages of these blocks. The definitions of the VTL-DL are a part
+    of the map of their own, and are not here.
+    """
+    blocks = _operator_chapters(cat)
+    parts = [
+        _title("Operators", _PAGE, overline=True),
+        _OPERATORS,
+        _raw(LEGEND_HTML),
+        _block_table(Catalogue(blocks), index),
+    ]
+    if blocks:
+        parts.append(_toctree(f"{chapter.id}/index" for chapter in blocks))
     return "\n\n".join(parts) + "\n"
 
 
@@ -1043,15 +1128,15 @@ class _Entry:
     example: Example
 
     def link(self) -> str:
-        """The title of the example, linking to it on the page of its operator."""
+        """``Operator · title`` of the example, linking to it on the page of its operator."""
         target = f"{self.chapter.id}/{self.operator.id}.html"
         anchor = example_anchor(self.variant, self.example)
-        return _link(example_title(self.example), f"{target}#{anchor}")
+        title = f"{self.operator.name} · {example_title(self.example)}"
+        return _link(title, f"{target}#{anchor}")
 
     def where(self) -> str:
-        """``(Block › Operator › ``form``)``."""
-        names = f"{_inline(self.chapter.title)} › {_inline(self.operator.name)}"
-        return f"({names} › {_literal(self.variant.label)})"
+        """``(Block › ``form``)``: the operator is in the title of the link."""
+        return f"({_inline(self.chapter.title)} › {_literal(self.variant.label)})"
 
 
 def _entries(cat: Catalogue) -> Iterator[_Entry]:

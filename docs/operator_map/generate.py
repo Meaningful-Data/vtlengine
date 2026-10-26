@@ -26,7 +26,8 @@ Elsewhere the cap is optional.
    each in a process of its own. A ``random`` example runs twice, to see whether its values are
    stable.
 3. The status of each example comes from the two runs (``tool.status``), the statuses are rolled
-   up, and the files are rendered: ``index.rst``, a page for each block (``<chapter>/index.rst``)
+   up, and the files are rendered: ``index.rst``, the overview (``overview.rst``), the page of
+   the blocks of operators (``operators.rst``), a page for each block (``<chapter>/index.rst``)
    and for each operator (``<chapter>/<operator>.rst``), ``status.json`` and
    ``example_pages.json``, which says for each example its title, status, marks and where it is
    on the page of its operator. The pages are documents of the Sphinx docs of the repository
@@ -100,7 +101,15 @@ from tool.model import (
     load_catalogue,
     validate_catalogue,
 )
-from tool.render import RunMeta, block_rst, index_rst, mermaid_blocks, operator_rst
+from tool.render import (
+    RunMeta,
+    block_rst,
+    index_rst,
+    mermaid_blocks,
+    operator_rst,
+    operators_rst,
+    overview_rst,
+)
 from tool.runner import Engine, EngineVersions, PreflightError, RunOutput, preflight, run_all
 from tool.status import (
     EMOJI,
@@ -140,6 +149,8 @@ _VERSION: Final = re.compile(r"""^__version__\s*=\s*["']([^"']+)["']""", re.MULT
 # tool before the fields ``error_type`` and ``error_code`` says them so.
 _ERROR_HEAD: Final = re.compile(r"^(\w+)(?: (\d+(?:-\d+)+))?(?::|$)")
 _INDEX_FILE: Final = "index.rst"
+_OVERVIEW_FILE: Final = "overview.rst"
+_OPERATORS_FILE: Final = "operators.rst"
 # How to run the generator, for ``--help``; the docstring and the index say the same.
 _HOW_TO_RUN: Final = """\
 It needs a Python that can import vtlengine, with the compiled parser in src/
@@ -658,12 +669,17 @@ def _render(
 ) -> dict[str, str]:
     """The text of every file by its path in the folder of the map, each diagram checked.
 
-    ``index.rst`` is the entry page, ``<chapter>/index.rst`` the page of a block, and
+    ``index.rst`` is the entry page, with ``overview.rst`` and ``operators.rst`` beside it,
+    ``<chapter>/index.rst`` the page of a block, and
     ``<chapter>/<operator>.rst`` the page of an operator, which reads the folders of its examples
     in ``examples_root``; ``status.json`` and ``example_pages.json`` come after the pages. The
     diagrams of the pages are checked against the limits of Mermaid, and the error names the page.
     """
-    files = {_INDEX_FILE: index_rst(cat, index, meta)}
+    files = {
+        _INDEX_FILE: index_rst(cat, index, meta),
+        _OVERVIEW_FILE: overview_rst(cat, index, meta),
+        _OPERATORS_FILE: operators_rst(cat, index),
+    }
     for chapter in cat.chapters:
         files[f"{chapter.id}/{_INDEX_FILE}"] = block_rst(chapter, cat, index, meta)
         for op in chapter.operators:
@@ -764,11 +780,12 @@ def _read_manifest(root: Path) -> list[str]:
 def _is_generated_path(text: str) -> bool:
     """Whether ``text`` can be the path of a file that a run generated, in the folder of the map.
 
-    It is ``index.rst``, ``status.json`` or ``example_pages.json`` in the folder of the map, or a
-    page in the folder of a block: lower-case letters, digits and ``_`` (the rule of the ids of
-    the catalogue), with ``.rst`` or ``.json``, and no folder that people keep in the map (the
-    examples, the tool and the catalogue). So nothing else can match: no ``..``, no absolute or
-    hidden path (the manifest, a staging folder), no source file of the tool.
+    It is ``index.rst``, ``overview.rst``, ``operators.rst``, ``status.json`` or
+    ``example_pages.json`` in the folder of the map, or a page in the folder of a block:
+    lower-case letters, digits and ``_`` (the rule of the ids of the catalogue), with ``.rst`` or
+    ``.json``, and no folder that people keep in the map (the examples, the tool and the
+    catalogue). So nothing else can match: no ``..``, no absolute or hidden path (the manifest, a
+    staging folder), no source file of the tool.
     """
     return bool(_GENERATED_PATH.fullmatch(text)) and text.split("/")[0] not in _KEPT_FOLDERS
 

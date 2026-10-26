@@ -221,8 +221,8 @@ class World:
         return json.loads((self.root / "status.json").read_text(encoding="utf-8"))
 
     def index_row(self, text: str) -> list[str]:
-        """The cells of the row of the block table of ``index.rst`` that holds ``text``."""
-        page = (self.root / "index.rst").read_text(encoding="utf-8")
+        """The cells of the row of the block table of ``overview.rst`` that holds ``text``."""
+        page = (self.root / "overview.rst").read_text(encoding="utf-8")
         chapters = re.split(r"\nBlocks\n-+\n", page, maxsplit=1)[1]
         chapters = chapters.split("\nNot implemented\n", 1)[0]
         rows: list[list[str]] = []
@@ -279,6 +279,8 @@ def problems(capsys: pytest.CaptureFixture[str]) -> list[str]:
 # manifest that lists them, which it writes last.
 OUTPUTS = [
     "index.rst",
+    "overview.rst",
+    "operators.rst",
     "alpha/index.rst",
     "alpha/first.rst",
     "beta/index.rst",
@@ -1163,11 +1165,18 @@ def test_the_run_writes_every_file_and_leaves_nothing_else(world: World) -> None
     index = (world.root / "index.rst").read_text(encoding="utf-8")
     rule = "=" * 40
     assert index.startswith(f"{rule}\nVTL 2.2 operator map\n{rule}\n")
-    assert ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   alpha/index\n   beta/index\n" in index
+    # The index has the parts of the map in its toctree, and the page of the operators has the
+    # blocks (the map of the world has no definitions).
+    assert ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   overview\n   operators\n" in index
+    operators = (world.root / "operators.rst").read_text(encoding="utf-8")
+    assert (
+        ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   alpha/index\n   beta/index\n" in operators
+    )
     assert "9.9.9" in index
     assert "abc1234" in index
     assert f"with pandas {PANDAS_VERSION} and DuckDB {DUCKDB_VERSION}" in index
-    assert f"(sdmx-twg/vtl @ {SPEC_COMMIT})" in index
+    overview = (world.root / "overview.rst").read_text(encoding="utf-8")
+    assert f"(sdmx-twg/vtl @ {SPEC_COMMIT})" in overview  # the attribution
     alpha = (world.root / "alpha/index.rst").read_text(encoding="utf-8")
     rule = "=" * 30  # twice the 15 characters of "Alpha operators"
     assert alpha.startswith(f"{rule}\nAlpha operators\n{rule}\n")
@@ -1595,7 +1604,7 @@ def test_the_summary_says_the_stale_files_and_the_example_statuses_apart(
     # The number of files that were removed, then the statuses of the examples, each as a
     # statement of its own: the counts of the statuses are not read as counts of stale files.
     assert lines[1:] == [
-        "wrote 5 pages, status.json, example_pages.json and .generated; removed 3 stale files. "
+        "wrote 7 pages, status.json, example_pages.json and .generated; removed 3 stale files. "
         "Examples: 🟢 3 · 🟡 0 · 🛡️ 0 · 🔴 1 · 🔵 0"
     ]
 
@@ -1856,7 +1865,7 @@ def failure(kind: type[BaseException]) -> BaseException:
 # to be removed. The third is the names that the run noted for putting back.
 RESTORE_CASES = [
     (3, "index.rst", OUTPUTS[:3]),
-    (3, "alpha/index.rst", OUTPUTS[:3]),
+    (5, "alpha/index.rst", OUTPUTS[:5]),
     (len(OUTPUTS) + 1, "gone/page.rst", [*OUTPUTS, *STALE, MANIFEST]),
 ]
 
