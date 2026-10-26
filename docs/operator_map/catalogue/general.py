@@ -222,7 +222,7 @@ CHAPTER = Chapter(
                 Variant(
                     "sc",
                     "SC_r <- sc",
-                    (authored("integer_literal"),),
+                    (authored("integer_literal"), authored("input_value")),
                     takes=(ANY_SCALAR,),
                     gives=(ANY_TYPE,),
                 ),
@@ -247,7 +247,7 @@ CHAPTER = Chapter(
                 Variant(
                     "sc",
                     "SC_r := sc",
-                    (authored("integer_literal"),),
+                    (authored("integer_literal"), authored("input_value")),
                     takes=(ANY_SCALAR,),
                     gives=(ANY_TYPE,),
                 ),

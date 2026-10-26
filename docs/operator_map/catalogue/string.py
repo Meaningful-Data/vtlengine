@@ -100,7 +100,7 @@ _TRIM = Operator(
         Variant(
             "sc",
             "trim(sc)",
-            (authored("leading_and_trailing_spaces"),),
+            (authored("leading_and_trailing_spaces"), authored("padded_input_value")),
             takes=_STRING,
             gives=_STRING,
         ),
@@ -132,7 +132,7 @@ _LTRIM = Operator(
         Variant(
             "sc",
             "ltrim(sc)",
-            (authored("leading_removed_trailing_kept"),),
+            (authored("leading_removed_trailing_kept"), authored("padded_input_value")),
             takes=_STRING,
             gives=_STRING,
         ),
@@ -152,7 +152,7 @@ _RTRIM = Operator(
         Variant(
             "sc",
             "rtrim(sc)",
-            (authored("trailing_removed_leading_kept"),),
+            (authored("trailing_removed_leading_kept"), authored("padded_input_value")),
             takes=_STRING,
             gives=_STRING,
         ),

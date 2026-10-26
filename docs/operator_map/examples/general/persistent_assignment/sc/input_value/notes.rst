@@ -1,0 +1,3 @@
+:Tests: ``SC_r <- SC_1`` with the input scalar ``SC_1`` = 3: a scalar read from the input, assigned to a persistent result.
+:Manual: `Persistent assignment <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Persistent%20assignment/index.html>`__: "If the Operand ``op`` is a scalar value, the result Data Set has no Components and contains only such a scalar value", as in "``income <- 3``". That contradicts the page's "Input parameters type", ``op :: dataset``, and its "Result type", ``result :: dataset``: the example follows the Behaviour, as does the non-persistent assignment, whose ``op`` is ``dataset | scalar``.
+:Expected: ``SC_r = 3``, an Integer: the value of ``SC_1``, as for ``SC_r := SC_1``.
