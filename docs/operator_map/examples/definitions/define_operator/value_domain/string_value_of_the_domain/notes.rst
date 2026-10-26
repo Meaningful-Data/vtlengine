@@ -1,4 +1,4 @@
 :Tests: a parameter typed by the value domain ``VD_1``, of the strings ``A``, ``B`` and ``C``, called with ``"A"``.
 :Manual: `define operator <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html>`__: ``scalarType ::= { basicScalarType | valueDomainName | setName } ...``, and in `Type conversion <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html>`__ a basic scalar value is "implicitly converted into a value belonging to a value domain" while "an element of a value domain is implicitly upcast into its corresponding basic scalar type". The script ends with ``end operator``, as the page's examples and the grammar do; its syntax line writes ``end define operator``.
 :Expected: ``SC_r = "A_X"``, a String: ``"A"`` is a value of ``VD_1``, and ``x || "_X"`` concatenates it as a string.
-:Finding: both engines refuse it with InputValidationException ``0-5-1-10``, "Invalid parameter type definition 'VD_1'".
+:Finding: both engines raise InputValidationException ``0-5-1-10``, "Invalid parameter type definition 'VD_1'".

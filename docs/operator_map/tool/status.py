@@ -98,6 +98,7 @@ NOT_IMPLEMENTED: Final[dict[str, str]] = {
         "Value Domain '{name}' not available for cast operator or scalar type representation "
         "or rulesets."
     ),
+    "0-5-1-10": "Invalid parameter type definition {definition}.",
 }
 
 _STATUSES: Final[tuple[Status, ...]] = ("ok", "partial", "refused", "missing", "diverge")
