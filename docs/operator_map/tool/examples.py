@@ -7,6 +7,13 @@ An example lives in ``examples/<chapter>/<operator>/<variant>/<example>/`` and h
   ``{"datasets": [{"name": ..., "DataStructure": [...]}]}``, and ``input/<NAME>.csv``: its data
   points (optional: without it the dataset is empty). The CSV of a dataset needs some structure
   file that declares a dataset ``NAME``, not necessarily ``input/<NAME>.json``;
+* ``input/scalars.json`` and ``input/scalars.csv``: the input scalars, which go together. The JSON
+  declares them, ``{"scalars": [{"name": ..., "type": ...}]}``, and the CSV holds their values: a
+  column for each scalar, named after it, and exactly one data row, where an empty cell is a
+  null. ``scalars.csv`` is not the data points of a dataset. The JSON types the values: an
+  Integer is an ``int``, a Number a ``float``, a Boolean a ``bool`` (``true`` or ``false``, in any
+  case), and a value of any other type is its text. A structure file with another name may
+  declare scalars too, but then they have no value;
 * ``value_domains/*.json`` and ``external_routines/*.json``: optional files for ``run``;
 * ``expected/<NAME>.json`` and ``expected/<NAME>.csv``: an expected result dataset. The JSON has
   the same format, but a component ``type`` may also be a list of the allowed types. An empty
@@ -30,10 +37,12 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 import re
+from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Final, TypeVar
+from typing import Any, Final, TypeVar, Union
 
 from tool.model import Example
 
@@ -41,6 +50,7 @@ _SCRIPT: Final = "script.vtl"
 _INPUT: Final = "input"
 _EXPECTED: Final = "expected"
 _SCALARS: Final = "scalars.json"
+_SCALAR_VALUES: Final = "scalars.csv"  # in ``input/``: the values of the input scalars
 _ERROR: Final = "error.json"
 _VALUE_DOMAINS: Final = "value_domains"
 _EXTERNAL_ROUTINES: Final = "external_routines"
@@ -71,6 +81,26 @@ _OUTSIDE: Final = (
 # It is written once, here: the loader checks the code of ``expected/error.json`` with it, and the
 # child of the runner takes the code of an exception with it.
 ERROR_CODE: Final = re.compile(r"\d+(-\d+)+", re.ASCII)
+
+# The types that a structure file gives a scalar: the ``data-type`` of the JSON schema of vtlengine.
+_SCALAR_TYPES: Final = (
+    "Integer",
+    "Number",
+    "Boolean",
+    "String",
+    "Date",
+    "Time_Period",
+    "Time",
+    "Duration",
+)
+# An integer or a number as a file writes it: ASCII digits only. ``int`` and ``float`` also take
+# ``1_0``, ``nan``, ``inf`` and the digits of other scripts, and none of those is a value here.
+_INTEGER: Final = re.compile(r"[+-]?\d+", re.ASCII)
+_NUMBER: Final = re.compile(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", re.ASCII)
+
+# The value of an input scalar: what ``run`` takes in ``scalar_values``. ``Union`` rather than
+# ``|``: the alias is evaluated when the module is imported, on Python 3.9.
+ScalarValue = Union[int, float, bool, str, None]
 
 _T = TypeVar("_T")
 _KINDS: Final[dict[type, str]] = {
@@ -115,7 +145,8 @@ class ExampleFiles:
     path: Path
     script: str
     structures: list[Path]  # every ``input/*.json``, sorted by name
-    datapoints: dict[str, Path]  # dataset name -> ``input/<name>.csv``, only datasets with data
+    # dataset name -> ``input/<name>.csv``, only datasets with data: ``scalars.csv`` is not one
+    datapoints: dict[str, Path]
     value_domains: list[Path]  # ``value_domains/*.json``, sorted by name
     external_routines: list[Path]  # ``external_routines/*.json``, sorted by name
     expected_datasets: list[ExpectedDataset]  # sorted by file name
@@ -123,6 +154,10 @@ class ExampleFiles:
     # The code of the error that the script is to raise, from ``expected/error.json``. An example
     # that has it has no expected outputs, and one that has none of the two cannot be loaded.
     expected_error: str | None = None
+    # The values of the input scalars, by name, from ``input/scalars.csv``: typed as
+    # ``input/scalars.json`` says (see ``_input_value``), and None for an empty cell. None itself
+    # when the example has no input scalars.
+    scalar_values: dict[str, ScalarValue] | None = None
 
 
 class ExampleError(Exception):
@@ -189,8 +224,14 @@ def load_example(path: Path) -> ExampleFiles:
 
     input_dir = path / _INPUT
     structures = _files(input_dir, ".json")
-    datapoints = {csv_file.stem: csv_file for csv_file in _files(input_dir, ".csv")}
+    # ``scalars.csv`` holds the values of the input scalars, not the data points of a dataset.
+    datapoints = {
+        csv_file.stem: csv_file
+        for csv_file in _files(input_dir, ".csv")
+        if csv_file.name != _SCALAR_VALUES
+    }
     _check_datapoints(structures, datapoints)
+    scalar_values = _load_input_scalars(path)
     return ExampleFiles(
         path=path,
         script=script,
@@ -201,6 +242,7 @@ def load_example(path: Path) -> ExampleFiles:
         expected_datasets=datasets,
         expected_scalars=scalars,
         expected_error=error,
+        scalar_values=scalar_values,
     )
 
 
@@ -405,11 +447,14 @@ def _load_expected_dataset(json_file: Path, csv_file: Path) -> ExpectedDataset:
 
 
 def _check_columns(
-    csv_file: Path, header: list[str], json_file: Path, components: dict[str, ExpectedComponent]
+    csv_file: Path, header: list[str], json_file: Path, declared: Collection[str]
 ) -> None:
-    """The CSV columns are the components of the structure: a mismatch is a typo in one file."""
-    missing = [column for column in components if column not in header]
-    unknown = [column for column in header if column not in components]
+    """The CSV columns are the names of the structure: a mismatch is a typo in one file.
+
+    The names are the components of a dataset, or the input scalars.
+    """
+    missing = [column for column in declared if column not in header]
+    unknown = [column for column in header if column not in declared]
     problems = []
     if missing:
         problems.append(f"missing {', '.join(missing)}")
@@ -480,6 +525,94 @@ def _scalar_value(raw: Any, file: Path, name: str) -> str | None:
     if isinstance(raw, bool):
         return "true" if raw else "false"
     raise ExampleError(f"{file}: the value of {name} must be a string, a number, a boolean or null")
+
+
+# --- Input scalars ---
+
+
+def _load_input_scalars(path: Path) -> dict[str, ScalarValue] | None:
+    """The values of ``input/scalars.csv``, typed by the scalars of ``input/scalars.json``.
+
+    The two files go together: an example has both or neither. The CSV has a column for each
+    declared scalar and no other, and exactly one data row. An example without them has no input
+    scalar values: None.
+    """
+    structure = path / _INPUT / _SCALARS
+    values = path / _INPUT / _SCALAR_VALUES
+    if structure.is_file() != values.is_file():
+        have, need = (
+            (_SCALARS, _SCALAR_VALUES) if structure.is_file() else (_SCALAR_VALUES, _SCALARS)
+        )
+        raise ExampleError(f"{path}: missing {_INPUT}/{need} (it goes with {_INPUT}/{have})")
+    if not structure.is_file():
+        return None
+    types = _declared_scalars(structure)
+    header, rows = _read_csv(values)
+    _check_columns(values, header, structure, types)
+    if len(rows) != 1:
+        raise ExampleError(f"{values}: must have exactly one data row, found {len(rows)}")
+    return {name: _input_value(rows[0][name], type_, values, name) for name, type_ in types.items()}
+
+
+def _declared_scalars(file: Path) -> dict[str, str]:
+    """The scalars of ``input/scalars.json`` with their VTL types, in the order of the file."""
+    document = _expect(_read_json(file), dict, file, "the document")
+    types: dict[str, str] = {}
+    for raw in _expect(document.get("scalars"), list, file, "'scalars'"):
+        item = _expect(raw, dict, file, "a scalar")
+        name = _expect(item.get("name"), str, file, "a scalar name")
+        type_ = _expect(item.get("type"), str, file, f"the type of {name}")
+        if type_ not in _SCALAR_TYPES:
+            raise ExampleError(
+                f"{file}: the type of {name} must be one of {', '.join(_SCALAR_TYPES)}, "
+                f"not {type_!r}"
+            )
+        if name in types:
+            raise ExampleError(f"{file}: duplicate scalar '{name}'")
+        types[name] = type_
+    return types
+
+
+def _input_value(text: str | None, type_: str, file: Path, name: str) -> ScalarValue:
+    """The value of the input scalar ``name`` of ``type_``, from its cell ``text`` of ``file``.
+
+    An empty cell is None. An Integer, a Number and a Boolean are the Python types that ``run``
+    takes for them. Any other type is its text, as the file writes it, which the engine checks.
+    """
+    if text is None or type_ not in _READERS:
+        return text
+    read, wanted = _READERS[type_]
+    try:
+        return read(text)
+    except ValueError:
+        raise ExampleError(f"{file}: the value of {name} must be {wanted}, not {text!r}") from None
+
+
+def _read_integer(text: str) -> int:
+    if _INTEGER.fullmatch(text) is None:
+        raise ValueError(text)
+    return int(text)
+
+
+def _read_number(text: str) -> float:
+    value = float(text) if _NUMBER.fullmatch(text) is not None else None
+    if value is None or not math.isfinite(value):  # ``1e999`` is no number once it is read
+        raise ValueError(text)
+    return value
+
+
+def _read_boolean(text: str) -> bool:
+    if text.lower() not in ("true", "false"):
+        raise ValueError(text)
+    return text.lower() == "true"
+
+
+# How the values of the types that are not text are read, and what the file must hold for each.
+_READERS: Final[dict[str, tuple[Callable[[str], ScalarValue], str]]] = {
+    "Integer": (_read_integer, "an Integer"),
+    "Number": (_read_number, "a Number"),
+    "Boolean": (_read_boolean, "true or false"),
+}
 
 
 # --- Input datasets ---

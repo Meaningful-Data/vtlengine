@@ -566,6 +566,34 @@ def test_example_page_shows_every_file_with_a_download_link(tmp_path: Path) -> N
     assert re.findall(r'<a class="dl" href="([^"]*)" download', text) == list(found)
 
 
+def test_example_page_shows_the_input_scalars_as_a_table_next_to_their_structure(
+    tmp_path: Path,
+) -> None:
+    src, out = tmp_path / "src", tmp_path / "out"
+    one = make_examples(src) / "string" / "length" / "comp" / "minimal"
+    declared = (
+        '{"scalars": [{"name": "SC_1", "type": "Integer"}, {"name": "SC_2", "type": "String"}]}\n'
+    )
+    (one / "input" / "scalars.json").write_text(declared, encoding="utf-8")
+    (one / "input" / "scalars.csv").write_text('SC_1,SC_2\n9,"a, b"\n', encoding="utf-8")
+    page = build(src, out, {KEY: page_entry()}) / "index.html"
+    found = sections(page)
+    assert list(found) == [
+        "script.vtl",
+        "input/DS_1.csv",
+        "input/scalars.csv",
+        "input/scalars.json",
+        "expected/DS_r.csv",
+    ]
+    # The values are a table, as the data of a dataset are, and the structure is text.
+    assert cells(found["input/scalars.csv"]) == [["SC_1", "SC_2"], ["9", "a, b"]]
+    assert "<pre>" not in found["input/scalars.csv"]
+    assert pre(found["input/scalars.json"]) == declared
+    text = page.read_text(encoding="utf-8")
+    assert 'href="input/scalars.csv" download' in text
+    assert 'href="input/scalars.json" download' in text
+
+
 def test_example_page_links_a_file_that_is_too_large_or_not_text(tmp_path: Path) -> None:
     src, out = tmp_path / "src", tmp_path / "out"
     one = make_examples(src) / "string" / "length" / "comp" / "minimal"

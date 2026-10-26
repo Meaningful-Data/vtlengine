@@ -151,6 +151,7 @@ def _run_once(files: ExampleFiles, engine: str) -> list[Output]:
         datapoints=datapoints,
         value_domains=value_domains or None,
         external_routines=external_routines or None,
+        scalar_values=files.scalar_values,
         return_only_persistent=False,
         use_duckdb=engine == "duckdb",
     )

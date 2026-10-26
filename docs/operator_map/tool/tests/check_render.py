@@ -623,6 +623,43 @@ def test_the_tables_show_the_cells_of_the_files_as_written(tmp_path: Path) -> No
     assert all("\n" not in table for table in re.findall(r"<table.*?</table>", text))
 
 
+def test_the_input_scalars_are_a_table_captioned_for_them_and_both_files_are_linked(
+    tmp_path: Path,
+) -> None:
+    base = "numeric/modulo/sc_sc/zero_divisor"
+    declared = [{"name": "SC_1", "type": "Integer"}, {"name": "SC_2", "type": "String"}]
+    write_example(
+        tmp_path,
+        base,
+        {
+            "input/scalars.json": json.dumps({"scalars": declared}),
+            "input/scalars.csv": 'SC_1,SC_2\n9,"a, b"\n',
+            "expected/error.json": '{"code": "2-1-15-6"}',
+        },
+    )
+    text = operator_rst(NUMERIC, MODULO, MAP, INDEX, META, examples_root=tmp_path)
+
+    # The values are a table like the data of a dataset, but it is captioned for the input scalars
+    # and not as the data of a dataset named ``scalars``, which no script could use.
+    assert html_tables(text) == [("Input scalars", [["SC_1", "SC_2"], ["9", "a, b"]])]
+    assert '<caption><span class="caption-text">Input scalars</span></caption>' in text
+    assert "<code>scalars</code>" not in text
+    # The structure of the scalars is not a table: it is a file of the example, like the others.
+    (files,) = [
+        line
+        for line in re.findall(r'<p class="om-files">Files: (.*)</p>', text)
+        if "scalars" in line
+    ]
+    folder = f"../examples/{base}"
+    assert re.findall(r'<a href="([^"]+)">([^<]+)</a>', files) == [
+        (f"{folder}/script.vtl", "script.vtl"),
+        (f"{folder}/input/scalars.csv", "input/scalars.csv"),
+        (f"{folder}/input/scalars.json", "input/scalars.json"),
+        (f"{folder}/expected/error.json", "expected/error.json"),
+        (f"{folder}/index.html", "example page ↗"),
+    ]
+
+
 def test_expected_scalars_and_an_expected_error(tmp_path: Path) -> None:
     write_modulo(tmp_path)
     text = operator_rst(NUMERIC, MODULO, MAP, INDEX, META, examples_root=tmp_path)

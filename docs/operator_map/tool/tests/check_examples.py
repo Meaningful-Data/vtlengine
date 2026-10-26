@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
+import csv
 import dataclasses
+import io
 import json
 import shutil
 from pathlib import Path
@@ -18,6 +20,7 @@ from tool.examples import (
     ExpectedComponent,
     ExpectedDataset,
     ExpectedScalar,
+    ScalarValue,
     check_notes,
     example_dir,
     load_example,
@@ -87,6 +90,40 @@ def build_scalar_example(path: Path) -> Path:
     write(path / "script.vtl", "sc_r := 3 + 5;\n")
     write(path / "expected/scalars.json", scalars(scalar("sc_r", "Integer", 8)))
     return path
+
+
+def declared(*pairs: tuple[str, str]) -> str:
+    """The text of an ``input/scalars.json`` file: the input scalars, each with its type."""
+    return json.dumps({"scalars": [{"name": name, "type": type_} for name, type_ in pairs]})
+
+
+def row(*cells: str) -> str:
+    """One line of CSV, a cell quoted where it needs it."""
+    out = io.StringIO()
+    csv.writer(out, lineterminator="\n").writerow(cells)
+    return out.getvalue()
+
+
+def build_scalar_input_example(path: Path) -> Path:
+    """``sc_r := sc_1 + sc_2`` reads its two operands from ``input/scalars.csv``."""
+    write(path / "script.vtl", "sc_r := sc_1 + sc_2;\n")
+    write(path / "input/scalars.json", declared(("sc_1", "Integer"), ("sc_2", "Integer")))
+    write(path / "input/scalars.csv", row("sc_1", "sc_2") + row("9", "4"))
+    write(path / "expected/scalars.json", scalars(scalar("sc_r", "Integer", 13)))
+    return path
+
+
+def write_scalar_input(path: Path, type_: str, cell: str) -> None:
+    """The input scalar ``sc_1`` of ``type_`` that holds ``cell`` in ``input/scalars.csv``."""
+    write(path / "input/scalars.json", declared(("sc_1", type_)))
+    write(path / "input/scalars.csv", row("sc_1") + row(cell))
+
+
+def input_scalars(path: Path) -> dict[str, ScalarValue]:
+    """The values of the input scalars of the example ``path``, which has some."""
+    values = load_example(path).scalar_values
+    assert values is not None
+    return values
 
 
 def error_file(code: Any) -> str:
@@ -405,6 +442,265 @@ def test_loaded_values_are_frozen_dataclasses(tmp_path: Path) -> None:
         assert dataclasses.is_dataclass(value)
         with pytest.raises(dataclasses.FrozenInstanceError):
             setattr(value, field, "other")
+
+
+# --- Input scalars ---
+
+
+def test_input_scalars_are_read_from_scalars_csv_typed_by_scalars_json(tmp_path: Path) -> None:
+    path = build_scalar_input_example(tmp_path / "ex")
+    files = load_example(path)
+
+    assert files.scalar_values == {"sc_1": 9, "sc_2": 4}
+    assert [type(value) for value in input_scalars(path).values()] == [int, int]
+    # scalars.json declares them, and run() needs it: it stays among the structures. scalars.csv
+    # is the values of the scalars, not the data points of a dataset.
+    assert files.structures == [path / "input/scalars.json"]
+    assert files.datapoints == {}
+    assert files.expected_scalars == [ExpectedScalar("sc_r", "Integer", "13")]
+
+
+def test_input_scalars_go_next_to_input_datasets(tmp_path: Path) -> None:
+    path = build_example(tmp_path / "ex")
+    write(path / "input/scalars.json", declared(("sc_1", "Number"), ("sc_2", "String")))
+    write(path / "input/scalars.csv", row("sc_1", "sc_2") + row("2", "a, b"))
+
+    files = load_example(path)
+
+    assert files.scalar_values == {"sc_1": 2.0, "sc_2": "a, b"}
+    assert files.structures == [path / "input/DS_1.json", path / "input/scalars.json"]
+    assert files.datapoints == {"DS_1": path / "input/DS_1.csv"}
+
+
+def test_an_example_without_scalars_csv_has_no_scalar_values(tmp_path: Path) -> None:
+    assert load_example(build_example(tmp_path / "dataset")).scalar_values is None
+    assert load_example(build_scalar_example(tmp_path / "scalar")).scalar_values is None
+    # A structure file that declares scalars, but is not scalars.json, gives them no value.
+    path = build_example(tmp_path / "declared")
+    write(path / "input/sc.json", declared(("sc_1", "Integer")))
+    assert load_example(path).scalar_values is None
+
+
+def test_scalar_values_are_in_the_order_of_scalars_json(tmp_path: Path) -> None:
+    path = build_scalar_input_example(tmp_path / "ex")
+    write(path / "input/scalars.csv", row("sc_2", "sc_1") + row("4", "9"))
+    assert list(input_scalars(path).items()) == [("sc_1", 9), ("sc_2", 4)]
+
+
+@pytest.mark.parametrize(
+    ("type_", "cell", "value"),
+    [
+        ("Integer", "9", 9),
+        ("Integer", "-3", -3),
+        ("Integer", "+5", 5),
+        ("Integer", "007", 7),
+        ("Number", "9", 9.0),
+        ("Number", "1.5", 1.5),
+        ("Number", "-0.25", -0.25),
+        ("Number", ".5", 0.5),
+        ("Number", "5.", 5.0),
+        ("Number", "1E-7", 1e-7),
+        ("Number", "+2e3", 2000.0),
+        ("Boolean", "true", True),
+        ("Boolean", "false", False),
+        ("Boolean", "TRUE", True),
+        ("Boolean", "False", False),
+        ("String", " a, b ", " a, b "),  # verbatim: the spaces stay
+        ("String", "true", "true"),  # a String is not read as what it looks like
+        ("String", "9", "9"),
+        ("Date", "2020-01-31", "2020-01-31"),
+        ("Time_Period", "2020Q1", "2020Q1"),
+        ("Time", "2020-01-01/2020-12-31", "2020-01-01/2020-12-31"),
+        ("Duration", "M", "M"),
+    ],
+)
+def test_an_input_scalar_has_the_python_type_of_its_vtl_type(
+    tmp_path: Path, type_: str, cell: str, value: Any
+) -> None:
+    path = build_scalar_input_example(tmp_path / "ex")
+    write_scalar_input(path, type_, cell)
+
+    (loaded,) = input_scalars(path).values()
+
+    # 9 == 9.0 and True == 1 in Python, so the type is compared apart.
+    assert (type(loaded), loaded) == (type(value), value)
+
+
+@pytest.mark.parametrize(
+    "type_",
+    ["Integer", "Number", "Boolean", "String", "Date", "Time_Period", "Time", "Duration"],
+)
+def test_an_empty_cell_is_a_null_scalar_of_any_type(tmp_path: Path, type_: str) -> None:
+    path = build_scalar_input_example(tmp_path / "ex")
+    write_scalar_input(path, type_, "")
+    assert load_example(path).scalar_values == {"sc_1": None}
+
+
+def test_input_scalars_read_a_file_with_a_byte_order_mark(tmp_path: Path) -> None:
+    path = build_scalar_input_example(tmp_path / "ex")
+    for file in ("input/scalars.csv", "input/scalars.json"):
+        text = (path / file).read_text(encoding="utf-8")
+        (path / file).write_text("\ufeff" + text, encoding="utf-8")
+    assert load_example(path).scalar_values == {"sc_1": 9, "sc_2": 4}
+
+
+def test_scalars_csv_and_scalars_json_go_together(tmp_path: Path) -> None:
+    no_structure = build_scalar_input_example(tmp_path / "no_structure")
+    (no_structure / "input/scalars.json").unlink()
+    with pytest.raises(ExampleError) as info:
+        load_example(no_structure)
+    assert str(info.value) == (
+        f"{no_structure}: missing input/scalars.json (it goes with input/scalars.csv)"
+    )
+
+    no_values = build_scalar_input_example(tmp_path / "no_values")
+    (no_values / "input/scalars.csv").unlink()
+    with pytest.raises(ExampleError) as info:
+        load_example(no_values)
+    assert str(info.value) == (
+        f"{no_values}: missing input/scalars.csv (it goes with input/scalars.json)"
+    )
+
+
+@pytest.mark.parametrize(
+    ("text", "message"),
+    [
+        # A name that scalars.json does not declare, a declared scalar with no column, and both.
+        ("sc_1,sc_2,sc_9\n9,4,1\n", r"\(not in the structure: sc_9\)"),
+        ("sc_1\n9\n", r"\(missing sc_2\)"),
+        ("sc_1,sc_9\n9,1\n", r"\(missing sc_2; not in the structure: sc_9\)"),
+        ("", r"\(missing sc_1, sc_2\)"),  # not even a header
+    ],
+)
+def test_the_columns_of_scalars_csv_are_the_scalars_of_scalars_json(
+    tmp_path: Path, text: str, message: str
+) -> None:
+    path = build_scalar_input_example(tmp_path / "ex")
+    write(path / "input/scalars.csv", text)
+    with pytest.raises(
+        ExampleError, match=r"columns do not match scalars\.json " + message
+    ) as info:
+        load_example(path)
+    assert str(path / "input/scalars.csv") in str(info.value)
+
+
+@pytest.mark.parametrize(
+    ("text", "found"),
+    [
+        ("sc_1,sc_2\n", 0),
+        ("sc_1,sc_2\n9,4\n10,5\n", 2),
+        ("sc_1,sc_2\n9,4\n10,5\n11,6\n", 3),
+    ],
+)
+def test_scalars_csv_has_exactly_one_data_row(tmp_path: Path, text: str, found: int) -> None:
+    path = build_scalar_input_example(tmp_path / "ex")
+    write(path / "input/scalars.csv", text)
+    with pytest.raises(ExampleError) as info:
+        load_example(path)
+    assert str(info.value) == (
+        f"{path / 'input/scalars.csv'}: must have exactly one data row, found {found}"
+    )
+
+
+@pytest.mark.parametrize(
+    ("type_", "cell", "wanted"),
+    [
+        ("Integer", "abc", "an Integer"),
+        ("Integer", "9.0", "an Integer"),  # a whole number is written without a point
+        ("Integer", "1e3", "an Integer"),
+        ("Integer", " 9", "an Integer"),
+        ("Integer", "9 ", "an Integer"),
+        ("Integer", "1_0", "an Integer"),  # Python's int() reads this one, the file does not
+        ("Integer", "\u0663", "an Integer"),  # an Arabic-Indic digit is not an ASCII one
+        ("Integer", "--1", "an Integer"),
+        ("Integer", "true", "an Integer"),
+        ("Number", "abc", "a Number"),
+        ("Number", "1,5", "a Number"),
+        ("Number", "1_0.5", "a Number"),
+        ("Number", "nan", "a Number"),
+        ("Number", "inf", "a Number"),
+        ("Number", "-Infinity", "a Number"),
+        ("Number", "1e999", "a Number"),  # not a finite number once it is read
+        ("Number", ".", "a Number"),
+        ("Number", "1 2", "a Number"),
+        ("Boolean", "yes", "true or false"),
+        ("Boolean", "1", "true or false"),
+        ("Boolean", "0", "true or false"),
+        ("Boolean", "t", "true or false"),
+        ("Boolean", " true", "true or false"),
+    ],
+)
+def test_a_value_that_is_not_of_the_type_of_its_scalar_is_refused(
+    tmp_path: Path, type_: str, cell: str, wanted: str
+) -> None:
+    path = build_scalar_input_example(tmp_path / "ex")
+    write_scalar_input(path, type_, cell)
+    with pytest.raises(ExampleError) as info:
+        load_example(path)
+    assert str(info.value) == (
+        f"{path / 'input/scalars.csv'}: the value of sc_1 must be {wanted}, not {cell!r}"
+    )
+
+
+def test_the_first_value_that_is_not_of_its_type_is_the_one_reported(tmp_path: Path) -> None:
+    path = build_scalar_input_example(tmp_path / "ex")
+    write(path / "input/scalars.csv", row("sc_2", "sc_1") + row("x", "y"))
+    with pytest.raises(ExampleError, match="the value of sc_1 must be an Integer, not 'y'"):
+        load_example(path)
+
+
+SCALARS_MALFORMED = [
+    ("{not json", "invalid JSON"),
+    ("[]", "the document must be an object"),
+    ("{}", "'scalars' must be an array"),
+    ('{"scalars": {}}', "'scalars' must be an array"),
+    ('{"scalars": [3]}', "a scalar must be an object"),
+    ('{"scalars": [{"type": "Integer"}]}', "a scalar name must be a string"),
+    ('{"scalars": [{"name": "sc_1"}]}', "the type of sc_1 must be a string"),
+    ('{"scalars": [{"name": "sc_1", "type": 3}]}', "the type of sc_1 must be a string"),
+    (
+        '{"scalars": [{"name": "sc_1", "type": "Integr"}, {"name": "sc_2", "type": "Integer"}]}',
+        "the type of sc_1 must be one of Integer, Number, Boolean, String, Date, Time_Period, "
+        "Time, Duration, not 'Integr'",
+    ),
+    (
+        '{"scalars": [{"name": "sc_1", "type": "integer"}, {"name": "sc_2", "type": "Integer"}]}',
+        "the type of sc_1 must be one of Integer, .*, not 'integer'",  # the case matters to run()
+    ),
+    (declared(("sc_1", "Integer"), ("sc_1", "Integer")), "duplicate scalar 'sc_1'"),
+]
+
+
+@pytest.mark.parametrize(
+    ("content", "message"),
+    SCALARS_MALFORMED,
+    ids=[message for _, message in SCALARS_MALFORMED],
+)
+def test_a_scalars_json_that_is_malformed_raises_example_error(
+    tmp_path: Path, content: str, message: str
+) -> None:
+    path = build_scalar_input_example(tmp_path / "ex")
+    write(path / "input/scalars.json", content)
+    with pytest.raises(ExampleError, match=message) as info:
+        load_example(path)
+    assert str(path / "input/scalars.json") in str(info.value)
+
+
+def test_a_scalars_csv_that_is_malformed_raises_example_error(tmp_path: Path) -> None:
+    path = build_scalar_input_example(tmp_path / "ragged")
+    write(path / "input/scalars.csv", "sc_1,sc_2\n9,4,1\n")
+    with pytest.raises(ExampleError, match="line 2 has more fields than the header"):
+        load_example(path)
+
+    twice = build_scalar_input_example(tmp_path / "twice")
+    write(twice / "input/scalars.csv", "sc_1,sc_1\n9,4\n")
+    with pytest.raises(ExampleError, match="duplicate column 'sc_1'"):
+        load_example(twice)
+
+    not_utf8 = build_scalar_input_example(tmp_path / "not_utf8")
+    (not_utf8 / "input/scalars.csv").write_bytes(b"sc_1,sc_2\n9,caf\xe9\n")
+    with pytest.raises(ExampleError, match="not valid UTF-8"):
+        load_example(not_utf8)
 
 
 # --- CSV files ---

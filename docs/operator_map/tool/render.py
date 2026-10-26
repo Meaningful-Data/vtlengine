@@ -28,7 +28,8 @@ diagram is grouped by block. Then:
   (``Variant.box``), the title of each box is a caption above its first form (``_box_caption``),
   and there is no border key: the titles tell the boxes apart. Each example is a collapsible
   block: its title, its status and the mark of each engine (``tool.status.mark``), then its notes
-  (``.. include::``), its script (``.. literalinclude::``), its data, its expected scalars or
+  (``.. include::``), its script (``.. literalinclude::``), its data (the values of its input
+  scalars, ``input/scalars.csv``, are a table captioned "Input scalars"), its expected scalars or
   error, and links to its files and to its own page in the built site.
 
 The data are HTML tables made here from the CSV files, not ``csv-table``: docutils reads a cell of
@@ -190,6 +191,8 @@ _DIAGRAM_CONFIG: Final = '{"flowchart": {"useMaxWidth": false}}'
 # expects, the other inputs of ``run``, then anything else. The notes are on the page already.
 _FILE_ORDER: Final = ("script.vtl", "input", "expected", "value_domains", "external_routines")
 _NOT_LINKED: Final = frozenset({"notes.rst", "notes.md"})
+# The file of ``input/`` that holds the values of the input scalars: a table, not a dataset's data.
+_SCALAR_VALUES: Final = "scalars.csv"
 # How a list of types names the types that stand for many: ``scalar`` and ``any``.
 _TYPE_NAMES: Final = {ANY_SCALAR: "any scalar", ANY_TYPE: "any type"}
 # The takes of an operator that are folded: it takes any value.
@@ -704,7 +707,7 @@ def _data_table(path: Path, what: str) -> str:
     with path.open(encoding="utf-8-sig", newline="") as handle:
         rows = list(csv.reader(handle))
     header, body = (rows[0], rows[1:]) if rows else ([], [])
-    caption = f"{html.escape(what)} <code>{html.escape(path.stem)}</code>"
+    caption = f"{html.escape(what)} {_table_of(path)}"
     if not body:
         caption += " (no data points)"
     head = "".join(f'<th class="head">{_cell(cell)}</th>' for cell in header)
@@ -714,6 +717,17 @@ def _data_table(path: Path, what: str) -> str:
         f'<caption><span class="caption-text">{caption}</span></caption>'
         f"<thead><tr>{head}</tr></thead><tbody>{lines}</tbody></table>"
     )
+
+
+def _table_of(path: Path) -> str:
+    """What the table of a CSV file is of: its dataset, as code, or the input scalars.
+
+    ``input/scalars.csv`` holds the values of the input scalars, not the data of a dataset named
+    ``scalars``, which no script could use: its caption is plain text, like "Expected scalars".
+    """
+    if path.name == _SCALAR_VALUES:
+        return "scalars"
+    return f"<code>{html.escape(path.stem)}</code>"
 
 
 def _cell(text: str) -> str:

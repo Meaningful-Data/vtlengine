@@ -27,7 +27,14 @@ import pandas as pd
 import pytest
 
 from tool import child, runner
-from tool.compare import ActualComponent, ActualDataset, ActualScalar, Output, compare_dataset
+from tool.compare import (
+    ActualComponent,
+    ActualDataset,
+    ActualScalar,
+    Output,
+    compare_dataset,
+    compare_scalar,
+)
 from tool.examples import ERROR_CODE, load_example
 from tool.runner import Engine, RunOutput, child_env, run_all, run_example
 from vtlengine.DataTypes import Boolean, Integer, Null, Number, String, TimeInterval, TimePeriod
@@ -76,6 +83,40 @@ EXTRAS_SCRIPT = (
 EXTRAS_COMPONENTS = [("Id_1", "Identifier", "Integer", False), ("Me_1", "Measure", "String", True)]
 VALUE_DOMAIN = {"name": "Countries", "type": "String", "setlist": ["DE", "FR", "IT"]}
 EXTERNAL_ROUTINE = {"name": "SQL_1", "query": "SELECT Id_1, Me_1 FROM DS_1 WHERE Id_1 = 1;"}
+
+# An example whose operands are input scalars: one of each kind that the loader reads apart (an
+# integer, a number, a boolean), some that stay text, and a null. ``input/scalars.json`` declares
+# them, and ``input/scalars.csv`` holds their values.
+SCALARS_SCRIPT = (
+    "sc_i := sc_1 + sc_2;\n"
+    "sc_n := sc_3 * 3;\n"
+    "sc_b := not sc_4;\n"
+    'sc_s := sc_5 || "!";\n'
+    "sc_z := isnull(sc_6);\n"
+    "sc_d := sc_7;\n"
+    "sc_p := sc_8;\n"
+)
+SCALARS_INPUT = [
+    ("sc_1", "Integer", "9"),
+    ("sc_2", "Integer", "4"),
+    ("sc_3", "Number", "1.5"),
+    ("sc_4", "Boolean", "true"),
+    ("sc_5", "String", "ab"),
+    ("sc_6", "Integer", ""),  # an empty cell is a null
+    ("sc_7", "Date", "2020-01-31"),
+    ("sc_8", "Time_Period", "2020Q1"),
+]
+# What the script gives, worked out by hand: 9 + 4, 1.5 * 3, the negation of true, "ab" followed by
+# "!", true for the null one, and the date and the period as they came.
+SCALARS_RESULT = [
+    ("sc_i", "Integer", "13"),
+    ("sc_n", "Number", "4.5"),
+    ("sc_b", "Boolean", "False"),
+    ("sc_s", "String", "ab!"),
+    ("sc_z", "Boolean", "True"),
+    ("sc_d", "Date", "2020-01-31"),
+    ("sc_p", "Time_Period", "2020Q1"),
+]
 
 # What a child prints when it answers, and what the runner makes of it.
 OK_PAYLOAD: dict[str, Any] = {
@@ -158,6 +199,30 @@ def build_extras_example(path: Path) -> Path:
     write(path / "external_routines/SQL_1.json", json.dumps(EXTERNAL_ROUTINE))
     write(path / "expected/DS_r.json", structure("DS_r", EXTRAS_COMPONENTS))
     write(path / "expected/DS_r.csv", "Id_1,Me_1\n1,DE\n2,XX\n")
+    return path
+
+
+def write_scalar_inputs(path: Path, items: list[tuple[str, str, str]]) -> None:
+    """``input/scalars.json`` and ``input/scalars.csv`` of the scalars ``(name, type, value)``."""
+    declared = [{"name": name, "type": type_} for name, type_, _ in items]
+    write(path / "input/scalars.json", json.dumps({"scalars": declared}))
+    write(
+        path / "input/scalars.csv",
+        ",".join(name for name, _, _ in items)
+        + "\n"
+        + ",".join(cell for _, _, cell in items)
+        + "\n",
+    )
+
+
+def build_scalars_example(path: Path) -> Path:
+    """Scalar operands that come from ``input/scalars.csv``, and the scalars that they give."""
+    write(path / "script.vtl", SCALARS_SCRIPT)
+    write_scalar_inputs(path, SCALARS_INPUT)
+    expected = [
+        {"name": name, "type": type_, "value": value} for name, type_, value in SCALARS_RESULT
+    ]
+    write(path / "expected/scalars.json", json.dumps({"scalars": expected}))
     return path
 
 
@@ -322,6 +387,32 @@ def test_value_domains_and_external_routines_reach_the_engines(tmp_path: Path) -
         assert results["DS_s"].rows == [{"Id_1": "1", "Me_1": "DE"}], engine
 
 
+def test_input_scalars_reach_the_engines(tmp_path: Path) -> None:
+    path = build_scalars_example(tmp_path / "ex")
+    expected = load_example(path).expected_scalars
+    for engine in ENGINES:
+        out = run_example(path, engine, TIMEOUT)
+
+        assert out.ok, (engine, out.error_type, out.error_message)
+        assert out.datasets == [], engine
+        # The operands are the values of scalars.csv, each as its type holds it: an integer adds,
+        # a number multiplies, a boolean negates, a null is null.
+        assert out.scalars == [ActualScalar(*result) for result in SCALARS_RESULT], engine
+        assert [compare_scalar(want, got) for want, got in zip(expected, out.scalars)] == [None] * 7
+
+
+def test_input_scalars_and_input_datasets_reach_the_engines_together(tmp_path: Path) -> None:
+    path = build_example(tmp_path / "ex", script="DS_r := DS_1 * sc_1;\n")
+    write_scalar_inputs(path, [("sc_1", "Integer", "2")])
+    for engine in ENGINES:
+        out = run_example(path, engine, TIMEOUT)
+
+        assert out.ok, (engine, out.error_type, out.error_message)
+        (result,) = out.datasets
+        doubled = {(row["Id_1"], row["Id_2"]): row["Me_1"] for row in result.rows}
+        assert doubled == {("10", "A"): "10", ("10", "B"): "4", ("11", "A"): "6", ("11", "B"): "8"}
+
+
 def test_an_example_that_cannot_be_loaded_is_an_error_of_the_child_not_a_crash(
     tmp_path: Path,
 ) -> None:
@@ -469,6 +560,7 @@ def vtlengine_call(path: Path, engine: Engine, **more: Any) -> dict[str, Any]:
         "datapoints": {"DS_1": path / "input/DS_1.csv", "DS_2": path / "input/DS_2.csv"},
         "value_domains": None,
         "external_routines": None,
+        "scalar_values": None,
         # The results of every assignment, not only the ones of the persistent ones (<-).
         "return_only_persistent": False,
         "use_duckdb": engine == "duckdb",
@@ -490,10 +582,15 @@ def test_the_example_goes_to_vtlengine_as_it_is(
     full = build_example(tmp_path / "full")
     write(full / "value_domains/vd.json", "{}")
     write(full / "external_routines/er.json", "{}")
+    scalars = build_example(tmp_path / "scalars")
+    write_scalar_inputs(
+        scalars, [("sc_1", "Integer", "2"), ("sc_2", "String", ""), ("sc_3", "Number", "1.5")]
+    )
 
     for engine in ENGINES:
+        # No value domains and no input scalars: none are passed.
         assert child._run_once(load_example(plain), engine) == []
-        assert calls.pop() == vtlengine_call(plain, engine)  # no value domains: none are passed
+        assert calls.pop() == vtlengine_call(plain, engine)
         assert child._run_once(load_example(full), engine) == []
         assert calls.pop() == vtlengine_call(
             full,
@@ -501,6 +598,12 @@ def test_the_example_goes_to_vtlengine_as_it_is(
             value_domains=[full / "value_domains/vd.json"],
             external_routines=[full / "external_routines/er.json"],
         )
+        # The values of the scalars go as ``scalar_values``, typed, a null as None. Their
+        # structure goes with the others, and their file is not the data of a dataset.
+        assert child._run_once(load_example(scalars), engine) == []
+        call = vtlengine_call(scalars, engine, scalar_values={"sc_1": 2, "sc_2": None, "sc_3": 1.5})
+        call["data_structures"].append(scalars / "input/scalars.json")
+        assert calls.pop() == call
     assert calls == []
 
 
