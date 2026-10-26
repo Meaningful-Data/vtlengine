@@ -4,7 +4,7 @@ Join operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 0 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.6rc2 (e84ced22) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 0 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -28,7 +28,7 @@ Join operators
        B["Join operators"]:::block
        join__inner_join["Inner Join · inner_join<br/>🟢19 🟡3"]:::partial
        join__left_join["Left Join · left_join<br/>🟢22 🟡1"]:::partial
-       join__full_join["Full Join · full_join<br/>🟢21 🔴2"]:::partial
+       join__full_join["Full Join · full_join<br/>🟢21 🟡1 🛡️1"]:::partial
        join__cross_join["Cross Join · cross_join<br/>🟢20 🟡1"]:::partial
        join__inner_join --- B
        join__left_join --- B
@@ -137,14 +137,14 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - SemanticError 1-1-13-4: At op left\_join: Using clause, using=[\'Id\_1\'], does not define all the Identifiers, of non reference Dataset DS\_2. Please check transformation with output Dataset DS\_r
    * - :doc:`Full Join <full_join>`
      - `full\_join(DS, DS using Id) <full_join.html#form-using>`__
-     - 🔴
+     - 🛡️
      - `All common identifiers <full_join.html#ex-using-all-common-identifiers>`__
      - 🛡 1-1-13-8
      - 🛡 1-1-13-8
      - SemanticError 1-1-13-8: At op full\_join: No available using clause. Please check transformation with output Dataset DS\_r
    * - :doc:`Full Join <full_join>`
      - `full\_join(DS, DS using Id, nvl(Id, c)) <full_join.html#form-using-nvl>`__
-     - 🔴
+     - 🟡
      - `Nvl for extra identifier <full_join.html#ex-using-nvl-nvl-for-extra-identifier>`__
      - 🛡 1-1-13-8
      - 🛡 1-1-13-8

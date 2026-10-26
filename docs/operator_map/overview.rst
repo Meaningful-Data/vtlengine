@@ -110,17 +110,17 @@ The counts are over the forms of the operators of each block.
      - 62
      - 38
      - 3
-     - 1
-     - 16
+     - 2
+     - 15
      - 4
    * - :doc:`Join operators <join/index>`
      - 🟡
      - 4
      - 89
      - 82
-     - 5
+     - 6
+     - 1
      - 0
-     - 2
      - 0
    * - :doc:`String operators <string/index>`
      - 🟡
@@ -235,9 +235,9 @@ The counts are over the forms of the operators of each block.
      - 115
      - 727
      - 589
-     - 71
-     - 13
-     - 44
+     - 72
+     - 15
+     - 41
      - 10
 
 Not implemented
@@ -265,10 +265,6 @@ The codes of the errors of vtlengine that say that it does not implement somethi
      - Value Domain '{name}' not available for cast operator or scalar type representation or rulesets.
    * - ``0-5-1-10``
      - Invalid parameter type definition {definition}.
-   * - ``1-1-13-8``
-     - At op ``{op}``: No available using clause.
-   * - ``1-3-2-1``
-     - Eval could not be called without a {option} type definition.
 
 📌 Team decisions
 --------------------------------

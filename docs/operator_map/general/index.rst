@@ -4,7 +4,7 @@ General purpose operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 4 of 7 operators all ok</span> · <span class="om-gen">vtlengine 1.9.6rc2 (e84ced22) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip diverge">🔵 4 of 7 operators all ok</span> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -31,7 +31,7 @@ General purpose operators
        general__non_persistent_assignment["Non-persistent assignment · #58;#61;<br/>🟢2"]:::ok
        general__membership["Membership · #35;<br/>🟢4 🟡1"]:::partial
        general__udo_call["User-defined operator call · name( )<br/>🟢4"]:::ok
-       general__eval["Evaluation of an external routine · eval<br/>🟢1 🛡️1 🔴2"]:::partial
+       general__eval["Evaluation of an external routine · eval<br/>🟢1 🛡️2 🔴1"]:::partial
        general__cast["Type conversion · cast<br/>🟢21 🟡2 🔴14 🔵4"]:::diverge
        general__parentheses --- B
        general__persistent_assignment --- B
@@ -233,7 +233,7 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - SemanticError 1-2-23: Eval operand must be a Dataset. Please check transformation with output Dataset DS\_r
    * - :doc:`Evaluation of an external routine <eval>`
      - `eval(R(DS) returns string) <eval.html#form-scalar-return>`__
-     - 🔴
+     - 🛡️
      - `String result <eval.html#ex-scalar-return-string-result>`__
      - 🛡 1-3-2-1
      - 🛡 1-3-2-1

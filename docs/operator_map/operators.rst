@@ -27,17 +27,17 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 62
      - 38
      - 3
-     - 1
-     - 16
+     - 2
+     - 15
      - 4
    * - :doc:`Join operators <join/index>`
      - 🟡
      - 4
      - 89
      - 82
-     - 5
+     - 6
+     - 1
      - 0
-     - 2
      - 0
    * - :doc:`String operators <string/index>`
      - 🟡
@@ -143,9 +143,9 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 111
      - 698
      - 571
-     - 67
-     - 12
-     - 38
+     - 68
+     - 14
+     - 35
      - 10
 
 .. toctree::

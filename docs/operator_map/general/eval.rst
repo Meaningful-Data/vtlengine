@@ -4,7 +4,7 @@ Evaluation of an external routine · ``eval``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 1 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Evaluation%20of%20an%20external%20routine/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (e84ced22) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 1 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Evaluation%20of%20an%20external%20routine/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -29,12 +29,12 @@ Evaluation of an external routine · ``eval``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Evaluation of an external routine · eval<br/>🟢1 🛡️1 🔴2"]:::partial
+       O["Evaluation of an external routine · eval<br/>🟢1 🛡️2 🔴1"]:::partial
        subgraph G_ds["Dataset"]
            direction LR
            v_sql_dataset["eval(R(DS))"]:::ok
            v_sql_dataset_scalar_arg["eval(R(DS, sc))"]:::refused
-           v_scalar_return["eval(R(DS) returns string)"]:::missing
+           v_scalar_return["eval(R(DS) returns string)"]:::refused
        end
        subgraph G_comp["Component"]
            direction LR
@@ -123,12 +123,12 @@ eval(R(DS, sc)) 🛡️ · external routine, any scalar → any type
 
    <span class="om-anchor" id="form-scalar-return"></span>
 
-eval(R(DS) returns string) 🔴 · external routine, any scalar → string
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+eval(R(DS) returns string) 🛡️ · external routine, any scalar → string
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-scalar-return-string-result" open><summary><span class="om-ex-title">String result</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-2-1</code> · DuckDB 🛡 <code>1-3-2-1</code></span></summary>
+   <details class="om-example" id="ex-scalar-return-string-result" open><summary><span class="om-ex-title">String result</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-3-2-1</code> · DuckDB 🛡 <code>1-3-2-1</code></span></summary>
    <p class="om-detail">SemanticError 1-3-2-1: Eval could not be called without a dataset output type definition. Please check transformation with output Dataset SC_r</p>
 
 .. include:: ../examples/general/eval/scalar_return/string_result/notes.rst

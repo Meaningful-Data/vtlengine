@@ -7054,7 +7054,7 @@
         "error_type": "SemanticError",
         "outcome": "error"
       },
-      "status": "missing"
+      "status": "refused"
     },
     "general/eval/sql_dataset/sql_query_on_dataset": {
       "duckdb": {
@@ -9278,7 +9278,7 @@
         "error_type": "SemanticError",
         "outcome": "error"
       },
-      "status": "missing"
+      "status": "refused"
     },
     "join/full_join/using_nvl/nvl_for_extra_identifier": {
       "duckdb": {
@@ -9294,7 +9294,7 @@
         "error_type": "SemanticError",
         "outcome": "error"
       },
-      "status": "missing"
+      "status": "refused"
     },
     "join/full_join/using_nvl/nvl_per_operand_alias": {
       "duckdb": {
@@ -15030,7 +15030,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "140e946ed3f888951adb8bb66ea45030be84e2aa",
-    "vtlengine_commit": "e84ced22",
+    "vtlengine_commit": "9dc0a08a",
     "vtlengine_version": "1.9.6rc2"
   }
 }
