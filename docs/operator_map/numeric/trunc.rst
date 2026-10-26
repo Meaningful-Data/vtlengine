@@ -4,7 +4,7 @@ Truncation · ``trunc``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 8 of 11 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Truncation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 8 of 11 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Truncation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -340,6 +340,10 @@ trunc(sc, n) 🟢 · number, integer → number
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>3.14159</td><td>4</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -353,7 +357,7 @@ trunc(sc, n) 🟢 · number, integer → number
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/numeric/trunc/sc_digits/drops_after_fourth_decimal/script.vtl">script.vtl</a> · <a href="../examples/numeric/trunc/sc_digits/drops_after_fourth_decimal/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/numeric/trunc/sc_digits/drops_after_fourth_decimal/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/numeric/trunc/sc_digits/drops_after_fourth_decimal/script.vtl">script.vtl</a> · <a href="../examples/numeric/trunc/sc_digits/drops_after_fourth_decimal/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/numeric/trunc/sc_digits/drops_after_fourth_decimal/input/scalars.json">input/scalars.json</a> · <a href="../examples/numeric/trunc/sc_digits/drops_after_fourth_decimal/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/numeric/trunc/sc_digits/drops_after_fourth_decimal/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -373,6 +377,10 @@ trunc(sc) 🟢 · number → integer
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>12345.6</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -386,7 +394,7 @@ trunc(sc) 🟢 · number → integer
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/numeric/trunc/sc_no_digits/drops_fraction_to_integer/script.vtl">script.vtl</a> · <a href="../examples/numeric/trunc/sc_no_digits/drops_fraction_to_integer/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/numeric/trunc/sc_no_digits/drops_fraction_to_integer/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/numeric/trunc/sc_no_digits/drops_fraction_to_integer/script.vtl">script.vtl</a> · <a href="../examples/numeric/trunc/sc_no_digits/drops_fraction_to_integer/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/numeric/trunc/sc_no_digits/drops_fraction_to_integer/input/scalars.json">input/scalars.json</a> · <a href="../examples/numeric/trunc/sc_no_digits/drops_fraction_to_integer/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/numeric/trunc/sc_no_digits/drops_fraction_to_integer/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -406,6 +414,10 @@ trunc(sc, \_) 🟢 · number → integer
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>12345.6</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -419,5 +431,5 @@ trunc(sc, \_) 🟢 · number → integer
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/numeric/trunc/sc_placeholder/placeholder_for_digits/script.vtl">script.vtl</a> · <a href="../examples/numeric/trunc/sc_placeholder/placeholder_for_digits/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/numeric/trunc/sc_placeholder/placeholder_for_digits/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/numeric/trunc/sc_placeholder/placeholder_for_digits/script.vtl">script.vtl</a> · <a href="../examples/numeric/trunc/sc_placeholder/placeholder_for_digits/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/numeric/trunc/sc_placeholder/placeholder_for_digits/input/scalars.json">input/scalars.json</a> · <a href="../examples/numeric/trunc/sc_placeholder/placeholder_for_digits/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/numeric/trunc/sc_placeholder/placeholder_for_digits/index.html">example page ↗</a></p>
    </details>

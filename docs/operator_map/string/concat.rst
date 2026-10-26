@@ -4,7 +4,7 @@ String concatenation · ``||``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 7 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/String%20concatenation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 7 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/String%20concatenation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -248,13 +248,17 @@ sc \|\| sc 🟢 · string → string
 
 .. raw:: html
 
-   <details class="om-example" id="ex-sc-sc-two-string-literals" open><summary><span class="om-ex-title">Two string literals</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-sc-sc-two-strings" open><summary><span class="om-ex-title">Two strings</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
-.. include:: ../examples/string/concat/sc_sc/two_string_literals/notes.rst
+.. include:: ../examples/string/concat/sc_sc/two_strings/notes.rst
 
-.. literalinclude:: ../examples/string/concat/sc_sc/two_string_literals/script.vtl
+.. literalinclude:: ../examples/string/concat/sc_sc/two_strings/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>Hello</td><td>, World</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -269,5 +273,5 @@ sc \|\| sc 🟢 · string → string
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/string/concat/sc_sc/two_string_literals/script.vtl">script.vtl</a> · <a href="../examples/string/concat/sc_sc/two_string_literals/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/concat/sc_sc/two_string_literals/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/string/concat/sc_sc/two_strings/script.vtl">script.vtl</a> · <a href="../examples/string/concat/sc_sc/two_strings/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/string/concat/sc_sc/two_strings/input/scalars.json">input/scalars.json</a> · <a href="../examples/string/concat/sc_sc/two_strings/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/concat/sc_sc/two_strings/index.html">example page ↗</a></p>
    </details>

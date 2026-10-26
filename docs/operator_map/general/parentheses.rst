@@ -4,7 +4,7 @@ Parentheses · ``( )``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 3 of 3 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Parentheses/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 3 of 3 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Parentheses/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -139,6 +139,10 @@ Forms
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th><th class="head">SC_3</th></tr></thead><tbody><tr><td>2</td><td>3</td><td>4</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -152,7 +156,7 @@ Forms
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/general/parentheses/sc/addition_first/script.vtl">script.vtl</a> · <a href="../examples/general/parentheses/sc/addition_first/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/general/parentheses/sc/addition_first/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/general/parentheses/sc/addition_first/script.vtl">script.vtl</a> · <a href="../examples/general/parentheses/sc/addition_first/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/general/parentheses/sc/addition_first/input/scalars.json">input/scalars.json</a> · <a href="../examples/general/parentheses/sc/addition_first/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/general/parentheses/sc/addition_first/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -164,6 +168,10 @@ Forms
 .. literalinclude:: ../examples/general/parentheses/sc/nested_parentheses/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th><th class="head">SC_3</th><th class="head">SC_4</th><th class="head">SC_5</th></tr></thead><tbody><tr><td>20</td><td>10</td><td>2</td><td>3</td><td>3</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -178,5 +186,5 @@ Forms
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/general/parentheses/sc/nested_parentheses/script.vtl">script.vtl</a> · <a href="../examples/general/parentheses/sc/nested_parentheses/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/general/parentheses/sc/nested_parentheses/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/general/parentheses/sc/nested_parentheses/script.vtl">script.vtl</a> · <a href="../examples/general/parentheses/sc/nested_parentheses/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/general/parentheses/sc/nested_parentheses/input/scalars.json">input/scalars.json</a> · <a href="../examples/general/parentheses/sc/nested_parentheses/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/general/parentheses/sc/nested_parentheses/index.html">example page ↗</a></p>
    </details>

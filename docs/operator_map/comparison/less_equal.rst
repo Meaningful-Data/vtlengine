@@ -4,7 +4,7 @@ Less than or equal to · ``<=``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 7 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Comparison%20operators/Less%20than/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 7 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Comparison%20operators/Less%20than/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -256,6 +256,10 @@ sc <= sc 🟢 · any scalar → boolean
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>5</td><td>5</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -269,5 +273,5 @@ sc <= sc 🟢 · any scalar → boolean
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/comparison/less_equal/sc_sc/equal_numbers/script.vtl">script.vtl</a> · <a href="../examples/comparison/less_equal/sc_sc/equal_numbers/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/comparison/less_equal/sc_sc/equal_numbers/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/comparison/less_equal/sc_sc/equal_numbers/script.vtl">script.vtl</a> · <a href="../examples/comparison/less_equal/sc_sc/equal_numbers/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/comparison/less_equal/sc_sc/equal_numbers/input/scalars.json">input/scalars.json</a> · <a href="../examples/comparison/less_equal/sc_sc/equal_numbers/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/comparison/less_equal/sc_sc/equal_numbers/index.html">example page ↗</a></p>
    </details>

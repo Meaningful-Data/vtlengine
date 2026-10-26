@@ -4,7 +4,7 @@ Period indicator · ``period_indicator``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 3 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Period%20indicator/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 3 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Period%20indicator/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -168,6 +168,10 @@ period\_indicator(sc) 🟢 · time_period → duration
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2010Q1</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -181,5 +185,5 @@ period\_indicator(sc) 🟢 · time_period → duration
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/time/period_indicator/sc/quarterly_period/script.vtl">script.vtl</a> · <a href="../examples/time/period_indicator/sc/quarterly_period/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/period_indicator/sc/quarterly_period/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/time/period_indicator/sc/quarterly_period/script.vtl">script.vtl</a> · <a href="../examples/time/period_indicator/sc/quarterly_period/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/time/period_indicator/sc/quarterly_period/input/scalars.json">input/scalars.json</a> · <a href="../examples/time/period_indicator/sc/quarterly_period/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/period_indicator/sc/quarterly_period/index.html">example page ↗</a></p>
    </details>

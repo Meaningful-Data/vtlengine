@@ -4,7 +4,7 @@ Logical disjunction · ``or``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 7 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Boolean%20operators/Logical%20disjunction/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 7 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Boolean%20operators/Logical%20disjunction/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -397,6 +397,10 @@ sc or sc 🟢 · boolean → boolean
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_true</th><th class="head">SC_false</th></tr></thead><tbody><tr><td>true</td><td>false</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -419,7 +423,7 @@ sc or sc 🟢 · boolean → boolean
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/boolean/or/sc_sc/all_four_boolean_combinations/script.vtl">script.vtl</a> · <a href="../examples/boolean/or/sc_sc/all_four_boolean_combinations/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/boolean/or/sc_sc/all_four_boolean_combinations/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/boolean/or/sc_sc/all_four_boolean_combinations/script.vtl">script.vtl</a> · <a href="../examples/boolean/or/sc_sc/all_four_boolean_combinations/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/boolean/or/sc_sc/all_four_boolean_combinations/input/scalars.json">input/scalars.json</a> · <a href="../examples/boolean/or/sc_sc/all_four_boolean_combinations/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/boolean/or/sc_sc/all_four_boolean_combinations/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -431,6 +435,10 @@ sc or sc 🟢 · boolean → boolean
 .. literalinclude:: ../examples/boolean/or/sc_sc/one_null_operand_on_either_side/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_true</th><th class="head">SC_null</th><th class="head">SC_false</th></tr></thead><tbody><tr><td>true</td><td></td><td>false</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -454,7 +462,7 @@ sc or sc 🟢 · boolean → boolean
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/boolean/or/sc_sc/one_null_operand_on_either_side/script.vtl">script.vtl</a> · <a href="../examples/boolean/or/sc_sc/one_null_operand_on_either_side/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/boolean/or/sc_sc/one_null_operand_on_either_side/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/boolean/or/sc_sc/one_null_operand_on_either_side/script.vtl">script.vtl</a> · <a href="../examples/boolean/or/sc_sc/one_null_operand_on_either_side/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/boolean/or/sc_sc/one_null_operand_on_either_side/input/scalars.json">input/scalars.json</a> · <a href="../examples/boolean/or/sc_sc/one_null_operand_on_either_side/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/boolean/or/sc_sc/one_null_operand_on_either_side/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -466,6 +474,10 @@ sc or sc 🟢 · boolean → boolean
 .. literalinclude:: ../examples/boolean/or/sc_sc/both_operands_null/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td></td><td></td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -480,5 +492,5 @@ sc or sc 🟢 · boolean → boolean
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/boolean/or/sc_sc/both_operands_null/script.vtl">script.vtl</a> · <a href="../examples/boolean/or/sc_sc/both_operands_null/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/boolean/or/sc_sc/both_operands_null/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/boolean/or/sc_sc/both_operands_null/script.vtl">script.vtl</a> · <a href="../examples/boolean/or/sc_sc/both_operands_null/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/boolean/or/sc_sc/both_operands_null/input/scalars.json">input/scalars.json</a> · <a href="../examples/boolean/or/sc_sc/both_operands_null/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/boolean/or/sc_sc/both_operands_null/index.html">example page ↗</a></p>
    </details>

@@ -3936,7 +3936,7 @@
       },
       "status": "ok"
     },
-    "comparison/in/sc_set/member_of_a_set_literal": {
+    "comparison/in/sc_set/member_of_a_set": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -3984,7 +3984,7 @@
       },
       "status": "ok"
     },
-    "comparison/isnull/sc/non_null_string_literal": {
+    "comparison/isnull/sc/non_null_string": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4288,7 +4288,7 @@
       },
       "status": "ok"
     },
-    "comparison/match_characters/sc_sc/matching_string_literal": {
+    "comparison/match_characters/sc_sc/matching_string": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -4480,7 +4480,7 @@
       },
       "status": "ok"
     },
-    "comparison/not_in/sc_set/member_of_a_set_literal": {
+    "comparison/not_in/sc_set/member_of_a_set": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6736,7 +6736,7 @@
       },
       "status": "missing"
     },
-    "general/cast/string_to_integer_sc/string_literal": {
+    "general/cast/string_to_integer_sc/string_of_digits": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12224,7 +12224,7 @@
       },
       "status": "ok"
     },
-    "string/concat/sc_sc/two_string_literals": {
+    "string/concat/sc_sc/two_strings": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -15030,7 +15030,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "140e946ed3f888951adb8bb66ea45030be84e2aa",
-    "vtlengine_commit": "9dc0a08a",
+    "vtlengine_commit": "ddd17ff6",
     "vtlengine_version": "1.9.6rc2"
   }
 }

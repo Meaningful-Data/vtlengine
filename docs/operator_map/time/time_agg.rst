@@ -4,7 +4,7 @@ Time aggregation · ``time_agg``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 7 of 8 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Time%20aggregation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 7 of 8 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Time%20aggregation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -184,6 +184,10 @@ time\_agg(p, sc) on time\_period 🟢 · time_period, duration → time_period
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2012M01</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -197,7 +201,7 @@ time\_agg(p, sc) on time\_period 🟢 · time_period, duration → time_period
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/time/time_agg/sc_time_period/month_to_quarter/script.vtl">script.vtl</a> · <a href="../examples/time/time_agg/sc_time_period/month_to_quarter/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/time_agg/sc_time_period/month_to_quarter/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/time/time_agg/sc_time_period/month_to_quarter/script.vtl">script.vtl</a> · <a href="../examples/time/time_agg/sc_time_period/month_to_quarter/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/time/time_agg/sc_time_period/month_to_quarter/input/scalars.json">input/scalars.json</a> · <a href="../examples/time/time_agg/sc_time_period/month_to_quarter/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/time_agg/sc_time_period/month_to_quarter/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -218,6 +222,10 @@ time\_agg(p, sc) on date 🛡️ · date, duration → date
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2012-12-23</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -231,7 +239,7 @@ time\_agg(p, sc) on date 🛡️ · date, duration → date
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/time/time_agg/sc_date/without_first_or_last/script.vtl">script.vtl</a> · <a href="../examples/time/time_agg/sc_date/without_first_or_last/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/time_agg/sc_date/without_first_or_last/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/time/time_agg/sc_date/without_first_or_last/script.vtl">script.vtl</a> · <a href="../examples/time/time_agg/sc_date/without_first_or_last/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/time/time_agg/sc_date/without_first_or_last/input/scalars.json">input/scalars.json</a> · <a href="../examples/time/time_agg/sc_date/without_first_or_last/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/time_agg/sc_date/without_first_or_last/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -251,6 +259,10 @@ time\_agg(p, from, sc) 🟢 · time, duration → time
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2012Q2</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -264,7 +276,7 @@ time\_agg(p, from, sc) 🟢 · time, duration → time
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/time/time_agg/period_from/quarter_to_year/script.vtl">script.vtl</a> · <a href="../examples/time/time_agg/period_from/quarter_to_year/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/time_agg/period_from/quarter_to_year/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/time/time_agg/period_from/quarter_to_year/script.vtl">script.vtl</a> · <a href="../examples/time/time_agg/period_from/quarter_to_year/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/time/time_agg/period_from/quarter_to_year/input/scalars.json">input/scalars.json</a> · <a href="../examples/time/time_agg/period_from/quarter_to_year/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/time_agg/period_from/quarter_to_year/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -284,6 +296,10 @@ time\_agg(p, sc, first) on date 🟢 · date, duration → date
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2012-02-13</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -297,7 +313,7 @@ time\_agg(p, sc, first) on date 🟢 · date, duration → date
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/time/time_agg/first/start_of_the_year/script.vtl">script.vtl</a> · <a href="../examples/time/time_agg/first/start_of_the_year/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/time_agg/first/start_of_the_year/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/time/time_agg/first/start_of_the_year/script.vtl">script.vtl</a> · <a href="../examples/time/time_agg/first/start_of_the_year/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/time/time_agg/first/start_of_the_year/input/scalars.json">input/scalars.json</a> · <a href="../examples/time/time_agg/first/start_of_the_year/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/time_agg/first/start_of_the_year/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -317,6 +333,10 @@ time\_agg(p, sc, last) on date 🟢 · date, duration → date
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2012-02-13</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -330,5 +350,5 @@ time\_agg(p, sc, last) on date 🟢 · date, duration → date
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/time/time_agg/last/end_of_the_quarter/script.vtl">script.vtl</a> · <a href="../examples/time/time_agg/last/end_of_the_quarter/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/time_agg/last/end_of_the_quarter/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/time/time_agg/last/end_of_the_quarter/script.vtl">script.vtl</a> · <a href="../examples/time/time_agg/last/end_of_the_quarter/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/time/time_agg/last/end_of_the_quarter/input/scalars.json">input/scalars.json</a> · <a href="../examples/time/time_agg/last/end_of_the_quarter/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/time_agg/last/end_of_the_quarter/index.html">example page ↗</a></p>
    </details>

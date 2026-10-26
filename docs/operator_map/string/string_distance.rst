@@ -4,7 +4,7 @@ String distances · ``string_distance``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 10 of 11 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/String%20distances/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 10 of 11 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/String%20distances/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -292,6 +292,10 @@ string\_distance(levenshtein, sc, sc) 🟢 · string → number
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>foo</td><td>fo</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -305,7 +309,7 @@ string\_distance(levenshtein, sc, sc) 🟢 · string → number
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/string/string_distance/levenshtein_sc/one_deletion/script.vtl">script.vtl</a> · <a href="../examples/string/string_distance/levenshtein_sc/one_deletion/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/string_distance/levenshtein_sc/one_deletion/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/string/string_distance/levenshtein_sc/one_deletion/script.vtl">script.vtl</a> · <a href="../examples/string/string_distance/levenshtein_sc/one_deletion/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/string/string_distance/levenshtein_sc/one_deletion/input/scalars.json">input/scalars.json</a> · <a href="../examples/string/string_distance/levenshtein_sc/one_deletion/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/string_distance/levenshtein_sc/one_deletion/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -325,6 +329,10 @@ string\_distance(damerau\_levenshtein, sc, sc) 🟢 · string → number
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>form</td><td>from</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -338,7 +346,7 @@ string\_distance(damerau\_levenshtein, sc, sc) 🟢 · string → number
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/string/string_distance/damerau_levenshtein_sc/adjacent_transposition_costs_one/script.vtl">script.vtl</a> · <a href="../examples/string/string_distance/damerau_levenshtein_sc/adjacent_transposition_costs_one/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/string_distance/damerau_levenshtein_sc/adjacent_transposition_costs_one/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/string/string_distance/damerau_levenshtein_sc/adjacent_transposition_costs_one/script.vtl">script.vtl</a> · <a href="../examples/string/string_distance/damerau_levenshtein_sc/adjacent_transposition_costs_one/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/string/string_distance/damerau_levenshtein_sc/adjacent_transposition_costs_one/input/scalars.json">input/scalars.json</a> · <a href="../examples/string/string_distance/damerau_levenshtein_sc/adjacent_transposition_costs_one/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/string_distance/damerau_levenshtein_sc/adjacent_transposition_costs_one/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -358,6 +366,10 @@ string\_distance(hamming, sc, sc) 🟢 · string → number
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>karolin</td><td>kathrin</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -371,7 +383,7 @@ string\_distance(hamming, sc, sc) 🟢 · string → number
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/string/string_distance/hamming_sc/three_differing_positions/script.vtl">script.vtl</a> · <a href="../examples/string/string_distance/hamming_sc/three_differing_positions/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/string_distance/hamming_sc/three_differing_positions/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/string/string_distance/hamming_sc/three_differing_positions/script.vtl">script.vtl</a> · <a href="../examples/string/string_distance/hamming_sc/three_differing_positions/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/string/string_distance/hamming_sc/three_differing_positions/input/scalars.json">input/scalars.json</a> · <a href="../examples/string/string_distance/hamming_sc/three_differing_positions/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/string_distance/hamming_sc/three_differing_positions/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -392,6 +404,10 @@ string\_distance(jaro\_winkler, sc, sc) 🟡 · string → number
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>FOO</td><td>FOO</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -405,7 +421,7 @@ string\_distance(jaro\_winkler, sc, sc) 🟡 · string → number
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/string/string_distance/jaro_winkler_sc/identical_strings/script.vtl">script.vtl</a> · <a href="../examples/string/string_distance/jaro_winkler_sc/identical_strings/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/string_distance/jaro_winkler_sc/identical_strings/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/string/string_distance/jaro_winkler_sc/identical_strings/script.vtl">script.vtl</a> · <a href="../examples/string/string_distance/jaro_winkler_sc/identical_strings/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/string/string_distance/jaro_winkler_sc/identical_strings/input/scalars.json">input/scalars.json</a> · <a href="../examples/string/string_distance/jaro_winkler_sc/identical_strings/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/string_distance/jaro_winkler_sc/identical_strings/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -418,6 +434,10 @@ string\_distance(jaro\_winkler, sc, sc) 🟡 · string → number
 .. literalinclude:: ../examples/string/string_distance/jaro_winkler_sc/disjoint_strings/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>FOO</td><td>BAR</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -432,5 +452,5 @@ string\_distance(jaro\_winkler, sc, sc) 🟡 · string → number
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/string/string_distance/jaro_winkler_sc/disjoint_strings/script.vtl">script.vtl</a> · <a href="../examples/string/string_distance/jaro_winkler_sc/disjoint_strings/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/string_distance/jaro_winkler_sc/disjoint_strings/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/string/string_distance/jaro_winkler_sc/disjoint_strings/script.vtl">script.vtl</a> · <a href="../examples/string/string_distance/jaro_winkler_sc/disjoint_strings/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/string/string_distance/jaro_winkler_sc/disjoint_strings/input/scalars.json">input/scalars.json</a> · <a href="../examples/string/string_distance/jaro_winkler_sc/disjoint_strings/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/string_distance/jaro_winkler_sc/disjoint_strings/index.html">example page ↗</a></p>
    </details>

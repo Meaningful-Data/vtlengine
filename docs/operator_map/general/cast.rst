@@ -4,7 +4,7 @@ Type conversion · ``cast``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 21 of 41 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip diverge">🔵 21 of 41 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -1293,13 +1293,17 @@ cast(sc<string>, integer) 🟢 · string → integer
 
 .. raw:: html
 
-   <details class="om-example" id="ex-string-to-integer-sc-string-literal" open><summary><span class="om-ex-title">String literal</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-string-to-integer-sc-string-of-digits" open><summary><span class="om-ex-title">String of digits</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
-.. include:: ../examples/general/cast/string_to_integer_sc/string_literal/notes.rst
+.. include:: ../examples/general/cast/string_to_integer_sc/string_of_digits/notes.rst
 
-.. literalinclude:: ../examples/general/cast/string_to_integer_sc/string_literal/script.vtl
+.. literalinclude:: ../examples/general/cast/string_to_integer_sc/string_of_digits/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>42</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -1314,5 +1318,5 @@ cast(sc<string>, integer) 🟢 · string → integer
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/general/cast/string_to_integer_sc/string_literal/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_integer_sc/string_literal/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/general/cast/string_to_integer_sc/string_literal/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_integer_sc/string_of_digits/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_integer_sc/string_of_digits/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/general/cast/string_to_integer_sc/string_of_digits/input/scalars.json">input/scalars.json</a> · <a href="../examples/general/cast/string_to_integer_sc/string_of_digits/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/general/cast/string_to_integer_sc/string_of_digits/index.html">example page ↗</a></p>
    </details>

@@ -4,7 +4,7 @@ Logical negation · ``not``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 3 of 3 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Boolean%20operators/Logical%20negation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 3 of 3 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Boolean%20operators/Logical%20negation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -178,6 +178,10 @@ not sc 🟢 · boolean → boolean
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_true</th><th class="head">SC_false</th></tr></thead><tbody><tr><td>true</td><td>false</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -194,7 +198,7 @@ not sc 🟢 · boolean → boolean
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/boolean/not/sc/true_and_false_operands/script.vtl">script.vtl</a> · <a href="../examples/boolean/not/sc/true_and_false_operands/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/boolean/not/sc/true_and_false_operands/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/boolean/not/sc/true_and_false_operands/script.vtl">script.vtl</a> · <a href="../examples/boolean/not/sc/true_and_false_operands/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/boolean/not/sc/true_and_false_operands/input/scalars.json">input/scalars.json</a> · <a href="../examples/boolean/not/sc/true_and_false_operands/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/boolean/not/sc/true_and_false_operands/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -206,6 +210,10 @@ not sc 🟢 · boolean → boolean
 .. literalinclude:: ../examples/boolean/not/sc/null_operand/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td></td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -220,5 +228,5 @@ not sc 🟢 · boolean → boolean
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/boolean/not/sc/null_operand/script.vtl">script.vtl</a> · <a href="../examples/boolean/not/sc/null_operand/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/boolean/not/sc/null_operand/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/boolean/not/sc/null_operand/script.vtl">script.vtl</a> · <a href="../examples/boolean/not/sc/null_operand/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/boolean/not/sc/null_operand/input/scalars.json">input/scalars.json</a> · <a href="../examples/boolean/not/sc/null_operand/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/boolean/not/sc/null_operand/index.html">example page ↗</a></p>
    </details>

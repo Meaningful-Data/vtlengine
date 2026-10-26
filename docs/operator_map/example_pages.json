@@ -1967,13 +1967,13 @@
     "status": "ok",
     "title": "Manual example 3"
   },
-  "comparison/in/sc_set/member_of_a_set_literal": {
-    "anchor": "ex-sc-set-member-of-a-set-literal",
+  "comparison/in/sc_set/member_of_a_set": {
+    "anchor": "ex-sc-set-member-of-a-set",
     "duckdb": "✅",
     "operator_page": "comparison/in.html",
     "pandas": "✅",
     "status": "ok",
-    "title": "Member of a set literal"
+    "title": "Member of a set"
   },
   "comparison/isnull/comp/manual_ex_2": {
     "anchor": "ex-comp-manual-ex-2",
@@ -1991,13 +1991,13 @@
     "status": "ok",
     "title": "Manual example 1"
   },
-  "comparison/isnull/sc/non_null_string_literal": {
-    "anchor": "ex-sc-non-null-string-literal",
+  "comparison/isnull/sc/non_null_string": {
+    "anchor": "ex-sc-non-null-string",
     "duckdb": "✅",
     "operator_page": "comparison/isnull.html",
     "pandas": "✅",
     "status": "ok",
-    "title": "Non null string literal"
+    "title": "Non null string"
   },
   "comparison/isnull/sc/null_literal": {
     "anchor": "ex-sc-null-literal",
@@ -2143,13 +2143,13 @@
     "status": "ok",
     "title": "Manual example 1"
   },
-  "comparison/match_characters/sc_sc/matching_string_literal": {
-    "anchor": "ex-sc-sc-matching-string-literal",
+  "comparison/match_characters/sc_sc/matching_string": {
+    "anchor": "ex-sc-sc-matching-string",
     "duckdb": "✅",
     "operator_page": "comparison/match_characters.html",
     "pandas": "✅",
     "status": "ok",
-    "title": "Matching string literal"
+    "title": "Matching string"
   },
   "comparison/not_equal/comp_comp/two_measures_and_null": {
     "anchor": "ex-comp-comp-two-measures-and-null",
@@ -2239,13 +2239,13 @@
     "status": "ok",
     "title": "Members and null operand"
   },
-  "comparison/not_in/sc_set/member_of_a_set_literal": {
-    "anchor": "ex-sc-set-member-of-a-set-literal",
+  "comparison/not_in/sc_set/member_of_a_set": {
+    "anchor": "ex-sc-set-member-of-a-set",
     "duckdb": "✅",
     "operator_page": "comparison/not_in.html",
     "pandas": "✅",
     "status": "ok",
-    "title": "Member of a set literal"
+    "title": "Member of a set"
   },
   "conditional/case/comp/smaller_of_two_components": {
     "anchor": "ex-comp-smaller-of-two-components",
@@ -3367,13 +3367,13 @@
     "status": "missing",
     "title": "Two digit mask"
   },
-  "general/cast/string_to_integer_sc/string_literal": {
-    "anchor": "ex-string-to-integer-sc-string-literal",
+  "general/cast/string_to_integer_sc/string_of_digits": {
+    "anchor": "ex-string-to-integer-sc-string-of-digits",
     "duckdb": "✅",
     "operator_page": "general/cast.html",
     "pandas": "✅",
     "status": "ok",
-    "title": "String literal"
+    "title": "String of digits"
   },
   "general/cast/string_to_number/sign_decimals_and_exponent": {
     "anchor": "ex-string-to-number-sign-decimals-and-exponent",
@@ -6111,13 +6111,13 @@
     "status": "ok",
     "title": "Prefix and null measure"
   },
-  "string/concat/sc_sc/two_string_literals": {
-    "anchor": "ex-sc-sc-two-string-literals",
+  "string/concat/sc_sc/two_strings": {
+    "anchor": "ex-sc-sc-two-strings",
     "duckdb": "✅",
     "operator_page": "string/concat.html",
     "pandas": "✅",
     "status": "ok",
-    "title": "Two string literals"
+    "title": "Two strings"
   },
   "string/instr/comp_params/all_parameters_from_components": {
     "anchor": "ex-comp-params-all-parameters-from-components",

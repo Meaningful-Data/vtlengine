@@ -4,7 +4,7 @@ Add time unit to date · ``dateadd``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 4 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Add%20time%20unit%20to%20date/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 4 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Add%20time%20unit%20to%20date/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -140,6 +140,10 @@ dateadd(date, n, p) 🟢 · date, integer, duration → date
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2020-02-10</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -153,7 +157,7 @@ dateadd(date, n, p) 🟢 · date, integer, duration → date
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/time/dateadd/sc_date/one_month_later/script.vtl">script.vtl</a> · <a href="../examples/time/dateadd/sc_date/one_month_later/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/dateadd/sc_date/one_month_later/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/time/dateadd/sc_date/one_month_later/script.vtl">script.vtl</a> · <a href="../examples/time/dateadd/sc_date/one_month_later/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/time/dateadd/sc_date/one_month_later/input/scalars.json">input/scalars.json</a> · <a href="../examples/time/dateadd/sc_date/one_month_later/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/dateadd/sc_date/one_month_later/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -165,6 +169,10 @@ dateadd(date, n, p) 🟢 · date, integer, duration → date
 .. literalinclude:: ../examples/time/dateadd/sc_date/one_year_later/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2020-02-10</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -179,7 +187,7 @@ dateadd(date, n, p) 🟢 · date, integer, duration → date
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/time/dateadd/sc_date/one_year_later/script.vtl">script.vtl</a> · <a href="../examples/time/dateadd/sc_date/one_year_later/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/dateadd/sc_date/one_year_later/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/time/dateadd/sc_date/one_year_later/script.vtl">script.vtl</a> · <a href="../examples/time/dateadd/sc_date/one_year_later/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/time/dateadd/sc_date/one_year_later/input/scalars.json">input/scalars.json</a> · <a href="../examples/time/dateadd/sc_date/one_year_later/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/dateadd/sc_date/one_year_later/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -199,6 +207,10 @@ dateadd(time\_period, n, p) 🟢 · time_period, integer, duration → date
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2022Q1</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -212,5 +224,5 @@ dateadd(time\_period, n, p) 🟢 · time_period, integer, duration → date
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/time/dateadd/sc_time_period/from_the_last_day_of_the_quarter/script.vtl">script.vtl</a> · <a href="../examples/time/dateadd/sc_time_period/from_the_last_day_of_the_quarter/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/dateadd/sc_time_period/from_the_last_day_of_the_quarter/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/time/dateadd/sc_time_period/from_the_last_day_of_the_quarter/script.vtl">script.vtl</a> · <a href="../examples/time/dateadd/sc_time_period/from_the_last_day_of_the_quarter/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/time/dateadd/sc_time_period/from_the_last_day_of_the_quarter/input/scalars.json">input/scalars.json</a> · <a href="../examples/time/dateadd/sc_time_period/from_the_last_day_of_the_quarter/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/dateadd/sc_time_period/from_the_last_day_of_the_quarter/index.html">example page ↗</a></p>
    </details>

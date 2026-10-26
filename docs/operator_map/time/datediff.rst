@@ -4,7 +4,7 @@ Days between two dates · ``datediff``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 4 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Days%20between%20two%20dates/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 4 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Days%20between%20two%20dates/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -108,6 +108,10 @@ datediff(date, date) 🟢 · date → integer
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>2020-12-14</td><td>2021-04-20</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -121,7 +125,7 @@ datediff(date, date) 🟢 · date → integer
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/time/datediff/sc_date/across_the_new_year/script.vtl">script.vtl</a> · <a href="../examples/time/datediff/sc_date/across_the_new_year/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/datediff/sc_date/across_the_new_year/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/time/datediff/sc_date/across_the_new_year/script.vtl">script.vtl</a> · <a href="../examples/time/datediff/sc_date/across_the_new_year/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/time/datediff/sc_date/across_the_new_year/input/scalars.json">input/scalars.json</a> · <a href="../examples/time/datediff/sc_date/across_the_new_year/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/datediff/sc_date/across_the_new_year/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -141,6 +145,10 @@ datediff(time\_period, time\_period) 🟢 · time_period → integer
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>2022Q1</td><td>2023Q2</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -154,7 +162,7 @@ datediff(time\_period, time\_period) 🟢 · time_period → integer
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/time/datediff/sc_time_period/last_days_of_two_quarters/script.vtl">script.vtl</a> · <a href="../examples/time/datediff/sc_time_period/last_days_of_two_quarters/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/datediff/sc_time_period/last_days_of_two_quarters/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/time/datediff/sc_time_period/last_days_of_two_quarters/script.vtl">script.vtl</a> · <a href="../examples/time/datediff/sc_time_period/last_days_of_two_quarters/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/time/datediff/sc_time_period/last_days_of_two_quarters/input/scalars.json">input/scalars.json</a> · <a href="../examples/time/datediff/sc_time_period/last_days_of_two_quarters/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/datediff/sc_time_period/last_days_of_two_quarters/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -174,6 +182,10 @@ datediff(time\_period, date) 🟢 · time_period, date → integer
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>2021Q2</td><td>2021-11-04</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -187,5 +199,5 @@ datediff(time\_period, date) 🟢 · time_period, date → integer
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/time/datediff/sc_mixed/quarter_end_to_a_date/script.vtl">script.vtl</a> · <a href="../examples/time/datediff/sc_mixed/quarter_end_to_a_date/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/datediff/sc_mixed/quarter_end_to_a_date/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/time/datediff/sc_mixed/quarter_end_to_a_date/script.vtl">script.vtl</a> · <a href="../examples/time/datediff/sc_mixed/quarter_end_to_a_date/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/time/datediff/sc_mixed/quarter_end_to_a_date/input/scalars.json">input/scalars.json</a> · <a href="../examples/time/datediff/sc_mixed/quarter_end_to_a_date/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/time/datediff/sc_mixed/quarter_end_to_a_date/index.html">example page ↗</a></p>
    </details>

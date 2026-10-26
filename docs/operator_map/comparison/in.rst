@@ -4,7 +4,7 @@ Element of · ``in``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 5 of 5 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Comparison%20operators/Element%20of/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 5 of 5 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Comparison%20operators/Element%20of/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -188,13 +188,17 @@ sc in set 🟢 · any scalar, set → boolean
 
 .. raw:: html
 
-   <details class="om-example" id="ex-sc-set-member-of-a-set-literal" open><summary><span class="om-ex-title">Member of a set literal</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-sc-set-member-of-a-set" open><summary><span class="om-ex-title">Member of a set</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
-.. include:: ../examples/comparison/in/sc_set/member_of_a_set_literal/notes.rst
+.. include:: ../examples/comparison/in/sc_set/member_of_a_set/notes.rst
 
-.. literalinclude:: ../examples/comparison/in/sc_set/member_of_a_set_literal/script.vtl
+.. literalinclude:: ../examples/comparison/in/sc_set/member_of_a_set/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -209,5 +213,5 @@ sc in set 🟢 · any scalar, set → boolean
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/comparison/in/sc_set/member_of_a_set_literal/script.vtl">script.vtl</a> · <a href="../examples/comparison/in/sc_set/member_of_a_set_literal/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/comparison/in/sc_set/member_of_a_set_literal/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/comparison/in/sc_set/member_of_a_set/script.vtl">script.vtl</a> · <a href="../examples/comparison/in/sc_set/member_of_a_set/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/comparison/in/sc_set/member_of_a_set/input/scalars.json">input/scalars.json</a> · <a href="../examples/comparison/in/sc_set/member_of_a_set/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/comparison/in/sc_set/member_of_a_set/index.html">example page ↗</a></p>
    </details>

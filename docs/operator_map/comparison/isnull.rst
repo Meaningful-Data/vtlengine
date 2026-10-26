@@ -4,7 +4,7 @@ Is null · ``isnull``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 3 of 3 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Comparison%20operators/Is%20null/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 3 of 3 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Comparison%20operators/Is%20null/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -156,13 +156,17 @@ isnull(sc) 🟢 · any scalar → boolean
 
 .. raw:: html
 
-   <details class="om-example" id="ex-sc-non-null-string-literal"><summary><span class="om-ex-title">Non null string literal</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-sc-non-null-string"><summary><span class="om-ex-title">Non null string</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
-.. include:: ../examples/comparison/isnull/sc/non_null_string_literal/notes.rst
+.. include:: ../examples/comparison/isnull/sc/non_null_string/notes.rst
 
-.. literalinclude:: ../examples/comparison/isnull/sc/non_null_string_literal/script.vtl
+.. literalinclude:: ../examples/comparison/isnull/sc/non_null_string/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>Hello</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -177,5 +181,5 @@ isnull(sc) 🟢 · any scalar → boolean
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/comparison/isnull/sc/non_null_string_literal/script.vtl">script.vtl</a> · <a href="../examples/comparison/isnull/sc/non_null_string_literal/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/comparison/isnull/sc/non_null_string_literal/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/comparison/isnull/sc/non_null_string/script.vtl">script.vtl</a> · <a href="../examples/comparison/isnull/sc/non_null_string/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/comparison/isnull/sc/non_null_string/input/scalars.json">input/scalars.json</a> · <a href="../examples/comparison/isnull/sc/non_null_string/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/comparison/isnull/sc/non_null_string/index.html">example page ↗</a></p>
    </details>

@@ -4,7 +4,7 @@ User-defined operator call · ``name( )``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 4 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/User-defined%20operator%20call/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 4 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/User-defined%20operator%20call/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -104,6 +104,10 @@ op(a, b) 🟢 · operator, any scalar → any type
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>10</td><td>3</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -117,7 +121,7 @@ op(a, b) 🟢 · operator, any scalar → any type
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/general/udo_call/all_args/positional_order/script.vtl">script.vtl</a> · <a href="../examples/general/udo_call/all_args/positional_order/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/general/udo_call/all_args/positional_order/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/general/udo_call/all_args/positional_order/script.vtl">script.vtl</a> · <a href="../examples/general/udo_call/all_args/positional_order/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/general/udo_call/all_args/positional_order/input/scalars.json">input/scalars.json</a> · <a href="../examples/general/udo_call/all_args/positional_order/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/general/udo_call/all_args/positional_order/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -137,6 +141,10 @@ op(a) 🟢 · operator, any scalar → any type
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>10</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -150,7 +158,7 @@ op(a) 🟢 · operator, any scalar → any type
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/general/udo_call/default_omitted/trailing_default/script.vtl">script.vtl</a> · <a href="../examples/general/udo_call/default_omitted/trailing_default/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/general/udo_call/default_omitted/trailing_default/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/general/udo_call/default_omitted/trailing_default/script.vtl">script.vtl</a> · <a href="../examples/general/udo_call/default_omitted/trailing_default/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/general/udo_call/default_omitted/trailing_default/input/scalars.json">input/scalars.json</a> · <a href="../examples/general/udo_call/default_omitted/trailing_default/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/general/udo_call/default_omitted/trailing_default/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -170,6 +178,10 @@ op(a, \_, c) 🟢 · operator, any scalar → any type
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>10</td><td>5</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -183,5 +195,5 @@ op(a, \_, c) 🟢 · operator, any scalar → any type
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/general/udo_call/placeholder_arg/underscore_in_the_middle/script.vtl">script.vtl</a> · <a href="../examples/general/udo_call/placeholder_arg/underscore_in_the_middle/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/general/udo_call/placeholder_arg/underscore_in_the_middle/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/general/udo_call/placeholder_arg/underscore_in_the_middle/script.vtl">script.vtl</a> · <a href="../examples/general/udo_call/placeholder_arg/underscore_in_the_middle/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/general/udo_call/placeholder_arg/underscore_in_the_middle/input/scalars.json">input/scalars.json</a> · <a href="../examples/general/udo_call/placeholder_arg/underscore_in_the_middle/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/general/udo_call/placeholder_arg/underscore_in_the_middle/index.html">example page ↗</a></p>
    </details>

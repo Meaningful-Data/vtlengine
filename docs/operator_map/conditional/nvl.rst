@@ -4,7 +4,7 @@ Nvl · ``nvl``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 5 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Nvl/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 5 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Nvl/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -258,6 +258,10 @@ nvl(sc, sc) 🟢 · any scalar → any type
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>0</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -271,7 +275,7 @@ nvl(sc, sc) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/conditional/nvl/sc_sc/null_first_operand/script.vtl">script.vtl</a> · <a href="../examples/conditional/nvl/sc_sc/null_first_operand/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/conditional/nvl/sc_sc/null_first_operand/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/conditional/nvl/sc_sc/null_first_operand/script.vtl">script.vtl</a> · <a href="../examples/conditional/nvl/sc_sc/null_first_operand/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/conditional/nvl/sc_sc/null_first_operand/input/scalars.json">input/scalars.json</a> · <a href="../examples/conditional/nvl/sc_sc/null_first_operand/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/conditional/nvl/sc_sc/null_first_operand/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -283,6 +287,10 @@ nvl(sc, sc) 🟢 · any scalar → any type
 .. literalinclude:: ../examples/conditional/nvl/sc_sc/non_null_first_operand/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>5</td><td>0</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -297,5 +305,5 @@ nvl(sc, sc) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/conditional/nvl/sc_sc/non_null_first_operand/script.vtl">script.vtl</a> · <a href="../examples/conditional/nvl/sc_sc/non_null_first_operand/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/conditional/nvl/sc_sc/non_null_first_operand/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/conditional/nvl/sc_sc/non_null_first_operand/script.vtl">script.vtl</a> · <a href="../examples/conditional/nvl/sc_sc/non_null_first_operand/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/conditional/nvl/sc_sc/non_null_first_operand/input/scalars.json">input/scalars.json</a> · <a href="../examples/conditional/nvl/sc_sc/non_null_first_operand/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/conditional/nvl/sc_sc/non_null_first_operand/index.html">example page ↗</a></p>
    </details>

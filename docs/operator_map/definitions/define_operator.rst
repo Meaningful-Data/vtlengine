@@ -4,7 +4,7 @@ define operator
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 6 of 13 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 6 of 13 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -132,6 +132,10 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -145,7 +149,7 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/integer_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/integer_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/integer_argument/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/integer_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/integer_argument/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/scalar_type/integer_argument/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/integer_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/integer_argument/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -157,6 +161,10 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 .. literalinclude:: ../examples/definitions/define_operator/scalar_type/number_argument/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>1.25</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -171,7 +179,7 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/number_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/number_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/number_argument/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/number_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/number_argument/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/scalar_type/number_argument/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/number_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/number_argument/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -183,6 +191,10 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 .. literalinclude:: ../examples/definitions/define_operator/scalar_type/string_argument/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>A</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -197,7 +209,7 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/string_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/string_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/string_argument/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/string_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/string_argument/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/scalar_type/string_argument/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/string_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/string_argument/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -209,6 +221,10 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 .. literalinclude:: ../examples/definitions/define_operator/scalar_type/boolean_argument/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>true</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -223,7 +239,7 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/boolean_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/boolean_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/boolean_argument/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/boolean_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/boolean_argument/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/scalar_type/boolean_argument/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/boolean_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/boolean_argument/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -235,6 +251,10 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 .. literalinclude:: ../examples/definitions/define_operator/scalar_type/date_argument/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2020-01-15</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -249,7 +269,7 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/date_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/date_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/date_argument/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/date_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/date_argument/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/scalar_type/date_argument/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/date_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/date_argument/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -261,6 +281,10 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 .. literalinclude:: ../examples/definitions/define_operator/scalar_type/time_period_argument/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2020Q1</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -275,7 +299,7 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/time_period_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/time_period_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/time_period_argument/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/time_period_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/time_period_argument/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/scalar_type/time_period_argument/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/time_period_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/time_period_argument/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -287,6 +311,10 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 .. literalinclude:: ../examples/definitions/define_operator/scalar_type/time_argument/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2020-01-01/2020-12-31</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -301,7 +329,7 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/time_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/time_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/time_argument/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/time_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/time_argument/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/scalar_type/time_argument/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/time_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/time_argument/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -313,6 +341,10 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 .. literalinclude:: ../examples/definitions/define_operator/scalar_type/duration_argument/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>M</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -327,7 +359,7 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/duration_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/duration_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/duration_argument/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/duration_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/duration_argument/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/scalar_type/duration_argument/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/duration_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/duration_argument/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -339,6 +371,10 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 .. literalinclude:: ../examples/definitions/define_operator/scalar_type/scalar_argument_keeps_its_type/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>5</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -353,7 +389,7 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/scalar_argument_keeps_its_type/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/scalar_argument_keeps_its_type/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/scalar_argument_keeps_its_type/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/scalar_type/scalar_argument_keeps_its_type/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/scalar_type/scalar_argument_keeps_its_type/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/scalar_type/scalar_argument_keeps_its_type/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/scalar_argument_keeps_its_type/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/scalar_type/scalar_argument_keeps_its_type/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -374,6 +410,10 @@ x <value domain> 🔴 · value domain → operator
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>A</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -387,7 +427,7 @@ x <value domain> 🔴 · value domain → operator
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/value_domain/string_value_of_the_domain/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/value_domain/string_value_of_the_domain/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/value_domain/string_value_of_the_domain/value_domains/VD_1.json">value_domains/VD_1.json</a> · <a href="../examples/definitions/define_operator/value_domain/string_value_of_the_domain/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/value_domain/string_value_of_the_domain/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/value_domain/string_value_of_the_domain/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/value_domain/string_value_of_the_domain/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/value_domain/string_value_of_the_domain/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/value_domain/string_value_of_the_domain/value_domains/VD_1.json">value_domains/VD_1.json</a> · <a href="../examples/definitions/define_operator/value_domain/string_value_of_the_domain/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -408,6 +448,10 @@ x <scalar type> [value …] \| { … } \| not null 🔴 · integer → operator
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -421,7 +465,7 @@ x <scalar type> [value …] \| { … } \| not null 🔴 · integer → operator
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/constrained_scalar/value_condition_holds/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/constrained_scalar/value_condition_holds/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/constrained_scalar/value_condition_holds/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/constrained_scalar/value_condition_holds/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/constrained_scalar/value_condition_holds/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/constrained_scalar/value_condition_holds/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/constrained_scalar/value_condition_holds/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/constrained_scalar/value_condition_holds/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -435,6 +479,10 @@ x <scalar type> [value …] \| { … } \| not null 🔴 · integer → operator
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -448,7 +496,7 @@ x <scalar type> [value …] \| { … } \| not null 🔴 · integer → operator
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/constrained_scalar/value_in_the_list/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/constrained_scalar/value_in_the_list/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/constrained_scalar/value_in_the_list/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/constrained_scalar/value_in_the_list/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/constrained_scalar/value_in_the_list/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/constrained_scalar/value_in_the_list/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/constrained_scalar/value_in_the_list/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/constrained_scalar/value_in_the_list/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -461,6 +509,10 @@ x <scalar type> [value …] \| { … } \| not null 🔴 · integer → operator
 .. literalinclude:: ../examples/definitions/define_operator/constrained_scalar/non_null_argument/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -475,7 +527,7 @@ x <scalar type> [value …] \| { … } \| not null 🔴 · integer → operator
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/constrained_scalar/non_null_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/constrained_scalar/non_null_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/constrained_scalar/non_null_argument/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/constrained_scalar/non_null_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/constrained_scalar/non_null_argument/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/constrained_scalar/non_null_argument/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/constrained_scalar/non_null_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/constrained_scalar/non_null_argument/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -496,6 +548,10 @@ s set<…> 🔴 · set → operator
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>B</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -509,7 +565,7 @@ s set<…> 🔴 · set → operator
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/set/value_domain_as_the_set/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/set/value_domain_as_the_set/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/set/value_domain_as_the_set/value_domains/VD_AB.json">value_domains/VD_AB.json</a> · <a href="../examples/definitions/define_operator/set/value_domain_as_the_set/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/set/value_domain_as_the_set/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/set/value_domain_as_the_set/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/set/value_domain_as_the_set/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/set/value_domain_as_the_set/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/set/value_domain_as_the_set/value_domains/VD_AB.json">value_domains/VD_AB.json</a> · <a href="../examples/definitions/define_operator/set/value_domain_as_the_set/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -902,6 +958,10 @@ y <type> default … 🟢 · integer → operator
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -915,7 +975,7 @@ y <type> default … 🟢 · integer → operator
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/default_value/last_argument_omitted/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/default_value/last_argument_omitted/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/default_value/last_argument_omitted/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/default_value/last_argument_omitted/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/default_value/last_argument_omitted/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/default_value/last_argument_omitted/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/default_value/last_argument_omitted/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/default_value/last_argument_omitted/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -928,6 +988,10 @@ y <type> default … 🟢 · integer → operator
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -941,7 +1005,7 @@ y <type> default … 🟢 · integer → operator
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/default_value/underscore_for_the_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/default_value/underscore_for_the_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/default_value/underscore_for_the_argument/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/default_value/underscore_for_the_argument/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/default_value/underscore_for_the_argument/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/default_value/underscore_for_the_argument/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/default_value/underscore_for_the_argument/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/default_value/underscore_for_the_argument/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -966,6 +1030,10 @@ no returns 🔴 · any scalar → operator
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>2</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -979,7 +1047,7 @@ no returns 🔴 · any scalar → operator
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/returns_omitted/type_of_the_body/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/returns_omitted/type_of_the_body/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/returns_omitted/type_of_the_body/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/returns_omitted/type_of_the_body/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/returns_omitted/type_of_the_body/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/returns_omitted/type_of_the_body/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/returns_omitted/type_of_the_body/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/returns_omitted/type_of_the_body/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -999,6 +1067,10 @@ returns <scalar type> 🟢 · integer → operator
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>2</td><td>3</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -1012,7 +1084,7 @@ returns <scalar type> 🟢 · integer → operator
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/definitions/define_operator/returns_scalar/larger_of_two_integers/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/returns_scalar/larger_of_two_integers/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/returns_scalar/larger_of_two_integers/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/definitions/define_operator/returns_scalar/larger_of_two_integers/script.vtl">script.vtl</a> · <a href="../examples/definitions/define_operator/returns_scalar/larger_of_two_integers/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/definitions/define_operator/returns_scalar/larger_of_two_integers/input/scalars.json">input/scalars.json</a> · <a href="../examples/definitions/define_operator/returns_scalar/larger_of_two_integers/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/definitions/define_operator/returns_scalar/larger_of_two_integers/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html

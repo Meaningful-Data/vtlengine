@@ -4,7 +4,7 @@ Modulo · ``mod``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 6 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Modulo/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 6 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Modulo/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -256,6 +256,10 @@ mod(sc, sc) 🟡 · number → number
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>5</td><td>2</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -269,7 +273,7 @@ mod(sc, sc) 🟡 · number → number
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/numeric/modulo/sc_sc/positive_operands/script.vtl">script.vtl</a> · <a href="../examples/numeric/modulo/sc_sc/positive_operands/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/numeric/modulo/sc_sc/positive_operands/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/numeric/modulo/sc_sc/positive_operands/script.vtl">script.vtl</a> · <a href="../examples/numeric/modulo/sc_sc/positive_operands/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/numeric/modulo/sc_sc/positive_operands/input/scalars.json">input/scalars.json</a> · <a href="../examples/numeric/modulo/sc_sc/positive_operands/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/numeric/modulo/sc_sc/positive_operands/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -282,6 +286,10 @@ mod(sc, sc) 🟡 · number → number
 .. literalinclude:: ../examples/numeric/modulo/sc_sc/negative_divisor/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>5</td><td>-2</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -296,7 +304,7 @@ mod(sc, sc) 🟡 · number → number
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/numeric/modulo/sc_sc/negative_divisor/script.vtl">script.vtl</a> · <a href="../examples/numeric/modulo/sc_sc/negative_divisor/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/numeric/modulo/sc_sc/negative_divisor/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/numeric/modulo/sc_sc/negative_divisor/script.vtl">script.vtl</a> · <a href="../examples/numeric/modulo/sc_sc/negative_divisor/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/numeric/modulo/sc_sc/negative_divisor/input/scalars.json">input/scalars.json</a> · <a href="../examples/numeric/modulo/sc_sc/negative_divisor/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/numeric/modulo/sc_sc/negative_divisor/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -309,6 +317,10 @@ mod(sc, sc) 🟡 · number → number
 .. literalinclude:: ../examples/numeric/modulo/sc_sc/zero_divisor/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>9</td><td>0</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -323,5 +335,5 @@ mod(sc, sc) 🟡 · number → number
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/numeric/modulo/sc_sc/zero_divisor/script.vtl">script.vtl</a> · <a href="../examples/numeric/modulo/sc_sc/zero_divisor/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/numeric/modulo/sc_sc/zero_divisor/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/numeric/modulo/sc_sc/zero_divisor/script.vtl">script.vtl</a> · <a href="../examples/numeric/modulo/sc_sc/zero_divisor/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/numeric/modulo/sc_sc/zero_divisor/input/scalars.json">input/scalars.json</a> · <a href="../examples/numeric/modulo/sc_sc/zero_divisor/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/numeric/modulo/sc_sc/zero_divisor/index.html">example page ↗</a></p>
    </details>

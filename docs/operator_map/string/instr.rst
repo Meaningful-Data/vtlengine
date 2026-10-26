@@ -4,7 +4,7 @@ String pattern location · ``instr``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 8 of 8 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/String%20pattern%20location/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 8 of 8 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/String%20pattern%20location/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -323,6 +323,10 @@ instr(sc, pattern) 🟢 · string → integer
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>abcde</td><td>c</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -336,5 +340,5 @@ instr(sc, pattern) 🟢 · string → integer
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/string/instr/sc_pattern/pattern_at_the_third_position/script.vtl">script.vtl</a> · <a href="../examples/string/instr/sc_pattern/pattern_at_the_third_position/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/instr/sc_pattern/pattern_at_the_third_position/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/string/instr/sc_pattern/pattern_at_the_third_position/script.vtl">script.vtl</a> · <a href="../examples/string/instr/sc_pattern/pattern_at_the_third_position/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/string/instr/sc_pattern/pattern_at_the_third_position/input/scalars.json">input/scalars.json</a> · <a href="../examples/string/instr/sc_pattern/pattern_at_the_third_position/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/instr/sc_pattern/pattern_at_the_third_position/index.html">example page ↗</a></p>
    </details>

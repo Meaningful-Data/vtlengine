@@ -4,7 +4,7 @@ if-then-else · ``if then else``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 5 of 5 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/if-then-else/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (9dc0a08a) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 5 of 5 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/if-then-else/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -218,6 +218,10 @@ if sc then sc else sc 🟢 · boolean, any scalar → any type
    :caption: script.vtl
    :language: none
 
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>3</td><td>0</td></tr></tbody></table>
+
 .. list-table:: Expected scalars
    :header-rows: 1
    :widths: auto
@@ -231,7 +235,7 @@ if sc then sc else sc 🟢 · boolean, any scalar → any type
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/conditional/if_then_else/sc/true_condition_gives_then_operand/script.vtl">script.vtl</a> · <a href="../examples/conditional/if_then_else/sc/true_condition_gives_then_operand/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/conditional/if_then_else/sc/true_condition_gives_then_operand/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/conditional/if_then_else/sc/true_condition_gives_then_operand/script.vtl">script.vtl</a> · <a href="../examples/conditional/if_then_else/sc/true_condition_gives_then_operand/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/conditional/if_then_else/sc/true_condition_gives_then_operand/input/scalars.json">input/scalars.json</a> · <a href="../examples/conditional/if_then_else/sc/true_condition_gives_then_operand/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/conditional/if_then_else/sc/true_condition_gives_then_operand/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -243,6 +247,10 @@ if sc then sc else sc 🟢 · boolean, any scalar → any type
 .. literalinclude:: ../examples/conditional/if_then_else/sc/false_condition_gives_else_operand/script.vtl
    :caption: script.vtl
    :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th><th class="head">SC_2</th></tr></thead><tbody><tr><td>0</td><td>3</td></tr></tbody></table>
 
 .. list-table:: Expected scalars
    :header-rows: 1
@@ -257,5 +265,5 @@ if sc then sc else sc 🟢 · boolean, any scalar → any type
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/conditional/if_then_else/sc/false_condition_gives_else_operand/script.vtl">script.vtl</a> · <a href="../examples/conditional/if_then_else/sc/false_condition_gives_else_operand/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/conditional/if_then_else/sc/false_condition_gives_else_operand/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/conditional/if_then_else/sc/false_condition_gives_else_operand/script.vtl">script.vtl</a> · <a href="../examples/conditional/if_then_else/sc/false_condition_gives_else_operand/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/conditional/if_then_else/sc/false_condition_gives_else_operand/input/scalars.json">input/scalars.json</a> · <a href="../examples/conditional/if_then_else/sc/false_condition_gives_else_operand/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/conditional/if_then_else/sc/false_condition_gives_else_operand/index.html">example page ↗</a></p>
    </details>
