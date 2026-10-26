@@ -134,7 +134,7 @@ def _cast_variants() -> tuple[Variant, ...]:
         Variant(
             "string_to_integer_sc",
             "cast(sc<string>, integer)",
-            (authored("string_literal"),),
+            (authored("string_of_digits"),),
             takes=(_STRING,),
             gives=("integer",),
         )
