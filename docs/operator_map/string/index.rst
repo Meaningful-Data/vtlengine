@@ -4,7 +4,7 @@ String operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 10 of 11 operators all ok</span> · <span class="om-gen">vtlengine 1.9.6rc2 (90f38d41) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 10 of 11 operators all ok</span> · <span class="om-gen">vtlengine 1.9.6rc2 (e84ced22) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -64,8 +64,7 @@ String operators
 
    </div>
 
-Operators
-------------------
+.. rubric:: Operators
 
 .. list-table::
    :header-rows: 1
@@ -108,8 +107,7 @@ Operators
      - 🟡
      - 11
 
-Types
-----------
+.. rubric:: Types
 
 .. list-table::
    :header-rows: 1
@@ -164,8 +162,7 @@ Types
      -
      - in
 
-Forms that are not green
-------------------------------------------------
+.. rubric:: Forms that are not green
 
 Every form that is not 🟢, with the example that shows its status: the first that is not green, or the first that diverges for a 🔵 form.
 
