@@ -62,7 +62,7 @@ _EQUAL_VALUE = authored("equal_value_and_null_measure")
 _SCALAR_FIRST = authored("scalar_first_and_null_measure")
 # The members, a non-member and a null of ``in`` and ``not_in``, and a member of a set literal.
 _MEMBERS = authored("members_and_null_operand")
-_SET_LITERAL_MEMBER = authored("member_of_a_set_literal")
+_SET_LITERAL_MEMBER = authored("member_of_a_set")
 
 _Examples = dict[str, tuple[Example, ...]]
 
@@ -191,7 +191,7 @@ _MATCH_CHARACTERS = Operator(
         Variant(
             "sc_sc",
             "match_characters(sc, sc)",
-            (authored("matching_string_literal"),),
+            (authored("matching_string"),),
             takes=_STRING,
             gives=_BOOLEAN,
         ),
@@ -212,7 +212,7 @@ _ISNULL = Operator(
         Variant(
             "sc",
             "isnull(sc)",
-            (authored("null_literal"), authored("non_null_string_literal")),
+            (authored("null_literal"), authored("non_null_string")),
             takes=_SCALAR,
             gives=_BOOLEAN,
         ),
