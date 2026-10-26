@@ -461,9 +461,6 @@ def test_the_codes_that_say_not_implemented() -> None:
         "1-3-2-5",
         "1-3-3-8",
         "0-5-1-8",
-        "0-5-1-10",
-        "1-1-13-8",
-        "1-3-2-1",
     }
     assert all(message for message in NOT_IMPLEMENTED.values())
 
