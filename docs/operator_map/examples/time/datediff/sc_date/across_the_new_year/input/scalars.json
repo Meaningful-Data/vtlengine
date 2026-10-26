@@ -1,0 +1,6 @@
+{
+  "scalars": [
+    {"name": "SC_1", "type": "Date"},
+    {"name": "SC_2", "type": "Date"}
+  ]
+}

@@ -11,8 +11,10 @@ vtlengine has no equivalent representation, so they are engine findings, not ada
 
 The other operators have the operand levels of their syntax, and ``time_agg`` the optional
 parameters (``periodIndFrom``, ``first``/``last``) and its use inside ``group all``. VTL has no
-time literals: a scalar date, time period or duration is written as a ``cast`` of a string, with
-no mask (vtlengine implements no cast mask).
+time literals: the scalar date or time period of an example is an input scalar of that type
+(``input/scalars.csv``), and the duration of ``monthtoday`` and ``yeartoday`` a ``cast`` of a
+string, with no mask (vtlengine implements no cast mask), as a Duration input scalar refuses an
+ISO 8601 text.
 
 Every form declares the types it takes and gives, the finest that its page states:
 

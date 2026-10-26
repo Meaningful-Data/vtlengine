@@ -1,3 +1,3 @@
-:Tests: ``dateadd`` on a scalar time period, the page's valid syntax ``dateadd (2022Q1, 5, “M”)``.
+:Tests: ``dateadd(SC_1, 5, "M")`` on a scalar time period, ``SC_1`` = 2022Q1, the page's valid syntax ``dateadd (2022Q1, 5, “M”)``.
 :Manual: `Add time unit to date <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Add%20time%20unit%20to%20date/index.html>`__: "The last day of the time period is assumed as the starting date", and "The scalar version of this operator takes as input one date or time_period value and returns a date".
 :Expected: ``DS_r = 2022-08-31``, a Date: ``2022Q1`` ends on 2022-03-31, and "adding months to a given date returns the date plus integer months": five months later is August 31, August having 31 days.

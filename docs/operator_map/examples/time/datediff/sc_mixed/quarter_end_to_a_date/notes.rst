@@ -1,3 +1,3 @@
-:Tests: ``datediff`` of a time period and a date, the page's valid syntax ``datediff (2021Q2, 2021-11-04)``.
+:Tests: ``datediff(SC_1, SC_2)`` of a time period and a date, ``SC_1`` = 2021Q2 and ``SC_2`` = 2021-11-04, the page's valid syntax ``datediff (2021Q2, 2021-11-04)``.
 :Manual: `Days between two dates <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Days%20between%20two%20dates/index.html>`__: "The last day of the time period is assumed as the starting/ending date". The result is on the `Extract time period <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Extract%20time%20period/index.html>`__ page, whose Example 2, misplaced there, says that ``datediff (2021Q2, 2021-11-04);`` "returns 127".
 :Expected: ``DS_r = 127``, an Integer: ``2021Q2`` ends on 2021-06-30, then come 31, 31, 30, 31 and 4 days.
