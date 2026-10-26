@@ -66,7 +66,7 @@ _CONCAT = Operator(
         Variant(
             "sc_sc",
             "sc || sc",
-            (authored("two_string_literals"),),
+            (authored("two_strings"),),
             takes=_STRING,
             gives=_STRING,
         ),

@@ -1,3 +1,3 @@
-:Tests: a parameter of type ``date``, called with ``cast("2020-01-15", date)``: a date has no literal, so the argument is cast from a string.
+:Tests: a parameter of type ``date``, called as ``same_date(SC_1)`` with the Date ``SC_1`` = ``2020-01-15``: a date has no literal, so the argument is an input scalar.
 :Manual: `define operator <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html>`__: a parameter type is "a VTL data type" (``basicScalarType ::= ... date ...``), and the User Manual says that these types "do not directly support literals": their values are "converted in the desired type by the cast operator". The script ends with ``end operator``, as the page's examples and the grammar do; its syntax line writes ``end define operator``.
 :Expected: ``SC_r = 2020-01-15``, a Date: the body returns its argument.
