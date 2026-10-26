@@ -4,7 +4,7 @@ Trailing whitespace removal · ``rtrim``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 3 of 3 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/Whitespace%20removal/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (ddd17ff6) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 3 of 3 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/Whitespace%20removal/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (140c5c19) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -152,4 +152,34 @@ rtrim(sc) 🟢 · string → string
 .. raw:: html
 
    <p class="om-files">Files: <a href="../examples/string/rtrim/sc/trailing_removed_leading_kept/script.vtl">script.vtl</a> · <a href="../examples/string/rtrim/sc/trailing_removed_leading_kept/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/rtrim/sc/trailing_removed_leading_kept/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-sc-padded-input-value"><summary><span class="om-ex-title">Padded input value</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/string/rtrim/sc/padded_input_value/notes.rst
+
+.. literalinclude:: ../examples/string/rtrim/sc/padded_input_value/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input scalars</span></caption><thead><tr><th class="head">SC_1</th></tr></thead><tbody><tr><td>  Hello  </td></tr></tbody></table>
+
+.. list-table:: Expected scalars
+   :header-rows: 1
+   :widths: auto
+
+   * - Name
+     - Type
+     - Value
+   * - ``SC_r``
+     - String
+     - ``"  Hello"``
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/string/rtrim/sc/padded_input_value/script.vtl">script.vtl</a> · <a href="../examples/string/rtrim/sc/padded_input_value/input/scalars.csv">input/scalars.csv</a> · <a href="../examples/string/rtrim/sc/padded_input_value/input/scalars.json">input/scalars.json</a> · <a href="../examples/string/rtrim/sc/padded_input_value/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/string/rtrim/sc/padded_input_value/index.html">example page ↗</a></p>
    </details>

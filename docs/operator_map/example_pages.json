@@ -3687,6 +3687,14 @@
     "status": "ok",
     "title": "Time period measure"
   },
+  "general/non_persistent_assignment/sc/input_value": {
+    "anchor": "ex-sc-input-value",
+    "duckdb": "✅",
+    "operator_page": "general/non_persistent_assignment.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Input value"
+  },
   "general/non_persistent_assignment/sc/integer_literal": {
     "anchor": "ex-sc-integer-literal",
     "duckdb": "✅",
@@ -3742,6 +3750,14 @@
     "pandas": "✅",
     "status": "ok",
     "title": "Manual example 1"
+  },
+  "general/persistent_assignment/sc/input_value": {
+    "anchor": "ex-sc-input-value",
+    "duckdb": "✅",
+    "operator_page": "general/persistent_assignment.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Input value"
   },
   "general/persistent_assignment/sc/integer_literal": {
     "anchor": "ex-sc-integer-literal",
@@ -6287,6 +6303,14 @@
     "status": "ok",
     "title": "Leading removed trailing kept"
   },
+  "string/ltrim/sc/padded_input_value": {
+    "anchor": "ex-sc-padded-input-value",
+    "duckdb": "✅",
+    "operator_page": "string/ltrim.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Padded input value"
+  },
   "string/replace/comp_patterns/patterns_from_components": {
     "anchor": "ex-comp-patterns-patterns-from-components",
     "duckdb": "✅",
@@ -6350,6 +6374,14 @@
     "pandas": "✅",
     "status": "ok",
     "title": "Manual example 1"
+  },
+  "string/rtrim/sc/padded_input_value": {
+    "anchor": "ex-sc-padded-input-value",
+    "duckdb": "✅",
+    "operator_page": "string/rtrim.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Padded input value"
   },
   "string/rtrim/sc/trailing_removed_leading_kept": {
     "anchor": "ex-sc-trailing-removed-leading-kept",
@@ -6558,6 +6590,14 @@
     "pandas": "✅",
     "status": "ok",
     "title": "Leading and trailing spaces"
+  },
+  "string/trim/sc/padded_input_value": {
+    "anchor": "ex-sc-padded-input-value",
+    "duckdb": "✅",
+    "operator_page": "string/trim.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Padded input value"
   },
   "string/upper/comp/manual_ex_2": {
     "anchor": "ex-comp-manual-ex-2",

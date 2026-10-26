@@ -7376,6 +7376,22 @@
       },
       "status": "ok"
     },
+    "general/non_persistent_assignment/sc/input_value": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
     "general/non_persistent_assignment/sc/integer_literal": {
       "duckdb": {
         "detail": "",
@@ -7473,6 +7489,22 @@
       "status": "ok"
     },
     "general/persistent_assignment/identity/manual_ex_1": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/persistent_assignment/sc/input_value": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -12576,6 +12608,22 @@
       },
       "status": "ok"
     },
+    "string/ltrim/sc/padded_input_value": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
     "string/replace/comp_patterns/patterns_from_components": {
       "duckdb": {
         "detail": "",
@@ -12689,6 +12737,22 @@
       "status": "ok"
     },
     "string/rtrim/ds/manual_ex_1": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "string/rtrim/sc/padded_input_value": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -13105,6 +13169,22 @@
       "status": "ok"
     },
     "string/trim/sc/leading_and_trailing_spaces": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "string/trim/sc/padded_input_value": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -15030,7 +15110,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "140e946ed3f888951adb8bb66ea45030be84e2aa",
-    "vtlengine_commit": "ddd17ff6",
+    "vtlengine_commit": "140c5c19",
     "vtlengine_version": "1.9.6rc2"
   }
 }
