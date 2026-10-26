@@ -41,7 +41,9 @@ target is a label of Sphinx, which is global to the docs, and the same form ids 
 
 **Block page.** The title and the status chip, the legend, the diagram of the block, a table of
 its operators, a table of the types that they take and give, the forms that are not green with
-the example that shows why, and the hidden ``toctree`` of the pages of its operators.
+the example that shows why, and the hidden ``toctree`` of the pages of its operators. The three
+parts are rubrics, not sections: the sidebar lists the pages of the operators right under their
+block, and not the parts of the block page.
 
 **Index.** The title and the introduction, a line on how the results were made, and the parts of
 the map, in its hidden ``toctree`` and in a list: the overview, the operators and the definitions
@@ -791,9 +793,9 @@ def block_rst(chapter: Chapter, cat: Catalogue, index: StatusIndex, meta: RunMet
     if chapter.operators:
         parts.append(_diagram(block_diagram(chapter, index)))
     parts += [
-        _section("Operators", _operator_table(chapter, index)),
-        _section("Types", _types_table(chapter)),
-        _section("Forms that are not green", *_not_green(chapter, index)),
+        _rubric("Operators", _operator_table(chapter, index)),
+        _rubric("Types", _types_table(chapter)),
+        _rubric("Forms that are not green", *_not_green(chapter, index)),
     ]
     if chapter.operators:
         parts.append(_toctree(op.id for op in chapter.operators))
@@ -1302,6 +1304,11 @@ def _title(text: str, char: str, *, overline: bool = False) -> str:
 def _section(title: str, *parts: str) -> str:
     """A section of a page: its title, then ``parts``, with a blank line between all."""
     return "\n\n".join([_title(title, _SECTION), *parts])
+
+
+def _rubric(title: str, *parts: str) -> str:
+    """A titled part of a page that is not a section: the sidebar does not list it."""
+    return "\n\n".join([f".. rubric:: {_inline(title)}", *parts])
 
 
 def _toctree(names: Iterable[str]) -> str:

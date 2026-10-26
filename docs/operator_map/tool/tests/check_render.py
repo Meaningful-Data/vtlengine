@@ -337,17 +337,22 @@ def titles(text: str, char: str) -> list[str]:
 
 
 def section(text: str, title: str) -> str:
-    """The text of the ``-`` section ``title``, up to the next ``-`` title or the end."""
+    """The text of the ``-`` section or rubric ``title``, up to the next of either or the end."""
     lines = text.split("\n")
+    rubric = f".. rubric:: {title}"
     start = next(
-        n for n, line in enumerate(lines[:-1]) if line == title and set(lines[n + 1]) == {"-"}
+        n
+        for n, line in enumerate(lines[:-1])
+        if line == rubric or (line == title and set(lines[n + 1]) == {"-"})
     )
+    skip = 1 if lines[start] == rubric else 2
     end = len(lines)
-    for n in range(start + 2, len(lines) - 1):
-        if lines[n] and lines[n + 1] and set(lines[n + 1]) == {"-"} and set(lines[n]) != {"-"}:
+    for n in range(start + skip, len(lines) - 1):
+        heading = lines[n] and lines[n + 1] and set(lines[n + 1]) == {"-"}
+        if lines[n].startswith(".. rubric:: ") or (heading and set(lines[n]) != {"-"}):
             end = n
             break
-    return "\n".join(lines[start + 2 : end])
+    return "\n".join(lines[start + skip : end])
 
 
 def skeleton(text: str) -> list[str]:
@@ -952,7 +957,14 @@ def test_the_viral_groups_name_operators_of_the_catalogue() -> None:
 def test_block_page_toctree_and_types_table() -> None:
     text = block_rst(NUMERIC, MAP, INDEX, META)
     assert text.startswith(f"{'=' * 34}\nNumeric operators\n{'=' * 34}\n\n")
-    assert titles(text, "-") == ["Operators", "Types", "Forms that are not green"]
+    # Its parts are rubrics, not sections, so that the sidebar has the operators right under the
+    # block.
+    assert titles(text, "-") == []
+    assert re.findall(r"^\.\. rubric:: (.+)$", text, re.MULTILINE) == [
+        "Operators",
+        "Types",
+        "Forms that are not green",
+    ]
     assert '<span class="om-chip diverge">🔵 2 of 3 operators all ok</span>' in text
     assert blocks(text) == [block_diagram(NUMERIC, INDEX)]
     # The operator pages are under the block page, in a hidden toctree, in catalogue order.
