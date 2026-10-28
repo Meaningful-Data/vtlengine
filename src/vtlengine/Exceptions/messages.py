@@ -489,6 +489,12 @@ centralised_messages = {
         "description": "Occurs when the output of a component in a HAVING clause "
         "is not boolean as required.",
     },
+    "1-1-2-4": {
+        "message": "Having condition must invoke aggregate operators.",
+        "description": "Raised when the condition of a HAVING clause is a constant or is "
+        "evaluated for each Data Point instead of for each group, as it does not invoke "
+        "any aggregate operator.",
+    },
     # Analytic errors
     "1-1-3-1": {
         "message": "At op {op}: An analytic operator cannot be used in a having clause, "

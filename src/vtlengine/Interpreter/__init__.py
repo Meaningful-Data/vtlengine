@@ -775,23 +775,25 @@ class InterpreterAnalyzer(ASTTemplate):
                 groupings = self._apply_time_agg_grouping(operand, groupings, grouping_op)
                 self.aggregation_dataset = None
             if node.having_clause is not None:
+                having_data = (
+                    pd.DataFrame(columns=operand.get_components_names())
+                    if operand.data is None
+                    else operand.data.copy()
+                )
                 self.aggregation_dataset = Dataset(
                     name=operand.name,
                     components=deepcopy(operand.components),
-                    data=pd.DataFrame(columns=operand.get_components_names()),
+                    data=having_data,
                 )
                 self.aggregation_grouping = extract_grouping_identifiers(
                     operand.get_identifiers_names(), node.grouping_op, groupings
                 )
                 self.is_from_having = True
-                # Empty data analysis on having - we do not care about the result
-                self.visit(node.having_clause)
+                having = self.visit(node.having_clause)
                 # Reset to default values
                 self.is_from_having = False
                 self.aggregation_grouping = None
                 self.aggregation_dataset = None
-                having = getattr(node.having_clause, "expr", "")
-                having = self._format_having_expression_udo(having)
 
         elif self.is_from_having:
             groupings = self.aggregation_grouping
@@ -802,25 +804,6 @@ class InterpreterAnalyzer(ASTTemplate):
         if not self.is_from_regular_aggregation:
             result.name = VirtualCounter._new_ds_name()
         return result
-
-    def _format_having_expression_udo(self, having: str) -> str:
-        if self.udo_params is None:
-            return having
-        for k, v in self.udo_params[-1].items():
-            old_param = None
-            if f"{k} " in having:
-                old_param = f"{k} "
-            elif f" {k}" in having:
-                old_param = f" {k}"
-            if old_param is not None:
-                if isinstance(v, str):
-                    new_param = f" {v}"
-                elif isinstance(v, (Dataset, Scalar)):
-                    new_param = f" {v.name}"
-                else:
-                    new_param = f" {v.value}"
-                having = having.replace(old_param, new_param)
-        return having
 
     def visit_Analytic(self, node: AST.Analytic) -> Any:  # noqa: C901
         if self.is_from_having:
@@ -1524,7 +1507,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_ParamConstant(self, node: AST.ParamConstant) -> str:
         return node.value
 
-    def visit_ParamOp(self, node: AST.ParamOp) -> None:  # noqa: C901
+    def visit_ParamOp(self, node: AST.ParamOp) -> Any:  # noqa: C901
         if node.op == ROUND:
             op_element = self.visit(node.children[0])
             param_element = self.visit(node.params[0]) if len(node.params) != 0 else None
@@ -1586,10 +1569,14 @@ class InterpreterAnalyzer(ASTTemplate):
                     else None
                 )
             result = self.visit(node.params)
+            if not isinstance(result, Dataset):
+                raise SemanticError("1-1-2-4")
+
             measure = result.get_measures()[0]
             if measure.data_type != Boolean:
-                raise SemanticError("1-1-2-3", type=SCALAR_TYPES_CLASS_REVERSE[Boolean])
-            return None
+                raise SemanticError("1-1-2-3", type=SCALAR_TYPES_CLASS_REVERSE[measure.data_type])
+
+            return result
         elif node.op == FILL_TIME_SERIES:
             mode = self.visit(node.params[0]) if len(node.params) == 1 else "all"
             return Fill_time_series.analyze(self.visit(node.children[0]), mode)
