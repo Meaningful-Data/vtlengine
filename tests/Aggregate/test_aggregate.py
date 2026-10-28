@@ -1486,3 +1486,119 @@ class AggregateOperatorsTest(TestAggregateHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1203_1(self):
+        """
+        Expression: DS_r1 <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having (sum(Me_1) > 2)];
+                    ... having not (sum(Me_1) > 5), between(sum(Me_1), 2, 5),
+                    isnull(sum(Me_1)), if-then-else and case
+        Description: The having condition of the aggr clause is any boolean expression
+                     invoking aggregate operators, not only a comparison, in/not_in or
+                     and/or/xor. A constant branch of an if-then-else or a case takes the
+                     same value for every group.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1203
+        Goal: Check Result.
+        """
+        code = "GH_1203_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1203_2(self):
+        """
+        Expression: DS_r1 <- sum(DS_1 group by Id_1 having (sum(Me_1) > 2));
+                    DS_r2 <- count(DS_1 group by Id_1 having isnull(sum(Me_1)));
+        Description: The having condition of the aggregate operators is any boolean
+                     expression invoking aggregate operators. A group whose aggregate is
+                     null is kept when the condition holds for it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1203
+        Goal: Check Result.
+        """
+        code = "GH_1203_2"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1203_3(self):
+        """
+        Expression: DS_r <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having Me_1 > 2];
+        Description: A having condition that invokes no aggregate operator is evaluated for
+                     each Data Point and not for each group.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1203
+        Goal: Check Exception.
+        """
+        code = "GH_1203_3"
+        number_inputs = 1
+        message = "1-1-2-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1203_4(self):
+        """
+        Expression: DS_r <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having true];
+        Description: A constant having condition invokes no aggregate operator.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1203
+        Goal: Check Exception.
+        """
+        code = "GH_1203_4"
+        number_inputs = 1
+        message = "1-1-2-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1203_5(self):
+        """
+        Expression: DS_r1 <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1
+                        having if count() > 1 then sum(Me_1) > 2 else isnull(sum(Me_1))];
+                    ... nested if-then-else, an if-then-else of Number type compared
+                    afterwards and a case whose branches invoke aggregate operators
+        Description: if-then-else and case in a having condition are at component level:
+                     their condition and their branches hold one value for each group.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1203
+        Goal: Check Result.
+        """
+        code = "GH_1203_5"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1203_6(self):
+        """
+        Expression: DS_r <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1
+                        having if sum(Me_1) > 5 then Me_1 > 2 else false];
+        Description: A branch of an if-then-else in a having condition that invokes no
+                     aggregate operator is evaluated for each Data Point, not for each group.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1203
+        Goal: Check Exception.
+        """
+        code = "GH_1203_6"
+        number_inputs = 1
+        message = "1-1-2-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1203_7(self):
+        """
+        Expression: DS_r <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1
+                        having case when sum(Me_1) > 5 then Me_1 > 2 else false];
+        Description: A branch of a case in a having condition that invokes no aggregate
+                     operator is evaluated for each Data Point, not for each group.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1203
+        Goal: Check Exception.
+        """
+        code = "GH_1203_7"
+        number_inputs = 1
+        message = "1-1-2-4"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )

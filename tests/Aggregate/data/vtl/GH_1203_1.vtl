@@ -1,0 +1,6 @@
+DS_r1 <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having (sum(Me_1) > 2)];
+DS_r2 <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having not (sum(Me_1) > 5)];
+DS_r3 <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having between(sum(Me_1), 2, 5)];
+DS_r4 <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having isnull(sum(Me_1))];
+DS_r5 <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having if sum(Me_1) > 5 then true else false];
+DS_r6 <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having case when sum(Me_1) > 5 then false when count() > 1 then true else isnull(sum(Me_1))];
