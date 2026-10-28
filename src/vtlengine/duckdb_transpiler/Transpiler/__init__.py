@@ -20,6 +20,7 @@ from typing import (
 )
 
 import vtlengine.AST as AST
+from vtlengine.AST.ASTString import _format_constraint
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
 from vtlengine.AST.Grammar import tokens
@@ -658,6 +659,90 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         return self._to_sql_literal(sc.value, getattr(sc.data_type, "__name__", ""))
 
     def _resolve_udo_param(self, name: str, udo_val: Any) -> str:
+        sql = self._resolve_udo_param_sql(name, udo_val)
+        constraints = self._get_udo_param(f"__constraints__{name}")
+        if constraints is None:
+            return sql
+        declared = self._get_udo_param(f"__type__{name}")
+        element = f"parameter {name}"
+        if isinstance(declared, Component) and constraints.value is not None:
+            return self._udo_checked_sql(sql, udo_val, constraints.value, element)
+        if isinstance(declared, Dataset):
+            structure = self._get_dataset_structure(udo_val)
+            return self._udo_checked_dataset_sql(sql, structure, declared, constraints, element)
+        return sql
+
+    def _udo_checked_sql(
+        self, sql: str, value: AST.AST, constraint: AST.TypeConstraint, element: str
+    ) -> str:
+        """sql, the values of a component, raising VTL 2-3-9 where a value breaks a constraint
+        of the type of a user defined operator: not null, a condition on value (the value AST)
+        or the values allowed."""
+        broken = []
+        if constraint.not_null:
+            broken.append(f"{sql} IS NULL")
+        if constraint.values is not None:
+            allowed = ", ".join(self.visit(allowed_value) for allowed_value in constraint.values)
+            broken.append(f"{sql} NOT IN ({allowed})")
+        if constraint.condition is not None:
+            self._push_udo_params({"value": value})
+            try:
+                condition = self.visit(deepcopy(constraint.condition))
+            finally:
+                self._pop_udo_params()
+            broken.append(f"({condition}) IS FALSE")
+        text = "\u00a6".join(
+            [
+                f"VTL 2-3-9 {self._get_udo_param('__udo__')}",
+                element,
+                _format_constraint(constraint).strip(),
+                "",
+            ]
+        )
+        message = "'" + text.replace("'", "''") + "'"
+        return (
+            f"CASE WHEN {' OR '.join(broken)} THEN "
+            f"error({message} || COALESCE(CAST({sql} AS VARCHAR), 'null')) ELSE {sql} END"
+        )
+
+    def _udo_checked_dataset_sql(
+        self,
+        sql: str,
+        structure: Optional[Dataset],
+        declared: Dataset,
+        constraints: AST.SignatureConstraints,
+        element: str,
+    ) -> str:
+        """sql, a Data Set, with its components that a dataset type constrains checked by
+        _udo_checked_sql."""
+        taken = (
+            AST.udo_dataset_components(declared, constraints, structure)
+            if structure is not None
+            else None
+        )
+        checked = {name: c for name, c in (taken or {}).items() if c is not None}
+        if not checked:
+            return sql
+        replaced = ", ".join(
+            self._udo_checked_sql(
+                quote_name(name),
+                AST.Identifier(
+                    value=name,
+                    kind="ComponentID",
+                    line_start=0,
+                    column_start=0,
+                    line_stop=0,
+                    column_stop=0,
+                ),
+                constraint,
+                f"component {name} of {element}",
+            )
+            + f" AS {quote_name(name)}"
+            for name, constraint in checked.items()
+        )
+        return f"SELECT * REPLACE ({replaced}) FROM ({sql})"
+
+    def _resolve_udo_param_sql(self, name: str, udo_val: Any) -> str:
         if not isinstance(udo_val, AST.VarID):
             return self.visit(udo_val) if isinstance(udo_val, AST.AST) else quote_name(udo_val)
         resolved = udo_val.value
@@ -3751,21 +3836,41 @@ FROM (
         """Register a UDO definition."""
         self._udos[node.op] = {
             "params": [
-                {"name": p.name, "type": p.type_, "default": p.default} for p in node.parameters
+                {
+                    "name": p.name,
+                    "type": p.type_,
+                    "default": p.default,
+                    "constraints": p.constraints,
+                }
+                for p in node.parameters
             ],
             "output": node.output_type,
             "expression": node.expression,
+            "return_type": node.return_type,
+            "return_constraints": node.return_constraints,
         }
 
     def visit_UDOCall(self, node: AST.UDOCall) -> str:  # type: ignore[override]
         """Visit a UDO call by expanding its definition with parameter bindings."""
         udo_def = self._udos[node.op]
         bindings = self._build_udo_bindings(udo_def, node.params, include_types=True)
+        bindings["__udo__"] = node.op
         expression = deepcopy(udo_def["expression"])
 
         self._push_udo_params(bindings)
         try:
-            return self.visit(expression)
+            sql = self.visit(expression)
+            declared, constraints = udo_def["return_type"], udo_def["return_constraints"]
+            if constraints is None:
+                return sql
+            if isinstance(declared, Component) and constraints.value is not None:
+                value = deepcopy(udo_def["expression"])
+                return self._udo_checked_sql(sql, value, constraints.value, "the output")
+            if isinstance(declared, Dataset):
+                return self._udo_checked_dataset_sql(
+                    sql, self._get_dataset_structure(node), declared, constraints, "the output"
+                )
+            return sql
         finally:
             self._pop_udo_params()
 

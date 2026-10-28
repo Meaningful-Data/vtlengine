@@ -654,6 +654,7 @@ class StructureVisitor(ASTTemplate):
                 bindings[param_name] = param_info["default"]
             if include_types:
                 bindings[f"__type__{param_name}"] = param_info.get("type")
+                bindings[f"__constraints__{param_name}"] = param_info.get("constraints")
         return bindings
 
     def _resolve_udocall_structure(self, node: AST.UDOCall) -> Optional[Dataset]:

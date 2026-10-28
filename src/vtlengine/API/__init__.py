@@ -338,6 +338,7 @@ def _run_with_duckdb(
         scalars=copy.deepcopy(input_scalars),
         only_semantic=True,
         return_only_persistent=False,
+        scalar_values_known=True,
     )
     semantic_results = interpreter.visit(_copy_ast(ast))
 

@@ -1,0 +1,6 @@
+define operator q (ds dataset, m component<number [value >= 1.5]>)
+    returns dataset is
+        ds[calc Me_3 := m]
+end operator;
+
+DS_r <- q(DS_1, Me_1);

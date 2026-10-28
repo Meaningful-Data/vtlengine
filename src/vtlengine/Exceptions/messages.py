@@ -1326,6 +1326,13 @@ centralised_messages = {
         "description": "Raised when a hierarchical ruleset condition refers to a component "
         "that is not declared in the condition of the ruleset signature.",
     },
+    "1-3-1-11": {
+        "message": "At op {op}: {element} has the value {value}, which its type constraint "
+        "{constraint} does not allow.",
+        "description": "Raised when a value written in the script, passed to or returned by a "
+        "user defined operator, is null for a not null type, or breaks the condition or the "
+        "allowed values of its type.",
+    },
     "1-3-12": {
         "message": "Default arguments cannot be followed by non-default arguments.",
         "description": "Occurs when a function definition places non-default parameters "
@@ -1351,8 +1358,8 @@ centralised_messages = {
         "description": "Occurs when a user-defined operator lacks a return definition.",
     },
     "1-3-2-6": {
-        "message": "At op {op}: type constraints, null and not null, multiplicity modifiers and "
-        "value domains are not supported in the returns of a user defined operator.",
+        "message": "At op {op}: value domains are not supported in the returns of a user defined "
+        "operator.",
         "description": "Raised when a user defined operator declares its result with a type "
         "form that the engine cannot check.",
     },
@@ -1561,5 +1568,12 @@ centralised_messages = {
         "message": "At op {op}: Data conversion error: {msg}.",
         "description": "Raised when DuckDB encounters a data conversion error during "
         "aggregation query execution.",
+    },
+    "2-3-9": {
+        "message": "At op {op}: {element} has the value {value}, which its type constraint "
+        "{constraint} does not allow.",
+        "description": "Raised when a value of the data, passed to or returned by a user defined "
+        "operator, is null for a not null type, or breaks the condition or the allowed values "
+        "of its type.",
     },
 }

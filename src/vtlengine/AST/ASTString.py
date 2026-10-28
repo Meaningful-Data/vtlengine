@@ -110,31 +110,49 @@ def _format_name(value: str) -> str:
     return _format_reserved_word(value)
 
 
-def _format_component_type(component: Component) -> str:
+def _format_constraint(constraint: Optional[AST.TypeConstraint]) -> str:
+    """The constraints of a scalar type, written as declared."""
+    if constraint is None:
+        return ""
+    text = ""
+    if constraint.condition is not None:
+        text += f" [{ASTString().render(constraint.condition)}]"
+    if constraint.values is not None:
+        text += f" {{{', '.join(ASTString().render(value) for value in constraint.values)}}}"
+    if constraint.not_null:
+        text += " not null"
+    return text
+
+
+def _format_component_type(
+    component: Component, constraint: Optional[AST.TypeConstraint] = None
+) -> str:
     role = "component" if component.role is None else component.role.value.lower()
     # A component declared without a type is parsed with a String instance, not the class
     if isinstance(component.data_type, type):
-        return f"{role}<{_format_type(component.data_type)}>"
+        return f"{role}<{_format_type(component.data_type)}{_format_constraint(constraint)}>"
     return role
 
 
-def _format_type(type_: Any) -> str:
+def _format_type(type_: Any, constraints: Optional[AST.SignatureConstraints] = None) -> str:
     """The type of an operator parameter or result, written as declared."""
     if isinstance(type_, Dataset):
-        if not type_.components:
-            return "dataset"
-        components = ", ".join(
-            [
-                f"{_format_component_type(component)} {_format_name(component.name)}"
-                for component in type_.components.values()
-            ]
-        )
-        return f"dataset {{{components}}}"
+        named = constraints.components if constraints is not None else {}
+        unnamed = constraints.unnamed if constraints is not None else []
+        components = [
+            f"{_format_component_type(component, named.get(name))} {_format_name(name)}"
+            for name, component in type_.components.items()
+        ] + [
+            f"{_format_component_type(entry.component, entry.constraint)} _{entry.multiplicity}"
+            for entry in unnamed
+        ]
+        return f"dataset {{{', '.join(components)}}}" if components else "dataset"
+    constraint = constraints.value if constraints is not None else None
     if isinstance(type_, Component):
-        return _format_component_type(type_)
+        return _format_component_type(type_, constraint)
     if isinstance(type_, Scalar):
-        return "scalar"
-    return SCALAR_TYPES_CLASS_REVERSE[type_].lower()
+        return f"scalar{_format_constraint(constraint)}"
+    return f"{SCALAR_TYPES_CLASS_REVERSE[type_].lower()}{_format_constraint(constraint)}"
 
 
 def _format_dataset_eval(dataset: Dataset) -> str:
@@ -437,13 +455,15 @@ class ASTString(ASTTemplate):
 
         name = _format_name(node.name)
 
-        return f"{name} {_format_type(node.type_)}{default}"
+        return f"{name} {_format_type(node.type_, node.constraints)}{default}"
 
     def visit_Operator(self, node: AST.Operator) -> None:
         signature_sep = ", " if len(node.parameters) > 1 else ""
         signature = signature_sep.join([self.visit(x) for x in node.parameters])
         returns = (
-            node.output_type.lower() if node.return_type is None else _format_type(node.return_type)
+            node.output_type.lower()
+            if node.return_type is None
+            else _format_type(node.return_type, node.return_constraints)
         )
         if self.pretty:
             self.vtl_script += f"define operator {node.op}({signature}){nl}"

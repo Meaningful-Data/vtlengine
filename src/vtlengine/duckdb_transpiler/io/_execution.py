@@ -86,6 +86,15 @@ def _mixed_frequency_error(msg_lower: str) -> Exception:
     )
 
 
+def _map_udo_constraint_error(msg: str) -> Optional[Exception]:
+    """A value that breaks a constraint of a type of a user defined operator."""
+    match = re.search("VTL 2-3-9 (.*?)\u00a6(.*?)\u00a6(.*?)\u00a6(.*)", msg)
+    if match is None:
+        return None
+    op, element, constraint, value = match.groups()
+    return RunTimeError("2-3-9", op=op, element=element, value=value, constraint=constraint)
+
+
 def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
     """Map the errors raised by the VTL SQL macros, which carry their own code."""
     # calc identifier: the calculated expression produced a null
@@ -185,7 +194,7 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     msg = str(error)
     msg_lower = msg.lower()
 
-    macro_error = _map_vtl_macro_error(msg, msg_lower)
+    macro_error = _map_udo_constraint_error(msg) or _map_vtl_macro_error(msg, msg_lower)
     if macro_error is not None:
         return macro_error
 

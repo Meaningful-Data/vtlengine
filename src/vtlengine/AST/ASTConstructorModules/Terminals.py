@@ -291,14 +291,17 @@ class Terminals:
         """
         pass
 
-    def visitCompConstraint(self, ctx):
+    def visitCompConstraint(self, ctx, allow_constraints=False):
         """
         compConstraint: componentType (componentID|multModifier) ;
+
+        None for a component with a multiplicity modifier, which ASTVisitor reads apart in a
+        user defined operator signature.
         """
         ctx_list = ctx.children
 
         component_node = [
-            self.visitComponentType(component)
+            self.visitComponentType(component, allow_constraints)
             for component in ctx_list
             if not component.is_terminal and component.ctx_id == RC.COMPONENT_TYPE
         ]
@@ -314,6 +317,8 @@ class Terminals:
         ]
 
         if len(component_mult) != 0:
+            if allow_constraints:
+                return None
             # AST_ASTCONSTRUCTOR.51
             raise SemanticError(
                 "1-3-13", construct=f"multiplicity modifier in {script_location(ctx)}"
@@ -328,9 +333,12 @@ class Terminals:
         if not c.is_terminal and c.rule_index == RC.CONSTANT[0]:
             return self.visitConstant(c)
 
-    def visitScalarType(self, ctx):
+    def visitScalarType(self, ctx, allow_constraints=False):
         """
         scalarType: (basicScalarType|valueDomainName)scalarTypeConstraint?((NOT)? NULL_CONSTANT)? ;
+
+        A user defined operator signature allows the constraints, which ASTVisitor reads apart
+        anywhere else they are not supported.
         """
         ctx_list = ctx.children
 
@@ -371,6 +379,9 @@ class Terminals:
         else:
             raise InputValidationException(code="0-5-1-10", definition=script_location(scalartype))
 
+        if allow_constraints:
+            return type_node
+
         if len(scalartype_constraint) != 0:
             # AST_ASTCONSTRUCTOR.45
             raise SemanticError("1-3-13", construct=f"type constraint in {script_location(ctx)}")
@@ -385,18 +396,20 @@ class Terminals:
 
         return type_node
 
-    def visitDatasetType(self, ctx):
+    def visitDatasetType(self, ctx, allow_constraints=False):
         """
         datasetType: DATASET ('{'compConstraint (',' compConstraint)* '}' )? ;
         """
         ctx_list = ctx.children
 
         components = [
-            self.visitCompConstraint(constraint)
+            self.visitCompConstraint(constraint, allow_constraints)
             for constraint in ctx_list
             if not constraint.is_terminal and constraint.ctx_id == RC.COMP_CONSTRAINT
         ]
-        components = {component.name: component for component in components}
+        components = {
+            component.name: component for component in components if component is not None
+        }
 
         return Dataset(name="Dataset", components=components, data=None)
 
@@ -409,7 +422,7 @@ class Terminals:
         """
         raise SemanticError("1-3-13", construct=f"ruleset type {script_location(ctx)}")
 
-    def visitComponentType(self, ctx):
+    def visitComponentType(self, ctx, allow_constraints=False):
         """
         componentType:  componentRole ( LT   scalarType  MT  )?
         """
@@ -417,7 +430,7 @@ class Terminals:
 
         role_node = self.visitComponentRole(ctx_list[0])
         data_type = [
-            self.visitScalarType(constraint)
+            self.visitScalarType(constraint, allow_constraints)
             for constraint in ctx_list
             if not constraint.is_terminal and constraint.ctx_id == RC.SCALAR_TYPE
         ]
@@ -427,7 +440,7 @@ class Terminals:
 
         return Component(name="Component", data_type=data_type, role=role_node, nullable=nullable)
 
-    def visitInputParameterType(self, ctx):
+    def visitInputParameterType(self, ctx, allow_constraints=False):
         """
         inputParameterType:
             scalarType
@@ -441,10 +454,10 @@ class Terminals:
         c = ctx_list[0]
 
         if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
-            return self.visitScalarType(c)
+            return self.visitScalarType(c, allow_constraints)
 
         elif not c.is_terminal and c.ctx_id == RC.DATASET_TYPE:
-            return self.visitDatasetType(c)
+            return self.visitDatasetType(c, allow_constraints)
 
         elif not c.is_terminal and c.ctx_id == RC.SCALAR_SET_TYPE:
             return self.visitScalarSetType(c)
@@ -453,7 +466,7 @@ class Terminals:
             return self.visitRulesetType(c)
 
         elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
-            return self.visitComponentType(c)
+            return self.visitComponentType(c, allow_constraints)
 
     def visitOutputParameterType(self, ctx):
         """
@@ -475,20 +488,20 @@ class Terminals:
         elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return "Component"
 
-    def visitDeclaredOutputType(self, ctx):
+    def visitDeclaredOutputType(self, ctx, allow_constraints=False):
         """
         The type that outputParameterType declares, read as visitInputParameterType reads a
         parameter type, or None when a parameter type cannot represent it (a value domain,
-        a type constraint, not null or a multiplicity modifier).
+        or a type constraint, not null or a multiplicity modifier without allow_constraints).
         """
         c = ctx.children[0]
         try:
             if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
-                return self.visitScalarType(c)
+                return self.visitScalarType(c, allow_constraints)
             elif not c.is_terminal and c.ctx_id == RC.DATASET_TYPE:
-                return self.visitDatasetType(c)
+                return self.visitDatasetType(c, allow_constraints)
             elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
-                return self.visitComponentType(c)
+                return self.visitComponentType(c, allow_constraints)
         except (InputValidationException, SemanticError) as error:
             # The type visitors reject these forms, so only output_type describes the result
             if error.args[1] not in ("0-5-1-10", "1-3-13"):
