@@ -585,12 +585,13 @@ class Operator(AST):
     Operator: (operator, parameters, outputType, expression, return_type)
 
     output_type is the kind of the result (Scalar, Component or Dataset), and return_type
-    the type the operator declares, when it can be represented like a parameter type.
+    the type the operator declares, when it can be represented like a parameter type. Both
+    are None for an operator without returns, whose result is the one of its expression.
     """
 
     op: str
     parameters: List[Argument]
-    output_type: str
+    output_type: Optional[str]
     expression: AST
     return_type: Optional[Any] = None
 

@@ -2364,7 +2364,7 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             result_type = "Scalar" if isinstance(result, Scalar) else "Dataset"
 
-        if result_type != operator["output"]:
+        if operator["output"] is not None and result_type != operator["output"]:
             raise SemanticError(
                 "1-3-1-1",
                 op=node.op,

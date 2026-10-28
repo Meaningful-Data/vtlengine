@@ -1,0 +1,19 @@
+define operator f(x integer)
+	is
+		x + 1
+end operator;
+
+define operator g(d dataset, c component)
+	is
+		d
+		[calc Me_2 := c * 2]
+end operator;
+
+define operator h(x integer)
+	returns integer is
+		x
+end operator;
+
+DS_r <-
+	g(DS_1, Me_1)
+		[calc Me_3 := f(1) + h(2)];
