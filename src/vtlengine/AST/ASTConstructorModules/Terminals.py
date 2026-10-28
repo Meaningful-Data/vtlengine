@@ -465,8 +465,8 @@ class Terminals:
         elif not c.is_terminal and c.ctx_id == RC.RULESET_TYPE:
             return self.visitRulesetType(c)
 
-        elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
-            return self.visitComponentType(c, allow_constraints)
+        # componentType, the last alternative of the grammar
+        return self.visitComponentType(c, allow_constraints)
 
     def visitOutputParameterType(self, ctx):
         """
@@ -485,8 +485,8 @@ class Terminals:
         elif not c.is_terminal and c.ctx_id == RC.DATASET_TYPE:
             return "Dataset"
 
-        elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
-            return "Component"
+        # componentType, the last alternative of the grammar
+        return "Component"
 
     def visitDeclaredOutputType(self, ctx, allow_constraints=False):
         """
