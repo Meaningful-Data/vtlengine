@@ -187,13 +187,24 @@ class Aggregation(Operator.Unary):
         # VDS is handled in visit_Aggregation
         return Dataset(name="result", components=result_components, data=None)
 
+    @staticmethod
+    def _apply_having(df: pd.DataFrame, grouping_keys: List[str], having: Dataset) -> pd.DataFrame:
+        """Keeps the groups for which the having condition evaluates or not to true"""
+        if having.data is None:
+            return df
+        condition = having.data[having.get_measures_names()[0]]
+        condition = condition.eq(True).fillna(False).astype(bool)
+        groups = having.data.loc[condition, grouping_keys]
+        if not grouping_keys:
+            return df if len(groups) > 0 else df.iloc[0:0]
+        return merge_frames(df, groups, how="inner", on=grouping_keys)
+
     @classmethod
     def _agg_func(
         cls,
         df: pd.DataFrame,
         grouping_keys: Optional[List[str]],
         measure_names: Optional[List[str]],
-        having_expression: Optional[str],
     ) -> pd.DataFrame:
         grouping_names = (
             [f'"{name}"' for name in grouping_keys] if grouping_keys is not None else None
@@ -203,19 +214,13 @@ class Aggregation(Operator.Unary):
         else:
             grouping = ""
 
-        if having_expression is None:
-            having_expression = ""
-
         if measure_names is not None and len(measure_names) == 0 and cls.op == COUNT:
             if not grouping_names:
                 # Counting the Data Points of a Data Set that is not grouped leaves no
                 # column to read them from, and a frame of no columns cannot even be
                 # registered, so the count is taken off the frame itself (issue #996).
                 return pd.DataFrame({"int_var": [len(df)]})
-            query = (
-                f"SELECT {', '.join(grouping_names)}, COUNT() AS "
-                f"int_var from df {grouping} {having_expression}"
-            )
+            query = f"SELECT {', '.join(grouping_names)}, COUNT() AS int_var from df {grouping}"
             conn = duckdb.connect(database=":memory:", read_only=False)
             try:
                 conn.register("df", df)
@@ -240,16 +245,13 @@ class Aggregation(Operator.Unary):
                         functions += f"{cls.py_op}({e}) AS {e}, "
             if grouping_names is not None and len(grouping_names) > 0:
                 query = (
-                    f"SELECT {', '.join(grouping_names) + ', '}{functions[:-2]} "
-                    f"from df {grouping} {having_expression}"
+                    f"SELECT {', '.join(grouping_names) + ', '}{functions[:-2]} from df {grouping}"
                 )
             else:
                 query = f"SELECT {functions[:-2]} from df"
 
         else:
-            query = (
-                f"SELECT {', '.join(grouping_names or [])} from df {grouping} {having_expression}"
-            )
+            query = f"SELECT {', '.join(grouping_names or [])} from df {grouping}"
 
         conn = duckdb.connect(database=":memory:", read_only=False)
         try:
@@ -270,9 +272,9 @@ class Aggregation(Operator.Unary):
         operand: Dataset,
         group_op: Optional[str],
         grouping_columns: Optional[List[str]],
-        having_expr: Optional[str],
+        having: Optional[Dataset],
     ) -> Dataset:
-        result = cls.validate(operand, group_op, grouping_columns, having_expr)
+        result = cls.validate(operand, group_op, grouping_columns, having)
 
         grouping_keys = result.get_identifiers_names()
         result_df = operand.data.copy() if operand.data is not None else pd.DataFrame()
@@ -282,7 +284,7 @@ class Aggregation(Operator.Unary):
         viral_df = result_df[grouping_keys + viral_attr_names].copy() if viral_attr_names else None
         result_df = result_df[grouping_keys + measure_names]
         cls._handle_data_types(result_df, operand.get_measures(), "input")
-        result_df = cls._agg_func(result_df, grouping_keys, measure_names, having_expr)
+        result_df = cls._agg_func(result_df, grouping_keys, measure_names)
 
         cls._handle_data_types(result_df, operand.get_measures(), "result")
         # Handle correct order on result
@@ -300,12 +302,11 @@ class Aggregation(Operator.Unary):
             aux_df = pd.DataFrame(columns=result.get_components_names())
         else:
             aux_df = merge_frames(aux_df, result_df, how="left", on=grouping_keys)
-        if having_expr is not None:
-            aux_df.dropna(subset=result.get_measures_names(), how="any", inplace=True)
+        if having is not None:
+            aux_df = cls._apply_having(aux_df, grouping_keys, having)
         if cls.op == COUNT and grouping_keys:
             # Groups whose counted values are all null keep no row through the
-            # aggregation, but counting none of them is zero and not null. This runs
-            # after the having filter, which reads those same absent rows.
+            # aggregation, but counting none of them is zero and not null.
             for measure_name in result.get_measures_names():
                 if measure_name in aux_df.columns:
                     aux_df[measure_name] = aux_df[measure_name].fillna(0)
