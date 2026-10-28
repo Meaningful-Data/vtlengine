@@ -461,13 +461,15 @@ class ASTString(ASTTemplate):
         signature_sep = ", " if len(node.parameters) > 1 else ""
         signature = signature_sep.join([self.visit(x) for x in node.parameters])
         returns = (
-            node.output_type.lower()
+            ""
+            if node.output_type is None
+            else f"returns {node.output_type.lower()} "
             if node.return_type is None
-            else _format_type(node.return_type, node.return_constraints)
+            else f"returns {_format_type(node.return_type, node.return_constraints)} "
         )
         if self.pretty:
             self.vtl_script += f"define operator {node.op}({signature}){nl}"
-            self.vtl_script += f"\treturns {returns} is{nl}"
+            self.vtl_script += f"\t{returns}is{nl}"
             expression = self.visit(node.expression)
             if "(" in expression:
                 expression = _replace_outside_quotes(expression, "(", f"({nl}{tab * 2}")
@@ -476,7 +478,7 @@ class ASTString(ASTTemplate):
             self.vtl_script += f"{tab * 2}{expression}{nl}"
             self.vtl_script += f"end operator;{nl}"
         else:
-            body = f"returns {returns} is {self.visit(node.expression)}"
+            body = f"{returns}is {self.visit(node.expression)}"
             self.vtl_script += f"define operator {node.op}({signature}) {body} end operator;"
 
     # ---------------------- Basic Operators ----------------------

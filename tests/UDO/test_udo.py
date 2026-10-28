@@ -517,12 +517,13 @@ class UdoTest(UDOHelper):
     def test_GL_452_2(self):
         """
         Status: OK
-        Description: UDO without return type defined
-        Goal: Check Result.
+        Description: UDO without return type defined, which is accepted (issue #1160), called
+            with Components for its integer parameters
+        Goal: Check Exception.
         """
         code = "GL_452_2"
         number_inputs = 1
-        message = "1-3-2-2"
+        message = "1-3-1-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
@@ -902,6 +903,19 @@ class UdoTest(UDOHelper):
         Goal: Check Result.
         """
         code = "GH_1161_7"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1160_1(self):
+        """
+        Status: OK
+        Description: Operators without returns give the result of their expression: a Scalar,
+            a Component and a Dataset, each with the type its expression gives
+        Goal: Check Result.
+        """
+        code = "GH_1160_1"
         number_inputs = 1
         references_names = ["1", "2"]
 

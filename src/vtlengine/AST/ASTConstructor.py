@@ -296,11 +296,9 @@ class ASTVisitor:
             if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ][0]
 
-        if len(return_) == 0:
-            raise SemanticError("1-3-2-2", op=operator)
-        else:
-            return_node, return_type, return_constraints = return_[0]
-        if return_type is None:
+        # Without returns, the result is whatever the body gives (issue #1160)
+        return_node, return_type, return_constraints = return_[0] if return_ else (None, None, None)
+        if return_ and return_type is None:
             raise SemanticError("1-3-2-6", op=operator)
 
         token_info = extract_token_info(ctx)
