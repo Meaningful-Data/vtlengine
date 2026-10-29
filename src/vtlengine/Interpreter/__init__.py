@@ -2,13 +2,13 @@ import csv
 from copy import copy, deepcopy
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Type, Union, cast
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union, cast
 
 import pandas as pd
 
 import vtlengine.AST as AST
 import vtlengine.Operators as Operators
-from vtlengine.AST.ASTString import _format_component_type, _format_type
+from vtlengine.AST.ASTString import _format_component_type, _format_constraint, _format_type
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
 from vtlengine.AST.DAG._models import DatasetSchedule
@@ -50,6 +50,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
     WHEN,
 )
+from vtlengine.AST.UDOTypes import udo_component_matches, udo_dataset_components
 from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
@@ -144,29 +145,15 @@ def _var_id_names(node: Any) -> Iterator[str]:
             yield from _var_id_names(child)
 
 
-def _udo_component_matches(declared: Any, found: Any) -> bool:
-    """Whether a component has the role and the type a user defined operator declares."""
-    # A component declared without a role or a type is parsed with None and a String instance,
-    # so declared is not typed as a Component
-    return (declared.role is None or found.role == declared.role) and (
-        not isinstance(declared.data_type, type)
-        or check_unary_implicit_promotion(found.data_type, declared.data_type)
-    )
+def _udo_value_text(value: Any) -> Any:
+    """A value in an error message, with a null written as in VTL."""
+    return "null" if pd.isna(value) else value
 
 
 def _check_udo_return_type(op: str, declared: Any, result: Any) -> None:
     """The result of a user defined operator must have the type it returns (issue #1161)."""
-    if isinstance(declared, Dataset):
-        found = result.components
-        matches = not declared.components or (
-            declared.components.keys() == found.keys()
-            and all(
-                _udo_component_matches(c, found[name]) for name, c in declared.components.items()
-            )
-        )
-        found_type = _format_type(result)
-    elif isinstance(declared, Component):
-        matches = _udo_component_matches(declared, result)
+    if isinstance(declared, Component):
+        matches = udo_component_matches(declared, result)
         found_type = _format_component_type(result)
     elif isinstance(declared, type):
         matches = check_unary_implicit_promotion(result.data_type, declared)
@@ -223,6 +210,10 @@ class InterpreterAnalyzer(ASTTemplate):
     udo_params: Optional[List[Dict[str, Any]]] = None
     # Names of the user defined operators being called, outermost first
     udo_calls: List[str] = field(default_factory=list)
+    # The constraints on the values of the component parameters of each of those calls
+    udo_constraints: List[Dict[str, AST.TypeConstraint]] = field(default_factory=list)
+    # Whether the input scalars hold their values, as on the DuckDB engine, even when only_semantic
+    scalar_values_known: bool = False
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
     # Names of the rules that computed each code item, in evaluation order
     hr_agg_item_rules: Optional[Dict[str, List[str]]] = None
@@ -401,7 +392,7 @@ class InterpreterAnalyzer(ASTTemplate):
         elif node.op in self.udos:
             raise SemanticError("1-2-24", element_type="User Defined Operator", name=node.op)
 
-        param_info: List[Dict[str, Union[str, Type[ScalarType], AST.AST]]] = []
+        param_info: List[Dict[str, Any]] = []
         for param in node.parameters:
             if param.name in [x["name"] for x in param_info]:
                 raise SemanticError("1-3-1-4", type="User Defined Operator", op=node.op)
@@ -411,7 +402,14 @@ class InterpreterAnalyzer(ASTTemplate):
                 type_ = param.type_.__class__.__name__
             else:
                 type_ = param.type_
-            param_info.append({"name": param.name, "type": type_})
+            param_info.append(
+                {
+                    "name": param.name,
+                    "type": type_,
+                    "declared": param.type_,
+                    "constraints": param.constraints,
+                }
+            )
             if param.default is not None:
                 default = self.visit(param.default)
                 declared: Any = param.type_
@@ -439,6 +437,7 @@ class InterpreterAnalyzer(ASTTemplate):
             "expression": node.expression,
             "output": node.output_type,
             "return_type": node.return_type,
+            "return_constraints": node.return_constraints,
         }
 
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
@@ -1096,7 +1095,22 @@ class InterpreterAnalyzer(ASTTemplate):
             return node.value
         # Having takes precedence as it is lower in the AST
         if self.udo_params is not None and node.value in self.udo_params[-1]:
+            constraint = self.udo_constraints[-1].get(node.value) if self.udo_constraints else None
             udo_element = copy(self.udo_params[-1][node.value])
+            if constraint is not None and isinstance(udo_element, (str, DataComponent)):
+                if isinstance(udo_element, str):
+                    renamed = copy(node)
+                    renamed.value = udo_element
+                    # The name is the argument's, not a parameter of this call
+                    self.udo_params.append({})
+                    try:
+                        udo_element = self.visit(renamed)
+                    finally:
+                        self.udo_params.pop()
+                self._check_udo_constraint(
+                    self.udo_calls[-1], f"parameter {node.value}", constraint, udo_element
+                )
+                return udo_element
             if isinstance(udo_element, (Scalar, Dataset, DataComponent)):
                 return udo_element
             # If it is only the component or dataset name, we rename the node.value
@@ -2384,6 +2398,8 @@ class InterpreterAnalyzer(ASTTemplate):
                         literal=param_element.literal,
                     )
 
+        component_constraints = self._check_udo_arguments(node, operator, signature_values)
+
         # We set it here to a list to start the stack of UDO params
         if self.udo_params is None:
             self.udo_params = []
@@ -2402,11 +2418,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 "1-3-2-7", op=node.op, calls=" -> ".join([*self.udo_calls, node.op])
             )
         self.udo_calls.append(node.op)
+        self.udo_constraints.append(component_constraints)
 
         # Calling the UDO AST, we use deepcopy to avoid changing the original UDO AST
         if operator is not None:
             result = self.visit(deepcopy(operator["expression"]))
         self.udo_calls.pop()
+        self.udo_constraints.pop()
 
         if self.is_from_regular_aggregation or self.is_from_rule:
             result_type = "Component" if isinstance(result, DataComponent) else "Scalar"
@@ -2422,6 +2440,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 type_2=result_type,
             )
         _check_udo_return_type(node.op, operator["return_type"], result)
+        self._check_udo_signature(
+            node.op, "the output", operator["return_type"], operator["return_constraints"], result
+        )
 
         # We pop the last element of the stack (current UDO params)
         # to avoid using them in the next UDO call
@@ -2431,6 +2452,109 @@ class InterpreterAnalyzer(ASTTemplate):
         if len(self.udo_params) == 0:
             self.udo_params = None
         return result
+
+    def _check_udo_arguments(
+        self, node: AST.UDOCall, operator: Dict[str, Any], signature_values: Dict[str, Any]
+    ) -> Dict[str, AST.TypeConstraint]:
+        """Check the scalar and dataset arguments of a call against what the types of their
+        parameters declare, and give the constraints of the component parameters, whose values
+        are checked where the body reads them."""
+        component_constraints: Dict[str, AST.TypeConstraint] = {}
+        for i, param in enumerate(operator["params"]):
+            declared, constraints = param["declared"], param["constraints"]
+            if isinstance(declared, Component):
+                if constraints is not None and constraints.value is not None:
+                    component_constraints[param["name"]] = constraints.value
+                continue
+            if constraints is None and not (isinstance(declared, Dataset) and declared.components):
+                continue
+            value = signature_values[param["name"]]
+            if isinstance(value, str):
+                # A dataset given by its name
+                value = self.visit(node.params[i])
+            self._check_udo_signature(
+                node.op, f"parameter {param['name']}", declared, constraints, value
+            )
+        return component_constraints
+
+    def _check_udo_signature(
+        self,
+        op: str,
+        element: str,
+        declared: Any,
+        constraints: Optional[AST.SignatureConstraints],
+        value: Any,
+    ) -> None:
+        """value, a Scalar, DataComponent or Dataset, must meet what the type of a parameter or
+        of the output of a user defined operator declares beyond its kind and data type: the
+        structure of a dataset type and the constraints on the values."""
+        if isinstance(declared, Dataset) and isinstance(value, Dataset):
+            taken = udo_dataset_components(op, element, declared, constraints, value)
+            for name, constraint in taken.items():
+                if constraint is not None:
+                    component = value.components[name]
+                    self._check_udo_constraint(
+                        op,
+                        f"component {name} of {element}",
+                        constraint,
+                        DataComponent(
+                            name=name,
+                            data=None if value.data is None else value.data[name],
+                            data_type=component.data_type,
+                            role=component.role,
+                            nullable=component.nullable,
+                        ),
+                    )
+        elif constraints is not None and constraints.value is not None:
+            self._check_udo_constraint(op, element, constraints.value, value)
+
+    def _check_udo_constraint(
+        self, op: str, element: str, constraint: AST.TypeConstraint, value: Any
+    ) -> None:
+        """Raise when a value of a Scalar or DataComponent breaks a constraint of the type of a
+        user defined operator: not null, a condition on value or the values allowed."""
+        if isinstance(value, DataComponent):
+            if value.data is None:
+                # The semantic analysis has no data points
+                return
+            values = value.data.astype(object).reset_index(drop=True)
+        elif isinstance(value, Scalar):
+            if self.only_semantic and not self.scalar_values_known:
+                # The values are checked when the script runs
+                return
+            values = pd.Series([value.value], dtype=object)
+        else:
+            return
+        broken = pd.Series(False, index=values.index)
+        if constraint.not_null:
+            broken |= values.isna()
+        if constraint.values is not None:
+            allowed = [self.visit(allowed_value).value for allowed_value in constraint.values]
+            broken |= values.notna() & ~values.isin(allowed)
+        if constraint.condition is not None:
+            if self.udo_params is None:
+                self.udo_params = []
+            self.udo_params.append({"value": value})
+            # A scalar has its value in a semantic analysis too, which computes no operation
+            semantic = Operators.only_semantic
+            Operators.only_semantic = semantic and isinstance(value, DataComponent)
+            try:
+                holds = self.visit(deepcopy(constraint.condition))
+            finally:
+                Operators.only_semantic = semantic
+                self.udo_params.pop()
+            result = pd.Series(
+                holds.data if isinstance(holds, DataComponent) else [holds.value], dtype=object
+            ).reset_index(drop=True)
+            broken |= result.notna() & (result == False)  # noqa: E712
+        if broken.any():
+            raise RunTimeError(
+                "2-3-9",
+                op=op,
+                element=element,
+                value=_udo_value_text(values[broken].iloc[0]),
+                constraint=_format_constraint(constraint).strip(),
+            )
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> None:
         period_to = node.period_to

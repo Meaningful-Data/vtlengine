@@ -1,0 +1,6 @@
+define operator c (m measure<number [value >= 1.5] not null>)
+    returns component<number not null> is
+        m * 2
+end operator;
+
+DS_r <- DS_1[calc Me_3 := c(Me_1)];

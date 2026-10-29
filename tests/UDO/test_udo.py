@@ -828,12 +828,12 @@ class UdoTest(UDOHelper):
     def test_GH_1161_2(self):
         """
         Status: OK
-        Description: The operator returns integer not null, which is not supported
+        Description: The operator returns integer not null, and its body gives null
         Goal: Check Exception.
         """
         code = "GH_1161_2"
         number_inputs = 1
-        message = "1-3-2-6"
+        message = "2-3-9"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
@@ -842,12 +842,12 @@ class UdoTest(UDOHelper):
     def test_GH_1161_3(self):
         """
         Status: OK
-        Description: The operator returns integer [value > 0], which is not supported
+        Description: The operator returns integer [value > 0], and its body gives -1
         Goal: Check Exception.
         """
         code = "GH_1161_3"
         number_inputs = 1
-        message = "1-3-2-6"
+        message = "2-3-9"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
@@ -856,12 +856,12 @@ class UdoTest(UDOHelper):
     def test_GH_1161_4(self):
         """
         Status: OK
-        Description: The body returns a dataset with another structure than the declared one
+        Description: The body returns a dataset without the Other_Id identifier the type names
         Goal: Check Exception.
         """
         code = "GH_1161_4"
         number_inputs = 1
-        message = "1-3-1-1"
+        message = "1-3-1-11"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
@@ -918,5 +918,216 @@ class UdoTest(UDOHelper):
         code = "GH_1160_1"
         number_inputs = 1
         references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1166_1(self):
+        """
+        Status: OK
+        Description: Parameters and outputs with not null, conditions on value, allowed
+            values and dataset types with _+ and _* components, all met by the call
+        Goal: Check Result.
+        """
+        code = "GH_1166_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1166_2(self):
+        """
+        Status: OK
+        Description: A null for a not null parameter
+        Goal: Check Exception.
+        """
+        code = "GH_1166_2"
+        number_inputs = 1
+        message = "2-3-9"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+        )
+
+    def test_GH_1166_3(self):
+        """
+        Status: OK
+        Description: A value that breaks the condition of a parameter
+        Goal: Check Exception.
+        """
+        code = "GH_1166_3"
+        number_inputs = 1
+        message = "2-3-9"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+        )
+
+    def test_GH_1166_4(self):
+        """
+        Status: OK
+        Description: A value outside the values a parameter allows
+        Goal: Check Exception.
+        """
+        code = "GH_1166_4"
+        number_inputs = 1
+        message = "2-3-9"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+        )
+
+    def test_GH_1166_5(self):
+        """
+        Status: OK
+        Description: A null input scalar for a not null parameter
+        Goal: Check Exception.
+        """
+        code = "GH_1166_5"
+        number_inputs = 1
+        message = "2-3-9"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            scalars={"SC_1": None},
+        )
+
+    def test_GH_1166_6(self):
+        """
+        Status: OK
+        Description: A null in the data of a not null Component parameter
+        Goal: Check Exception.
+        """
+        code = "GH_1166_6"
+        number_inputs = 1
+        message = "2-3-9"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+        )
+
+    def test_GH_1166_7(self):
+        """
+        Status: OK
+        Description: A Component that breaks the condition of its parameter, given outside a clause
+        Goal: Check Exception.
+        """
+        code = "GH_1166_7"
+        number_inputs = 1
+        message = "2-3-9"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+        )
+
+    def test_GH_1166_8(self):
+        """
+        Status: OK
+        Description: A dataset with a Number Measure besides the one String Measure its type allows
+        Goal: Check Exception.
+        """
+        code = "GH_1166_8"
+        number_inputs = 1
+        message = "1-3-1-14"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+        )
+
+    def test_GH_1166_9(self):
+        """
+        Status: OK
+        Description: A null in a Measure of the output that its type declares not null
+        Goal: Check Exception.
+        """
+        code = "GH_1166_9"
+        number_inputs = 1
+        message = "2-3-9"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+        )
+
+    def test_GH_1166_10(self):
+        """
+        Status: OK
+        Description: A component that the dataset type names with another data type
+        Goal: Check Exception.
+        """
+        code = "GH_1166_10"
+        number_inputs = 1
+        message = "1-3-1-12"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1166_11(self):
+        """
+        Status: OK
+        Description: No component for the _+ of a dataset type
+        Goal: Check Exception.
+        """
+        code = "GH_1166_11"
+        number_inputs = 1
+        message = "1-3-1-13"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1166_12(self):
+        """
+        Status: OK
+        Description: Two components for the _ (exactly one) of a dataset type
+        Goal: Check Exception.
+        """
+        code = "GH_1166_12"
+        number_inputs = 1
+        message = "1-3-1-14"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1166_13(self):
+        """
+        Status: OK
+        Description: No component of the output for the _+ of the dataset type it returns
+        Goal: Check Exception.
+        """
+        code = "GH_1166_13"
+        number_inputs = 1
+        message = "1-3-1-13"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1166_14(self):
+        """
+        Status: OK
+        Description: A dataset with one String Measure for _, one Number Measure for _+ and no
+            Boolean Measure for _*, and an output with one Number Measure for _
+        Goal: Check Result.
+        """
+        code = "GH_1166_14"
+        number_inputs = 1
+        references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

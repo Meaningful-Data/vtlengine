@@ -567,14 +567,46 @@ class Types(AST):
 
 
 @dataclass
+class TypeConstraint:
+    """What a type in the signature of a user defined operator requires of its values: not
+    null, a condition on value or the values allowed."""
+
+    not_null: bool = False
+    condition: Optional[AST] = None
+    values: Optional[List[AST]] = None
+
+
+@dataclass
+class UnnamedComponent:
+    """A component of a dataset type written as _, _+ or _*: one, at least one or any number
+    of components with its role and type, whatever their names."""
+
+    component: Any
+    multiplicity: str
+    constraint: Optional[TypeConstraint] = None
+
+
+@dataclass
+class SignatureConstraints:
+    """What a type in the signature of a user defined operator requires beyond the model type
+    that describes it: the constraint on the value of a scalar or component type, and the
+    constraints and unnamed components of a dataset type."""
+
+    value: Optional[TypeConstraint] = None
+    components: Dict[str, TypeConstraint] = field(default_factory=dict)
+    unnamed: List[UnnamedComponent] = field(default_factory=list)
+
+
+@dataclass
 class Argument(AST):
     """
-    Argument: (name, type_, default)
+    Argument: (name, type_, default, constraints)
     """
 
     name: str
     type_: Type[ScalarType]
     default: Optional[AST]
+    constraints: Optional[SignatureConstraints] = None
 
     __eq__ = AST.ast_equality
 
@@ -594,6 +626,7 @@ class Operator(AST):
     output_type: Optional[str]
     expression: AST
     return_type: Optional[Any] = None
+    return_constraints: Optional[SignatureConstraints] = None
 
     __eq__ = AST.ast_equality
 

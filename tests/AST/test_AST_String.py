@@ -44,6 +44,7 @@ params = [
     "GH_1181.vtl",
     "GH_1150.vtl",
     "GH_1160.vtl",
+    "GH_1166.vtl",
 ]
 
 params_prettier = [
@@ -80,6 +81,7 @@ params_prettier = [
     ("GH_1181.vtl", "reference_GH_1181.vtl"),
     ("GH_1150.vtl", "reference_GH_1150.vtl"),
     ("GH_1160.vtl", "reference_GH_1160.vtl"),
+    ("GH_1166.vtl", "reference_GH_1166.vtl"),
 ]
 
 POSITION_FIELDS = {"line_start", "column_start", "line_stop", "column_stop"}

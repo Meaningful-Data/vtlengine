@@ -24,7 +24,10 @@ from vtlengine.AST import (
     HRUnOp,
     Operator,
     PersistentAssignment,
+    SignatureConstraints,
     Start,
+    TypeConstraint,
+    UnnamedComponent,
     ViralPropagationDef,
 )
 from vtlengine.AST.ASTConstructorModules import extract_token_info
@@ -280,7 +283,8 @@ class ASTVisitor:
         return_ = [
             (
                 Terminals().visitOutputParameterType(datatype),
-                Terminals().visitDeclaredOutputType(datatype),
+                Terminals().visitDeclaredOutputType(datatype, allow_constraints=True),
+                self._signature_constraints(datatype),
             )
             for datatype in ctx_list
             if not datatype.is_terminal and datatype.rule_index == RC.OUTPUT_PARAMETER_TYPE[0]
@@ -292,7 +296,8 @@ class ASTVisitor:
             if not expr.is_terminal and expr.rule_index == RC.EXPR[0]
         ][0]
 
-        return_node, return_type = return_[0] if return_ else (None, None)
+        # Without returns, the result is whatever the body gives (issue #1160)
+        return_node, return_type, return_constraints = return_[0] if return_ else (None, None, None)
         if return_ and return_type is None:
             raise SemanticError("1-3-2-6", op=operator)
 
@@ -304,6 +309,7 @@ class ASTVisitor:
             output_type=return_node,
             expression=expr,
             return_type=return_type,
+            return_constraints=return_constraints,
             **token_info,
         )
 
@@ -443,11 +449,12 @@ class ASTVisitor:
             for element in ctx_list
             if not element.is_terminal and element.rule_index == RC.VAR_ID[0]
         ][0]
-        argument_type = [
-            Terminals().visitInputParameterType(element)
+        type_ctx = [
+            element
             for element in ctx_list
             if not element.is_terminal and element.rule_index == RC.INPUT_PARAMETER_TYPE[0]
         ][0]
+        argument_type = Terminals().visitInputParameterType(type_ctx, allow_constraints=True)
         argument_default = [
             Terminals().visitScalarItem(element)
             for element in ctx_list
@@ -459,8 +466,68 @@ class ASTVisitor:
             argument_type.name = argument_name.value
         token_info = extract_token_info(ctx)
         return Argument(
-            name=argument_name.value, type_=argument_type, default=argument_default, **token_info
+            name=argument_name.value,
+            type_=argument_type,
+            default=argument_default,
+            constraints=self._signature_constraints(type_ctx),
+            **token_info,
         )
+
+    def _signature_constraints(self, ctx: Any) -> Optional[SignatureConstraints]:
+        """What the type of a parameter or of the returns of a user defined operator requires
+        beyond its model type, or None when it requires nothing more."""
+        c = ctx.children[0]
+        constraints = SignatureConstraints()
+        if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
+            constraints.value = self._type_constraint(c)
+        elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
+            constraints.value = self._component_type_constraint(c)
+        elif not c.is_terminal and c.ctx_id == RC.DATASET_TYPE:
+            for comp in c.children:
+                if comp.is_terminal or comp.ctx_id != RC.COMP_CONSTRAINT:
+                    continue
+                comp_type, name_or_mult = comp.children[0], comp.children[1]
+                constraint = self._component_type_constraint(comp_type)
+                if name_or_mult.ctx_id == RC.MULT_MODIFIER:
+                    component = Terminals().visitComponentType(comp_type, allow_constraints=True)
+                    multiplicity = name_or_mult.text.lstrip("_")
+                    constraints.unnamed.append(
+                        UnnamedComponent(component, multiplicity, constraint)
+                    )
+                elif constraint is not None:
+                    name = Terminals().visitComponentID(name_or_mult).value
+                    constraints.components[name] = constraint
+        if constraints == SignatureConstraints():
+            return None
+        return constraints
+
+    def _component_type_constraint(self, ctx: Any) -> Optional[TypeConstraint]:
+        """The constraint of the scalar type of a componentType, if it has one."""
+        for c in ctx.children:
+            if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
+                return self._type_constraint(c)
+        return None
+
+    @staticmethod
+    def _type_constraint(ctx: Any) -> Optional[TypeConstraint]:
+        """
+        scalarType: (basicScalarType|valueDomainName)scalarTypeConstraint?((NOT)? NULL_CONSTANT)? ;
+        scalarTypeConstraint: QLPAREN exprComponent QRPAREN       # conditionConstraint
+                            | GLPAREN scalarItem (COMMA scalarItem)* GRPAREN  # rangeConstraint
+        """
+        constraint = TypeConstraint(
+            not_null=any(
+                c.is_terminal and c.symbol_type == vtl_cpp_parser.NOT for c in ctx.children
+            )
+        )
+        for c in ctx.children:
+            if not c.is_terminal and c.ctx_id == RC.CONDITION_CONSTRAINT:
+                constraint.condition = ExprComp().visitExprComponent(c.children[1])
+            elif not c.is_terminal and c.ctx_id == RC.RANGE_CONSTRAINT:
+                constraint.values = [
+                    Terminals().visitScalarItem(item) for item in c.children if not item.is_terminal
+                ]
+        return None if constraint == TypeConstraint() else constraint
 
     """
                         -----------------------------------
