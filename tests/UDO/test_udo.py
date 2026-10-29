@@ -833,7 +833,7 @@ class UdoTest(UDOHelper):
         """
         code = "GH_1161_2"
         number_inputs = 1
-        message = "1-3-1-11"
+        message = "2-3-9"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
@@ -847,7 +847,7 @@ class UdoTest(UDOHelper):
         """
         code = "GH_1161_3"
         number_inputs = 1
-        message = "1-3-1-11"
+        message = "2-3-9"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
@@ -856,12 +856,12 @@ class UdoTest(UDOHelper):
     def test_GH_1161_4(self):
         """
         Status: OK
-        Description: The body returns a dataset with another structure than the declared one
+        Description: The body returns a dataset without the Other_Id identifier the type names
         Goal: Check Exception.
         """
         code = "GH_1161_4"
         number_inputs = 1
-        message = "1-3-1-1"
+        message = "1-3-1-11"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
@@ -942,7 +942,7 @@ class UdoTest(UDOHelper):
         """
         code = "GH_1166_2"
         number_inputs = 1
-        message = "1-3-1-11"
+        message = "2-3-9"
 
         self.NewSemanticExceptionTest(
             code=code,
@@ -958,7 +958,7 @@ class UdoTest(UDOHelper):
         """
         code = "GH_1166_3"
         number_inputs = 1
-        message = "1-3-1-11"
+        message = "2-3-9"
 
         self.NewSemanticExceptionTest(
             code=code,
@@ -974,7 +974,7 @@ class UdoTest(UDOHelper):
         """
         code = "GH_1166_4"
         number_inputs = 1
-        message = "1-3-1-11"
+        message = "2-3-9"
 
         self.NewSemanticExceptionTest(
             code=code,
@@ -1034,12 +1034,12 @@ class UdoTest(UDOHelper):
     def test_GH_1166_8(self):
         """
         Status: OK
-        Description: A dataset with a Number Measure for a type with one String Measure
+        Description: A dataset with a Number Measure besides the one String Measure its type allows
         Goal: Check Exception.
         """
         code = "GH_1166_8"
         number_inputs = 1
-        message = "1-3-1-1"
+        message = "1-3-1-14"
 
         self.NewSemanticExceptionTest(
             code=code,
@@ -1062,3 +1062,72 @@ class UdoTest(UDOHelper):
             number_inputs=number_inputs,
             exception_code=message,
         )
+
+    def test_GH_1166_10(self):
+        """
+        Status: OK
+        Description: A component that the dataset type names with another data type
+        Goal: Check Exception.
+        """
+        code = "GH_1166_10"
+        number_inputs = 1
+        message = "1-3-1-12"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1166_11(self):
+        """
+        Status: OK
+        Description: No component for the _+ of a dataset type
+        Goal: Check Exception.
+        """
+        code = "GH_1166_11"
+        number_inputs = 1
+        message = "1-3-1-13"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1166_12(self):
+        """
+        Status: OK
+        Description: Two components for the _ (exactly one) of a dataset type
+        Goal: Check Exception.
+        """
+        code = "GH_1166_12"
+        number_inputs = 1
+        message = "1-3-1-14"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1166_13(self):
+        """
+        Status: OK
+        Description: No component of the output for the _+ of the dataset type it returns
+        Goal: Check Exception.
+        """
+        code = "GH_1166_13"
+        number_inputs = 1
+        message = "1-3-1-13"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1166_14(self):
+        """
+        Status: OK
+        Description: A dataset with one String Measure for _, one Number Measure for _+ and no
+            Boolean Measure for _*, and an output with one Number Measure for _
+        Goal: Check Result.
+        """
+        code = "GH_1166_14"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

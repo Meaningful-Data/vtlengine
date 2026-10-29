@@ -24,6 +24,7 @@ from vtlengine.AST.ASTString import _format_constraint
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
 from vtlengine.AST.Grammar import tokens
+from vtlengine.AST.UDOTypes import udo_dataset_components
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     Boolean,
@@ -715,8 +716,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     ) -> str:
         """sql, a Data Set, with its components that a dataset type constrains checked by
         _udo_checked_sql."""
+        # The semantic analysis already raised when the structure does not meet the type
         taken = (
-            AST.udo_dataset_components(declared, constraints, structure)
+            udo_dataset_components(
+                self._get_udo_param("__udo__"), element, declared, constraints, structure
+            )
             if structure is not None
             else None
         )

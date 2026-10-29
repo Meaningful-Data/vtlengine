@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
 
-from vtlengine.DataTypes import ScalarType, check_unary_implicit_promotion
+from vtlengine.DataTypes import ScalarType
 from vtlengine.Model import Dataset, Role
 
 if hasattr(inspect, "get_annotations"):
@@ -595,49 +595,6 @@ class SignatureConstraints:
     value: Optional[TypeConstraint] = None
     components: Dict[str, TypeConstraint] = field(default_factory=dict)
     unnamed: List[UnnamedComponent] = field(default_factory=list)
-
-
-def udo_component_matches(declared: Any, found: Any) -> bool:
-    """Whether a component has the role and the type a user defined operator declares."""
-    # A component declared without a role or a type is parsed with None and a String instance,
-    # so declared is not typed as a Component
-    return (declared.role is None or found.role == declared.role) and (
-        not isinstance(declared.data_type, type)
-        or check_unary_implicit_promotion(found.data_type, declared.data_type)
-    )
-
-
-def udo_dataset_components(
-    declared: Dataset, constraints: Optional[SignatureConstraints], found: Dataset
-) -> Optional[Dict[str, Optional[TypeConstraint]]]:
-    """The components of found that a dataset type takes, each with the constraint on its values,
-    or None when found does not have the structure the type gives.
-
-    The type restricts only the roles it names: their components are the ones it names and
-    the ones its _ (one), _+ (at least one) and _* (any number) components take.
-    """
-    unnamed = constraints.unnamed if constraints is not None else []
-    named = constraints.components if constraints is not None else {}
-    entries = [*declared.components.values(), *(entry.component for entry in unnamed)]
-    roles = {entry.role for entry in entries}
-    remaining = {
-        name: comp for name, comp in found.components.items() if None in roles or comp.role in roles
-    }
-    taken: Dict[str, Optional[TypeConstraint]] = {}
-    for name, comp in declared.components.items():
-        if name not in remaining or not udo_component_matches(comp, remaining.pop(name)):
-            return None
-        taken[name] = named.get(name)
-    for entry in unnamed:
-        matching = [n for n, c in remaining.items() if udo_component_matches(entry.component, c)]
-        if entry.multiplicity == "":
-            matching = matching[:1]
-        if not matching and entry.multiplicity != "*":
-            return None
-        for name in matching:
-            del remaining[name]
-            taken[name] = entry.constraint
-    return None if remaining else taken
 
 
 @dataclass

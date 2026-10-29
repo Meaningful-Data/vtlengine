@@ -50,6 +50,7 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
     WHEN,
 )
+from vtlengine.AST.UDOTypes import udo_component_matches, udo_dataset_components
 from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
@@ -152,7 +153,7 @@ def _udo_value_text(value: Any) -> Any:
 def _check_udo_return_type(op: str, declared: Any, result: Any) -> None:
     """The result of a user defined operator must have the type it returns (issue #1161)."""
     if isinstance(declared, Component):
-        matches = AST.udo_component_matches(declared, result)
+        matches = udo_component_matches(declared, result)
         found_type = _format_component_type(result)
     elif isinstance(declared, type):
         matches = check_unary_implicit_promotion(result.data_type, declared)
@@ -2488,15 +2489,7 @@ class InterpreterAnalyzer(ASTTemplate):
         of the output of a user defined operator declares beyond its kind and data type: the
         structure of a dataset type and the constraints on the values."""
         if isinstance(declared, Dataset) and isinstance(value, Dataset):
-            taken = AST.udo_dataset_components(declared, constraints, value)
-            if taken is None:
-                raise SemanticError(
-                    "1-3-1-1",
-                    op=op,
-                    option=element,
-                    type_1=_format_type(declared, constraints),
-                    type_2=_format_type(value),
-                )
+            taken = udo_dataset_components(op, element, declared, constraints, value)
             for name, constraint in taken.items():
                 if constraint is not None:
                     component = value.components[name]
@@ -2526,12 +2519,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 return
             values = value.data.astype(object).reset_index(drop=True)
         elif isinstance(value, Scalar):
-            if (
-                self.only_semantic
-                and not value.literal
-                and not self.scalar_values_known
-                and value.value is None
-            ):
+            if self.only_semantic and not self.scalar_values_known:
+                # The values are checked when the script runs
                 return
             values = pd.Series([value.value], dtype=object)
         else:
@@ -2558,18 +2547,14 @@ class InterpreterAnalyzer(ASTTemplate):
                 holds.data if isinstance(holds, DataComponent) else [holds.value], dtype=object
             ).reset_index(drop=True)
             broken |= result.notna() & (result == False)  # noqa: E712
-        if not broken.any():
-            return
-        error = {
-            "op": op,
-            "element": element,
-            "value": _udo_value_text(values[broken].iloc[0]),
-            "constraint": _format_constraint(constraint).strip(),
-        }
-        if isinstance(value, Scalar) and value.literal:
-            # A value written in the script, which the semantic analysis knows
-            raise SemanticError("1-3-1-11", **error)
-        raise RunTimeError("2-3-9", **error)
+        if broken.any():
+            raise RunTimeError(
+                "2-3-9",
+                op=op,
+                element=element,
+                value=_udo_value_text(values[broken].iloc[0]),
+                constraint=_format_constraint(constraint).strip(),
+            )
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> None:
         period_to = node.period_to

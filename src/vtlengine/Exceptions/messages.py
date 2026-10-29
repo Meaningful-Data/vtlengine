@@ -1327,11 +1327,28 @@ centralised_messages = {
         "that is not declared in the condition of the ruleset signature.",
     },
     "1-3-1-11": {
-        "message": "At op {op}: {element} has the value {value}, which its type constraint "
-        "{constraint} does not allow.",
-        "description": "Raised when a value written in the script, passed to or returned by a "
-        "user defined operator, is null for a not null type, or breaks the condition or the "
-        "allowed values of its type.",
+        "message": "At op {op}: {element} has no component {name}, which its type {type} requires.",
+        "description": "Raised when the Data Set passed to or returned by a user defined operator "
+        "lacks a component that its dataset type names.",
+    },
+    "1-3-1-12": {
+        "message": "At op {op}: component {name} of {element} is {found}, but its type {type} "
+        "declares it as {declared}.",
+        "description": "Raised when a component that the dataset type of a user defined operator "
+        "names has another role or a data type that does not promote to the declared one.",
+    },
+    "1-3-1-13": {
+        "message": "At op {op}: {element} has no {component} component for the {modifier} of "
+        "its type {type}.",
+        "description": "Raised when no component of the Data Set passed to or returned by a "
+        "user defined operator has the role and data type that a _ or _+ component of its "
+        "dataset type requires at least once.",
+    },
+    "1-3-1-14": {
+        "message": "At op {op}: {element} has {components}, which its type {type} does not allow.",
+        "description": "Raised when the Data Set passed to or returned by a user defined operator "
+        "has components of a role its dataset type restricts that neither a named component "
+        "nor a _, _+ or _* component of the type takes.",
     },
     "1-3-12": {
         "message": "Default arguments cannot be followed by non-default arguments.",
