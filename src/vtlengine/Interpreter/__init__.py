@@ -1641,6 +1641,35 @@ class InterpreterAnalyzer(ASTTemplate):
                 items.extend(self._collect_hr_code_items(child))
         return items
 
+    @staticmethod
+    def _hr_eq_rules(rules: List[AST.HRule]) -> List[AST.HRule]:
+        """The '=' rules of a ruleset, with or without a condition: they compute code items."""
+        return [
+            rule
+            for rule in rules
+            if rule.rule.op == EQ
+            or rule.rule.op == WHEN
+            and cast(AST.HRBinOp, rule.rule.right).op == EQ
+        ]
+
+    @staticmethod
+    def _sort_hr_rules(
+        node: AST.HROperation, hr_info: Dict[str, Any], rules: List[AST.HRule]
+    ) -> List[AST.HRule]:
+        """Order the '=' rules so each code item is computed before the rules that read it."""
+        hierarchy_ast = AST.HRuleset(
+            name=node.ruleset_name,
+            signature_type=hr_info["node"].signature_type,
+            element=hr_info["node"].element,
+            rules=rules,
+            line_start=node.line_start,
+            line_stop=node.line_stop,
+            column_start=node.column_start,
+            column_stop=node.column_stop,
+        )
+        HRDAGAnalyzer.sort_hierarchy_rules(hierarchy_ast)
+        return hierarchy_ast.rules
+
     def visit_HROperation(self, node: AST.HROperation) -> None:  # noqa: C901
         """Handle hierarchy and check_hierarchy operators."""
         # Visit dataset and get component if present
@@ -1700,11 +1729,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if node.op == HIERARCHY:
                 # Only the '=' rules compute code items. The ruleset keeps all its rules for
                 # a later check_hierarchy (issue #1142).
-                rules = [
-                    rule
-                    for rule in rules
-                    if rule.rule.op == EQ or rule.rule.op == WHEN and rule.rule.right.op == EQ
-                ]
+                rules = self._hr_eq_rules(rules)
 
                 if len(rules) == 0:
                     raise SemanticError("1-1-10-5")
@@ -1713,24 +1738,16 @@ class InterpreterAnalyzer(ASTTemplate):
                 # (issue #1142), but a rule without a condition would overlap the others.
                 item_rules: Dict[str, List[AST.HRule]] = {}
                 for rule in rules:
-                    left_part = rule.rule.left if rule.rule.op == EQ else rule.rule.right.left
+                    eq_node = (
+                        rule.rule if rule.rule.op == EQ else cast(AST.HRBinOp, rule.rule.right)
+                    )
+                    left_part = eq_node.left
                     item_rules.setdefault(left_part.value, []).append(rule)
                 for code_item, defining_rules in item_rules.items():
                     if len(defining_rules) > 1 and any(r.rule.op == EQ for r in defining_rules):
                         raise SemanticError("1-1-10-10", ruleset=hr_name, code_item=code_item)
 
-                hierarchy_ast = AST.HRuleset(
-                    name=hr_name,
-                    signature_type=hr_info["node"].signature_type,
-                    element=hr_info["node"].element,
-                    rules=rules,
-                    line_start=node.line_start,
-                    line_stop=node.line_stop,
-                    column_start=node.column_start,
-                    column_stop=node.column_stop,
-                )
-                HRDAGAnalyzer.sort_hierarchy_rules(hierarchy_ast)
-                rules = hierarchy_ast.rules
+                rules = self._sort_hr_rules(node, hr_info, rules)
 
                 # Map each rule to its computed node and the code items it combines, for viral
                 # combination at the final evaluate (outside the rule handling, issue #877).
@@ -1777,6 +1794,15 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.hr_agg_item_rules = None
                 self.hr_agg_ruleset = None
             else:
+                if input_ == DATASET_PRIORITY:
+                    self.is_from_hr_agg = True
+                    self.hr_agg_rules_computed = {}
+                    self.hr_agg_item_rules = {}
+                    self.hr_agg_ruleset = hr_name
+                    for rule in self._sort_hr_rules(node, hr_info, self._hr_eq_rules(rules)):
+                        self.visit(rule)
+                    self.is_from_hr_agg = False
+                    self.hr_agg_ruleset = None
                 self.is_from_hr_val = True
                 for rule in rules:
                     rule_output_values[rule.name] = {
@@ -1785,6 +1811,8 @@ class InterpreterAnalyzer(ASTTemplate):
                         "output": self.visit(rule),
                     }
                 self.is_from_hr_val = False
+                self.hr_agg_rules_computed = None
+                self.hr_agg_item_rules = None
 
             # Clean up interpreter state
             self.ruleset_signature = None
@@ -1956,7 +1984,6 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.hr_agg_rules_computed is not None
                 and self.hr_agg_item_rules is not None
                 and rule_result.data is not None
-                and not (self.hr_input == DATASET_PRIORITY and node.rule.op != EQ)
             ):
                 # Keyed by rule: several rules may compute the same code item (issue #1142).
                 # A rule that computes no data point is kept too: with input rule, the later
@@ -2010,7 +2037,10 @@ class InterpreterAnalyzer(ASTTemplate):
         self.compute_partial_data &= not self.is_from_hr_agg or node.op not in HR_COMP_MAPPING
         # The left code item of a hierarchy rule is the one this rule computes: it does not
         # read what another rule computed for it (issue #1142).
-        self.is_hr_rule_left = self.is_from_hr_agg and node.op in HR_COMP_MAPPING
+        # check_hierarchy validates the left code item as the operand gives it (issue #1173).
+        self.is_hr_rule_left = (self.is_from_hr_agg or self.is_from_hr_val) and (
+            node.op in HR_COMP_MAPPING
+        )
         left_operand = self.visit(node.left)
         self.is_hr_rule_left = False
         self.compute_partial_data = self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO)
@@ -2184,8 +2214,18 @@ class InterpreterAnalyzer(ASTTemplate):
             else self.hr_agg_item_rules.get(node.value)
         )
         if computed_by:
-            computed = self._hr_computed_item(computed_by, rule_data, other_ids, hr_component)
-            if self.hr_input in (RULE_PRIORITY, DATASET_PRIORITY):
+            # With input dataset_priority, the data points the operand has win (issue #1173)
+            operand = (
+                df[~df[me_name].isin([REMOVE]) & df[me_name].notna()]
+                if self.hr_input == DATASET_PRIORITY
+                else None
+            )
+            computed = self._hr_computed_item(
+                computed_by, rule_data, other_ids, hr_component, operand
+            )
+            if self.hr_input == DATASET_PRIORITY:
+                computed = pd.concat([computed, df.drop(index=computed.index, errors="ignore")])
+            elif self.hr_input == RULE_PRIORITY:
                 # The operand's data point where no rule computed a non-null one; a null
                 # computed one is kept where the operand has none
                 in_operand = df.index[~df[me_name].isin([REMOVE])]
@@ -2217,17 +2257,26 @@ class InterpreterAnalyzer(ASTTemplate):
         rule_data: pd.DataFrame,
         other_ids: List[str],
         rule_component: str,
+        operand: Optional[pd.DataFrame] = None,
     ) -> pd.DataFrame:
         """Data points that earlier rules computed for a code item, on this rule's groups.
 
         Every rule that computed the code item contributes its data points (issue #1142),
-        once when several of them computed the same one (issue #1193). They take the labels
-        of the matching groups of the current rule: a rule with a condition numbers the
-        groups of its own rows only, so the labels of its output do not match the ones of
-        another rule.
+        once when several of them computed the same one (issue #1193), except the ones of
+        operand, which win over them (input dataset_priority, issue #1173). They take the
+        labels of the matching groups of the current rule: a rule with a condition numbers
+        the groups of its own rows only, so the labels of its output do not match the ones
+        of another rule.
         """
         computed = cast(Dict[str, pd.DataFrame], self.hr_agg_rules_computed)
         df = pd.concat([computed[name] for name in rule_names], ignore_index=True)
+        if operand is not None and len(operand) > 0:
+            if other_ids:
+                in_operand = pd.MultiIndex.from_frame(operand[other_ids].astype(object))
+                df = df[~pd.MultiIndex.from_frame(df[other_ids].astype(object)).isin(in_operand)]
+            else:
+                # The single (global) data point is the operand's
+                df = df.iloc[0:0]
         if len(rule_names) > 1:
             components = cast(Dataset, self.ruleset_dataset).components
             df = unique_data_points(df, components, cast(str, self.hr_agg_ruleset), rule_component)
