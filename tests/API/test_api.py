@@ -501,7 +501,8 @@ params_validate_ds = [
         filepath_json / "DS_1.json",
         {"DS_1": pd.DataFrame({"wrong_col": [1, 2]})},
         False,
-        "0-3-1-5",
+        # pandas reports the missing components first, DuckDB the extra column
+        "0-3-1-5|0-3-1-15",
     ),
     (filepath_json / "DS_1.json", None, True, None),
     (
@@ -538,7 +539,7 @@ params_validate_ds = [
         [filepath_json / "DS_1.json"],
         {"DS_1": pd.DataFrame({"wrong": [1]})},
         False,
-        "0-3-1-5",
+        "0-3-1-5|0-3-1-15",
     ),
     (
         [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
@@ -2154,8 +2155,9 @@ def test_validate_sql(path_sql, is_valid):
                 validate_external_routine(ext_routine_data)
 
 
+@pytest.mark.parametrize("use_duckdb", [False, True])
 @pytest.mark.parametrize("ds_input, dp_input, is_valid, message", params_validate_ds)
-def test_validate_dataset(ds_input, dp_input, is_valid, message):
+def test_validate_dataset(ds_input, dp_input, is_valid, message, use_duckdb):
     if isinstance(ds_input, list):
         ds_data = []
         for item in ds_input:
@@ -2170,10 +2172,10 @@ def test_validate_dataset(ds_input, dp_input, is_valid, message):
     else:
         ds_data = ds_input
     if is_valid:
-        validate_dataset(ds_data, dp_input)
+        validate_dataset(ds_data, dp_input, use_duckdb=use_duckdb)
     else:
         with pytest.raises(Exception, match=message):
-            validate_dataset(ds_data, dp_input)
+            validate_dataset(ds_data, dp_input, use_duckdb=use_duckdb)
 
 
 params_load_errors_on_every_path = [
@@ -2193,6 +2195,7 @@ def test_load_errors_on_every_path(code, error_code, message):
     datapoints = {"DS_1": filepath_csv / f"{code}.csv"}
     calls = [
         lambda: validate_dataset(data_structures, datapoints),
+        lambda: validate_dataset(data_structures, datapoints, use_duckdb=True),
         lambda: run(script="DS_r := DS_1;", data_structures=data_structures, datapoints=datapoints),
         lambda: run(
             script="DS_r := DS_1;",
