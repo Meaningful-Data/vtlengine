@@ -172,6 +172,10 @@ def map_duckdb_error(
             error=str(error),
         )
 
+    if "expected number of columns" in error_msg or "unterminated quote" in error_msg:
+        match = re.search(r"CSV Error on Line: (\d+)", str(error))
+        return DataLoadError("0-3-1-18", name=dataset_name, line=match.group(1) if match else "?")
+
     # Duplicate key (PRIMARY KEY violation)
     if "duplicate" in error_msg or "primary key" in error_msg:
         return DataLoadError("0-3-1-7", name=dataset_name, row_index="unknown")

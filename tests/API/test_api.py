@@ -2176,6 +2176,37 @@ def test_validate_dataset(ds_input, dp_input, is_valid, message):
             validate_dataset(ds_data, dp_input)
 
 
+params_load_errors_on_every_path = [
+    ("GH_1216_1", "0-3-1-18", "On Dataset DS_1 loading: line 2 of the file does not split"),
+    ("GH_1216_2", "0-3-1-18", "On Dataset DS_1 loading: line 3 of the file does not split"),
+    ("GH_1216_3", "0-3-1-5", "On Dataset DS_1 loading: Component Me_1 is missing in Datapoints."),
+    ("GH_1216_4", "0-3-1-5", "On Dataset DS_1 loading: Component Me_1 is missing in Datapoints."),
+]
+
+
+@pytest.mark.parametrize("code, error_code, message", params_load_errors_on_every_path)
+def test_load_errors_on_every_path(code, error_code, message):
+    """validate_dataset and run on both engines reject the same datapoints with the same
+    error, which names the dataset and not the file (issue #1216)."""
+    with open(filepath_json / f"{code}.json", "r", encoding="utf-8") as f:
+        data_structures = json.load(f)
+    datapoints = {"DS_1": filepath_csv / f"{code}.csv"}
+    calls = [
+        lambda: validate_dataset(data_structures, datapoints),
+        lambda: run(script="DS_r := DS_1;", data_structures=data_structures, datapoints=datapoints),
+        lambda: run(
+            script="DS_r := DS_1;",
+            data_structures=data_structures,
+            datapoints=datapoints,
+            use_duckdb=True,
+        ),
+    ]
+    for call in calls:
+        with pytest.raises(DataLoadError, match=message) as context:
+            call()
+        assert context.value.args[1] == error_code
+
+
 def test_run_error_on_extra_dataframe_columns():
     """Extra columns in the input DataFrame that are not in the DataStructure raise an error."""
     script = "DS_r <- DS_1;"
