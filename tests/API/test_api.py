@@ -501,7 +501,8 @@ params_validate_ds = [
         filepath_json / "DS_1.json",
         {"DS_1": pd.DataFrame({"wrong_col": [1, 2]})},
         False,
-        "0-3-1-5",
+        # pandas reports the missing components first, DuckDB the extra column
+        "0-3-1-5|0-3-1-15",
     ),
     (filepath_json / "DS_1.json", None, True, None),
     (
@@ -538,7 +539,7 @@ params_validate_ds = [
         [filepath_json / "DS_1.json"],
         {"DS_1": pd.DataFrame({"wrong": [1]})},
         False,
-        "0-3-1-5",
+        "0-3-1-5|0-3-1-15",
     ),
     (
         [filepath_json / "DS_1.json", filepath_json / "DS_2.json"],
@@ -2154,8 +2155,9 @@ def test_validate_sql(path_sql, is_valid):
                 validate_external_routine(ext_routine_data)
 
 
+@pytest.mark.parametrize("use_duckdb", [False, True])
 @pytest.mark.parametrize("ds_input, dp_input, is_valid, message", params_validate_ds)
-def test_validate_dataset(ds_input, dp_input, is_valid, message):
+def test_validate_dataset(ds_input, dp_input, is_valid, message, use_duckdb):
     if isinstance(ds_input, list):
         ds_data = []
         for item in ds_input:
@@ -2170,10 +2172,42 @@ def test_validate_dataset(ds_input, dp_input, is_valid, message):
     else:
         ds_data = ds_input
     if is_valid:
-        validate_dataset(ds_data, dp_input)
+        validate_dataset(ds_data, dp_input, use_duckdb=use_duckdb)
     else:
         with pytest.raises(Exception, match=message):
-            validate_dataset(ds_data, dp_input)
+            validate_dataset(ds_data, dp_input, use_duckdb=use_duckdb)
+
+
+params_load_errors_on_every_path = [
+    ("GH_1216_1", "0-3-1-18", "On Dataset DS_1 loading: line 2 of the file does not split"),
+    ("GH_1216_2", "0-3-1-18", "On Dataset DS_1 loading: line 3 of the file does not split"),
+    ("GH_1216_3", "0-3-1-5", "On Dataset DS_1 loading: Component Me_1 is missing in Datapoints."),
+    ("GH_1216_4", "0-3-1-5", "On Dataset DS_1 loading: Component Me_1 is missing in Datapoints."),
+]
+
+
+@pytest.mark.parametrize("code, error_code, message", params_load_errors_on_every_path)
+def test_load_errors_on_every_path(code, error_code, message):
+    """validate_dataset and run on both engines reject the same datapoints with the same
+    error, which names the dataset and not the file (issue #1216)."""
+    with open(filepath_json / f"{code}.json", "r", encoding="utf-8") as f:
+        data_structures = json.load(f)
+    datapoints = {"DS_1": filepath_csv / f"{code}.csv"}
+    calls = [
+        lambda: validate_dataset(data_structures, datapoints),
+        lambda: validate_dataset(data_structures, datapoints, use_duckdb=True),
+        lambda: run(script="DS_r := DS_1;", data_structures=data_structures, datapoints=datapoints),
+        lambda: run(
+            script="DS_r := DS_1;",
+            data_structures=data_structures,
+            datapoints=datapoints,
+            use_duckdb=True,
+        ),
+    ]
+    for call in calls:
+        with pytest.raises(DataLoadError, match=message) as context:
+            call()
+        assert context.value.args[1] == error_code
 
 
 def test_run_error_on_extra_dataframe_columns():

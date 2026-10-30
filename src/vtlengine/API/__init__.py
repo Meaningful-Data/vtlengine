@@ -31,7 +31,11 @@ from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.DAG import DAGAnalyzer
 from vtlengine.AST.Grammar._cpp_parser import parser_lock, vtl_cpp_parser
 from vtlengine.duckdb_transpiler.Config.config import configured_connection
-from vtlengine.duckdb_transpiler.io import execute_queries, extract_datapoint_paths
+from vtlengine.duckdb_transpiler.io import (
+    execute_queries,
+    extract_datapoint_paths,
+    validate_datapoints,
+)
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
 from vtlengine.Exceptions import InputValidationException, VTLSyntaxError
 from vtlengine.files.output import format_date_iso8601
@@ -123,6 +127,7 @@ def validate_dataset(
         Union[Dict[str, Union[pd.DataFrame, Path, str]], List[Union[str, Path]], Path, str]
     ] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+    use_duckdb: bool = False,
 ) -> None:
     """
     Validate that datasets can be loaded from the given data_structures and optional datapoints.
@@ -131,11 +136,21 @@ def validate_dataset(
         data_structures: Dict, Path, or List of Dict/Path objects representing data structures.
         datapoints: Optional Dict, Path, or List of Dict/Path objects representing datapoints.
         scalar_values: Optional Dict with scalar values to be used in the datasets.
+        use_duckdb: If True, load the datapoints with the DuckDB engine, as \
+        run(use_duckdb=True) loads them, instead of pandas. (default: False)
 
     Raises:
         Exception: If the data structures or datapoints are invalid or cannot be loaded.
     """
-    load_datasets_with_data(data_structures, datapoints, scalar_values, validate=True)
+    if not use_duckdb:
+        load_datasets_with_data(data_structures, datapoints, scalar_values, validate=True)
+        return
+    datasets, scalars = load_datasets(cast(Any, data_structures))
+    _handle_scalars_values(scalars, scalar_values)
+    _load_url_datapoints(datapoints, data_structures, None, datasets)
+    path_dict, dataframe_dict = extract_datapoint_paths(datapoints, datasets)
+    with configured_connection() as conn:
+        validate_datapoints(conn, path_dict, dataframe_dict, datasets)
 
 
 def validate_value_domain(
@@ -280,6 +295,30 @@ def _copy_ast(ast: Start) -> Start:
         return copy.deepcopy(ast)
 
 
+def _load_url_datapoints(
+    datapoints: Any,
+    data_structures: Any,
+    mapping_dict: Optional[Dict[str, str]],
+    input_datasets: Dict[str, Dataset],
+) -> None:
+    """Load URL datapoints via pysdmx and merge them into datapoints as DataFrames.
+
+    URL datapoints require data_structures to be a file path or URL string.
+    """
+    if isinstance(datapoints, dict) and isinstance(data_structures, (str, Path)):
+        url_datapoints = {k: v for k, v in datapoints.items() if isinstance(v, str) and _is_url(v)}
+        if url_datapoints:
+            url_ds, _, url_dfs = _handle_url_datapoints(
+                url_datapoints, data_structures, mapping_dict
+            )
+            input_datasets.update(url_ds)
+            for url_name, url_df in url_dfs.items():
+                datapoints[url_name] = url_df
+            for url_name in url_datapoints:
+                if url_name in datapoints and isinstance(datapoints[url_name], str):
+                    del datapoints[url_name]
+
+
 @with_recursion_headroom
 def _run_with_duckdb(
     script: Union[str, TransformationScheme, Path],
@@ -354,20 +393,7 @@ def _run_with_duckdb(
     # Get DAG analysis for efficient load/save scheduling
     ds_analysis = DAGAnalyzer.ds_structure(ast)
 
-    # Handle URL datapoints: load via pysdmx and merge into datapoints as DataFrames
-    # URL datapoints require data_structures to be a file path or URL string
-    if isinstance(datapoints, dict) and isinstance(data_structures, (str, Path)):
-        url_datapoints = {k: v for k, v in datapoints.items() if isinstance(v, str) and _is_url(v)}
-        if url_datapoints:
-            url_ds, _, url_dfs = _handle_url_datapoints(
-                url_datapoints, data_structures, mapping_dict
-            )
-            input_datasets.update(url_ds)
-            for url_name, url_df in url_dfs.items():
-                datapoints[url_name] = url_df
-            for url_name in url_datapoints:
-                if url_name in datapoints and isinstance(datapoints[url_name], str):
-                    del datapoints[url_name]
+    _load_url_datapoints(datapoints, data_structures, mapping_dict, input_datasets)
 
     # Extract paths without pandas validation (DuckDB-optimized)
     # This avoids the double CSV read that load_datasets_with_data causes
