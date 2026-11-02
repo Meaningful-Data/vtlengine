@@ -4531,3 +4531,77 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         with mock.patch.dict(os.environ, {"COMPARISON_ABSOLUTE_THRESHOLD": "6"}):
             self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1218_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 rule Id_2)[calc attribute At_1 := "z"];
+
+        Description: hierarchy drops the attribute At_1 of its operand, which the calc
+        clause then creates again.
+
+        Git Branch: #1218.
+        Goal: Check a calc clause on the hierarchy result sets a dropped attribute.
+        """
+
+        code = "GH_1218_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1218_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 rule Id_2 always_zero all)
+                                [calc attribute At_1 := "z"];
+
+        Description: With output all, the data points of the operand that no rule
+        computes are kept without the attribute At_1, which the calc clause creates again.
+
+        Git Branch: #1218.
+        Goal: Check hierarchy with output all drops the attributes that are not viral.
+        """
+
+        code = "GH_1218_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1218_3(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 rule Id_2 all)
+                                [calc attribute At_1 := "z"];
+
+        Description: check_hierarchy drops the attribute At_1 of its operand, which the
+        calc clause then creates again.
+
+        Git Branch: #1218.
+        Goal: Check a calc clause on the check_hierarchy result sets a dropped attribute.
+        """
+
+        code = "GH_1218_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
