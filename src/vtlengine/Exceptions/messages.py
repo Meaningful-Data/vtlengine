@@ -327,6 +327,12 @@ centralised_messages = {
         "description": "Raised when a component declared as not nullable in the DataStructure "
         "carries a null value in the datapoints. An Identifier reports 0-3-1-3 instead.",
     },
+    "0-3-1-18": {
+        "message": "On Dataset {name} loading: line {line} of the file does not split into the "
+        "fields of its header.",
+        "description": "Raised when a row of a CSV file has more fields than its header names, "
+        "or a quote that leaves it unterminated.",
+    },
     # Input validation errors for URL datapoints
     "0-1-3-8": {
         "message": "data_structures must be a file path or URL "
