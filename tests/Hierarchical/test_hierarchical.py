@@ -5506,3 +5506,33 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_20(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1, At_1
+                        rule Id_2) is
+                        R1: when Id_1 > 1 then Y = A + D [At_1 = "x"] errorcode "E1"
+                            errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Id_1, At_1 rule Id_2
+                                partial_null);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition Id_1, At_1 rule Id_2
+                                partial_null all);
+
+        Description: The data point of E, a code item outside the ruleset, satisfies the
+        condition of D, so D is missing, not left out of the rule.
+
+        Git Branch: #1223.
+        Goal: Check a right condition on an attribute in a rule with a condition on an
+        identifier.
+        """
+
+        code = "GH_1223_20"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

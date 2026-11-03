@@ -4285,7 +4285,7 @@ FROM (
                     if rc is not None:
                         holds = " AND ".join(f"({c})" for c in (when, rc) if c is not None)
                         fields.append(f"_in{j} := MAX(CASE WHEN {holds} THEN 1 ELSE 0 END)")
-                        if when is None and reads_data_point(rc_node):
+                        if reads_data_point(rc_node):
                             found.append(f"({rc})")
                 structs.append(f"struct_pack({', '.join(fields)}) AS _r{parsed.index}")
         src = self._hoisted_source(table_src, hoisted) if hoisted else table_src
