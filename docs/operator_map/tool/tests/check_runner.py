@@ -18,6 +18,7 @@ import subprocess
 import sys
 import threading
 import time
+import types
 from pathlib import Path
 from textwrap import dedent
 from typing import Any
@@ -244,6 +245,15 @@ def fake_child(monkeypatch: pytest.MonkeyPatch, *codes: str) -> list[list[str]]:
     return started
 
 
+def printing_value(before: str, value: str) -> str:
+    """Python code that prints a result line with one String scalar, ``value`` evaluated."""
+    return (
+        f"{before}\nimport json\n"
+        "print('RESULT:' + json.dumps({'ok': True, 'datasets': [], 'scalars': "
+        f"[{{'name': 'v', 'type': 'String', 'value': {value}}}]}}))\n"
+    )
+
+
 def printing(payload: dict[str, Any], before: str = "", after: str = "") -> str:
     """Python code that prints ``payload`` as the result line, between two other statements."""
     return f"{before}\nprint('RESULT:' + {json.dumps(payload)!r})\n{after}\n"
@@ -268,6 +278,90 @@ def run_child(*command: str) -> subprocess.CompletedProcess[str]:
         env=child_env(),
         timeout=TIMEOUT,
     )
+
+
+# --- The two ways of starting a child ---
+#
+# Every check of this file runs twice: with each child forked from the server that imported the
+# engines once, and with each child a fresh interpreter (``fresh``), as on a platform that cannot
+# fork. The children must behave alike either way.
+
+
+@pytest.fixture(autouse=True, params=["forked", "fresh"])
+def start(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> str:
+    if request.param == "fresh":
+        monkeypatch.setattr(runner, "forking_available", lambda: False)
+    elif not runner.forking_available():
+        pytest.skip("this platform cannot fork the children from a server")
+    return str(request.param)
+
+
+def test_a_forked_child_comes_from_the_server_and_a_fresh_one_from_here(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, start: str
+) -> None:
+    parent = printing_value("import os", "str(os.getppid())")
+    fake_child(monkeypatch, parent)
+    out = run_example(tmp_path / "ex", "pandas", TIMEOUT)
+    [scalar] = out.scalars
+    assert (scalar.value == str(os.getpid())) == (start == "fresh")
+
+
+def test_run_all_can_be_asked_for_fresh_children(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake_child(monkeypatch, printing_value("import os", "str(os.getppid())"))
+    results = run_all([(tmp_path / "ex", "pandas", 1)], workers=1, timeout_s=TIMEOUT, fresh=True)
+    [scalar] = results[(tmp_path / "ex", "pandas")].scalars
+    assert scalar.value == str(os.getpid())
+
+
+def test_a_timed_out_child_is_killed_with_what_it_started(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    heartbeat = tmp_path / "heartbeat"
+    beat = tmp_path / "beat.py"
+    beat.write_text(
+        "import sys, time\n"
+        "for _ in range(2000):\n"
+        "    open(sys.argv[1], 'a').write('x')\n"
+        "    time.sleep(0.02)\n",
+        encoding="utf-8",
+    )
+    starts = dedent(
+        f"""\
+        import subprocess, sys, time
+        subprocess.Popen([sys.executable, {str(beat)!r}, {str(heartbeat)!r}])
+        time.sleep(60)
+        """
+    )
+    fake_child(monkeypatch, starts)
+    out = run_example(tmp_path / "ex", "pandas", 1.0)
+    assert out.error_type == "Timeout"
+    final = heartbeat.stat().st_size
+    time.sleep(0.3)
+    assert heartbeat.stat().st_size == final  # nothing that the child started is left writing
+
+
+def test_a_main_without_a_file_starts_fresh_children(monkeypatch: pytest.MonkeyPatch) -> None:
+    # A forked child runs the main script of this process again, by its path: ``python -c``
+    # and ``python -`` have none to run, so their children are fresh.
+    main = types.ModuleType("__main__")
+    main.__file__ = "<stdin>"
+    monkeypatch.setitem(sys.modules, "__main__", main)
+    assert not runner._main_can_run_again()
+    assert runner._Children()._context is None
+
+
+def test_the_script_of_this_process_is_preloaded_by_its_name(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    main = types.ModuleType("__main__")
+    script = WORKTREE / "docs" / "operator_map" / "generate.py"
+    main.__file__ = str(script)
+    monkeypatch.setitem(sys.modules, "__main__", main)
+    monkeypatch.setattr(sys, "path", [str(script.parent), *sys.path])
+    assert runner._main_can_run_again()
+    assert runner._main_preload() == ["generate"]
 
 
 # --- Real engines ---
@@ -981,6 +1075,7 @@ def test_an_interrupt_kills_the_child_that_is_running(
 
     monkeypatch.setattr(runner, "_kill_group", spy)
     monkeypatch.setattr(subprocess.Popen, "communicate", interrupted)
+    monkeypatch.setattr(runner._Forked, "communicate", interrupted)
     with pytest.raises(KeyboardInterrupt):
         run_example(tmp_path, "pandas", TIMEOUT)
 

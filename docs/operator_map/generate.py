@@ -1,7 +1,7 @@
 """Generate the operator map: validate, run every example on both engines, judge, write.
 
     generate.py [--only CHAPTER]... [--workers 4] [--timeout 120] [--check-only | --compare]
-                [--summary FILE]
+                [--summary FILE] [--fresh-processes]
 
 It needs a Python that can import vtlengine, with the compiled parser in src/ ("Building the C++
 parser from source" in CONTRIBUTING.md says how to build it): every example runs in a child
@@ -24,8 +24,10 @@ Elsewhere the cap is optional.
    or to a definition of the VTL-DL.
 2. One child process imports vtlengine and both engines, and gives their versions (the
    preflight of ``tool.runner``). Then every example runs on the pandas and the DuckDB engine,
-   each in a process of its own. A ``random`` example runs twice, to see whether its values are
-   stable.
+   each in a process of its own, forked from a server that imported the engines once (with
+   ``--fresh-processes``, or where the platform cannot fork, a fresh interpreter each). A
+   ``random`` example runs twice, to see whether its values are stable. A line every 30 seconds
+   says how far the run has got.
 3. The status of each example comes from the two runs (``tool.status``), the statuses are rolled
    up, and the files are rendered: ``index.rst``, how to read (``how_to_read.rst``), the
    overview (``overview.rst``), the page of the blocks of operators (``operators.rst``), the team
@@ -343,7 +345,8 @@ def _run(
     """Run ``todo`` on both engines and judge the runs: the result of each, by key."""
     examples_root = ROOT / "examples"
     progress = _RunProgress(examples_root)
-    outputs = run_all(_jobs(todo, examples_root), args.workers, args.timeout, progress)
+    jobs = _jobs(todo, examples_root)
+    outputs = run_all(jobs, args.workers, args.timeout, progress, fresh=args.fresh_processes)
     return _judge(todo, loaded, outputs, examples_root, meta.date)
 
 
@@ -502,6 +505,12 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         help=f"run the examples and compare their statuses with the committed {_STATUS_FILE}, "
         "writing nothing: the exit code is 1 when an example ranks lower than there (a "
         "regression, which is run a second time to be sure), 0 otherwise",
+    )
+    parser.add_argument(
+        "--fresh-processes",
+        action="store_true",
+        help="start a fresh interpreter for every run, instead of forking it from a server that "
+        "imported the engines once: several times slower, for when the forked runs are in doubt",
     )
     parser.add_argument(
         "--summary",

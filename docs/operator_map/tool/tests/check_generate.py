@@ -158,6 +158,7 @@ class World:
     settings: list[tuple[int, float]] = field(default_factory=list)
     interrupt: bool = False
     preflights: list[float] = field(default_factory=list)  # the timeout of each preflight
+    fresh: list[bool] = field(default_factory=list)  # whether each run asked for fresh processes
 
     def preflight(self, timeout_s: float) -> Any:
         self.preflights.append(timeout_s)
@@ -183,9 +184,12 @@ class World:
         workers: int,
         timeout_s: float,
         progress: Callable[[int, int, tuple[Path, Engine]], None] | None = None,
+        *,
+        fresh: bool = False,
     ) -> dict[tuple[Path, Engine], RunOutput]:
         self.calls.append(list(jobs))
         self.settings.append((workers, timeout_s))
+        self.fresh.append(fresh)
         if self.interrupt:
             raise KeyboardInterrupt
         outputs = {(path, engine): self.output(path, engine) for path, engine, _ in jobs}
@@ -2177,8 +2181,10 @@ def test_compare_ignores_a_regression_that_does_not_repeat(
         workers: int,
         timeout_s: float,
         progress: Callable[[int, int, tuple[Path, Engine]], None] | None = None,
+        *,
+        fresh: bool = False,
     ) -> dict[tuple[Path, Engine], RunOutput]:
-        outputs = first_run(jobs, workers, timeout_s, progress)
+        outputs = first_run(jobs, workers, timeout_s, progress, fresh=fresh)
         world.modes.clear()  # the second run is right again
         return outputs
 
@@ -2338,3 +2344,9 @@ def test_a_run_prints_its_progress(world: World, capsys: pytest.CaptureFixture[s
     assert generate.main([]) == 0
     lines = capsys.readouterr().out.splitlines()
     assert any(line.startswith("[100%] 8/8 runs · ") for line in lines)
+
+
+def test_runs_are_forked_unless_fresh_processes_are_asked_for(world: World) -> None:
+    assert generate.main([]) == 0
+    assert generate.main(["--fresh-processes"]) == 0
+    assert world.fresh == [False, True]

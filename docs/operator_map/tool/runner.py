@@ -12,20 +12,34 @@ the children that run are killed, and no child starts after that.
 
 ``preflight`` starts one child before a run, to see that it can import the engines at all: a
 child that cannot would make every example a crash.
+
+A child is forked from a server that imported vtlengine, pandas and DuckDB once (the
+``forkserver`` of ``multiprocessing``), where the platform can fork: it starts with the engines
+in memory, so that a run takes a tenth of the time of a fresh interpreter, most of which goes to
+the imports. It is still a process of its own for every run, with a session of its own, its
+output in files and its exit code, and the server never runs an example, so a run cannot see
+what another one did. ``run_all(fresh=True)``, and a platform that cannot fork, start a fresh
+interpreter for every child instead (``python -m tool.child``).
 """
 
 from __future__ import annotations
 
+import functools
 import json
+import multiprocessing
 import os
+import runpy
+import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import threading
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import suppress
 from dataclasses import dataclass
+from multiprocessing.context import BaseContext
 from pathlib import Path
 from typing import Any, Final, Literal
 
@@ -56,6 +70,20 @@ print("PREFLIGHT:" + json.dumps({"pandas": pandas.__version__, "duckdb": duckdb.
 """
 _PREFLIGHT_HINT: Final = (
     "run the generator with a Python that can import vtlengine: the compiled parser must be in src/"
+)
+# What every child has in its environment besides that of this process: one thread and 1 GB
+# for DuckDB.
+_CHILD_SETTINGS: Final = {"VTL_THREADS": "1", "VTL_MEMORY_LIMIT": "1GB"}
+# Where a child imports from: the engine of this worktree, and the modules of the map.
+_CHILD_PATHS: Final = (_WORKTREE / "src", _WORKTREE / "docs" / "operator_map")
+# What the server of the forked children imports once, as the preflight child does.
+_PRELOAD: Final = (
+    "duckdb",
+    "pandas",
+    "vtlengine",
+    "vtlengine.duckdb_transpiler",
+    "vtlengine.Interpreter",
+    "tool.child",
 )
 
 
@@ -91,13 +119,149 @@ def child_env() -> dict[str, str]:
 
     The rest is the environment of this process.
     """
-    paths = [_WORKTREE / "src", _WORKTREE / "docs" / "operator_map"]
     return {
         **os.environ,
-        "PYTHONPATH": os.pathsep.join(str(path) for path in paths),
-        "VTL_THREADS": "1",
-        "VTL_MEMORY_LIMIT": "1GB",
+        "PYTHONPATH": os.pathsep.join(str(path) for path in _CHILD_PATHS),
+        **_CHILD_SETTINGS,
     }
+
+
+def forking_available() -> bool:
+    """Whether the children can be forked from a server: not on Windows."""
+    return "forkserver" in multiprocessing.get_all_start_methods()
+
+
+def _main_can_run_again() -> bool:
+    """Whether a forked child can run the main module of this process again, as it does.
+
+    ``multiprocessing`` runs it again in every child, by its module name or by its path: a
+    script on disk or a module can be, while ``python -c`` and ``python -`` have no file.
+    """
+    main = sys.modules.get("__main__")
+    if getattr(main, "__spec__", None) is not None:
+        return True
+    path = getattr(main, "__file__", None)
+    return path is not None and Path(path).is_file()
+
+
+def _main_preload() -> list[str]:
+    """The script of this process by its module name, when the server can import it so.
+
+    Every child runs the script again: with its imports in the server, that takes a tenth of
+    the time (the generator's catalogue and pages, for ``generate.py``).
+    """
+    main = sys.modules.get("__main__")
+    path = getattr(main, "__file__", None)
+    if getattr(main, "__spec__", None) is not None or path is None:
+        return []
+    script = Path(path).resolve()
+    folders = {str(Path(entry).resolve()) for entry in sys.path if entry}
+    return [script.stem] if script.is_file() and str(script.parent) in folders else []
+
+
+@functools.cache
+def _forkserver() -> BaseContext:
+    """The context of the forked children, whose server imports the engines of this worktree.
+
+    The server takes the ``sys.path`` of this process when it starts, so the paths of a child
+    are put there first; this process still imports none of the engines.
+    """
+    for path in reversed(_CHILD_PATHS):
+        if str(path) not in sys.path:
+            sys.path.insert(0, str(path))
+    context = multiprocessing.get_context("forkserver")
+    context.set_forkserver_preload([*_PRELOAD, *_main_preload()])
+    return context
+
+
+def _forked_main(command: Sequence[str], out_path: str, err_path: str) -> None:
+    """In a child forked from the server: ``command`` as a fresh interpreter would run it.
+
+    ``command`` is ``python -m <module> <arguments>`` or ``python -c <code> <arguments>``. The
+    child leads a session of its own, as a fresh child does, and its standard output and error
+    go to the files that the parent reads when it ends.
+    """
+    os.setsid()
+    for fd, path in ((1, out_path), (2, err_path)):
+        target = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        os.dup2(target, fd)
+        os.close(target)
+    os.environ.update(_CHILD_SETTINGS)
+    flag, what, *arguments = command[1:]
+    if flag == "-m":
+        sys.argv = [what, *arguments]
+        runpy.run_module(what, run_name="__main__", alter_sys=True)
+    else:
+        sys.argv = ["-c", *arguments]
+        exec(compile(what, "<string>", "exec"), {"__name__": "__main__"})  # noqa: S102
+
+
+def _forkable(command: Sequence[str]) -> bool:
+    """Whether ``command`` is ``python -m`` or ``python -c``, which a forked child can run."""
+    return len(command) >= 3 and command[0] == sys.executable and command[1] in ("-m", "-c")
+
+
+class _Forked:
+    """A child forked from the server, with what the runner uses of ``subprocess.Popen``."""
+
+    def __init__(self, context: BaseContext, command: Sequence[str]) -> None:
+        self._folder = Path(tempfile.mkdtemp(prefix="vtl-map-run-"))
+        self._out, self._err = self._folder / "out", self._folder / "err"
+        self._process = context.Process(  # type: ignore[attr-defined]
+            target=_forked_main, args=(list(command), str(self._out), str(self._err))
+        )
+        try:
+            self._process.start()
+        except BaseException:
+            shutil.rmtree(self._folder, ignore_errors=True)
+            raise
+        self.pid: int = self._process.pid
+
+    @property
+    def returncode(self) -> int | None:
+        """The exit code once the child has ended, negative for a signal; None until then."""
+        code: int | None = self._process.exitcode
+        return code
+
+    def communicate(self, timeout: float | None = None) -> tuple[str, str]:
+        """Wait for the end of the child, then its output and its error, as text."""
+        self.wait(timeout)
+        return self._read(self._out), self._read(self._err)
+
+    def wait(self, timeout: float | None = None) -> int:
+        """Wait for the end of the child: its exit code."""
+        self._process.join(timeout)
+        code = self.returncode
+        if code is None:
+            raise subprocess.TimeoutExpired("forked child", timeout or 0.0)
+        return code
+
+    def kill_group(self) -> None:
+        """Kill the child and what it started; the child alone if it has no group yet.
+
+        A child that has not called ``setsid`` yet, just after its fork, leads no group. One
+        that has ended is left alone: its id may have been given to another process.
+        """
+        try:
+            os.killpg(self.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            if self.returncode is None:
+                with suppress(ProcessLookupError):
+                    os.kill(self.pid, signal.SIGKILL)
+
+    def __enter__(self) -> _Forked:
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self._process.join()
+        shutil.rmtree(self._folder, ignore_errors=True)
+
+    @staticmethod
+    def _read(path: Path) -> str:
+        try:
+            return path.read_text(encoding="utf-8", errors="replace")
+        except FileNotFoundError:  # a child killed before it opened its files
+            return ""
 
 
 class _Children:
@@ -107,20 +271,30 @@ class _Children:
     are kept under the same lock: a child is either killed by the cancel or never started.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, fresh: bool = False) -> None:
         self._lock = threading.Lock()
-        self._live: set[subprocess.Popen[str]] = set()
+        self._live: set[subprocess.Popen[str] | _Forked] = set()
         self._cancelled = threading.Event()
+        forked = not fresh and forking_available() and _main_can_run_again()
+        self._context = _forkserver() if forked else None
 
     @property
     def cancelled(self) -> bool:
         return self._cancelled.is_set()
 
-    def start(self, command: list[str]) -> subprocess.Popen[str] | None:
-        """Start a child and keep it; None, and nothing started, once the run is cancelled."""
+    def start(self, command: list[str]) -> subprocess.Popen[str] | _Forked | None:
+        """Start a child and keep it; None, and nothing started, once the run is cancelled.
+
+        The child is forked from the server when there is one and ``command`` is a Python
+        module or code, else it is a fresh process.
+        """
         with self._lock:
             if self._cancelled.is_set():
                 return None
+            if self._context is not None and _forkable(command):
+                forked = _Forked(self._context, command)
+                self._live.add(forked)
+                return forked
             process = subprocess.Popen(  # noqa: S603
                 command,
                 stdin=subprocess.DEVNULL,
@@ -135,7 +309,7 @@ class _Children:
             self._live.add(process)
             return process
 
-    def forget(self, process: subprocess.Popen[str]) -> None:
+    def forget(self, process: subprocess.Popen[str] | _Forked) -> None:
         """Stop keeping a child that has ended."""
         with self._lock:
             self._live.discard(process)
@@ -187,8 +361,12 @@ def run_all(
     workers: int,
     timeout_s: float,
     progress: Callable[[int, int, tuple[Path, Engine]], None] | None = None,
+    *,
+    fresh: bool = False,
 ) -> dict[tuple[Path, Engine], RunOutput]:
     """Run every ``(example folder, engine, repeat)`` job, ``workers`` at a time.
+
+    ``fresh`` starts a fresh interpreter for each child, instead of forking it from the server.
 
     ``progress`` is called, in this thread, each time a job ends: with how many have ended, how
     many there are, and the key of the one that ended.
@@ -199,7 +377,7 @@ def run_all(
     everything they started, and no child starts after that, neither for a job that waits nor
     for a second attempt of a run that timed out.
     """
-    children = _Children()
+    children = _Children(fresh)
     pool = ThreadPoolExecutor(max_workers=workers)
     try:
         futures = [
@@ -309,11 +487,14 @@ def _attempt(
                 raise
     finally:
         children.forget(process)
-    return _decode(stdout, stderr, process.returncode)
+    return _decode(stdout, stderr, process.wait())  # it has ended: wait gives its exit code
 
 
-def _kill_group(process: subprocess.Popen[Any]) -> None:
+def _kill_group(process: subprocess.Popen[Any] | _Forked) -> None:
     """Kill the child and everything it started: the child leads a process group of its own."""
+    if isinstance(process, _Forked):
+        process.kill_group()
+        return
     with suppress(ProcessLookupError):  # nothing is left in the group
         os.killpg(process.pid, signal.SIGKILL)
 
