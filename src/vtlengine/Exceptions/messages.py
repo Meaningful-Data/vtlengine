@@ -327,6 +327,12 @@ centralised_messages = {
         "description": "Raised when a component declared as not nullable in the DataStructure "
         "carries a null value in the datapoints. An Identifier reports 0-3-1-3 instead.",
     },
+    "0-3-1-18": {
+        "message": "On Dataset {name} loading: line {line} of the file does not split into the "
+        "fields of its header.",
+        "description": "Raised when a row of a CSV file has more fields than its header names, "
+        "or a quote that leaves it unterminated.",
+    },
     # Input validation errors for URL datapoints
     "0-1-3-8": {
         "message": "data_structures must be a file path or URL "
@@ -815,8 +821,11 @@ centralised_messages = {
         "description": "Raised when an alias is used more than once in the same operation.",
     },
     "1-1-13-2": {
-        "message": "At op {op}: Missing mandatory aliasing.",
-        "description": "Occurs when a required alias for an operation is not provided.",
+        "message": "At op {op}: the operand {operand} needs an alias. Aliases are mandatory for "
+        "the result of a sub-expression and for a Data Set that appears more than once in the "
+        "join.",
+        "description": "Raised when a join operand that is the result of a sub-expression, or a "
+        "Data Set that appears more than once in the join, has no alias.",
     },
     "1-1-13-3": {
         "message": "At op {op}: Join conflict with duplicated names for "

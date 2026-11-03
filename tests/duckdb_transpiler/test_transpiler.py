@@ -270,8 +270,10 @@ class TestMatchOperator:
         results = transpile_and_get_sql(transpiler, ast)
 
         _, sql, _ = results[0]
+        # A single Measure is named bool_var, as the semantic analysis names it (issue #1222)
         expected_sql = (
-            'SELECT "Id_1", vtl_match_characters("Me_1", \'(?=[A-Z])\\w+\') AS "Me_1" FROM "DS_1"'
+            'SELECT "Id_1", vtl_match_characters("Me_1", \'(?=[A-Z])\\w+\') AS "bool_var" '
+            'FROM "DS_1"'
         )
         assert_sql_equal(sql, expected_sql)
 

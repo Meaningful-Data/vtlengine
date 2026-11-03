@@ -82,6 +82,14 @@ class Cast(Operator.Unary):
         elif isinstance(operand, Scalar):
             return cls.scalar_validation(operand, scalarType, mask)
 
+    @staticmethod
+    def result_measure_name(measure: Component, to_type: Type[ScalarType]) -> str:
+        """A Measure keeps its name when it is implicitly promoted to the type, and takes the
+        generic name of the type otherwise."""
+        if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[measure.data_type]):
+            return measure.name
+        return COMP_NAME_MAPPING[to_type]
+
     @classmethod
     def dataset_validation(  # type: ignore[override]
         cls,
@@ -101,13 +109,10 @@ class Cast(Operator.Unary):
         result_components = {
             comp_name: copy(comp)
             for comp_name, comp in operand.components.items()
-            if comp.role != Role.MEASURE
+            if comp.role in (Role.IDENTIFIER, Role.VIRAL_ATTRIBUTE)
         }
 
-        if not to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
-            measure_name = COMP_NAME_MAPPING[to_type]
-        else:
-            measure_name = measure.name
+        measure_name = cls.result_measure_name(measure, to_type)
         result_components[measure_name] = Component(
             name=measure_name,
             data_type=to_type,
@@ -194,7 +199,10 @@ class Cast(Operator.Unary):
         original_measure = operand.get_measures()[0]
         result_dataset = cls.dataset_validation(operand, to_type, mask)
         new_measure = result_dataset.get_measures()[0]
-        result_dataset.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
+        attributes = [name for name, c in operand.components.items() if c.role == Role.ATTRIBUTE]
+        result_dataset.data = (
+            operand.data.drop(columns=attributes) if operand.data is not None else pd.DataFrame()
+        )
 
         if original_measure.name != new_measure.name:
             result_dataset.data.rename(

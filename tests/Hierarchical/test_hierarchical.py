@@ -5536,3 +5536,82 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1225_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C
+                    end hierarchical ruleset;
+
+                    DS_r1 <- union(hierarchy(DS_1, HR_1 rule Id_2), DS_2);
+                    DS_r2 <- intersect(hierarchy(DS_1, HR_1 rule Id_2), DS_2);
+                    DS_r3 <- setdiff(hierarchy(DS_1, HR_1 rule Id_2), DS_2);
+                    DS_r4 <- symdiff(hierarchy(DS_1, HR_1 rule Id_2), DS_2);
+
+        Description: The first operand of each set operator is a hierarchy written inline.
+
+        Git Branch: #1225.
+        Goal: Check the set operators read an inline hierarchy as their first operand.
+        """
+
+        code = "GH_1225_1"
+        number_inputs = 2
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1225_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C
+                    end hierarchical ruleset;
+
+                    DS_r1 <- union(DS_2, hierarchy(DS_1, HR_1 rule Id_2 all));
+                    DS_r2 <- intersect(DS_2, hierarchy(DS_1, HR_1 rule Id_2 all));
+                    DS_r3 <- setdiff(DS_2, hierarchy(DS_1, HR_1 rule Id_2 all));
+                    DS_r4 <- symdiff(DS_2, hierarchy(DS_1, HR_1 rule Id_2 all));
+
+        Description: The second operand of each set operator is a hierarchy written inline,
+        in output mode all.
+
+        Git Branch: #1225.
+        Goal: Check the set operators read an inline hierarchy as their second operand.
+        """
+
+        code = "GH_1225_2"
+        number_inputs = 2
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1225_3(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_c <- check_hierarchy(DS_2, HR_1 rule Id_2 all);
+                    DS_r1 <- union(check_hierarchy(DS_1, HR_1 rule Id_2 all), DS_c);
+                    DS_r2 <- setdiff(check_hierarchy(DS_1, HR_1 rule Id_2 all), DS_c);
+
+        Description: The first operand of union and setdiff is a check_hierarchy written
+        inline.
+
+        Git Branch: #1225.
+        Goal: Check the set operators read an inline check_hierarchy as an operand.
+        """
+
+        code = "GH_1225_3"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

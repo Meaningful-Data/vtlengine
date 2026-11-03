@@ -7,9 +7,10 @@ Public functions:
 - execute_queries: Execute transpiled SQL queries with DAG scheduling
 - extract_datapoint_paths: Extract paths without pandas validation (DuckDB-optimized)
 - register_dataframes: Register DataFrames directly with DuckDB
+- validate_datapoints: Load datapoints as a run does, only to validate them
 """
 
-from ._execution import execute_queries
+from ._execution import execute_queries, validate_datapoints
 from ._io import (
     extract_datapoint_paths,
     load_datapoints_duckdb,
@@ -26,4 +27,5 @@ __all__ = [
     "register_dataframes",
     "apply_time_period_representation",
     "format_time_period_scalar",
+    "validate_datapoints",
 ]
