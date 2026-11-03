@@ -2457,18 +2457,18 @@
   },
   "conditional/nvl/sc_comp/non_null_scalar_first_operand": {
     "anchor": "ex-sc-comp-non-null-scalar-first-operand",
-    "duckdb": "🛡 1-1-9-2",
+    "duckdb": "✅",
     "operator_page": "conditional/nvl.html",
-    "pandas": "🛡 1-1-9-2",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Non null scalar first operand"
   },
   "conditional/nvl/sc_ds/non_null_scalar_first_operand": {
     "anchor": "ex-sc-ds-non-null-scalar-first-operand",
-    "duckdb": "🛡 1-1-9-2",
+    "duckdb": "✅",
     "operator_page": "conditional/nvl.html",
-    "pandas": "🛡 1-1-9-2",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Non null scalar first operand"
   },
   "conditional/nvl/sc_sc/non_null_first_operand": {
@@ -5729,10 +5729,10 @@
   },
   "numeric/round/sc_comp_digits/digits_from_component": {
     "anchor": "ex-sc-comp-digits-digits-from-component",
-    "duckdb": "🛡 1-1-15-8",
+    "duckdb": "✅",
     "operator_page": "numeric/round.html",
-    "pandas": "🛡 1-1-15-8",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Digits from component"
   },
   "numeric/round/sc_digits/rounds_up_at_fourth_decimal": {
@@ -5905,10 +5905,10 @@
   },
   "numeric/trunc/sc_comp_digits/digits_from_component": {
     "anchor": "ex-sc-comp-digits-digits-from-component",
-    "duckdb": "🛡 1-1-15-8",
+    "duckdb": "✅",
     "operator_page": "numeric/trunc.html",
-    "pandas": "🛡 1-1-15-8",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Digits from component"
   },
   "numeric/trunc/sc_digits/drops_after_fourth_decimal": {
@@ -7537,10 +7537,10 @@
   },
   "validation/check_hierarchy/rule/manual_ex_1": {
     "anchor": "ex-rule-manual-ex-1",
-    "duckdb": "🛡 1-3-2-3",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 1-3-2-3",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Manual example 1"
   },
   "validation/check_hierarchy/rule/value_domain_bound_to_identifier": {

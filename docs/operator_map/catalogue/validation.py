@@ -183,13 +183,9 @@ CHECK_HIERARCHY = Operator(
             "check_hierarchy(DS, HR rule C)",
             _NUMBER_DATA_SET,
             _HIERARCHY_GIVES["all_measures"],
-            manual(
-                "ex_1",
-                erratum=(
-                    "rule R030 evaluates to true, so its errorcode must be null; "
-                    'the manual prints "XX"'
-                ),
-            ),
+            # The example's ruleset has a cycle (R020, R070, R110), so it expects 1-3-2-3; the
+            # manual's slip on the errorcode of R030 goes to the list for the VTL Task Force.
+            manual("ex_1"),
             authored("value_domain_bound_to_identifier"),
         ),
         _form(

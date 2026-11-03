@@ -4,7 +4,7 @@ Check hierarchy · ``check_hierarchy``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 29 of 40 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Data%20validation%20operators/Check%20hierarchy/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (9c8976e7) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 29 of 40 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Data%20validation%20operators/Check%20hierarchy/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (ce4408d3) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -1201,8 +1201,7 @@ check\_hierarchy(DS, HR rule C) 🟢 · number, hierarchical ruleset → number,
 
 .. raw:: html
 
-   <details class="om-example" id="ex-rule-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-3-2-3</code> · DuckDB 🛡 <code>1-3-2-3</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-2-3: At op hierarchy: Vtl Script contains Cycles, no DAG established. Nodes involved: {2: StatementDeps(inputs=[&#x27;M&#x27;, &#x27;N&#x27;, &#x27;O&#x27;], outputs=[&#x27;B&#x27;], persistent=[], unknown_variables=[]), …</p>
+   <details class="om-example" id="ex-rule-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/validation/check_hierarchy/rule/manual_ex_1/notes.rst
 
@@ -1213,11 +1212,12 @@ check\_hierarchy(DS, HR rule C) 🟢 · number, hierarchical ruleset → number,
 .. raw:: html
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>2010</td><td>A</td><td>5</td></tr><tr><td>2010</td><td>B</td><td>11</td></tr><tr><td>2010</td><td>C</td><td>0</td></tr><tr><td>2010</td><td>G</td><td>19</td></tr><tr><td>2010</td><td>H</td><td></td></tr><tr><td>2010</td><td>I</td><td>14</td></tr><tr><td>2010</td><td>M</td><td>2</td></tr><tr><td>2010</td><td>N</td><td>5</td></tr><tr><td>2010</td><td>O</td><td>4</td></tr><tr><td>2010</td><td>P</td><td>7</td></tr><tr><td>2010</td><td>Q</td><td>-7</td></tr><tr><td>2010</td><td>S</td><td>3</td></tr><tr><td>2010</td><td>T</td><td>9</td></tr><tr><td>2010</td><td>U</td><td></td></tr><tr><td>2010</td><td>V</td><td>6</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">ruleid</th><th class="head">bool_var</th><th class="head">imbalance</th><th class="head">errorcode</th><th class="head">errorlevel</th></tr></thead><tbody><tr><td>2010</td><td>A</td><td>R010</td><td></td><td></td><td></td><td></td></tr><tr><td>2010</td><td>B</td><td>R020</td><td>true</td><td>0</td><td></td><td></td></tr><tr><td>2010</td><td>C</td><td>R030</td><td>true</td><td>0</td><td></td><td></td></tr><tr><td>2010</td><td>D</td><td>R040</td><td></td><td></td><td></td><td></td></tr><tr><td>2010</td><td>E</td><td>R050</td><td></td><td></td><td></td><td></td></tr><tr><td>2010</td><td>G</td><td>R070</td><td>false</td><td>8</td><td></td><td></td></tr><tr><td>2010</td><td>H</td><td>R080</td><td></td><td></td><td></td><td></td></tr><tr><td>2010</td><td>I</td><td>R090</td><td></td><td></td><td></td><td></td></tr><tr><td>2010</td><td>M</td><td>R100</td><td>false</td><td>-3</td><td></td><td>5</td></tr><tr><td>2010</td><td>M</td><td>R110</td><td>true</td><td>-17</td><td></td><td></td></tr></tbody></table>
+
+Expected error ``1-3-2-3``: At op {op}: Vtl Script contains Cycles, no DAG established. Nodes involved: {nodes}.
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/validation/check_hierarchy/rule/manual_ex_1/script.vtl">script.vtl</a> · <a href="../examples/validation/check_hierarchy/rule/manual_ex_1/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/validation/check_hierarchy/rule/manual_ex_1/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/validation/check_hierarchy/rule/manual_ex_1/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/validation/check_hierarchy/rule/manual_ex_1/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/validation/check_hierarchy/rule/manual_ex_1/value_domains/VD_1.json">value_domains/VD_1.json</a> · <a href="../examples/validation/check_hierarchy/rule/manual_ex_1/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/validation/check_hierarchy/rule/manual_ex_1/script.vtl">script.vtl</a> · <a href="../examples/validation/check_hierarchy/rule/manual_ex_1/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/validation/check_hierarchy/rule/manual_ex_1/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/validation/check_hierarchy/rule/manual_ex_1/expected/error.json">expected/error.json</a> · <a href="../examples/validation/check_hierarchy/rule/manual_ex_1/value_domains/VD_1.json">value_domains/VD_1.json</a> · <a href="../examples/validation/check_hierarchy/rule/manual_ex_1/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html

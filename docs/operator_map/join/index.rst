@@ -4,7 +4,7 @@ Join operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 2 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (9c8976e7) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 2 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (ce4408d3) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 

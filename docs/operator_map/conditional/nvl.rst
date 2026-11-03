@@ -4,7 +4,7 @@ Nvl · ``nvl``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 5 of 7 forms all ok, 2 refused</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Nvl/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (9c8976e7) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 7 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Nvl/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (ce4408d3) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -29,18 +29,18 @@ Nvl · ``nvl``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Nvl · nvl<br/>🟢5 🛡️2"]:::ok
+       O["Nvl · nvl<br/>🟢7"]:::ok
        subgraph G_ds["Dataset"]
            direction LR
            v_ds_sc["nvl(DS, sc)"]:::ok
            v_ds_ds["nvl(DS, DS)"]:::ok
-           v_sc_ds["nvl(sc, DS)"]:::refused
+           v_sc_ds["nvl(sc, DS)"]:::ok
        end
        subgraph G_comp["Component"]
            direction LR
            v_comp_sc["nvl(comp, sc)"]:::ok
            v_comp_comp["nvl(comp, comp)"]:::ok
-           v_sc_comp["nvl(sc, comp)"]:::refused
+           v_sc_comp["nvl(sc, comp)"]:::ok
        end
        subgraph G_sc["Scalar"]
            direction LR
@@ -135,13 +135,12 @@ nvl(DS, DS) 🟢 · any scalar → any type
 
    <span class="om-anchor" id="form-sc-ds"></span>
 
-nvl(sc, DS) 🛡️ · any scalar → any type
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+nvl(sc, DS) 🟢 · any scalar → any type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-sc-ds-non-null-scalar-first-operand"><summary><span class="om-ex-title">Non null scalar first operand</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-9-2</code> · DuckDB 🛡 <code>1-1-9-2</code></span></summary>
-   <p class="om-detail">SemanticError 1-1-9-2: At op None: The applicable operand cannot be a Dataset when the operand is a Scalar. Please check transformation with output Dataset DS_r</p>
+   <details class="om-example" id="ex-sc-ds-non-null-scalar-first-operand"><summary><span class="om-ex-title">Non null scalar first operand</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/nvl/sc_ds/non_null_scalar_first_operand/notes.rst
 
@@ -152,11 +151,12 @@ nvl(sc, DS) 🛡️ · any scalar → any type
 .. raw:: html
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>10</td></tr><tr><td>2</td><td></td></tr><tr><td>3</td><td>30</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>5</td></tr><tr><td>2</td><td>5</td></tr><tr><td>3</td><td>5</td></tr></tbody></table>
+
+Expected error ``1-1-9-2``: At op {op}: The applicable operand cannot be a {right\_type} when the operand is a {left\_type}.
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/conditional/nvl/sc_ds/non_null_scalar_first_operand/script.vtl">script.vtl</a> · <a href="../examples/conditional/nvl/sc_ds/non_null_scalar_first_operand/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/conditional/nvl/sc_ds/non_null_scalar_first_operand/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/conditional/nvl/sc_ds/non_null_scalar_first_operand/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/conditional/nvl/sc_ds/non_null_scalar_first_operand/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/conditional/nvl/sc_ds/non_null_scalar_first_operand/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/conditional/nvl/sc_ds/non_null_scalar_first_operand/script.vtl">script.vtl</a> · <a href="../examples/conditional/nvl/sc_ds/non_null_scalar_first_operand/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/conditional/nvl/sc_ds/non_null_scalar_first_operand/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/conditional/nvl/sc_ds/non_null_scalar_first_operand/expected/error.json">expected/error.json</a> · <a href="../examples/conditional/nvl/sc_ds/non_null_scalar_first_operand/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -217,13 +217,12 @@ nvl(comp, comp) 🟢 · any scalar → any type
 
    <span class="om-anchor" id="form-sc-comp"></span>
 
-nvl(sc, comp) 🛡️ · any scalar → any type
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+nvl(sc, comp) 🟢 · any scalar → any type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-sc-comp-non-null-scalar-first-operand"><summary><span class="om-ex-title">Non null scalar first operand</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-9-2</code> · DuckDB 🛡 <code>1-1-9-2</code></span></summary>
-   <p class="om-detail">SemanticError 1-1-9-2: At op None: The applicable operand cannot be a DataComponent when the operand is a Scalar. Please check transformation with output Dataset DS_r</p>
+   <details class="om-example" id="ex-sc-comp-non-null-scalar-first-operand"><summary><span class="om-ex-title">Non null scalar first operand</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/nvl/sc_comp/non_null_scalar_first_operand/notes.rst
 
@@ -234,11 +233,12 @@ nvl(sc, comp) 🛡️ · any scalar → any type
 .. raw:: html
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>10</td></tr><tr><td>2</td><td></td></tr><tr><td>3</td><td>30</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>10</td><td>5</td></tr><tr><td>2</td><td></td><td>5</td></tr><tr><td>3</td><td>30</td><td>5</td></tr></tbody></table>
+
+Expected error ``1-1-9-2``: At op {op}: The applicable operand cannot be a {right\_type} when the operand is a {left\_type}.
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/conditional/nvl/sc_comp/non_null_scalar_first_operand/script.vtl">script.vtl</a> · <a href="../examples/conditional/nvl/sc_comp/non_null_scalar_first_operand/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/conditional/nvl/sc_comp/non_null_scalar_first_operand/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/conditional/nvl/sc_comp/non_null_scalar_first_operand/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/conditional/nvl/sc_comp/non_null_scalar_first_operand/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/conditional/nvl/sc_comp/non_null_scalar_first_operand/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/conditional/nvl/sc_comp/non_null_scalar_first_operand/script.vtl">script.vtl</a> · <a href="../examples/conditional/nvl/sc_comp/non_null_scalar_first_operand/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/conditional/nvl/sc_comp/non_null_scalar_first_operand/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/conditional/nvl/sc_comp/non_null_scalar_first_operand/expected/error.json">expected/error.json</a> · <a href="../examples/conditional/nvl/sc_comp/non_null_scalar_first_operand/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html

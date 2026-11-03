@@ -135,9 +135,9 @@ The counts are over the forms of the operators of each block.
      - 🔵
      - 18
      - 94
-     - 88
+     - 90
      - 1
-     - 2
+     - 0
      - 0
      - 3
    * - :doc:`Comparison operators <comparison/index>`
@@ -207,9 +207,9 @@ The counts are over the forms of the operators of each block.
      - 🟡
      - 3
      - 19
-     - 14
+     - 16
      - 3
-     - 2
+     - 0
      - 0
      - 0
    * - :doc:`Clause operators <clause/index>`
@@ -234,9 +234,9 @@ The counts are over the forms of the operators of each block.
      - 🔵
      - 115
      - 727
-     - 643
+     - 647
      - 50
-     - 6
+     - 2
      - 20
      - 8
 
@@ -295,7 +295,6 @@ Examples where the manual gets an expected output, a script or an input wrong. T
 - `Aggregate invocation · Manual example 1 <aggregate/aggregate_invocation.html#ex-group-by-manual-ex-1>`__ (Aggregate and Analytic operators › ``agg(DS group by Id)``): The script comments its alternative forms with \'#\', which is not a VTL comment (the manual\'s conventions define /\* \*/ and //): they are commented with // here.
 - `Aggregate invocation · Manual example 4 <aggregate/aggregate_invocation.html#ex-aggr-multiple-manual-ex-4>`__ (Aggregate and Analytic operators › ``DS[aggr Me := agg(Me), Me := agg(Me) group by Id]``): The result is named DS\_3, not DS\_r, and keeps At\_1 as a ViralAttribute; DS\_1 declares At\_1 a plain (non-viral) Attribute, which the default propagation rule drops, so DS\_r has Id\_1, Me\_2 and Me\_3 only.
 - `Analytic invocation · Manual example 2 <aggregate/analytic_invocation.html#ex-partition-except-all-manual-ex-2>`__ (Aggregate and Analytic operators › ``an(over (partition except all order by Id))``): The result declares Me\_1 and Me\_2 Number: calc leaves Me\_1 Integer as in DS\_1, and rank returns integer, so both are Integer.
-- `Check hierarchy · Manual example 1 <validation/check_hierarchy.html#ex-rule-manual-ex-1>`__ (Data validation operators › ``check_hierarchy(DS, HR rule C)``): rule R030 evaluates to true, so its errorcode must be null; the manual prints \"XX\"
 
 Adaptations
 ----------------------

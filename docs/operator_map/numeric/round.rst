@@ -4,7 +4,7 @@ Rounding · ``round``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 10 of 11 forms all ok, 1 refused</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Rounding/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (9c8976e7) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 11 of 11 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Rounding/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (ce4408d3) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -29,7 +29,7 @@ Rounding · ``round``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Rounding · round<br/>🟢10 🛡️1"]:::ok
+       O["Rounding · round<br/>🟢11"]:::ok
        subgraph G_ds["Dataset"]
            direction LR
            v_ds_digits["round(DS, n)"]:::ok
@@ -42,7 +42,7 @@ Rounding · ``round``
            v_comp_no_digits["round(comp)"]:::ok
            v_comp_placeholder["round(comp, _)"]:::ok
            v_comp_comp_digits["round(comp, comp)"]:::ok
-           v_sc_comp_digits["round(sc, comp)"]:::refused
+           v_sc_comp_digits["round(sc, comp)"]:::ok
        end
        subgraph G_sc["Scalar"]
            direction LR
@@ -296,13 +296,12 @@ round(comp, comp) 🟢 · number, integer → number
 
    <span class="om-anchor" id="form-sc-comp-digits"></span>
 
-round(sc, comp) 🛡️ · number, integer → number
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+round(sc, comp) 🟢 · number, integer → number
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-sc-comp-digits-digits-from-component"><summary><span class="om-ex-title">Digits from component</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-15-8</code> · DuckDB 🛡 <code>1-1-15-8</code></span></summary>
-   <p class="om-detail">SemanticError 1-1-15-8: At op round: round operator cannot have a DataComponent and an Scalar operand as parameter. Please check transformation with output Dataset DS_r</p>
+   <details class="om-example" id="ex-sc-comp-digits-digits-from-component"><summary><span class="om-ex-title">Digits from component</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/numeric/round/sc_comp_digits/digits_from_component/notes.rst
 
@@ -313,11 +312,12 @@ round(sc, comp) 🛡️ · number, integer → number
 .. raw:: html
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr><tr><td>2</td><td>4</td></tr><tr><td>3</td><td>0</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2</td><td>3.140000</td></tr><tr><td>2</td><td>4</td><td>3.141600</td></tr><tr><td>3</td><td>0</td><td>3.000000</td></tr></tbody></table>
+
+Expected error ``1-1-15-8``: At op {op}: {op} operator cannot have a {comp\_type} as parameter.
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/numeric/round/sc_comp_digits/digits_from_component/script.vtl">script.vtl</a> · <a href="../examples/numeric/round/sc_comp_digits/digits_from_component/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/numeric/round/sc_comp_digits/digits_from_component/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/numeric/round/sc_comp_digits/digits_from_component/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/numeric/round/sc_comp_digits/digits_from_component/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/numeric/round/sc_comp_digits/digits_from_component/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/numeric/round/sc_comp_digits/digits_from_component/script.vtl">script.vtl</a> · <a href="../examples/numeric/round/sc_comp_digits/digits_from_component/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/numeric/round/sc_comp_digits/digits_from_component/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/numeric/round/sc_comp_digits/digits_from_component/expected/error.json">expected/error.json</a> · <a href="../examples/numeric/round/sc_comp_digits/digits_from_component/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html

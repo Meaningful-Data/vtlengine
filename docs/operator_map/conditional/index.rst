@@ -4,7 +4,7 @@ Conditional operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 2 of 3 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (9c8976e7) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 2 of 3 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (ce4408d3) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -28,7 +28,7 @@ Conditional operators
        B["Conditional operators"]:::block
        conditional__if_then_else["if-then-else · if then else<br/>🟢5"]:::ok
        conditional__case["Case · case when<br/>🟢4 🟡3"]:::partial
-       conditional__nvl["Nvl · nvl<br/>🟢5 🛡️2"]:::ok
+       conditional__nvl["Nvl · nvl<br/>🟢7"]:::ok
        conditional__if_then_else --- B
        conditional__case --- B
        B --- conditional__nvl
@@ -118,20 +118,6 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - ❌
      - ❌
      - value expected 10 got 1
-   * - :doc:`Nvl <nvl>`
-     - `nvl(sc, DS) <nvl.html#form-sc-ds>`__
-     - 🛡️
-     - `Non null scalar first operand <nvl.html#ex-sc-ds-non-null-scalar-first-operand>`__
-     - 🛡 1-1-9-2
-     - 🛡 1-1-9-2
-     - SemanticError 1-1-9-2: At op None: The applicable operand cannot be a Dataset when the operand is a Scalar. Please check transformation with output Dataset DS\_r
-   * - :doc:`Nvl <nvl>`
-     - `nvl(sc, comp) <nvl.html#form-sc-comp>`__
-     - 🛡️
-     - `Non null scalar first operand <nvl.html#ex-sc-comp-non-null-scalar-first-operand>`__
-     - 🛡 1-1-9-2
-     - 🛡 1-1-9-2
-     - SemanticError 1-1-9-2: At op None: The applicable operand cannot be a DataComponent when the operand is a Scalar. Please check transformation with output Dataset DS\_r
 
 .. toctree::
    :maxdepth: 1

@@ -52,9 +52,9 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🔵
      - 18
      - 94
-     - 88
+     - 90
      - 1
-     - 2
+     - 0
      - 0
      - 3
    * - :doc:`Comparison operators <comparison/index>`
@@ -124,9 +124,9 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🟡
      - 3
      - 19
-     - 14
+     - 16
      - 3
-     - 2
+     - 0
      - 0
      - 0
    * - :doc:`Clause operators <clause/index>`
@@ -142,9 +142,9 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🔵
      - 111
      - 698
-     - 622
+     - 626
      - 47
-     - 5
+     - 1
      - 16
      - 8
 
