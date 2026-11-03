@@ -4842,3 +4842,130 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
+
+    def test_GH_1224_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Me_1 rule Id_2) is
+                        R1: when Me_1 > 0 then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 all);
+
+        Description: The condition component is a Measure, which every data point satisfies.
+
+        Git Branch: #1224.
+        Goal: Check the rules apply when the condition component is a Measure.
+        """
+
+        code = "GH_1224_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1224_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Me_1 rule Id_2) is
+                        R1: when Me_1 > 0 then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 partial_null);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2
+                                partial_null all);
+
+        Description: The rule reads the code items only from the data points satisfying the
+        condition on the Measure: the others are missing.
+
+        Git Branch: #1224.
+        Goal: Check a data point not satisfying the condition on a Measure is missing.
+        """
+
+        code = "GH_1224_2"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1224_3(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Me_1 rule Id_2) is
+                        R1: A = B [Me_1 > 0] + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 always_null);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2
+                                always_null all);
+
+        Description: The condition of the code item B is on a Measure.
+
+        Git Branch: #1224.
+        Goal: Check a code item condition on a Measure.
+        """
+
+        code = "GH_1224_3"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1224_4(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Me_1 rule Id_2) is
+                        R1: when Me_1 > 0 then A = B + C errorcode "E1" errorlevel 1;
+                        R2: when Me_1 > 0 then D = A + E errorcode "E2" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 non_null rule all);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2
+                                non_null dataset_priority all);
+
+        Description: R2 reads the code item A that R1 computes. With input dataset_priority,
+        R2 takes the computed A where the data point of A does not satisfy the condition.
+
+        Git Branch: #1224.
+        Goal: Check a rule reads a computed code item under a condition on a Measure.
+        """
+
+        code = "GH_1224_4"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1224_5(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_2 rule Id_2) is
+                        R1: when Id_2 <> "B" then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition Id_2 rule Id_2
+                                partial_null all);
+
+        Description: The condition component is the rule component, so the data point of B
+        does not satisfy it and is missing.
+
+        Git Branch: #1224.
+        Goal: Check a condition on the rule component.
+        """
+
+        code = "GH_1224_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

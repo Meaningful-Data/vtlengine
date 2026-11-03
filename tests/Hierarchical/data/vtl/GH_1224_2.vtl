@@ -1,0 +1,6 @@
+define hierarchical ruleset HR_1 (variable condition Me_1 rule Id_2) is
+    R1: when Me_1 > 0 then A = B + C errorcode "E1" errorlevel 1
+end hierarchical ruleset;
+
+DS_r1 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 partial_null);
+DS_r2 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 partial_null all);
