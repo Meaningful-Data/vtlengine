@@ -771,3 +771,50 @@ class TestSemanticAnalysisCopy:
 
         assert copied == ast
         assert copied.children[0] is not ast.children[0]
+
+
+# =============================================================================
+# Hierarchical rulesets
+# =============================================================================
+
+
+class TestHierarchyConditionViews:
+    """Rules whose conditions apply per data point read their own pivot columns (#1223)."""
+
+    def test_views_stay_out_of_the_chain(self) -> None:
+        """The views that no rule updates are packed per rule, outside the chain of pivots.
+
+        Copying them through every pivot of the chain made the planning grow with the square
+        of the number of rules.
+        """
+        rules = ";\n".join(f'R{i}: when At_1 = "x" then T{i} = A + B' for i in range(3))
+        script = (
+            "define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is\n"
+            f"{rules}\nend hierarchical ruleset;\n"
+            "DS_r <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);"
+        )
+        components = [
+            ("Id_1", "Integer", "Identifier"),
+            ("Id_2", "String", "Identifier"),
+            ("Me_1", "Number", "Measure"),
+            ("At_1", "String", "Attribute"),
+        ]
+        data_structures = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {"name": n, "type": t, "role": r, "nullable": r != "Identifier"}
+                        for n, t, r in components
+                    ],
+                }
+            ]
+        }
+
+        sql = " ".join(transpile(script, data_structures)[-1][1].split())
+
+        for i in range(3):
+            assert f"AS _r{i}_views" in sql
+        assert "SELECT p.* EXCLUDE (_r0_views, _r1_views, _r2_views) REPLACE" in sql
+        assert sql.count("SELECT p.* REPLACE") == 2
+        assert 'UNNEST(s._r2_views) FROM _pivot_1 c JOIN _pivot s USING ("Id_1")' in sql
