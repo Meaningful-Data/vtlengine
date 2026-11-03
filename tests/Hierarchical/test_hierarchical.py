@@ -5023,3 +5023,91 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1224_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Me_1 rule Id_2) is
+                        R1: when Me_1 > 0 then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 all);
+
+        Description: The condition of the rule is on the measure Me_1, which every data point
+        satisfies.
+
+        Git Branch: #1224.
+        Goal: Check a measure as condition component.
+        """
+
+        code = "GH_1224_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1224_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Me_1 rule Id_2) is
+                        R1: when Me_1 < 50 then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2);
+                    DS_r2 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 partial_null);
+                    DS_r3 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 always_zero all);
+                    DS_r4 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 all);
+                    DS_r5 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2
+                                partial_null all);
+                    DS_r6 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2
+                                always_zero all_measures);
+
+        Description: The condition of the rule is on the measure Me_1. A data point takes part
+        in the rule only when its own Me_1 satisfies it.
+
+        Git Branch: #1224.
+        Goal: Check a measure condition evaluated per data point.
+        """
+
+        code = "GH_1224_2"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1224_3(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Me_1 rule Id_2) is
+                        R1: A = B [Me_1 < 5] + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_2 (variable condition Me_1 rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1;
+                        R2: when Me_1 > 5 then D = A + E errorcode "E2" errorlevel 2
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 all);
+                    DS_r3 <- hierarchy(DS_2, HR_2 condition Me_1 rule Id_2);
+                    DS_r4 <- hierarchy(DS_2, HR_2 condition Me_1 rule Id_2 partial_zero);
+
+        Description: A measure in the condition of a right code item, and in the condition of
+        a rule that reads a computed code item.
+
+        Git Branch: #1224.
+        Goal: Check measure conditions on right code items and on computed code items.
+        """
+
+        code = "GH_1224_3"
+        number_inputs = 2
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
