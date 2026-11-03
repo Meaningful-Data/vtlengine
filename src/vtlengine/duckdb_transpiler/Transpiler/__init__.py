@@ -237,6 +237,21 @@ def _hr_literal(code_item: str) -> str:
     return "'" + code_item.replace("'", "''") + "'"
 
 
+def _var_id_names(node: Any) -> Set[str]:
+    """The names of the VarIDs in ``node``."""
+    names: Set[str] = set()
+    pending: List[Any] = [node]
+    while pending:
+        item = pending.pop()
+        if isinstance(item, AST.VarID):
+            names.add(item.value)
+        elif isinstance(item, list):
+            pending.extend(item)
+        elif isinstance(item, AST.AST):
+            pending.extend(vars(item).values())
+    return names
+
+
 def _rename_var_ids(node: AST.AST, names: Dict[str, str]) -> AST.AST:
     """A copy of ``node`` whose VarIDs named in ``names`` take their new name."""
     node = deepcopy(node)
@@ -4216,7 +4231,8 @@ FROM (
         code item) and ``_in{j}`` (a data point of the group satisfies its condition). The
         conditions are evaluated on each data point, with the operand as their structure: a
         data point that does not satisfy them is missing for the rule. The group flags see the
-        data points of every code item. Naming the fields by position lets a rule name a code
+        data points of every code item when the condition reads more than the identifiers of
+        the group. Naming the fields by position lets a rule name a code
         item twice, and code items differ only in case.
 
         Returns (pivot_sql, measure_name, other_ids).
@@ -4244,6 +4260,11 @@ FROM (
                 f"{has} := MAX(CASE WHEN {match} THEN 1 ELSE 0 END)",
             ]
 
+        def reads_data_point(condition: AST.AST) -> bool:
+            # A condition on the other identifiers has one value for a whole group
+            read = {cond_mapping.get(n, n) for n in _var_id_names(condition)}
+            return not read <= {*other_ids, *self.scalars}
+
         structs: List[str] = []
         with self._clause_scope(ds), self._hoist_scope() as hoisted:
             for parsed in parsed_rules:
@@ -4255,7 +4276,8 @@ FROM (
                 fields: List[str] = []
                 if when is not None:
                     fields.append(f"_when := MAX(CASE WHEN ({when}) THEN 1 ELSE 0 END)")
-                    found.append(f"({when})")
+                    if reads_data_point(parsed.when_node):
+                        found.append(f"({when})")
                 fields += item_fields("_lval", "_lhas", parsed.left_code_item, [when])
                 for j, (ci, rc_node) in enumerate(zip(parsed.right_code_items, parsed.right_conds)):
                     rc = None if rc_node is None else self._build_hr_when_sql(rc_node, cond_mapping)
@@ -4263,7 +4285,7 @@ FROM (
                     if rc is not None:
                         holds = " AND ".join(f"({c})" for c in (when, rc) if c is not None)
                         fields.append(f"_in{j} := MAX(CASE WHEN {holds} THEN 1 ELSE 0 END)")
-                        if when is None:
+                        if when is None and reads_data_point(rc_node):
                             found.append(f"({rc})")
                 structs.append(f"struct_pack({', '.join(fields)}) AS _r{parsed.index}")
         src = self._hoisted_source(table_src, hoisted) if hoisted else table_src
