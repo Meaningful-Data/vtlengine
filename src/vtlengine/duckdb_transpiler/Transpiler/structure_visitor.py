@@ -13,6 +13,7 @@ from vtlengine.DataTypes import (
     SCALAR_TYPES,
     Boolean,
     Date,
+    Duration,
     Integer,
     Number,
     TimeInterval,
@@ -24,6 +25,7 @@ from vtlengine.duckdb_transpiler.sql import references_raising_macro
 from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS, get_duckdb_type
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Join import merged_viral_attribute_names
 
 
@@ -475,7 +477,7 @@ class StructureVisitor(ASTTemplate):
         if isinstance(node, AST.ParFunction):
             return self._get_dataset_structure(node.operand)
         if isinstance(node, AST.ParamOp):
-            return self._get_dataset_structure(node.children[0]) if node.children else None
+            return self._resolve_paramop_structure(node)
         if isinstance(node, AST.Aggregation) and node.operand:
             return self._build_aggregation_structure(node)
         if isinstance(node, AST.JoinOp):
@@ -485,6 +487,11 @@ class StructureVisitor(ASTTemplate):
         if isinstance(node, AST.MulOp) and node.children:
             if node.op == tokens.EXISTS_IN:
                 return self._build_exists_in_structure(node)
+            if node.op == tokens.BETWEEN:
+                ds = self._get_dataset_structure(node.children[0])
+                if ds is not None and len(ds.get_measures_names()) == 1:
+                    return self._build_boolean_result_structure(ds)
+                return self._without_attributes(ds)
             return self._get_dataset_structure(node.children[0])
         if isinstance(node, AST.Validation):
             return self._build_validation_structure(node)
@@ -555,14 +562,25 @@ class StructureVisitor(ASTTemplate):
         if left_is_ds and right_is_ds:
             ds = self._build_ds_ds_binop_structure(node)
             return self._as_boolean_if_mono(ds, op)
-        if left_is_ds:
-            ds = self._get_dataset_structure(node.left)
-            if ds is not None and op in (tokens.IN, tokens.NOT_IN):
-                return self._build_boolean_result_structure(ds)
-            return self._as_boolean_if_mono(ds, op)
-        if right_is_ds:
-            return self._as_boolean_if_mono(self._get_dataset_structure(node.right), op)
-        return None
+        if not left_is_ds and not right_is_ds:
+            return None
+        ds = self._get_dataset_structure(node.left if left_is_ds else node.right)
+        if ds is None or op == tokens.TIMESHIFT:
+            return ds
+        if (left_is_ds and op in (tokens.IN, tokens.NOT_IN)) or (
+            op == tokens.CHARSET_MATCH and len(ds.get_measures_names()) == 1
+        ):
+            return self._build_boolean_result_structure(ds)
+        return self._as_boolean_if_mono(self._without_attributes(ds), op)
+
+    @staticmethod
+    def _without_attributes(ds: Optional[Dataset]) -> Optional[Dataset]:
+        """Drop the attributes that are not viral, as the query of an operator that applies
+        to each Measure does."""
+        if ds is None or all(c.role != Role.ATTRIBUTE for c in ds.components.values()):
+            return ds
+        comps = {name: c for name, c in ds.components.items() if c.role != Role.ATTRIBUTE}
+        return Dataset(name=ds.name, components=comps, data=None)
 
     def _as_boolean_if_mono(self, ds: Optional[Dataset], op: str) -> Optional[Dataset]:
         """Collapse a mono-measure operand to ``bool_var`` for comparison ops.
@@ -604,6 +622,26 @@ class StructureVisitor(ASTTemplate):
             return ds
         return self._build_integer_result_structure(ds)
 
+    def _resolve_paramop_structure(self, node: AST.ParamOp) -> Optional[Dataset]:
+        """Resolve a ParamOp to its dataset structure."""
+        ds = self._get_dataset_structure(node.children[0]) if node.children else None
+        if ds is None or node.op in (tokens.FILL_TIME_SERIES, tokens.DATE_ADD):
+            return ds
+        measures = ds.get_measures()
+        if len(measures) == 1 and node.op == tokens.INSTR:
+            return self._build_integer_result_structure(ds)
+        to_type = node.children[1] if node.op == tokens.CAST and len(node.children) > 1 else None
+        if len(measures) == 1 and isinstance(to_type, type):
+            name = Cast.result_measure_name(measures[0], to_type)
+            comps = {
+                n: c
+                for n, c in ds.components.items()
+                if c.role in (Role.IDENTIFIER, Role.VIRAL_ATTRIBUTE)
+            }
+            comps[name] = self._make_comp(name, to_type, nullable=measures[0].nullable)
+            return Dataset(name=ds.name, components=comps, data=None)
+        return self._without_attributes(ds)
+
     def _resolve_unaryop_structure(self, node: AST.UnaryOp) -> Optional[Dataset]:
         """Resolve a UnaryOp to its dataset structure."""
         ds = self._get_dataset_structure(node.operand)
@@ -613,7 +651,14 @@ class StructureVisitor(ASTTemplate):
             return self._build_boolean_result_structure(ds)
         if node.op in self._INTEGER_RESULT_UNARY_OPS:
             return self._as_integer_if_mono(ds)
-        return ds
+        if node.op == tokens.PERIOD_INDICATOR:
+            comps = self._identifiers_dict(ds)
+            comps.update((n, c) for n, c in ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE)
+            comps["duration_var"] = self._make_comp("duration_var", Duration)
+            return Dataset(name=ds.name, components=comps, data=None)
+        if node.op in (tokens.FLOW_TO_STOCK, tokens.STOCK_TO_FLOW):
+            return ds
+        return self._without_attributes(ds)
 
     def _build_aggregation_structure(self, node: AST.Aggregation) -> Optional[Dataset]:
         """Resolve an Aggregation (count/sum/avg/…) to its output structure."""

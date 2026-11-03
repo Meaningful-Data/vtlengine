@@ -885,6 +885,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
+    def _result_measure_name(self, node: AST.AST) -> Optional[str]:
+        """The single Measure the structure of a node names, which the query names too, also
+        inside a clause, where the output of the assignment is not known (issue #1222)."""
+        ds = self._get_dataset_structure(node)
+        measures = ds.get_measures_names() if ds is not None else []
+        return measures[0] if len(measures) == 1 else None
+
     # Dataset-level binary helpers
 
     @staticmethod
@@ -1533,7 +1540,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return f"{match_function}({col}, {pattern_sql})"
 
         if self._get_node_type(node.left) == _DATASET:
-            return self._apply_measures(node.left, _match_sql)
+            return self._apply_measures(node.left, _match_sql, self._result_measure_name(node))
         return _match_sql(self.visit(node.left))
 
     def _match_characters_function(self, pattern_node: AST.AST) -> str:
@@ -1705,6 +1712,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 and self._renames_mono_measure_to_int(tokens.CEIL, ds_struct)
                 else None
             )
+            if op == tokens.INSTR:
+                int_override = self._result_measure_name(node)
             return self._apply_measures(
                 ds_node, _param_expr, output_name_override=int_override, cast_bool_to_str=to_str
             )
@@ -2421,7 +2430,7 @@ FROM (
                 src_type = comp_types.get(col_name)
                 return self._cast_expr(col, duckdb_type, target_type_str, mask, src_type)
 
-            return self._apply_measures(operand, _cast_measure)
+            return self._apply_measures(operand, _cast_measure, self._result_measure_name(node))
         else:
             operand_sql = self.visit(operand)
             source_type = self._get_source_vtl_type(operand)
@@ -3436,7 +3445,7 @@ FROM (
                     col, low_sql, high_sql, is_number_comparison(dt, *bound_types)
                 )
 
-            return self._apply_measures(node.children[0], _between)
+            return self._apply_measures(node.children[0], _between, self._result_measure_name(node))
 
         operand_sql = self.visit(node.children[0])
         operand_dt = self._detect_scalar_type(node.children[0])
