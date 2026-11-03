@@ -4,7 +4,7 @@ Data validation operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 1 of 3 operators all ok</span> · <span class="om-gen">vtlengine 1.9.6rc2 (140c5c19) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 1 of 3 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (d067399d) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -27,7 +27,7 @@ Data validation operators
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Data validation operators"]:::block
        validation__check_datapoint["Check datapoint · check_datapoint<br/>🟢3 🟡4"]:::partial
-       validation__check_hierarchy["Check hierarchy · check_hierarchy<br/>🟢15 🟡7 🔴18"]:::partial
+       validation__check_hierarchy["Check hierarchy · check_hierarchy<br/>🟢28 🟡12"]:::partial
        validation__check["Check · check<br/>🟢6"]:::ok
        validation__check_datapoint --- B
        validation__check_hierarchy --- B
@@ -146,90 +146,6 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - ❌
      - type of errorlevel expected Integer got Number
    * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR non\_null dataset\_priority invalid) <check_hierarchy.html#form-non-null-dataset-priority-invalid>`__
-     - 🔴
-     - `Null item from the rule computing it <check_hierarchy.html#ex-non-null-dataset-priority-invalid-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR non\_null dataset\_priority all) <check_hierarchy.html#form-non-null-dataset-priority-all>`__
-     - 🔴
-     - `Null item from the rule computing it <check_hierarchy.html#ex-non-null-dataset-priority-all-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR non\_null dataset\_priority all\_measures) <check_hierarchy.html#form-non-null-dataset-priority-all-measures>`__
-     - 🔴
-     - `Null item from the rule computing it <check_hierarchy.html#ex-non-null-dataset-priority-all-measures-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR non\_zero dataset\_priority invalid) <check_hierarchy.html#form-non-zero-dataset-priority-invalid>`__
-     - 🔴
-     - `Null item from the rule computing it <check_hierarchy.html#ex-non-zero-dataset-priority-invalid-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR non\_zero dataset\_priority all) <check_hierarchy.html#form-non-zero-dataset-priority-all>`__
-     - 🔴
-     - `Null item from the rule computing it <check_hierarchy.html#ex-non-zero-dataset-priority-all-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR non\_zero dataset\_priority all\_measures) <check_hierarchy.html#form-non-zero-dataset-priority-all-measures>`__
-     - 🔴
-     - `Null item from the rule computing it <check_hierarchy.html#ex-non-zero-dataset-priority-all-measures-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR partial\_null dataset\_priority invalid) <check_hierarchy.html#form-partial-null-dataset-priority-invalid>`__
-     - 🔴
-     - `Null item from the rule computing it <check_hierarchy.html#ex-partial-null-dataset-priority-invalid-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR partial\_null dataset\_priority all) <check_hierarchy.html#form-partial-null-dataset-priority-all>`__
-     - 🔴
-     - `Null item from the rule computing it <check_hierarchy.html#ex-partial-null-dataset-priority-all-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR partial\_null dataset\_priority all\_measures) <check_hierarchy.html#form-partial-null-dataset-priority-all-measures>`__
-     - 🔴
-     - `Null item from the rule computing it <check_hierarchy.html#ex-partial-null-dataset-priority-all-measures-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR partial\_zero dataset\_priority invalid) <check_hierarchy.html#form-partial-zero-dataset-priority-invalid>`__
-     - 🔴
-     - `Null item from the rule computing it <check_hierarchy.html#ex-partial-zero-dataset-priority-invalid-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR partial\_zero dataset\_priority all) <check_hierarchy.html#form-partial-zero-dataset-priority-all>`__
-     - 🔴
-     - `Null item from the rule computing it <check_hierarchy.html#ex-partial-zero-dataset-priority-all-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR partial\_zero dataset\_priority all\_measures) <check_hierarchy.html#form-partial-zero-dataset-priority-all-measures>`__
-     - 🔴
-     - `Null item from the rule computing it <check_hierarchy.html#ex-partial-zero-dataset-priority-all-measures-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
-   * - :doc:`Check hierarchy <check_hierarchy>`
      - `check\_hierarchy(DS, HR always\_null dataset all) <check_hierarchy.html#form-always-null-dataset-all>`__
      - 🟡
      - `Rule with no item found is null <check_hierarchy.html#ex-always-null-dataset-all-rule-with-no-item-found-is-null>`__
@@ -244,26 +160,19 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - ❌
      - missing row Id\_1=1, Id\_2=Y, ruleid=R5
    * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR always\_null dataset\_priority invalid) <check_hierarchy.html#form-always-null-dataset-priority-invalid>`__
-     - 🔴
-     - `Null item from the rule computing it <check_hierarchy.html#ex-always-null-dataset-priority-invalid-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
-   * - :doc:`Check hierarchy <check_hierarchy>`
      - `check\_hierarchy(DS, HR always\_null dataset\_priority all) <check_hierarchy.html#form-always-null-dataset-priority-all>`__
-     - 🔴
+     - 🟡
      - `Null item from the rule computing it <check_hierarchy.html#ex-always-null-dataset-priority-all-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
+     - ❌
+     - ❌
+     - missing row Id\_1=1, Id\_2=Y, ruleid=R5
    * - :doc:`Check hierarchy <check_hierarchy>`
      - `check\_hierarchy(DS, HR always\_null dataset\_priority all\_measures) <check_hierarchy.html#form-always-null-dataset-priority-all-measures>`__
-     - 🔴
+     - 🟡
      - `Null item from the rule computing it <check_hierarchy.html#ex-always-null-dataset-priority-all-measures-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
+     - ❌
+     - ❌
+     - missing row Id\_1=1, Id\_2=Y, ruleid=R5
    * - :doc:`Check hierarchy <check_hierarchy>`
      - `check\_hierarchy(DS, HR always\_zero dataset invalid) <check_hierarchy.html#form-always-zero-dataset-invalid>`__
      - 🟡
@@ -287,25 +196,25 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - missing row Id\_1=1, Id\_2=Y, ruleid=R5
    * - :doc:`Check hierarchy <check_hierarchy>`
      - `check\_hierarchy(DS, HR always\_zero dataset\_priority invalid) <check_hierarchy.html#form-always-zero-dataset-priority-invalid>`__
-     - 🔴
+     - 🟡
      - `Null item from the rule computing it <check_hierarchy.html#ex-always-zero-dataset-priority-invalid-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
+     - ❌
+     - ❌
+     - missing row Id\_1=1, Id\_2=Y, ruleid=R5
    * - :doc:`Check hierarchy <check_hierarchy>`
      - `check\_hierarchy(DS, HR always\_zero dataset\_priority all) <check_hierarchy.html#form-always-zero-dataset-priority-all>`__
-     - 🔴
+     - 🟡
      - `Null item from the rule computing it <check_hierarchy.html#ex-always-zero-dataset-priority-all-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
+     - ❌
+     - ❌
+     - missing row Id\_1=1, Id\_2=Y, ruleid=R5
    * - :doc:`Check hierarchy <check_hierarchy>`
      - `check\_hierarchy(DS, HR always\_zero dataset\_priority all\_measures) <check_hierarchy.html#form-always-zero-dataset-priority-all-measures>`__
-     - 🔴
+     - 🟡
      - `Null item from the rule computing it <check_hierarchy.html#ex-always-zero-dataset-priority-all-measures-null-item-from-the-rule-computing-it>`__
-     - 🛡 0-5-1-9
-     - 🛡 0-5-1-9
-     - InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented
+     - ❌
+     - ❌
+     - missing row Id\_1=1, Id\_2=Y, ruleid=R5
    * - :doc:`Check hierarchy <check_hierarchy>`
      - `check\_hierarchy(DS, HR rule C) <check_hierarchy.html#form-rule>`__
      - 🟡

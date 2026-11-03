@@ -34,8 +34,8 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🟡
      - 4
      - 89
-     - 82
-     - 6
+     - 83
+     - 5
      - 1
      - 0
      - 0
@@ -115,20 +115,20 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🟡
      - 3
      - 53
-     - 24
-     - 11
+     - 37
+     - 16
      - 0
-     - 18
+     - 0
      - 0
    * - :doc:`Conditional operators <conditional/index>`
-     - 🔵
+     - 🟡
      - 3
      - 19
-     - 13
-     - 2
+     - 14
+     - 3
      - 2
      - 0
-     - 2
+     - 0
    * - :doc:`Clause operators <clause/index>`
      - 🟡
      - 9
@@ -142,11 +142,11 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🔵
      - 111
      - 698
-     - 571
-     - 68
+     - 586
+     - 73
      - 14
-     - 35
-     - 10
+     - 17
+     - 8
 
 .. toctree::
    :maxdepth: 1

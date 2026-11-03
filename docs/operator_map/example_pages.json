@@ -2273,10 +2273,10 @@
   },
   "conditional/case/ds/inline_dataset_condition": {
     "anchor": "ex-ds-inline-dataset-condition",
-    "duckdb": "💥 ParserException",
+    "duckdb": "✅",
     "operator_page": "conditional/case.html",
     "pandas": "✅",
-    "status": "diverge",
+    "status": "ok",
     "title": "Inline dataset condition"
   },
   "conditional/case/ds/unmatched_data_point_left_out": {
@@ -2289,10 +2289,10 @@
   },
   "conditional/case/ds_multi_when/overlapping_inline_conditions": {
     "anchor": "ex-ds-multi-when-overlapping-inline-conditions",
-    "duckdb": "💥 ParserException",
+    "duckdb": "❌",
     "operator_page": "conditional/case.html",
     "pandas": "❌",
-    "status": "diverge",
+    "status": "partial",
     "title": "Overlapping inline conditions"
   },
   "conditional/case/ds_multi_when/overlapping_named_conditions": {
@@ -2761,26 +2761,26 @@
   },
   "definitions/define_operator/constrained_scalar/non_null_argument": {
     "anchor": "ex-constrained-scalar-non-null-argument",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Non null argument"
   },
   "definitions/define_operator/constrained_scalar/value_condition_holds": {
     "anchor": "ex-constrained-scalar-value-condition-holds",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Value condition holds"
   },
   "definitions/define_operator/constrained_scalar/value_in_the_list": {
     "anchor": "ex-constrained-scalar-value-in-the-list",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Value in the list"
   },
   "definitions/define_operator/dataset/dataset_argument": {
@@ -2793,10 +2793,10 @@
   },
   "definitions/define_operator/dataset/exactly_one_measure": {
     "anchor": "ex-dataset-exactly-one-measure",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Exactly one measure"
   },
   "definitions/define_operator/dataset/named_components": {
@@ -2809,18 +2809,18 @@
   },
   "definitions/define_operator/dataset/one_or_more_measures": {
     "anchor": "ex-dataset-one-or-more-measures",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "One or more measures"
   },
   "definitions/define_operator/dataset/zero_or_more_measures": {
     "anchor": "ex-dataset-zero-or-more-measures",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Zero or more measures"
   },
   "definitions/define_operator/default_value/last_argument_omitted": {
@@ -2865,10 +2865,10 @@
   },
   "definitions/define_operator/returns_omitted/type_of_the_body": {
     "anchor": "ex-returns-omitted-type-of-the-body",
-    "duckdb": "🛡 1-3-2-2",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 1-3-2-2",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Type of the body"
   },
   "definitions/define_operator/returns_scalar/larger_of_two_integers": {
@@ -4337,10 +4337,10 @@
   },
   "join/cross_join/bare/expression_without_alias": {
     "anchor": "ex-bare-expression-without-alias",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "join/cross_join.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Expression without alias"
   },
   "join/cross_join/calc_attribute/constant_attribute": {
@@ -7241,26 +7241,26 @@
   },
   "validation/check_hierarchy/always_null_dataset_priority_all/null_item_from_the_rule_computing_it": {
     "anchor": "ex-always-null-dataset-priority-all-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "❌",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "❌",
+    "status": "partial",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/always_null_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
     "anchor": "ex-always-null-dataset-priority-all-measures-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "❌",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "❌",
+    "status": "partial",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/always_null_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
     "anchor": "ex-always-null-dataset-priority-invalid-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/always_zero_dataset_all/rule_with_no_item_found_is_false": {
@@ -7289,26 +7289,26 @@
   },
   "validation/check_hierarchy/always_zero_dataset_priority_all/null_item_from_the_rule_computing_it": {
     "anchor": "ex-always-zero-dataset-priority-all-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "❌",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "❌",
+    "status": "partial",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/always_zero_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
     "anchor": "ex-always-zero-dataset-priority-all-measures-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "❌",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "❌",
+    "status": "partial",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/always_zero_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
     "anchor": "ex-always-zero-dataset-priority-invalid-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "❌",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "❌",
+    "status": "partial",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/condition/conditioning_value_domain_bound": {
@@ -7369,26 +7369,26 @@
   },
   "validation/check_hierarchy/non_null_dataset_priority_all/null_item_from_the_rule_computing_it": {
     "anchor": "ex-non-null-dataset-priority-all-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/non_null_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
     "anchor": "ex-non-null-dataset-priority-all-measures-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/non_null_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
     "anchor": "ex-non-null-dataset-priority-invalid-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/non_zero_dataset_all/rule_with_no_nonzero_item_dropped": {
@@ -7417,26 +7417,26 @@
   },
   "validation/check_hierarchy/non_zero_dataset_priority_all/null_item_from_the_rule_computing_it": {
     "anchor": "ex-non-zero-dataset-priority-all-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/non_zero_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
     "anchor": "ex-non-zero-dataset-priority-all-measures-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/non_zero_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
     "anchor": "ex-non-zero-dataset-priority-invalid-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/partial_null_dataset_all/missing_items_count_as_null": {
@@ -7465,26 +7465,26 @@
   },
   "validation/check_hierarchy/partial_null_dataset_priority_all/null_item_from_the_rule_computing_it": {
     "anchor": "ex-partial-null-dataset-priority-all-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/partial_null_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
     "anchor": "ex-partial-null-dataset-priority-all-measures-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/partial_null_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
     "anchor": "ex-partial-null-dataset-priority-invalid-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/partial_zero_dataset_all/missing_items_count_as_zero": {
@@ -7513,26 +7513,26 @@
   },
   "validation/check_hierarchy/partial_zero_dataset_priority_all/null_item_from_the_rule_computing_it": {
     "anchor": "ex-partial-zero-dataset-priority-all-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/partial_zero_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
     "anchor": "ex-partial-zero-dataset-priority-all-measures-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/partial_zero_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
     "anchor": "ex-partial-zero-dataset-priority-invalid-null-item-from-the-rule-computing-it",
-    "duckdb": "🛡 0-5-1-9",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "🛡 0-5-1-9",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/rule/manual_ex_1": {

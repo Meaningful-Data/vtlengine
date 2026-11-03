@@ -4,7 +4,7 @@ Conditional operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 1 of 3 operators all ok</span> · <span class="om-gen">vtlengine 1.9.6rc2 (140c5c19) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 1 of 3 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (d067399d) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -27,7 +27,7 @@ Conditional operators
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Conditional operators"]:::block
        conditional__if_then_else["if-then-else · if then else<br/>🟢5"]:::ok
-       conditional__case["Case · case when<br/>🟢3 🟡2 🔵2"]:::diverge
+       conditional__case["Case · case when<br/>🟢4 🟡3"]:::partial
        conditional__nvl["Nvl · nvl<br/>🟢5 🛡️2"]:::partial
        conditional__if_then_else --- B
        conditional__case --- B
@@ -53,7 +53,7 @@ Conditional operators
      - 🟢
      - 5
    * - :doc:`Case <case>` ``case when``
-     - 🔵
+     - 🟡
      - 7
    * - :doc:`Nvl <nvl>` ``nvl``
      - 🟡
@@ -98,19 +98,12 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - DuckDB
      - Detail
    * - :doc:`Case <case>`
-     - `case when DS then DS else DS <case.html#form-ds>`__
-     - 🔵
-     - `Inline dataset condition <case.html#ex-ds-inline-dataset-condition>`__
-     - ✅
-     - 💥 ParserException
-     - DuckDB: ParserException: Parser Error: syntax error at or near \"SELECT\"
-   * - :doc:`Case <case>`
      - `case when DS then DS when DS then DS \.\.\. else DS <case.html#form-ds-multi-when>`__
-     - 🔵
+     - 🟡
      - `Overlapping inline conditions <case.html#ex-ds-multi-when-overlapping-inline-conditions>`__
      - ❌
-     - 💥 ParserException
-     - pandas: row Id\_1=3: Me\_1 expected 300 got 3; DuckDB: ParserException: Parser Error: syntax error at or near \"SELECT\"
+     - ❌
+     - row Id\_1=3: Me\_1 expected 300 got 3
    * - :doc:`Case <case>`
      - `case when comp then sc when comp then sc \.\.\. else sc <case.html#form-comp-multi-when>`__
      - 🟡

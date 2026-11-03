@@ -4,7 +4,7 @@ Join operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 0 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.6rc2 (140c5c19) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 1 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (d067399d) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -29,7 +29,7 @@ Join operators
        join__inner_join["Inner Join · inner_join<br/>🟢19 🟡3"]:::partial
        join__left_join["Left Join · left_join<br/>🟢22 🟡1"]:::partial
        join__full_join["Full Join · full_join<br/>🟢21 🟡1 🛡️1"]:::partial
-       join__cross_join["Cross Join · cross_join<br/>🟢20 🟡1"]:::partial
+       join__cross_join["Cross Join · cross_join<br/>🟢21"]:::ok
        join__inner_join --- B
        join__left_join --- B
        B --- join__full_join
@@ -62,7 +62,7 @@ Join operators
      - 🟡
      - 23
    * - :doc:`Cross Join <cross_join>` ``cross_join``
-     - 🟡
+     - 🟢
      - 21
 
 .. rubric:: Types
@@ -149,13 +149,6 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - 🛡 1-1-13-8
      - 🛡 1-1-13-8
      - SemanticError 1-1-13-8: At op full\_join: No available using clause. Please check transformation with output Dataset DS\_r
-   * - :doc:`Cross Join <cross_join>`
-     - `cross\_join(DS, DS) <cross_join.html#form-bare>`__
-     - 🟡
-     - `Expression without alias <cross_join.html#ex-bare-expression-without-alias>`__
-     - ❌
-     - ❌
-     - expected error 1-1-13-2, got 1-1-13-9
 
 .. toctree::
    :maxdepth: 1

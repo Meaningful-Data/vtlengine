@@ -40,7 +40,7 @@ A node for each block, with how many operators it has, and how many of them are 
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        R["VTL 2.2<br/>Reference Manual"]:::block
        chapter__general["General purpose operators<br/>7 operators · 🟢4 🟡2 🔵1"]:::diverge
-       chapter__join["Join operators<br/>4 operators · 🟡4"]:::partial
+       chapter__join["Join operators<br/>4 operators · 🟢1 🟡3"]:::partial
        chapter__string["String operators<br/>11 operators · 🟢10 🟡1"]:::partial
        chapter__numeric["Numeric operators<br/>18 operators · 🟢12 🟡5 🔵1"]:::diverge
        chapter__comparison["Comparison operators<br/>12 operators · 🟢12"]:::ok
@@ -50,7 +50,7 @@ A node for each block, with how many operators it has, and how many of them are 
        chapter__hierarchy["Hierarchical aggregation<br/>1 operator · 🟡1"]:::partial
        chapter__aggregate["Aggregate and Analytic operators<br/>18 operators · 🟢5 🟡12 🔵1"]:::diverge
        chapter__validation["Data validation operators<br/>3 operators · 🟢1 🟡2"]:::partial
-       chapter__conditional["Conditional operators<br/>3 operators · 🟢1 🟡1 🔵1"]:::diverge
+       chapter__conditional["Conditional operators<br/>3 operators · 🟢1 🟡2"]:::partial
        chapter__clause["Clause operators<br/>9 operators · 🟢6 🟡2 🔴1"]:::partial
        chapter__definitions["Definitions (VTL-DL)<br/>4 operators · 🟡4"]:::partial
        chapter__general --- R
@@ -117,8 +117,8 @@ The counts are over the forms of the operators of each block.
      - 🟡
      - 4
      - 89
-     - 82
-     - 6
+     - 83
+     - 5
      - 1
      - 0
      - 0
@@ -198,20 +198,20 @@ The counts are over the forms of the operators of each block.
      - 🟡
      - 3
      - 53
-     - 24
-     - 11
+     - 37
+     - 16
      - 0
-     - 18
+     - 0
      - 0
    * - :doc:`Conditional operators <conditional/index>`
-     - 🔵
+     - 🟡
      - 3
      - 19
-     - 13
-     - 2
+     - 14
+     - 3
      - 2
      - 0
-     - 2
+     - 0
    * - :doc:`Clause operators <clause/index>`
      - 🟡
      - 9
@@ -225,20 +225,20 @@ The counts are over the forms of the operators of each block.
      - 🟡
      - 4
      - 29
-     - 18
-     - 4
+     - 21
+     - 3
      - 1
-     - 6
+     - 4
      - 0
    * - **Total**
      - 🔵
      - 115
      - 727
-     - 589
-     - 72
+     - 607
+     - 76
      - 15
-     - 41
-     - 10
+     - 21
+     - 8
 
 Not implemented
 ------------------------------
@@ -253,10 +253,6 @@ The codes of the errors of vtlengine that say that it does not implement somethi
      - Message
    * - ``1-3-13``
      - Unsupported VTL construct: {construct}.
-   * - ``0-5-1-9``
-     - Dataset Priority input mode on HR is not implemented
-   * - ``1-3-2-2``
-     - At op ``{op}``: User defined operator without returns is not implemented.
    * - ``1-3-2-5``
      - At op eval: Eval in component execution is not supported, it only applies to Data Sets.
    * - ``1-3-3-8``

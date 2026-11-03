@@ -4,7 +4,7 @@ Definitions (VTL-DL)
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 0 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.6rc2 (140c5c19) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 0 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (d067399d) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -26,7 +26,7 @@ Definitions (VTL-DL)
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Definitions (VTL-DL)"]:::block
-       definitions__define_operator["define operator<br/>🟢6 🟡2 🔴5"]:::partial
+       definitions__define_operator["define operator<br/>🟢9 🟡1 🔴3"]:::partial
        definitions__define_datapoint_ruleset["define datapoint ruleset<br/>🟢3 🟡1 🛡️1"]:::partial
        definitions__define_hierarchical_ruleset["define hierarchical ruleset<br/>🟢6 🟡1"]:::partial
        definitions__define_viral_propagation["define viral propagation 📌<br/>🟢3 🔴1"]:::partial
@@ -175,13 +175,6 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - 🛡 0-5-1-10
      - InputValidationException 0-5-1-10: Invalid parameter type definition \'VD\_1\' (line 1, column 32).
    * - :doc:`define operator <define_operator>`
-     - `x <scalar type> [value …] \| { … } \| not null <define_operator.html#form-constrained-scalar>`__
-     - 🔴
-     - `Value condition holds <define_operator.html#ex-constrained-scalar-value-condition-holds>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: type constraint in \'integer [value >= 0]\' (line 1, column 30).
-   * - :doc:`define operator <define_operator>`
      - `s set<…> <define_operator.html#form-set>`__
      - 🔴
      - `Value domain as the set <define_operator.html#ex-set-value-domain-as-the-set>`__
@@ -196,26 +189,12 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - ❌
      - role of At\_1 expected Attribute got Measure
    * - :doc:`define operator <define_operator>`
-     - `ds dataset [{ … }] <define_operator.html#form-dataset>`__
-     - 🟡
-     - `Exactly one measure <define_operator.html#ex-dataset-exactly-one-measure>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in \'measure<integer> \_\' (line 1, column 37).
-   * - :doc:`define operator <define_operator>`
      - `r <ruleset type> <define_operator.html#form-ruleset>`__
      - 🔴
      - `Datapoint type <define_operator.html#ex-ruleset-datapoint-type>`__
      - 🛡 1-3-13
      - 🛡 1-3-13
      - SemanticError 1-3-13: Unsupported VTL construct: ruleset type \'datapoint\' (line 5, column 49).
-   * - :doc:`define operator <define_operator>`
-     - `no returns <define_operator.html#form-returns-omitted>`__
-     - 🔴
-     - `Type of the body <define_operator.html#ex-returns-omitted-type-of-the-body>`__
-     - 🛡 1-3-2-2
-     - 🛡 1-3-2-2
-     - SemanticError 1-3-2-2: At op add\_one: User defined operator without returns is not implemented.
    * - :doc:`define datapoint ruleset <define_datapoint_ruleset>`
      - `(valuedomain VD [as alias], …) <define_datapoint_ruleset.html#form-valuedomain>`__
      - 🛡️

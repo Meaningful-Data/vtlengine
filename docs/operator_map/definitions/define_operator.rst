@@ -4,7 +4,7 @@ define operator
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 6 of 13 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (140c5c19) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 9 of 13 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d067399d) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -25,22 +25,22 @@ define operator
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["define operator<br/>🟢6 🟡2 🔴5"]:::partial
+       O["define operator<br/>🟢9 🟡1 🔴3"]:::partial
        subgraph G_b1["Signature"]
            direction LR
            v_no_parameters["f ()"]:::ok
            v_scalar_type["x #60;scalar type#62;"]:::ok
            v_value_domain["x #60;value domain#62;"]:::missing
-           v_constrained_scalar["x #60;scalar type#62; #91;value …#93; #124; #123; … #125; #124; not null"]:::missing
+           v_constrained_scalar["x #60;scalar type#62; #91;value …#93; #124; #123; … #125; #124; not null"]:::ok
            v_set["s set#60;…#62;"]:::missing
            v_component["c component #124; identifier #124; measure #124; attribute #124; viral attribute #60;…#62;"]:::partial
-           v_dataset["ds dataset #91;#123; … #125;#93;"]:::partial
+           v_dataset["ds dataset #91;#123; … #125;#93;"]:::ok
            v_ruleset["r #60;ruleset type#62;"]:::missing
            v_default_value["y #60;type#62; default …"]:::ok
        end
        subgraph G_b2["Return type"]
            direction LR
-           v_returns_omitted["no returns"]:::missing
+           v_returns_omitted["no returns"]:::ok
            v_returns_scalar["returns #60;scalar type#62;"]:::ok
            v_returns_component["returns component#60;…#62;"]:::ok
            v_returns_dataset["returns dataset"]:::ok
@@ -434,13 +434,12 @@ x <value domain> 🔴 · value domain → operator
 
    <span class="om-anchor" id="form-constrained-scalar"></span>
 
-x <scalar type> [value …] \| { … } \| not null 🔴 · integer → operator
+x <scalar type> [value …] \| { … } \| not null 🟢 · integer → operator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-constrained-scalar-value-condition-holds" open><summary><span class="om-ex-title">Value condition holds</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: type constraint in &#x27;integer [value &gt;= 0]&#x27; (line 1, column 30).</p>
+   <details class="om-example" id="ex-constrained-scalar-value-condition-holds" open><summary><span class="om-ex-title">Value condition holds</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/constrained_scalar/value_condition_holds/notes.rst
 
@@ -470,8 +469,7 @@ x <scalar type> [value …] \| { … } \| not null 🔴 · integer → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-constrained-scalar-value-in-the-list"><summary><span class="om-ex-title">Value in the list</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: type constraint in &#x27;integer { 1, 2, 3 }&#x27; (line 1, column 30).</p>
+   <details class="om-example" id="ex-constrained-scalar-value-in-the-list"><summary><span class="om-ex-title">Value in the list</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/constrained_scalar/value_in_the_list/notes.rst
 
@@ -501,8 +499,7 @@ x <scalar type> [value …] \| { … } \| not null 🔴 · integer → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-constrained-scalar-non-null-argument"><summary><span class="om-ex-title">Non null argument</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: not null in &#x27;integer not null&#x27; (line 1, column 28).</p>
+   <details class="om-example" id="ex-constrained-scalar-non-null-argument"><summary><span class="om-ex-title">Non null argument</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/constrained_scalar/non_null_argument/notes.rst
 
@@ -681,7 +678,7 @@ c component \| identifier \| measure \| attribute \| viral attribute <…> 🟡 
 
    <span class="om-anchor" id="form-dataset"></span>
 
-ds dataset [{ … }] 🟡 · any scalar → operator
+ds dataset [{ … }] 🟢 · any scalar → operator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -726,8 +723,7 @@ ds dataset [{ … }] 🟡 · any scalar → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-dataset-exactly-one-measure"><summary><span class="om-ex-title">Exactly one measure</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in &#x27;measure&lt;integer&gt; _&#x27; (line 1, column 37).</p>
+   <details class="om-example" id="ex-dataset-exactly-one-measure"><summary><span class="om-ex-title">Exactly one measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/dataset/exactly_one_measure/notes.rst
 
@@ -747,8 +743,7 @@ ds dataset [{ … }] 🟡 · any scalar → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-dataset-one-or-more-measures"><summary><span class="om-ex-title">One or more measures</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in &#x27;measure&lt;integer&gt; _+&#x27; (line 1, column 37).</p>
+   <details class="om-example" id="ex-dataset-one-or-more-measures"><summary><span class="om-ex-title">One or more measures</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/dataset/one_or_more_measures/notes.rst
 
@@ -768,8 +763,7 @@ ds dataset [{ … }] 🟡 · any scalar → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-dataset-zero-or-more-measures"><summary><span class="om-ex-title">Zero or more measures</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in &#x27;measure&lt;integer&gt; _*&#x27; (line 1, column 37).</p>
+   <details class="om-example" id="ex-dataset-zero-or-more-measures"><summary><span class="om-ex-title">Zero or more measures</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/dataset/zero_or_more_measures/notes.rst
 
@@ -1016,13 +1010,12 @@ y <type> default … 🟢 · integer → operator
 
    <span class="om-anchor" id="form-returns-omitted"></span>
 
-no returns 🔴 · any scalar → operator
+no returns 🟢 · any scalar → operator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-returns-omitted-type-of-the-body" open><summary><span class="om-ex-title">Type of the body</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-2-2</code> · DuckDB 🛡 <code>1-3-2-2</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-2-2: At op add_one: User defined operator without returns is not implemented.</p>
+   <details class="om-example" id="ex-returns-omitted-type-of-the-body" open><summary><span class="om-ex-title">Type of the body</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/returns_omitted/type_of_the_body/notes.rst
 

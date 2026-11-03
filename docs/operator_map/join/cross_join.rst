@@ -4,7 +4,7 @@ Cross Join · ``cross_join``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 20 of 21 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Cross%20Join/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (140c5c19) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 21 of 21 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Cross%20Join/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d067399d) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -25,8 +25,8 @@ Cross Join · ``cross_join``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Cross Join · cross_join<br/>🟢20 🟡1"]:::partial
-       v_bare["cross_join(DS, DS)"]:::partial
+       O["Cross Join · cross_join<br/>🟢21"]:::ok
+       v_bare["cross_join(DS, DS)"]:::ok
        v_aliases["cross_join(DS as a, DS as b)"]:::ok
        v_filter["cross_join(DS, DS filter cond)"]:::ok
        v_apply["cross_join(DS, DS apply expr)"]:::ok
@@ -127,7 +127,7 @@ Forms
 
    <span class="om-anchor" id="form-bare"></span>
 
-cross\_join(DS, DS) 🟡 · any scalar → any type
+cross\_join(DS, DS) 🟢 · any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -153,8 +153,7 @@ cross\_join(DS, DS) 🟡 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-bare-expression-without-alias"><summary><span class="om-ex-title">Expression without alias</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">expected error 1-1-13-2, got 1-1-13-9</p>
+   <details class="om-example" id="ex-bare-expression-without-alias"><summary><span class="om-ex-title">Expression without alias</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/cross_join/bare/expression_without_alias/notes.rst
 

@@ -4,7 +4,7 @@ Case · ``case when``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 3 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Case/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.6rc2 (140c5c19) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 4 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Case/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d067399d) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -29,12 +29,12 @@ Case · ``case when``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Case · case when<br/>🟢3 🟡2 🔵2"]:::diverge
+       O["Case · case when<br/>🟢4 🟡3"]:::partial
        subgraph G_ds["Dataset"]
            direction LR
-           v_ds["case when DS then DS else DS"]:::diverge
+           v_ds["case when DS then DS else DS"]:::ok
            v_ds_scalar_branch["case when DS then DS#124;sc else sc#124;DS"]:::ok
-           v_ds_multi_when["case when DS then DS when DS then DS ... else DS"]:::diverge
+           v_ds_multi_when["case when DS then DS when DS then DS ... else DS"]:::partial
        end
        subgraph G_comp["Component"]
            direction LR
@@ -79,13 +79,12 @@ Forms
 
    <span class="om-anchor" id="form-ds"></span>
 
-case when DS then DS else DS 🔵 · boolean, any scalar → any type
+case when DS then DS else DS 🟢 · boolean, any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-inline-dataset-condition" open><summary><span class="om-ex-title">Inline dataset condition</span> <span class="om-chip diverge" title="engines differ">🔵</span> <span class="om-marks">pandas ✅ · DuckDB 💥 <code>ParserException</code></span></summary>
-   <p class="om-detail">DuckDB: ParserException: Parser Error: syntax error at or near &quot;SELECT&quot;</p>
+   <details class="om-example" id="ex-ds-inline-dataset-condition" open><summary><span class="om-ex-title">Inline dataset condition</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/case/ds/inline_dataset_condition/notes.rst
 
@@ -178,13 +177,13 @@ case when DS then DS\|sc else sc\|DS 🟢 · boolean, any scalar → any type
 
    <span class="om-anchor" id="form-ds-multi-when"></span>
 
-case when DS then DS when DS then DS \.\.\. else DS 🔵 · boolean, any scalar → any type
+case when DS then DS when DS then DS \.\.\. else DS 🟡 · boolean, any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-multi-when-overlapping-inline-conditions" open><summary><span class="om-ex-title">Overlapping inline conditions</span> <span class="om-chip diverge" title="engines differ">🔵</span> <span class="om-marks">pandas ❌ · DuckDB 💥 <code>ParserException</code></span></summary>
-   <p class="om-detail">pandas: row Id_1=3: Me_1 expected 300 got 3; DuckDB: ParserException: Parser Error: syntax error at or near &quot;SELECT&quot;</p>
+   <details class="om-example" id="ex-ds-multi-when-overlapping-inline-conditions" open><summary><span class="om-ex-title">Overlapping inline conditions</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <p class="om-detail">row Id_1=3: Me_1 expected 300 got 3</p>
 
 .. include:: ../examples/conditional/case/ds_multi_when/overlapping_inline_conditions/notes.rst
 

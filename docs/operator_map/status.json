@@ -4546,19 +4546,19 @@
     },
     "conditional/case/ds/inline_dataset_condition": {
       "duckdb": {
-        "detail": "ParserException: Parser Error: syntax error at or near \"SELECT\"",
+        "detail": "",
         "error_code": null,
-        "error_type": "ParserException",
-        "outcome": "error"
+        "error_type": null,
+        "outcome": "match"
       },
-      "engines_agree": false,
+      "engines_agree": true,
       "pandas": {
         "detail": "",
         "error_code": null,
         "error_type": null,
         "outcome": "match"
       },
-      "status": "diverge"
+      "status": "ok"
     },
     "conditional/case/ds/unmatched_data_point_left_out": {
       "duckdb": {
@@ -4578,19 +4578,19 @@
     },
     "conditional/case/ds_multi_when/overlapping_inline_conditions": {
       "duckdb": {
-        "detail": "ParserException: Parser Error: syntax error at or near \"SELECT\"",
+        "detail": "row Id_1=3: Me_1 expected 300 got 3",
         "error_code": null,
-        "error_type": "ParserException",
-        "outcome": "error"
+        "error_type": null,
+        "outcome": "mismatch"
       },
-      "engines_agree": false,
+      "engines_agree": true,
       "pandas": {
         "detail": "row Id_1=3: Me_1 expected 300 got 3",
         "error_code": null,
         "error_type": null,
         "outcome": "mismatch"
       },
-      "status": "diverge"
+      "status": "partial"
     },
     "conditional/case/ds_multi_when/overlapping_named_conditions": {
       "duckdb": {
@@ -5522,51 +5522,51 @@
     },
     "definitions/define_operator/constrained_scalar/non_null_argument": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: not null in 'integer not null' (line 1, column 28).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: not null in 'integer not null' (line 1, column 28).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_operator/constrained_scalar/value_condition_holds": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: type constraint in 'integer [value >= 0]' (line 1, column 30).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: type constraint in 'integer [value >= 0]' (line 1, column 30).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_operator/constrained_scalar/value_in_the_list": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: type constraint in 'integer { 1, 2, 3 }' (line 1, column 30).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: type constraint in 'integer { 1, 2, 3 }' (line 1, column 30).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_operator/dataset/dataset_argument": {
       "duckdb": {
@@ -5586,19 +5586,19 @@
     },
     "definitions/define_operator/dataset/exactly_one_measure": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _' (line 1, column 37).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _' (line 1, column 37).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_operator/dataset/named_components": {
       "duckdb": {
@@ -5618,35 +5618,35 @@
     },
     "definitions/define_operator/dataset/one_or_more_measures": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _+' (line 1, column 37).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _+' (line 1, column 37).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_operator/dataset/zero_or_more_measures": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _*' (line 1, column 37).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: multiplicity modifier in 'measure<integer> _*' (line 1, column 37).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_operator/default_value/last_argument_omitted": {
       "duckdb": {
@@ -5730,19 +5730,19 @@
     },
     "definitions/define_operator/returns_omitted/type_of_the_body": {
       "duckdb": {
-        "detail": "SemanticError 1-3-2-2: At op add_one: User defined operator without returns is not implemented.",
-        "error_code": "1-3-2-2",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-2-2: At op add_one: User defined operator without returns is not implemented.",
-        "error_code": "1-3-2-2",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_operator/returns_scalar/larger_of_two_integers": {
       "duckdb": {
@@ -8674,19 +8674,19 @@
     },
     "join/cross_join/bare/expression_without_alias": {
       "duckdb": {
-        "detail": "expected error 1-1-13-2, got 1-1-13-9",
-        "error_code": "1-1-13-9",
+        "detail": "",
+        "error_code": "1-1-13-2",
         "error_type": "SemanticError",
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "expected error 1-1-13-2, got 1-1-13-9",
-        "error_code": "1-1-13-9",
+        "detail": "",
+        "error_code": "1-1-13-2",
         "error_type": "SemanticError",
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "join/cross_join/calc_attribute/constant_attribute": {
       "duckdb": {
@@ -14482,51 +14482,51 @@
     },
     "validation/check_hierarchy/always_null_dataset_priority_all/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
       },
-      "status": "missing"
+      "status": "partial"
     },
     "validation/check_hierarchy/always_null_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
       },
-      "status": "missing"
+      "status": "partial"
     },
     "validation/check_hierarchy/always_null_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "validation/check_hierarchy/always_zero_dataset_all/rule_with_no_item_found_is_false": {
       "duckdb": {
@@ -14578,51 +14578,51 @@
     },
     "validation/check_hierarchy/always_zero_dataset_priority_all/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
       },
-      "status": "missing"
+      "status": "partial"
     },
     "validation/check_hierarchy/always_zero_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
       },
-      "status": "missing"
+      "status": "partial"
     },
     "validation/check_hierarchy/always_zero_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
       },
-      "status": "missing"
+      "status": "partial"
     },
     "validation/check_hierarchy/condition/conditioning_value_domain_bound": {
       "duckdb": {
@@ -14738,51 +14738,51 @@
     },
     "validation/check_hierarchy/non_null_dataset_priority_all/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "validation/check_hierarchy/non_null_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "validation/check_hierarchy/non_null_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "validation/check_hierarchy/non_zero_dataset_all/rule_with_no_nonzero_item_dropped": {
       "duckdb": {
@@ -14834,51 +14834,51 @@
     },
     "validation/check_hierarchy/non_zero_dataset_priority_all/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "validation/check_hierarchy/non_zero_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "validation/check_hierarchy/non_zero_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "validation/check_hierarchy/partial_null_dataset_all/missing_items_count_as_null": {
       "duckdb": {
@@ -14930,51 +14930,51 @@
     },
     "validation/check_hierarchy/partial_null_dataset_priority_all/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "validation/check_hierarchy/partial_null_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "validation/check_hierarchy/partial_null_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "validation/check_hierarchy/partial_zero_dataset_all/missing_items_count_as_zero": {
       "duckdb": {
@@ -15026,51 +15026,51 @@
     },
     "validation/check_hierarchy/partial_zero_dataset_priority_all/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "validation/check_hierarchy/partial_zero_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "validation/check_hierarchy/partial_zero_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-9: Dataset Priority input mode on HR is not implemented",
-        "error_code": "0-5-1-9",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "validation/check_hierarchy/rule/manual_ex_1": {
       "duckdb": {
@@ -15106,11 +15106,11 @@
     }
   },
   "meta": {
-    "date": "2026-10-26",
+    "date": "2026-11-03",
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "140e946ed3f888951adb8bb66ea45030be84e2aa",
-    "vtlengine_commit": "140c5c19",
-    "vtlengine_version": "1.9.6rc2"
+    "vtlengine_commit": "d067399d",
+    "vtlengine_version": "1.9.7rc1"
   }
 }
