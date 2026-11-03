@@ -821,8 +821,11 @@ centralised_messages = {
         "description": "Raised when an alias is used more than once in the same operation.",
     },
     "1-1-13-2": {
-        "message": "At op {op}: Missing mandatory aliasing.",
-        "description": "Occurs when a required alias for an operation is not provided.",
+        "message": "At op {op}: the operand {operand} needs an alias. Aliases are mandatory for "
+        "the result of a sub-expression and for a Data Set that appears more than once in the "
+        "join.",
+        "description": "Raised when a join operand that is the result of a sub-expression, or a "
+        "Data Set that appears more than once in the join, has no alias.",
     },
     "1-1-13-3": {
         "message": "At op {op}: Join conflict with duplicated names for "
