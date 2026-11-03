@@ -98,13 +98,25 @@ jobs:
       - name: Run tests with pandas backend
         env:
           VTL_ENGINE_BACKEND: pandas
-        run: poetry run pytest -n auto --verbose --tb=short --durations=10
+        run: poetry run pytest -n auto --verbose --tb=short --durations=10 --junitxml=test-results/pandas.xml
       - name: Run tests with duckdb backend
         env:
           VTL_ENGINE_BACKEND: duckdb
-        run: poetry run pytest --cov=vtlengine -n auto --verbose --tb=short --strict-markers --strict-config --durations=10
+        run: poetry run pytest --cov=vtlengine -n auto --verbose --tb=short --strict-markers --strict-config --durations=10 --junitxml=test-results/duckdb.xml
       - name: Check coverage
         run: poetry run coverage report --fail-under=85
+      - name: Summarize the tests
+        # In the summary of the job: a row per backend, the coverage, and the tests that failed.
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          python scripts/pytest_summary.py \
+            --title "Tests · ${{ matrix.os }} · Python ${{ matrix.python-version }}" \
+            pandas=test-results/pandas.xml duckdb=test-results/duckdb.xml >> "$GITHUB_STEP_SUMMARY"
+          coverage=$(poetry run coverage report --format=total 2>/dev/null || true)
+          if [ -n "$coverage" ]; then
+            echo "Coverage of vtlengine: ${coverage}%" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   # The operator map (docs/operator_map): its generator's tests, the checks of its catalogue and
   # examples, and every example run on both engines and compared with the committed status.json.
