@@ -2051,8 +2051,14 @@ class InterpreterAnalyzer(ASTTemplate):
         if isinstance(right_operand, Dataset):
             right_operand = get_measure_from_dataset(right_operand, node.right.value)
 
-        if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO) and self.partial_rule_data is not None:
-            # Operands may cover different groups, so filter them by label.
+        if (
+            self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO)
+            and self.partial_rule_data is not None
+            and node.op in HR_COMP_MAPPING
+        ):
+            # Operands may cover different groups, so filter them by label. Only once all the
+            # code items of the rule are read: a code item left out of the rule before one that
+            # exists would read as missing (issue #1223)
             kept = self.partial_rule_data.index[self.partial_rule_data]
             if left_operand.data is not None:
                 left_operand.data = left_operand.data[left_operand.data.index.isin(kept)]

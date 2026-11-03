@@ -818,7 +818,7 @@ class TestHierarchyRuleSources:
         assert 'SELECT "Id_1", UNNEST(s._r2) FROM _pivot s) AS _src' in sql
 
     @pytest.mark.parametrize(
-        ("condition", "widened"), [("Id_1 > 0", False), ('Id_1 > 0 and Me_1 > 0', True)]
+        ("condition", "widened"), [("Id_1 > 0", False), ("Id_1 > 0 and Me_1 > 0", True)]
     )
     def test_pivot_reads_more_rows_for_data_point_conditions(
         self, condition: str, widened: bool
@@ -851,4 +851,3 @@ class TestHierarchyRuleSources:
         sql = " ".join(transpile(script, data_structures)[-1][1].split())
 
         assert ("WHERE \"Id_2\" IN ('A', 'B', 'C') GROUP BY" not in sql) == widened
-

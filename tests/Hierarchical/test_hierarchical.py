@@ -5481,3 +5481,28 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_19(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        R1: X = E [Id_1 > 1] + D [Id_1 = 2] + B errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 partial_null);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2
+                                partial_null all);
+
+        Description: For Id_1 1, E and D are left out of the rule, so X is B, which exists.
+
+        Git Branch: #1223.
+        Goal: Check partial_null with two code items next to each other left out of the rule.
+        """
+
+        code = "GH_1223_19"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
