@@ -5141,3 +5141,31 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_8(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1;
+                        R2: when At_1 = "x" then D = A + E errorcode "E2" errorlevel 2
+                    end hierarchical ruleset;
+
+                    DS_r1 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_null
+                                dataset_priority all);
+                    DS_r2 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_zero);
+
+        Description: The rule component is the only identifier of DS_1, and no data point
+        satisfies the condition of R2: R2 does not apply, even if R1 computes A.
+
+        Git Branch: #1223.
+        Goal: Check a rule that reads a computed code item and whose condition no data point
+        satisfies, without other identifiers.
+        """
+
+        code = "GH_1223_8"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
