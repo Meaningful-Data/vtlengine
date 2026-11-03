@@ -105,18 +105,42 @@ jobs:
         run: poetry run pytest --cov=vtlengine -n auto --verbose --tb=short --strict-markers --strict-config --durations=10 --junitxml=test-results/duckdb.xml
       - name: Check coverage
         run: poetry run coverage report --fail-under=85
-      - name: Summarize the tests
-        # In the summary of the job: a row per backend, the coverage, and the tests that failed.
+      - name: Keep the test results
+        # The Test summary job reads them: the JUnit XML of each backend, the job and its coverage.
         if: ${{ !cancelled() }}
         shell: bash
         run: |
-          python scripts/pytest_summary.py \
-            --title "Tests · ${{ matrix.os }} · Python ${{ matrix.python-version }}" \
-            pandas=test-results/pandas.xml duckdb=test-results/duckdb.xml >> "$GITHUB_STEP_SUMMARY"
-          coverage=$(poetry run coverage report --format=total 2>/dev/null || true)
-          if [ -n "$coverage" ]; then
-            echo "Coverage of vtlengine: ${coverage}%" >> "$GITHUB_STEP_SUMMARY"
-          fi
+          mkdir -p test-results
+          printf '{"os": "%s", "python": "%s"}\n' "${{ matrix.os }}" "${{ matrix.python-version }}" \
+            > test-results/job.json
+          poetry run coverage report --format=total > test-results/coverage.txt 2>/dev/null \
+            || rm -f test-results/coverage.txt
+      - name: Upload the test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
+          path: test-results/
+          retention-days: 7
+
+  # One summary of the whole matrix: a row per job and backend, the slowest tests with the job
+  # where they were slowest, and the tests that failed.
+  test-summary:
+    name: Test summary
+    needs: [testing]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download the test results
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: test-results-*
+          path: test-results
+      - name: Summarize the tests
+        run: python3 scripts/pytest_summary.py --title "Tests" test-results >> "$GITHUB_STEP_SUMMARY"
 
   # The operator map (docs/operator_map): its generator's tests, the checks of its catalogue and
   # examples, and every example run on both engines and compared with the committed status.json.
