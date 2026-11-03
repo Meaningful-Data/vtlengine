@@ -495,6 +495,38 @@ def load_scheduled_datasets(
             )
 
 
+def validate_datapoints(
+    conn: duckdb.DuckDBPyConnection,
+    path_dict: Optional[Dict[str, Path]],
+    dataframe_dict: Dict[str, pd.DataFrame],
+    input_datasets: Dict[str, Dataset],
+) -> None:
+    """
+    Load the given datapoints as a run loads them, rejecting the ones a run would reject.
+
+    Each table is dropped once it is loaded, so one dataset is held at a time.
+
+    Args:
+        conn: DuckDB connection
+        path_dict: Dict mapping dataset names to CSV paths
+        dataframe_dict: Dict mapping dataset names to DataFrames
+        input_datasets: Dict of input dataset structures
+    """
+    if _contains_time_components(input_datasets):
+        initialize_time_types(conn, sql_fragments=["vtl_period_normalize"])
+    for ds_name, file_path in (path_dict or {}).items():
+        load_datapoints_duckdb(
+            conn=conn,
+            components=input_datasets[ds_name].components,
+            dataset_name=ds_name,
+            file_path=file_path,
+        )
+        conn.execute(f'DROP TABLE "{ds_name}"')
+    for ds_name, data in dataframe_dict.items():
+        register_dataframes(conn, {ds_name: data}, input_datasets)
+        conn.execute(f'DROP TABLE "{ds_name}"')
+
+
 def cleanup_scheduled_datasets(
     conn: duckdb.DuckDBPyConnection,
     statement_num: int,

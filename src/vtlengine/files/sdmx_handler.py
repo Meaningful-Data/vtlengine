@@ -218,12 +218,13 @@ def load_sdmx_datapoints(
     data = pd_dataset.data
 
     # Sanitize SDMX-specific columns
-    data = _sanitize_sdmx_columns(components, file_path, data)
+    data = _sanitize_sdmx_columns(components, dataset_name, file_path, data)
     return data
 
 
 def _sanitize_sdmx_columns(
     components: Dict[str, Component],
+    dataset_name: str,
     file_path: Path,
     data: pd.DataFrame,
 ) -> pd.DataFrame:
@@ -235,6 +236,7 @@ def _sanitize_sdmx_columns(
 
     Args:
         components: Expected components for validation.
+        dataset_name: Name of the dataset for error messages.
         file_path: Path to file for error messages.
         data: DataFrame to sanitize.
 
@@ -278,8 +280,7 @@ def _sanitize_sdmx_columns(
     for comp_name, comp in components.items():
         if comp_name not in data:
             if not comp.nullable:
-                name = file_path.stem
-                raise InputValidationException("0-3-1-5", name=name, comp_name=comp_name)
+                raise DataLoadError("0-3-1-5", name=dataset_name, comp_name=comp_name)
             data[comp_name] = None
 
     return data

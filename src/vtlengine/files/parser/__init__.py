@@ -1,4 +1,5 @@
 import csv
+import re
 import warnings
 from csv import DictReader
 from pathlib import Path
@@ -100,7 +101,10 @@ def _validate_csv_path(components: Dict[str, Component], csv_path: Path) -> None
 
 
 def _sanitize_pandas_columns(
-    components: Dict[str, Component], csv_path: Union[str, Path], data: pd.DataFrame
+    components: Dict[str, Component],
+    csv_path: Union[str, Path],
+    data: pd.DataFrame,
+    dataset_name: str,
 ) -> pd.DataFrame:
     # Fast loading from SDMX-CSV
     if (
@@ -130,8 +134,7 @@ def _sanitize_pandas_columns(
     for comp_name, comp in components.items():
         if comp_name not in data:
             if not comp.nullable:
-                name = Path(csv_path).stem
-                raise InputValidationException(code="0-3-1-5", name=name, comp_name=comp_name)
+                raise DataLoadError("0-3-1-5", name=dataset_name, comp_name=comp_name)
             data[comp_name] = None
     return data
 
@@ -140,7 +143,9 @@ def _is_remote_path(csv_path: Union[str, Path]) -> bool:
     return isinstance(csv_path, str) and "://" in csv_path
 
 
-def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path]) -> pd.DataFrame:
+def _pandas_load_csv(
+    components: Dict[str, Component], csv_path: Union[str, Path], dataset_name: str
+) -> pd.DataFrame:
     obj_dtypes = dict.fromkeys(components, "string[pyarrow]")
 
     na_values: Union[Dict[str, List[str]], List[str]]
@@ -155,20 +160,31 @@ def _pandas_load_csv(components: Dict[str, Component], csv_path: Union[str, Path
     sep = _detect_delimiter(csv_path)
 
     try:
-        data = pd.read_csv(  # type: ignore[call-overload, unused-ignore]
-            csv_path,
-            dtype=obj_dtypes,
-            engine="c",
-            sep=sep,
-            keep_default_na=False,
-            na_values=na_values,
-            encoding="utf-8-sig",
-        )
+        with warnings.catch_warnings():
+            # pandas truncates a first row with more fields than the header with a warning,
+            # and would read the extra leading fields as the index without index_col=False
+            warnings.simplefilter("error", pd.errors.ParserWarning)
+            data = pd.read_csv(  # type: ignore[call-overload, unused-ignore]
+                csv_path,
+                dtype=obj_dtypes,
+                engine="c",
+                sep=sep,
+                keep_default_na=False,
+                na_values=na_values,
+                encoding="utf-8-sig",
+                index_col=False,
+            )
     except UnicodeDecodeError:
         name = csv_path if isinstance(csv_path, str) else csv_path.name
         raise InputValidationException(code="0-1-2-5", file=name) from None
+    except (pd.errors.ParserError, pd.errors.ParserWarning) as error:
+        match = re.search(r"Expected \d+ fields in line (\d+)", str(error))
+        if match is None and isinstance(error, pd.errors.ParserError):
+            raise
+        line = match.group(1) if match else 2
+        raise DataLoadError("0-3-1-18", name=dataset_name, line=line) from None
 
-    return _sanitize_pandas_columns(components, csv_path, data)
+    return _sanitize_pandas_columns(components, csv_path, data, dataset_name)
 
 
 def _parse_boolean(value: Any) -> bool:
@@ -376,7 +392,7 @@ def load_datapoints(
             # CSV file (plain or SDMX-CSV)
             if isinstance(csv_path, Path):
                 _validate_csv_path(components, csv_path)
-            data = _pandas_load_csv(components, csv_path)
+            data = _pandas_load_csv(components, csv_path, dataset_name)
     else:
         raise InputValidationException(
             code="0-1-1-2", input=csv_path, message="Input must be a Path."
