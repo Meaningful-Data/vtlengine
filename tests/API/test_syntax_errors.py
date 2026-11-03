@@ -2,6 +2,8 @@ import pandas as pd
 import pytest
 
 from vtlengine import run
+from vtlengine.API import create_ast
+from vtlengine.AST import VarID
 from vtlengine.Exceptions import VTLSyntaxError
 
 _EMPTY_DS = {"datasets": []}
@@ -90,14 +92,11 @@ def test_valid_script_still_parses():
 
 
 # ---------------------------------------------------------------------------
-# IDENTIFIER digit/underscore handling
-# A bare identifier must begin with a letter or a digit (and, when starting
-# with a digit, contain at least one letter) — e.g. `abc`, `24A0`, `1abc`,
-# `9_foo`. This matches the VTL "regular names" definition (VTL 2.1 User
-# Manual, "The regular names"): a name must begin with an alphanumeric
-# character, not a special character. Therefore:
-#   - bare names starting with `_` are rejected (only valid when quoted);
-#   - purely numeric tokens (e.g. `123`) are constants, not identifiers.
+# IDENTIFIER digit/underscore handling (VTL 2.2 grammar)
+# A bare identifier begins with a letter or `_` (e.g. `abc`, `_foo`, `_1abc`).
+# A name that begins with a digit (e.g. `24A0`) must be quoted, except for a
+# code item of a hierarchical rule (ITEM_CODE token). Purely numeric tokens
+# (e.g. `123`) are constants, not identifiers.
 # ---------------------------------------------------------------------------
 
 
@@ -105,22 +104,11 @@ def test_valid_script_still_parses():
     "name",
     ["24A0", "1abc", "9_foo"],
 )
-def test_bare_identifier_starting_with_digit_runs(name):
-    """A bare digit-prefixed identifier (with a letter) can name a dataset end-to-end."""
+def test_bare_identifier_starting_with_digit_is_rejected(name):
+    """Outside a hierarchical rule, a bare name cannot start with a digit."""
     script = f"DS_A <- {name} * 2;"
-    data_structures = {
-        "datasets": [
-            {
-                "name": name,
-                "DataStructure": [
-                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
-                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
-                ],
-            }
-        ]
-    }
-    result = run(script=script, data_structures=data_structures, datapoints=_NO_DATA)
-    assert "DS_A" in result
+    with pytest.raises(VTLSyntaxError):
+        run(script=script, data_structures=_EMPTY_DS, datapoints=_NO_DATA)
 
 
 @pytest.mark.parametrize(
@@ -160,8 +148,114 @@ def test_quoted_identifier_starting_with_digit_runs(quoted_name):
     "underscore_name",
     ["_foo", "_unknown", "_1abc"],
 )
-def test_bare_underscore_prefixed_identifier_is_rejected(underscore_name):
-    """A bare identifier starting with `_` is not valid (it must be quoted)."""
-    script = f"DS_A <- {underscore_name} * 2;"
-    with pytest.raises(VTLSyntaxError):
-        run(script=script, data_structures=_EMPTY_DS, datapoints=_NO_DATA)
+def test_bare_underscore_prefixed_identifier_parses(underscore_name):
+    """A bare identifier can start with `_`."""
+    operand = create_ast(f"DS_A <- {underscore_name} * 2;").children[0].right.left
+    assert isinstance(operand, VarID)
+    assert operand.value == underscore_name
+
+
+# ---------------------------------------------------------------------------
+# Hierarchical rules
+# A code item may start with a digit (e.g. `10A`), and the relation of a rule
+# is one of `=`, `>`, `<`, `>=` and `<=` (hrComparisonOperand). `<>` and a
+# missing relation are syntax errors, raised when the ruleset is defined (#1156).
+# ---------------------------------------------------------------------------
+
+_HR_DS = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+
+def _hr_datapoints(items: list, values: list) -> dict:
+    """One group per Id_1 value; each group holds the given items with the given values."""
+    rows = [
+        (group, item, value)
+        for group, group_values in enumerate(values, start=1)
+        for item, value in zip(items, group_values)
+    ]
+    return {"DS_1": pd.DataFrame(rows, columns=["Id_1", "Id_2", "Me_1"])}
+
+
+def _check_hierarchy_bool_vars(rule: str, datapoints: dict, use_duckdb: bool) -> list:
+    script = f"""
+        define hierarchical ruleset HR_1 (valuedomain rule VD_1) is
+            {rule}
+        end hierarchical ruleset;
+
+        DS_r <- check_hierarchy(DS_1, HR_1 rule Id_2 all);
+    """
+    result = run(
+        script=script, data_structures=_HR_DS, datapoints=datapoints, use_duckdb=use_duckdb
+    )
+    return result["DS_r"].data.sort_values("Id_1")["bool_var"].tolist()
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_bare_code_item_starting_with_digit_runs(use_duckdb):
+    """A hierarchical rule takes bare code items that start with a digit."""
+    datapoints = _hr_datapoints(["10A", "10B", "1_0"], [[7.0, 3.0, 4.0], [8.0, 3.0, 4.0]])
+    bool_vars = _check_hierarchy_bool_vars("R1: 10A = 10B + 1_0", datapoints, use_duckdb)
+    assert bool_vars == [True, False]
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+@pytest.mark.parametrize(
+    ("relation", "expected"),
+    [
+        # TOTAL against A + B = 7, with TOTAL = 7, 10 and 5 in groups 1, 2 and 3
+        ("=", [True, False, False]),
+        (">", [False, True, False]),
+        ("<", [False, False, True]),
+        (">=", [True, True, False]),
+        ("<=", [True, False, True]),
+    ],
+)
+def test_hierarchical_rule_relation_runs(relation, expected, use_duckdb):
+    """Each relation a hierarchical rule allows compares the code item with its sum."""
+    datapoints = _hr_datapoints(
+        ["TOTAL", "A", "B"], [[7.0, 3.0, 4.0], [10.0, 3.0, 4.0], [5.0, 3.0, 4.0]]
+    )
+    bool_vars = _check_hierarchy_bool_vars(f"R1: TOTAL {relation} A + B", datapoints, use_duckdb)
+    assert bool_vars == expected
+
+
+@pytest.mark.parametrize(
+    ("ruleset", "column"),
+    [
+        pytest.param(
+            "define hierarchical ruleset HR_1 (valuedomain rule VD_1) is\n"
+            "    R1: TOTAL <> A + B\n"
+            "end hierarchical ruleset;",
+            15,
+            id="not_equal",
+        ),
+        pytest.param(
+            "define hierarchical ruleset HR_1 (valuedomain condition VD_2 as C_1 rule VD_1) is\n"
+            '    R1: when C_1 = "X" then TOTAL <> A + B\n'
+            "end hierarchical ruleset;",
+            35,
+            id="not_equal_in_conditioned_rule",
+        ),
+        pytest.param(
+            "define hierarchical ruleset HR_1 (valuedomain rule VD_1) is\n"
+            "    R1: TOTAL A + B\n"
+            "end hierarchical ruleset;",
+            15,
+            id="missing_relation",
+        ),
+    ],
+)
+def test_hierarchical_rule_relation_is_rejected(ruleset, column):
+    """`<>` or no relation in a hierarchical rule fails when the ruleset is defined."""
+    with pytest.raises(VTLSyntaxError, match=f"line 2, column {column}:"):
+        run(script=ruleset, data_structures=_EMPTY_DS, datapoints=_NO_DATA)
