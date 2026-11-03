@@ -1,0 +1,27 @@
+{
+    "datasets": [
+        {
+            "name": "DS_r",
+            "DataStructure": [
+                {
+                    "name": "Id_1",
+                    "role": "Identifier",
+                    "type": "Time_Period",
+                    "nullable": false
+                },
+                {
+                    "name": "duration_var",
+                    "role": "Measure",
+                    "type": "Duration",
+                    "nullable": true
+                },
+                {
+                    "name": "At_1",
+                    "role": "Attribute",
+                    "type": "String",
+                    "nullable": false
+                }
+            ]
+        }
+    ]
+}
