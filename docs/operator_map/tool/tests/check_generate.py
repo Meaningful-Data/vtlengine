@@ -2109,3 +2109,165 @@ def test_the_default_folders_are_the_ones_of_this_worktree() -> None:
     assert here == generate.ROOT
     assert generate.ROOT == generate.REPO / "docs" / "operator_map"
     assert (generate.REPO / "src" / "vtlengine" / "__init__.py").is_file()
+
+
+# --- Comparing with the committed baseline ---
+
+ALPHA_KEYS = {"alpha/first/ds/manual_ex_1", "alpha/first/ds/two_rows", "alpha/first/sc/one_value"}
+
+
+def stdout_lines(capsys: pytest.CaptureFixture[str]) -> list[str]:
+    """The lines that the generator printed on its standard output."""
+    return capsys.readouterr().out.splitlines()
+
+
+def test_compare_writes_nothing_and_passes_when_nothing_changed(
+    world: World, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert generate.main([]) == 0
+    before = world.files()
+    capsys.readouterr()
+    assert generate.main(["--compare"]) == 0
+    assert world.files() == before
+    lines = stdout_lines(capsys)
+    assert lines[-1] == "0 regressions, 0 improvements, 0 other changes, 0 new, 0 removed"
+
+
+def test_compare_fails_on_a_regression_and_names_it(
+    world: World, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert generate.main([]) == 0
+    before = world.files()
+    world.modes["alpha"] = "wrong"
+    capsys.readouterr()
+    assert generate.main(["--compare"]) == 1
+    lines = stdout_lines(capsys)
+    assert "regression: alpha/first/ds/two_rows: 🟢 → 🟡 (pandas ❌, DuckDB ❌)" in lines
+    assert lines[-1] == "3 regressions, 0 improvements, 0 other changes, 0 new, 0 removed"
+    assert world.files() == before
+
+
+def test_compare_reruns_the_regressions_once(world: World) -> None:
+    assert generate.main([]) == 0
+    world.modes["alpha"] = "wrong"
+    world.calls.clear()
+    assert generate.main(["--compare"]) == 1
+    assert len(world.calls) == 2
+    rerun = {path.relative_to(world.root / "examples").as_posix() for path, _, _ in world.calls[1]}
+    assert rerun == ALPHA_KEYS
+
+
+def test_compare_ignores_a_regression_that_does_not_repeat(
+    world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert generate.main([]) == 0
+    first_run = world.run_all
+
+    def wrong_once(
+        jobs: Sequence[tuple[Path, Engine, int]], workers: int, timeout_s: float
+    ) -> dict[tuple[Path, Engine], RunOutput]:
+        outputs = first_run(jobs, workers, timeout_s)
+        world.modes.clear()  # the second run is right again
+        return outputs
+
+    world.modes["alpha"] = "wrong"
+    monkeypatch.setattr(generate, "run_all", wrong_once)
+    capsys.readouterr()
+    assert generate.main(["--compare"]) == 0
+    lines = stdout_lines(capsys)
+    assert lines[-2] == "0 regressions, 0 improvements, 0 other changes, 0 new, 0 removed"
+    assert lines[-1] == (
+        "3 regressions did not repeat on a second run: alpha/first/ds/manual_ex_1, "
+        "alpha/first/ds/two_rows, alpha/first/sc/one_value"
+    )
+
+
+def test_compare_reports_improvements_and_passes(
+    world: World, capsys: pytest.CaptureFixture[str]
+) -> None:
+    world.modes["beta"] = "wrong"
+    assert generate.main([]) == 0
+    world.modes.clear()
+    capsys.readouterr()
+    assert generate.main(["--compare"]) == 0
+    lines = stdout_lines(capsys)
+    assert "improvement: beta/second/ds/two_rows: 🟡 → 🟢 (pandas ✅, DuckDB ✅)" in lines
+    assert lines[-1] == "0 regressions, 1 improvement, 0 other changes, 0 new, 0 removed"
+
+
+def test_compare_does_not_count_green_to_shield(
+    world: World, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert generate.main([]) == 0
+    world.modes["beta"] = "refused"
+    capsys.readouterr()
+    assert generate.main(["--compare"]) == 0
+    lines = stdout_lines(capsys)
+    assert "other: beta/second/ds/two_rows: 🟢 → 🛡️ (pandas 🛡 2-1-15-6, DuckDB 🛡 2-1-15-6)" in lines
+    assert lines[-1] == "0 regressions, 0 improvements, 1 other change, 0 new, 0 removed"
+
+
+def test_compare_without_a_baseline_is_a_problem(
+    world: World, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert generate.main(["--compare"]) == 1
+    assert problems(capsys) == ["status.json: no baseline to compare with (run generate.py first)"]
+    assert world.preflights == []
+    assert world.calls == []
+
+
+def test_compare_with_an_unreadable_baseline_is_a_problem(
+    world: World, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (world.root / "status.json").write_text("{", encoding="utf-8")
+    assert generate.main(["--compare"]) == 1
+    [line] = problems(capsys)
+    assert line.startswith("status.json: cannot read the previous results (JSONDecodeError")
+    assert world.calls == []
+
+
+def test_compare_with_only_compares_the_named_chapters(
+    world: World, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert generate.main([]) == 0
+    world.modes["beta"] = "wrong"
+    world.calls.clear()
+    capsys.readouterr()
+    assert generate.main(["--compare", "--only", "alpha"]) == 0
+    assert world.run_chapters() == {"alpha"}
+    lines = stdout_lines(capsys)
+    assert lines[-1] == "0 regressions, 0 improvements, 0 other changes, 0 new, 0 removed"
+
+
+def test_summary_appends_markdown(world: World, tmp_path: Path) -> None:
+    assert generate.main([]) == 0
+    summary = tmp_path / "summary.md"
+    summary.write_text("before\n", encoding="utf-8")
+    assert generate.main(["--compare", "--summary", str(summary)]) == 0
+    assert generate.main(["--compare", "--summary", str(summary)]) == 0
+    text = summary.read_text(encoding="utf-8")
+    assert text.startswith("before\n")
+    assert text.count("### Operator map") == 2
+    assert "No example changed status." in text
+
+
+def test_a_full_run_with_summary_compares_with_the_file_it_replaces(
+    world: World, tmp_path: Path
+) -> None:
+    assert generate.main([]) == 0
+    world.modes["beta"] = "wrong"
+    summary = tmp_path / "summary.md"
+    assert generate.main(["--summary", str(summary)]) == 0
+    assert world.status()["examples"]["beta/second/ds/two_rows"]["status"] == "partial"
+    text = summary.read_text(encoding="utf-8")
+    assert "#### Regressions (1)" in text
+    assert "beta/second/ds/two_rows" in text
+
+
+def test_compare_and_check_only_cannot_go_together(
+    world: World, capsys: pytest.CaptureFixture[str]
+) -> None:
+    with pytest.raises(SystemExit) as stopped:
+        generate.main(["--compare", "--check-only"])
+    assert stopped.value.code == 2
+    assert "argument --check-only: not allowed with argument --compare" in capsys.readouterr().err

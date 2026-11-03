@@ -1,6 +1,7 @@
 """Generate the operator map: validate, run every example on both engines, judge, write.
 
-    generate.py [--only CHAPTER]... [--workers 4] [--timeout 120] [--check-only]
+    generate.py [--only CHAPTER]... [--workers 4] [--timeout 120] [--check-only | --compare]
+                [--summary FILE]
 
 It needs a Python that can import vtlengine, with the compiled parser in src/ ("Building the C++
 parser from source" in CONTRIBUTING.md says how to build it): every example runs in a child
@@ -52,6 +53,15 @@ chapter whatever ``--only`` says: it limits which examples run, and the page cov
 manual example mapping to the pages of the chapters named. Nothing is run or written with
 ``--check-only``: it stops after the checks, and does not ask for previous results.
 
+With ``--compare`` the examples run as always (all of them, or the chapters of ``--only``), and
+their statuses are compared with the committed ``status.json`` (``tool.baseline``): nothing is
+written. A status that ranks lower than there is a regression; the examples that regressed run a
+second time, and a regression counts only if it is there both times. The improvements, the
+changes between 🟢 and 🛡️, and the new and removed examples are reported, and never fail. The
+exit code is 1 with a regression, and 0 otherwise. ``--summary FILE`` appends the same report to
+``FILE`` as Markdown (the summary of a CI job): with ``--compare``, against the committed file;
+in a run that writes, against the ``status.json`` that the run replaces.
+
 The exit code is 0 for a run that wrote its files, 1 for any problem (printed one per line, and
 nothing is written), and 2 for a run that was interrupted, wherever the interrupt came, that hit
 an internal error (one line: its type and message), or whose preflight child cannot import the
@@ -85,6 +95,7 @@ from pathlib import Path
 from typing import Any, Final, get_args
 
 from catalogue import manual_index
+from tool.baseline import compare, report_lines, summary_markdown
 from tool.examples import (
     ExampleError,
     ExampleFiles,
@@ -265,13 +276,26 @@ def _generate(args: argparse.Namespace, progress: _Progress) -> int:
         )
 
     items = _items(cat)
-    checked = _check(cat, items, only, ROOT, with_previous=not args.check_only)
+    writes = not (args.check_only or args.compare)
+    checked = _check(cat, items, only, ROOT, with_previous=writes)
     if checked.problems:
         return _fail(checked.problems)
     if args.check_only:
         print(f"ok: {len(items)} examples checked, nothing was run")
         return 0
     todo = [item for item in items if not only or item.group in only]
+    baseline: dict[str, ExampleResult] = {}
+    unread = ""  # why the summary of a run that writes has no baseline to compare with
+    if args.compare:
+        try:
+            baseline = _baseline(only)
+        except GenerateError as exc:
+            return _fail([str(exc)])
+    elif args.summary is not None:
+        try:
+            baseline = _load_previous(ROOT / _STATUS_FILE)
+        except GenerateError as exc:
+            unread = str(exc)
     try:
         versions = preflight(args.timeout)
     except PreflightError as exc:  # every run would crash: the pages must not take that
@@ -282,13 +306,13 @@ def _generate(args: argparse.Namespace, progress: _Progress) -> int:
     except GenerateError as exc:
         return _fail([str(exc)])
 
-    examples_root = ROOT / "examples"
     print(f"running {len(todo)} examples on both engines ({args.workers} at a time)", flush=True)
-    outputs = run_all(_jobs(todo, examples_root), args.workers, args.timeout)
-    results = _judge(todo, checked.loaded, outputs, examples_root, meta.date)
+    results = _run(todo, checked.loaded, args, meta)
+    if args.compare:
+        return _compare(baseline, results, todo, checked.loaded, args, meta)
     index = build_index(cat, {**checked.previous, **results})
     try:
-        files = _render(cat, index, meta, examples_root)
+        files = _render(cat, index, meta, ROOT / "examples")
     except MermaidLimitError as exc:
         return _fail([str(exc)])
     removed = _write_all(ROOT, files, progress)
@@ -301,7 +325,80 @@ def _generate(args: argparse.Namespace, progress: _Progress) -> int:
         f"wrote {pages} pages, {_STATUS_FILE}, {_EXAMPLE_PAGES_FILE} and {_MANIFEST}; "
         f"removed {len(removed)} stale files. Examples: {summary}"
     )
+    if args.summary is not None:
+        report = summary_markdown(compare(baseline, index.examples), index.examples, meta)
+        if unread:
+            report += f"\n{unread}: every example is reported as new.\n"
+        _append_summary(args.summary, report)
     return 0
+
+
+def _run(
+    todo: Sequence[_Item],
+    loaded: Mapping[str, ExampleFiles],
+    args: argparse.Namespace,
+    meta: RunMeta,
+) -> dict[str, ExampleResult]:
+    """Run ``todo`` on both engines and judge the runs: the result of each, by key."""
+    examples_root = ROOT / "examples"
+    outputs = run_all(_jobs(todo, examples_root), args.workers, args.timeout)
+    return _judge(todo, loaded, outputs, examples_root, meta.date)
+
+
+# --- Comparing with the committed baseline ---
+
+
+def _baseline(only: Sequence[str]) -> dict[str, ExampleResult]:
+    """The results of the committed ``status.json``, of the chapters of ``only`` if it names any.
+
+    Raises ``GenerateError`` when there is no file, or when it cannot be read.
+    """
+    path = ROOT / _STATUS_FILE
+    if not path.is_file():
+        raise GenerateError(f"{_STATUS_FILE}: no baseline to compare with (run generate.py first)")
+    baseline = _load_previous(path)
+    if only:
+        baseline = {key: each for key, each in baseline.items() if key.split("/")[0] in only}
+    return baseline
+
+
+def _compare(
+    baseline: Mapping[str, ExampleResult],
+    results: dict[str, ExampleResult],
+    todo: Sequence[_Item],
+    loaded: Mapping[str, ExampleFiles],
+    args: argparse.Namespace,
+    meta: RunMeta,
+) -> int:
+    """Compare ``results`` with ``baseline``, print and append the report: 1 with a regression.
+
+    The examples that regressed run a second time: a regression counts only if it is there both
+    times, so that a run slowed down by a busy machine does not fail the check.
+    """
+    found = compare(baseline, results)
+    regressed = {change.key for change in found.regressions}
+    if regressed:
+        again = _run([item for item in todo if item.key in regressed], loaded, args, meta)
+        results.update(again)
+        found = compare(baseline, results)
+    for line in report_lines(found):
+        print(line)
+    passing = sorted(regressed - {change.key for change in found.regressions})
+    if passing:
+        noun = "regression" if len(passing) == 1 else "regressions"
+        print(f"{len(passing)} {noun} did not repeat on a second run: {', '.join(passing)}")
+    if args.summary is not None:
+        _append_summary(args.summary, summary_markdown(found, results, meta))
+    return 1 if found.regressions else 0
+
+
+def _append_summary(path: Path, text: str) -> None:
+    """Append ``text`` to the file at ``path``; a file that cannot be written is only said."""
+    try:
+        with path.open("a", encoding="utf-8") as summary:
+            summary.write(text)
+    except OSError as exc:
+        print(f"cannot append the summary to {path}: {exc}", file=sys.stderr)
 
 
 def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
@@ -333,10 +430,25 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         default=120.0,
         help="seconds that a run of an example can take (default: %(default)s)",
     )
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--check-only",
         action="store_true",
         help="check the catalogue and the example folders, then stop: nothing is run or written",
+    )
+    mode.add_argument(
+        "--compare",
+        action="store_true",
+        help=f"run the examples and compare their statuses with the committed {_STATUS_FILE}, "
+        "writing nothing: the exit code is 1 when an example ranks lower than there (a "
+        "regression, which is run a second time to be sure), 0 otherwise",
+    )
+    parser.add_argument(
+        "--summary",
+        type=Path,
+        metavar="FILE",
+        help=f"append to FILE a Markdown report of how the statuses moved from {_STATUS_FILE} "
+        "(the one that the run replaces, or that --compare reads), for the summary of a CI job",
     )
     return parser.parse_args(argv)
 
