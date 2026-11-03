@@ -1775,7 +1775,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
             # A ruleset with a signature or a rule clause gives the component
             component = cast(str, component)
-            Check_Hierarchy.validate_hr_dataset(dataset, component)
+            Check_Hierarchy.validate_hr_dataset(dataset, component, cond_info.values())
 
             # Set up interpreter state for rule processing
             self.ruleset_dataset = dataset
@@ -1820,6 +1820,8 @@ class InterpreterAnalyzer(ASTTemplate):
             self.ruleset_dataset = None
             self.ruleset_mode = None
             self.hr_input = None
+            # Only the conditions read the attributes (issue #1223)
+            Check_Hierarchy.remove_attributes(dataset)
 
             # Final evaluation
             if node.op == CHECK_HIERARCHY:
@@ -2158,7 +2160,12 @@ class InterpreterAnalyzer(ASTTemplate):
         rule_data = self.rule_data
         signature = self.ruleset_signature
 
-        result_components = {c.name: c for c in ruleset_ds.get_components()}
+        # The attributes stay in the rule data, for the conditions (issue #1223)
+        result_components = {
+            c.name: c
+            for c in ruleset_ds.get_components()
+            if c.role in (Role.IDENTIFIER, Role.MEASURE)
+        }
         hr_component = signature["RULE_COMPONENT"]  # type: ignore[index]
         me_name = ruleset_ds.get_measures_names()[0]
         other_ids = list(set(ruleset_ds.get_identifiers_names()) - {hr_component})
@@ -2171,7 +2178,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if rule_data is None:
             return Dataset(name=node.value, components=result_components, data=None)
 
-        df = rule_data.copy()
+        df = rule_data[list(result_components)].copy()
         code_data = df[other_ids].drop_duplicates().reset_index(drop=True)
         if not other_ids:
             # Without extra identifiers there is exactly one (global) group; a

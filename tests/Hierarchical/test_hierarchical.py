@@ -4842,3 +4842,184 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
+
+    def test_GH_1223_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: when At_1 = "x" then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_null);
+                    DS_r3 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 always_zero all);
+
+        Description: The condition of the rule is on the attribute At_1. A data point takes
+        part in the rule only when its own At_1 satisfies it, a null At_1 does not. The
+        result drops the attributes At_1 and At_2.
+
+        Git Branch: #1223.
+        Goal: Check hierarchy with an attribute as condition component.
+        """
+
+        code = "GH_1223_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_2(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: when At_1 = "x" then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2 all);
+                    DS_r3 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2
+                                partial_null all);
+                    DS_r4 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2
+                                always_zero all_measures);
+
+        Description: The condition of the rule is on the attribute At_1. The validated and the
+        right code items take part in the rule only when their own At_1 satisfies it.
+
+        Git Branch: #1223.
+        Goal: Check check_hierarchy with an attribute as condition component.
+        """
+
+        code = "GH_1223_2"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_3(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define viral propagation VP_1 (variable At_1) is
+                        aggregate max
+                    end viral propagation;
+
+                    define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: when At_1 <> "z" then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_zero all);
+                    DS_r3 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2
+                                always_zero all);
+
+        Description: The condition of the rule is on the viral attribute At_1, which still
+        propagates to the result: the computed data points combine the At_1 of the right code
+        items, the validated ones keep their own.
+
+        Git Branch: #1223.
+        Goal: Check a viral attribute as condition component.
+        """
+
+        code = "GH_1223_3"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_4(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1;
+                        R2: when At_1 = "x" then D = A + E errorcode "E2" errorlevel 2
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_zero);
+                    DS_r3 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_zero
+                                rule_priority);
+                    DS_r4 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_zero
+                                dataset);
+                    DS_r5 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_zero
+                                dataset_priority all);
+
+        Description: R2 reads the code item A that R1 computes. R2 applies to the groups
+        with a data point whose At_1 is "x", also of a code item outside the ruleset (Z), and
+        reads there the computed A.
+
+        Git Branch: #1223.
+        Goal: Check an attribute condition on a rule that reads a computed code item.
+        """
+
+        code = "GH_1223_4"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_5(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: A = B [At_1 = "x"] + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2 all);
+
+        Description: The right code item B has a condition on the attribute At_1. B is left
+        out of the rule only when no data point of the group satisfies it.
+
+        Git Branch: #1223.
+        Goal: Check an attribute in the condition of a right code item.
+        """
+
+        code = "GH_1223_5"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_6(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain condition VD_1 as C_1
+                        rule VD_2) is
+                        R1: when C_1 = "x" then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_2 (variable condition Id_1, At_1
+                        rule Id_2) is
+                        R1: when Id_1 > 1 and At_1 = "x" then A = B + C errorcode "E1"
+                            errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2 all);
+                    DS_r3 <- hierarchy(DS_2, HR_2 condition Id_1, At_1 rule Id_2);
+
+        Description: The alias C_1 of a value domain condition refers to the attribute At_1
+        of DS_1, whose only identifier is the rule component. HR_2 conditions on an
+        identifier and an attribute together.
+
+        Git Branch: #1223.
+        Goal: Check attribute conditions with an alias, without other identifiers and mixed
+        with an identifier.
+        """
+
+        code = "GH_1223_6"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
