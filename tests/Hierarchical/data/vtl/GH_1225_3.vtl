@@ -1,0 +1,7 @@
+define hierarchical ruleset HR_1 (variable rule Id_2) is
+    R1: A = B + C errorcode "E1" errorlevel 1
+end hierarchical ruleset;
+
+DS_c <- check_hierarchy(DS_2, HR_1 rule Id_2 all);
+DS_r1 <- union(check_hierarchy(DS_1, HR_1 rule Id_2 all), DS_c);
+DS_r2 <- setdiff(check_hierarchy(DS_1, HR_1 rule Id_2 all), DS_c);

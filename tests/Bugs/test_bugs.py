@@ -2527,6 +2527,37 @@ class SetBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1225_4(self):
+        """
+        Expression: DS_r1 <- union(symdiff(DS_1, DS_3), DS_2);
+                    DS_r2 <- setdiff(f_hierarchy(DS_1), DS_2);
+                    DS_r3 <- intersect(check_datapoint(DS_1[filter Id_1 > 0], DPR_1 all),
+                                       check_datapoint(DS_2, DPR_1 all));
+        Description: The first operand of each set operator is an inline operator whose query
+            starts with WITH: symdiff, a user defined operator returning a hierarchy and
+            check_datapoint over an expression with two rules.
+        Git Issue: GH_1225.
+        Goal: Check the set operators read any inline operand built from CTEs.
+        """
+        code = "GH_1225_4"
+        number_inputs = 3
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1225_5(self):
+        """
+        Expression: DS_r <- union(fill_time_series(DS_1, all), DS_2);
+        Description: The first operand of union is an inline fill_time_series.
+        Git Issue: GH_1225.
+        Goal: Check the set operators read an inline fill_time_series.
+        """
+        code = "GH_1225_5"
+        number_inputs = 2
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class AggregationBugs(BugHelper):
     """ """
@@ -2975,11 +3006,20 @@ class AggregationBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1225_7(self):
+        """
+        Expression: DS_r1 <- count((DS_1 / 2) group by Id_1);
+                    DS_r2 <- count(DS_1 + DS_2 group by Id_1);
+        Description: The operand of count is an expression, whose measure keeps its name
+            while count reports int_var.
+        Git Issue: GH_1225.
+        Goal: Check count reads the measures of an expression operand on DuckDB.
+        """
+        code = "GH_1225_7"
+        number_inputs = 2
+        references_names = ["1", "2"]
 
-class DataValidationBugs(BugHelper):
-    """ """
-
-    classTest = "Bugs.DataValidationBugs"
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_VTLEN_503(self):
         """ """
@@ -3406,6 +3446,24 @@ class ConditionalBugs(BugHelper):
         code = "GH_1024"
         number_inputs = 1
         references_names = ["1", "2", "3", "4", "5"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1225_6(self):
+        """
+        Expression: DS_r1 <- if DS_1 > 1 then DS_2 else DS_3;
+                    DS_r2 <- if DS_1[keep Me_1] > 1 and DS_1 < 5 then DS_2 else DS_3;
+                    DS_r3 <- if hierarchy(DS_1, HR_1 rule Id_2) > 4 then DS_2 else DS_3;
+                    DS_r4 <- case when DS_1 > 6 then DS_1 when DS_1[keep Me_1] <= 1 then DS_2
+                              else DS_3;
+        Description: The conditions of the dataset if and case are expressions other than a
+            plain dataset or a comparison of two datasets.
+        Git Issue: GH_1225.
+        Goal: Check the condition is evaluated as a boolean dataset on DuckDB.
+        """
+        code = "GH_1225_6"
+        number_inputs = 3
+        references_names = ["1", "2", "3", "4"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 

@@ -2,7 +2,7 @@
 
 import re
 from collections import Counter, defaultdict
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import (
@@ -3103,12 +3103,16 @@ FROM (
                 return "COUNT(*)"
             return ""
 
-        ds = self._get_dataset_structure(node.operand)
-        if ds is None:
-            operand_sql = self.visit(node.operand)
-            return registry.sql(op, operand_sql)
+        # count always reports int_var, so its operand names its Measures itself
+        # instead of after the assignment target, which holds int_var.
+        stash = self._stash_assignment() if op == tokens.COUNT else nullcontext()
+        with stash:
+            ds = self._get_dataset_structure(node.operand)
+            if ds is None:
+                operand_sql = self.visit(node.operand)
+                return registry.sql(op, operand_sql)
 
-        table_src = self._get_dataset_sql(node.operand)
+            table_src = self._get_dataset_sql(node.operand)
 
         # Resolve group columns from input identifiers.
         all_ids = ds.get_identifiers_names()
@@ -3476,18 +3480,7 @@ FROM (
         the measure values from the first (or relevant) dataset.  This differs
         from SQL INTERSECT/EXCEPT which compare all columns.
         """
-        child_sqls = []
-        for child in node.children:
-            child_sql = self.visit(child)
-            if not child_sql.strip().upper().startswith("SELECT"):
-                child_sql = (
-                    f"SELECT * FROM "
-                    f"{quote_name(child.value if hasattr(child, 'value') else child_sql)}"
-                )
-            checked_sql = self._materialize_raising_operand(f"({child_sql})")
-            if checked_sql != f"({child_sql})":
-                child_sql = f"SELECT * FROM {checked_sql}"
-            child_sqls.append(child_sql)
+        child_sqls = [f"SELECT * FROM {self._get_dataset_sql(child)}" for child in node.children]
 
         if op == tokens.UNION:
             first_child = node.children[0]
@@ -3601,16 +3594,19 @@ FROM (
         source_ds = self._get_dataset_structure(source_node)
         alias = "cond"
 
-        # When the condition is a binary op between two datasets is evaluated
-        # as a subquery and reference its boolean measure column instead.
-        cond_is_ds_vs_ds = (
-            isinstance(node.condition, AST.BinOp)
-            and self._get_node_type(node.condition.left) == _DATASET
-            and self._get_node_type(node.condition.right) == _DATASET
+        # A condition other than a plain dataset is evaluated as a subquery and its boolean measure
+        # is referenced instead.
+        cond_is_plain = (
+            isinstance(node.condition, AST.VarID)
+            and self._get_node_type(node.condition) == _DATASET
         )
-        cond_ds = self._get_dataset_structure(node.condition) if cond_is_ds_vs_ds else None
+        cond_ds = None
+        if not cond_is_plain:
+            with self._stash_assignment():
+                cond_ds = self._get_dataset_structure(node.condition)
+                source_sql = self._get_dataset_sql(node.condition) if cond_ds else ""
         if cond_ds is not None:
-            source_sql = self.visit(node.condition)
+            source_ds = cond_ds
             source_ids = list(cond_ds.get_identifiers_names())
             bool_measures = list(cond_ds.get_measures_names())
             cond_expr = f"{alias}.{quote_name(bool_measures[0])}" if bool_measures else "TRUE"
@@ -3732,6 +3728,15 @@ FROM (
         builder: SQLBuilder,
     ) -> str:
         """Join a CASE condition dataset and return the SQL condition expression."""
+        with self._stash_assignment():
+            whole_ds = self._get_dataset_structure(case_obj.condition)
+            if whole_ds is not None:
+                self._left_join_dataset(
+                    case_obj.condition, _DATASET, alias, source_ids, alias_src, builder
+                )
+        if whole_ds is not None:
+            return f"{alias}.{quote_name(whole_ds.get_measures_names()[0])}"
+
         cond_source = self._find_condition_source(case_obj.condition)
         cond_ds = self._get_dataset_structure(cond_source) if cond_source else None
         if cond_source is not None:
@@ -3746,9 +3751,11 @@ FROM (
 
     def _build_dataset_case(self, node: AST.Case) -> str:
         """Build SQL for dataset-level CASE with JOINs."""
-        source_node = self._find_condition_source(node.cases[0].condition)
-        source_ds = self._get_dataset_structure(source_node)
-        source_sql = self._get_dataset_sql(source_node)
+        # The first condition, whatever its expression, gives the data points of the result
+        with self._stash_assignment():
+            first_cond = node.cases[0].condition
+            source_ds = self._get_dataset_structure(first_cond)
+            source_sql = self._get_dataset_sql(first_cond)
         source_ids = list(source_ds.get_identifiers_names())
         alias_src = "src"
 
@@ -3762,7 +3769,12 @@ FROM (
         then_aliases: List[Optional[str]] = []
         then_types: List[str] = []
         for i, case in enumerate(node.cases):
-            cond_expr = self._build_case_condition(case, f"c{i}", source_ids, alias_src, builder)
+            if i == 0:
+                cond_expr = f"{alias_src}.{quote_name(source_ds.get_measures_names()[0])}"
+            else:
+                cond_expr = self._build_case_condition(
+                    case, f"c{i}", source_ids, alias_src, builder
+                )
             cond_exprs.append(cond_expr)
 
             t_type = self._get_node_type(case.thenOp)
@@ -3939,6 +3951,16 @@ FROM (
         ]
         union_sql = " UNION ALL ".join(rule_queries)
 
+        if "ruleid" in id_cols:
+            numbered = " UNION ALL ".join(
+                f"SELECT *, {i} AS _dp_rule FROM ({q})" for i, q in enumerate(rule_queries)
+            )
+            partition = ", ".join(quote_name(c) for c in id_cols)
+            union_sql = (
+                f"SELECT * EXCLUDE (_dp_rule) FROM ({numbered}) AS _dp_all "
+                f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {partition} ORDER BY _dp_rule) = 1"
+            )
+
         if use_cte:
             cte = CTEBuilder()
             cte.cte("_dp_src", stripped[1:-1].strip(), materialized=True)
@@ -3980,7 +4002,12 @@ FROM (
         rule_name = rule.name or ""
         ec_sql = self._error_code_sql(rule.erCode)
         el_sql = self._error_code_sql(rule.erLevel)
-        select_parts = [quote_name(c) for c in id_cols + measure_cols]
+        # An operand component the rule writes again (an operand coming out of a
+        # validation) is replaced by the rule's value, as in the pandas engine.
+        written = {"ruleid", "errorcode", "errorlevel"}
+        if output_mode != "invalid":
+            written.add("bool_var")
+        select_parts = [quote_name(c) for c in id_cols + measure_cols if c not in written]
         # check_datapoint is row-preserving: viral attributes are copied unchanged (issue #906).
         viral_parts: List[str] = []
         for comp in viral_comps or []:
