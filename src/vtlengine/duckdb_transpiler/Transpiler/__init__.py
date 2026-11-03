@@ -5006,22 +5006,11 @@ FROM (
         return filters
 
     def _build_hr_when_sql(self, node: AST.AST, cond_mapping: Dict[str, str]) -> str:
-        """Generate SQL for a WHEN condition in a hierarchical rule."""
-        if isinstance(node, (AST.DefIdentifier, AST.VarID)):
-            col_name = cond_mapping.get(node.value, node.value)
-            return quote_name(col_name)
-        if isinstance(node, AST.Constant):
-            return self._to_sql_literal(node.value)
-        if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
-            operand_sql = self._build_hr_when_sql(node.operand, cond_mapping)
-            return registry.sql(node.op, operand_sql)
-        if isinstance(node, (AST.HRBinOp, AST.BinOp)):
-            left_sql = self._build_hr_when_sql(node.left, cond_mapping)
-            right_sql = self._build_hr_when_sql(node.right, cond_mapping)
-            return registry.sql(node.op, left_sql, right_sql)
-        if isinstance(node, AST.MulOp):
-            children_sql = [self._build_hr_when_sql(c, cond_mapping) for c in node.children]
-            return registry.sql(node.op, *children_sql)
+        """Generate SQL for a condition of a hierarchical rule, in the scope of its operand.
+
+        The condition names the components by their names in the ruleset; it is visited as
+        any other expression on them, with their types (issue #1223).
+        """
         return self.visit(_rename_var_ids(node, cond_mapping))
 
     def _error_code_sql(self, value: Any) -> str:

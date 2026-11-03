@@ -5445,3 +5445,39 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_18(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Me_1 rule Id_2) is
+                        R1: when Me_1 = 0.3 then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_2 (variable condition Id_1 rule Id_2) is
+                        R1: when getyear(Id_1) = 2020 then A = B + C errorcode "E1"
+                            errorlevel 1
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_3 (variable condition Id_1 rule Id_2) is
+                        R1: when period_indicator(Id_1) = cast("Q", duration)
+                            then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 always_zero);
+                    DS_r2 <- hierarchy(DS_2, HR_2 condition Id_1 rule Id_2);
+                    DS_r3 <- hierarchy(DS_2, HR_3 condition Id_1 rule Id_2);
+
+        Description: The conditions compare a Number with the tolerance of the comparisons,
+        and the year and the period indicator of a time period.
+
+        Git Branch: #1223.
+        Goal: Check conditions are evaluated as the same expressions elsewhere.
+        """
+
+        code = "GH_1223_18"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
