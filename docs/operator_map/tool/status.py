@@ -85,8 +85,6 @@ VTL_ERRORS: Final[frozenset[str]] = frozenset(
 # compares, so that a message that changes there does not go unnoticed here.
 NOT_IMPLEMENTED: Final[dict[str, str]] = {
     "1-3-13": "Unsupported VTL construct: {construct}.",
-    "0-5-1-9": "Dataset Priority input mode on HR is not implemented",
-    "1-3-2-2": "At op ``{op}``: User defined operator without returns is not implemented.",
     "1-3-2-5": (
         "At op eval: Eval in component execution is not supported, it only applies to Data Sets."
     ),
