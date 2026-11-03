@@ -4305,10 +4305,15 @@ FROM (
 
     @staticmethod
     def _hr_rule_pivots(
-        cte: CTEBuilder, parsed_rules: List[_ParsedHRRule], other_ids: List[str], pivot: str
+        cte: CTEBuilder,
+        parsed_rules: List[_ParsedHRRule],
+        other_ids: List[str],
+        pivot: str,
+        prefix: str,
     ) -> Dict[int, str]:
         """The pivot each rule reads, by rule index: ``pivot``, or for large rulesets narrow
-        projections of it with the structs of a few rules each (issue #1223)."""
+        projections of it named ``prefix`` and a number, with the structs of a few rules each
+        (issue #1223)."""
         if len(parsed_rules) <= _HR_PIVOT_RULES:
             return {parsed.index: pivot for parsed in parsed_rules}
         keys = [quote_name(c) for c in other_ids]
@@ -4316,7 +4321,7 @@ FROM (
         pivots: Dict[int, str] = {}
         for start in range(0, len(ordered), _HR_PIVOT_RULES):
             chunk = ordered[start : start + _HR_PIVOT_RULES]
-            name = f"{pivot}_{start // _HR_PIVOT_RULES}"
+            name = f"{prefix}_{start // _HR_PIVOT_RULES}"
             structs = [f"_r{parsed.index}" for parsed in chunk]
             cte.cte(name, f"SELECT {', '.join([*keys, *structs])} FROM {pivot}", True)
             pivots.update((parsed.index, name) for parsed in chunk)
@@ -4385,7 +4390,7 @@ FROM (
                 cte, ds, parsed_rules, priority_rules, other_ids, mode, ruleset_name
             )
         input_mode = "dataset_priority" if priority_rules else "dataset"
-        pivots = self._hr_rule_pivots(cte, parsed_rules, other_ids, pivot)
+        pivots = self._hr_rule_pivots(cte, parsed_rules, other_ids, pivot, "_check_pivot")
         measure_comp = ds.components.get(measure_name)
         rule_queries = [
             self._build_check_hr_rule_select(
@@ -4488,7 +4493,7 @@ FROM (
         rules read and the rules that compute each code item.
         """
         computed_by: Dict[str, List[str]] = defaultdict(list)
-        pivots = self._hr_rule_pivots(cte, priority_rules, other_ids, "_pivot")
+        pivots = self._hr_rule_pivots(cte, priority_rules, other_ids, "_pivot", "_dp_rule_pivot")
         for i, parsed in enumerate(priority_rules):
             name = f"_dp_rule_{i}"
             source = self._hr_rule_source(
@@ -4777,7 +4782,7 @@ FROM (
         cte = CTEBuilder()
         # MATERIALIZED so the pivot aggregation is computed once, not once per rule.
         cte.cte("_pivot", pivot_sql, materialized=True)
-        pivots = self._hr_rule_pivots(cte, parsed_rules, other_ids, "_pivot")
+        pivots = self._hr_rule_pivots(cte, parsed_rules, other_ids, "_pivot", "_rule_pivot")
         rule_result_refs: List[Tuple[str, str]] = []
         computed_by: Dict[str, List[str]] = defaultdict(list)
 

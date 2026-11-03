@@ -5407,3 +5407,41 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_17(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R0: T0 = A0 + B0 errorcode "E0" errorlevel 1;
+                        ...
+                        R16: T16 = A16 + B16 errorcode "E16" errorlevel 1
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_2 (variable condition Id_1 rule Id_2) is
+                        R0: when Id_1 = 1 then X = A0 + B0 errorcode "E0" errorlevel 1;
+                        R1: when Id_1 = 2 then X = A1 + B1 errorcode "E1" errorlevel 1;
+                        R2: Y = X + A2 errorcode "E2" errorlevel 1;
+                        R3: T3 = A3 + B3 errorcode "E3" errorlevel 1;
+                        ...
+                        R16: T16 = A16 + B16 errorcode "E16" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- check_hierarchy(DS_1, HR_1 rule Id_2 always_zero
+                                dataset_priority all);
+                    DS_r2 <- check_hierarchy(DS_1, HR_2 condition Id_1 rule Id_2 always_zero
+                                dataset_priority all);
+
+        Description: Rulesets of more rules than one pivot holds, with and without overlapping
+        rules that another rule reads.
+
+        Git Branch: #1223.
+        Goal: Check dataset_priority on large rulesets.
+        """
+
+        code = "GH_1223_17"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
