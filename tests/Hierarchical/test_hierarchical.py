@@ -5615,3 +5615,40 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_21(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        R1: when Id_1 > 0 then A = B + C errorcode "E1" errorlevel 1;
+                        R2: when Id_1 < 10 then A = B - C errorcode "E2" errorlevel 2;
+                        R3: D >= A + E errorcode "E3" errorlevel 3
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2
+                                dataset_priority all);
+
+        Description: R1 and R2 compute different values of A, which the operand lacks and
+        R3, a rule that only validates, reads.
+
+        Git Branch: #1223.
+        Goal: Check the runtime error names the ruleset when a validating rule reads the
+        code item.
+        """
+
+        code = "GH_1223_21"
+        number_inputs = 1
+        exception_code = "2-1-10-1"
+        exception_message = (
+            "More than one rule of the Hierarchy Roll-up HR_1 computes code item A "
+            "for the same data point, with different values."
+        )
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=exception_code,
+            exception_message=exception_message,
+        )

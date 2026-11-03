@@ -1821,7 +1821,6 @@ class InterpreterAnalyzer(ASTTemplate):
                     for rule in self._sort_hr_rules(node, hr_info, self._hr_eq_rules(rules)):
                         self.visit(rule)
                     self.is_from_hr_agg = False
-                    self.hr_agg_ruleset = None
                 self.is_from_hr_val = True
                 for rule in rules:
                     rule_output_values[rule.name] = {
@@ -1832,6 +1831,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.is_from_hr_val = False
                 self.hr_agg_rules_computed = None
                 self.hr_agg_item_rules = None
+                # The rules that validate read the computed code items too (issue #1223)
+                self.hr_agg_ruleset = None
 
             # Clean up interpreter state
             self.ruleset_signature = None

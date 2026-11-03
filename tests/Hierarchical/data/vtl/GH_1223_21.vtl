@@ -1,0 +1,7 @@
+define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+    R1: when Id_1 > 0 then A = B + C errorcode "E1" errorlevel 1;
+    R2: when Id_1 < 10 then A = B - C errorcode "E2" errorlevel 2;
+    R3: D >= A + E errorcode "E3" errorlevel 3
+end hierarchical ruleset;
+
+DS_r <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 dataset_priority all);
