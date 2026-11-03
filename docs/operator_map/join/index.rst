@@ -4,7 +4,7 @@ Join operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 2 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (ce4408d3) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 2 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (52e8d54f) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -94,7 +94,7 @@ Join operators
 
 .. rubric:: Forms that are not green
 
-Every form that is not 🟢, with the example that shows its status: the first that is not green, or the first that diverges for a 🔵 form.
+Every form that is neither 🟢 nor 🛡️, with the example that shows its status: the first that is neither, or the first that diverges for a 🔵 form.
 
 .. list-table::
    :header-rows: 1
@@ -110,24 +110,17 @@ Every form that is not 🟢, with the example that shows its status: the first t
    * - :doc:`Left Join <left_join>`
      - `left\_join(DS, DS using Id, nvl(Id, c)) <left_join.html#form-using-nvl>`__
      - 🟡
-     - `Nvl for extra identifier <left_join.html#ex-using-nvl-nvl-for-extra-identifier>`__
-     - 🛡 1-1-13-4
-     - 🛡 1-1-13-4
-     - SemanticError 1-1-13-4: At op left\_join: Using clause, using=[\'Id\_1\'], does not define all the Identifiers, of non reference Dataset DS\_2. Please check transformation with output Dataset DS\_r
-   * - :doc:`Full Join <full_join>`
-     - `full\_join(DS, DS using Id) <full_join.html#form-using>`__
-     - 🛡️
-     - `All common identifiers <full_join.html#ex-using-all-common-identifiers>`__
-     - 🛡 1-1-13-8
-     - 🛡 1-1-13-8
-     - SemanticError 1-1-13-8: At op full\_join: No available using clause. Please check transformation with output Dataset DS\_r
+     - `Nvl on aliased identifier <left_join.html#ex-using-nvl-nvl-on-aliased-identifier>`__
+     - 💥 AttributeError
+     - 💥 AttributeError
+     - AttributeError: \'BinOp\' object has no attribute \'value\'
    * - :doc:`Full Join <full_join>`
      - `full\_join(DS, DS using Id, nvl(Id, c)) <full_join.html#form-using-nvl>`__
      - 🟡
-     - `Nvl for extra identifier <full_join.html#ex-using-nvl-nvl-for-extra-identifier>`__
-     - 🛡 1-1-13-8
-     - 🛡 1-1-13-8
-     - SemanticError 1-1-13-8: At op full\_join: No available using clause. Please check transformation with output Dataset DS\_r
+     - `Nvl per operand alias <full_join.html#ex-using-nvl-nvl-per-operand-alias>`__
+     - 💥 AttributeError
+     - 💥 AttributeError
+     - AttributeError: \'BinOp\' object has no attribute \'value\'
 
 .. toctree::
    :maxdepth: 1

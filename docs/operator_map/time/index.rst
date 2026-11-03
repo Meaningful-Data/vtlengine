@@ -4,7 +4,7 @@ Time operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 16 of 17 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (ce4408d3) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 16 of 17 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (52e8d54f) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -296,7 +296,7 @@ Time operators
 
 .. rubric:: Forms that are not green
 
-Every form that is not 🟢, with the example that shows its status: the first that is not green, or the first that diverges for a 🔵 form.
+Every form that is neither 🟢 nor 🛡️, with the example that shows its status: the first that is neither, or the first that diverges for a 🔵 form.
 
 .. list-table::
    :header-rows: 1

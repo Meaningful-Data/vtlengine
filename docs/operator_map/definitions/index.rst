@@ -4,7 +4,7 @@ Definitions (VTL-DL)
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 0 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (ce4408d3) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 0 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (52e8d54f) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -154,7 +154,7 @@ Definitions (VTL-DL)
 
 .. rubric:: Forms that are not green
 
-Every form that is not 🟢, with the example that shows its status: the first that is not green, or the first that diverges for a 🔵 form.
+Every form that is neither 🟢 nor 🛡️, with the example that shows its status: the first that is neither, or the first that diverges for a 🔵 form.
 
 .. list-table::
    :header-rows: 1
@@ -195,13 +195,6 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - 🛡 1-3-13
      - 🛡 1-3-13
      - SemanticError 1-3-13: Unsupported VTL construct: ruleset type \'datapoint\' (line 5, column 49).
-   * - :doc:`define datapoint ruleset <define_datapoint_ruleset>`
-     - `(valuedomain VD [as alias], …) <define_datapoint_ruleset.html#form-valuedomain>`__
-     - 🛡️
-     - `Domains bound to components <define_datapoint_ruleset.html#ex-valuedomain-domains-bound-to-components>`__
-     - 🛡 1-1-1-10
-     - 🛡 1-1-1-10
-     - SemanticError 1-1-1-10: Component VD\_FLOW not found in Dataset DS\_1. Please check transformation with output Dataset DS\_r
    * - :doc:`define datapoint ruleset <define_datapoint_ruleset>`
      - `[name :] … [errorcode …] [errorlevel …] <define_datapoint_ruleset.html#form-rule-options>`__
      - 🟡

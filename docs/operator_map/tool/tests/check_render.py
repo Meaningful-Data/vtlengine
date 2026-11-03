@@ -1039,7 +1039,7 @@ def test_block_page_lists_the_forms_that_are_not_green_with_their_reason() -> No
             "DuckDB: KeyError: \\'Me\\_1\\'",
         ],
     ]  # mod(sc, sc) has a 🟢 and a 🛡️ example: it is green, and not listed
-    assert "Every form is green." in block_rst(STRING, MAP, index_of(MAP), META)
+    assert "Every form is 🟢 or 🛡️." in block_rst(STRING, MAP, index_of(MAP), META)
 
 
 # --- The index, the overview and the page of the operators ---
@@ -1322,7 +1322,8 @@ def test_detail_names_the_engine_that_has_one() -> None:
         "SemanticError 1-1-1-1: boom"
     )
     # An example that matches has nothing to say, and its form is not in the table.
-    assert "Every form is green." in one_form_block(OK)
+    assert "Every form is 🟢 or 🛡️." in one_form_block(OK)
+    assert "Every form is 🟢 or 🛡️." in one_form_block(ExampleResult(error, error, True, "refused"))
 
 
 def test_engines_that_differ_with_the_same_verdict_say_so() -> None:

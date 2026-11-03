@@ -864,16 +864,17 @@ def _types_table(chapter: Chapter) -> str:
 
 
 def _not_green(chapter: Chapter, index: StatusIndex) -> list[str]:
-    """The forms that are not 🟢, in the order of the diagrams, with the example that shows why.
+    """The forms that are neither 🟢 nor 🛡️, in diagram order, with the example that shows why.
 
-    That is the first example that is not green, or for a 🔵 form the first that diverges.
+    That is the first example that is neither green nor a shield, or for a 🔵 form the first that
+    diverges. A shield, an error raised on purpose, is no defect.
     """
     rows: list[list[str]] = []
     for op in chapter.operators:
         for variant in forms_in_diagram_order(op):
             key = f"{chapter.id}/{op.id}/{variant.id}"
             status = index.variants.get(key)
-            if status is None or status == "ok":
+            if status is None or status in ("ok", "refused"):
                 continue
             shown = _shown_example(status, variant, key, index)
             if shown is None:
@@ -893,11 +894,11 @@ def _not_green(chapter: Chapter, index: StatusIndex) -> list[str]:
                 ]
             )
     if not rows:
-        return ["Every form is green."]
+        return ["Every form is 🟢 or 🛡️."]
     head = ("Operator", "Form", "Status", "Example", "pandas", "DuckDB", "Detail")
     intro = (
-        "Every form that is not 🟢, with the example that shows its status: the first that is "
-        "not green, or the first that diverges for a 🔵 form."
+        "Every form that is neither 🟢 nor 🛡️, with the example that shows its status: the first "
+        "that is neither, or the first that diverges for a 🔵 form."
     )
     return [intro, _table(head, rows)]
 
@@ -917,7 +918,7 @@ def _shows(status: Status, result: ExampleResult) -> bool:
     """Whether an example is the one to show for a form that has ``status``."""
     if status == "diverge":
         return result.status == "diverge"
-    return result.status != "ok"
+    return result.status not in ("ok", "refused")
 
 
 # --- Index ---
