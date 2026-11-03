@@ -3971,6 +3971,134 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1173_1(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        TOTAL = A + B;
+                        GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 rule Id_2 dataset_priority all);
+
+        Description: TOTAL is missing from DS_1 on Id_1 = 2.
+
+        Git Branch: #1173.
+        Goal: Check the second rule takes TOTAL from the first rule there.
+        """
+
+        code = "GH_1173_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1173_2(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        R1: when Id_1 = 1 then TOTAL = A + B;
+                        R2: when Id_1 = 2 then TOTAL = D + E;
+                        R3: GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 dataset_priority all);
+
+        Description: TOTAL is missing from DS_1, and two rules compute it under different
+        conditions.
+
+        Git Branch: #1173.
+        Goal: Check R3 takes TOTAL from the rule that computes it on each Id_1.
+        """
+
+        code = "GH_1173_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1173_3(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        TOTAL = A + B;
+                        GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 rule Id_2 dataset_priority);
+
+        Description: TOTAL is null in DS_1 on Id_1 = 1.
+
+        Git Branch: #1173.
+        Goal: Check the second rule takes TOTAL from the first rule there, while the first rule
+        validates the TOTAL of DS_1.
+        """
+
+        code = "GH_1173_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1173_4(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: TOTAL = A + B;
+                        R2: TOTAL = D + E;
+                        R3: GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 rule Id_2 dataset_priority all);
+
+        Description: TOTAL is missing from DS_1 on Id_1 = 2, where R1 and R2 both compute it.
+
+        Git Branch: #1173.
+        Goal: Check the runtime error is raised.
+        """
+
+        code = "GH_1173_4"
+        number_inputs = 1
+        exception_code = "2-1-10-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_1173_5(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: TOTAL = A + B;
+                        R2: TOTAL = D + E;
+                        R3: GRAND = TOTAL + C
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 rule Id_2 dataset_priority invalid);
+
+        Description: R1 and R2 compute different TOTAL values, but DS_1 has TOTAL on every
+            Id_1, so R3 reads the TOTAL of DS_1 and no error is raised.
+
+        Git Branch: #1173.
+        Goal: Check Result.
+        """
+
+        code = "GH_1173_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1190_1(self):
         """
         HIERARCHICAL RULSET: hierarchy, check_hierarchy
@@ -4403,3 +4531,1124 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         with mock.patch.dict(os.environ, {"COMPARISON_ABSOLUTE_THRESHOLD": "6"}):
             self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1218_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 rule Id_2)[calc attribute At_1 := "z"];
+
+        Description: hierarchy drops the attribute At_1 of its operand, which the calc
+        clause then creates again.
+
+        Git Branch: #1218.
+        Goal: Check a calc clause on the hierarchy result sets a dropped attribute.
+        """
+
+        code = "GH_1218_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1218_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 rule Id_2 always_zero all)
+                                [calc attribute At_1 := "z"];
+
+        Description: With output all, the data points of the operand that no rule
+        computes are kept without the attribute At_1, which the calc clause creates again.
+
+        Git Branch: #1218.
+        Goal: Check hierarchy with output all drops the attributes that are not viral.
+        """
+
+        code = "GH_1218_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1218_3(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 rule Id_2 all)
+                                [calc attribute At_1 := "z"];
+
+        Description: check_hierarchy drops the attribute At_1 of its operand, which the
+        calc clause then creates again.
+
+        Git Branch: #1218.
+        Goal: Check a calc clause on the check_hierarchy result sets a dropped attribute.
+        """
+
+        code = "GH_1218_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1218_4(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2)[rename Me_1 to Me_2];
+                    DS_r2 <- hierarchy(DS_1, HR_1 rule Id_2)[sub Id_1 = "X"];
+                    DS_r3 <- hierarchy(DS_1, HR_1 rule Id_2)
+                                [calc attribute At_1 := "z"][calc attribute At_2 := "w"];
+                    DS_r4 <- hierarchy(DS_1, HR_1 rule Id_2)
+                                [calc attribute At_1 := "z", attribute At_2 := "w"];
+
+        Description: hierarchy drops the attributes At_1 (String) and At_2 (Date) of its
+        operand. The clauses on the result do not refer to them, and the calc clauses create
+        them again, At_2 with another type.
+
+        Git Branch: #1218.
+        Goal: Check clauses chained on a hierarchy result whose operand has attributes.
+        """
+
+        code = "GH_1218_4"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1218_5(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2 all);
+                    DS_r2 <- hierarchy(DS_1, HR_1 rule Id_2 dataset all)
+                                [calc attribute At_1 := "z"];
+                    DS_r3 <- hierarchy(DS_1, HR_1 rule Id_2 always_zero rule_priority all)
+                                [calc attribute At_1 := "z"];
+
+        Description: With output all, the data points of the operand that no rule computes
+        are kept without the attributes At_1 and At_2, with and without a clause on the
+        result and with the dataset and rule_priority inputs.
+
+        Git Branch: #1218.
+        Goal: Check hierarchy with output all drops the attributes that are not viral.
+        """
+
+        code = "GH_1218_5"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1218_6(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_2 (variable condition Id_1 rule Id_2) is
+                        R1: when Id_1 = "X" then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_2 condition Id_1 rule Id_2)
+                                [calc attribute At_1 := "z"];
+                    DS_r2 <- hierarchy(DS_1[filter At_1 <> "y"], HR_1 rule Id_2 partial_zero)
+                                [calc attribute At_1 := "z"];
+                    DS_r3 <- hierarchy(DS_1[calc attribute At_3 := "q"], HR_1 rule Id_2)
+                                [calc attribute At_3 := "z"];
+
+        Description: A conditioned rule, an operand filtered on one of its attributes and an
+        operand with an attribute created by a calc clause, each followed by a calc clause
+        that creates a dropped attribute again.
+
+        Git Branch: #1218.
+        Goal: Check other hierarchy operands and rules drop the attributes that are not viral.
+        """
+
+        code = "GH_1218_6"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1218_7(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(hierarchy(DS_1, HR_1 rule Id_2 all), HR_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(hierarchy(DS_1, HR_1 rule Id_2 all),
+                                HR_1 rule Id_2 all);
+                    DS_r3 <- inner_join(hierarchy(DS_1, HR_1 rule Id_2) as a, DS_2 as b
+                                calc attribute At_1 := "z");
+
+        Description: The result of hierarchy, whose operand has attributes, is the operand of
+        another hierarchy, of a check_hierarchy and of a join with a calc clause.
+
+        Git Branch: #1218.
+        Goal: Check operators that take a hierarchy result as operand.
+        """
+
+        code = "GH_1218_7"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1218_8(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    define operator f (ds dataset)
+                        returns dataset is
+                            hierarchy(ds, HR_1 rule Id_2)
+                    end operator;
+
+                    DS_r <- f(DS_1)[calc attribute At_1 := "z"];
+
+        Description: A user defined operator returns the hierarchy result, and a calc clause
+        on its call creates a dropped attribute again.
+
+        Git Branch: #1218.
+        Goal: Check a calc clause on a user defined operator that returns a hierarchy result.
+        """
+
+        code = "GH_1218_8"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1218_9(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define viral propagation VP (variable VAt_1) is
+                        aggregate max
+                    end viral propagation;
+
+                    define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 rule Id_2)[calc attribute At_1 := "z"];
+
+        Description: The operand has the attribute At_1 and the viral attribute VAt_1.
+        hierarchy keeps VAt_1, combined with max, and drops At_1, which the calc clause
+        creates again.
+
+        Git Branch: #1218.
+        Goal: Check hierarchy keeps the viral attributes and drops the other ones.
+        """
+
+        code = "GH_1218_9"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1218_10(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    define datapoint ruleset DPR (variable Me_1) is
+                        R1: Me_1 > 2 errorcode "E2" errorlevel 1
+                    end datapoint ruleset;
+
+                    DS_r1 <- check_datapoint(DS_1, DPR all)[calc attribute At_1 := "z"];
+                    DS_r2 <- check(DS_1 > 2 errorcode "E3" errorlevel 1 imbalance DS_1 - 2 all)
+                                [calc attribute At_1 := "z"];
+                    DS_r3 <- check_hierarchy(DS_1, HR_1 rule Id_2 invalid)
+                                [calc attribute At_1 := "z"];
+
+        Description: The validation operators drop the attributes of their operand, which a
+        calc clause on their result creates again.
+
+        Git Branch: #1218.
+        Goal: Check a calc clause on the result of the validation operators.
+        """
+
+        code = "GH_1218_10"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1218_11(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 rule Id_2)[filter At_1 = "x"];
+
+        Description: hierarchy drops the attribute At_1 of its operand, so the filter clause
+        on the result refers to a component that does not exist.
+
+        Git Branch: #1218.
+        Goal: Check a clause on a hierarchy result cannot use a dropped attribute.
+        """
+
+        code = "GH_1218_11"
+        number_inputs = 1
+        exception_code = "1-1-1-10"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_1223_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: when At_1 = "x" then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_null);
+                    DS_r3 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 always_zero all);
+
+        Description: The condition of the rule is on the attribute At_1. A data point takes
+        part in the rule only when its own At_1 satisfies it, a null At_1 does not. The
+        result drops the attributes At_1 and At_2.
+
+        Git Branch: #1223.
+        Goal: Check hierarchy with an attribute as condition component.
+        """
+
+        code = "GH_1223_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_2(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: when At_1 = "x" then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2 all);
+                    DS_r3 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2
+                                partial_null all);
+                    DS_r4 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2
+                                always_zero all_measures);
+
+        Description: The condition of the rule is on the attribute At_1. The validated and the
+        right code items take part in the rule only when their own At_1 satisfies it.
+
+        Git Branch: #1223.
+        Goal: Check check_hierarchy with an attribute as condition component.
+        """
+
+        code = "GH_1223_2"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_3(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define viral propagation VP_1 (variable At_1) is
+                        aggregate max
+                    end viral propagation;
+
+                    define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: when At_1 <> "z" then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_zero all);
+                    DS_r3 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2
+                                always_zero all);
+
+        Description: The condition of the rule is on the viral attribute At_1, which still
+        propagates to the result: the computed data points combine the At_1 of the right code
+        items, the validated ones keep their own.
+
+        Git Branch: #1223.
+        Goal: Check a viral attribute as condition component.
+        """
+
+        code = "GH_1223_3"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_4(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1;
+                        R2: when At_1 = "x" then D = A + E errorcode "E2" errorlevel 2
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_zero);
+                    DS_r3 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_zero
+                                rule_priority);
+                    DS_r4 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_zero
+                                dataset);
+                    DS_r5 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_zero
+                                dataset_priority all);
+
+        Description: R2 reads the code item A that R1 computes. R2 applies to the groups
+        with a data point whose At_1 is "x", also of a code item outside the ruleset (Z), and
+        reads there the computed A.
+
+        Git Branch: #1223.
+        Goal: Check an attribute condition on a rule that reads a computed code item.
+        """
+
+        code = "GH_1223_4"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_5(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: A = B [At_1 = "x"] + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2 all);
+
+        Description: The right code item B has a condition on the attribute At_1. B is left
+        out of the rule only when no data point of the group satisfies it.
+
+        Git Branch: #1223.
+        Goal: Check an attribute in the condition of a right code item.
+        """
+
+        code = "GH_1223_5"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_6(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (valuedomain condition VD_1 as C_1
+                        rule VD_2) is
+                        R1: when C_1 = "x" then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_2 (variable condition Id_1, At_1
+                        rule Id_2) is
+                        R1: when Id_1 > 1 and At_1 = "x" then A = B + C errorcode "E1"
+                            errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2 all);
+                    DS_r3 <- hierarchy(DS_2, HR_2 condition Id_1, At_1 rule Id_2);
+
+        Description: The alias C_1 of a value domain condition refers to the attribute At_1
+        of DS_1, whose only identifier is the rule component. HR_2 conditions on an
+        identifier and an attribute together.
+
+        Git Branch: #1223.
+        Goal: Check attribute conditions with an alias, without other identifiers and mixed
+        with an identifier.
+        """
+
+        code = "GH_1223_6"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1224_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Me_1 rule Id_2) is
+                        R1: when Me_1 > 0 then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 all);
+
+        Description: The condition of the rule is on the measure Me_1, which every data point
+        satisfies.
+
+        Git Branch: #1224.
+        Goal: Check a measure as condition component.
+        """
+
+        code = "GH_1224_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1224_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Me_1 rule Id_2) is
+                        R1: when Me_1 < 50 then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2);
+                    DS_r2 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 partial_null);
+                    DS_r3 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 always_zero all);
+                    DS_r4 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 all);
+                    DS_r5 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2
+                                partial_null all);
+                    DS_r6 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2
+                                always_zero all_measures);
+
+        Description: The condition of the rule is on the measure Me_1. A data point takes part
+        in the rule only when its own Me_1 satisfies it.
+
+        Git Branch: #1224.
+        Goal: Check a measure condition evaluated per data point.
+        """
+
+        code = "GH_1224_2"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1224_3(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Me_1 rule Id_2) is
+                        R1: A = B [Me_1 < 5] + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_2 (variable condition Me_1 rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1;
+                        R2: when Me_1 > 5 then D = A + E errorcode "E2" errorlevel 2
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 all);
+                    DS_r3 <- hierarchy(DS_2, HR_2 condition Me_1 rule Id_2);
+                    DS_r4 <- hierarchy(DS_2, HR_2 condition Me_1 rule Id_2 partial_zero);
+
+        Description: A measure in the condition of a right code item, and in the condition of
+        a rule that reads a computed code item.
+
+        Git Branch: #1224.
+        Goal: Check measure conditions on right code items and on computed code items.
+        """
+
+        code = "GH_1224_3"
+        number_inputs = 2
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_7(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define viral propagation VP_1 (variable At_1) is
+                        aggregate max
+                    end viral propagation;
+
+                    define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: when At_1 = "w" then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 all);
+
+        Description: No data point satisfies the condition on the viral attribute At_1, so
+        the rule computes no data point. The result keeps At_1.
+
+        Git Branch: #1223.
+        Goal: Check a hierarchy that computes no data point of an operand with a viral
+        attribute.
+        """
+
+        code = "GH_1223_7"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_8(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1;
+                        R2: when At_1 = "x" then D = A + E errorcode "E2" errorlevel 2
+                    end hierarchical ruleset;
+
+                    DS_r1 <- check_hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_null
+                                dataset_priority all);
+                    DS_r2 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_zero);
+
+        Description: The rule component is the only identifier of DS_1, and no data point
+        satisfies the condition of R2: R2 does not apply, even if R1 computes A.
+
+        Git Branch: #1223.
+        Goal: Check a rule that reads a computed code item and whose condition no data point
+        satisfies, without other identifiers.
+        """
+
+        code = "GH_1223_8"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_9(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition At_1, Me_1
+                        rule Id_2) is
+                        R1: when At_1 = "x" then A = B + C errorcode "E1" errorlevel 1;
+                        R2: when Me_1 > 0 then A = B - C errorcode "E2" errorlevel 2;
+                        R3: when At_1 = "x" then D = A + E errorcode "E3" errorlevel 3
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition At_1, Me_1 rule Id_2
+                                dataset_priority all);
+
+        Description: R3 reads A, which R1 and R2 compute with different values. The A of
+        the operand does not satisfy the condition of R3, so R3 does not read it, and the
+        runtime error is raised.
+
+        Git Branch: #1223.
+        Goal: Check dataset_priority reads the operand as the condition of the reading rule
+        sees it.
+        """
+
+        code = "GH_1223_9"
+        number_inputs = 1
+        exception_code = "2-1-10-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_1223_10(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define viral propagation VP_1 (variable At_1) is
+                        aggregate max
+                    end viral propagation;
+
+                    define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: when At_1 = "y" then A = B + F errorcode "E1" errorlevel 1;
+                        R2: when At_1 = "x" then A = B + C errorcode "E2" errorlevel 2;
+                        R3: when At_1 = "x" then D = A + E errorcode "E3" errorlevel 3
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_zero);
+
+        Description: The rule component is the only identifier of DS_1. R1 and R2 may both
+        compute A, but only R1 does, so D combines the viral At_1 that R1 gives to A.
+
+        Git Branch: #1223.
+        Goal: Check the viral attributes of a code item that only some of the rules that may
+        compute it compute, without other identifiers.
+        """
+
+        code = "GH_1223_10"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_11(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: F = D - A errorcode "E1" errorlevel 1;
+                        R2: G = F + B errorcode "E2" errorlevel 2
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2 non_zero rule_priority);
+                    DS_r2 <- hierarchy(DS_1, HR_1 rule Id_2 non_zero);
+                    DS_r3 <- check_hierarchy(DS_1, HR_1 rule Id_2 non_zero dataset_priority all);
+
+        Description: R1 computes a zero F for Id_1 1, which the non_zero mode drops, so R2
+        does not read it: with rule_priority it reads the F of the operand, with rule none.
+
+        Git Branch: #1223.
+        Goal: Check a rule does not read a computed data point that the mode drops.
+        """
+
+        code = "GH_1223_11"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_12(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        R1: when Id_1 > 0 then A = B + C errorcode "E1" errorlevel 1;
+                        R2: when Id_1 < 10 then A = C + B errorcode "E2" errorlevel 2;
+                        R3: D = A + E errorcode "E3" errorlevel 3
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_2 (variable condition Me_1 rule Id_2) is
+                        R1: when Me_1 > 0 then A = B + C errorcode "E1" errorlevel 1;
+                        R2: when Me_1 < 10 then A = C + B errorcode "E2" errorlevel 2;
+                        R3: D = A + E errorcode "E3" errorlevel 3
+                    end hierarchical ruleset;
+
+                    DS_r1 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 always_zero
+                                dataset_priority all);
+                    DS_r2 <- check_hierarchy(DS_2, HR_2 condition Me_1 rule Id_2 always_zero
+                                dataset_priority all);
+
+        Description: R1 and R2 compute the same A, which the operand lacks, so R3 reads it
+        once. DS_2 has no identifier other than the rule component.
+
+        Git Branch: #1223.
+        Goal: Check dataset_priority with overlapping rules that compute the same value.
+        """
+
+        code = "GH_1223_12"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_13(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        R1: when Id_1 > 0 then A = B + C errorcode "E1" errorlevel 1;
+                        R2: when Id_1 < 10 then A = B - C errorcode "E2" errorlevel 2;
+                        R3: when Id_1 > 5 then D = A + E errorcode "E3" errorlevel 3
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2
+                                dataset_priority all);
+
+        Description: R1 and R2 compute different values of A. R3, which reads A, does not
+        apply to Id_1 1, so it does not read the A of the operand there.
+
+        Git Branch: #1223.
+        Goal: Check the runtime error of overlapping rules where the reading rule does not
+        apply.
+        """
+
+        code = "GH_1223_13"
+        number_inputs = 1
+        exception_code = "2-1-10-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_1223_14(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        R1: A = B [Id_1 = 1] + C + B [Id_1 = 2] errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_2 (variable condition At_1 rule Id_2) is
+                        R1: A = B [At_1 = "x"] + C + B [At_1 = "y"] errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 always_zero);
+                    DS_r2 <- hierarchy(DS_1, HR_2 condition At_1 rule Id_2 always_zero);
+
+        Description: B appears twice in the rule, each time with its own condition.
+
+        Git Branch: #1223.
+        Goal: Check a code item twice in a rule with different right conditions.
+        """
+
+        code = "GH_1223_14"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_15(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = b + B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 rule Id_2 always_zero all);
+
+        Description: The code items b and B differ only in case.
+
+        Git Branch: #1223.
+        Goal: Check code items that differ only in case are different code items.
+        """
+
+        code = "GH_1223_15"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_16(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: when time_agg("A", _, At_1, first) = cast("2020A", time_period)
+                            then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_2 (variable condition Id_1 rule Id_2) is
+                        R1: when time_agg("A", _, Id_1, first) = cast("2020A", time_period)
+                            then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- hierarchy(DS_1, HR_2 condition Id_1 rule Id_2);
+
+        Description: The conditions aggregate the time period of an attribute and of an
+        identifier.
+
+        Git Branch: #1223.
+        Goal: Check time_agg in the condition of a hierarchical rule.
+        """
+
+        code = "GH_1223_16"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_17(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R0: T0 = A0 + B0 errorcode "E0" errorlevel 1;
+                        ...
+                        R16: T16 = A16 + B16 errorcode "E16" errorlevel 1
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_2 (variable condition Id_1 rule Id_2) is
+                        R0: when Id_1 = 1 then X = A0 + B0 errorcode "E0" errorlevel 1;
+                        R1: when Id_1 = 2 then X = A1 + B1 errorcode "E1" errorlevel 1;
+                        R2: Y = X + A2 errorcode "E2" errorlevel 1;
+                        R3: T3 = A3 + B3 errorcode "E3" errorlevel 1;
+                        ...
+                        R16: T16 = A16 + B16 errorcode "E16" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- check_hierarchy(DS_1, HR_1 rule Id_2 always_zero
+                                dataset_priority all);
+                    DS_r2 <- check_hierarchy(DS_1, HR_2 condition Id_1 rule Id_2 always_zero
+                                dataset_priority all);
+
+        Description: Rulesets of more rules than one pivot holds, with and without overlapping
+        rules that another rule reads.
+
+        Git Branch: #1223.
+        Goal: Check dataset_priority on large rulesets.
+        """
+
+        code = "GH_1223_17"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_18(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Me_1 rule Id_2) is
+                        R1: when Me_1 = 0.3 then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_2 (variable condition Id_1 rule Id_2) is
+                        R1: when getyear(Id_1) = 2020 then A = B + C errorcode "E1"
+                            errorlevel 1
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_3 (variable condition Id_1 rule Id_2) is
+                        R1: when period_indicator(Id_1) = cast("Q", duration)
+                            then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 always_zero);
+                    DS_r2 <- hierarchy(DS_2, HR_2 condition Id_1 rule Id_2);
+                    DS_r3 <- hierarchy(DS_2, HR_3 condition Id_1 rule Id_2);
+
+        Description: The conditions compare a Number with the tolerance of the comparisons,
+        and the year and the period indicator of a time period.
+
+        Git Branch: #1223.
+        Goal: Check conditions are evaluated as the same expressions elsewhere.
+        """
+
+        code = "GH_1223_18"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_19(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        R1: X = E [Id_1 > 1] + D [Id_1 = 2] + B errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 partial_null);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2
+                                partial_null all);
+
+        Description: For Id_1 1, E and D are left out of the rule, so X is B, which exists.
+
+        Git Branch: #1223.
+        Goal: Check partial_null with two code items next to each other left out of the rule.
+        """
+
+        code = "GH_1223_19"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_20(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1, At_1
+                        rule Id_2) is
+                        R1: when Id_1 > 1 then Y = A + D [At_1 = "x"] errorcode "E1"
+                            errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Id_1, At_1 rule Id_2
+                                partial_null);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 condition Id_1, At_1 rule Id_2
+                                partial_null all);
+
+        Description: The data point of E, a code item outside the ruleset, satisfies the
+        condition of D, so D is missing, not left out of the rule.
+
+        Git Branch: #1223.
+        Goal: Check a right condition on an attribute in a rule with a condition on an
+        identifier.
+        """
+
+        code = "GH_1223_20"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1225_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C
+                    end hierarchical ruleset;
+
+                    DS_r1 <- union(hierarchy(DS_1, HR_1 rule Id_2), DS_2);
+                    DS_r2 <- intersect(hierarchy(DS_1, HR_1 rule Id_2), DS_2);
+                    DS_r3 <- setdiff(hierarchy(DS_1, HR_1 rule Id_2), DS_2);
+                    DS_r4 <- symdiff(hierarchy(DS_1, HR_1 rule Id_2), DS_2);
+
+        Description: The first operand of each set operator is a hierarchy written inline.
+
+        Git Branch: #1225.
+        Goal: Check the set operators read an inline hierarchy as their first operand.
+        """
+
+        code = "GH_1225_1"
+        number_inputs = 2
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1225_2(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C
+                    end hierarchical ruleset;
+
+                    DS_r1 <- union(DS_2, hierarchy(DS_1, HR_1 rule Id_2 all));
+                    DS_r2 <- intersect(DS_2, hierarchy(DS_1, HR_1 rule Id_2 all));
+                    DS_r3 <- setdiff(DS_2, hierarchy(DS_1, HR_1 rule Id_2 all));
+                    DS_r4 <- symdiff(DS_2, hierarchy(DS_1, HR_1 rule Id_2 all));
+
+        Description: The second operand of each set operator is a hierarchy written inline,
+        in output mode all.
+
+        Git Branch: #1225.
+        Goal: Check the set operators read an inline hierarchy as their second operand.
+        """
+
+        code = "GH_1225_2"
+        number_inputs = 2
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1225_3(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_c <- check_hierarchy(DS_2, HR_1 rule Id_2 all);
+                    DS_r1 <- union(check_hierarchy(DS_1, HR_1 rule Id_2 all), DS_c);
+                    DS_r2 <- setdiff(check_hierarchy(DS_1, HR_1 rule Id_2 all), DS_c);
+
+        Description: The first operand of union and setdiff is a check_hierarchy written
+        inline.
+
+        Git Branch: #1225.
+        Goal: Check the set operators read an inline check_hierarchy as an operand.
+        """
+
+        code = "GH_1225_3"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_21(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        R1: when Id_1 > 0 then A = B + C errorcode "E1" errorlevel 1;
+                        R2: when Id_1 < 10 then A = B - C errorcode "E2" errorlevel 2;
+                        R3: D >= A + E errorcode "E3" errorlevel 3
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2
+                                dataset_priority all);
+
+        Description: R1 and R2 compute different values of A, which the operand lacks and
+        R3, a rule that only validates, reads.
+
+        Git Branch: #1223.
+        Goal: Check the runtime error names the ruleset when a validating rule reads the
+        code item.
+        """
+
+        code = "GH_1223_21"
+        number_inputs = 1
+        exception_code = "2-1-10-1"
+        exception_message = (
+            "More than one rule of the Hierarchy Roll-up HR_1 computes code item A "
+            "for the same data point, with different values."
+        )
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=exception_code,
+            exception_message=exception_message,
+        )

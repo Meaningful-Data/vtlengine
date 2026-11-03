@@ -1,0 +1,42 @@
+define hierarchical ruleset HR_1 (variable rule Id_2) is
+    R0: T0 = A0 + B0 errorcode "E0" errorlevel 1;
+    R1: T1 = A1 + B1 errorcode "E1" errorlevel 1;
+    R2: T2 = A2 + B2 errorcode "E2" errorlevel 1;
+    R3: T3 = A3 + B3 errorcode "E3" errorlevel 1;
+    R4: T4 = A4 + B4 errorcode "E4" errorlevel 1;
+    R5: T5 = A5 + B5 errorcode "E5" errorlevel 1;
+    R6: T6 = A6 + B6 errorcode "E6" errorlevel 1;
+    R7: T7 = A7 + B7 errorcode "E7" errorlevel 1;
+    R8: T8 = A8 + B8 errorcode "E8" errorlevel 1;
+    R9: T9 = A9 + B9 errorcode "E9" errorlevel 1;
+    R10: T10 = A10 + B10 errorcode "E10" errorlevel 1;
+    R11: T11 = A11 + B11 errorcode "E11" errorlevel 1;
+    R12: T12 = A12 + B12 errorcode "E12" errorlevel 1;
+    R13: T13 = A13 + B13 errorcode "E13" errorlevel 1;
+    R14: T14 = A14 + B14 errorcode "E14" errorlevel 1;
+    R15: T15 = A15 + B15 errorcode "E15" errorlevel 1;
+    R16: T16 = A16 + B16 errorcode "E16" errorlevel 1
+end hierarchical ruleset;
+
+define hierarchical ruleset HR_2 (variable condition Id_1 rule Id_2) is
+    R0: when Id_1 = 1 then X = A0 + B0 errorcode "E0" errorlevel 1;
+    R1: when Id_1 = 2 then X = A1 + B1 errorcode "E1" errorlevel 1;
+    R2: Y = X + A2 errorcode "E2" errorlevel 1;
+    R3: T3 = A3 + B3 errorcode "E3" errorlevel 1;
+    R4: T4 = A4 + B4 errorcode "E4" errorlevel 1;
+    R5: T5 = A5 + B5 errorcode "E5" errorlevel 1;
+    R6: T6 = A6 + B6 errorcode "E6" errorlevel 1;
+    R7: T7 = A7 + B7 errorcode "E7" errorlevel 1;
+    R8: T8 = A8 + B8 errorcode "E8" errorlevel 1;
+    R9: T9 = A9 + B9 errorcode "E9" errorlevel 1;
+    R10: T10 = A10 + B10 errorcode "E10" errorlevel 1;
+    R11: T11 = A11 + B11 errorcode "E11" errorlevel 1;
+    R12: T12 = A12 + B12 errorcode "E12" errorlevel 1;
+    R13: T13 = A13 + B13 errorcode "E13" errorlevel 1;
+    R14: T14 = A14 + B14 errorcode "E14" errorlevel 1;
+    R15: T15 = A15 + B15 errorcode "E15" errorlevel 1;
+    R16: T16 = A16 + B16 errorcode "E16" errorlevel 1
+end hierarchical ruleset;
+
+DS_r1 <- check_hierarchy(DS_1, HR_1 rule Id_2 always_zero dataset_priority all);
+DS_r2 <- check_hierarchy(DS_1, HR_2 condition Id_1 rule Id_2 always_zero dataset_priority all);

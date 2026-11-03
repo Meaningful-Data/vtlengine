@@ -4878,3 +4878,159 @@ class ClauseOperatorsTest(TestAttributesHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1222_1(self):
+        """
+        Expression: DS_r <- abs(DS_1)[rename Me_1 to Me_2];
+        Description: Rename after abs, on an operand with a non-viral attribute,
+                     the same on both engines.
+        Git Issue: GH_1222.
+        """
+        code = "GH_1222_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1222_2(self):
+        """
+        Expression: DS_r <- (DS_1 + 1)[calc attribute At_1 := "z"];
+        Description: Calc of the dropped attribute after a dataset-scalar operator, on an operand with a non-viral attribute,
+                     the same on both engines.
+        Git Issue: GH_1222.
+        """
+        code = "GH_1222_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1222_3(self):
+        """
+        Expression: DS_r <- round(DS_1, 0)[sub Id_2 = "A"];
+        Description: Sub after round, on an operand with a non-viral attribute,
+                     the same on both engines.
+        Git Issue: GH_1222.
+        """
+        code = "GH_1222_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1222_4(self):
+        """
+        Expression: DS_r <- symdiff(abs(DS_1), abs(DS_2));
+        Description: Symdiff of two abs results, on an operand with a non-viral attribute,
+                     the same on both engines.
+        Git Issue: GH_1222.
+        """
+        code = "GH_1222_4"
+        number_inputs = 2
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1222_5(self):
+        """
+        Expression: DS_r <- cast(DS_1, string);
+        Description: Cast drops the attribute that is not viral, as the other operators do,
+                     the same on both engines.
+        Git Issue: GH_1222.
+        """
+        code = "GH_1222_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1222_6(self):
+        """
+        Expression: DS_r <- cast(DS_1, string)[calc attribute At_1 := "z"];
+        Description: Calc after a cast that renames the Measure to str_var, on an operand with a non-viral attribute,
+                     the same on both engines.
+        Git Issue: GH_1222.
+        """
+        code = "GH_1222_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1222_7(self):
+        """
+        Expression: DS_r <- between(DS_1, 0, 2)[rename bool_var to Me_2];
+        Description: Rename of the bool_var Measure of between, on an operand with a non-viral attribute,
+                     the same on both engines.
+        Git Issue: GH_1222.
+        """
+        code = "GH_1222_7"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1222_8(self):
+        """
+        Expression: DS_r <- upper(DS_1)[calc attribute At_1 := "z"];
+        Description: Calc of the dropped attribute after upper, on an operand with a non-viral attribute,
+                     the same on both engines.
+        Git Issue: GH_1222.
+        """
+        code = "GH_1222_8"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1222_9(self):
+        """
+        Expression: DS_r <- instr(DS_1, "a")[rename int_var to Me_2];
+        Description: Rename of the int_var Measure of instr, on an operand with a non-viral attribute,
+                     the same on both engines.
+        Git Issue: GH_1222.
+        """
+        code = "GH_1222_9"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1222_10(self):
+        """
+        Expression: DS_r <- symdiff(match_characters(DS_1, "a.*"), match_characters(DS_2, "a.*"));
+        Description: Symdiff of two match_characters results, on an operand with a non-viral attribute,
+                     the same on both engines.
+        Git Issue: GH_1222.
+        """
+        code = "GH_1222_10"
+        number_inputs = 2
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1222_11(self):
+        """
+        Expression: DS_r <- (not DS_1)[rename Me_1 to Me_2];
+        Description: Rename after not, on an operand with a non-viral attribute,
+                     the same on both engines.
+        Git Issue: GH_1222.
+        """
+        code = "GH_1222_11"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1222_12(self):
+        """
+        Expression: DS_r <- period_indicator(DS_1)[calc attribute At_1 := "z"];
+        Description: Calc of the dropped attribute after period_indicator, on an operand with a non-viral attribute,
+                     the same on both engines.
+        Git Issue: GH_1222.
+        """
+        code = "GH_1222_12"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

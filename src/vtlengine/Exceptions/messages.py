@@ -327,6 +327,12 @@ centralised_messages = {
         "description": "Raised when a component declared as not nullable in the DataStructure "
         "carries a null value in the datapoints. An Identifier reports 0-3-1-3 instead.",
     },
+    "0-3-1-18": {
+        "message": "On Dataset {name} loading: line {line} of the file does not split into the "
+        "fields of its header.",
+        "description": "Raised when a row of a CSV file has more fields than its header names, "
+        "or a quote that leaves it unterminated.",
+    },
     # Input validation errors for URL datapoints
     "0-1-3-8": {
         "message": "data_structures must be a file path or URL "
@@ -815,8 +821,11 @@ centralised_messages = {
         "description": "Raised when an alias is used more than once in the same operation.",
     },
     "1-1-13-2": {
-        "message": "At op {op}: Missing mandatory aliasing.",
-        "description": "Occurs when a required alias for an operation is not provided.",
+        "message": "At op {op}: the operand {operand} needs an alias. Aliases are mandatory for "
+        "the result of a sub-expression and for a Data Set that appears more than once in the "
+        "join.",
+        "description": "Raised when a join operand that is the result of a sub-expression, or a "
+        "Data Set that appears more than once in the join, has no alias.",
     },
     "1-1-13-3": {
         "message": "At op {op}: Join conflict with duplicated names for "
@@ -1326,6 +1335,30 @@ centralised_messages = {
         "description": "Raised when a hierarchical ruleset condition refers to a component "
         "that is not declared in the condition of the ruleset signature.",
     },
+    "1-3-1-11": {
+        "message": "At op {op}: {element} has no component {name}, which its type {type} requires.",
+        "description": "Raised when the Data Set passed to or returned by a user defined operator "
+        "lacks a component that its dataset type names.",
+    },
+    "1-3-1-12": {
+        "message": "At op {op}: component {name} of {element} is {found}, but its type {type} "
+        "declares it as {declared}.",
+        "description": "Raised when a component that the dataset type of a user defined operator "
+        "names has another role or a data type that does not promote to the declared one.",
+    },
+    "1-3-1-13": {
+        "message": "At op {op}: {element} has no {component} component for the {modifier} of "
+        "its type {type}.",
+        "description": "Raised when no component of the Data Set passed to or returned by a "
+        "user defined operator has the role and data type that a _ or _+ component of its "
+        "dataset type requires at least once.",
+    },
+    "1-3-1-14": {
+        "message": "At op {op}: {element} has {components}, which its type {type} does not allow.",
+        "description": "Raised when the Data Set passed to or returned by a user defined operator "
+        "has components of a role its dataset type restricts that neither a named component "
+        "nor a _, _+ or _* component of the type takes.",
+    },
     "1-3-12": {
         "message": "Default arguments cannot be followed by non-default arguments.",
         "description": "Occurs when a function definition places non-default parameters "
@@ -1346,13 +1379,9 @@ centralised_messages = {
         "description": "Occurs when an evaluation is attempted without a necessary "
         "type definition.",
     },
-    "1-3-2-2": {
-        "message": "At op {op}: User defined operator without returns is not implemented.",
-        "description": "Occurs when a user-defined operator lacks a return definition.",
-    },
     "1-3-2-6": {
-        "message": "At op {op}: type constraints, null and not null, multiplicity modifiers and "
-        "value domains are not supported in the returns of a user defined operator.",
+        "message": "At op {op}: value domains are not supported in the returns of a user defined "
+        "operator.",
         "description": "Raised when a user defined operator declares its result with a type "
         "form that the engine cannot check.",
     },
@@ -1561,5 +1590,12 @@ centralised_messages = {
         "message": "At op {op}: Data conversion error: {msg}.",
         "description": "Raised when DuckDB encounters a data conversion error during "
         "aggregation query execution.",
+    },
+    "2-3-9": {
+        "message": "At op {op}: {element} has the value {value}, which its type constraint "
+        "{constraint} does not allow.",
+        "description": "Raised when a value of the data, passed to or returned by a user defined "
+        "operator, is null for a not null type, or breaks the condition or the allowed values "
+        "of its type.",
     },
 }

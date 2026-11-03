@@ -23,7 +23,7 @@ from typing import Any, Dict, List
 import pandas as pd
 import pytest
 
-from tests.Helper import TestHelper, _use_duckdb_backend
+from tests.Helper import TestHelper
 from vtlengine import run
 from vtlengine.API._InternalApi import (
     _load_single_external_routine_from_file,
@@ -242,14 +242,11 @@ class DataLoadTest(DataLoadHelper):
 
         assert dataset_input.data["OBS_VALUE"][0] == string_to_compare
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend(),
-        reason="Duckdb cannot handle unmatched types errors as pandas, so it not raises the same error",
-    )
     def test_12(self):
         """
         Status: OK
-        Description: Data Load, example bad quotes with commas.
+        Description: Data Load, example bad quotes with commas, which leave a row with more
+            fields than the header.
         Git issue: 81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Exception.
@@ -257,7 +254,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_81-11"
         number_inputs = 1
 
-        exception_code = "0-3-1-3"
+        exception_code = "0-3-1-18"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
@@ -290,14 +287,11 @@ class DataLoadTest(DataLoadHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    @pytest.mark.skipif(
-        _use_duckdb_backend(),
-        reason="Duckdb cannot handle unmatched types errors as pandas, so it not raises the same error",
-    )
     def test_15(self):
         """
         Status: OK
-        Description: Data Load,example bad quotes with commas.
+        Description: Data Load, example bad quotes with commas, which leave a row with more
+            fields than the header or an unterminated quote.
         Git issue: 81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Git Branch: bug-81-triple-doble-quote-commas-data-loading-and-intermediate-results.
         Goal: Check Exception.
@@ -305,7 +299,7 @@ class DataLoadTest(DataLoadHelper):
         code = "GL_81-14"
         number_inputs = 1
 
-        exception_code = "0-3-1-3"
+        exception_code = "0-3-1-18"
         self.DataLoadExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )

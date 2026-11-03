@@ -1,0 +1,11 @@
+define hierarchical ruleset HR_1 (variable rule Id_2) is
+    R1: A = B + C errorcode "E1" errorlevel 1
+end hierarchical ruleset;
+
+define datapoint ruleset DPR (variable Me_1) is
+    R1: Me_1 > 2 errorcode "E2" errorlevel 1
+end datapoint ruleset;
+
+DS_r1 <- check_datapoint(DS_1, DPR all)[calc attribute At_1 := "z"];
+DS_r2 <- check(DS_1 > 2 errorcode "E3" errorlevel 1 imbalance DS_1 - 2 all)[calc attribute At_1 := "z"];
+DS_r3 <- check_hierarchy(DS_1, HR_1 rule Id_2 invalid)[calc attribute At_1 := "z"];

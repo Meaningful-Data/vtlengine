@@ -86,6 +86,15 @@ def _mixed_frequency_error(msg_lower: str) -> Exception:
     )
 
 
+def _map_udo_constraint_error(msg: str) -> Optional[Exception]:
+    """A value that breaks a constraint of a type of a user defined operator."""
+    match = re.search("VTL 2-3-9 (.*?)\u00a6(.*?)\u00a6(.*?)\u00a6(.*)", msg)
+    if match is None:
+        return None
+    op, element, constraint, value = match.groups()
+    return RunTimeError("2-3-9", op=op, element=element, value=value, constraint=constraint)
+
+
 def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
     """Map the errors raised by the VTL SQL macros, which carry their own code."""
     # calc identifier: the calculated expression produced a null
@@ -185,7 +194,7 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     msg = str(error)
     msg_lower = msg.lower()
 
-    macro_error = _map_vtl_macro_error(msg, msg_lower)
+    macro_error = _map_udo_constraint_error(msg) or _map_vtl_macro_error(msg, msg_lower)
     if macro_error is not None:
         return macro_error
 
@@ -484,6 +493,38 @@ def load_scheduled_datasets(
                 dataset_name=ds_name,
                 file_path=None,
             )
+
+
+def validate_datapoints(
+    conn: duckdb.DuckDBPyConnection,
+    path_dict: Optional[Dict[str, Path]],
+    dataframe_dict: Dict[str, pd.DataFrame],
+    input_datasets: Dict[str, Dataset],
+) -> None:
+    """
+    Load the given datapoints as a run loads them, rejecting the ones a run would reject.
+
+    Each table is dropped once it is loaded, so one dataset is held at a time.
+
+    Args:
+        conn: DuckDB connection
+        path_dict: Dict mapping dataset names to CSV paths
+        dataframe_dict: Dict mapping dataset names to DataFrames
+        input_datasets: Dict of input dataset structures
+    """
+    if _contains_time_components(input_datasets):
+        initialize_time_types(conn, sql_fragments=["vtl_period_normalize"])
+    for ds_name, file_path in (path_dict or {}).items():
+        load_datapoints_duckdb(
+            conn=conn,
+            components=input_datasets[ds_name].components,
+            dataset_name=ds_name,
+            file_path=file_path,
+        )
+        conn.execute(f'DROP TABLE "{ds_name}"')
+    for ds_name, data in dataframe_dict.items():
+        register_dataframes(conn, {ds_name: data}, input_datasets)
+        conn.execute(f'DROP TABLE "{ds_name}"')
 
 
 def cleanup_scheduled_datasets(

@@ -1,0 +1,8 @@
+define hierarchical ruleset HR_1 (variable rule Id_2) is
+    R1: F = D - A errorcode "E1" errorlevel 1;
+    R2: G = F + B errorcode "E2" errorlevel 2
+end hierarchical ruleset;
+
+DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2 non_zero rule_priority);
+DS_r2 <- hierarchy(DS_1, HR_1 rule Id_2 non_zero);
+DS_r3 <- check_hierarchy(DS_1, HR_1 rule Id_2 non_zero dataset_priority all);

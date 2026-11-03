@@ -248,26 +248,9 @@ DATA_STRUCTURES = {
             "ruleset type 'hierarchical' (line 1, column 22)",
         ),
         (
-            "define operator f (x dataset {identifier<integer> Id_1, measure<number> _+}) "
-            "returns dataset is x end operator;",
-            "multiplicity modifier in 'measure<number> _+' (line 1, column 57)",
-        ),
-        (
             'DS_r <- eval(SQL1(DS_1) language "SQL" returns dataset '
             "{identifier<integer> Id_1, measure<number> _*});",
             "multiplicity modifier in 'measure<number> _*' (line 1, column 83)",
-        ),
-        (
-            "define operator f (x integer not null) returns integer is x end operator;",
-            "not null in 'integer not null' (line 1, column 22)",
-        ),
-        (
-            "define operator f (x integer null) returns integer is x end operator;",
-            "null in 'integer null' (line 1, column 22)",
-        ),
-        (
-            "define operator f (x integer [value > 0]) returns integer is x end operator;",
-            "type constraint in 'integer [value > 0]' (line 1, column 22)",
         ),
         (
             "DS_r <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having true];",

@@ -1,0 +1,6 @@
+define operator f (x integer not null, y integer [value > 0] default 1, z string {"a", "b"})
+    returns integer [value > 0] is
+        x + y
+end operator;
+
+DS_r <- DS_1[calc Me_3 := f(null, 1, "a")];

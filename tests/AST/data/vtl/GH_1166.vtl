@@ -1,0 +1,4 @@
+define operator f (x integer not null, y integer [value > 0] default 1, z string {"a", "b"}) returns integer [value > 0] is x + y end operator;
+define operator c (m measure<number [value >= 1.5] not null>) returns component<number not null> is m * 2 end operator;
+define operator d (ds dataset {identifier<integer> Id_1, measure<number> _+, attribute<string> _*, measure<string {"a", "b"}> _}) returns dataset {measure<number> _+} is ds[keep Me_1] end operator;
+DS_r <- d(DS_1)[calc Me_3 := f(1, _, "a"), Me_4 := c(Me_1)];

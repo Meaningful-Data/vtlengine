@@ -1,0 +1,6 @@
+define operator f (ds dataset)
+    returns dataset {measure<string> _+} is
+        ds[keep Me_1]
+end operator;
+
+DS_r <- f(DS_1);

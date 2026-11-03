@@ -1,0 +1,8 @@
+define hierarchical ruleset HR_1 (variable rule Id_2) is
+    R1: A = B + C errorcode "E1" errorlevel 1
+end hierarchical ruleset;
+
+DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2)[rename Me_1 to Me_2];
+DS_r2 <- hierarchy(DS_1, HR_1 rule Id_2)[sub Id_1 = "X"];
+DS_r3 <- hierarchy(DS_1, HR_1 rule Id_2)[calc attribute At_1 := "z"][calc attribute At_2 := "w"];
+DS_r4 <- hierarchy(DS_1, HR_1 rule Id_2)[calc attribute At_1 := "z", attribute At_2 := "w"];
