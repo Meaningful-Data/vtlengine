@@ -8,12 +8,14 @@ For historical tags, the current branch's ``docs/conf.py``, ``docs/_templates/``
 ``docs/scripts/`` are overlaid on top of the worktree before building so legacy refs
 build without depending on whatever extension stack they shipped with at the time.
 
-A version that has the operator map (``docs/operator_map/generate.py``) gets its map
-regenerated against its own engine before it is built: the worktree's source, with the
-compiled parser of the checkout when the parser sources are the same, else the one of the
-version's wheel on PyPI. A map that cannot be regenerated never stops the build: the version
-is built from its committed pages, and the reason is printed and added to the summary of the
-CI job (``GITHUB_STEP_SUMMARY``), where the generator also writes its report.
+With ``VTLENGINE_DOCS_REGENERATE_MAP=1`` (as ``docs.yml`` sets it), a version that has the
+operator map (``docs/operator_map/generate.py``) gets its map regenerated against its own engine
+before it is built: the worktree's source, with the compiled parser of the checkout when the
+parser sources are the same, else the one of the version's wheel on PyPI. Without it, as in a
+local build, the versions keep their committed maps: a regeneration runs every example of the
+map, which takes minutes and memory. A map that cannot be regenerated never stops the build:
+the version is built from its committed pages, and the reason is printed and added to the
+summary of the CI job (``GITHUB_STEP_SUMMARY``), where the generator also writes its report.
 """
 
 import argparse
@@ -46,6 +48,7 @@ PARSER_DIR = Path("src/vtlengine/AST/Grammar/_cpp_parser")
 PARSER_SOURCES = ("src/vtlengine/AST/Grammar/_cpp_parser", "CMakeLists.txt")
 PARSER_PREFIX = "vtl_cpp_parser"
 MAP_TIMEOUT_S = 3600  # a run of every example takes about 10 minutes
+REGENERATE_MAP = "VTLENGINE_DOCS_REGENERATE_MAP"  # "1" to regenerate the maps
 _RELEASE_TAG = re.compile(r"v(\d+\.\d+\.\d+(?:rc\d+)?)")
 
 
@@ -180,11 +183,12 @@ def _same_parser_sources(worktree: Path) -> bool:
 def regenerate_operator_map(worktree: Path, ref: str) -> None:
     """Regenerate the operator map of ``ref`` in its worktree, against its own engine.
 
-    A version without the map is left alone. This never raises: when the parser cannot be had,
-    or the generator fails, the version is built from its committed pages, and the reason is
-    printed and appended to the summary of the CI job when there is one.
+    Only when ``VTLENGINE_DOCS_REGENERATE_MAP`` is ``1``; a version without the map is left
+    alone. This never raises: when the parser cannot be had, or the generator fails, the version
+    is built from its committed pages, and the reason is printed and appended to the summary of
+    the CI job when there is one.
     """
-    if not (worktree / MAP_GENERATOR).is_file():
+    if os.environ.get(REGENERATE_MAP) != "1" or not (worktree / MAP_GENERATOR).is_file():
         return
     summary = os.environ.get("GITHUB_STEP_SUMMARY", "")
     try:

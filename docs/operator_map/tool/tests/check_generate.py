@@ -2276,6 +2276,19 @@ def test_a_full_run_with_summary_compares_with_the_file_it_replaces(
     assert "beta/second/ds/two_rows" in text
 
 
+def test_a_full_run_with_summary_and_an_unreadable_status_reports_every_example_as_new(
+    world: World, tmp_path: Path
+) -> None:
+    assert generate.main([]) == 0
+    (world.root / "status.json").write_text("{", encoding="utf-8")
+    summary = tmp_path / "summary.md"
+    assert generate.main(["--summary", str(summary)]) == 0
+    text = summary.read_text(encoding="utf-8")
+    assert "#### New examples (4)" in text
+    assert "status.json: cannot read the previous results (JSONDecodeError" in text
+    assert text.rstrip().endswith("every example is reported as new.")
+
+
 def test_compare_and_check_only_cannot_go_together(
     world: World, capsys: pytest.CaptureFixture[str]
 ) -> None:

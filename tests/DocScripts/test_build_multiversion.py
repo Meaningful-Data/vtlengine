@@ -55,6 +55,7 @@ def checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (root / bm.PARSER_DIR / SO_NAME).write_bytes(b"checkout so")
     monkeypatch.setattr(bm, "REPO_ROOT", root)
     monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    monkeypatch.setenv("VTLENGINE_DOCS_REGENERATE_MAP", "1")
     return root
 
 
@@ -117,11 +118,14 @@ def test_a_branch_without_a_release_is_built_from_its_committed_pages(
     same_sources(monkeypatch, False)
     run = FakeRun()
     monkeypatch.setattr(subprocess, "run", run)
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
     bm.regenerate_operator_map(make_worktree(tmp_path), "main")
     assert run.commands == []
     out = capsys.readouterr().out
     assert "operator map of main: not regenerated (main has no release on PyPI" in out
     assert out.rstrip().endswith("built from its committed pages")
+    assert summary.read_text(encoding="utf-8").strip() == out.strip()
 
 
 @pytest.mark.parametrize("failure", ["exit", "timeout"])
@@ -155,3 +159,34 @@ def test_summary_only_when_the_variable_is_set(
     assert without == [sys.executable, str(worktree / bm.MAP_GENERATOR)]
     assert with_summary == [*without, "--summary", str(summary)]
     assert not summary.exists()  # the generator writes it; a run that went well adds nothing
+
+
+def test_maps_are_regenerated_only_when_asked(
+    tmp_path: Path, checkout: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    same_sources(monkeypatch, True)
+    run = FakeRun()
+    monkeypatch.setattr(subprocess, "run", run)
+    monkeypatch.delenv("VTLENGINE_DOCS_REGENERATE_MAP")
+    bm.regenerate_operator_map(make_worktree(tmp_path), "v1.9.7")
+    assert run.commands == []  # a local build keeps the committed pages, and its minutes
+
+
+def test_a_tag_whose_wheel_cannot_be_downloaded_is_built_from_its_committed_pages(
+    tmp_path: Path, checkout: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    same_sources(monkeypatch, False)
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+
+    def no_wheel(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        error = "ERROR: No matching distribution found for vtlengine==9.9.9"
+        return subprocess.CompletedProcess(command, 1, "", f"Looking in indexes\n{error}\n")
+
+    monkeypatch.setattr(subprocess, "run", no_wheel)
+    bm.regenerate_operator_map(make_worktree(tmp_path), "v9.9.9")
+    assert summary.read_text(encoding="utf-8") == (
+        "\noperator map of v9.9.9: not regenerated (pip cannot download vtlengine==9.9.9: "
+        "ERROR: No matching distribution found for vtlengine==9.9.9); built from its committed "
+        "pages\n"
+    )

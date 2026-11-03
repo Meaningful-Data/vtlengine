@@ -229,6 +229,9 @@ jobs:
         run: |
           poetry run python docs/scripts/configure_doc_versions.py
       - name: Build multi-version documentation
+        env:
+          # Regenerate the operator map of every version that has one, against its own engine.
+          VTLENGINE_DOCS_REGENERATE_MAP: "1"
         run: |
           poetry run python docs/scripts/build_multiversion.py _site
       - name: Generate latest alias
