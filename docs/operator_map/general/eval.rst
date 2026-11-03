@@ -4,7 +4,7 @@ Evaluation of an external routine · ``eval``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 1 of 4 forms all ok, 2 refused</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Evaluation%20of%20an%20external%20routine/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (3828a83f) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 3 of 4 forms all ok, 1 refused</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Evaluation%20of%20an%20external%20routine/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (27ad1da7) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -29,16 +29,16 @@ Evaluation of an external routine · ``eval``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Evaluation of an external routine · eval<br/>🟢1 🛡️2 🔴1"]:::partial
+       O["Evaluation of an external routine · eval<br/>🟢3 🛡️1"]:::ok
        subgraph G_ds["Dataset"]
            direction LR
            v_sql_dataset["eval(R(DS))"]:::ok
            v_sql_dataset_scalar_arg["eval(R(DS, sc))"]:::refused
-           v_scalar_return["eval(R(DS) returns string)"]:::refused
+           v_scalar_return["eval(R(DS) returns string)"]:::ok
        end
        subgraph G_comp["Component"]
            direction LR
-           v_comp["DS#91;calc Me #58;#61; eval(R(comp))#93;"]:::missing
+           v_comp["DS#91;calc Me #58;#61; eval(R(comp))#93;"]:::ok
        end
        O --- G_ds
        O --- G_comp
@@ -123,13 +123,12 @@ eval(R(DS, sc)) 🛡️ · external routine, any scalar → any type
 
    <span class="om-anchor" id="form-scalar-return"></span>
 
-eval(R(DS) returns string) 🛡️ · external routine, any scalar → string
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+eval(R(DS) returns string) 🟢 · external routine, any scalar → string
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-scalar-return-string-result"><summary><span class="om-ex-title">String result</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-3-2-1</code> · DuckDB 🛡 <code>1-3-2-1</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-2-1: Eval could not be called without a dataset output type definition. Please check transformation with output Dataset SC_r</p>
+   <details class="om-example" id="ex-scalar-return-string-result"><summary><span class="om-ex-title">String result</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/eval/scalar_return/string_result/notes.rst
 
@@ -141,33 +140,23 @@ eval(R(DS) returns string) 🛡️ · external routine, any scalar → string
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>A</td></tr><tr><td>2</td><td>C</td></tr><tr><td>3</td><td>B</td></tr></tbody></table>
 
-.. list-table:: Expected scalars
-   :header-rows: 1
-   :widths: auto
-
-   * - Name
-     - Type
-     - Value
-   * - ``SC_r``
-     - String
-     - ``"C"``
+Expected error ``1-3-2-1``: Eval could not be called without a {option} type definition.
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/general/eval/scalar_return/string_result/script.vtl">script.vtl</a> · <a href="../examples/general/eval/scalar_return/string_result/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/eval/scalar_return/string_result/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/eval/scalar_return/string_result/expected/scalars.json">expected/scalars.json</a> · <a href="../examples/general/eval/scalar_return/string_result/external_routines/SQL_3.json">external_routines/SQL_3.json</a> · <a href="../examples/general/eval/scalar_return/string_result/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/general/eval/scalar_return/string_result/script.vtl">script.vtl</a> · <a href="../examples/general/eval/scalar_return/string_result/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/eval/scalar_return/string_result/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/eval/scalar_return/string_result/expected/error.json">expected/error.json</a> · <a href="../examples/general/eval/scalar_return/string_result/external_routines/SQL_3.json">external_routines/SQL_3.json</a> · <a href="../examples/general/eval/scalar_return/string_result/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
 
    <span class="om-anchor" id="form-comp"></span>
 
-DS[calc Me := eval(R(comp))] 🔴 · external routine, any scalar → integer
+DS[calc Me := eval(R(comp))] 🟢 · external routine, any scalar → integer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-comp-inside-calc"><summary><span class="om-ex-title">Inside calc</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-2-5</code> · DuckDB 🛡 <code>1-3-2-5</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-2-5: At op eval: Eval in component execution is not supported, it only applies to Data Sets.</p>
+   <details class="om-example" id="ex-comp-inside-calc"><summary><span class="om-ex-title">Inside calc</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/eval/comp/inside_calc/notes.rst
 
@@ -178,9 +167,10 @@ DS[calc Me := eval(R(comp))] 🔴 · external routine, any scalar → integer
 .. raw:: html
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>10</td></tr><tr><td>2</td><td>20</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>10</td><td>20</td></tr><tr><td>2</td><td>20</td><td>40</td></tr></tbody></table>
+
+Expected error ``1-3-2-5``: At op eval: Eval in component execution is not supported, it only applies to Data Sets.
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/general/eval/comp/inside_calc/script.vtl">script.vtl</a> · <a href="../examples/general/eval/comp/inside_calc/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/eval/comp/inside_calc/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/eval/comp/inside_calc/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/eval/comp/inside_calc/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/eval/comp/inside_calc/external_routines/SQL_4.json">external_routines/SQL_4.json</a> · <a href="../examples/general/eval/comp/inside_calc/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/general/eval/comp/inside_calc/script.vtl">script.vtl</a> · <a href="../examples/general/eval/comp/inside_calc/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/eval/comp/inside_calc/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/eval/comp/inside_calc/expected/error.json">expected/error.json</a> · <a href="../examples/general/eval/comp/inside_calc/external_routines/SQL_4.json">external_routines/SQL_4.json</a> · <a href="../examples/general/eval/comp/inside_calc/index.html">example page ↗</a></p>
    </details>

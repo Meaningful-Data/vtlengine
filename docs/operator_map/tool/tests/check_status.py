@@ -457,7 +457,6 @@ def test_the_marks_of_the_verdicts_of_a_run() -> None:
 def test_the_codes_that_say_not_implemented() -> None:
     assert set(NOT_IMPLEMENTED) == {
         "1-3-13",
-        "1-3-2-5",
         "1-3-3-8",
         "0-5-1-8",
         "0-5-1-10",

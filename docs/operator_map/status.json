@@ -7026,35 +7026,35 @@
     },
     "general/eval/comp/inside_calc": {
       "duckdb": {
-        "detail": "SemanticError 1-3-2-5: At op eval: Eval in component execution is not supported, it only applies to Data Sets.",
+        "detail": "",
         "error_code": "1-3-2-5",
         "error_type": "SemanticError",
-        "outcome": "error"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-2-5: At op eval: Eval in component execution is not supported, it only applies to Data Sets.",
+        "detail": "",
         "error_code": "1-3-2-5",
         "error_type": "SemanticError",
-        "outcome": "error"
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "general/eval/scalar_return/string_result": {
       "duckdb": {
-        "detail": "SemanticError 1-3-2-1: Eval could not be called without a dataset output type definition. Please check transformation with output Dataset SC_r",
+        "detail": "",
         "error_code": "1-3-2-1",
         "error_type": "SemanticError",
-        "outcome": "error"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-2-1: Eval could not be called without a dataset output type definition. Please check transformation with output Dataset SC_r",
+        "detail": "",
         "error_code": "1-3-2-1",
         "error_type": "SemanticError",
-        "outcome": "error"
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "general/eval/sql_dataset/sql_query_on_dataset": {
       "duckdb": {
@@ -15110,7 +15110,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "3828a83f",
+    "vtlengine_commit": "27ad1da7",
     "vtlengine_version": "1.9.7rc1"
   }
 }

@@ -39,7 +39,7 @@ A node for each block, with how many operators it has, and how many of them are 
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        R["VTL 2.2<br/>Reference Manual"]:::block
-       chapter__general["General purpose operators<br/>7 operators · 🟢4 🟡2 🔵1"]:::diverge
+       chapter__general["General purpose operators<br/>7 operators · 🟢5 🟡1 🔵1"]:::diverge
        chapter__join["Join operators<br/>4 operators · 🟢2 🟡2"]:::partial
        chapter__string["String operators<br/>11 operators · 🟢10 🟡1"]:::partial
        chapter__numeric["Numeric operators<br/>18 operators · 🟢16 🟡1 🔵1"]:::diverge
@@ -108,10 +108,10 @@ The counts are over the forms of the operators of each block.
      - 🔵
      - 7
      - 62
-     - 38
+     - 40
      - 3
-     - 2
-     - 15
+     - 1
+     - 14
      - 4
    * - :doc:`Join operators <join/index>`
      - 🟡
@@ -234,10 +234,10 @@ The counts are over the forms of the operators of each block.
      - 🔵
      - 115
      - 727
-     - 640
+     - 642
      - 50
-     - 8
-     - 21
+     - 7
+     - 20
      - 8
 
 Not implemented
@@ -253,8 +253,6 @@ The codes of the errors of vtlengine that say that it does not implement somethi
      - Message
    * - ``1-3-13``
      - Unsupported VTL construct: {construct}.
-   * - ``1-3-2-5``
-     - At op eval: Eval in component execution is not supported, it only applies to Data Sets.
    * - ``1-3-3-8``
      - Viral propagation definition {name} is defined on value domain {value_domain}, which is not supported yet; define it on a variable instead.
    * - ``0-5-1-8``

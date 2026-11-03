@@ -4,7 +4,7 @@ General purpose operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 4 of 7 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (3828a83f) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip diverge">🔵 5 of 7 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (27ad1da7) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -31,7 +31,7 @@ General purpose operators
        general__non_persistent_assignment["Non-persistent assignment · #58;#61;<br/>🟢2"]:::ok
        general__membership["Membership · #35;<br/>🟢4 🟡1"]:::partial
        general__udo_call["User-defined operator call · name( )<br/>🟢4"]:::ok
-       general__eval["Evaluation of an external routine · eval<br/>🟢1 🛡️2 🔴1"]:::partial
+       general__eval["Evaluation of an external routine · eval<br/>🟢3 🛡️1"]:::ok
        general__cast["Type conversion · cast<br/>🟢21 🟡2 🔴14 🔵4"]:::diverge
        general__parentheses --- B
        general__persistent_assignment --- B
@@ -77,7 +77,7 @@ General purpose operators
      - 🟢
      - 4
    * - :doc:`Evaluation of an external routine <eval>` ``eval``
-     - 🟡
+     - 🟢
      - 4
    * - :doc:`Type conversion <cast>` ``cast``
      - 🔵
@@ -231,20 +231,6 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - 🛡 1-2-23
      - 🛡 1-2-23
      - SemanticError 1-2-23: Eval operand must be a Dataset. Please check transformation with output Dataset DS\_r
-   * - :doc:`Evaluation of an external routine <eval>`
-     - `eval(R(DS) returns string) <eval.html#form-scalar-return>`__
-     - 🛡️
-     - `String result <eval.html#ex-scalar-return-string-result>`__
-     - 🛡 1-3-2-1
-     - 🛡 1-3-2-1
-     - SemanticError 1-3-2-1: Eval could not be called without a dataset output type definition. Please check transformation with output Dataset SC\_r
-   * - :doc:`Evaluation of an external routine <eval>`
-     - `DS[calc Me := eval(R(comp))] <eval.html#form-comp>`__
-     - 🔴
-     - `Inside calc <eval.html#ex-comp-inside-calc>`__
-     - 🛡 1-3-2-5
-     - 🛡 1-3-2-5
-     - SemanticError 1-3-2-5: At op eval: Eval in component execution is not supported, it only applies to Data Sets.
    * - :doc:`Type conversion <cast>`
      - `cast(comp<boolean>, string) <cast.html#form-boolean-to-string>`__
      - 🟡

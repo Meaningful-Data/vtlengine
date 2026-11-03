@@ -3513,18 +3513,18 @@
   },
   "general/eval/comp/inside_calc": {
     "anchor": "ex-comp-inside-calc",
-    "duckdb": "🛡 1-3-2-5",
+    "duckdb": "✅",
     "operator_page": "general/eval.html",
-    "pandas": "🛡 1-3-2-5",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Inside calc"
   },
   "general/eval/scalar_return/string_result": {
     "anchor": "ex-scalar-return-string-result",
-    "duckdb": "🛡 1-3-2-1",
+    "duckdb": "✅",
     "operator_page": "general/eval.html",
-    "pandas": "🛡 1-3-2-1",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "String result"
   },
   "general/eval/sql_dataset/sql_query_on_dataset": {
