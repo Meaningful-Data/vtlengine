@@ -4690,9 +4690,11 @@ FROM (
         ruleset_name: str,
     ) -> str:
         """Generate SQL for hierarchy operator using CTE chain."""
+        # The result drops the attributes that are not viral (issue #1218)
+        all_cols = [quote_name(n) for n, c in ds.components.items() if c.role != Role.ATTRIBUTE]
+        all_cols_csv = ", ".join(all_cols)
         if not parsed_rules:
-            cols = [quote_name(c) for c in ds.get_components_names()]
-            return f"SELECT {', '.join(cols)} FROM {table_src}"
+            return f"SELECT {all_cols_csv} FROM {table_src}"
 
         pivot_sql, measure, other_ids, unique_items = self._build_hr_pivot(
             table_src, ds, parsed_rules, rule_comp, cond_mapping
@@ -4809,8 +4811,6 @@ FROM (
 
         # output == "all": union(setdiff(op, computed), computed)
         id_cols = [quote_name(c) for c in ds.get_identifiers_names()]
-        all_cols = [quote_name(c) for c in ds.get_components_names()]
-        all_cols_csv = ", ".join(all_cols)
         id_cols_csv = ", ".join(id_cols)
         cte.cte("_computed", computed_sql)
         cte.cte(

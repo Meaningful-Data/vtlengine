@@ -735,9 +735,10 @@ class StructureVisitor(ASTTemplate):
         comps = self._identifiers_dict(inner_ds)
         measure_name = inner_ds.get_measures_names()[0] if inner_ds.get_measures_names() else ""
         if node.op == tokens.HIERARCHY:
-            # hierarchy: same structure as input (identifiers + measures)
+            # hierarchy: identifiers, measures and viral attributes. The other attributes
+            # are dropped, as the query does (issue #1218).
             for name, comp in inner_ds.components.items():
-                if comp.role != Role.IDENTIFIER:
+                if comp.role in (Role.MEASURE, Role.VIRAL_ATTRIBUTE):
                     comps[name] = comp
         else:
             # check_hierarchy: output depends on output mode
