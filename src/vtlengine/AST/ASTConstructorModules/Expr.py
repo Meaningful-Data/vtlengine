@@ -33,7 +33,6 @@ from vtlengine.AST import (
     ValidationMode,
     ValidationOutput,
     VarID,
-    Windowing,
 )
 from vtlengine.AST.ASTConstructorModules import extract_token_info, script_location
 from vtlengine.AST.ASTConstructorModules.ExprComponents import ExprComp
@@ -1462,16 +1461,6 @@ class Expr:
             elif not c.is_terminal and c.rule_index == RC.WINDOWING_CLAUSE[0]:
                 window = Terminals().visitWindowingClause(c)
                 continue
-
-        if window is None and (partition_by is not None or order_by is not None):
-            window = Windowing(
-                type_="data",
-                start=-1,
-                stop=0,
-                start_mode="preceding",
-                stop_mode="current",
-                **extract_token_info(ctx),
-            )
 
         return Analytic(
             op=op_node,
