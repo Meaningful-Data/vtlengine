@@ -771,3 +771,83 @@ class TestSemanticAnalysisCopy:
 
         assert copied == ast
         assert copied.children[0] is not ast.children[0]
+
+
+# =============================================================================
+# Hierarchical rulesets
+# =============================================================================
+
+
+class TestHierarchyRuleSources:
+    """Each rule of a hierarchy reads its own struct of the pivot (#1223)."""
+
+    def test_rules_join_only_the_rules_they_read(self) -> None:
+        """A rule joins only the rules that compute its code items.
+
+        A chain of pivots that carried every code item through every rule made the planning
+        grow with the square of the number of rules.
+        """
+        script = (
+            "define hierarchical ruleset HR_1 (variable rule Id_2) is\n"
+            "R0: T0 = A + B;\nR1: T1 = T0 + C;\nR2: T2 = D + E\n"
+            "end hierarchical ruleset;\n"
+            "DS_r <- hierarchy(DS_1, HR_1 rule Id_2);"
+        )
+        components = [
+            ("Id_1", "Integer", "Identifier"),
+            ("Id_2", "String", "Identifier"),
+            ("Me_1", "Number", "Measure"),
+        ]
+        data_structures = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {"name": n, "type": t, "role": r, "nullable": r != "Identifier"}
+                        for n, t, r in components
+                    ],
+                }
+            ]
+        }
+
+        sql = " ".join(transpile(script, data_structures)[-1][1].split())
+
+        assert "_pivot_0" not in sql
+        assert sql.count("LEFT JOIN _rule_") == 1
+        assert 'FROM _pivot s) AS u LEFT JOIN _rule_0 AS _c0 USING ("Id_1")' in sql
+        assert 'SELECT "Id_1", UNNEST(s._r2) FROM _pivot s) AS _src' in sql
+
+    @pytest.mark.parametrize(
+        ("condition", "widened"), [("Id_1 > 0", False), ("Id_1 > 0 and Me_1 > 0", True)]
+    )
+    def test_pivot_reads_more_rows_for_data_point_conditions(
+        self, condition: str, widened: bool
+    ) -> None:
+        """The pivot reads the data points of other code items only for a condition that
+        reads more than the other identifiers: a group has one value of those."""
+        script = (
+            "define hierarchical ruleset HR_1 (variable condition Id_1, Me_1 rule Id_2) is\n"
+            f"R1: when {condition} then A = B + C\n"
+            "end hierarchical ruleset;\n"
+            "DS_r <- hierarchy(DS_1, HR_1 condition Id_1, Me_1 rule Id_2);"
+        )
+        components = [
+            ("Id_1", "Integer", "Identifier"),
+            ("Id_2", "String", "Identifier"),
+            ("Me_1", "Number", "Measure"),
+        ]
+        data_structures = {
+            "datasets": [
+                {
+                    "name": "DS_1",
+                    "DataStructure": [
+                        {"name": n, "type": t, "role": r, "nullable": r != "Identifier"}
+                        for n, t, r in components
+                    ],
+                }
+            ]
+        }
+
+        sql = " ".join(transpile(script, data_structures)[-1][1].split())
+
+        assert ("WHERE \"Id_2\" IN ('A', 'B', 'C') GROUP BY" not in sql) == widened

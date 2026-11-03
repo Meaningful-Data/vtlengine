@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Collection, Dict, List, Optional, Type, Union
 
 import pandas as pd
 
@@ -326,7 +326,9 @@ class Check_Hierarchy(Validation):
         return result
 
     @staticmethod
-    def validate_hr_dataset(dataset: Dataset, component_name: str) -> None:
+    def validate_hr_dataset(
+        dataset: Dataset, component_name: str, condition_components: Collection[str] = ()
+    ) -> None:
         if len(dataset.get_measures()) != 1:
             raise SemanticError(
                 "1-1-10-1", op=Check_Hierarchy.op, op_type="hierarchy", me_type="Number"
@@ -349,11 +351,12 @@ class Check_Hierarchy(Validation):
                 name=component_name,
                 role=dataset.components[component_name].role.value,
             )
-        # Remove attributes from dataset
-        if len(dataset.get_attributes()) > 0:
-            for x in dataset.get_attributes():
-                dataset.delete_component(x.name)
+        # The conditions of the rules read their attributes (issue #1223)
+        Check_Hierarchy.remove_attributes(dataset, keep=condition_components)
 
-        if len(dataset.get_viral_attributes()) > 0:
-            for x in dataset.get_viral_attributes():
-                dataset.delete_component(x.name)
+    @staticmethod
+    def remove_attributes(dataset: Dataset, keep: Collection[str] = ()) -> None:
+        """Remove the attributes, viral or not, of the operand except the ones in ``keep``."""
+        for attribute in dataset.get_attributes() + dataset.get_viral_attributes():
+            if attribute.name not in keep:
+                dataset.delete_component(attribute.name)

@@ -1,0 +1,10 @@
+define viral propagation VP_1 (variable At_1) is
+    aggregate max
+end viral propagation;
+
+define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+    R1: when At_1 = "w" then A = B + C errorcode "E1" errorlevel 1
+end hierarchical ruleset;
+
+DS_r1 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+DS_r2 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 all);

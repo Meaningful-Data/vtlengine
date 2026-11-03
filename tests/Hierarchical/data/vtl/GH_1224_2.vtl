@@ -1,0 +1,10 @@
+define hierarchical ruleset HR_1 (variable condition Me_1 rule Id_2) is
+    R1: when Me_1 < 50 then A = B + C errorcode "E1" errorlevel 1
+end hierarchical ruleset;
+
+DS_r1 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2);
+DS_r2 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 partial_null);
+DS_r3 <- hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 always_zero all);
+DS_r4 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 all);
+DS_r5 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 partial_null all);
+DS_r6 <- check_hierarchy(DS_1, HR_1 condition Me_1 rule Id_2 always_zero all_measures);

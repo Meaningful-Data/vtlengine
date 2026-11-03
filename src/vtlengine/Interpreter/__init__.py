@@ -1793,7 +1793,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
             # A ruleset with a signature or a rule clause gives the component
             component = cast(str, component)
-            Check_Hierarchy.validate_hr_dataset(dataset, component)
+            Check_Hierarchy.validate_hr_dataset(dataset, component, cond_info.values())
 
             # Set up interpreter state for rule processing
             self.ruleset_dataset = dataset
@@ -1821,7 +1821,6 @@ class InterpreterAnalyzer(ASTTemplate):
                     for rule in self._sort_hr_rules(node, hr_info, self._hr_eq_rules(rules)):
                         self.visit(rule)
                     self.is_from_hr_agg = False
-                    self.hr_agg_ruleset = None
                 self.is_from_hr_val = True
                 for rule in rules:
                     rule_output_values[rule.name] = {
@@ -1832,12 +1831,16 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.is_from_hr_val = False
                 self.hr_agg_rules_computed = None
                 self.hr_agg_item_rules = None
+                # The rules that validate read the computed code items too (issue #1223)
+                self.hr_agg_ruleset = None
 
             # Clean up interpreter state
             self.ruleset_signature = None
             self.ruleset_dataset = None
             self.ruleset_mode = None
             self.hr_input = None
+            # Only the conditions read the attributes (issue #1223)
+            Check_Hierarchy.remove_attributes(dataset)
 
             # Final evaluation
             if node.op == CHECK_HIERARCHY:
@@ -2067,8 +2070,14 @@ class InterpreterAnalyzer(ASTTemplate):
         if isinstance(right_operand, Dataset):
             right_operand = get_measure_from_dataset(right_operand, node.right.value)
 
-        if self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO) and self.partial_rule_data is not None:
-            # Operands may cover different groups, so filter them by label.
+        if (
+            self.ruleset_mode in (PARTIAL_NULL, PARTIAL_ZERO)
+            and self.partial_rule_data is not None
+            and node.op in HR_COMP_MAPPING
+        ):
+            # Operands may cover different groups, so filter them by label. Only once all the
+            # code items of the rule are read: a code item left out of the rule before one that
+            # exists would read as missing (issue #1223)
             kept = self.partial_rule_data.index[self.partial_rule_data]
             if left_operand.data is not None:
                 left_operand.data = left_operand.data[left_operand.data.index.isin(kept)]
@@ -2176,7 +2185,12 @@ class InterpreterAnalyzer(ASTTemplate):
         rule_data = self.rule_data
         signature = self.ruleset_signature
 
-        result_components = {c.name: c for c in ruleset_ds.get_components()}
+        # The attributes stay in the rule data, for the conditions (issue #1223)
+        result_components = {
+            c.name: c
+            for c in ruleset_ds.get_components()
+            if c.role in (Role.IDENTIFIER, Role.MEASURE)
+        }
         hr_component = signature["RULE_COMPONENT"]  # type: ignore[index]
         me_name = ruleset_ds.get_measures_names()[0]
         other_ids = list(set(ruleset_ds.get_identifiers_names()) - {hr_component})
@@ -2189,7 +2203,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if rule_data is None:
             return Dataset(name=node.value, components=result_components, data=None)
 
-        df = rule_data.copy()
+        df = rule_data[list(result_components)].copy()
         code_data = df[other_ids].drop_duplicates().reset_index(drop=True)
         if not other_ids:
             # Without extra identifiers there is exactly one (global) group; a
@@ -2300,8 +2314,9 @@ class InterpreterAnalyzer(ASTTemplate):
             components = cast(Dataset, self.ruleset_dataset).components
             df = unique_data_points(df, components, cast(str, self.hr_agg_ruleset), rule_component)
         if not other_ids:
-            # A single (global) group, labelled 0 like the code items of the rule
-            return df
+            # A single (global) group, labelled 0 like the code items of the rule. Without
+            # data points that satisfy the condition of the rule there is none (issue #1223)
+            return (df if len(rule_data) > 0 else df.iloc[0:0]).reset_index(drop=True)
         groups = rule_data[other_ids].drop_duplicates().reset_index(drop=True)
         groups["__group__"] = groups.index
         labelled = merge_frames(df, groups, on=other_ids, how="inner")
