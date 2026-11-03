@@ -3942,6 +3942,16 @@ FROM (
         ]
         union_sql = " UNION ALL ".join(rule_queries)
 
+        if "ruleid" in id_cols:
+            numbered = " UNION ALL ".join(
+                f"SELECT *, {i} AS _dp_rule FROM ({q})" for i, q in enumerate(rule_queries)
+            )
+            partition = ", ".join(quote_name(c) for c in id_cols)
+            union_sql = (
+                f"SELECT * EXCLUDE (_dp_rule) FROM ({numbered}) AS _dp_all "
+                f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {partition} ORDER BY _dp_rule) = 1"
+            )
+
         if use_cte:
             cte = CTEBuilder()
             cte.cte("_dp_src", stripped[1:-1].strip(), materialized=True)
@@ -3983,7 +3993,12 @@ FROM (
         rule_name = rule.name or ""
         ec_sql = self._error_code_sql(rule.erCode)
         el_sql = self._error_code_sql(rule.erLevel)
-        select_parts = [quote_name(c) for c in id_cols + measure_cols]
+        # An operand component the rule writes again (an operand coming out of a
+        # validation) is replaced by the rule's value, as in the pandas engine.
+        written = {"ruleid", "errorcode", "errorlevel"}
+        if output_mode != "invalid":
+            written.add("bool_var")
+        select_parts = [quote_name(c) for c in id_cols + measure_cols if c not in written]
         # check_datapoint is row-preserving: viral attributes are copied unchanged (issue #906).
         viral_parts: List[str] = []
         for comp in viral_comps or []:
