@@ -5232,3 +5232,143 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_11(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: F = D - A errorcode "E1" errorlevel 1;
+                        R2: G = F + B errorcode "E2" errorlevel 2
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2 non_zero rule_priority);
+                    DS_r2 <- hierarchy(DS_1, HR_1 rule Id_2 non_zero);
+                    DS_r3 <- check_hierarchy(DS_1, HR_1 rule Id_2 non_zero dataset_priority all);
+
+        Description: R1 computes a zero F for Id_1 1, which the non_zero mode drops, so R2
+        does not read it: with rule_priority it reads the F of the operand, with rule none.
+
+        Git Branch: #1223.
+        Goal: Check a rule does not read a computed data point that the mode drops.
+        """
+
+        code = "GH_1223_11"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_13(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        R1: when Id_1 > 0 then A = B + C errorcode "E1" errorlevel 1;
+                        R2: when Id_1 < 10 then A = B - C errorcode "E2" errorlevel 2;
+                        R3: when Id_1 > 5 then D = A + E errorcode "E3" errorlevel 3
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2
+                                dataset_priority all);
+
+        Description: R1 and R2 compute different values of A. R3, which reads A, does not
+        apply to Id_1 1, so it does not read the A of the operand there.
+
+        Git Branch: #1223.
+        Goal: Check the runtime error of overlapping rules where the reading rule does not
+        apply.
+        """
+
+        code = "GH_1223_13"
+        number_inputs = 1
+        exception_code = "2-1-10-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_1223_14(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        R1: A = B [Id_1 = 1] + C + B [Id_1 = 2] errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_2 (variable condition At_1 rule Id_2) is
+                        R1: A = B [At_1 = "x"] + C + B [At_1 = "y"] errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 always_zero);
+                    DS_r2 <- hierarchy(DS_1, HR_2 condition At_1 rule Id_2 always_zero);
+
+        Description: B appears twice in the rule, each time with its own condition.
+
+        Git Branch: #1223.
+        Goal: Check a code item twice in a rule with different right conditions.
+        """
+
+        code = "GH_1223_14"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_15(self):
+        """
+        HIERARCHICAL RULSET: hierarchy and check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = b + B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2);
+                    DS_r2 <- check_hierarchy(DS_1, HR_1 rule Id_2 always_zero all);
+
+        Description: The code items b and B differ only in case.
+
+        Git Branch: #1223.
+        Goal: Check code items that differ only in case are different code items.
+        """
+
+        code = "GH_1223_15"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_16(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: when time_agg("A", _, At_1, first) = cast("2020A", time_period)
+                            then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_2 (variable condition Id_1 rule Id_2) is
+                        R1: when time_agg("A", _, Id_1, first) = cast("2020A", time_period)
+                            then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- hierarchy(DS_1, HR_2 condition Id_1 rule Id_2);
+
+        Description: The conditions aggregate the time period of an attribute and of an
+        identifier.
+
+        Git Branch: #1223.
+        Goal: Check time_agg in the condition of a hierarchical rule.
+        """
+
+        code = "GH_1223_16"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

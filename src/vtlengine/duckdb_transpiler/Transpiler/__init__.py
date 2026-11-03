@@ -13,7 +13,6 @@ from typing import (
     Generator,
     List,
     Optional,
-    Sequence,
     Set,
     Tuple,
     Union,
@@ -233,40 +232,9 @@ def _bool_to_str(col_ref: str) -> str:
     return f"CASE WHEN {col_ref} IS NULL THEN NULL WHEN {col_ref} THEN 'True' ELSE 'False' END"
 
 
-def _val_col(code_item: str) -> str:
-    """Return the pivot column name holding the value for a code item."""
-    return f"_val_{code_item}"
-
-
-def _has_col(code_item: str) -> str:
-    """Return the pivot column name indicating presence (0/1) of a code item."""
-    return f"_has_{code_item}"
-
-
-def _view_col(kind: str, index: int, code_item: Optional[str] = None) -> str:
-    """Return the pivot column of a rule whose conditions apply per data point (issue #1223).
-
-    ``kind`` is ``val`` or ``has`` (a code item that satisfies the conditions), ``in`` (a
-    data point of the group satisfies the condition of a right code item), ``when`` (a
-    data point of the group satisfies the condition of the rule) or ``views`` (the struct of
-    the columns that the chain of pivots does not update).
-    """
-    return f"_r{index}_{kind}" if code_item is None else f"_r{index}_{kind}_{code_item}"
-
-
-def _var_id_names(node: Any) -> Set[str]:
-    """The names of the VarIDs in ``node``, including the conditions of its code items."""
-    names: Set[str] = set()
-    pending: List[Any] = [node]
-    while pending:
-        item = pending.pop()
-        if isinstance(item, AST.VarID):
-            names.add(item.value)
-        elif isinstance(item, list):
-            pending.extend(item)
-        elif isinstance(item, AST.AST):
-            pending.extend(vars(item).values())
-    return names
+def _hr_literal(code_item: str) -> str:
+    """A code item or rule name of a hierarchical ruleset as a SQL string literal."""
+    return "'" + code_item.replace("'", "''") + "'"
 
 
 def _rename_var_ids(node: AST.AST, names: Dict[str, str]) -> AST.AST:
@@ -283,6 +251,10 @@ def _rename_var_ids(node: AST.AST, names: Dict[str, str]) -> AST.AST:
             pending.extend(vars(item).values())
     return node
 
+
+# Rules of a hierarchical ruleset per pivot that the rules read: planning a reference to a
+# pivot costs as much as its width (issue #1223)
+_HR_PIVOT_RULES = 16
 
 # Text casts that check the text as the pandas engine does, by the lower case name of the
 # target type ({0}: the text, {1}: the SQL type)
@@ -325,11 +297,10 @@ class _ParsedHRRule:
     comparison_node: Any  # AST node for the comparison (left = right)
     left_code_item: str  # Left-side code item name
     right_expr_node: AST.AST  # Right-side expression AST
-    right_code_items: List[str]  # All code item names in the right-side expression
-    left_cond_sql: Optional[str] = None  # Left-side `_right_condition` SQL, when cond_mapping given
-    right_conds: Dict[str, str] = field(default_factory=dict)  # Right-side per-item conditions
-    index: int = 0  # Position in the ruleset, which names its view columns
-    per_point: bool = False  # Its conditions read more than the other identifiers (#1223)
+    right_code_items: List[str]  # The right code items, by position (a rule may repeat one)
+    right_conds: List[Any]  # The condition AST of each right code item, or None
+    positions: Dict[int, int]  # Position of each right code item, by id of its node
+    index: int = 0  # Position in the ruleset, which names the struct of the rule in the pivot
 
 
 @dataclass
@@ -4141,11 +4112,7 @@ FROM (
                 cond_mapping[hr_info["condition"][i]] = self._get_node_value(cond_node)
 
         mode = node.validation_mode.value if node.validation_mode else "non_null"
-        group_ids = set(ds.get_identifiers_names()) - {component}
-        parsed_rules = [
-            self._parse_hr_rule(r, cond_mapping, i, group_ids)
-            for i, r in enumerate(hr_info["rules"])
-        ]
+        parsed_rules = [self._parse_hr_rule(r, i) for i, r in enumerate(hr_info["rules"])]
 
         if node.op == tokens.HIERARCHY:
             eq_rules = self._sort_hierarchy_rules(
@@ -4202,29 +4169,12 @@ FROM (
         by_rule = {id(parsed.rule): parsed for parsed in parsed_rules}
         return [by_rule[id(rule)] for rule in ruleset.rules]
 
-    def _parse_hr_rule(
-        self,
-        rule: AST.HRule,
-        cond_mapping: Optional[Dict[str, str]] = None,
-        index: int = 0,
-        group_ids: Optional[Set[str]] = None,
-    ) -> _ParsedHRRule:
-        """Parse a hierarchical rule, resolving right-side conditions when given a mapping.
-
-        Conditions that read only ``group_ids``, the identifiers other than the rule
-        component, hold for a whole group of data points; the others are evaluated on each
-        data point (issue #1223).
-        """
+    def _parse_hr_rule(self, rule: AST.HRule, index: int = 0) -> _ParsedHRRule:
+        """Parse a hierarchical rule, at ``index`` in its ruleset."""
         rule_node: Any = rule.rule
         has_when = isinstance(rule_node, AST.HRBinOp) and rule_node.op == tokens.WHEN
         comparison_node = rule_node.right if has_when else rule_node
-        right_items, right_conds = self._collect_hr_code_items(comparison_node.right, cond_mapping)
-        left_rc = getattr(comparison_node.left, "_right_condition", None)
-        left_cond_sql: Optional[str] = None
-        if cond_mapping is not None and left_rc is not None:
-            left_cond_sql = self._build_hr_when_sql(left_rc, cond_mapping)
-        mapping = cond_mapping or {}
-        read = {mapping.get(name, name) for name in _var_id_names(rule_node)}
+        right_nodes = self._hr_code_item_nodes(comparison_node.right)
         return _ParsedHRRule(
             rule=rule,
             has_when=has_when,
@@ -4232,29 +4182,22 @@ FROM (
             comparison_node=comparison_node,
             left_code_item=comparison_node.left.value,
             right_expr_node=comparison_node.right,
-            right_code_items=right_items,
-            left_cond_sql=left_cond_sql,
-            right_conds=right_conds,
+            right_code_items=[n.value for n in right_nodes],
+            right_conds=[getattr(n, "_right_condition", None) for n in right_nodes],
+            positions={id(n): j for j, n in enumerate(right_nodes)},
             index=index,
-            per_point=group_ids is not None and not read <= group_ids,
         )
 
-    @staticmethod
-    def _collect_all_hr_items(
-        parsed_rules: List[_ParsedHRRule],
-    ) -> Tuple[List[str], Dict[str, str]]:
-        """Collect deduplicated code items and left-side conditions across pre-parsed rules.
-
-        The right-side conditions are applied by each rule, see ``_hr_item_sql``.
-        """
-        all_items: List[str] = []
-        all_conds: Dict[str, str] = {}
-        for p in parsed_rules:
-            all_items.append(p.left_code_item)
-            all_items.extend(p.right_code_items)
-            if p.left_cond_sql is not None:
-                all_conds[p.left_code_item] = p.left_cond_sql
-        return list(dict.fromkeys(all_items)), all_conds
+    @classmethod
+    def _hr_code_item_nodes(cls, node: Any) -> List[AST.DefIdentifier]:
+        """The right code items of a hierarchical rule expression, in order."""
+        if isinstance(node, AST.DefIdentifier):
+            return [node]
+        if isinstance(node, AST.HRBinOp):
+            return cls._hr_code_item_nodes(node.left) + cls._hr_code_item_nodes(node.right)
+        if isinstance(node, AST.HRUnOp):
+            return cls._hr_code_item_nodes(node.operand)
+        return []
 
     def _build_hr_pivot(
         self,
@@ -4263,76 +4206,148 @@ FROM (
         parsed_rules: List[_ParsedHRRule],
         rule_comp: str,
         cond_mapping: Dict[str, str],
-        chained: Set[str],
     ) -> Tuple[str, str, List[str]]:
         """Build the pivot SELECT SQL and metadata for hierarchy operations.
 
-        ``chained`` are the code items that a chain of pivots computes. Returns (pivot_sql,
-        measure_name, other_ids).
+        The pivot has a row per group of the identifiers other than the rule component, and
+        a struct ``_r{k}`` per rule with what the rule reads (issue #1223): ``_when`` (a data
+        point of the group satisfies the condition of the rule), ``_lval`` and ``_lhas`` (value
+        and presence of the left code item), ``_val{j}`` and ``_has{j}`` (of the j-th right
+        code item) and ``_in{j}`` (a data point of the group satisfies its condition). The
+        conditions are evaluated on each data point, with the operand as their structure: a
+        data point that does not satisfy them is missing for the rule. The group flags see the
+        data points of every code item. Naming the fields by position lets a rule name a code
+        item twice, and code items differ only in case.
+
+        Returns (pivot_sql, measure_name, other_ids).
         """
         measure_name = ds.get_measures_names()[0]
         other_ids = [n for n in ds.get_identifiers_names() if n != rule_comp]
-        unique_items, item_conds = self._collect_all_hr_items(parsed_rules)
-
         qrc = quote_name(rule_comp)
         qm = quote_name(measure_name)
         group_cols = [quote_name(c) for c in other_ids]
+        items = dict.fromkeys(
+            ci
+            for parsed in parsed_rules
+            for ci in (parsed.left_code_item, *parsed.right_code_items)
+        )
+        found = [f"{qrc} IN ({', '.join(_hr_literal(ci) for ci in items)})"]
 
-        select_parts = list(group_cols)
-        for ci in unique_items:
-            extra = f" AND {item_conds[ci]}" if ci in item_conds else ""
-            match_case = f"CASE WHEN {qrc} = '{ci}'{extra}"
-            select_parts.append(f"MAX({match_case} THEN {qm} END) AS {_val_col(ci)}")
-            select_parts.append(f"MAX({match_case} THEN 1 ELSE 0 END) AS {_has_col(ci)}")
-
-        # The conditions on other components than the group identifiers are evaluated on
-        # each data point, into the view columns of their rule (issue #1223). The group flags
-        # see the data points of every code item. The columns that a chain of pivots never
-        # updates go in one struct per rule: a wide pivot slows down the planning.
-        in_list = ", ".join(f"'{ci}'" for ci in unique_items)
-        found = [f"{qrc} IN ({in_list})"]
-        for parsed in parsed_rules:
-            if not parsed.per_point:
-                continue
-            k = parsed.index
-            views: List[Tuple[str, str]] = []
-            when = (
-                self._build_hr_when_sql(parsed.when_node, cond_mapping) if parsed.has_when else None
+        def item_fields(
+            val: str, has: str, code_item: str, conds: List[Optional[str]]
+        ) -> List[str]:
+            match = " AND ".join(
+                [f"{qrc} = {_hr_literal(code_item)}", *(f"({c})" for c in conds if c is not None)]
             )
-            if when is not None:
-                views.append((_view_col("when", k), f"MAX(CASE WHEN ({when}) THEN 1 ELSE 0 END)"))
-                found.append(f"({when})")
-            for ci in self._hr_view_items(parsed):
-                right_cond = parsed.right_conds.get(ci) if ci != parsed.left_code_item else None
-                cond = " AND ".join(f"({c})" for c in (when, right_cond) if c is not None)
-                match_case = f"CASE WHEN {qrc} = '{ci}' AND {cond}"
-                views.append((_view_col("val", k, ci), f"MAX({match_case} THEN {qm} END)"))
-                views.append((_view_col("has", k, ci), f"MAX({match_case} THEN 1 ELSE 0 END)"))
-            for ci, right_cond in parsed.right_conds.items():
-                cond = " AND ".join(f"({c})" for c in (when, right_cond) if c is not None)
-                views.append((_view_col("in", k, ci), f"MAX(CASE WHEN {cond} THEN 1 ELSE 0 END)"))
-                if when is None:
-                    found.append(f"({right_cond})")
-            statics = set(self._hr_static_cols(parsed, chained))
-            packed = ", ".join(f"{name} := {expr}" for name, expr in views if name in statics)
-            select_parts.append(f"struct_pack({packed}) AS {_view_col('views', k)}")
-            select_parts.extend(f"{expr} AS {name}" for name, expr in views if name not in statics)
+            return [
+                f"{val} := MAX(CASE WHEN {match} THEN {qm} END)",
+                f"{has} := MAX(CASE WHEN {match} THEN 1 ELSE 0 END)",
+            ]
 
+        structs: List[str] = []
+        with self._clause_scope(ds), self._hoist_scope() as hoisted:
+            for parsed in parsed_rules:
+                when = (
+                    self._build_hr_when_sql(parsed.when_node, cond_mapping)
+                    if parsed.has_when
+                    else None
+                )
+                fields: List[str] = []
+                if when is not None:
+                    fields.append(f"_when := MAX(CASE WHEN ({when}) THEN 1 ELSE 0 END)")
+                    found.append(f"({when})")
+                fields += item_fields("_lval", "_lhas", parsed.left_code_item, [when])
+                for j, (ci, rc_node) in enumerate(zip(parsed.right_code_items, parsed.right_conds)):
+                    rc = None if rc_node is None else self._build_hr_when_sql(rc_node, cond_mapping)
+                    fields += item_fields(f"_val{j}", f"_has{j}", ci, [when, rc])
+                    if rc is not None:
+                        holds = " AND ".join(f"({c})" for c in (when, rc) if c is not None)
+                        fields.append(f"_in{j} := MAX(CASE WHEN {holds} THEN 1 ELSE 0 END)")
+                        if when is None:
+                            found.append(f"({rc})")
+                structs.append(f"struct_pack({', '.join(fields)}) AS _r{parsed.index}")
+        src = self._hoisted_source(table_src, hoisted) if hoisted else table_src
         group_by = f" GROUP BY {', '.join(group_cols)}" if group_cols else ""
         pivot_sql = (
-            f"SELECT {', '.join(select_parts)} "
-            f"FROM {table_src} WHERE {' OR '.join(dict.fromkeys(found))}{group_by}"
+            f"SELECT {', '.join([*group_cols, *structs])} "
+            f"FROM {src} WHERE {' OR '.join(dict.fromkeys(found))}{group_by}"
         )
         return pivot_sql, measure_name, other_ids
 
+    def _hr_rule_source(
+        self,
+        parsed: _ParsedHRRule,
+        other_ids: List[str],
+        pivot: str,
+        computed_by: Dict[str, List[str]],
+        input_mode: str,
+    ) -> str:
+        """The relation a rule reads: its struct of ``pivot``, where the code items that the
+        rules in ``computed_by`` compute come from them as the input mode says (issue #1223).
+
+        A rule joins only the rules that compute its code items: a chain of pivots carrying
+        every code item made the planning grow with the square of the number of rules.
+        """
+        keys = [quote_name(c) for c in other_ids]
+        operand = f"(SELECT {', '.join([*keys, f'UNNEST(s._r{parsed.index})'])} FROM {pivot} s)"
+        aliases: Dict[str, str] = {}
+        replaced: List[str] = []
+        for j, code_item in enumerate(parsed.right_code_items):
+            computing = computed_by.get(code_item, [])
+            if computing:
+                names = [aliases.setdefault(c, f"_c{len(aliases)}") for c in computing]
+                replaced += self._hr_computed_item_sql(j, names, input_mode)
+        if not replaced:
+            return f"{operand} AS _src"
+        join = f"USING ({', '.join(keys)})" if keys else "ON TRUE"
+        joins = " ".join(f"LEFT JOIN {c} AS {a} {join}" for c, a in aliases.items())
+        return f"(SELECT u.* REPLACE ({', '.join(replaced)}) FROM {operand} AS u {joins}) AS _src"
+
     @staticmethod
-    def _hr_view_items(parsed: _ParsedHRRule) -> List[str]:
-        """The code items of a rule with view columns: the ones with a condition (#1223)."""
-        if not parsed.per_point:
-            return []
-        if parsed.has_when:
-            return list(dict.fromkeys([parsed.left_code_item, *parsed.right_code_items]))
-        return [ci for ci in dict.fromkeys(parsed.right_code_items) if ci in parsed.right_conds]
+    def _hr_rule_pivots(
+        cte: CTEBuilder, parsed_rules: List[_ParsedHRRule], other_ids: List[str], pivot: str
+    ) -> Dict[int, str]:
+        """The pivot each rule reads, by rule index: ``pivot``, or for large rulesets narrow
+        projections of it with the structs of a few rules each (issue #1223)."""
+        if len(parsed_rules) <= _HR_PIVOT_RULES:
+            return {parsed.index: pivot for parsed in parsed_rules}
+        keys = [quote_name(c) for c in other_ids]
+        ordered = sorted(parsed_rules, key=lambda parsed: parsed.index)
+        pivots: Dict[int, str] = {}
+        for start in range(0, len(ordered), _HR_PIVOT_RULES):
+            chunk = ordered[start : start + _HR_PIVOT_RULES]
+            name = f"{pivot}_{start // _HR_PIVOT_RULES}"
+            structs = [f"_r{parsed.index}" for parsed in chunk]
+            cte.cte(name, f"SELECT {', '.join([*keys, *structs])} FROM {pivot}", True)
+            pivots.update((parsed.index, name) for parsed in chunk)
+        return pivots
+
+    @staticmethod
+    def _hr_computed_item_sql(position: int, rules: List[str], input_mode: str) -> List[str]:
+        """Value and presence of the right code item at ``position`` that the joined ``rules``
+        compute: the last rule that computed a data point wins (issues #1142, #1193).
+
+        With input rule only the computed data points are read; with rule_priority a null
+        computed value leaves the one of the operand; with dataset_priority a non-null data
+        point of the operand wins (issue #1173).
+        """
+        val, has = f"u._val{position}", f"u._has{position}"
+        latest = list(reversed(rules))
+        computed = " ".join(f"WHEN {r}._present IS NOT NULL THEN {r}._computed" for r in latest)
+        if input_mode == "rule_priority":
+            value = f"COALESCE({', '.join(f'{r}._computed' for r in latest)}, {val})"
+        elif input_mode == "dataset_priority":
+            value = (
+                f"CASE WHEN {has} = 1 AND {val} IS NOT NULL THEN {val} {computed} ELSE {val} END"
+            )
+        else:
+            value = f"CASE {computed} END"
+        any_rule = " OR ".join(f"{r}._present IS NOT NULL" for r in rules)
+        otherwise = "0" if input_mode == "rule" else has
+        return [
+            f"{value} AS _val{position}",
+            f"CASE WHEN {any_rule} THEN 1 ELSE {otherwise} END AS _has{position}",
+        ]
 
     def _build_check_hierarchy_sql(
         self,
@@ -4356,26 +4371,21 @@ FROM (
             cols = [quote_name(c) for c in (out_ds.components if out_ds else ds.components)]
             return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
 
-        chained = {p.left_code_item for p in priority_rules or []}
         pivot_sql, measure_name, other_ids = self._build_hr_pivot(
-            table_src, ds, parsed_rules, rule_comp, cond_mapping, chained
+            table_src, ds, parsed_rules, rule_comp, cond_mapping
         )
         cte = CTEBuilder()
         # MATERIALIZED so the pivot aggregation is computed once, not once per
         # rule branch in the UNION ALL below.
         cte.cte("_pivot", pivot_sql, materialized=True)
-        right_pivot = "_pivot"
+        pivot = "_pivot"
+        computed_by: Dict[str, List[str]] = {}
         if priority_rules:
-            right_pivot = self._build_priority_pivot(
-                cte,
-                parsed_rules,
-                priority_rules,
-                other_ids,
-                mode,
-                cond_mapping,
-                ruleset_name,
-                chained,
+            pivot, computed_by = self._build_priority_rules(
+                cte, ds, parsed_rules, priority_rules, other_ids, mode, ruleset_name
             )
+        input_mode = "dataset_priority" if priority_rules else "dataset"
+        pivots = self._hr_rule_pivots(cte, parsed_rules, other_ids, pivot)
         measure_comp = ds.components.get(measure_name)
         rule_queries = [
             self._build_check_hr_rule_select(
@@ -4386,8 +4396,7 @@ FROM (
                 measure_type=measure_comp.data_type if measure_comp else None,
                 mode=mode,
                 output=output,
-                cond_mapping=cond_mapping,
-                pivot_ref=self._hr_left_from_operand(right_pivot, p, other_ids, chained),
+                source=self._hr_rule_source(p, other_ids, pivots[p.index], computed_by, input_mode),
             )
             for p in parsed_rules
         ]
@@ -4416,71 +4425,23 @@ FROM (
             )
         return cte.select(union_sql)
 
-    def _collect_hr_code_items(
-        self, node: AST.AST, cond_mapping: Optional[Dict[str, str]] = None
-    ) -> Tuple[List[str], Dict[str, str]]:
-        """Extract code-item names and right-side conditions from an HR expression."""
-        if isinstance(node, AST.DefIdentifier):
-            conds: Dict[str, str] = {}
-            if cond_mapping is not None:
-                rc = getattr(node, "_right_condition", None)
-                if rc is not None:
-                    conds[node.value] = self._build_hr_when_sql(rc, cond_mapping)
-            return [node.value], conds
-        if isinstance(node, AST.HRBinOp):
-            li, lc = self._collect_hr_code_items(node.left, cond_mapping)
-            ri, rc = self._collect_hr_code_items(node.right, cond_mapping)
-            lc.update(rc)
-            return li + ri, lc
-        if isinstance(node, AST.HRUnOp):
-            return self._collect_hr_code_items(node.operand, cond_mapping)
-        return [], {}
-
-    @classmethod
-    def _hr_item_sql(
-        cls, code_item: str, parsed: Optional[_ParsedHRRule], is_left: bool = False
-    ) -> Tuple[str, str, str]:
-        """Value, presence and exclusion SQL of a code item in a rule.
+    @staticmethod
+    def _hr_item_sql(parsed: _ParsedHRRule, position: Optional[int] = None) -> Tuple[str, str, str]:
+        """Value, presence and exclusion SQL of a code item of a rule: the left one, or the
+        right one at ``position``.
 
         Where the condition of a right code item is not TRUE, the code item is left out of
         the rule, unless all the right code items are: then they read as missing data
         points.
         """
-        if parsed is not None and parsed.per_point:
-            return cls._hr_view_item_sql(code_item, parsed, is_left)
-        cond = None if parsed is None or is_left else parsed.right_conds.get(code_item)
-        if parsed is None or cond is None:
-            return _val_col(code_item), _has_col(code_item), "FALSE"
-        conds = [parsed.right_conds.get(ci) for ci in parsed.right_code_items]
-        any_held = "TRUE" if None in conds else " OR ".join(f"COALESCE({c}, FALSE)" for c in conds)
-        holds = f"COALESCE({cond}, FALSE)"
-        return (
-            f"CASE WHEN {holds} THEN {_val_col(code_item)} END",
-            f"CASE WHEN {holds} THEN {_has_col(code_item)} ELSE 0 END",
-            f"(NOT {holds} AND ({any_held}))",
-        )
-
-    @classmethod
-    def _hr_view_item_sql(
-        cls, code_item: str, parsed: _ParsedHRRule, is_left: bool
-    ) -> Tuple[str, str, str]:
-        """``_hr_item_sql`` of a rule whose conditions apply per data point (issue #1223).
-
-        The code item is read from the view columns of the rule. A right code item is left
-        out where no data point of the group satisfies its condition.
-        """
-        k = parsed.index
-        viewed = code_item in cls._hr_view_items(parsed) and (not is_left or parsed.has_when)
-        val = _view_col("val", k, code_item) if viewed else _val_col(code_item)
-        has = _view_col("has", k, code_item) if viewed else _has_col(code_item)
-        if is_left or code_item not in parsed.right_conds:
+        if position is None:
+            return "_lval", "_lhas", "FALSE"
+        val, has = f"_val{position}", f"_has{position}"
+        if parsed.right_conds[position] is None:
             return val, has, "FALSE"
-        held = [
-            f"{_view_col('in', k, ci)} = 1" if ci in parsed.right_conds else None
-            for ci in parsed.right_code_items
-        ]
-        any_held = "TRUE" if None in held else " OR ".join(cast(List[str], held))
-        holds = f"{_view_col('in', k, code_item)} = 1"
+        held = [f"_in{j} = 1" for j, c in enumerate(parsed.right_conds) if c is not None]
+        any_held = "TRUE" if None in parsed.right_conds else " OR ".join(held)
+        holds = f"_in{position} = 1"
         return (
             f"CASE WHEN {holds} THEN {val} END",
             f"CASE WHEN {holds} THEN {has} ELSE 0 END",
@@ -4488,24 +4449,18 @@ FROM (
         )
 
     def _build_hr_value_expr(
-        self,
-        code_item: str,
-        mode: str,
-        parsed: Optional[_ParsedHRRule] = None,
-        is_left: bool = False,
+        self, parsed: _ParsedHRRule, mode: str, position: Optional[int] = None
     ) -> str:
-        """Generate the value expression for a code item from pivot columns, per mode."""
-        val, has, excluded = self._hr_item_sql(code_item, parsed, is_left)
+        """Generate the value expression of a code item of a rule, per mode."""
+        val, has, excluded = self._hr_item_sql(parsed, position)
         if mode in ("always_zero", "non_zero", "partial_zero"):
             val = f"CASE WHEN {has} = 0 THEN 0 ELSE {val} END"
         return val if excluded == "FALSE" else f"CASE WHEN {excluded} THEN 0 ELSE {val} END"
 
-    def _build_hr_expr_sql(
-        self, node: AST.AST, mode: str, parsed: Optional[_ParsedHRRule] = None
-    ) -> str:
-        """Generate SQL for a hierarchical rule arithmetic expression using pivot columns."""
+    def _build_hr_expr_sql(self, node: AST.AST, mode: str, parsed: _ParsedHRRule) -> str:
+        """Generate SQL for a hierarchical rule arithmetic expression from the rule source."""
         if isinstance(node, AST.DefIdentifier):
-            return self._build_hr_value_expr(node.value, mode, parsed)
+            return self._build_hr_value_expr(parsed, mode, parsed.positions[id(node)])
         if isinstance(node, AST.HRBinOp):
             left_sql = self._build_hr_expr_sql(node.left, mode, parsed)
             right_sql = self._build_hr_expr_sql(node.right, mode, parsed)
@@ -4514,109 +4469,84 @@ FROM (
         operand_sql = self._build_hr_expr_sql(node.operand, mode, parsed)  # type: ignore[attr-defined]
         return f"({node.op}{operand_sql})"  # type: ignore[attr-defined]
 
-    def _build_priority_pivot(
+    def _build_priority_rules(
         self,
         cte: CTEBuilder,
+        ds: Dataset,
         parsed_rules: List[_ParsedHRRule],
         priority_rules: List[_ParsedHRRule],
         other_ids: List[str],
         mode: str,
-        cond_mapping: Dict[str, str],
         ruleset_name: str,
-        chained: Set[str],
-    ) -> str:
-        """Build the pivot that input dataset_priority reads the right side of the rules from.
+    ) -> Tuple[str, Dict[str, List[str]]]:
+        """Compute the code items that input dataset_priority reads where the operand lacks
+        them.
 
-        The '=' rules are computed in dependency order, as hierarchy does: the pivot keeps the
-        operand's non-null data points and takes the computed ones where the operand has none
-        (issue #1173). Where another rule reads a code item that the operand lacks, two rules
-        must not both compute it. Returns the name of the pivot.
+        The '=' rules are computed in dependency order, as hierarchy does (issue #1173). Where
+        a rule reads a code item that the operand lacks, as the rule sees the operand, the
+        rules that compute it must give it the same value (2-1-10-1). Returns the pivot the
+        rules read and the rules that compute each code item.
         """
-        join_keys = [quote_name(c) for c in other_ids]
-        current = "_pivot"
-        statics = [_view_col("views", p.index) for p in parsed_rules if p.per_point]
-        item_rule_ctes: Dict[str, List[str]] = defaultdict(list)
+        computed_by: Dict[str, List[str]] = defaultdict(list)
+        pivots = self._hr_rule_pivots(cte, priority_rules, other_ids, "_pivot")
         for i, parsed in enumerate(priority_rules):
-            rule_cte = f"_dp_rule_{i}"
-            rule_sql = self._build_hierarchy_rule_cte(
-                parsed=parsed,
-                pivot_ref=self._hr_source(current, parsed, other_ids, chained),
-                other_ids=other_ids,
-                mode=mode,
-                cond_mapping=cond_mapping,
+            name = f"_dp_rule_{i}"
+            source = self._hr_rule_source(
+                parsed, other_ids, pivots[parsed.index], computed_by, "dataset_priority"
             )
-            cte.cte(rule_cte, rule_sql, materialized=True)
-            next_pivot = f"_dp_pivot_{i}"
-            update_sql = self._build_hierarchy_pivot_update(
-                prev_pivot=current,
-                rule_cte=rule_cte,
-                left_code_item=parsed.left_code_item,
-                join_keys=join_keys,
-                input_mode="dataset_priority",
-                first_for_item=True,
-                views=self._hr_chain_views(parsed_rules, parsed.left_code_item),
-                exclude=statics if current == "_pivot" else (),
-            )
-            cte.cte(next_pivot, update_sql, materialized=True)
-            item_rule_ctes[parsed.left_code_item].append(rule_cte)
-            current = next_pivot
+            cte.cte(name, self._build_hierarchy_rule_cte(parsed, source, other_ids, mode), True)
+            computed_by[parsed.left_code_item].append(name)
 
-        keys = ", ".join(f"r.{quote_name(c)}" for c in other_ids)
-        join_sql = f"USING ({', '.join(join_keys)})" if join_keys else "ON TRUE"
+        keys = [quote_name(c) for c in other_ids]
+        selected = ", ".join([*(f"r.{k}" for k in keys), "r._computed AS _cv"])
+        join_sql = f"USING ({', '.join(keys)})" if keys else "ON TRUE"
+        group_by = f" GROUP BY {', '.join(keys)}" if keys else ""
+        measure = ds.components[ds.get_measures_names()[0]]
+        same = (
+            number_tolerance_sql(tokens.EQ, "MIN(_cv)", "MAX(_cv)")
+            if measure.data_type == Number
+            else None
+        )
+        # A null and a value are different
+        same = same or "MIN(_cv) = MAX(_cv)"
+        differ = f"COUNT(_cv) NOT IN (0, COUNT(*)) OR NOT COALESCE({same}, TRUE)"
         guards = []
-        for item, rule_ctes in item_rule_ctes.items():
-            readers = [parsed for parsed in parsed_rules if item in parsed.right_code_items]
+        for item, rule_ctes in computed_by.items():
+            readers = [
+                (parsed, j)
+                for parsed in parsed_rules
+                for j, ci in enumerate(parsed.right_code_items)
+                if ci == item
+            ]
             if len(rule_ctes) < 2 or not readers:
                 continue
-            # Only where the operand has no non-null data point for the code item, as a rule
-            # that reads it sees the operand (issue #1223)
-            lacking = " OR ".join(dict.fromkeys(self._hr_operand_lacks(item, p) for p in readers))
+            lacking = " OR ".join(
+                dict.fromkeys(self._hr_operand_lacks(parsed, j) for parsed, j in readers)
+            )
             union = " UNION ALL ".join(
-                f"SELECT {keys or '1 AS _one'} FROM {c} r JOIN _pivot o {join_sql} WHERE {lacking}"
+                f"SELECT {selected} FROM {c} r JOIN _pivot o {join_sql} WHERE {lacking}"
                 for c in rule_ctes
             )
-            group_by = f" GROUP BY {', '.join(quote_name(c) for c in other_ids)}" if keys else ""
             message = self._to_sql_literal(
                 f"VTL 2-1-10-1: ruleset {ruleset_name}, code item {item}"
             )
             guards.append(
                 f"CASE WHEN EXISTS (SELECT 1 FROM ({union}) AS _dpu{group_by} "
-                f"HAVING COUNT(*) > 1) THEN error({message}) ELSE TRUE END"
+                f"HAVING COUNT(*) > 1 AND ({differ})) THEN error({message}) ELSE TRUE END"
             )
-        if guards:
-            cte.cte("_dp_pivot", f"SELECT * FROM {current} WHERE {' AND '.join(guards)}")
-            current = "_dp_pivot"
-        return current
+        if not guards:
+            return "_pivot", computed_by
+        cte.cte("_dp_pivot", f"SELECT * FROM _pivot WHERE {' AND '.join(guards)}", True)
+        return "_dp_pivot", computed_by
 
-    @classmethod
-    def _hr_operand_lacks(cls, code_item: str, reader: _ParsedHRRule) -> str:
-        """Where the operand pivot ``o`` has no non-null data point of a code item that a rule
-        reads, through the view of the rule when it has one (issue #1223)."""
-        if code_item in cls._hr_view_items(reader):
-            val = _view_col("val", reader.index, code_item)
-            has = _view_col("has", reader.index, code_item)
-        else:
-            val, has = _val_col(code_item), _has_col(code_item)
-        return f"NOT (o.{has} = 1 AND o.{val} IS NOT NULL)"
-
-    @classmethod
-    def _hr_left_from_operand(
-        cls, pivot: str, parsed: _ParsedHRRule, other_ids: List[str], chained: Set[str]
-    ) -> str:
-        """The relation a check rule reads: the code item it validates comes from the operand.
-
-        ``pivot`` holds the right side of the rules; with input dataset it is the operand pivot.
-        The view columns that the chain does not carry come from the operand pivot as well.
-        """
-        if pivot == "_pivot":
-            return cls._hr_source(pivot, parsed, other_ids, chained)
-        val, has, _ = cls._hr_item_sql(parsed.left_code_item, parsed, is_left=True)
-        statics = cls._hr_static_cols(parsed, chained)
-        replaced = "" if val in statics else f" REPLACE (o.{val} AS {val}, o.{has} AS {has})"
-        added = f", UNNEST(o.{_view_col('views', parsed.index)})" if parsed.per_point else ""
-        join_keys = [quote_name(c) for c in other_ids]
-        join_sql = f"USING ({', '.join(join_keys)})" if join_keys else "ON TRUE"
-        return f"(SELECT f.*{replaced}{added} FROM {pivot} f JOIN _pivot o {join_sql}) AS _chk"
+    @staticmethod
+    def _hr_operand_lacks(reader: _ParsedHRRule, position: int) -> str:
+        """Where the operand pivot ``o`` has no non-null data point of the right code item at
+        ``position`` of a rule, as the conditions of the rule see the operand."""
+        struct = f"o._r{reader.index}"
+        val = f"struct_extract({struct}, '_val{position}')"
+        has = f"struct_extract({struct}, '_has{position}')"
+        return f"NOT ({has} = 1 AND {val} IS NOT NULL)"
 
     def _build_check_hr_rule_select(
         self,
@@ -4627,21 +4557,18 @@ FROM (
         measure_type: Optional[type],
         mode: str,
         output: str,
-        cond_mapping: Dict[str, str],
-        pivot_ref: str = "_pivot",
+        source: str,
     ) -> str:
-        """Generate a SELECT for a single check_hierarchy rule from the pivot CTE."""
+        """Generate a SELECT for a single check_hierarchy rule from its source."""
         rule = parsed.rule
         rule_name = rule.name or ""
 
-        l_val = self._build_hr_value_expr(parsed.left_code_item, mode, parsed, is_left=True)
+        l_val = self._build_hr_value_expr(parsed, mode)
         r_val = self._build_hr_expr_sql(parsed.right_expr_node, mode, parsed)
 
         # Both sides are projected once into _lv/_rv and the comparison runs over
         # those aliases, so the emitted SQL stays readable: the tolerance macro
         # names each side several times, and the rule expressions can be large.
-        when_sql = self._hr_rule_when_sql(parsed, cond_mapping)
-
         val_cols = [quote_name(c) for c in other_ids]
         val_cols.append(f"{l_val} AS _lv")
         val_cols.append(f"{r_val} AS _rv")
@@ -4655,10 +4582,10 @@ FROM (
         )
         # The rule only applies where its condition holds: elsewhere there is no
         # comparison, so no data point (issue #1141).
-        if when_sql is not None:
-            val_where.append(f"({when_sql})")
+        if parsed.has_when:
+            val_where.append("_when = 1")
         val_where_clause = f" WHERE {' AND '.join(val_where)}" if val_where else ""
-        val_sql = f"SELECT {', '.join(val_cols)} FROM {pivot_ref}{val_where_clause}"
+        val_sql = f"SELECT {', '.join(val_cols)} FROM {source}{val_where_clause}"
 
         rule_op = parsed.comparison_node.op
         bool_expr = None
@@ -4683,13 +4610,13 @@ FROM (
         q_rc = quote_name(rule_comp)
         q_m = quote_name(measure)
         outer_cols: List[str] = [quote_name(c) for c in other_ids]
-        outer_cols.append(f"'{parsed.left_code_item}' AS {q_rc}")
+        outer_cols.append(f"{_hr_literal(parsed.left_code_item)} AS {q_rc}")
         if output != "all":
             outer_cols.append(f"_lv AS {q_m}")
         if output != "invalid":
             outer_cols.append(f"_bv AS {quote_name('bool_var')}")
         outer_cols.append(f"_imb AS {quote_name('imbalance')}")
-        outer_cols.append(f"'{rule_name}' AS {quote_name('ruleid')}")
+        outer_cols.append(f"{_hr_literal(rule_name)} AS {quote_name('ruleid')}")
 
         for val, null_expr, col in (
             (ec_sql, "CAST(NULL AS VARCHAR)", "errorcode"),
@@ -4753,9 +4680,8 @@ FROM (
                 elif child_ctes:
                     child_selects.append(f"SELECT {proj} FROM {child_ctes[0]}")
                 else:
-                    child_selects.append(
-                        f"SELECT {proj} FROM {table_src} WHERE {quote_name(rule_comp)} = '{child}'"
-                    )
+                    match = f"{quote_name(rule_comp)} = {_hr_literal(child)}"
+                    child_selects.append(f"SELECT {proj} FROM {table_src} WHERE {match}")
             if not child_selects:
                 continue
             if other_q:
@@ -4815,7 +4741,7 @@ FROM (
             proj = ", ".join(
                 [
                     *other_q,
-                    f"'{parsed.left_code_item}' AS {quote_name(rule_comp)}",
+                    f"{_hr_literal(parsed.left_code_item)} AS {quote_name(rule_comp)}",
                     *raw_cols,
                     f"{i} AS _hr_rule",
                 ]
@@ -4838,68 +4764,43 @@ FROM (
         cond_mapping: Dict[str, str],
         ruleset_name: str,
     ) -> str:
-        """Generate SQL for hierarchy operator using CTE chain."""
+        """Generate SQL for hierarchy operator: one CTE per rule, in dependency order."""
         # The result drops the attributes that are not viral (issue #1218)
         all_cols = [quote_name(n) for n, c in ds.components.items() if c.role != Role.ATTRIBUTE]
         all_cols_csv = ", ".join(all_cols)
         if not parsed_rules:
             return f"SELECT {all_cols_csv} FROM {table_src}"
 
-        chained = set() if input_mode == "dataset" else {p.left_code_item for p in parsed_rules}
         pivot_sql, measure, other_ids = self._build_hr_pivot(
-            table_src, ds, parsed_rules, rule_comp, cond_mapping, chained
+            table_src, ds, parsed_rules, rule_comp, cond_mapping
         )
         cte = CTEBuilder()
-        # MATERIALIZED to avoid the optimizer re-inlining the pivot aggregation
-        # into every dependent CTE in the chain below.
+        # MATERIALIZED so the pivot aggregation is computed once, not once per rule.
         cte.cte("_pivot", pivot_sql, materialized=True)
+        pivots = self._hr_rule_pivots(cte, parsed_rules, other_ids, "_pivot")
         rule_result_refs: List[Tuple[str, str]] = []
-        current_pivot = "_pivot"
-
-        join_keys = [quote_name(c) for c in other_ids]
-        computed_items: Set[str] = set()
-        statics = [_view_col("views", p.index) for p in parsed_rules if p.per_point]
+        computed_by: Dict[str, List[str]] = defaultdict(list)
 
         for i, parsed in enumerate(parsed_rules):
             rule_cte_name = f"_rule_{i}"
-            # Each _rule_i is referenced by the next _pivot_i AND by the final
-            # SELECT projecting the rule output. Materialize so we evaluate once.
+            # Every rule reads its code items from the operand with input dataset (issue
+            # #1169)
+            source = self._hr_rule_source(
+                parsed,
+                other_ids,
+                pivots[parsed.index],
+                {} if input_mode == "dataset" else computed_by,
+                input_mode,
+            )
+            # Each _rule_i is referenced by the rules that read its code item AND by the
+            # final SELECT projecting the rule output. Materialize so we evaluate once.
             cte.cte(
                 rule_cte_name,
-                self._build_hierarchy_rule_cte(
-                    parsed=parsed,
-                    pivot_ref=self._hr_source(current_pivot, parsed, other_ids, chained),
-                    other_ids=other_ids,
-                    mode=mode,
-                    cond_mapping=cond_mapping,
-                ),
+                self._build_hierarchy_rule_cte(parsed, source, other_ids, mode),
                 materialized=True,
             )
             rule_result_refs.append((rule_cte_name, parsed.left_code_item))
-            if input_mode == "dataset":
-                # Every rule reads its code items from the operand (issue #1169)
-                continue
-
-            next_pivot = f"_pivot_{i}"
-            # Each _pivot_i is consumed by the next iteration's _rule_{i+1} and
-            # by the next _pivot_{i+1}. Without materialization the chain of N
-            # pivots gets re-inlined N times.
-            cte.cte(
-                next_pivot,
-                self._build_hierarchy_pivot_update(
-                    prev_pivot=current_pivot,
-                    rule_cte=rule_cte_name,
-                    left_code_item=parsed.left_code_item,
-                    join_keys=join_keys,
-                    input_mode=input_mode,
-                    first_for_item=parsed.left_code_item not in computed_items,
-                    views=self._hr_chain_views(parsed_rules, parsed.left_code_item),
-                    exclude=statics if current_pivot == "_pivot" else (),
-                ),
-                materialized=True,
-            )
-            computed_items.add(parsed.left_code_item)
-            current_pivot = next_pivot
+            computed_by[parsed.left_code_item].append(rule_cte_name)
 
         # Several rules may compute the same code item under different conditions (issue
         # #1142): each data point keeps the rule that computed it (issue #1193)
@@ -4914,21 +4815,13 @@ FROM (
         q_m = quote_name(measure)
         for i, (rule_cte, left_ci) in enumerate(rule_result_refs):
             cols = [quote_name(c) for c in other_ids]
-            cols.append(f"'{left_ci}' AS {q_rc}")
+            cols.append(f"{_hr_literal(left_ci)} AS {q_rc}")
             cols.append(f"_computed AS {q_m}")
             if overlaps:
                 cols.append(f"{i} AS _hr_rule")
-
-            result_filter: List[str] = []
-            if mode == "non_null":
-                result_filter.append("_computed IS NOT NULL")
-            elif mode == "non_zero":
-                result_filter.append("(_computed IS NULL OR _computed != 0)")
-
-            where = f" WHERE {' AND '.join(result_filter)}" if result_filter else ""
-            final_selects.append(f"SELECT {', '.join(cols)} FROM {rule_cte}{where}")
+            final_selects.append(f"SELECT {', '.join(cols)} FROM {rule_cte}")
             group_cols = ", ".join(quote_name(c) for c in other_ids) or "1 AS _one"
-            rule_groups.append(f"SELECT DISTINCT {group_cols} FROM {rule_cte}{where}")
+            rule_groups.append(f"SELECT DISTINCT {group_cols} FROM {rule_cte}")
 
         computed_sql = " UNION ALL ".join(final_selects)
 
@@ -5019,14 +4912,9 @@ FROM (
         )
 
     def _build_hierarchy_rule_cte(
-        self,
-        parsed: _ParsedHRRule,
-        pivot_ref: str,
-        other_ids: List[str],
-        mode: str,
-        cond_mapping: Dict[str, str],
+        self, parsed: _ParsedHRRule, source: str, other_ids: List[str], mode: str
     ) -> str:
-        """Generate SELECT for _rule_N CTE in hierarchy CTE chain."""
+        """Generate the SELECT of the CTE of a rule of a hierarchy from its source."""
         r_val = self._build_hr_expr_sql(parsed.right_expr_node, mode, parsed)
 
         select_parts = [quote_name(c) for c in other_ids]
@@ -5038,127 +4926,29 @@ FROM (
         where_parts = self._build_hr_mode_filter(
             mode=mode,
             parsed=parsed,
-            left_val_expr=self._build_hr_value_expr(
-                parsed.left_code_item, mode, parsed, is_left=True
-            ),
+            left_val_expr=self._build_hr_value_expr(parsed, mode),
             right_val_expr=r_val,
             is_hierarchy=True,
         )
         right_presence = [
-            f"{self._hr_item_sql(ci, parsed)[1]} = 1" for ci in parsed.right_code_items
+            f"{self._hr_item_sql(parsed, j)[1]} = 1" for j in range(len(parsed.right_code_items))
         ]
         if right_presence:
             where_parts.append(f"({' OR '.join(right_presence)})")
-        when_sql = self._hr_rule_when_sql(parsed, cond_mapping)
-        if when_sql is not None:
+        if parsed.has_when:
             # The rule only computes where its condition holds: another rule may compute
             # the same code item elsewhere (issue #1142).
-            where_parts.append(f"({when_sql})")
+            where_parts.append("_when = 1")
 
         where_clause = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
-        return f"  SELECT {', '.join(select_parts)} FROM {pivot_ref}{where_clause}"
-
-    def _build_hierarchy_pivot_update(
-        self,
-        prev_pivot: str,
-        rule_cte: str,
-        left_code_item: str,
-        join_keys: List[str],
-        input_mode: str,
-        first_for_item: bool,
-        views: List[int],
-        exclude: Sequence[str] = (),
-    ) -> str:
-        """Generate _pivot_N CTE that updates pivot with a rule's computed value.
-
-        ``views`` are the rules that read the computed code item through their view columns:
-        they read the computed value too, with their own view of the operand as fallback.
-        ``exclude`` are the view columns the chain does not carry (issue #1223).
-        """
-        first_key = join_keys[0] if join_keys else "_present"
-
-        if input_mode == "rule_priority":
-            guard = "r._computed IS NOT NULL"
-        else:
-            guard = f"r.{first_key} IS NOT NULL"
-        columns = [(_val_col(left_code_item), _has_col(left_code_item))]
-        columns += [
-            (_view_col("val", k, left_code_item), _view_col("has", k, left_code_item))
-            for k in views
-        ]
-        replaced: List[str] = []
-        for val_col, has_col in columns:
-            # Only the first rule computing the item drops its dataset value: later rules for
-            # the same item keep the earlier rules' output (issue #1142).
-            fallback_val, fallback_has = (
-                ("NULL", "0")
-                if input_mode == "rule" and first_for_item
-                else (f"p.{val_col}", f"p.{has_col}")
-            )
-            val_expr = f"CASE WHEN {guard} THEN r._computed ELSE {fallback_val} END AS {val_col}"
-            if input_mode == "dataset_priority":
-                # The operand's non-null data point, otherwise the computed one (issue #1173)
-                val_expr = (
-                    f"CASE WHEN p.{has_col} = 1 AND p.{val_col} IS NOT NULL THEN p.{val_col} "
-                    f"WHEN r.{first_key} IS NOT NULL THEN r._computed ELSE p.{val_col} END "
-                    f"AS {val_col}"
-                )
-            replaced.append(val_expr)
-            replaced.append(
-                f"CASE WHEN r.{first_key} IS NOT NULL THEN 1 ELSE {fallback_has} END AS {has_col}"
-            )
-
-        # Without join keys the pivot is a single global row; LEFT JOIN ON TRUE
-        # keeps it (with NULL r.*) when the rule CTE produced no row.
-        join_sql = f"USING ({', '.join(join_keys)})" if join_keys else "ON TRUE"
-
-        excluded = f" EXCLUDE ({', '.join(exclude)})" if exclude else ""
-        return (
-            f"  SELECT p.*{excluded} REPLACE ({', '.join(replaced)})\n"
-            f"  FROM {prev_pivot} p\n"
-            f"  LEFT JOIN {rule_cte} r {join_sql}"
-        )
-
-    @classmethod
-    def _hr_chain_views(cls, parsed_rules: List[_ParsedHRRule], code_item: str) -> List[int]:
-        """The rules that read a computed code item through their view columns: the chain of
-        pivots updates these views (issue #1223)."""
-        return [
-            p.index
-            for p in parsed_rules
-            if code_item in p.right_code_items and code_item in cls._hr_view_items(p)
-        ]
-
-    @classmethod
-    def _hr_static_cols(cls, parsed: _ParsedHRRule, chained: Set[str]) -> List[str]:
-        """The view columns of a rule that the chain of pivots never updates, given the code
-        items it computes. They stay in ``_pivot``, in the struct of the rule (issue #1223)."""
-        if not parsed.per_point:
-            return []
-        k = parsed.index
-        cols = [_view_col("when", k)] if parsed.has_when else []
-        cols += [_view_col("in", k, ci) for ci in parsed.right_conds]
-        for ci in cls._hr_view_items(parsed):
-            if ci not in parsed.right_code_items or ci not in chained:
-                cols += [_view_col("val", k, ci), _view_col("has", k, ci)]
-        return cols
-
-    @classmethod
-    def _hr_source(
-        cls, pivot_ref: str, parsed: _ParsedHRRule, other_ids: List[str], chained: Set[str]
-    ) -> str:
-        """The relation a rule reads: a pivot of the chain, with the view columns of the rule
-        that only ``_pivot`` keeps, in a struct (issue #1223)."""
-        if not parsed.per_point:
-            return pivot_ref
-        views = _view_col("views", parsed.index)
-        if pivot_ref == "_pivot":
-            return f"(SELECT s.*, UNNEST(s.{views}) FROM _pivot s) AS _src"
-        join_keys = [quote_name(c) for c in other_ids]
-        join_sql = (
-            f"JOIN _pivot s USING ({', '.join(join_keys)})" if join_keys else "CROSS JOIN _pivot s"
-        )
-        return f"(SELECT c.*, UNNEST(s.{views}) FROM {pivot_ref} c {join_sql}) AS _src"
+        rule_sql = f"SELECT {', '.join(select_parts)} FROM {source}{where_clause}"
+        # The later rules do not read the data points that the mode leaves out of the result
+        # (issue #1223)
+        dropped = {
+            "non_null": "_computed IS NOT NULL",
+            "non_zero": "(_computed IS NULL OR _computed != 0)",
+        }.get(mode)
+        return rule_sql if dropped is None else f"SELECT * FROM ({rule_sql}) AS _rc WHERE {dropped}"
 
     def _build_hr_mode_filter(
         self,
@@ -5168,13 +4958,13 @@ FROM (
         right_val_expr: str,
         is_hierarchy: bool,
     ) -> List[str]:
-        """Generate WHERE filter clauses for the validation mode using pivot columns.
+        """Generate WHERE filter clauses for the validation mode from the rule source.
 
         An excluded right code item is not involved in the rule.
         """
-        right_code_items = parsed.right_code_items
-        left_sql = self._hr_item_sql(parsed.left_code_item, parsed, is_left=True)
-        right_sql = [self._hr_item_sql(i, parsed) for i in right_code_items]
+        positions = range(len(parsed.right_code_items))
+        left_sql = self._hr_item_sql(parsed)
+        right_sql = [self._hr_item_sql(parsed, j) for j in positions]
         all_items_sql = [left_sql, *right_sql]
         items_sql = right_sql if is_hierarchy else all_items_sql
         filters: List[str] = []
@@ -5187,7 +4977,7 @@ FROM (
 
         elif mode == "non_zero":
             if is_hierarchy:
-                vals = [self._build_hr_value_expr(i, mode, parsed) for i in right_code_items]
+                vals = [self._build_hr_value_expr(parsed, mode, j) for j in positions]
                 zero_checks = [f"({v} IS NOT NULL AND {v} = 0)" for v in vals]
                 if zero_checks:
                     filters.append(f"NOT ({' AND '.join(zero_checks)})")
@@ -5209,20 +4999,6 @@ FROM (
             filters.append(f"({' OR '.join(presence)})")
 
         return filters
-
-    def _hr_rule_when_sql(
-        self, parsed: _ParsedHRRule, cond_mapping: Dict[str, str]
-    ) -> Optional[str]:
-        """The condition of a rule on a row of the pivot, if the rule has one.
-
-        A condition evaluated per data point holds for a group where one of its data points
-        satisfies it (issue #1223).
-        """
-        if not parsed.has_when:
-            return None
-        if parsed.per_point:
-            return f"{_view_col('when', parsed.index)} = 1"
-        return self._build_hr_when_sql(parsed.when_node, cond_mapping)
 
     def _build_hr_when_sql(self, node: AST.AST, cond_mapping: Dict[str, str]) -> str:
         """Generate SQL for a WHEN condition in a hierarchical rule."""
