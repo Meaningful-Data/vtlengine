@@ -18,6 +18,7 @@ It only uses the standard library, so that it runs before anything is installed.
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import sys
 import xml.etree.ElementTree as ET  # noqa: S405  (the files are pytest's own, on the runner)
@@ -48,7 +49,7 @@ class Job:
 
     os_name: str
     python: str
-    runs: dict[str, Run]
+    runs: dict[str, Run | None]  # None: the file is there but cannot be read
     coverage: str | None = None
 
     def sort_key(self) -> tuple[str, tuple[int, ...]]:
@@ -78,6 +79,14 @@ def read_run(path: Path) -> Run:
     return run
 
 
+def _read_or_none(path: Path) -> Run | None:
+    """The run of a JUnit XML file; None when it is empty or cut short, as by a crash."""
+    try:
+        return read_run(path)
+    except ET.ParseError:
+        return None
+
+
 def read_jobs(folder: Path) -> list[Job]:
     """The jobs whose results are in the folders of ``folder``, in the order of the summary."""
     jobs = []
@@ -88,7 +97,7 @@ def read_jobs(folder: Path) -> list[Job]:
             os_name, python = str(data["os"]), str(data["python"])
         else:
             os_name, python = job_folder.name, NONE
-        runs = {path.stem: read_run(path) for path in sorted(job_folder.glob("*.xml"))}
+        runs = {path.stem: _read_or_none(path) for path in sorted(job_folder.glob("*.xml"))}
         coverage_file = job_folder / "coverage.txt"
         coverage = (
             coverage_file.read_text(encoding="utf-8").strip() if coverage_file.is_file() else None
@@ -119,8 +128,9 @@ def summarize(
             coverage = f"{job.coverage}%" if job.coverage and backend == backends[-1] else NONE
             run = job.runs.get(backend)
             if run is None:
+                state = "unreadable" if backend in job.runs else "did not run"
                 dashes = " | ".join([NONE] * 5)
-                lines.append(f"| {where} | {dashes} | did not run | {coverage} |")
+                lines.append(f"| {where} | {dashes} | {state} | {coverage} |")
                 continue
             passed = run.tests - run.failures - run.errors - run.skipped
             lines.append(
@@ -166,7 +176,7 @@ def cell(text: str) -> str:
     one_line = " ".join(text.split())
     if len(one_line) > MESSAGE_MAX:
         one_line = one_line[: MESSAGE_MAX - 1] + "…"
-    return escaped(one_line)
+    return escaped(html.escape(one_line, quote=False))
 
 
 def escaped(text: str) -> str:

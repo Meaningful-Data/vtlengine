@@ -27,6 +27,7 @@ from __future__ import annotations
 import functools
 import json
 import multiprocessing
+import multiprocessing.forkserver
 import os
 import runpy
 import shutil
@@ -163,15 +164,48 @@ def _main_preload() -> list[str]:
 def _forkserver() -> BaseContext:
     """The context of the forked children, whose server imports the engines of this worktree.
 
-    The server takes the ``sys.path`` of this process when it starts, so the paths of a child
-    are put there first; this process still imports none of the engines.
+    The server starts with the paths of a child first on its ``PYTHONPATH``: Python 3.12 and
+    older do not give it the ``sys.path`` of this process, and it would import the vtlengine
+    that its own path finds first, an installed one or another checkout's. Python 3.13 gives
+    it that ``sys.path``, so the paths go first there too. This process still imports none of
+    the engines.
     """
     for path in reversed(_CHILD_PATHS):
         if str(path) not in sys.path:
             sys.path.insert(0, str(path))
     context = multiprocessing.get_context("forkserver")
     context.set_forkserver_preload([*_PRELOAD, *_main_preload()])
+    before = os.environ.get("PYTHONPATH")
+    os.environ["PYTHONPATH"] = os.pathsep.join(
+        [*(str(path) for path in _CHILD_PATHS), *([before] if before else [])]
+    )
+    try:
+        multiprocessing.forkserver.ensure_running()
+    finally:
+        if before is None:
+            del os.environ["PYTHONPATH"]
+        else:
+            os.environ["PYTHONPATH"] = before
     return context
+
+
+def _engine_problem() -> str | None:
+    """Why the vtlengine of a forked child is not the one of this worktree; None if it is.
+
+    The child has it from the server, which imported it before any child: one from elsewhere
+    would run every example on another engine, so a child says so instead of running.
+    """
+    module = sys.modules.get("vtlengine")
+    path = getattr(module, "__file__", None)
+    if path is None:
+        return None
+    expected = (_WORKTREE / "src").resolve()
+    if Path(path).resolve().is_relative_to(expected):
+        return None
+    return (
+        f"the forked runs import vtlengine from {path}, not from {expected}: run the "
+        "generator with --fresh-processes"
+    )
 
 
 def _forked_main(command: Sequence[str], out_path: str, err_path: str) -> None:
@@ -187,6 +221,9 @@ def _forked_main(command: Sequence[str], out_path: str, err_path: str) -> None:
         os.dup2(target, fd)
         os.close(target)
     os.environ.update(_CHILD_SETTINGS)
+    problem = _engine_problem()
+    if problem is not None:
+        raise RuntimeError(problem)
     flag, what, *arguments = command[1:]
     if flag == "-m":
         sys.argv = [what, *arguments]
@@ -240,14 +277,16 @@ class _Forked:
         """Kill the child and what it started; the child alone if it has no group yet.
 
         A child that has not called ``setsid`` yet, just after its fork, leads no group. One
-        that has ended is left alone: its id may have been given to another process.
+        that has ended is left alone: the server reaps it at once, and its id may have been
+        given to another process.
         """
+        if self.returncode is not None:
+            return
         try:
             os.killpg(self.pid, signal.SIGKILL)
         except ProcessLookupError:
-            if self.returncode is None:
-                with suppress(ProcessLookupError):
-                    os.kill(self.pid, signal.SIGKILL)
+            with suppress(ProcessLookupError):
+                os.kill(self.pid, signal.SIGKILL)
 
     def __enter__(self) -> _Forked:
         return self

@@ -122,6 +122,7 @@ jobs:
           name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
           path: test-results/
           retention-days: 1  # the Test summary job removes them once it has read them
+          overwrite: true  # a re-run of a failed job replaces the results of its first run
 
   # One summary of the whole matrix: a row per job and backend, the slowest tests with the job
   # where they were slowest, and the tests that failed.

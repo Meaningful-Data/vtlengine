@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import io
 import json
+import multiprocessing
+import multiprocessing.forkserver
 import os
 import re
 import signal
@@ -362,6 +364,59 @@ def test_the_script_of_this_process_is_preloaded_by_its_name(
     monkeypatch.setattr(sys, "path", [str(script.parent), *sys.path])
     assert runner._main_can_run_again()
     assert runner._main_preload() == ["generate"]
+
+
+def test_the_server_imports_the_engine_of_this_worktree_whatever_the_path_says(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, start: str
+) -> None:
+    # Python 3.12 and older do not give the server the sys.path of this process: it imported
+    # the vtlengine that its own path found first, here a decoy on PYTHONPATH.
+    if start == "fresh":
+        pytest.skip("only the forked children come from the server")
+    decoy = tmp_path / "decoy" / "vtlengine"
+    decoy.mkdir(parents=True)
+    (decoy / "__init__.py").write_text("", encoding="utf-8")
+    stop_the_server()
+    monkeypatch.setenv("PYTHONPATH", str(decoy.parent))
+    try:
+        fake_child(monkeypatch, printing_value("import vtlengine", "vtlengine.__file__"))
+        out = run_example(tmp_path / "ex", "pandas", TIMEOUT)
+        [scalar] = out.scalars
+        assert scalar.value is not None
+        assert Path(scalar.value).resolve().is_relative_to(WORKTREE / "src")
+    finally:
+        stop_the_server()
+
+
+def stop_the_server() -> None:
+    """Stop the server of the forked children, so that the next run starts a new one."""
+    multiprocessing.forkserver._forkserver._stop()  # type: ignore[attr-defined]
+    runner._forkserver.cache_clear()
+
+
+def test_an_engine_from_elsewhere_is_named(monkeypatch: pytest.MonkeyPatch) -> None:
+    elsewhere = types.ModuleType("vtlengine")
+    elsewhere.__file__ = "/somewhere/else/vtlengine/__init__.py"
+    monkeypatch.setitem(sys.modules, "vtlengine", elsewhere)
+    problem = runner._engine_problem()
+    assert problem is not None
+    assert "/somewhere/else/vtlengine/__init__.py" in problem
+    assert "--fresh-processes" in problem
+
+
+def test_the_engine_of_this_worktree_is_no_problem() -> None:
+    assert runner._engine_problem() is None
+
+
+def test_an_ended_child_is_never_killed(monkeypatch: pytest.MonkeyPatch) -> None:
+    killed: list[int] = []
+    monkeypatch.setattr(os, "killpg", lambda pid, sig: killed.append(pid))
+    monkeypatch.setattr(os, "kill", lambda pid, sig: killed.append(pid))
+    ended = runner._Forked.__new__(runner._Forked)
+    ended._process = types.SimpleNamespace(exitcode=0, pid=4242)
+    ended.pid = 4242
+    ended.kill_group()
+    assert killed == []  # its id may be another process's by now
 
 
 # --- Real engines ---

@@ -145,3 +145,22 @@ def test_a_test_id_with_a_pipe_stays_in_its_cell(tmp_path: Path) -> None:
     lines = rows(summarize("Tests", read_jobs(tmp_path)))
     assert "| `tests.t::test_x[a\\|b]` | 9.0 s | ubuntu-latest | 3.13 | pandas |" in lines
     assert "| ubuntu-latest | 3.13 | pandas | `tests.t::test_x[a\\|b]` | no |" in lines
+
+
+def test_an_unreadable_file_is_a_row_of_its_own(tmp_path: Path) -> None:
+    job(
+        tmp_path, "ubuntu-latest", "3.13", coverage=None, pandas="<testsuites><testsuite", duckdb=""
+    )
+    lines = rows(summarize("Tests", read_jobs(tmp_path)))
+    assert "| ubuntu-latest | 3.13 | pandas | — | — | — | — | — | unreadable | — |" in lines
+    assert "| ubuntu-latest | 3.13 | duckdb | — | — | — | — | — | unreadable | — |" in lines
+
+
+def test_angle_brackets_of_a_message_are_shown(tmp_path: Path) -> None:
+    message = "assert &lt;NA&gt; == 1 for &lt;vtlengine.Model.Dataset object&gt;"
+    run = junit(
+        case("tests.t::test_x", 1.0, f'<failure message="{message}"/>'), tests=1, failures=1
+    )
+    job(tmp_path, "ubuntu-latest", "3.13", pandas=run)
+    text = summarize("Tests", read_jobs(tmp_path))
+    assert "assert &lt;NA&gt; == 1 for &lt;vtlengine.Model.Dataset object&gt;" in text
