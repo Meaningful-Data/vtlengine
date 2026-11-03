@@ -6,14 +6,13 @@ Overview
 
    <div class="om-legend"><span class="om-chip ok">🟢 all ok</span><span class="om-chip partial">🟡 partially implemented</span><span class="om-chip refused">🛡️ refused with an error</span><span class="om-chip missing">🔴 not implemented or crash</span><span class="om-chip diverge">🔵 engines differ</span> <span class="om-key">✅ match · ❌ wrong result · 🛡 guarded error (code) · 💥 crash · 📌 team decision</span></div>
 
-Overview diagram
---------------------------------
+.. rubric:: Overview diagram
 
-A node for each block, with how many operators it has, and how many of them are in each status. Where the viewer supports links in diagrams, a block opens its page. The table of the blocks below is the reliable way to every block page.
+A node for each block, with how many operators it has, and how many of them are in each status, drawn small: the ⛶ button opens it in full screen. Where the viewer supports links in diagrams, a block opens its page. The tables below are the reliable way to every page.
 
 .. raw:: html
 
-   <div class="om-diagram">
+   <div class="om-diagram om-small">
 
 .. mermaid::
    :config: {"flowchart": {"useMaxWidth": false}}
@@ -74,10 +73,9 @@ A node for each block, with how many operators it has, and how many of them are 
 
    </div>
 
-Blocks
-------------
+.. rubric:: Operators
 
-The counts are over the forms of the operators of each block.
+The blocks of operators, one for each chapter of operators of the manual. The counts are over the forms of the operators of each block. Their pages are under :doc:`Operators <operators>` in the sidebar.
 
 .. list-table::
    :header-rows: 1
@@ -209,27 +207,74 @@ The counts are over the forms of the operators of each block.
      - 0
      - 1
      - 0
-   * - :doc:`Definitions (VTL-DL) <definitions/index>`
+   * - **Total**
+     - 🔵
+     - 111
+     - 698
+     - 626
+     - 47
+     - 1
+     - 16
+     - 8
+
+.. rubric:: Definitions (VTL-DL)
+
+The definitions of the VTL-DL. The counts are over the forms of each one. Their pages are under :doc:`Definitions (VTL-DL) <definitions/index>` in the sidebar.
+
+.. list-table::
+   :header-rows: 1
+   :widths: auto
+
+   * - Definition
+     - Status
+     - Forms
+     - 🟢
+     - 🟡
+     - 🛡️
+     - 🔴
+     - 🔵
+   * - :doc:`define operator <definitions/define_operator>`
+     - 🟡
+     - 13
+     - 9
+     - 1
+     - 0
+     - 3
+     - 0
+   * - :doc:`define datapoint ruleset <definitions/define_datapoint_ruleset>`
+     - 🟡
+     - 5
+     - 3
+     - 1
+     - 1
+     - 0
+     - 0
+   * - :doc:`define hierarchical ruleset <definitions/define_hierarchical_ruleset>`
+     - 🟡
+     - 7
+     - 6
+     - 1
+     - 0
+     - 0
+     - 0
+   * - :doc:`define viral propagation <definitions/define_viral_propagation>`
      - 🟡
      - 4
+     - 3
+     - 0
+     - 0
+     - 1
+     - 0
+   * - **Total**
+     - 🟡
      - 29
      - 21
      - 3
      - 1
      - 4
      - 0
-   * - **Total**
-     - 🔵
-     - 115
-     - 727
-     - 647
-     - 50
-     - 2
-     - 20
-     - 8
 
-Not implemented
-------------------------------
+.. rubric:: Not implemented
 
 The codes of the errors of vtlengine that say that it does not implement something. A form whose examples fail with one of them on both engines is 🔴, not implemented, rather than 🛡️, refused. The list is kept by hand, in ``docs/operator_map/tool/status.py``, with the messages as the error catalogue of vtlengine writes them.
 
@@ -248,9 +293,15 @@ The codes of the errors of vtlengine that say that it does not implement somethi
    * - ``0-5-1-10``
      - Invalid parameter type definition {definition}.
 
-Attribution
-----------------------
+.. rubric:: Attribution
 
 Examples marked *manual* are taken from the VTL 2.2 Reference Manual (sdmx-twg/vtl @ 1bea1153beda0dc553767e7ca8fe16a0d51c5b34), converted to the vtlengine format.
 
 The manual is published at `sdmx-twg.github.io/vtl/v2.2 <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/index.html>`__, and its source is the repository `sdmx-twg/vtl <https://github.com/sdmx-twg/vtl>`__.
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   operators
+   definitions/index

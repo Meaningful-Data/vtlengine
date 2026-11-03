@@ -7,8 +7,8 @@ to how to read the map (``how_to_read.rst``), the overview (``overview.rst``), t
 blocks of operators (``operators.rst``) and the team decisions, errata and adaptations
 (``decisions.rst``); the page of a block is ``<chapter>/index.rst`` and the
 page of an operator ``<chapter>/<operator>.rst``. Each is in the hidden ``toctree`` of the page
-above it (the block of the definitions is a part of the index), so every operator has a URL of
-its own. Nothing
+above it (the page of the operators and the block of the definitions are under the overview), so
+every operator has a URL of its own. Nothing
 here runs an engine. The page of an operator reads the files of its examples, in
 ``examples_root`` (``docs/operator_map/examples`` unless it is given): which there are, and the
 data of their CSV and JSON files.
@@ -52,31 +52,36 @@ parts are rubrics, not sections: the sidebar lists the pages of the operators ri
 block, and not the parts of the block page.
 
 **Index.** The title and the introduction, the results at a glance (``_glance``), the parts of
-the map, in its hidden ``toctree`` and in a list: how to read, the overview, the operators, the
-definitions of the VTL-DL, and the team decisions, errata and adaptations; then a note on how the
-results were made. So the sidebar has the parts on one level, the blocks below them and the
-operators below their blocks, and the index fits a screen.
+the map, in its hidden ``toctree`` and in a list: how to read, the overview, and the team
+decisions, errata and adaptations; then a note on how the results were made. So the sidebar has
+the parts on one level, the operators and the definitions of the VTL-DL under the overview, the
+blocks under the operators and the operators under their blocks (``navigation_depth`` in
+``docs/conf.py`` lets the sidebar go that deep), and the index fits a screen.
 
 **How to read** (``how_to_read.rst``). The legend, and what the pages, the diagrams, the
 statuses, the marks, the examples, the types and the comparison of the outputs are.
 
-**Overview** (``overview.rst``). The legend, the overview diagram, a table of the blocks, the
-codes that say that something is not implemented (``NOT_IMPLEMENTED``), and the attribution.
+**Overview** (``overview.rst``). The legend, the overview diagram drawn small, a table of the
+blocks of operators, a table of the definitions of the VTL-DL, the codes that say that something
+is not implemented (``NOT_IMPLEMENTED``), and the attribution. Its hidden ``toctree`` has the
+page of the operators and the block of the definitions. Its parts are rubrics, not sections: the
+sidebar lists these two pages right under it, and not the parts of the overview.
 
 **Team decisions, errata and adaptations** (``decisions.rst``). The lists of the examples that
 follow a team decision, correct an erratum of the manual or adapt it, which link to the examples
 on the pages of their operators as ``Operator · title``.
 
 **Operators** (``operators.rst``). The legend, a table of the blocks of operators, and the hidden
-``toctree`` of their pages. The block of the definitions is a part of its own, under the index.
+``toctree`` of their pages. The block of the definitions is next to it, under the overview.
 
 **Diagrams.** They come from ``tool.mermaid``, in ``.. mermaid::`` directives that ask Mermaid
 for their natural size (``useMaxWidth`` off), inside an ``om-diagram`` block. The docs set a
 width of at most 700 px for a diagram, which makes the text of a wide one too small to read: the
 CSS of the map (``docs/_static/operator_map.css``) lets these diagrams take their natural width,
-and a diagram wider than the page scrolls in its block. The links between the pages are ``:doc:``
-roles, and the clicks of the diagrams, the links to an anchor and the links to the files of the
-examples are relative URLs of the built site.
+and a diagram wider than the page scrolls in its block. The overview diagram is the exception: it
+is in an ``om-small`` block too, which the CSS draws at about half its natural width. The links
+between the pages are ``:doc:`` roles, and the clicks of the diagrams, the links to an anchor and
+the links to the files of the examples are relative URLs of the built site.
 
 **Escaping.** The text that comes from the catalogue or from the engines is free text: ``_inline``
 and ``_text`` escape what RST would read as markup, and what Sphinx would typeset (see
@@ -979,13 +984,14 @@ _REGENERATE: Final = (
 
 _HOW_TO_READ: Final = (
     """\
-- **Pages.** The map has five parts: this guide, the overview, the operators, the definitions of \
-the VTL-DL, and the team decisions, errata and adaptations of the examples. The operators have a \
-page for each block (a chapter of the manual), and the blocks a \
-page for each operator; the definitions have a page for each definition. The sidebar, the \
-tables and the diagrams lead to them.
+- **Pages.** The map has three parts: this guide, the overview, and the team decisions, errata \
+and adaptations of the examples. Under the overview are the operators, with a page for each \
+block (a chapter of the manual) and one for each operator, and the definitions of the VTL-DL, \
+with a page for each definition. The sidebar, the tables and the diagrams lead to them.
 - **Diagrams.** The overview and the page of a block have the map or the block in the middle, \
-and its blocks or its operators on both sides. The page of an operator has the operator on top. \
+and its blocks or its operators on both sides; the overview diagram is drawn small. The ⛶ \
+button at the top right of a diagram opens it in full screen. The page of an operator has the \
+operator on top. \
 When its forms use two kinds of operands or more, they are in a light box for each kind: a \
 solid border for the forms on datasets, a dashed one for components and a dotted one for \
 scalars, as the key above the diagram shows. Otherwise its forms are on both sides of it. The \
@@ -1030,14 +1036,14 @@ still return the same values.
 
 _OVERVIEW: Final = (
     "A node for each block, with how many operators it has, and how many of them are in each "
-    "status. Where the viewer supports links in diagrams, a block opens its page. The table of "
-    "the blocks below is the reliable way to every block page."
+    "status, drawn small: the ⛶ button opens it in full screen. Where the viewer supports links "
+    "in diagrams, a block opens its page. The tables below are the reliable way to every page."
 )
-_BLOCKS: Final = "The counts are over the forms of the operators of each block."
 _OPERATORS: Final = (
     "The blocks of operators, one for each chapter of operators of the manual. The counts are "
     "over the forms of the operators of each block."
 )
+_DEFINITIONS: Final = "The definitions of the VTL-DL. The counts are over the forms of each one."
 _NOT_IMPLEMENTED: Final = (
     "The codes of the errors of vtlengine that say that it does not implement something. A form "
     "whose examples fail with one of them on both engines is 🔴, not implemented, rather than "
@@ -1049,11 +1055,11 @@ _NOT_IMPLEMENTED: Final = (
 def index_rst(cat: Catalogue, index: StatusIndex, meta: RunMeta) -> str:
     """The entry page: the introduction, the results at a glance, the parts, how they were made.
 
-    Its hidden ``toctree`` has the parts, so that the sidebar shows them on one level: the
-    overview (``overview_rst``), the blocks of operators (``operators_rst``) and the definitions
-    of the VTL-DL (the page of their block). The blocks, and their operators, are below them. The
-    page fits a screen: the strip (``_glance``) is a few lines, and the note on how the results
-    were made closes it, in small print.
+    Its hidden ``toctree`` has the parts, so that the sidebar shows them on one level: how to
+    read (``how_to_read_rst``), the overview (``overview_rst``), with the blocks of operators and
+    the definitions of the VTL-DL under it, and the team decisions, errata and adaptations
+    (``decisions_rst``). The page fits a screen: the strip (``_glance``) is a few lines, and the
+    note on how the results were made closes it, in small print.
     """
     parts = _parts(cat)
     note = f"{_generation(meta)} {_DO_NOT_EDIT}"
@@ -1114,38 +1120,33 @@ def _glance(cat: Catalogue, index: StatusIndex) -> str:
 def _parts(cat: Catalogue) -> list[tuple[str, str, str]]:
     """The pages of the parts of the map, under the index: the name, the title and what is there.
 
-    The page of the operators is there when the map has a block of operators, and the page of
-    the definitions when it has their block.
+    The overview says what is under it: the blocks of operators when the map has them, and the
+    definitions of the VTL-DL when it has their block.
     """
-    parts = [
+    under = []
+    if blocks := _operator_chapters(cat):
+        under.append(f"the {_count(len(blocks), 'block')} of operators")
+    if _definitions_chapter(cat) is not None:
+        under.append("the definitions of the VTL-DL")
+    overview = "the overview diagram"
+    if under:
+        overview += f", {' and '.join(under)}, with their pages under it,"
+    overview += " and the codes that say that something is not implemented."
+    return [
         (
             "how_to_read",
             "How to read",
             "the pages, the diagrams, the statuses and marks, the examples, the types, and how the "
             "outputs are compared.",
         ),
-        (
-            "overview",
-            "Overview",
-            "the overview diagram and the table of the blocks, and the codes that say that "
-            "something is not implemented.",
-        ),
-    ]
-    if blocks := _operator_chapters(cat):
-        what = f"the {_count(len(blocks), 'block')} of operators, with a page for each operator."
-        parts.append(("operators", "Operators", what))
-    if definitions := _definitions_chapter(cat):
-        what = "the definitions of the VTL-DL, with a page for each."
-        parts.append((f"{definitions.id}/index", definitions.title, what))
-    parts.append(
+        ("overview", "Overview", overview),
         (
             "decisions",
             _DECISIONS_TITLE,
             "the examples that follow a team decision, correct an erratum of the manual or adapt "
             "its representation.",
-        )
-    )
-    return parts
+        ),
+    ]
 
 
 def _operator_chapters(cat: Catalogue) -> tuple[Chapter, ...]:
@@ -1159,18 +1160,38 @@ def _definitions_chapter(cat: Catalogue) -> Chapter | None:
 
 
 def overview_rst(cat: Catalogue, index: StatusIndex, meta: RunMeta) -> str:
-    """The overview: the legend, the overview diagram, the blocks, what is not implemented.
+    """The overview: the legend, the diagram, the operators, the definitions, the codes.
 
-    It raises ``MermaidLimitError`` when the overview cannot fit the limits of Mermaid.
+    The overview diagram is drawn small. Then come a table of the blocks of operators, one of the
+    definitions of the VTL-DL, the codes that say that something is not implemented, and the
+    attribution. Its hidden ``toctree`` has the page of the operators (``operators_rst``) and the
+    block of the definitions, when the map has them. Its parts are rubrics, not sections, so that
+    the sidebar lists these pages right under it. It raises ``MermaidLimitError`` when the
+    overview cannot fit the limits of Mermaid.
     """
     parts = [
         _title("Overview", _PAGE, overline=True),
         _raw(LEGEND_HTML),
-        _section("Overview diagram", _OVERVIEW, _diagram(overview_block(cat, index))),
-        _section("Blocks", _BLOCKS, _block_table(cat, index)),
-        _section("Not implemented", _NOT_IMPLEMENTED, _not_implemented_table()),
+        _rubric("Overview diagram", _OVERVIEW, _diagram(overview_block(cat, index), small=True)),
+    ]
+    under = []
+    if blocks := _operator_chapters(cat):
+        where = f"Their pages are under {_doc('Operators', 'operators')} in the sidebar."
+        table = _block_table(Catalogue(blocks), index)
+        parts.append(_rubric("Operators", f"{_OPERATORS} {where}", table))
+        under.append("operators")
+    if (definitions := _definitions_chapter(cat)) is not None:
+        page = f"{definitions.id}/index"
+        where = f"Their pages are under {_doc(definitions.title, page)} in the sidebar."
+        table = _definition_table(definitions, index)
+        parts.append(_rubric(definitions.title, f"{_DEFINITIONS} {where}", table))
+        under.append(page)
+    parts += [
+        _rubric("Not implemented", _NOT_IMPLEMENTED, _not_implemented_table()),
         _attribution(meta),
     ]
+    if under:
+        parts.append(_toctree(under))
     return "\n\n".join(parts) + "\n"
 
 
@@ -1204,8 +1225,8 @@ def decisions_rst(cat: Catalogue) -> str:
 def operators_rst(cat: Catalogue, index: StatusIndex) -> str:
     """The page of the blocks of operators: the legend, their table, and their pages.
 
-    Its hidden ``toctree`` has the pages of these blocks. The definitions of the VTL-DL are a part
-    of the map of their own, and are not here.
+    Its hidden ``toctree`` has the pages of these blocks. The definitions of the VTL-DL are next
+    to it, under the overview, and are not here.
     """
     blocks = _operator_chapters(cat)
     parts = [
@@ -1252,20 +1273,50 @@ def _block_table(cat: Catalogue, index: StatusIndex) -> str:
     return _table(head, rows)
 
 
+def _definition_table(chapter: Chapter, index: StatusIndex) -> str:
+    """A row per definition: its status and forms, and its forms by status; then a total."""
+    if not chapter.operators:
+        return "The map has no definitions."
+    rows = [
+        _count_row(
+            _doc(op.name, f"{chapter.id}/{op.id}"),
+            index.operators.get(f"{chapter.id}/{op.id}"),
+            None,
+            _operator_form_statuses(chapter, op, index),
+        )
+        for op in chapter.operators
+    ]
+    total = _form_statuses(chapter, index)
+    rows.append(_count_row("**Total**", index.chapters.get(chapter.id), None, total))
+    head = ("Definition", "Status", "Forms", *(EMOJI[status] for status in _STATUSES))
+    return _table(head, rows)
+
+
 def _count_row(
-    first: str, status: Status | None, operators: int, statuses: Sequence[Status]
+    first: str, status: Status | None, operators: int | None, statuses: Sequence[Status]
 ) -> list[str]:
+    """A row of counts: ``first``, the emoji of ``status``, the sizes, and the tally.
+
+    The sizes are ``operators``, unless it is ``None``, and the number of ``statuses``; the tally
+    says how many of them are in each status.
+    """
     tally = counts(statuses)
     emoji = EMOJI[status] if status is not None else ""
+    sizes = [str(len(statuses))] if operators is None else [str(operators), str(len(statuses))]
     numbers = (str(tally[status]) for status in _STATUSES)
-    return [first, emoji, str(operators), str(len(statuses)), *numbers]
+    return [first, emoji, *sizes, *numbers]
 
 
 def _form_statuses(chapter: Chapter, index: StatusIndex) -> list[Status]:
     """The statuses of the forms of ``chapter`` that the index has."""
-    keys = (
-        f"{chapter.id}/{op.id}/{variant.id}" for op in chapter.operators for variant in op.variants
-    )
+    return [
+        status for op in chapter.operators for status in _operator_form_statuses(chapter, op, index)
+    ]
+
+
+def _operator_form_statuses(chapter: Chapter, op: Operator, index: StatusIndex) -> list[Status]:
+    """The statuses of the forms of ``op``, of ``chapter``, that the index has."""
+    keys = (f"{chapter.id}/{op.id}/{variant.id}" for variant in op.variants)
     return [index.variants[key] for key in keys if key in index.variants]
 
 
@@ -1371,7 +1422,7 @@ def _adaptations(entries: Sequence[_Entry]) -> str:
 def _attribution(meta: RunMeta) -> str:
     manual = _link("sdmx-twg.github.io/vtl/v2.2", f"{MANUAL_BASE}/index.html")
     source = _link("sdmx-twg/vtl", SPEC_REPO)
-    return _section(
+    return _rubric(
         "Attribution",
         "Examples marked *manual* are taken from the VTL 2.2 Reference Manual "
         f"(sdmx-twg/vtl @ {meta.spec_commit}), converted to the vtlengine format.",
@@ -1407,13 +1458,18 @@ def mermaid_blocks(text: str) -> list[str]:
     return blocks
 
 
-def _diagram(block: str) -> str:
-    """A ``.. mermaid::`` directive of ``block`` at its natural size, in an ``om-diagram`` block."""
+def _diagram(block: str, *, small: bool = False) -> str:
+    """A ``.. mermaid::`` directive of ``block`` in an ``om-diagram`` block.
+
+    The diagram is drawn at its natural size, or, when it is ``small``, at about half of it: the
+    ``om-small`` rule of ``docs/_static/operator_map.css`` caps its width.
+    """
     lines = block.split("\n")
     directive = f".. mermaid::\n{_INDENT}:config: {_DIAGRAM_CONFIG}\n\n" + "\n".join(
         f"{_INDENT}{line}" if line else "" for line in lines
     )
-    return "\n\n".join([_raw('<div class="om-diagram">'), directive, _raw("</div>")])
+    classes = "om-diagram om-small" if small else "om-diagram"
+    return "\n\n".join([_raw(f'<div class="{classes}">'), directive, _raw("</div>")])
 
 
 # --- HTML ---

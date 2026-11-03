@@ -223,8 +223,8 @@ class World:
     def index_row(self, text: str) -> list[str]:
         """The cells of the row of the block table of ``overview.rst`` that holds ``text``."""
         page = (self.root / "overview.rst").read_text(encoding="utf-8")
-        chapters = re.split(r"\nBlocks\n-+\n", page, maxsplit=1)[1]
-        chapters = chapters.split("\nNot implemented\n", 1)[0]
+        chapters = page.split("\n.. rubric:: Operators\n", 1)[1]
+        chapters = chapters.split("\n.. rubric:: ", 1)[0]
         rows: list[list[str]] = []
         for line in chapters.splitlines():
             if line.startswith("   * -"):
@@ -1168,12 +1168,13 @@ def test_the_run_writes_every_file_and_leaves_nothing_else(world: World) -> None
     index = (world.root / "index.rst").read_text(encoding="utf-8")
     rule = "=" * 40
     assert index.startswith(f"{rule}\nVTL 2.2 operator map\n{rule}\n")
-    # The index has the parts of the map in its toctree, and the page of the operators has the
-    # blocks (the map of the world has no definitions).
+    # The index has the parts of the map in its toctree, the overview has the page of the
+    # operators (the map of the world has no definitions), and that page has the blocks.
     assert (
-        ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n"
-        "   how_to_read\n   overview\n   operators\n   decisions\n"
+        ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   how_to_read\n   overview\n   decisions\n"
     ) in index
+    overview = (world.root / "overview.rst").read_text(encoding="utf-8")
+    assert overview.endswith(".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   operators\n")
     operators = (world.root / "operators.rst").read_text(encoding="utf-8")
     assert (
         ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   alpha/index\n   beta/index\n" in operators
@@ -1181,7 +1182,6 @@ def test_the_run_writes_every_file_and_leaves_nothing_else(world: World) -> None
     assert "9.9.9" in index
     assert "abc1234" in index
     assert f"with pandas {PANDAS_VERSION} and DuckDB {DUCKDB_VERSION}" in index
-    overview = (world.root / "overview.rst").read_text(encoding="utf-8")
     assert f"(sdmx-twg/vtl @ {SPEC_COMMIT})" in overview  # the attribution
     alpha = (world.root / "alpha/index.rst").read_text(encoding="utf-8")
     rule = "=" * 30  # twice the 15 characters of "Alpha operators"

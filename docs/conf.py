@@ -80,6 +80,10 @@ mermaid_height = "auto"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
+# The sidebar goes one level deeper than the theme's 4: the operator map has its operators under
+# their block, the blocks under the page of the operators, and that page under the overview. No
+# other page of the docs has a fifth level.
+html_theme_options = {"navigation_depth": 5}
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
 # The chips, lists, examples and diagrams of the operator map: every rule is scoped to its pages.

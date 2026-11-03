@@ -67,6 +67,17 @@
     margin: 0;
 }
 
+/* The overview diagram is drawn small, at about half its natural width (420 px): the tables under
+ * it lead to the pages. The diagram scales with its block (its SVG is as wide as the block, and
+ * its height follows). The button of the extension that opens it in full screen (⛶, 28 px wide,
+ * 4 px from the right of the container that the extension puts around the diagram) sits in a
+ * margin of its own, on the right, and covers no node. A scale (zoom, transform) would not do:
+ * Mermaid measures the labels while it draws them in the page, and would size the boxes for the
+ * scaled text. */
+.om-diagram.om-small { max-width: 456px; }
+.om-diagram.om-small .mermaid-container { box-sizing: border-box; padding-right: 36px; }
+.om-diagram.om-small pre.mermaid { width: 100% !important; }
+
 /* Types: the "Takes · Gives" line, then "Comes from" and "Goes to" side by side, each a
  * collapsible list by block. */
 .om-takes, .om-line { margin: 4px 0; }

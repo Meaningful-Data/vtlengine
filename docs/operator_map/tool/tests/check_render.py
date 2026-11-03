@@ -54,6 +54,7 @@ from tool.model import (
 from tool.render import (
     BORDER_KEY_HTML,
     LEGEND_HTML,
+    RUN_FILE,
     RunMeta,
     block_rst,
     decisions_rst,
@@ -64,6 +65,7 @@ from tool.render import (
     operator_rst,
     operators_rst,
     overview_rst,
+    run_html,
 )
 from tool.status import NOT_IMPLEMENTED, EngineVerdict, ExampleResult, StatusIndex, build_index
 
@@ -1056,10 +1058,9 @@ def test_index_structure() -> None:
     text = index_rst(MAP, INDEX, META)
     rule = "=" * 40  # twice the 20 characters of the title
     assert text.startswith(f"{rule}\nVTL 2.2 operator map\n{rule}\n\n")
-    # The parts of the map are on one level of the sidebar: the map has no definitions.
+    # The parts of the map are on one level of the sidebar; the operators are under the overview.
     toctree = (
-        ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n"
-        "   how_to_read\n   overview\n   operators\n   decisions\n"
+        ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   how_to_read\n   overview\n   decisions\n"
     )
     assert toctree in text
     assert titles(text, "-") == []
@@ -1073,10 +1074,12 @@ def test_index_structure() -> None:
     assert [line.split(": ", 1)[0] for line in parts] == [
         "- :doc:`How to read <how_to_read>`",
         "- :doc:`Overview <overview>`",
-        "- :doc:`Operators <operators>`",
         "- :doc:`Team decisions, errata and adaptations <decisions>`",
     ]
-    assert "the 3 blocks of operators" in parts[2]
+    assert parts[1].endswith(
+        ": the overview diagram, the 3 blocks of operators, with their pages under it, and the "
+        "codes that say that something is not implemented."
+    )
     # The results at a glance come before the parts, and the note on the run closes the page.
     glance = text.split('<div class="om-glance">', 1)[1].split("</div></div>", 1)[0]
     assert text.index("om-glance") < text.index("- :doc:")
@@ -1091,42 +1094,86 @@ def test_index_structure() -> None:
     assert ".md" not in text
 
 
-def test_the_definitions_are_a_part_of_their_own() -> None:
+def test_the_operators_and_the_definitions_are_under_the_overview() -> None:
     cat = Catalogue((NUMERIC, DEFINE_CHAPTER))
-    index = index_of(cat)
+    # One form of the definition is wrong: the definition and its block are 🟡.
+    index = index_of(cat, {"definitions/define_x/result/two_rows": PARTIAL})
     text = index_rst(cat, index, META)
     assert (
-        ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n"
-        "   how_to_read\n   overview\n   operators\n   definitions/index\n   decisions\n"
+        ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   how_to_read\n   overview\n   decisions\n"
+        in text
+    )
+    assert (
+        "- :doc:`Overview <overview>`: the overview diagram, the 1 block of operators and the "
+        "definitions of the VTL-DL, with their pages under it, and the codes that say that "
+        "something is not implemented."
     ) in text
-    assert "- :doc:`Definitions <definitions/index>`: the definitions of the VTL-DL" in text
+    overview = overview_rst(cat, index, META)
+    assert overview.endswith(
+        ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   operators\n   definitions/index\n"
+    )
     # The page of the operators has the blocks of operators only, in its table and its toctree.
     operators = operators_rst(cat, index)
     assert ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   numeric/index\n" in operators
     assert "definitions" not in operators
-    # The overview has every block, the definitions too.
-    assert ":doc:`Definitions <definitions/index>`" in section(
-        overview_rst(cat, index, META), "Blocks"
+    # The overview has a table of the blocks of operators and one of the definitions, each after
+    # a link to the page that they are under.
+    blocks_part = section(overview, "Operators")
+    assert "Their pages are under :doc:`Operators <operators>` in the sidebar." in blocks_part
+    assert [row[0] for row in table_rows(blocks_part)] == [
+        "Block",
+        ":doc:`Numeric operators <numeric/index>`",
+        "**Total**",
+    ]
+    definitions = section(overview, "Definitions")
+    assert "Their pages are under :doc:`Definitions <definitions/index>` in the sidebar." in (
+        definitions
     )
+    assert table_rows(definitions) == [
+        ["Definition", "Status", "Forms", "🟢", "🟡", "🛡️", "🔴", "🔵"],
+        [":doc:`Define x <definitions/define_x>`", "🟡", "5", "4", "1", "0", "0", "0"],
+        ["**Total**", "🟡", "5", "4", "1", "0", "0", "0"],
+    ]
 
 
 def test_index_without_blocks_has_only_the_overview() -> None:
     empty = Catalogue(())
-    text = index_rst(empty, StatusIndex({}, {}, {}, {}), META)
+    index = StatusIndex({}, {}, {}, {})
+    text = index_rst(empty, index, META)
     assert ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   how_to_read\n   overview\n" in text
-    assert "   overview\n   operators" not in text
+    assert (
+        "- :doc:`Overview <overview>`: the overview diagram and the codes that say that "
+        "something is not implemented."
+    ) in text
     assert ":doc:`Operators <operators>`" not in text
-    assert ".. toctree::" not in operators_rst(empty, StatusIndex({}, {}, {}, {}))
+    overview = overview_rst(empty, index, META)
+    assert ".. toctree::" not in overview
+    assert re.findall(r"^\.\. rubric:: (.+)$", overview, re.MULTILINE) == [
+        "Overview diagram",
+        "Not implemented",
+        "Attribution",
+    ]
+    assert ".. toctree::" not in operators_rst(empty, index)
 
 
 def test_overview_structure() -> None:
     text = overview_rst(MAP, INDEX, META)
     rule = "=" * 16  # twice the 8 characters of the title
     assert text.startswith(f"{rule}\nOverview\n{rule}\n\n")
-    assert titles(text, "-") == ["Overview diagram", "Blocks", "Not implemented", "Attribution"]
-    assert text.split("\nOverview diagram\n", 1)[0].count(LEGEND_HTML) == 1
-    assert ".. toctree::" not in text
-    assert blocks(section(text, "Overview diagram")) == [overview_block(MAP, INDEX)]
+    # Its parts are rubrics, not sections, so that the sidebar has the operators right under it.
+    assert titles(text, "-") == []
+    assert re.findall(r"^\.\. rubric:: (.+)$", text, re.MULTILINE) == [
+        "Overview diagram",
+        "Operators",
+        "Not implemented",
+        "Attribution",
+    ]
+    assert text.split(".. rubric:: Overview diagram", 1)[0].count(LEGEND_HTML) == 1
+    # The map has no definitions: the page of the operators is the only one under the overview.
+    assert text.endswith(".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   operators\n")
+    diagram = section(text, "Overview diagram")
+    assert blocks(diagram) == [overview_block(MAP, INDEX)]
+    assert '<div class="om-diagram om-small">' in diagram
     assert len(blocks(text)) == 1
     assert ".md" not in text
 
@@ -1139,7 +1186,9 @@ def test_how_to_read_is_a_page_of_its_own() -> None:
     how = " ".join(text.split())
     for words in ("✅", "❌", "🛡", "💥", "solid", "dashed", "dotted", "Used with", "0.6001–0.7999"):
         assert words in how, words
-    assert "five parts: this guide, the overview, the operators, the definitions" in how
+    assert "three parts: this guide, the overview, and the team decisions" in how
+    assert "Under the overview are the operators" in how
+    assert "The ⛶ button at the top right of a diagram opens it in full screen." in how
     assert "Elsewhere the cap is optional." in how
 
 
@@ -1164,7 +1213,7 @@ def test_operators_page_structure() -> None:
 
 
 def test_overview_block_table_counts_the_forms() -> None:
-    rows = table_rows(section(overview_rst(MAP, INDEX, META), "Blocks"))
+    rows = table_rows(section(overview_rst(MAP, INDEX, META), "Operators"))
     assert rows == [
         ["Block", "Status", "Operators", "Forms", "🟢", "🟡", "🛡️", "🔴", "🔵"],
         [":doc:`Numeric operators <numeric/index>`", "🔵", "3", "6", "5", "0", "0", "0", "1"],
@@ -1438,6 +1487,11 @@ def read_rst(text: str, source: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
         text = args[2]  # the role is called with (name, rawtext, text, lineno, inliner, ...)
         return [nodes.Text(text.partition(" <")[0])], []
 
+    # The head of a page reads the versions from the file that the run writes next to the index.
+    for name in re.findall(r"^   :file: (.+)$", text, re.MULTILINE):
+        versions = source.parent / name
+        versions.parent.mkdir(parents=True, exist_ok=True)
+        versions.write_text(run_html(META), encoding="utf-8")
     registered = directives._directives  # what register_directive fills
     monkeypatch.setitem(registered, "mermaid", stub({"config": directives.unchanged}))
     toctree = stub({"maxdepth": directives.unchanged, "hidden": directives.flag})
@@ -1535,14 +1589,16 @@ def test_the_pages_are_read_as_written_by_docutils(
     not_green = [row for row in rows if len(row) == 7]
     assert [row[6] for row in not_green[1:]] == HOSTILE
 
-    listing = read_rst(overview_rst(cat, index, META), tmp_path / "overview.rst", monkeypatch)
+    listing = read_rst(decisions_rst(cat), tmp_path / "decisions.rst", monkeypatch)
     items = [item.astext() for item in listing.findall(nodes.list_item)]
     for detail in HOSTILE:
         # Once as the erratum and once as the adaptation of its form, as typed.
         assert sum(item.endswith(f": {detail}") for item in items) == 2, detail
     read_rst(index_rst(MAP, INDEX, META), tmp_path / "index.rst", monkeypatch)
+    read_rst(how_to_read_rst(), tmp_path / "how_to_read.rst", monkeypatch)
     read_rst(overview_rst(MAP, INDEX, META), tmp_path / "overview.rst", monkeypatch)
     read_rst(operators_rst(MAP, INDEX), tmp_path / "operators.rst", monkeypatch)
+    read_rst(decisions_rst(MAP), tmp_path / "decisions.rst", monkeypatch)
 
 
 # --- What Sphinx makes of the pages ---
@@ -1583,8 +1639,10 @@ def test_docs_build_anchor_ids(tmp_path: Path) -> None:
     write_example(examples, "numeric/addition/sc_sc/two_numbers", {"expected/DS_r.csv": "A\n"})
     pages = {
         "index.rst": index_rst(cat, index, META),
+        "how_to_read.rst": how_to_read_rst(),
         "overview.rst": overview_rst(cat, index, META),
         "operators.rst": operators_rst(cat, index),
+        "decisions.rst": decisions_rst(cat),
         "numeric/index.rst": block_rst(chapter, cat, index, META),
         **{
             f"numeric/{op.id}.rst": operator_rst(
@@ -1596,6 +1654,7 @@ def test_docs_build_anchor_ids(tmp_path: Path) -> None:
     for name, text in pages.items():
         (source / name).parent.mkdir(parents=True, exist_ok=True)
         (source / name).write_text(text, encoding="utf-8")
+    (source / RUN_FILE).write_text(run_html(META), encoding="utf-8")
     (source / "_static").mkdir()
     shutil.copy(CSS, source / "_static" / CSS.name)
     (source / "conf.py").write_text(
