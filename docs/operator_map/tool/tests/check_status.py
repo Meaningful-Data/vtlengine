@@ -194,7 +194,8 @@ def test_rollup_precedence() -> None:
 
 def test_rollup_refused() -> None:
     assert rollup(["refused", "refused"]) == "refused"
-    assert rollup(["ok", "refused"]) == "partial"
+    assert rollup(["ok", "refused"]) == "ok"  # a refusal on purpose is no defect
+    assert rollup(["refused", "ok", "refused"]) == "ok"
     assert rollup(["refused", "diverge"]) == "diverge"
 
 
@@ -1290,7 +1291,7 @@ def test_build_index_rolls_the_refused_status_up() -> None:
         "numeric/subtraction/ds_ds": "ok",
     }
     assert index.operators == {"numeric/addition": "refused", "numeric/subtraction": "ok"}
-    assert index.chapters == {"numeric": "partial"}  # ok and refused
+    assert index.chapters == {"numeric": "ok"}  # ok and refused: a refusal is no defect
 
     both = {**results, "numeric/subtraction/ds_ds/minimal": result("refused")}
     index = build_index(cat, both)

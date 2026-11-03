@@ -512,11 +512,11 @@ def test_operator_page_structure(tmp_path: Path) -> None:
     rule = "=" * 32  # twice the 16 characters of the title
     assert text.startswith(f"{rule}\nModulo · ``mod``\n{rule}\n\n")
 
-    def example(form_id: str, name: str, *, opened: bool, data: bool, scalars: bool) -> list[str]:
+    def example(form_id: str, name: str, *, data: bool, scalars: bool) -> list[str]:
         folder = f"../examples/numeric/modulo/{form_id}/{name}"
         anchor = f"ex-{form_id}-{name}".replace("_", "-")
         return [
-            f'raw <details class="om-example" id="{anchor}"{" open" if opened else ""}>',
+            f'raw <details class="om-example" id="{anchor}">',  # every example starts closed
             f"include:: {folder}/notes.rst",
             f"literalinclude:: {folder}/script.vtl",
             "  :caption: script.vtl",
@@ -545,14 +545,14 @@ def test_operator_page_structure(tmp_path: Path) -> None:
         "- Forms",
         'raw <span class="om-anchor" id="form-ds-ds">',
         "~ mod(DS, DS) 🔵 · number → number",
-        *example("ds_ds", "manual_ex_1", opened=True, data=True, scalars=False),
+        *example("ds_ds", "manual_ex_1", data=True, scalars=False),
         'raw <span class="om-anchor" id="form-comp-comp">',
         "~ mod(comp, comp) 🟢 · number → number",
-        *example("comp_comp", "two_components", opened=True, data=True, scalars=False),
+        *example("comp_comp", "two_components", data=True, scalars=False),
         'raw <span class="om-anchor" id="form-sc-sc">',
-        "~ mod(sc, sc) 🟡 · number → number",
-        *example("sc_sc", "zero_divisor", opened=True, data=False, scalars=False),
-        *example("sc_sc", "positive_operands", opened=False, data=False, scalars=True),
+        "~ mod(sc, sc) 🟢 · number → number",  # 🟢 and 🛡️ examples: green
+        *example("sc_sc", "zero_divisor", data=False, scalars=False),
+        *example("sc_sc", "positive_operands", data=False, scalars=True),
     ]
     # The anchors are those of the diagram: every click to a form lands on its section.
     assert blocks(text) == [operator_diagram(NUMERIC, MODULO, MAP, INDEX)]
@@ -672,7 +672,8 @@ def test_expected_scalars_and_an_expected_error(tmp_path: Path) -> None:
         ["``SC_s``", "String", '``"  Hello"``'],
         ["``SC_t``", "String", "``null``"],
     ]
-    assert "\n\nExpected error ``2-1-15-6``\n\n" in text
+    # The code, with its message from the error catalogue of vtlengine, placeholders included.
+    assert "\n\nExpected error ``2-1-15-6``: At op {op}: Scalar division by Zero.\n\n" in text
 
 
 def test_the_types_say_what_a_form_takes_and_gives_and_list_the_operators_by_block(
@@ -1037,16 +1038,7 @@ def test_block_page_lists_the_forms_that_are_not_green_with_their_reason() -> No
             "💥 KeyError",
             "DuckDB: KeyError: \\'Me\\_1\\'",
         ],
-        [
-            ":doc:`Modulo <modulo>`",
-            "`mod(sc, sc) <modulo.html#form-sc-sc>`__",
-            "🟡",
-            "`Zero divisor <modulo.html#ex-sc-sc-zero-divisor>`__",
-            "🛡 2-1-15-6",
-            "🛡 2-1-15-6",
-            "RunTimeError 2-1-15-6: Scalar division by Zero.",
-        ],
-    ]
+    ]  # mod(sc, sc) has a 🟢 and a 🛡️ example: it is green, and not listed
     assert "Every form is green." in block_rst(STRING, MAP, index_of(MAP), META)
 
 
@@ -1147,7 +1139,7 @@ def test_overview_block_table_counts_the_forms() -> None:
     rows = table_rows(section(overview_rst(MAP, INDEX, META), "Blocks"))
     assert rows == [
         ["Block", "Status", "Operators", "Forms", "🟢", "🟡", "🛡️", "🔴", "🔵"],
-        [":doc:`Numeric operators <numeric/index>`", "🔵", "3", "6", "4", "1", "0", "0", "1"],
+        [":doc:`Numeric operators <numeric/index>`", "🔵", "3", "6", "5", "0", "0", "0", "1"],
         [":doc:`String operators <string/index>`", "🟡", "1", "1", "0", "1", "0", "0", "0"],
         [
             ":doc:`Conditional operators <conditional/index>`",
@@ -1160,7 +1152,7 @@ def test_overview_block_table_counts_the_forms() -> None:
             "0",
             "0",
         ],
-        ["**Total**", "🔵", "5", "8", "5", "2", "0", "0", "1"],
+        ["**Total**", "🔵", "5", "8", "6", "1", "0", "0", "1"],
     ]
     # The page of the operators has the same rows for the same blocks.
     assert table_rows(operators_rst(MAP, INDEX)) == rows

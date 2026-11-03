@@ -86,6 +86,9 @@ html_css_files = ["custom.css"]
 # The multiversion build puts this conf on old tags, which have no such file: no dead link there.
 if (Path(__file__).parent / "_static" / "operator_map.css").exists():
     html_css_files += ["operator_map.css"]
+# Its examples and lists start closed; a link to one opens it.
+if (Path(__file__).parent / "_static" / "operator_map.js").exists():
+    html_js_files = ["operator_map.js"]
 
 # Copy CNAME file to output for GitHub Pages custom domain
 html_extra_path = ["CNAME"]

@@ -20,17 +20,19 @@ diagram is grouped by block. Then:
 * **Types**: what its forms take and give, and two columns, "Comes from" and "Goes to", with the
   operators that give what it takes and those that take what it gives (``tool.typelinks``),
   grouped by block in collapsible lists. The operators that return the type of their input, and
-  those that take any scalar, are a closed list of their own. An operator that takes any scalar
+  those that take any scalar, are a list of their own. An operator that takes any scalar
   is fed by any operator that returns a value, and one that returns the type of its input feeds
   whatever takes that type: each says so in one line instead of a list.
 * **Forms**: a section per form, in the order of the diagram (``forms_in_diagram_order``), headed
   by its label, its status and its types. When the forms name the boxes that they are in
   (``Variant.box``), the title of each box is a caption above its first form (``_box_caption``),
   and there is no border key: the titles tell the boxes apart. Each example is a collapsible
-  block: its title, its status and the mark of each engine (``tool.status.mark``), then its notes
-  (``.. include::``), its script (``.. literalinclude::``), its data (the values of its input
-  scalars, ``input/scalars.csv``, are a table captioned "Input scalars"), its expected scalars or
-  error, and links to its files and to its own page in the built site.
+  block, closed like every list of the page (a link to an example opens it,
+  ``docs/_static/operator_map.js``): its title, its status and the mark of each engine
+  (``tool.status.mark``), then its notes (``.. include::``), its script
+  (``.. literalinclude::``), its data (the values of its input scalars, ``input/scalars.csv``, are
+  a table captioned "Input scalars"), its expected scalars or error (the code with its message from
+  the error catalogue of vtlengine), and links to its files and to its own page in the built site.
 
 The data are HTML tables made here from the CSV files, not ``csv-table``: docutils reads a cell of
 a ``csv-table`` as RST, and Sphinx typesets it, so ``x"y`` would show ``x”y``, ``*a*`` an emphasis
@@ -75,7 +77,9 @@ of VTL in an inline literal. Inside raw HTML, the text is escaped with ``html.es
 
 from __future__ import annotations
 
+import ast
 import csv
+import functools
 import html
 import json
 import re
@@ -127,6 +131,10 @@ from tool.status import (
 from tool.typelinks import Ref, TypeLinks, block_types_table, by_block, type_links
 
 MANUAL_BASE: Final = "https://sdmx-twg.github.io/vtl/v2.2/reference_manual"
+# The error catalogue of vtlengine, whose messages an expected error shows.
+_ENGINE_MESSAGES: Final = (
+    Path(__file__).resolve().parents[3] / "src" / "vtlengine" / "Exceptions" / "messages.py"
+)
 SPEC_REPO: Final = "https://github.com/sdmx-twg/vtl"
 ISSUES: Final = "https://github.com/Meaningful-Data/vtlengine/issues"
 MAX_DETAIL: Final = 200  # characters of what went wrong with an example, the ellipsis included
@@ -263,7 +271,7 @@ def operator_rst(
     groups = load_viral_groups() if viral is None else viral
     key = f"{chapter.id}/{op.id}"
     statuses = [index.variants.get(f"{key}/{variant.id}") for variant in op.variants]
-    summary = f"{_all_ok(statuses)} of {_count(len(statuses), 'form')} all ok"
+    summary = _ok_summary(statuses, "form")
     title = _text(op.name) + (f" · {_literal(op.symbol)}" if op.symbol else "")
     parts = [
         _title(title, _PAGE, overline=True),
@@ -297,6 +305,13 @@ def _all_ok(statuses: Sequence[Status | None]) -> int:
     return sum(1 for status in statuses if status == "ok")
 
 
+def _ok_summary(statuses: Sequence[Status | None], noun: str) -> str:
+    """``3 of 4 forms all ok, 1 refused``: how many of ``statuses`` are 🟢, and 🛡️ if any."""
+    refused = sum(1 for status in statuses if status == "refused")
+    summary = f"{_all_ok(statuses)} of {_count(len(statuses), noun)} all ok"
+    return f"{summary}, {refused} refused" if refused else summary
+
+
 # --- "Used with" ---
 
 
@@ -314,7 +329,7 @@ def _used_with_list(
         return []
     labels = {(e.chapter.id, e.operator.id): " · ".join(e.labels) for e in entries}
     refs = _in_catalogue_order((_ref(e.chapter, e.operator, index) for e in entries), cat)
-    return [_raw(_listing("Used with", refs, opened=True, labels=labels))]
+    return [_raw(_listing("Used with", refs, labels=labels))]
 
 
 def _ref(chapter: Chapter, op: Operator, index: StatusIndex) -> Ref:
@@ -415,16 +430,13 @@ def _typed(
     folded: tuple[Sequence[Ref], str],
     cat: Catalogue,
 ) -> list[str]:
-    """The list of the operators of ``types``, each once, and the closed list ``folded``.
-
-    The folded list is open when there is nothing by type to show above it.
-    """
+    """The list of the operators of ``types``, each once, and the list ``folded``."""
     title = f"{side} · {_type_list(types)}"
     refs = _in_catalogue_order((ref for t in types for ref in by_type.get(t, ())), cat)
-    found = [_listing(title, refs, opened=True)] if refs else [_line(f"{title}:", "none")]
+    found = [_listing(title, refs)] if refs else [_line(f"{title}:", "none")]
     extra, extra_title = folded
     if extra:
-        found.append(_listing(f"{side} · {extra_title}", extra, opened=not refs))
+        found.append(_listing(f"{side} · {extra_title}", extra))
     return found
 
 
@@ -444,13 +456,13 @@ def _listing(
     title: str,
     refs: Sequence[Ref],
     *,
-    opened: bool,
     labels: Mapping[tuple[str, str], str] | None = None,
 ) -> str:
     """A collapsible list of operators, by block: how many, and the tally of their statuses.
 
-    Each block is closed, with its count and tally, and holds a chip for each operator, which
-    links to its page. ``labels`` adds a small label to the chip of an operator.
+    The list is closed, and so is each block, with its count and tally. A block holds a chip for
+    each operator, which links to its page. ``labels`` adds a small label to the chip of an
+    operator.
     """
     groups = by_block(refs)
     inner = "".join(
@@ -461,9 +473,8 @@ def _listing(
         for block, group in groups
     )
     count = f"{_count(len(refs), 'operator')} in {_count(len(groups), 'block')}"
-    attribute = " open" if opened else ""
     return (
-        f'<details class="om-dir"{attribute}><summary><b>{html.escape(title)}</b> — {count} '
+        f'<details class="om-dir"><summary><b>{html.escape(title)}</b> — {count} '
         f"{_tally(ref.status for ref in refs)}</summary>{inner}</details>"
     )
 
@@ -540,9 +551,7 @@ def _applied_by(cat: Catalogue, index: StatusIndex, groups: Sequence[ViralGroup]
         f"({_link(_page_title(group.page), manual_url(group.page))})"
         for group in groups
     ]
-    return _section(
-        "Applied by", intro, "\n".join(items), _raw(_listing("Applied by", refs, opened=True))
-    )
+    return _section("Applied by", intro, "\n".join(items), _raw(_listing("Applied by", refs)))
 
 
 def _page_title(page: str) -> str:
@@ -594,8 +603,8 @@ def _form_section(
         _raw(f'<span class="om-anchor" id="{form_anchor(variant)}"></span>'),
         _title(heading, _SUBSECTION),
     ]
-    for n, example in enumerate(variant.examples):
-        parts.append(_example(chapter, op, variant, example, index, root, opened=n == 0))
+    for example in variant.examples:
+        parts.append(_example(chapter, op, variant, example, index, root))
     return "\n\n".join(parts)
 
 
@@ -606,17 +615,13 @@ def _example(
     example: Example,
     index: StatusIndex,
     root: Path,
-    *,
-    opened: bool,
 ) -> str:
-    """The collapsible block of an example: open for the first example of its form."""
+    """The collapsible block of an example, closed: a link to it opens it (``operator_map.js``)."""
     names = (chapter.id, op.id, variant.id, example.name)
     folder = example_dir(root, *names)
     url = f"{_EXAMPLES}/{'/'.join(names)}"
     result = index.examples.get("/".join(names))
     attributes = f'class="om-example" id="{example_anchor(variant, example)}"'
-    if opened:
-        attributes += " open"
     opening = [f"<details {attributes}><summary>{_summary(example, result)}</summary>"]
     if result is not None and result.status != "ok":
         opening.append(f'<p class="om-detail">{html.escape(_detail_text(result))}</p>')
@@ -640,7 +645,10 @@ def _example(
         parts.append(_scalars(scalars))
     error = folder / "expected" / "error.json"
     if error.is_file():
-        parts.append(f"Expected error {_literal(_error_code(error))}")
+        code = _error_code(error)
+        message = _error_messages().get(code)
+        expected = f"Expected error {_literal(code)}"
+        parts.append(f"{expected}: {_inline(message)}" if message else expected)
     links = [
         f'<a href="{_attribute(f"{url}/{quote(name)}")}">{html.escape(name)}</a>'
         for name in _files(folder)
@@ -770,6 +778,24 @@ def _error_code(path: Path) -> str:
     return str(json.loads(path.read_text(encoding="utf-8-sig")).get("code", ""))
 
 
+@functools.cache
+def _error_messages() -> dict[str, str]:
+    """The message of each code of vtlengine's error catalogue, placeholders included.
+
+    It is read from the source of the catalogue, ``centralised_messages``, as the page of the
+    error messages of the docs is made from it: no engine is imported.
+    """
+    tree = ast.parse(_ENGINE_MESSAGES.read_text(encoding="utf-8"))
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "centralised_messages"
+            for target in node.targets
+        ):
+            catalogue = ast.literal_eval(node.value)
+            return {str(code): str(entry["message"]) for code, entry in catalogue.items()}
+    raise ValueError(f"no centralised_messages in {_ENGINE_MESSAGES}")
+
+
 def _files(folder: Path) -> list[str]:
     """The files of an example folder, by their path in it, but the notes, in reading order."""
     if not folder.is_dir():
@@ -798,7 +824,7 @@ def block_rst(chapter: Chapter, cat: Catalogue, index: StatusIndex, meta: RunMet
     ``MermaidLimitError`` when the diagram cannot fit the limits of Mermaid.
     """
     statuses = [index.operators.get(f"{chapter.id}/{op.id}") for op in chapter.operators]
-    summary = f"{_all_ok(statuses)} of {_count(len(statuses), 'operator')} all ok"
+    summary = _ok_summary(statuses, "operator")
     parts = [
         _title(_text(chapter.title), _PAGE, overline=True),
         _raw(_head(index.chapters.get(chapter.id), summary, meta)),
@@ -932,13 +958,14 @@ with a thin, sparsely dotted border, "Used with", has the operators that it is c
 Where the viewer supports links in diagrams, a node opens its page, and a form its section; the \
 tables and the lists are the reliable way.
 - **Statuses.** The colour of a node, and the emoji of a chip or a heading, say its status: 🟢 \
-all its examples give the expected result on both engines; 🟡 partially implemented, a mix, or \
-a result that is wrong on both engines; 🛡️ refused with an error: both engines raise an error \
-of vtlengine with a code where the manual defines a result, and the code is not one of those \
-that say that something is not implemented (the list below); 🔴 not implemented, or a crash; \
-🔵 the engines differ. A form takes the status of its examples, an operator that of its forms, \
-and a block that of its operators: 🔵 when any of them is 🔵, 🟢, 🛡️ or 🔴 when all of them \
-are, and 🟡 otherwise. The tallies count the forms of an operator, and the operators of a block.
+all its examples give the expected result on both engines, or are refused on purpose; 🟡 \
+partially implemented, a mix, or a result that is wrong on both engines; 🛡️ refused with an \
+error: both engines raise an error of vtlengine with a code where the manual defines a result, \
+and the code is not one of those that say that something is not implemented (the list below); \
+🔴 not implemented, or a crash; 🔵 the engines differ. A form takes the status of its examples, \
+an operator that of its forms, and a block that of its operators: 🔵 when any of them is 🔵, \
+🛡️ or 🔴 when all of them are, 🟢 when all of them are 🟢 or 🛡️, and 🟡 otherwise. The tallies \
+count the forms of an operator, and the operators of a block.
 - **Marks.** An example shows what each engine gave: ✅ a match, the expected output or the \
 expected error; ❌ a wrong result; 🛡 a guarded error, an error that vtlengine raises on \
 purpose, with its code, such as 🛡 2-1-15-6; 💥 a crash, an exception that vtlengine does not \

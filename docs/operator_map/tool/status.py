@@ -536,8 +536,8 @@ def rollup(statuses: Sequence[Status]) -> Status:
     """The status of a group, such as the examples of a variant or the variants of an operator.
 
     It is ``diverge`` if any member is, else ``ok`` if all are, else ``refused`` if all are, else
-    ``missing`` if all are, else ``partial``. An empty group has no status: it raises
-    ``ValueError``.
+    ``missing`` if all are, else ``ok`` if all are ``ok`` or ``refused`` (a refusal on purpose is
+    no defect), else ``partial``. An empty group has no status: it raises ``ValueError``.
     """
     if not statuses:
         raise ValueError("nothing to roll up: no statuses")
@@ -546,6 +546,8 @@ def rollup(statuses: Sequence[Status]) -> Status:
     for uniform in _UNIFORM:
         if all(status == uniform for status in statuses):
             return uniform
+    if all(status in ("ok", "refused") for status in statuses):
+        return "ok"
     return "partial"
 
 
