@@ -5260,6 +5260,41 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1223_12(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition Id_1 rule Id_2) is
+                        R1: when Id_1 > 0 then A = B + C errorcode "E1" errorlevel 1;
+                        R2: when Id_1 < 10 then A = C + B errorcode "E2" errorlevel 2;
+                        R3: D = A + E errorcode "E3" errorlevel 3
+                    end hierarchical ruleset;
+
+                    define hierarchical ruleset HR_2 (variable condition Me_1 rule Id_2) is
+                        R1: when Me_1 > 0 then A = B + C errorcode "E1" errorlevel 1;
+                        R2: when Me_1 < 10 then A = C + B errorcode "E2" errorlevel 2;
+                        R3: D = A + E errorcode "E3" errorlevel 3
+                    end hierarchical ruleset;
+
+                    DS_r1 <- check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 always_zero
+                                dataset_priority all);
+                    DS_r2 <- check_hierarchy(DS_2, HR_2 condition Me_1 rule Id_2 always_zero
+                                dataset_priority all);
+
+        Description: R1 and R2 compute the same A, which the operand lacks, so R3 reads it
+        once. DS_2 has no identifier other than the rule component.
+
+        Git Branch: #1223.
+        Goal: Check dataset_priority with overlapping rules that compute the same value.
+        """
+
+        code = "GH_1223_12"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1223_13(self):
         """
         HIERARCHICAL RULSET: check_hierarchy

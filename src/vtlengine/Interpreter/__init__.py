@@ -2291,7 +2291,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if not other_ids:
             # A single (global) group, labelled 0 like the code items of the rule. Without
             # data points that satisfy the condition of the rule there is none (issue #1223)
-            return df if len(rule_data) > 0 else df.iloc[0:0]
+            return (df if len(rule_data) > 0 else df.iloc[0:0]).reset_index(drop=True)
         groups = rule_data[other_ids].drop_duplicates().reset_index(drop=True)
         groups["__group__"] = groups.index
         labelled = merge_frames(df, groups, on=other_ids, how="inner")
