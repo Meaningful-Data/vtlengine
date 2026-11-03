@@ -94,6 +94,7 @@ numeric/unary_minus.rst
 numeric/unary_plus.rst
 operators.rst
 overview.rst
+run.html
 set/index.rst
 set/intersect.rst
 set/setdiff.rst

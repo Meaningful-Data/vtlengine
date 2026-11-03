@@ -4,7 +4,14 @@ Maximum value · ``max``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 7 of 8 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Maximum%20value/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (f66d9b68) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 7 of 8 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Maximum%20value/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+
+.. raw:: html
+   :file: ../run.html
+
+.. raw:: html
+
+   </span></div>
 
 .. raw:: html
 

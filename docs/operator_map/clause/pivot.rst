@@ -4,7 +4,14 @@ Pivoting · ``pivot``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip missing">🔴 0 of 1 form all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Pivoting/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (f66d9b68) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip missing">🔴 0 of 1 form all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Pivoting/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+
+.. raw:: html
+   :file: ../run.html
+
+.. raw:: html
+
+   </span></div>
 
 .. raw:: html
 

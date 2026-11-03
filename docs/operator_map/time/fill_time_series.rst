@@ -4,7 +4,14 @@ Fill time series · ``fill_time_series``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 8 of 8 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Fill%20time%20series/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (f66d9b68) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 8 of 8 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Fill%20time%20series/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+
+.. raw:: html
+   :file: ../run.html
+
+.. raw:: html
+
+   </span></div>
 
 .. raw:: html
 

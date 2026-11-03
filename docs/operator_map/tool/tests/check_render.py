@@ -361,7 +361,8 @@ def skeleton(text: str) -> list[str]:
     """The parts of a page in order: its titles, its directives, and the first tag of a raw block.
 
     A title is ``<adornment> <title>``, a directive its line without the leading ``.. `` (an
-    option is ``  :<option>: <value>``), and a raw block of HTML ``raw <first tag>``.
+    option is ``  :<option>: <value>``), a raw block of HTML ``raw <first tag>``, and one read
+    from a file ``raw :file: <path>``.
     """
     lines = text.split("\n")
     marks = {n: f"{rule} {title}" for n, (rule, title) in _numbered_headings(lines)}
@@ -369,6 +370,8 @@ def skeleton(text: str) -> list[str]:
     for n, line in enumerate(lines):
         if n in marks:
             found.append(marks[n])
+        elif line == ".. raw:: html" and lines[n + 1].strip().startswith(":file:"):
+            found.append("raw " + lines[n + 1].strip())  # a raw block read from a file
         elif line == ".. raw:: html":
             first = lines[n + 2].strip()
             found.append("raw " + re.match(r"<[^>]*>", first).group())  # type: ignore[union-attr]
@@ -536,6 +539,8 @@ def test_operator_page_structure(tmp_path: Path) -> None:
     assert skeleton(text) == [
         "= Modulo · ``mod``",
         'raw <div class="om-head">',
+        "raw :file: ../run.html",
+        "raw </span>",
         'raw <div class="om-legend">',
         'raw <div class="om-legend om-borders">',
         'raw <div class="om-diagram">',

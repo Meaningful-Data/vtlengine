@@ -13,11 +13,12 @@ here runs an engine. The page of an operator reads the files of its examples, in
 ``examples_root`` (``docs/operator_map/examples`` unless it is given): which there are, and the
 data of their CSV and JSON files.
 
-**Operator page.** The title (``Name · symbol``), a chip with the status of the operator and a
-link to its page of the manual; the legend (``LEGEND_HTML``) and, when the diagram has boxes for
-the kinds of the forms, the key of their borders (``BORDER_KEY_HTML``); the diagram of the
-operator, and under it the full list of what it is used with when the "Used with" box of the
-diagram is grouped by block. Then:
+**Operator page.** The title (``Name · symbol``), a chip with the status of the operator, a
+link to its page of the manual and the versions that made the results, which every head reads
+from the one file ``run.html`` (``RUN_FILE``); the legend (``LEGEND_HTML``) and, when the diagram
+has boxes for the kinds of the forms, the key of their borders (``BORDER_KEY_HTML``); the diagram
+of the operator, and under it the full list of what it is used with when the "Used with" box of
+the diagram is grouped by block. Then:
 
 * **Types**: what its forms take and give, and two columns, "Comes from" and "Goes to", with the
   operators that give what it takes and those that take what it gives (``tool.typelinks``),
@@ -283,7 +284,7 @@ def operator_rst(
     title = _text(op.name) + (f" · {_literal(op.symbol)}" if op.symbol else "")
     parts = [
         _title(title, _PAGE, overline=True),
-        _raw(_head(index.operators.get(key), summary, meta, manual_url(op.page))),
+        _head(index.operators.get(key), summary, manual_url(op.page)),
         _raw(LEGEND_HTML),
         *([_raw(BORDER_KEY_HTML)] if has_boxes(op) and not has_titled_boxes(op) else []),
         _diagram(operator_diagram(chapter, op, cat, index)),
@@ -295,18 +296,36 @@ def operator_rst(
     return "\n\n".join(parts) + "\n"
 
 
-def _head(status: Status | None, summary: str, meta: RunMeta, manual: str | None = None) -> str:
-    """The line under the title: the status chip, the manual page, and what made the results."""
+def _head(status: Status | None, summary: str, manual: str | None = None) -> str:
+    """The line under the title: the status chip, the manual page, and what made the results.
+
+    What made the results, the versions of vtlengine and of its engines, is read from the one
+    file ``RUN_FILE`` of the map (``run_html``), so that a new run changes that file and not the
+    head of every page. The line is three ``raw`` blocks: the opening of the line, the file, and
+    the closing. Every page with a head is in the folder of a block, next to the map's folder.
+    """
     chip = _chip(status, f"{EMOJI[status]} {summary}" if status is not None else summary)
     parts = [chip]
     if manual is not None:
         parts.append(f'<a href="{_attribute(manual)}">VTL 2.2 Reference Manual ↗</a>')
+    opening = '<div class="om-head">' + " · ".join(parts) + ' · <span class="om-gen">'
+    return "\n\n".join(
+        [_raw(opening), f".. raw:: html\n{_INDENT}:file: ../{RUN_FILE}", _raw("</span></div>")]
+    )
+
+
+# The file of the map that holds the versions that made the results: the head of every page reads
+# it (``_head``), so a run with new versions changes this file only.
+RUN_FILE: Final = "run.html"
+
+
+def run_html(meta: RunMeta) -> str:
+    """The versions of vtlengine, with its commit, and of its engines, as the heads show them."""
     engines = (
         f"vtlengine {meta.vtlengine_version} ({meta.vtlengine_commit}) · "
         f"pandas {meta.pandas_version} · DuckDB {meta.duckdb_version}"
     )
-    parts.append(f'<span class="om-gen">{html.escape(engines)}</span>')
-    return '<div class="om-head">' + " · ".join(parts) + "</div>"
+    return html.escape(engines) + "\n"
 
 
 def _all_ok(statuses: Sequence[Status | None]) -> int:
@@ -835,7 +854,7 @@ def block_rst(chapter: Chapter, cat: Catalogue, index: StatusIndex, meta: RunMet
     summary = _ok_summary(statuses, "operator")
     parts = [
         _title(_text(chapter.title), _PAGE, overline=True),
-        _raw(_head(index.chapters.get(chapter.id), summary, meta)),
+        _head(index.chapters.get(chapter.id), summary),
         _raw(LEGEND_HTML),
     ]
     if chapter.operators:

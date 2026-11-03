@@ -104,6 +104,7 @@ from tool.model import (
     validate_catalogue,
 )
 from tool.render import (
+    RUN_FILE,
     RunMeta,
     block_rst,
     decisions_rst,
@@ -113,6 +114,7 @@ from tool.render import (
     operator_rst,
     operators_rst,
     overview_rst,
+    run_html,
 )
 from tool.runner import Engine, EngineVersions, PreflightError, RunOutput, preflight, run_all
 from tool.status import (
@@ -138,7 +140,7 @@ _MANIFEST: Final = ".generated"
 # The paths that a run generates: the index, ``status.json`` and ``example_pages.json`` in the
 # folder of the map, and the pages of a block in the folder of its chapter, all named by the rule
 # of the ids of the catalogue. The folders that people keep in the map are never a block's.
-_GENERATED_PATH: Final = re.compile(r"[a-z0-9_]+\.(?:rst|json)|[a-z0-9_]+/[a-z0-9_]+\.rst")
+_GENERATED_PATH: Final = re.compile(r"[a-z0-9_]+\.(?:rst|json|html)|[a-z0-9_]+/[a-z0-9_]+\.rst")
 _KEPT_FOLDERS: Final = frozenset({"catalogue", "examples", "tool"})
 # The folders of the staging folder: the new files, as they will be in the folder of the map, and
 # the old bytes of every file that the move replaces or removes. Two folders, so that no name of
@@ -679,7 +681,8 @@ def _render(
     ``operators.rst`` and ``decisions.rst`` beside it,
     ``<chapter>/index.rst`` the page of a block, and
     ``<chapter>/<operator>.rst`` the page of an operator, which reads the folders of its examples
-    in ``examples_root``; ``status.json`` and ``example_pages.json`` come after the pages. The
+    in ``examples_root``; ``run.html``, the versions that the heads of the pages read, then
+    ``status.json`` and ``example_pages.json`` come after the pages. The
     diagrams of the pages are checked against the limits of Mermaid, and the error names the page.
     """
     files = {
@@ -701,6 +704,7 @@ def _render(
                 check_limits(block)
             except MermaidLimitError as exc:
                 raise MermaidLimitError(f"{name}: {exc}") from exc
+    files[RUN_FILE] = run_html(meta)
     files[_STATUS_FILE] = _status_json(meta, index)
     files[_EXAMPLE_PAGES_FILE] = _example_pages_json(cat, index)
     return files
@@ -790,7 +794,8 @@ def _is_generated_path(text: str) -> bool:
     """Whether ``text`` can be the path of a file that a run generated, in the folder of the map.
 
     It is ``index.rst``, ``how_to_read.rst``, ``overview.rst``, ``operators.rst``,
-    ``decisions.rst``, ``status.json`` or
+    ``decisions.rst``, ``run.html`` (the versions that the heads of the pages read),
+    ``status.json`` or
     ``example_pages.json`` in the folder of the map, or a page in the folder of a block:
     lower-case letters, digits and ``_`` (the rule of the ids of the catalogue), with ``.rst`` or
     ``.json``, and no folder that people keep in the map (the examples, the tool and the

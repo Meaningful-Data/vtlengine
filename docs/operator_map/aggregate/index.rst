@@ -4,7 +4,14 @@ Aggregate and Analytic operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 8 of 18 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (f66d9b68) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip diverge">🔵 8 of 18 operators all ok</span> · <span class="om-gen">
+
+.. raw:: html
+   :file: ../run.html
+
+.. raw:: html
+
+   </span></div>
 
 .. raw:: html
 

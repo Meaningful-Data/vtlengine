@@ -287,6 +287,7 @@ OUTPUTS = [
     "alpha/first.rst",
     "beta/index.rst",
     "beta/second.rst",
+    "run.html",
     "status.json",
     "example_pages.json",
 ]
