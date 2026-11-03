@@ -56,6 +56,8 @@ from tool.render import (
     LEGEND_HTML,
     RunMeta,
     block_rst,
+    decisions_rst,
+    how_to_read_rst,
     index_rst,
     manual_url,
     mermaid_blocks,
@@ -1050,7 +1052,10 @@ def test_index_structure() -> None:
     rule = "=" * 40  # twice the 20 characters of the title
     assert text.startswith(f"{rule}\nVTL 2.2 operator map\n{rule}\n\n")
     # The parts of the map are on one level of the sidebar: the map has no definitions.
-    toctree = ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   overview\n   operators\n"
+    toctree = (
+        ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n"
+        "   how_to_read\n   overview\n   operators\n   decisions\n"
+    )
     assert toctree in text
     assert titles(text, "-") == []
     assert text.index(toctree) < text.index("Generated on 2026-10-23")
@@ -1061,10 +1066,22 @@ def test_index_structure() -> None:
     assert f"https://github.com/sdmx-twg/vtl/tree/{SPEC}" in text
     parts = [line for line in text.splitlines() if line.startswith("- :doc:")]
     assert [line.split(": ", 1)[0] for line in parts] == [
+        "- :doc:`How to read <how_to_read>`",
         "- :doc:`Overview <overview>`",
         "- :doc:`Operators <operators>`",
+        "- :doc:`Team decisions, errata and adaptations <decisions>`",
     ]
-    assert "the 3 blocks of operators" in parts[1]
+    assert "the 3 blocks of operators" in parts[2]
+    # The results at a glance come before the parts, and the note on the run closes the page.
+    glance = text.split('<div class="om-glance">', 1)[1].split("</div></div>", 1)[0]
+    assert text.index("om-glance") < text.index("- :doc:")
+    assert "<b>5</b> operators · <b>" in glance
+    assert "examples, each run on both engines" in glance
+    statuses = re.findall(r'<span class="om-chip (\w+)">', glance)
+    assert statuses == ["ok", "refused", "partial", "missing", "diverge"]
+    note = text.split(".. container:: om-note\n\n", 1)[1]
+    assert note.lstrip().startswith("Generated on 2026-10-23")
+    assert "Do not edit them by hand." in note
     assert blocks(text) == []
     assert ".md" not in text
 
@@ -1075,7 +1092,7 @@ def test_the_definitions_are_a_part_of_their_own() -> None:
     text = index_rst(cat, index, META)
     assert (
         ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n"
-        "   overview\n   operators\n   definitions/index\n"
+        "   how_to_read\n   overview\n   operators\n   definitions/index\n   decisions\n"
     ) in text
     assert "- :doc:`Definitions <definitions/index>`: the definitions of the VTL-DL" in text
     # The page of the operators has the blocks of operators only, in its table and its toctree.
@@ -1091,7 +1108,7 @@ def test_the_definitions_are_a_part_of_their_own() -> None:
 def test_index_without_blocks_has_only_the_overview() -> None:
     empty = Catalogue(())
     text = index_rst(empty, StatusIndex({}, {}, {}, {}), META)
-    assert ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   overview\n" in text
+    assert ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   how_to_read\n   overview\n" in text
     assert "   overview\n   operators" not in text
     assert ":doc:`Operators <operators>`" not in text
     assert ".. toctree::" not in operators_rst(empty, StatusIndex({}, {}, {}, {}))
@@ -1101,26 +1118,32 @@ def test_overview_structure() -> None:
     text = overview_rst(MAP, INDEX, META)
     rule = "=" * 16  # twice the 8 characters of the title
     assert text.startswith(f"{rule}\nOverview\n{rule}\n\n")
-    assert titles(text, "-") == [
-        "How to read",
-        "Overview diagram",
-        "Blocks",
-        "Not implemented",
-        "📌 Team decisions",
-        ERRATA_TITLE,
-        "Adaptations",
-        "Attribution",
-    ]
-    assert text.split("\nHow to read\n", 1)[0].count(LEGEND_HTML) == 1
+    assert titles(text, "-") == ["Overview diagram", "Blocks", "Not implemented", "Attribution"]
+    assert text.split("\nOverview diagram\n", 1)[0].count(LEGEND_HTML) == 1
     assert ".. toctree::" not in text
     assert blocks(section(text, "Overview diagram")) == [overview_block(MAP, INDEX)]
     assert len(blocks(text)) == 1
-    how = " ".join(section(text, "How to read").split())
+    assert ".md" not in text
+
+
+def test_how_to_read_is_a_page_of_its_own() -> None:
+    text = how_to_read_rst()
+    rule = "=" * 22  # twice the 11 characters of the title
+    assert text.startswith(f"{rule}\nHow to read\n{rule}\n\n")
+    assert text.count(LEGEND_HTML) == 1
+    how = " ".join(text.split())
     for words in ("✅", "❌", "🛡", "💥", "solid", "dashed", "dotted", "Used with", "0.6001–0.7999"):
         assert words in how, words
-    assert "three parts: this overview, the operators and the definitions" in how
+    assert "five parts: this guide, the overview, the operators, the definitions" in how
     assert "Elsewhere the cap is optional." in how
-    assert ".md" not in text
+
+
+def test_decisions_errata_and_adaptations_are_a_page_of_their_own() -> None:
+    text = decisions_rst(MAP)
+    title = "Team decisions, errata and adaptations"
+    rule = "=" * (2 * len(title))
+    assert text.startswith(f"{rule}\n{title}\n{rule}\n\n")
+    assert titles(text, "-") == ["📌 Team decisions", ERRATA_TITLE, "Adaptations"]
 
 
 def test_operators_page_structure() -> None:
@@ -1165,7 +1188,7 @@ def test_overview_lists_the_codes_that_are_not_implemented() -> None:
 
 
 def test_overview_lists_link_to_anchors_by_operator_and_example() -> None:
-    text = overview_rst(MAP, INDEX, META)
+    text = decisions_rst(MAP)
     decisions = section(text, "📌 Team decisions")
     assert (
         f"- `📌 #1049 <{ISSUES}/1049>`__ · "
@@ -1191,11 +1214,11 @@ def test_overview_lists_link_to_anchors_by_operator_and_example() -> None:
 
 
 def test_overview_lists_say_what_they_list_and_when_they_are_empty() -> None:
-    text = overview_rst(MAP, INDEX, META)
+    text = decisions_rst(MAP)
     assert "an expected output, a script or an input" in section(text, ERRATA_TITLE)
     assert "These are not errata." in section(text, "Adaptations")
     empty = Catalogue((CONDITIONAL,))
-    text = overview_rst(empty, index_of(empty), META)
+    text = decisions_rst(empty)
     assert "None: no expected output follows a recorded team decision." in text
     assert "None: nothing in the manual's examples had to be corrected." in text
     assert "None: no example needed an adaptation." in text
@@ -1205,7 +1228,7 @@ def test_overview_escapes_the_free_text_of_the_lists() -> None:
     erratum = "the *manual* prints a_b | c, `x` and \\ and ends with ::"
     variant = form("v", "f(x)", NUMBER, NUMBER, authored("case", erratum=erratum))
     cat = Catalogue((Chapter("c", "C", (operator("o", "Some_op", "f", variant),)),))
-    errata = section(overview_rst(cat, index_of(cat), META), ERRATA_TITLE)
+    errata = section(decisions_rst(cat), ERRATA_TITLE)
     assert (
         "- `Some\\_op · Case <c/o.html#ex-v-case>`__ (C › ``f(x)``): the \\*manual\\* prints "
         "a\\_b \\| c, \\`x\\` and \\\\ and ends with :\\:"
@@ -1213,7 +1236,7 @@ def test_overview_escapes_the_free_text_of_the_lists() -> None:
     typeset = 'it\'s "a" -- b --- c - d... e. . . f'
     variant = form("v", "f(x)", NUMBER, NUMBER, authored("case", erratum=typeset))
     cat = Catalogue((Chapter("c", "C", (operator("o", "Some_op", "f", variant),)),))
-    errata = section(overview_rst(cat, index_of(cat), META), ERRATA_TITLE)
+    errata = section(decisions_rst(cat), ERRATA_TITLE)
     assert ': it\\\'s \\"a\\" \\-\\- b \\-\\-\\- c - d\\.\\.\\. e\\. \\. \\. f' in errata
 
 
@@ -1343,7 +1366,7 @@ def test_a_label_that_a_literal_cannot_hold_is_escaped_text() -> None:
         for name, label in labels.items()
     )
     cat = Catalogue((Chapter("c", "C", (operator("o", "O", "o", *variants),)),))
-    errata = section(overview_rst(cat, index_of(cat), META), ERRATA_TITLE).splitlines()
+    errata = section(decisions_rst(cat), ERRATA_TITLE).splitlines()
 
     def item(variant: str, label: str) -> str:
         return f"- `O · Minimal <c/o.html#ex-{variant}-minimal>`__ (C › {label}): e"

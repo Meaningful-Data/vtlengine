@@ -279,8 +279,10 @@ def problems(capsys: pytest.CaptureFixture[str]) -> list[str]:
 # manifest that lists them, which it writes last.
 OUTPUTS = [
     "index.rst",
+    "how_to_read.rst",
     "overview.rst",
     "operators.rst",
+    "decisions.rst",
     "alpha/index.rst",
     "alpha/first.rst",
     "beta/index.rst",
@@ -1167,7 +1169,10 @@ def test_the_run_writes_every_file_and_leaves_nothing_else(world: World) -> None
     assert index.startswith(f"{rule}\nVTL 2.2 operator map\n{rule}\n")
     # The index has the parts of the map in its toctree, and the page of the operators has the
     # blocks (the map of the world has no definitions).
-    assert ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   overview\n   operators\n" in index
+    assert (
+        ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n"
+        "   how_to_read\n   overview\n   operators\n   decisions\n"
+    ) in index
     operators = (world.root / "operators.rst").read_text(encoding="utf-8")
     assert (
         ".. toctree::\n   :maxdepth: 1\n   :hidden:\n\n   alpha/index\n   beta/index\n" in operators
@@ -1604,7 +1609,7 @@ def test_the_summary_says_the_stale_files_and_the_example_statuses_apart(
     # The number of files that were removed, then the statuses of the examples, each as a
     # statement of its own: the counts of the statuses are not read as counts of stale files.
     assert lines[1:] == [
-        "wrote 7 pages, status.json, example_pages.json and .generated; removed 3 stale files. "
+        "wrote 9 pages, status.json, example_pages.json and .generated; removed 3 stale files. "
         "Examples: 🟢 3 · 🟡 0 · 🛡️ 0 · 🔴 1 · 🔵 0"
     ]
 
@@ -1865,7 +1870,7 @@ def failure(kind: type[BaseException]) -> BaseException:
 # to be removed. The third is the names that the run noted for putting back.
 RESTORE_CASES = [
     (3, "index.rst", OUTPUTS[:3]),
-    (5, "alpha/index.rst", OUTPUTS[:5]),
+    (7, "alpha/index.rst", OUTPUTS[:7]),
     (len(OUTPUTS) + 1, "gone/page.rst", [*OUTPUTS, *STALE, MANIFEST]),
 ]
 

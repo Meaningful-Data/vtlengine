@@ -26,8 +26,10 @@ Elsewhere the cap is optional.
    each in a process of its own. A ``random`` example runs twice, to see whether its values are
    stable.
 3. The status of each example comes from the two runs (``tool.status``), the statuses are rolled
-   up, and the files are rendered: ``index.rst``, the overview (``overview.rst``), the page of
-   the blocks of operators (``operators.rst``), a page for each block (``<chapter>/index.rst``)
+   up, and the files are rendered: ``index.rst``, how to read (``how_to_read.rst``), the
+   overview (``overview.rst``), the page of the blocks of operators (``operators.rst``), the team
+   decisions, errata and adaptations (``decisions.rst``), a page for each block
+   (``<chapter>/index.rst``)
    and for each operator (``<chapter>/<operator>.rst``), ``status.json`` and
    ``example_pages.json``, which says for each example its title, status, marks and where it is
    on the page of its operator. The pages are documents of the Sphinx docs of the repository
@@ -104,6 +106,8 @@ from tool.model import (
 from tool.render import (
     RunMeta,
     block_rst,
+    decisions_rst,
+    how_to_read_rst,
     index_rst,
     mermaid_blocks,
     operator_rst,
@@ -149,8 +153,10 @@ _VERSION: Final = re.compile(r"""^__version__\s*=\s*["']([^"']+)["']""", re.MULT
 # tool before the fields ``error_type`` and ``error_code`` says them so.
 _ERROR_HEAD: Final = re.compile(r"^(\w+)(?: (\d+(?:-\d+)+))?(?::|$)")
 _INDEX_FILE: Final = "index.rst"
+_HOW_TO_READ_FILE: Final = "how_to_read.rst"
 _OVERVIEW_FILE: Final = "overview.rst"
 _OPERATORS_FILE: Final = "operators.rst"
+_DECISIONS_FILE: Final = "decisions.rst"
 # How to run the generator, for ``--help``; the docstring and the index say the same.
 _HOW_TO_RUN: Final = """\
 It needs a Python that can import vtlengine, with the compiled parser in src/
@@ -669,7 +675,8 @@ def _render(
 ) -> dict[str, str]:
     """The text of every file by its path in the folder of the map, each diagram checked.
 
-    ``index.rst`` is the entry page, with ``overview.rst`` and ``operators.rst`` beside it,
+    ``index.rst`` is the entry page, with ``how_to_read.rst``, ``overview.rst``,
+    ``operators.rst`` and ``decisions.rst`` beside it,
     ``<chapter>/index.rst`` the page of a block, and
     ``<chapter>/<operator>.rst`` the page of an operator, which reads the folders of its examples
     in ``examples_root``; ``status.json`` and ``example_pages.json`` come after the pages. The
@@ -677,8 +684,10 @@ def _render(
     """
     files = {
         _INDEX_FILE: index_rst(cat, index, meta),
+        _HOW_TO_READ_FILE: how_to_read_rst(),
         _OVERVIEW_FILE: overview_rst(cat, index, meta),
         _OPERATORS_FILE: operators_rst(cat, index),
+        _DECISIONS_FILE: decisions_rst(cat),
     }
     for chapter in cat.chapters:
         files[f"{chapter.id}/{_INDEX_FILE}"] = block_rst(chapter, cat, index, meta)
@@ -780,7 +789,8 @@ def _read_manifest(root: Path) -> list[str]:
 def _is_generated_path(text: str) -> bool:
     """Whether ``text`` can be the path of a file that a run generated, in the folder of the map.
 
-    It is ``index.rst``, ``overview.rst``, ``operators.rst``, ``status.json`` or
+    It is ``index.rst``, ``how_to_read.rst``, ``overview.rst``, ``operators.rst``,
+    ``decisions.rst``, ``status.json`` or
     ``example_pages.json`` in the folder of the map, or a page in the folder of a block:
     lower-case letters, digits and ``_`` (the rule of the ids of the catalogue), with ``.rst`` or
     ``.json``, and no folder that people keep in the map (the examples, the tool and the

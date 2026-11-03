@@ -99,3 +99,27 @@ details.om-example > summary { cursor: pointer; font-size: 15px; }
 .rst-content table.om-data th {
     white-space: pre-wrap !important;
 }
+
+/* The index: the results at a glance, a bar of the examples by status and a chip for each, and
+ * the note on how the results were made, in small print. */
+.om-glance {
+    border: 1px solid #e1e4e5;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 0 0 16px;
+    background: #f8f9fa;
+}
+.om-glance p { margin: 0 0 6px; }
+.om-glance-bar {
+    display: flex;
+    height: 14px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+.om-glance-bar .ok { background: #5cb85c; }
+.om-glance-bar .refused { background: #9ed49e; }
+.om-glance-bar .partial { background: #ffc107; }
+.om-glance-bar .missing { background: #dc3545; }
+.om-glance-bar .diverge { background: #007bff; }
+.om-note { font-size: 13px; line-height: 18px; color: #777; }
