@@ -45,7 +45,7 @@ A node for each block, with how many operators it has, and how many of them are 
        chapter__numeric["Numeric operators<br/>18 operators · 🟢16 🟡1 🔵1"]:::diverge
        chapter__comparison["Comparison operators<br/>12 operators · 🟢12"]:::ok
        chapter__boolean["Boolean operators<br/>4 operators · 🟢4"]:::ok
-       chapter__time["Time operators<br/>17 operators · 🟢12 🟡3 🛡️2"]:::partial
+       chapter__time["Time operators<br/>17 operators · 🟢16 🟡1"]:::partial
        chapter__set["Set operators<br/>4 operators · 🟢4"]:::ok
        chapter__hierarchy["Hierarchical aggregation<br/>1 operator · 🟡1"]:::partial
        chapter__aggregate["Aggregate and Analytic operators<br/>18 operators · 🟢8 🟡9 🔵1"]:::diverge
@@ -162,9 +162,9 @@ The counts are over the forms of the operators of each block.
      - 🟡
      - 17
      - 54
-     - 45
-     - 4
-     - 4
+     - 53
+     - 0
+     - 0
      - 1
      - 0
    * - :doc:`Set operators <set/index>`
@@ -234,9 +234,9 @@ The counts are over the forms of the operators of each block.
      - 🔵
      - 115
      - 727
-     - 632
-     - 54
-     - 12
+     - 640
+     - 50
+     - 8
      - 21
      - 8
 
@@ -267,6 +267,14 @@ The codes of the errors of vtlengine that say that it does not implement somethi
 
 Expected outputs that follow a recorded team decision. The notes of an example say what the manual says and how its output was derived.
 
+- `📌 #394 <https://github.com/Meaningful-Data/vtlengine/issues/394>`__ · `Number of days to years and days · Manual example 1 <time/daytoyear.html#ex-comp-manual-ex-1>`__ (Time operators › ``calc daytoyear(comp)``)
+- `📌 #394 <https://github.com/Meaningful-Data/vtlengine/issues/394>`__ · `Number of days to years and days · Years of 365 days <time/daytoyear.html#ex-sc-years-of-365-days>`__ (Time operators › ``daytoyear(sc)``)
+- `📌 #394 <https://github.com/Meaningful-Data/vtlengine/issues/394>`__ · `Number of days to months and days · Manual example 2 <time/daytomonth.html#ex-comp-manual-ex-2>`__ (Time operators › ``calc daytomonth(comp)``)
+- `📌 #394 <https://github.com/Meaningful-Data/vtlengine/issues/394>`__ · `Number of days to months and days · Months of thirty days <time/daytomonth.html#ex-sc-months-of-thirty-days>`__ (Time operators › ``daytomonth(sc)``)
+- `📌 #394 <https://github.com/Meaningful-Data/vtlengine/issues/394>`__ · `Years and days to number of days · Manual example 1 <time/yeartoday.html#ex-comp-manual-ex-1>`__ (Time operators › ``calc yeartoday(comp)``)
+- `📌 #394 <https://github.com/Meaningful-Data/vtlengine/issues/394>`__ · `Years and days to number of days · One year and twenty days <time/yeartoday.html#ex-sc-one-year-and-twenty-days>`__ (Time operators › ``yeartoday(sc)``)
+- `📌 #394 <https://github.com/Meaningful-Data/vtlengine/issues/394>`__ · `Months and days to number of days · Iso month and day durations <time/monthtoday.html#ex-comp-iso-month-and-day-durations>`__ (Time operators › ``calc monthtoday(comp)``)
+- `📌 #394 <https://github.com/Meaningful-Data/vtlengine/issues/394>`__ · `Months and days to number of days · Three months and ten days <time/monthtoday.html#ex-sc-three-months-and-ten-days>`__ (Time operators › ``monthtoday(sc)``)
 - `📌 #1193 <https://github.com/Meaningful-Data/vtlengine/issues/1193>`__ · `Hierarchical roll-up · Overlapping rules that agree <hierarchy/hierarchy.html#ex-condition-overlapping-rules-that-agree>`__ (Hierarchical aggregation › ``hierarchy(DS, HR condition C)``)
 - `📌 #1049 <https://github.com/Meaningful-Data/vtlengine/issues/1049>`__ · `Counting the number of data points · Single group no identifiers <aggregate/count.html#ex-ds-no-group-single-group-no-identifiers>`__ (Aggregate and Analytic operators › ``count(DS)``)
 - `📌 #1049 <https://github.com/Meaningful-Data/vtlengine/issues/1049>`__ · `Counting the number of data points · All null data point ignored <aggregate/count.html#ex-ds-group-by-all-null-data-point-ignored>`__ (Aggregate and Analytic operators › ``count(DS group by Id)``)

@@ -13474,67 +13474,67 @@
     },
     "time/daytomonth/comp/manual_ex_2": {
       "duckdb": {
-        "detail": "type of Me_2 expected Duration got String",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "type of Me_2 expected Duration got String",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "time/daytomonth/sc/months_of_thirty_days": {
       "duckdb": {
-        "detail": "type expected Duration got String",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "type expected Duration got String",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "time/daytoyear/comp/manual_ex_1": {
       "duckdb": {
-        "detail": "type of Me_2 expected Duration got String",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "type of Me_2 expected Duration got String",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "time/daytoyear/sc/years_of_365_days": {
       "duckdb": {
-        "detail": "type expected Duration got String",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "type expected Duration got String",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "time/fill_time_series/all_date/manual_ex_4": {
       "duckdb": {
@@ -13826,35 +13826,35 @@
     },
     "time/monthtoday/comp/iso_month_and_day_durations": {
       "duckdb": {
-        "detail": "DataLoadError 0-3-1-6: On Dataset DS_1 loading: not possible to cast column Me_1 to Duration. Error found: \"Invalid format: 'P2M5D'\" Please check loaded file DS_r",
-        "error_code": "0-3-1-6",
-        "error_type": "DataLoadError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "DataLoadError 0-3-1-6: On Dataset DS_1 loading: not possible to cast column Me_1 to Duration. Error found: \"Impossible to cast P2M5D from type str to Duration.\" Please check loaded file DS_r",
-        "error_code": "0-3-1-6",
-        "error_type": "DataLoadError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "time/monthtoday/sc/three_months_and_ten_days": {
       "duckdb": {
-        "detail": "SemanticError 1-1-5-6: Impossible to cast P3M10D from type String to Duration. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-5-6",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-5-6: Impossible to cast P3M10D from type String to Duration. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-5-6",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "time/period_indicator/comp/manual_ex_2": {
       "duckdb": {
@@ -14178,35 +14178,35 @@
     },
     "time/yeartoday/comp/manual_ex_1": {
       "duckdb": {
-        "detail": "DataLoadError 0-3-1-6: On Dataset DS_1 loading: not possible to cast column Me_1 to Duration. Error found: \"Invalid format: 'P2Y230D'\" Please check loaded file DS_r",
-        "error_code": "0-3-1-6",
-        "error_type": "DataLoadError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "DataLoadError 0-3-1-6: On Dataset DS_1 loading: not possible to cast column Me_1 to Duration. Error found: \"Impossible to cast P2Y230D from type str to Duration.\" Please check loaded file DS_r",
-        "error_code": "0-3-1-6",
-        "error_type": "DataLoadError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "time/yeartoday/sc/one_year_and_twenty_days": {
       "duckdb": {
-        "detail": "SemanticError 1-1-5-6: Impossible to cast P1Y20D from type String to Duration. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-5-6",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-5-6: Impossible to cast P1Y20D from type String to Duration. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-5-6",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "validation/check/all/explicit_all_same_as_default": {
       "duckdb": {
@@ -15110,7 +15110,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "95864f4b",
+    "vtlengine_commit": "3828a83f",
     "vtlengine_version": "1.9.7rc1"
   }
 }

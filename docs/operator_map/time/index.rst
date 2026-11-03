@@ -4,7 +4,7 @@ Time operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 12 of 17 operators all ok, 2 refused</span> · <span class="om-gen">vtlengine 1.9.7rc1 (95864f4b) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 16 of 17 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (3828a83f) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -39,10 +39,10 @@ Time operators
        time__getmonth["Extract the month · getmonth<br/>🟢2"]:::ok
        time__dayofmonth["Extract the day of the month · dayofmonth<br/>🟢2"]:::ok
        time__dayofyear["Extract the day of the year · dayofyear<br/>🟢2"]:::ok
-       time__daytoyear["Number of days to years and days · daytoyear<br/>🟡2"]:::partial
-       time__daytomonth["Number of days to months and days · daytomonth<br/>🟡2"]:::partial
-       time__yeartoday["Years and days to number of days · yeartoday<br/>🛡️2"]:::refused
-       time__monthtoday["Months and days to number of days · monthtoday<br/>🛡️2"]:::refused
+       time__daytoyear["Number of days to years and days · daytoyear 📌<br/>🟢2"]:::ok
+       time__daytomonth["Number of days to months and days · daytomonth 📌<br/>🟢2"]:::ok
+       time__yeartoday["Years and days to number of days · yeartoday 📌<br/>🟢2"]:::ok
+       time__monthtoday["Months and days to number of days · monthtoday 📌<br/>🟢2"]:::ok
        time__period_indicator --- B
        time__fill_time_series --- B
        time__flow_to_stock --- B
@@ -131,16 +131,16 @@ Time operators
      - 🟢
      - 2
    * - :doc:`Number of days to years and days <daytoyear>` ``daytoyear``
-     - 🟡
+     - 🟢
      - 2
    * - :doc:`Number of days to months and days <daytomonth>` ``daytomonth``
-     - 🟡
+     - 🟢
      - 2
    * - :doc:`Years and days to number of days <yeartoday>` ``yeartoday``
-     - 🛡️
+     - 🟢
      - 2
    * - :doc:`Months and days to number of days <monthtoday>` ``monthtoday``
-     - 🛡️
+     - 🟢
      - 2
 
 .. rubric:: Types
@@ -316,62 +316,6 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - 💥 IndexError
      - 💥 IndexError
      - IndexError: list index out of range
-   * - :doc:`Number of days to years and days <daytoyear>`
-     - `calc daytoyear(comp) <daytoyear.html#form-comp>`__
-     - 🟡
-     - `Manual example 1 <daytoyear.html#ex-comp-manual-ex-1>`__
-     - ❌
-     - ❌
-     - type of Me\_2 expected Duration got String
-   * - :doc:`Number of days to years and days <daytoyear>`
-     - `daytoyear(sc) <daytoyear.html#form-sc>`__
-     - 🟡
-     - `Years of 365 days <daytoyear.html#ex-sc-years-of-365-days>`__
-     - ❌
-     - ❌
-     - type expected Duration got String
-   * - :doc:`Number of days to months and days <daytomonth>`
-     - `calc daytomonth(comp) <daytomonth.html#form-comp>`__
-     - 🟡
-     - `Manual example 2 <daytomonth.html#ex-comp-manual-ex-2>`__
-     - ❌
-     - ❌
-     - type of Me\_2 expected Duration got String
-   * - :doc:`Number of days to months and days <daytomonth>`
-     - `daytomonth(sc) <daytomonth.html#form-sc>`__
-     - 🟡
-     - `Months of thirty days <daytomonth.html#ex-sc-months-of-thirty-days>`__
-     - ❌
-     - ❌
-     - type expected Duration got String
-   * - :doc:`Years and days to number of days <yeartoday>`
-     - `calc yeartoday(comp) <yeartoday.html#form-comp>`__
-     - 🛡️
-     - `Manual example 1 <yeartoday.html#ex-comp-manual-ex-1>`__
-     - 🛡 0-3-1-6
-     - 🛡 0-3-1-6
-     - pandas: DataLoadError 0-3-1-6: On Dataset DS\_1 loading: not possible to cast column Me\_1 to Duration. Error found: \"Impossible to cast P2Y230D from type str to Duration.\" Please check loaded file DS\_…
-   * - :doc:`Years and days to number of days <yeartoday>`
-     - `yeartoday(sc) <yeartoday.html#form-sc>`__
-     - 🛡️
-     - `One year and twenty days <yeartoday.html#ex-sc-one-year-and-twenty-days>`__
-     - 🛡 1-1-5-6
-     - 🛡 1-1-5-6
-     - SemanticError 1-1-5-6: Impossible to cast P1Y20D from type String to Duration. Please check transformation with output Dataset DS\_r
-   * - :doc:`Months and days to number of days <monthtoday>`
-     - `calc monthtoday(comp) <monthtoday.html#form-comp>`__
-     - 🛡️
-     - `Iso month and day durations <monthtoday.html#ex-comp-iso-month-and-day-durations>`__
-     - 🛡 0-3-1-6
-     - 🛡 0-3-1-6
-     - pandas: DataLoadError 0-3-1-6: On Dataset DS\_1 loading: not possible to cast column Me\_1 to Duration. Error found: \"Impossible to cast P2M5D from type str to Duration.\" Please check loaded file DS\_r;…
-   * - :doc:`Months and days to number of days <monthtoday>`
-     - `monthtoday(sc) <monthtoday.html#form-sc>`__
-     - 🛡️
-     - `Three months and ten days <monthtoday.html#ex-sc-three-months-and-ten-days>`__
-     - 🛡 1-1-5-6
-     - 🛡 1-1-5-6
-     - SemanticError 1-1-5-6: Impossible to cast P3M10D from type String to Duration. Please check transformation with output Dataset DS\_r
 
 .. toctree::
    :maxdepth: 1

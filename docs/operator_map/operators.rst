@@ -79,9 +79,9 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🟡
      - 17
      - 54
-     - 45
-     - 4
-     - 4
+     - 53
+     - 0
+     - 0
      - 1
      - 0
    * - :doc:`Set operators <set/index>`
@@ -142,9 +142,9 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🔵
      - 111
      - 698
-     - 611
-     - 51
-     - 11
+     - 619
+     - 47
+     - 7
      - 17
      - 8
 

@@ -6737,34 +6737,34 @@
   },
   "time/daytomonth/comp/manual_ex_2": {
     "anchor": "ex-comp-manual-ex-2",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "time/daytomonth.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Manual example 2"
   },
   "time/daytomonth/sc/months_of_thirty_days": {
     "anchor": "ex-sc-months-of-thirty-days",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "time/daytomonth.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Months of thirty days"
   },
   "time/daytoyear/comp/manual_ex_1": {
     "anchor": "ex-comp-manual-ex-1",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "time/daytoyear.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Manual example 1"
   },
   "time/daytoyear/sc/years_of_365_days": {
     "anchor": "ex-sc-years-of-365-days",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "time/daytoyear.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Years of 365 days"
   },
   "time/fill_time_series/all_date/manual_ex_4": {
@@ -6913,18 +6913,18 @@
   },
   "time/monthtoday/comp/iso_month_and_day_durations": {
     "anchor": "ex-comp-iso-month-and-day-durations",
-    "duckdb": "🛡 0-3-1-6",
+    "duckdb": "✅",
     "operator_page": "time/monthtoday.html",
-    "pandas": "🛡 0-3-1-6",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Iso month and day durations"
   },
   "time/monthtoday/sc/three_months_and_ten_days": {
     "anchor": "ex-sc-three-months-and-ten-days",
-    "duckdb": "🛡 1-1-5-6",
+    "duckdb": "✅",
     "operator_page": "time/monthtoday.html",
-    "pandas": "🛡 1-1-5-6",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Three months and ten days"
   },
   "time/period_indicator/comp/manual_ex_2": {
@@ -7089,18 +7089,18 @@
   },
   "time/yeartoday/comp/manual_ex_1": {
     "anchor": "ex-comp-manual-ex-1",
-    "duckdb": "🛡 0-3-1-6",
+    "duckdb": "✅",
     "operator_page": "time/yeartoday.html",
-    "pandas": "🛡 0-3-1-6",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Manual example 1"
   },
   "time/yeartoday/sc/one_year_and_twenty_days": {
     "anchor": "ex-sc-one-year-and-twenty-days",
-    "duckdb": "🛡 1-1-5-6",
+    "duckdb": "✅",
     "operator_page": "time/yeartoday.html",
-    "pandas": "🛡 1-1-5-6",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "One year and twenty days"
   },
   "validation/check/all/explicit_all_same_as_default": {

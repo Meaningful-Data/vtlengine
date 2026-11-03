@@ -4,7 +4,7 @@ Not equal to · ``<>``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 7 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Comparison%20operators/Not%20equal%20to/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (95864f4b) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 7 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Comparison%20operators/Not%20equal%20to/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (3828a83f) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 

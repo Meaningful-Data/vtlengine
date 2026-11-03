@@ -6,15 +6,15 @@ The time series operators (``fill_time_series``, ``flow_to_stock``, ``stock_to_f
 *time_period* and *date* types with its limits method (absent, ``single``, ``all``); its manual
 examples on the *time* type (``single`` and ``all``) are two more variants. The manual writes
 its *time* values as ``2010M1/2010M12``, which vtlengine cannot load: those inputs are rewritten
-as ``2010-01-01/2010-12-31`` (adaptations). Its ISO durations such as ``P2Y230D`` are kept:
-vtlengine has no equivalent representation, so they are engine findings, not adaptations.
+as ``2010-01-01/2010-12-31`` (adaptations). Its ISO durations such as ``P2Y230D`` are kept, as
+Strings: a Duration holds only a period indicator, and the operators of the days and durations
+take and return Strings (team decision #394).
 
 The other operators have the operand levels of their syntax, and ``time_agg`` the optional
 parameters (``periodIndFrom``, ``first``/``last``) and its use inside ``group all``. VTL has no
 time literals: the scalar date or time period of an example is an input scalar of that type
-(``input/scalars.csv``), and the duration of ``monthtoday`` and ``yeartoday`` a ``cast`` of a
-string, with no mask (vtlengine implements no cast mask), as a Duration input scalar refuses an
-ISO 8601 text.
+(``input/scalars.csv``), and the duration of ``monthtoday`` and ``yeartoday`` an input String
+(#394).
 
 Every form declares the types it takes and gives, the finest that its page states:
 
@@ -48,6 +48,8 @@ _TIME_ADAPTATION = (
     "the manual's time values YYYYMm/YYYYMm (e.g. 2010M1/2010M12), which vtlengine cannot load, "
     "are rewritten as YYYY-MM-DD/YYYY-MM-DD (2010-01-01/2010-12-31)"
 )
+# Duration holds only the period indicators: ISO 8601 durations are Strings (#394).
+_ISO_DURATION = 394
 _DUPLICATED_G = (
     "the expected output repeats Id_1 = G on the second data point, where the input has H"
 )
@@ -534,14 +536,14 @@ CHAPTER = Chapter(
         _days_to_duration(
             "daytoyear",
             "Number of days to years and days",
-            manual("ex_1", erratum=_DUPLICATED_G),
-            authored("years_of_365_days"),
+            manual("ex_1", erratum=_DUPLICATED_G, decision=_ISO_DURATION),
+            authored("years_of_365_days", decision=_ISO_DURATION),
         ),
         _days_to_duration(
             "daytomonth",
             "Number of days to months and days",
-            manual("ex_2", erratum=_DUPLICATED_G),
-            authored("months_of_thirty_days"),
+            manual("ex_2", erratum=_DUPLICATED_G, decision=_ISO_DURATION),
+            authored("months_of_thirty_days", decision=_ISO_DURATION),
         ),
         _duration_to_days(
             "yeartoday",
@@ -552,14 +554,15 @@ CHAPTER = Chapter(
                     "the expected data points are those of Number days to duration "
                     "ex_1 (Me_1 = 240, Me_2 = P0Y240D...), not yeartoday of DS_1"
                 ),
+                decision=_ISO_DURATION,
             ),
-            authored("one_year_and_twenty_days"),
+            authored("one_year_and_twenty_days", decision=_ISO_DURATION),
         ),
         _duration_to_days(
             "monthtoday",
             "Months and days to number of days",
-            authored("iso_month_and_day_durations"),
-            authored("three_months_and_ten_days"),
+            authored("iso_month_and_day_durations", decision=_ISO_DURATION),
+            authored("three_months_and_ten_days", decision=_ISO_DURATION),
         ),
     ),
 )

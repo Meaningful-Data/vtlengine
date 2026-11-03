@@ -4,7 +4,7 @@ Hierarchical aggregation
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 0 of 1 operator all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (95864f4b) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 0 of 1 operator all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (3828a83f) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
