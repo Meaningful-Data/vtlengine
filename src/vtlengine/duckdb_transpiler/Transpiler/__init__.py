@@ -4552,15 +4552,16 @@ FROM (
             item_rule_ctes[parsed.left_code_item].append(rule_cte)
             current = next_pivot
 
-        read_items = {ci for parsed in parsed_rules for ci in parsed.right_code_items}
         keys = ", ".join(f"r.{quote_name(c)}" for c in other_ids)
         join_sql = f"USING ({', '.join(join_keys)})" if join_keys else "ON TRUE"
         guards = []
         for item, rule_ctes in item_rule_ctes.items():
-            if len(rule_ctes) < 2 or item not in read_items:
+            readers = [parsed for parsed in parsed_rules if item in parsed.right_code_items]
+            if len(rule_ctes) < 2 or not readers:
                 continue
-            # Only where the operand has no non-null data point for the code item
-            lacking = f"NOT (o.{_has_col(item)} = 1 AND o.{_val_col(item)} IS NOT NULL)"
+            # Only where the operand has no non-null data point for the code item, as a rule
+            # that reads it sees the operand (issue #1223)
+            lacking = " OR ".join(dict.fromkeys(self._hr_operand_lacks(item, p) for p in readers))
             union = " UNION ALL ".join(
                 f"SELECT {keys or '1 AS _one'} FROM {c} r JOIN _pivot o {join_sql} WHERE {lacking}"
                 for c in rule_ctes
@@ -4577,6 +4578,17 @@ FROM (
             cte.cte("_dp_pivot", f"SELECT * FROM {current} WHERE {' AND '.join(guards)}")
             current = "_dp_pivot"
         return current
+
+    @classmethod
+    def _hr_operand_lacks(cls, code_item: str, reader: _ParsedHRRule) -> str:
+        """Where the operand pivot ``o`` has no non-null data point of a code item that a rule
+        reads, through the view of the rule when it has one (issue #1223)."""
+        if code_item in cls._hr_view_items(reader):
+            val = _view_col("val", reader.index, code_item)
+            has = _view_col("has", reader.index, code_item)
+        else:
+            val, has = _val_col(code_item), _has_col(code_item)
+        return f"NOT (o.{has} = 1 AND o.{val} IS NOT NULL)"
 
     @classmethod
     def _hr_left_from_operand(cls, pivot: str, parsed: _ParsedHRRule, other_ids: List[str]) -> str:

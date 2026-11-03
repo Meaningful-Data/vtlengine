@@ -5169,3 +5169,35 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_9(self):
+        """
+        HIERARCHICAL RULSET: check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable condition At_1, Me_1
+                        rule Id_2) is
+                        R1: when At_1 = "x" then A = B + C errorcode "E1" errorlevel 1;
+                        R2: when Me_1 > 0 then A = B - C errorcode "E2" errorlevel 2;
+                        R3: when At_1 = "x" then D = A + E errorcode "E3" errorlevel 3
+                    end hierarchical ruleset;
+
+                    DS_r <- check_hierarchy(DS_1, HR_1 condition At_1, Me_1 rule Id_2
+                                dataset_priority all);
+
+        Description: R3 reads A, which R1 and R2 compute with different values. The A of
+        the operand does not satisfy the condition of R3, so R3 does not read it, and the
+        runtime error is raised.
+
+        Git Branch: #1223.
+        Goal: Check dataset_priority reads the operand as the condition of the reading rule
+        sees it.
+        """
+
+        code = "GH_1223_9"
+        number_inputs = 1
+        exception_code = "2-1-10-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
