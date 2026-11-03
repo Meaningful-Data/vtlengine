@@ -2327,10 +2327,10 @@ def test_a_progress_line_says_how_far_and_how_long(
     assert generate._progress_line(done, total, elapsed, "c/o/v/e on pandas") == line
 
 
-def test_progress_lines_come_every_30_seconds_and_at_the_end(
+def test_progress_lines_come_every_5_seconds_and_at_the_end(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    times = iter([0.0, 10.0, 29.0, 31.0, 45.0, 62.0, 70.0])
+    times = iter([0.0, 2.0, 4.0, 6.0, 8.0, 12.0, 13.0])
     monkeypatch.setattr(generate, "_now", lambda: next(times))
     progress = generate._RunProgress(tmp_path)
     for done in range(1, 7):

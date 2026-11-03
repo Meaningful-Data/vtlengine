@@ -26,7 +26,7 @@ Elsewhere the cap is optional.
    preflight of ``tool.runner``). Then every example runs on the pandas and the DuckDB engine,
    each in a process of its own, forked from a server that imported the engines once (with
    ``--fresh-processes``, or where the platform cannot fork, a fresh interpreter each). A
-   ``random`` example runs twice, to see whether its values are stable. A line every 30 seconds
+   ``random`` example runs twice, to see whether its values are stable. A line every 5 seconds
    says how far the run has got.
 3. The status of each example comes from the two runs (``tool.status``), the statuses are rolled
    up, and the files are rendered: ``index.rst``, how to read (``how_to_read.rst``), the
@@ -352,7 +352,7 @@ def _run(
 
 # --- How far a run has got ---
 
-_PROGRESS_EVERY_S: Final = 30.0  # a line at most this often, and one at the end
+_PROGRESS_EVERY_S: Final = 5.0  # a line at most this often, and one at the end
 
 
 def _now() -> float:
