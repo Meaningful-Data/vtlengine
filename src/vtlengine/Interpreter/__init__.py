@@ -1515,7 +1515,20 @@ class InterpreterAnalyzer(ASTTemplate):
             )
             result.data.reset_index(drop=True, inplace=True)
 
+    @staticmethod
+    def _check_join_aliases(node: AST.JoinOp) -> None:
+        """Aliases are mandatory for a Data Set that appears more than once in the join and for
+        a Data Set that results from a sub-expression."""
+        operands = [c.left if isinstance(c, AST.BinOp) and c.op == AS else c for c in node.clauses]
+        names = [operand.value for operand in operands if isinstance(operand, AST.VarID)]
+        for clause in node.clauses:
+            if isinstance(clause, AST.BinOp) and clause.op == AS:
+                continue
+            if not isinstance(clause, AST.VarID) or names.count(clause.value) > 1:
+                raise SemanticError("1-1-13-2", op=node.op)
+
     def visit_JoinOp(self, node: AST.JoinOp) -> None:
+        self._check_join_aliases(node)
         clause_elements = []
         for clause in node.clauses:
             clause_elements.append(self.visit(clause))

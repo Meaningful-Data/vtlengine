@@ -2250,7 +2250,7 @@ class JoinsGeneralTests(JoinHelper):
         code = "GL_384_6"
         number_inputs = 2
 
-        error_code = "1-1-13-9"
+        error_code = "1-1-13-2"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2558,3 +2558,75 @@ class JoinsGeneralTests(JoinHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code="1-1-13-22"
         )
+
+    def test_GH_1221_1(self):
+        """
+        Expression: DS_r <- inner_join(DS_1[filter Me_1 > 1], DS_2);
+        Description: The alias is mandatory for the result of a sub-expression.
+        Git Issue: GH_1221.
+        """
+        code = "GH_1221_1"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-2"
+        )
+
+    def test_GH_1221_2(self):
+        """
+        Expression: DS_r <- inner_join(check_datapoint(DS_1, DPR all), DS_2);
+        Description: The alias is mandatory for the result of a sub-expression, which the
+                     DuckDB engine rejected with a raw ParserException.
+        Git Issue: GH_1221.
+        """
+        code = "GH_1221_2"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-2"
+        )
+
+    def test_GH_1221_3(self):
+        """
+        Expression: DS_r <- inner_join(DS_1, DS_1);
+        Description: The alias is mandatory for a Data Set that appears more than once.
+        Git Issue: GH_1221.
+        """
+        code = "GH_1221_3"
+        number_inputs = 1
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-2"
+        )
+
+    def test_GH_1221_4(self):
+        """
+        Expression: DS_r <- full_join(DS_1 as d1, DS_1);
+        Description: The alias is mandatory for every occurrence of a Data Set that appears
+                     more than once.
+        Git Issue: GH_1221.
+        """
+        code = "GH_1221_4"
+        number_inputs = 1
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-2"
+        )
+
+    def test_GH_1221_5(self):
+        """
+        Expression: DS_r <- inner_join(DS_1[filter Me_1 > 1] as d1, DS_2 as d2);
+        Description: An aliased sub-expression is joined, the same on both engines.
+        Git Issue: GH_1221.
+        """
+        code = "GH_1221_5"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1221_6(self):
+        """
+        Expression: DS_r <- inner_join(check_datapoint(DS_1, DPR all) as d1, DS_2 as d2);
+        Description: An aliased check_datapoint result is joined, the same on both engines.
+        Git Issue: GH_1221.
+        """
+        code = "GH_1221_6"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
