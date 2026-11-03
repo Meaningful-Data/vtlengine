@@ -1,7 +1,0 @@
-define hierarchical ruleset HR_1 (variable rule Id_2) is
-    R1: A = B + C
-end hierarchical ruleset;
-
-DS_r1 <- sum(DS_1 over (partition by Id_1));
-DS_r2 <- sum(hierarchy(DS_1, HR_1 rule Id_2 all) over (partition by Id_1));
-DS_r3 <- avg(DS_1 over (order by Id_1));

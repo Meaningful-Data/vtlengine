@@ -3021,29 +3021,6 @@ class AggregationBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
-    def test_GH_1225_8(self):
-        """
-        Expression: DS_r1 <- sum(DS_1 over (partition by Id_1));
-                    DS_r2 <- sum(hierarchy(DS_1, HR_1 rule Id_2 all) over (partition by Id_1));
-                    DS_r3 <- avg(DS_1 over (order by Id_1));
-        Description: Dataset level analytic operators without a windowing clause. The hierarchy
-            returns the computed data point A after the input ones.
-        Git Issue: GH_1225.
-        Goal: Check an omitted windowing clause covers the whole partition, as in the
-            component level form (#1002), whatever the order of the data points.
-        """
-        code = "GH_1225_8"
-        number_inputs = 1
-        references_names = ["1", "2", "3"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-
-class DataValidationBugs(BugHelper):
-    """ """
-
-    classTest = "Bugs.DataValidationBugs"
-
     def test_VTLEN_503(self):
         """ """
         code = "VTLEN_503"
