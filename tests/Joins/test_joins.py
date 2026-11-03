@@ -2568,7 +2568,10 @@ class JoinsGeneralTests(JoinHelper):
         code = "GH_1221_1"
         number_inputs = 2
         self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code="1-1-13-2"
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-13-2",
+            exception_message="At op inner_join: the operand DS_1[filter Me_1 > 1] needs an alias.",
         )
 
     def test_GH_1221_2(self):
@@ -2581,7 +2584,10 @@ class JoinsGeneralTests(JoinHelper):
         code = "GH_1221_2"
         number_inputs = 2
         self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code="1-1-13-2"
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-13-2",
+            exception_message="At op inner_join: the operand check_datapoint(DS_1, DPR all) needs an alias.",
         )
 
     def test_GH_1221_3(self):
@@ -2593,7 +2599,10 @@ class JoinsGeneralTests(JoinHelper):
         code = "GH_1221_3"
         number_inputs = 1
         self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code="1-1-13-2"
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-13-2",
+            exception_message="At op inner_join: the operand DS_1 needs an alias.",
         )
 
     def test_GH_1221_4(self):
@@ -2606,7 +2615,10 @@ class JoinsGeneralTests(JoinHelper):
         code = "GH_1221_4"
         number_inputs = 1
         self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code="1-1-13-2"
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-13-2",
+            exception_message="At op full_join: the operand DS_1 needs an alias.",
         )
 
     def test_GH_1221_5(self):

@@ -8,7 +8,12 @@ import pandas as pd
 
 import vtlengine.AST as AST
 import vtlengine.Operators as Operators
-from vtlengine.AST.ASTString import _format_component_type, _format_constraint, _format_type
+from vtlengine.AST.ASTString import (
+    ASTString,
+    _format_component_type,
+    _format_constraint,
+    _format_type,
+)
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
 from vtlengine.AST.DAG._models import DatasetSchedule
@@ -1525,7 +1530,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if isinstance(clause, AST.BinOp) and clause.op == AS:
                 continue
             if not isinstance(clause, AST.VarID) or names.count(clause.value) > 1:
-                raise SemanticError("1-1-13-2", op=node.op)
+                raise SemanticError("1-1-13-2", op=node.op, operand=ASTString().render(clause))
 
     def visit_JoinOp(self, node: AST.JoinOp) -> None:
         self._check_join_aliases(node)
