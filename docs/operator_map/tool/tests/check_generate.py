@@ -178,13 +178,21 @@ class World:
         return RunOutput(True, [ActualDataset("DS_r", COMPONENTS, rows)], [], stable=True)
 
     def run_all(
-        self, jobs: Sequence[tuple[Path, Engine, int]], workers: int, timeout_s: float
+        self,
+        jobs: Sequence[tuple[Path, Engine, int]],
+        workers: int,
+        timeout_s: float,
+        progress: Callable[[int, int, tuple[Path, Engine]], None] | None = None,
     ) -> dict[tuple[Path, Engine], RunOutput]:
         self.calls.append(list(jobs))
         self.settings.append((workers, timeout_s))
         if self.interrupt:
             raise KeyboardInterrupt
-        return {(path, engine): self.output(path, engine) for path, engine, _ in jobs}
+        outputs = {(path, engine): self.output(path, engine) for path, engine, _ in jobs}
+        for done, key in enumerate(outputs, start=1):
+            if progress is not None:
+                progress(done, len(outputs), key)
+        return outputs
 
     def run_chapters(self) -> set[str]:
         """The chapters of the jobs that were started, in every call."""
@@ -1607,9 +1615,10 @@ def test_the_summary_says_the_stale_files_and_the_example_statuses_apart(
     assert generate.main([]) == 0
     lines = capsys.readouterr().out.splitlines()
     assert lines[0] == f"running {len(KEYS)} examples on both engines (4 at a time)"
+    assert lines[1].startswith("[100%] 8/8 runs · ")  # the progress of the run, at its end
     # The number of files that were removed, then the statuses of the examples, each as a
     # statement of its own: the counts of the statuses are not read as counts of stale files.
-    assert lines[1:] == [
+    assert lines[2:] == [
         "wrote 9 pages, status.json, example_pages.json and .generated; removed 3 stale files. "
         "Examples: 🟢 3 · 🟡 0 · 🛡️ 0 · 🔴 1 · 🔵 0"
     ]
@@ -2164,9 +2173,12 @@ def test_compare_ignores_a_regression_that_does_not_repeat(
     first_run = world.run_all
 
     def wrong_once(
-        jobs: Sequence[tuple[Path, Engine, int]], workers: int, timeout_s: float
+        jobs: Sequence[tuple[Path, Engine, int]],
+        workers: int,
+        timeout_s: float,
+        progress: Callable[[int, int, tuple[Path, Engine]], None] | None = None,
     ) -> dict[tuple[Path, Engine], RunOutput]:
-        outputs = first_run(jobs, workers, timeout_s)
+        outputs = first_run(jobs, workers, timeout_s, progress)
         world.modes.clear()  # the second run is right again
         return outputs
 
@@ -2271,3 +2283,45 @@ def test_compare_and_check_only_cannot_go_together(
         generate.main(["--compare", "--check-only"])
     assert stopped.value.code == 2
     assert "argument --check-only: not allowed with argument --compare" in capsys.readouterr().err
+
+
+# --- How far a run has got ---
+
+
+@pytest.mark.parametrize(
+    ("done", "total", "elapsed", "line"),
+    [
+        (3, 6, 31.0, "[ 50%] 3/6 runs · 31s elapsed · about 31s left · c/o/v/e on pandas"),
+        (1, 1888, 2.5, "[  0%] 1/1888 runs · 2s elapsed · about 1h18m left · c/o/v/e on pandas"),
+        (
+            700,
+            1888,
+            192.0,
+            "[ 37%] 700/1888 runs · 3m12s elapsed · about 5m25s left · c/o/v/e on pandas",
+        ),
+        (6, 6, 62.0, "[100%] 6/6 runs · 1m02s"),
+    ],
+)
+def test_a_progress_line_says_how_far_and_how_long(
+    done: int, total: int, elapsed: float, line: str
+) -> None:
+    assert generate._progress_line(done, total, elapsed, "c/o/v/e on pandas") == line
+
+
+def test_progress_lines_come_every_30_seconds_and_at_the_end(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    times = iter([0.0, 10.0, 29.0, 31.0, 45.0, 62.0, 70.0])
+    monkeypatch.setattr(generate, "_now", lambda: next(times))
+    progress = generate._RunProgress(tmp_path)
+    for done in range(1, 7):
+        progress(done, 6, (tmp_path / "c" / "o" / "v" / f"e{done}", "pandas"))
+    lines = capsys.readouterr().out.splitlines()
+    assert [line.split("]")[0] for line in lines] == ["[ 50%", "[ 83%", "[100%"]
+    assert lines[0].endswith(" · c/o/v/e3 on pandas")
+
+
+def test_a_run_prints_its_progress(world: World, capsys: pytest.CaptureFixture[str]) -> None:
+    assert generate.main([]) == 0
+    lines = capsys.readouterr().out.splitlines()
+    assert any(line.startswith("[100%] 8/8 runs · ") for line in lines)

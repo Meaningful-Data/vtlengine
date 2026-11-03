@@ -88,6 +88,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from datetime import date
@@ -341,8 +342,67 @@ def _run(
 ) -> dict[str, ExampleResult]:
     """Run ``todo`` on both engines and judge the runs: the result of each, by key."""
     examples_root = ROOT / "examples"
-    outputs = run_all(_jobs(todo, examples_root), args.workers, args.timeout)
+    progress = _RunProgress(examples_root)
+    outputs = run_all(_jobs(todo, examples_root), args.workers, args.timeout, progress)
     return _judge(todo, loaded, outputs, examples_root, meta.date)
+
+
+# --- How far a run has got ---
+
+_PROGRESS_EVERY_S: Final = 30.0  # a line at most this often, and one at the end
+
+
+def _now() -> float:
+    return time.monotonic()
+
+
+class _RunProgress:
+    """Prints how far a run has got, every ``_PROGRESS_EVERY_S`` seconds and when it ends.
+
+    One line each time, never a line that rewrites itself: the lines are meant for the log of a
+    CI job as much as for a terminal.
+    """
+
+    def __init__(self, examples_root: Path) -> None:
+        self._root = examples_root
+        self._start = _now()
+        self._last = self._start
+
+    def __call__(self, done: int, total: int, key: tuple[Path, Engine]) -> None:
+        now = _now()
+        if done < total and now - self._last < _PROGRESS_EVERY_S:
+            return
+        self._last = now
+        path, engine = key
+        try:
+            example = path.relative_to(self._root).as_posix()
+        except ValueError:
+            example = path.name
+        line = _progress_line(done, total, now - self._start, f"{example} on {engine}")
+        print(line, flush=True)
+
+
+def _progress_line(done: int, total: int, elapsed_s: float, last: str) -> str:
+    """``[ 37%] 700/1888 runs · 3m12s elapsed · about 5m25s left · <the last run>``.
+
+    The time left assumes that the runs to come take as long as those that ended. The last line
+    of a run is only how many ran and how long it took.
+    """
+    head = f"[{done * 100 // total:3d}%] {done}/{total} runs · {_duration(elapsed_s)}"
+    if done == total:
+        return head
+    left = elapsed_s / done * (total - done)
+    return f"{head} elapsed · about {_duration(left)} left · {last}"
+
+
+def _duration(seconds: float) -> str:
+    """``31s``, ``3m12s`` or ``1h18m``."""
+    whole = int(seconds)
+    if whole < 60:
+        return f"{whole}s"
+    if whole < 3600:
+        return f"{whole // 60}m{whole % 60:02d}s"
+    return f"{whole // 3600}h{whole % 3600 // 60:02d}m"
 
 
 # --- Comparing with the committed baseline ---

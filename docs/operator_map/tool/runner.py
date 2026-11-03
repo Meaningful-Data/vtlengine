@@ -22,8 +22,8 @@ import signal
 import subprocess
 import sys
 import threading
-from collections.abc import Sequence
-from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Callable, Sequence
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
@@ -183,9 +183,15 @@ def run_example(
 
 
 def run_all(
-    jobs: Sequence[tuple[Path, Engine, int]], workers: int, timeout_s: float
+    jobs: Sequence[tuple[Path, Engine, int]],
+    workers: int,
+    timeout_s: float,
+    progress: Callable[[int, int, tuple[Path, Engine]], None] | None = None,
 ) -> dict[tuple[Path, Engine], RunOutput]:
     """Run every ``(example folder, engine, repeat)`` job, ``workers`` at a time.
+
+    ``progress`` is called, in this thread, each time a job ends: with how many have ended, how
+    many there are, and the key of the one that ended.
 
     The result has the jobs in their order, keyed by ``(example folder, engine)``. An exception
     in the thread that waits for the results, such as the interrupt of the caller or an error
@@ -203,6 +209,11 @@ def run_all(
             )
             for path, engine, repeat in jobs
         ]
+        keys = {future: key for key, future in futures}
+        for done, future in enumerate(as_completed(keys), start=1):
+            future.result()  # a job that raised stops the run as soon as it ends
+            if progress is not None:
+                progress(done, len(futures), keys[future])
         return {key: future.result() for key, future in futures}
     except BaseException:
         # Only this thread gets an interrupt: the workers wait on children that are in sessions

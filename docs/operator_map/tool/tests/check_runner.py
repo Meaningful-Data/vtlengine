@@ -1155,6 +1155,24 @@ def test_run_all_cancels_the_jobs_that_have_not_started_when_one_raises(
     assert len(started) < 10  # the first one, and what the worker took before the cancel
 
 
+def test_run_all_reports_each_run_that_ends(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def stub(
+        path: Path, engine: Engine, timeout_s: float, repeat: int = 1, **_: object
+    ) -> RunOutput:
+        return OK_OUTPUT
+
+    monkeypatch.setattr(runner, "run_example", stub)
+    jobs: list[tuple[Path, Engine, int]] = [(tmp_path / name, "pandas", 1) for name in "abc"]
+    seen: list[tuple[int, int, tuple[Path, Engine]]] = []
+
+    run_all(jobs, workers=2, timeout_s=TIMEOUT, progress=lambda *each: seen.append(each))
+
+    assert [(done, total) for done, total, _ in seen] == [(1, 3), (2, 3), (3, 3)]
+    assert {key for _, _, key in seen} == {(tmp_path / name, "pandas") for name in "abc"}
+
+
 def test_run_all_with_no_jobs() -> None:
     assert run_all([], workers=2, timeout_s=TIMEOUT) == {}
 
