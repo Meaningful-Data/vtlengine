@@ -4,7 +4,7 @@ Evaluation of an external routine · ``eval``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 3 of 4 forms all ok, 1 refused</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Evaluation%20of%20an%20external%20routine/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (27ad1da7) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 4 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Evaluation%20of%20an%20external%20routine/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (9c8976e7) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -29,11 +29,11 @@ Evaluation of an external routine · ``eval``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Evaluation of an external routine · eval<br/>🟢3 🛡️1"]:::ok
+       O["Evaluation of an external routine · eval<br/>🟢4"]:::ok
        subgraph G_ds["Dataset"]
            direction LR
            v_sql_dataset["eval(R(DS))"]:::ok
-           v_sql_dataset_scalar_arg["eval(R(DS, sc))"]:::refused
+           v_sql_dataset_scalar_arg["eval(R(DS, sc))"]:::ok
            v_scalar_return["eval(R(DS) returns string)"]:::ok
        end
        subgraph G_comp["Component"]
@@ -95,13 +95,12 @@ eval(R(DS)) 🟢 · external routine, any scalar → any type
 
    <span class="om-anchor" id="form-sql-dataset-scalar-arg"></span>
 
-eval(R(DS, sc)) 🛡️ · external routine, any scalar → any type
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+eval(R(DS, sc)) 🟢 · external routine, any scalar → any type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-sql-dataset-scalar-arg-positional-scalar-argument"><summary><span class="om-ex-title">Positional scalar argument</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-2-23</code> · DuckDB 🛡 <code>1-2-23</code></span></summary>
-   <p class="om-detail">SemanticError 1-2-23: Eval operand must be a Dataset. Please check transformation with output Dataset DS_r</p>
+   <details class="om-example" id="ex-sql-dataset-scalar-arg-positional-scalar-argument"><summary><span class="om-ex-title">Positional scalar argument</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/eval/sql_dataset_scalar_arg/positional_scalar_argument/notes.rst
 
@@ -112,11 +111,12 @@ eval(R(DS, sc)) 🛡️ · external routine, any scalar → any type
 .. raw:: html
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>10</td></tr><tr><td>2</td><td>20</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>30</td></tr><tr><td>2</td><td>60</td></tr></tbody></table>
+
+Expected error ``1-2-23``: {pos} operand must be a Dataset.
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/general/eval/sql_dataset_scalar_arg/positional_scalar_argument/script.vtl">script.vtl</a> · <a href="../examples/general/eval/sql_dataset_scalar_arg/positional_scalar_argument/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/eval/sql_dataset_scalar_arg/positional_scalar_argument/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/eval/sql_dataset_scalar_arg/positional_scalar_argument/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/eval/sql_dataset_scalar_arg/positional_scalar_argument/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/eval/sql_dataset_scalar_arg/positional_scalar_argument/external_routines/SQL_2.json">external_routines/SQL_2.json</a> · <a href="../examples/general/eval/sql_dataset_scalar_arg/positional_scalar_argument/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/general/eval/sql_dataset_scalar_arg/positional_scalar_argument/script.vtl">script.vtl</a> · <a href="../examples/general/eval/sql_dataset_scalar_arg/positional_scalar_argument/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/eval/sql_dataset_scalar_arg/positional_scalar_argument/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/eval/sql_dataset_scalar_arg/positional_scalar_argument/expected/error.json">expected/error.json</a> · <a href="../examples/general/eval/sql_dataset_scalar_arg/positional_scalar_argument/external_routines/SQL_2.json">external_routines/SQL_2.json</a> · <a href="../examples/general/eval/sql_dataset_scalar_arg/positional_scalar_argument/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html

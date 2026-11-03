@@ -3537,10 +3537,10 @@
   },
   "general/eval/sql_dataset_scalar_arg/positional_scalar_argument": {
     "anchor": "ex-sql-dataset-scalar-arg-positional-scalar-argument",
-    "duckdb": "🛡 1-2-23",
+    "duckdb": "✅",
     "operator_page": "general/eval.html",
-    "pandas": "🛡 1-2-23",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Positional scalar argument"
   },
   "general/membership/attribute/dataset_without_identifiers": {

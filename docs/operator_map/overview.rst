@@ -108,9 +108,9 @@ The counts are over the forms of the operators of each block.
      - 🔵
      - 7
      - 62
-     - 40
+     - 41
      - 3
-     - 1
+     - 0
      - 14
      - 4
    * - :doc:`Join operators <join/index>`
@@ -234,9 +234,9 @@ The counts are over the forms of the operators of each block.
      - 🔵
      - 115
      - 727
-     - 642
+     - 643
      - 50
-     - 7
+     - 6
      - 20
      - 8
 

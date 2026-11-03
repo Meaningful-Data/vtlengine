@@ -4,7 +4,7 @@ General purpose operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 5 of 7 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (27ad1da7) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip diverge">🔵 5 of 7 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (9c8976e7) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -31,7 +31,7 @@ General purpose operators
        general__non_persistent_assignment["Non-persistent assignment · #58;#61;<br/>🟢2"]:::ok
        general__membership["Membership · #35;<br/>🟢4 🟡1"]:::partial
        general__udo_call["User-defined operator call · name( )<br/>🟢4"]:::ok
-       general__eval["Evaluation of an external routine · eval<br/>🟢3 🛡️1"]:::ok
+       general__eval["Evaluation of an external routine · eval<br/>🟢4"]:::ok
        general__cast["Type conversion · cast<br/>🟢21 🟡2 🔴14 🔵4"]:::diverge
        general__parentheses --- B
        general__persistent_assignment --- B
@@ -224,13 +224,6 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - ❌
      - ❌
      - missing components: str\_var
-   * - :doc:`Evaluation of an external routine <eval>`
-     - `eval(R(DS, sc)) <eval.html#form-sql-dataset-scalar-arg>`__
-     - 🛡️
-     - `Positional scalar argument <eval.html#ex-sql-dataset-scalar-arg-positional-scalar-argument>`__
-     - 🛡 1-2-23
-     - 🛡 1-2-23
-     - SemanticError 1-2-23: Eval operand must be a Dataset. Please check transformation with output Dataset DS\_r
    * - :doc:`Type conversion <cast>`
      - `cast(comp<boolean>, string) <cast.html#form-boolean-to-string>`__
      - 🟡

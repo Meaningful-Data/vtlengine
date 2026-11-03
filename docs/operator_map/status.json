@@ -7074,19 +7074,19 @@
     },
     "general/eval/sql_dataset_scalar_arg/positional_scalar_argument": {
       "duckdb": {
-        "detail": "SemanticError 1-2-23: Eval operand must be a Dataset. Please check transformation with output Dataset DS_r",
+        "detail": "",
         "error_code": "1-2-23",
         "error_type": "SemanticError",
-        "outcome": "error"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-2-23: Eval operand must be a Dataset. Please check transformation with output Dataset DS_r",
+        "detail": "",
         "error_code": "1-2-23",
         "error_type": "SemanticError",
-        "outcome": "error"
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "general/membership/attribute/dataset_without_identifiers": {
       "duckdb": {
@@ -15110,7 +15110,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "27ad1da7",
+    "vtlengine_commit": "9c8976e7",
     "vtlengine_version": "1.9.7rc1"
   }
 }

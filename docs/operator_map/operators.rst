@@ -25,9 +25,9 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🔵
      - 7
      - 62
-     - 40
+     - 41
      - 3
-     - 1
+     - 0
      - 14
      - 4
    * - :doc:`Join operators <join/index>`
@@ -142,9 +142,9 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🔵
      - 111
      - 698
-     - 621
+     - 622
      - 47
-     - 6
+     - 5
      - 16
      - 8
 
