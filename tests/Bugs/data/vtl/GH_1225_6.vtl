@@ -1,0 +1,8 @@
+define hierarchical ruleset HR_1 (variable rule Id_2) is
+    R1: A = B + C
+end hierarchical ruleset;
+
+DS_r1 <- if DS_1 > 1 then DS_2 else DS_3;
+DS_r2 <- if DS_1[keep Me_1] > 1 and DS_1 < 5 then DS_2 else DS_3;
+DS_r3 <- if hierarchy(DS_1, HR_1 rule Id_2) > 4 then DS_2 else DS_3;
+DS_r4 <- case when DS_1 > 6 then DS_1 when DS_1[keep Me_1] <= 1 then DS_2 else DS_3;
