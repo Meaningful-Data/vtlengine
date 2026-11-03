@@ -15109,8 +15109,8 @@
     "date": "2026-11-03",
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
-    "spec_commit": "140e946ed3f888951adb8bb66ea45030be84e2aa",
-    "vtlengine_commit": "d067399d",
+    "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
+    "vtlengine_commit": "55780655",
     "vtlengine_version": "1.9.7rc1"
   }
 }

@@ -4,7 +4,7 @@ Numeric operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 12 of 18 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (d067399d) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip diverge">🔵 12 of 18 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 

@@ -121,10 +121,10 @@ GROUPS: Final[tuple[ViralGroup, ...]] = (
     ViralGroup(
         "Joins",
         "Join operators/Inner Join",
-        "For all the other viral attributes, which are present in multiple data sets, the "
-        "Attribute propagation rule is applied on VDS₂",
+        "The other viral attributes, which are present in multiple data sets, are combined by "
+        "applying the Attribute propagation rule on VDS₁",
         # "The Viral Attribute propagation in the join is the following." opens the same paragraph
-        # on the four pages; the Left Join and the Full Join apply the rule on VDS₁.
+        # on the four pages.
         ("join.inner_join", "join.left_join", "join.full_join", "join.cross_join"),
     ),
     ViralGroup(

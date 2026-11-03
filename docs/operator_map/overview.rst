@@ -273,8 +273,6 @@ Expected outputs that follow a recorded team decision. The notes of an example s
 - `📌 #1049 <https://github.com/Meaningful-Data/vtlengine/issues/1049>`__ · `Counting the number of data points · Drops the listed identifier <aggregate/count.html#ex-ds-group-except-drops-the-listed-identifier>`__ (Aggregate and Analytic operators › ``count(DS group except Id)``)
 - `📌 #1049 <https://github.com/Meaningful-Data/vtlengine/issues/1049>`__ · `Counting the number of data points · Quarters to years <aggregate/count.html#ex-ds-group-all-quarters-to-years>`__ (Aggregate and Analytic operators › ``count(DS group all time_agg("A"))``)
 - `📌 #1049 <https://github.com/Meaningful-Data/vtlengine/issues/1049>`__ · `Counting the number of data points · Two measures <aggregate/count.html#ex-ds-having-two-measures>`__ (Aggregate and Analytic operators › ``count(DS group by Id having cond)``)
-- `📌 #1175 <https://github.com/Meaningful-Data/vtlengine/issues/1175>`__ · `define viral propagation · Avg across two operators <definitions/define_viral_propagation.html#ex-aggregation-avg-across-two-operators>`__ (Definitions (VTL-DL) › ``aggregate min | max | sum | avg``)
-- `📌 #1175 <https://github.com/Meaningful-Data/vtlengine/issues/1175>`__ · `define viral propagation · Avg within one operator <definitions/define_viral_propagation.html#ex-aggregation-avg-within-one-operator>`__ (Definitions (VTL-DL) › ``aggregate min | max | sum | avg``)
 
 Manual errata (corrected expected outputs, scripts or inputs)
 --------------------------------------------------------------------------------------------------------------------------
@@ -313,6 +311,6 @@ Examples where the manual's representation of an input or of an output name was 
 Attribution
 ----------------------
 
-Examples marked *manual* are taken from the VTL 2.2 Reference Manual (sdmx-twg/vtl @ 140e946ed3f888951adb8bb66ea45030be84e2aa), converted to the vtlengine format.
+Examples marked *manual* are taken from the VTL 2.2 Reference Manual (sdmx-twg/vtl @ 1bea1153beda0dc553767e7ca8fe16a0d51c5b34), converted to the vtlengine format.
 
 The manual is published at `sdmx-twg.github.io/vtl/v2.2 <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/index.html>`__, and its source is the repository `sdmx-twg/vtl <https://github.com/sdmx-twg/vtl>`__.

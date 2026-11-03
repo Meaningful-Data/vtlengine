@@ -4,7 +4,7 @@ Definitions (VTL-DL)
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 0 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (d067399d) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 0 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -29,7 +29,7 @@ Definitions (VTL-DL)
        definitions__define_operator["define operator<br/>🟢9 🟡1 🔴3"]:::partial
        definitions__define_datapoint_ruleset["define datapoint ruleset<br/>🟢3 🟡1 🛡️1"]:::partial
        definitions__define_hierarchical_ruleset["define hierarchical ruleset<br/>🟢6 🟡1"]:::partial
-       definitions__define_viral_propagation["define viral propagation 📌<br/>🟢3 🔴1"]:::partial
+       definitions__define_viral_propagation["define viral propagation<br/>🟢3 🔴1"]:::partial
        definitions__define_operator --- B
        definitions__define_datapoint_ruleset --- B
        B --- definitions__define_hierarchical_ruleset

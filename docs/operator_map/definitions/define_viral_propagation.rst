@@ -4,7 +4,7 @@ define viral propagation
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 3 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/viral_attributes.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d067399d) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 3 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/viral_attributes.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -25,7 +25,7 @@ define viral propagation
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["define viral propagation 📌<br/>🟢3 🔴1"]:::partial
+       O["define viral propagation<br/>🟢3 🔴1"]:::partial
        subgraph G_b1["Signature"]
            direction LR
            v_variable["(variable V)"]:::ok
@@ -34,7 +34,7 @@ define viral propagation
        subgraph G_b2["Body"]
            direction LR
            v_enumerated["when … then … #91;else …#93;"]:::ok
-           v_aggregation["aggregate min #124; max #124; sum #124; avg 📌"]:::ok
+           v_aggregation["aggregate min #124; max #124; sum #124; avg"]:::ok
        end
        O --- G_b1
        O --- G_b2
@@ -66,7 +66,7 @@ Every operator that propagates viral attributes applies the rules that this defi
 - **Aggregate invocations**: \"For invocation at Data Set level, the Attribute propagation rule is applied.\" (`Aggregate invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Aggregate%20invocation/index.html>`__)
 - **Analytic invocations**: \"the Attribute propagation rule is applied for every Viral Attribute in the Data Set by combining, for each row, all the Attribute values in the data points present in relative window\" (`Analytic invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html>`__)
 - **The aggr clause**: \"For all the other Attributes that are defined as viral, the Attribute propagation rule is applied\" (`Aggregation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Aggregation/index.html>`__)
-- **Joins**: \"For all the other viral attributes, which are present in multiple data sets, the Attribute propagation rule is applied on VDS₂\" (`Inner Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html>`__)
+- **Joins**: \"The other viral attributes, which are present in multiple data sets, are combined by applying the Attribute propagation rule on VDS₁\" (`Inner Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html>`__)
 - **Hierarchical roll-up**: \"The Attribute propagation rule is applied on the groups of Data Points which contribute to the same Data Points of the result\" (`Hierarchical roll-up <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Hierarchical%20aggregation/Hierarchical%20roll-up/index.html>`__)
 - **Check hierarchy**: \"The Attribute propagation rule is applied on each group of Data Points which contributes to the same Data Point of the result\" (`Check hierarchy <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Data%20validation%20operators/Check%20hierarchy/index.html>`__)
 

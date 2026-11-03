@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Final
 
-MANUAL_COMMIT: Final = "140e946ed3f888951adb8bb66ea45030be84e2aa"
+MANUAL_COMMIT: Final = "1bea1153beda0dc553767e7ca8fe16a0d51c5b34"
 
 # The ``<chapter>/<page>`` of the pages of the manual, and the pages of the VTL-DL.
 MANUAL_PAGES: Final[tuple[str, ...]] = (

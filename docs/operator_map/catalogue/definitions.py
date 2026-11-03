@@ -428,8 +428,8 @@ DEFINE_VIRAL_PROPAGATION = Operator(
             authored("max_of_each_pair"),
             authored("sum_of_each_pair"),
             authored("avg_of_each_pair"),
-            authored("avg_across_two_operators", decision=1175),
-            authored("avg_within_one_operator", decision=1175),
+            authored("avg_across_two_operators"),
+            authored("avg_within_one_operator"),
         ),
     ),
 )
