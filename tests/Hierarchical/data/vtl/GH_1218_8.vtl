@@ -1,0 +1,10 @@
+define hierarchical ruleset HR_1 (variable rule Id_2) is
+    R1: A = B + C errorcode "E1" errorlevel 1
+end hierarchical ruleset;
+
+define operator f (ds dataset)
+    returns dataset is
+        hierarchy(ds, HR_1 rule Id_2)
+end operator;
+
+DS_r <- f(DS_1)[calc attribute At_1 := "z"];

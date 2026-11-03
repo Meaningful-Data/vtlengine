@@ -1,0 +1,7 @@
+Id_1,Id_2,bool_var,imbalance,errorcode,errorlevel,At_1
+X,A,True,1,,,z
+X,B,False,-1,E3,1,z
+X,C,False,0,E3,1,z
+Y,A,True,8,,,z
+Y,B,True,1,,,z
+Y,C,True,2,,,z

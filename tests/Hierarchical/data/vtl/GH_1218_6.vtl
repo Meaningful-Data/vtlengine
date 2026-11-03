@@ -1,0 +1,11 @@
+define hierarchical ruleset HR_1 (variable rule Id_2) is
+    R1: A = B + C errorcode "E1" errorlevel 1
+end hierarchical ruleset;
+
+define hierarchical ruleset HR_2 (variable condition Id_1 rule Id_2) is
+    R1: when Id_1 = "X" then A = B + C errorcode "E1" errorlevel 1
+end hierarchical ruleset;
+
+DS_r1 <- hierarchy(DS_1, HR_2 condition Id_1 rule Id_2)[calc attribute At_1 := "z"];
+DS_r2 <- hierarchy(DS_1[filter At_1 <> "y"], HR_1 rule Id_2 partial_zero)[calc attribute At_1 := "z"];
+DS_r3 <- hierarchy(DS_1[calc attribute At_3 := "q"], HR_1 rule Id_2)[calc attribute At_3 := "z"];
