@@ -5265,10 +5265,10 @@
   },
   "numeric/ceil/ds/one_number_measure": {
     "anchor": "ex-ds-one-number-measure",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "numeric/ceil.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "One number measure"
   },
   "numeric/ceil/sc/positive_fraction": {
@@ -5385,10 +5385,10 @@
   },
   "numeric/floor/ds/one_number_measure": {
     "anchor": "ex-ds-one-number-measure",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "numeric/floor.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "One number measure"
   },
   "numeric/floor/sc/negative_fraction": {
@@ -5705,10 +5705,10 @@
   },
   "numeric/round/ds_no_digits/one_number_measure": {
     "anchor": "ex-ds-no-digits-one-number-measure",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "numeric/round.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "One number measure"
   },
   "numeric/round/ds_no_digits/two_number_measures": {
@@ -5721,10 +5721,10 @@
   },
   "numeric/round/ds_placeholder/placeholder_for_digits": {
     "anchor": "ex-ds-placeholder-placeholder-for-digits",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "numeric/round.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Placeholder for digits"
   },
   "numeric/round/sc_comp_digits/digits_from_component": {
@@ -5881,10 +5881,10 @@
   },
   "numeric/trunc/ds_no_digits/one_number_measure": {
     "anchor": "ex-ds-no-digits-one-number-measure",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "numeric/trunc.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "One number measure"
   },
   "numeric/trunc/ds_no_digits/two_number_measures": {
@@ -5897,10 +5897,10 @@
   },
   "numeric/trunc/ds_placeholder/placeholder_for_digits": {
     "anchor": "ex-ds-placeholder-placeholder-for-digits",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "numeric/trunc.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Placeholder for digits"
   },
   "numeric/trunc/sc_comp_digits/digits_from_component": {

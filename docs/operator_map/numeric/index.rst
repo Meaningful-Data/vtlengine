@@ -4,7 +4,7 @@ Numeric operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 12 of 18 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip diverge">🔵 16 of 18 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (95864f4b) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -33,10 +33,10 @@ Numeric operators
        numeric__multiplication["Multiplication · *<br/>🟢7"]:::ok
        numeric__division["Division · /<br/>🟢7"]:::ok
        numeric__modulo["Modulo · mod<br/>🟢6 🟡1"]:::partial
-       numeric__round["Rounding · round<br/>🟢8 🟡2 🛡️1"]:::partial
-       numeric__trunc["Truncation · trunc<br/>🟢8 🟡2 🛡️1"]:::partial
-       numeric__ceil["Ceiling · ceil<br/>🟢2 🟡1"]:::partial
-       numeric__floor["Floor · floor<br/>🟢2 🟡1"]:::partial
+       numeric__round["Rounding · round<br/>🟢10 🛡️1"]:::ok
+       numeric__trunc["Truncation · trunc<br/>🟢10 🛡️1"]:::ok
+       numeric__ceil["Ceiling · ceil<br/>🟢3"]:::ok
+       numeric__floor["Floor · floor<br/>🟢3"]:::ok
        numeric__abs["Absolute value · abs<br/>🟢3"]:::ok
        numeric__exp["Exponential · exp<br/>🟢3"]:::ok
        numeric__ln["Natural logarithm · ln<br/>🟢3"]:::ok
@@ -116,16 +116,16 @@ Numeric operators
      - 🟡
      - 7
    * - :doc:`Rounding <round>` ``round``
-     - 🟡
+     - 🟢
      - 11
    * - :doc:`Truncation <trunc>` ``trunc``
-     - 🟡
+     - 🟢
      - 11
    * - :doc:`Ceiling <ceil>` ``ceil``
-     - 🟡
+     - 🟢
      - 3
    * - :doc:`Floor <floor>` ``floor``
-     - 🟡
+     - 🟢
      - 3
    * - :doc:`Absolute value <abs>` ``abs``
      - 🟢
@@ -236,20 +236,6 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - ❌
      - value expected -1 got 1
    * - :doc:`Rounding <round>`
-     - `round(DS) <round.html#form-ds-no-digits>`__
-     - 🟡
-     - `One number measure <round.html#ex-ds-no-digits-one-number-measure>`__
-     - ❌
-     - ❌
-     - missing components: Me\_1; unexpected components: int\_var
-   * - :doc:`Rounding <round>`
-     - `round(DS, \_) <round.html#form-ds-placeholder>`__
-     - 🟡
-     - `Placeholder for digits <round.html#ex-ds-placeholder-placeholder-for-digits>`__
-     - ❌
-     - ❌
-     - missing components: Me\_1; unexpected components: int\_var
-   * - :doc:`Rounding <round>`
      - `round(sc, comp) <round.html#form-sc-comp-digits>`__
      - 🛡️
      - `Digits from component <round.html#ex-sc-comp-digits-digits-from-component>`__
@@ -257,40 +243,12 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - 🛡 1-1-15-8
      - SemanticError 1-1-15-8: At op round: round operator cannot have a DataComponent and an Scalar operand as parameter. Please check transformation with output Dataset DS\_r
    * - :doc:`Truncation <trunc>`
-     - `trunc(DS) <trunc.html#form-ds-no-digits>`__
-     - 🟡
-     - `One number measure <trunc.html#ex-ds-no-digits-one-number-measure>`__
-     - ❌
-     - ❌
-     - missing components: Me\_1; unexpected components: int\_var
-   * - :doc:`Truncation <trunc>`
-     - `trunc(DS, \_) <trunc.html#form-ds-placeholder>`__
-     - 🟡
-     - `Placeholder for digits <trunc.html#ex-ds-placeholder-placeholder-for-digits>`__
-     - ❌
-     - ❌
-     - missing components: Me\_1; unexpected components: int\_var
-   * - :doc:`Truncation <trunc>`
      - `trunc(sc, comp) <trunc.html#form-sc-comp-digits>`__
      - 🛡️
      - `Digits from component <trunc.html#ex-sc-comp-digits-digits-from-component>`__
      - 🛡 1-1-15-8
      - 🛡 1-1-15-8
      - SemanticError 1-1-15-8: At op trunc: trunc operator cannot have a DataComponent and an Scalar operand as parameter. Please check transformation with output Dataset DS\_r
-   * - :doc:`Ceiling <ceil>`
-     - `ceil(DS) <ceil.html#form-ds>`__
-     - 🟡
-     - `One number measure <ceil.html#ex-ds-one-number-measure>`__
-     - ❌
-     - ❌
-     - missing components: Me\_1; unexpected components: int\_var
-   * - :doc:`Floor <floor>`
-     - `floor(DS) <floor.html#form-ds>`__
-     - 🟡
-     - `One number measure <floor.html#ex-ds-one-number-measure>`__
-     - ❌
-     - ❌
-     - missing components: Me\_1; unexpected components: int\_var
    * - :doc:`Random <random>`
      - `random(DS, n) <random.html#form-ds>`__
      - 🔵

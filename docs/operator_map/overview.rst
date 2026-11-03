@@ -42,7 +42,7 @@ A node for each block, with how many operators it has, and how many of them are 
        chapter__general["General purpose operators<br/>7 operators · 🟢4 🟡2 🔵1"]:::diverge
        chapter__join["Join operators<br/>4 operators · 🟢2 🟡2"]:::partial
        chapter__string["String operators<br/>11 operators · 🟢10 🟡1"]:::partial
-       chapter__numeric["Numeric operators<br/>18 operators · 🟢12 🟡5 🔵1"]:::diverge
+       chapter__numeric["Numeric operators<br/>18 operators · 🟢16 🟡1 🔵1"]:::diverge
        chapter__comparison["Comparison operators<br/>12 operators · 🟢12"]:::ok
        chapter__boolean["Boolean operators<br/>4 operators · 🟢4"]:::ok
        chapter__time["Time operators<br/>17 operators · 🟢12 🟡3 🛡️2"]:::partial
@@ -135,8 +135,8 @@ The counts are over the forms of the operators of each block.
      - 🔵
      - 18
      - 94
-     - 82
-     - 7
+     - 88
+     - 1
      - 2
      - 0
      - 3
@@ -234,8 +234,8 @@ The counts are over the forms of the operators of each block.
      - 🔵
      - 115
      - 727
-     - 626
-     - 60
+     - 632
+     - 54
      - 12
      - 21
      - 8

@@ -4,7 +4,7 @@ Time operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 12 of 17 operators all ok, 2 refused</span> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 12 of 17 operators all ok, 2 refused</span> · <span class="om-gen">vtlengine 1.9.7rc1 (95864f4b) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 

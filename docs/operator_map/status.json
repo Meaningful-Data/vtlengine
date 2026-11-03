@@ -10530,19 +10530,19 @@
     },
     "numeric/ceil/ds/one_number_measure": {
       "duckdb": {
-        "detail": "missing components: Me_1; unexpected components: int_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing components: Me_1; unexpected components: int_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "numeric/ceil/sc/positive_fraction": {
       "duckdb": {
@@ -10770,19 +10770,19 @@
     },
     "numeric/floor/ds/one_number_measure": {
       "duckdb": {
-        "detail": "missing components: Me_1; unexpected components: int_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing components: Me_1; unexpected components: int_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "numeric/floor/sc/negative_fraction": {
       "duckdb": {
@@ -11410,19 +11410,19 @@
     },
     "numeric/round/ds_no_digits/one_number_measure": {
       "duckdb": {
-        "detail": "missing components: Me_1; unexpected components: int_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing components: Me_1; unexpected components: int_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "numeric/round/ds_no_digits/two_number_measures": {
       "duckdb": {
@@ -11442,19 +11442,19 @@
     },
     "numeric/round/ds_placeholder/placeholder_for_digits": {
       "duckdb": {
-        "detail": "missing components: Me_1; unexpected components: int_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing components: Me_1; unexpected components: int_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "numeric/round/sc_comp_digits/digits_from_component": {
       "duckdb": {
@@ -11762,19 +11762,19 @@
     },
     "numeric/trunc/ds_no_digits/one_number_measure": {
       "duckdb": {
-        "detail": "missing components: Me_1; unexpected components: int_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing components: Me_1; unexpected components: int_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "numeric/trunc/ds_no_digits/two_number_measures": {
       "duckdb": {
@@ -11794,19 +11794,19 @@
     },
     "numeric/trunc/ds_placeholder/placeholder_for_digits": {
       "duckdb": {
-        "detail": "missing components: Me_1; unexpected components: int_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing components: Me_1; unexpected components: int_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "numeric/trunc/sc_comp_digits/digits_from_component": {
       "duckdb": {
@@ -15110,7 +15110,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "d5c65271",
+    "vtlengine_commit": "95864f4b",
     "vtlengine_version": "1.9.7rc1"
   }
 }
