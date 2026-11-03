@@ -105,3 +105,66 @@ jobs:
         run: poetry run pytest --cov=vtlengine -n auto --verbose --tb=short --strict-markers --strict-config --durations=10
       - name: Check coverage
         run: poetry run coverage report --fail-under=85
+
+  # The operator map (docs/operator_map): its generator's tests, the checks of its catalogue and
+  # examples, and every example run on both engines and compared with the committed status.json.
+  # Only a regression fails; improvements are listed in the job summary.
+  operator-map:
+    name: Operator map
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install poetry
+        run: pipx install poetry
+      - name: Set up Python 3.13
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+          cache: poetry
+      - name: Cache ANTLR4 runtime prebuilt
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: antlr4-cache
+        with:
+          path: build/antlr4-prefix
+          key: antlr4-runtime-${{ runner.os }}-py3.13-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
+      - name: Cache compiled C++ parser
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: cpp-cache
+        with:
+          path: src/vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*
+          key: cpp-parser-${{ runner.os }}-py3.13-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml') }}
+      - name: Download ANTLR4 C++ runtime source
+        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
+        run: bash scripts/setup_antlr4_runtime.sh
+      - name: Build ANTLR4 runtime
+        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
+        run: |
+          cmake -S . -B build/antlr4-build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DVTLENGINE_BUILD_ANTLR4_PREBUILT=ON
+          cmake --build build/antlr4-build --target antlr4_runtime --config Release
+          cmake --install build/antlr4-build --prefix "$PWD/build/antlr4-prefix" --config Release
+      - name: Build C++ parser binary
+        if: steps.cpp-cache.outputs.cache-hit != 'true'
+        run: |
+          pip wheel . -w .build_wheel --no-deps -v \
+            -C cmake.define.VTLENGINE_USE_PREBUILT_ANTLR4=ON \
+            -C "cmake.define.VTLENGINE_ANTLR4_PREFIX=$PWD/build/antlr4-prefix"
+          unzip -o -j .build_wheel/*.whl \
+            'vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*' \
+            -d src/vtlengine/AST/Grammar/_cpp_parser/
+          rm -rf .build_wheel
+      - name: Install dependencies
+        run: poetry install --no-root --all-extras
+      - name: Run the operator map's tests
+        run: >-
+          poetry run pytest -p no:cacheprovider -o python_files='check_*.py'
+          -o pythonpath="src docs/operator_map" docs/operator_map/tool/tests -q
+      - name: Check the operator map's catalogue and examples
+        run: poetry run python docs/operator_map/generate.py --check-only
+      - name: Compare the engine with the operator map
+        run: poetry run python docs/operator_map/generate.py --compare --summary "$GITHUB_STEP_SUMMARY"
