@@ -2,7 +2,7 @@
 
 import re
 from collections import Counter, defaultdict
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import (
@@ -3094,12 +3094,16 @@ FROM (
                 return "COUNT(*)"
             return ""
 
-        ds = self._get_dataset_structure(node.operand)
-        if ds is None:
-            operand_sql = self.visit(node.operand)
-            return registry.sql(op, operand_sql)
+        # count always reports int_var, so its operand names its Measures itself
+        # instead of after the assignment target, which holds int_var.
+        stash = self._stash_assignment() if op == tokens.COUNT else nullcontext()
+        with stash:
+            ds = self._get_dataset_structure(node.operand)
+            if ds is None:
+                operand_sql = self.visit(node.operand)
+                return registry.sql(op, operand_sql)
 
-        table_src = self._get_dataset_sql(node.operand)
+            table_src = self._get_dataset_sql(node.operand)
 
         # Resolve group columns from input identifiers.
         all_ids = ds.get_identifiers_names()
@@ -3581,16 +3585,19 @@ FROM (
         source_ds = self._get_dataset_structure(source_node)
         alias = "cond"
 
-        # When the condition is a binary op between two datasets is evaluated
-        # as a subquery and reference its boolean measure column instead.
-        cond_is_ds_vs_ds = (
-            isinstance(node.condition, AST.BinOp)
-            and self._get_node_type(node.condition.left) == _DATASET
-            and self._get_node_type(node.condition.right) == _DATASET
+        # A condition other than a plain dataset is evaluated as a subquery and its boolean measure
+        # is referenced instead.
+        cond_is_plain = (
+            isinstance(node.condition, AST.VarID)
+            and self._get_node_type(node.condition) == _DATASET
         )
-        cond_ds = self._get_dataset_structure(node.condition) if cond_is_ds_vs_ds else None
+        cond_ds = None
+        if not cond_is_plain:
+            with self._stash_assignment():
+                cond_ds = self._get_dataset_structure(node.condition)
+                source_sql = self._get_dataset_sql(node.condition) if cond_ds else ""
         if cond_ds is not None:
-            source_sql = self.visit(node.condition)
+            source_ds = cond_ds
             source_ids = list(cond_ds.get_identifiers_names())
             bool_measures = list(cond_ds.get_measures_names())
             cond_expr = f"{alias}.{quote_name(bool_measures[0])}" if bool_measures else "TRUE"
@@ -3712,6 +3719,15 @@ FROM (
         builder: SQLBuilder,
     ) -> str:
         """Join a CASE condition dataset and return the SQL condition expression."""
+        with self._stash_assignment():
+            whole_ds = self._get_dataset_structure(case_obj.condition)
+            if whole_ds is not None:
+                self._left_join_dataset(
+                    case_obj.condition, _DATASET, alias, source_ids, alias_src, builder
+                )
+        if whole_ds is not None:
+            return f"{alias}.{quote_name(whole_ds.get_measures_names()[0])}"
+
         cond_source = self._find_condition_source(case_obj.condition)
         cond_ds = self._get_dataset_structure(cond_source) if cond_source else None
         if cond_source is not None:
@@ -3726,9 +3742,11 @@ FROM (
 
     def _build_dataset_case(self, node: AST.Case) -> str:
         """Build SQL for dataset-level CASE with JOINs."""
-        source_node = self._find_condition_source(node.cases[0].condition)
-        source_ds = self._get_dataset_structure(source_node)
-        source_sql = self._get_dataset_sql(source_node)
+        # The first condition, whatever its expression, gives the data points of the result
+        with self._stash_assignment():
+            first_cond = node.cases[0].condition
+            source_ds = self._get_dataset_structure(first_cond)
+            source_sql = self._get_dataset_sql(first_cond)
         source_ids = list(source_ds.get_identifiers_names())
         alias_src = "src"
 
@@ -3742,7 +3760,12 @@ FROM (
         then_aliases: List[Optional[str]] = []
         then_types: List[str] = []
         for i, case in enumerate(node.cases):
-            cond_expr = self._build_case_condition(case, f"c{i}", source_ids, alias_src, builder)
+            if i == 0:
+                cond_expr = f"{alias_src}.{quote_name(source_ds.get_measures_names()[0])}"
+            else:
+                cond_expr = self._build_case_condition(
+                    case, f"c{i}", source_ids, alias_src, builder
+                )
             cond_exprs.append(cond_expr)
 
             t_type = self._get_node_type(case.thenOp)
