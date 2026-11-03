@@ -4,7 +4,7 @@ Intersection · ``intersect``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 2 of 2 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Set%20operators/Intersection/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 2 of 2 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Set%20operators/Intersection/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -57,7 +57,7 @@ intersect(DS, DS) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-two-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-two-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/set/intersect/two/manual_ex_1/notes.rst
 
@@ -106,7 +106,7 @@ intersect(DS, DS, \.\.\.) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-n-point-in-all-three-operands" open><summary><span class="om-ex-title">Point in all three operands</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-n-point-in-all-three-operands"><summary><span class="om-ex-title">Point in all three operands</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/set/intersect/n/point_in_all_three_operands/notes.rst
 

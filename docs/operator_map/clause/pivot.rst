@@ -4,7 +4,7 @@ Pivoting · ``pivot``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip missing">🔴 0 of 1 form all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Pivoting/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip missing">🔴 0 of 1 form all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Pivoting/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -54,7 +54,7 @@ DS[pivot Id, Me] 🔴 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-basic-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <details class="om-example" id="ex-basic-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
    <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: pivot clause. Please check transformation with output Dataset DS_r</p>
 
 .. include:: ../examples/clause/pivot/basic/manual_ex_1/notes.rst

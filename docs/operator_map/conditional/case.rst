@@ -4,7 +4,7 @@ Case · ``case when``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 4 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Case/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 4 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Case/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -84,7 +84,7 @@ case when DS then DS else DS 🟢 · boolean, any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-inline-dataset-condition" open><summary><span class="om-ex-title">Inline dataset condition</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-ds-inline-dataset-condition"><summary><span class="om-ex-title">Inline dataset condition</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/case/ds/inline_dataset_condition/notes.rst
 
@@ -135,7 +135,7 @@ case when DS then DS\|sc else sc\|DS 🟢 · boolean, any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-scalar-branch-scalar-else-feeds-all-measures" open><summary><span class="om-ex-title">Scalar else feeds all measures</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-ds-scalar-branch-scalar-else-feeds-all-measures"><summary><span class="om-ex-title">Scalar else feeds all measures</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/case/ds_scalar_branch/scalar_else_feeds_all_measures/notes.rst
 
@@ -182,7 +182,7 @@ case when DS then DS when DS then DS \.\.\. else DS 🟡 · boolean, any scalar 
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-multi-when-overlapping-inline-conditions" open><summary><span class="om-ex-title">Overlapping inline conditions</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-ds-multi-when-overlapping-inline-conditions"><summary><span class="om-ex-title">Overlapping inline conditions</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">row Id_1=3: Me_1 expected 300 got 3</p>
 
 .. include:: ../examples/conditional/case/ds_multi_when/overlapping_inline_conditions/notes.rst
@@ -235,7 +235,7 @@ case when comp then comp else comp 🟢 · boolean, any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-comp-smaller-of-two-components" open><summary><span class="om-ex-title">Smaller of two components</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-comp-smaller-of-two-components"><summary><span class="om-ex-title">Smaller of two components</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/case/comp/smaller_of_two_components/notes.rst
 
@@ -262,7 +262,7 @@ case when comp then sc when comp then sc \.\.\. else sc 🟡 · boolean, any sca
 
 .. raw:: html
 
-   <details class="om-example" id="ex-comp-multi-when-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-comp-multi-when-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/case/comp_multi_when/manual_ex_1/notes.rst
 
@@ -310,7 +310,7 @@ case when sc then sc else sc 🟢 · boolean, any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-sc-true-condition-gives-then-operand" open><summary><span class="om-ex-title">True condition gives then operand</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-sc-true-condition-gives-then-operand"><summary><span class="om-ex-title">True condition gives then operand</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/case/sc/true_condition_gives_then_operand/notes.rst
 
@@ -377,7 +377,7 @@ case when sc then sc when sc then sc \.\.\. else sc 🟡 · boolean, any scalar 
 
 .. raw:: html
 
-   <details class="om-example" id="ex-sc-multi-when-first-condition-true" open><summary><span class="om-ex-title">First condition true</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-sc-multi-when-first-condition-true"><summary><span class="om-ex-title">First condition true</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/case/sc_multi_when/first_condition_true/notes.rst
 

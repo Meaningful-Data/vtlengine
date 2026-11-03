@@ -4,7 +4,7 @@ Hierarchical roll-up · ``hierarchy``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 26 of 38 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Hierarchical%20aggregation/Hierarchical%20roll-up/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 26 of 38 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Hierarchical%20aggregation/Hierarchical%20roll-up/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -152,7 +152,7 @@ Types
 
    <p class="om-takes"><b>Takes</b> number, hierarchical ruleset · <b>Gives</b> any type</p>
    <p class="om-viral"><b>Viral attributes:</b> combined with the propagation rules → <a href="../definitions/define_viral_propagation.html">Viral propagation</a></p>
-   <div class="om-cols"><div class="om-col"><details class="om-dir" open><summary><b>Comes from · number</b> — 45 operators in 6 blocks 🟢24 🟡16 🛡️2 🔵3</summary><details class="om-blk"><summary>General purpose operators <b>(2)</b> 🟡1 🔵1</summary><div><a class="om-chip partial" href="../general/eval.html" title="partially implemented">Evaluation of an external routine <code>eval</code></a><a class="om-chip diverge" href="../general/cast.html" title="engines differ">Type conversion <code>cast</code></a></div></details><details class="om-blk"><summary>String operators <b>(3)</b> 🟢2 🟡1</summary><div><a class="om-chip ok" href="../string/instr.html" title="all ok">String pattern location <code>instr</code></a><a class="om-chip ok" href="../string/length.html" title="all ok">String length <code>length</code></a><a class="om-chip partial" href="../string/string_distance.html" title="partially implemented">String distances <code>string_distance</code></a></div></details><details class="om-blk"><summary>Numeric operators <b>(18)</b> 🟢12 🟡5 🔵1</summary><div><a class="om-chip ok" href="../numeric/unary_plus.html" title="all ok">Unary plus <code>+</code></a><a class="om-chip ok" href="../numeric/unary_minus.html" title="all ok">Unary minus <code>-</code></a><a class="om-chip ok" href="../numeric/addition.html" title="all ok">Addition <code>+</code></a><a class="om-chip ok" href="../numeric/subtraction.html" title="all ok">Subtraction <code>-</code></a><a class="om-chip ok" href="../numeric/multiplication.html" title="all ok">Multiplication <code>*</code></a><a class="om-chip ok" href="../numeric/division.html" title="all ok">Division <code>/</code></a><a class="om-chip partial" href="../numeric/modulo.html" title="partially implemented">Modulo <code>mod</code></a><a class="om-chip partial" href="../numeric/round.html" title="partially implemented">Rounding <code>round</code></a><a class="om-chip partial" href="../numeric/trunc.html" title="partially implemented">Truncation <code>trunc</code></a><a class="om-chip partial" href="../numeric/ceil.html" title="partially implemented">Ceiling <code>ceil</code></a><a class="om-chip partial" href="../numeric/floor.html" title="partially implemented">Floor <code>floor</code></a><a class="om-chip ok" href="../numeric/abs.html" title="all ok">Absolute value <code>abs</code></a><a class="om-chip ok" href="../numeric/exp.html" title="all ok">Exponential <code>exp</code></a><a class="om-chip ok" href="../numeric/ln.html" title="all ok">Natural logarithm <code>ln</code></a><a class="om-chip ok" href="../numeric/sqrt.html" title="all ok">Square root <code>sqrt</code></a><a class="om-chip ok" href="../numeric/power.html" title="all ok">Power <code>power</code></a><a class="om-chip ok" href="../numeric/log.html" title="all ok">Logarithm <code>log</code></a><a class="om-chip diverge" href="../numeric/random.html" title="engines differ">Random <code>random</code></a></div></details><details class="om-blk"><summary>Time operators <b>(9)</b> 🟢7 🛡️2</summary><div><a class="om-chip ok" href="../time/flow_to_stock.html" title="all ok">Flow to stock <code>flow_to_stock</code></a><a class="om-chip ok" href="../time/stock_to_flow.html" title="all ok">Stock to flow <code>stock_to_flow</code></a><a class="om-chip ok" href="../time/datediff.html" title="all ok">Days between two dates <code>datediff</code></a><a class="om-chip ok" href="../time/getyear.html" title="all ok">Extract the year <code>getyear</code></a><a class="om-chip ok" href="../time/getmonth.html" title="all ok">Extract the month <code>getmonth</code></a><a class="om-chip ok" href="../time/dayofmonth.html" title="all ok">Extract the day of the month <code>dayofmonth</code></a><a class="om-chip ok" href="../time/dayofyear.html" title="all ok">Extract the day of the year <code>dayofyear</code></a><a class="om-chip refused" href="../time/yeartoday.html" title="refused with an error">Years and days to number of days <code>yeartoday</code></a><a class="om-chip refused" href="../time/monthtoday.html" title="refused with an error">Months and days to number of days <code>monthtoday</code></a></div></details><details class="om-blk"><summary>Aggregate and Analytic operators <b>(10)</b> 🟢2 🟡7 🔵1</summary><div><a class="om-chip diverge" href="../aggregate/count.html" title="engines differ">Counting the number of data points <code>count</code></a><a class="om-chip partial" href="../aggregate/median.html" title="partially implemented">Median value <code>median</code></a><a class="om-chip partial" href="../aggregate/sum.html" title="partially implemented">Sum <code>sum</code></a><a class="om-chip partial" href="../aggregate/avg.html" title="partially implemented">Average value <code>avg</code></a><a class="om-chip partial" href="../aggregate/stddev_pop.html" title="partially implemented">Population standard deviation <code>stddev_pop</code></a><a class="om-chip partial" href="../aggregate/stddev_samp.html" title="partially implemented">Sample standard deviation <code>stddev_samp</code></a><a class="om-chip partial" href="../aggregate/var_pop.html" title="partially implemented">Population variance <code>var_pop</code></a><a class="om-chip partial" href="../aggregate/var_samp.html" title="partially implemented">Sample variance <code>var_samp</code></a><a class="om-chip ok" href="../aggregate/rank.html" title="all ok">Rank <code>rank</code></a><a class="om-chip ok" href="../aggregate/ratio_to_report.html" title="all ok">Ratio to report <code>ratio_to_report</code></a></div></details><details class="om-blk"><summary>Data validation operators <b>(3)</b> 🟢1 🟡2</summary><div><a class="om-chip partial" href="../validation/check_datapoint.html" title="partially implemented">Check datapoint <code>check_datapoint</code></a><a class="om-chip partial" href="../validation/check_hierarchy.html" title="partially implemented">Check hierarchy <code>check_hierarchy</code></a><a class="om-chip ok" href="../validation/check.html" title="all ok">Check <code>check</code></a></div></details></details><details class="om-dir"><summary><b>Comes from · operators that return any type (their input&#x27;s)</b> — 36 operators in 7 blocks 🟢22 🟡13 🔴1</summary><details class="om-blk"><summary>General purpose operators <b>(5)</b> 🟢4 🟡1</summary><div><a class="om-chip ok" href="../general/parentheses.html" title="all ok">Parentheses <code>( )</code></a><a class="om-chip ok" href="../general/persistent_assignment.html" title="all ok">Persistent assignment <code>&lt;-</code></a><a class="om-chip ok" href="../general/non_persistent_assignment.html" title="all ok">Non-persistent assignment <code>:=</code></a><a class="om-chip partial" href="../general/membership.html" title="partially implemented">Membership <code>#</code></a><a class="om-chip ok" href="../general/udo_call.html" title="all ok">User-defined operator call <code>name( )</code></a></div></details><details class="om-blk"><summary>Join operators <b>(4)</b> 🟢1 🟡3</summary><div><a class="om-chip partial" href="../join/inner_join.html" title="partially implemented">Inner Join <code>inner_join</code></a><a class="om-chip partial" href="../join/left_join.html" title="partially implemented">Left Join <code>left_join</code></a><a class="om-chip partial" href="../join/full_join.html" title="partially implemented">Full Join <code>full_join</code></a><a class="om-chip ok" href="../join/cross_join.html" title="all ok">Cross Join <code>cross_join</code></a></div></details><details class="om-blk"><summary>Time operators <b>(3)</b> 🟢3</summary><div><a class="om-chip ok" href="../time/fill_time_series.html" title="all ok">Fill time series <code>fill_time_series</code></a><a class="om-chip ok" href="../time/timeshift.html" title="all ok">Time shift <code>timeshift</code></a><a class="om-chip ok" href="../time/dateadd.html" title="all ok">Add time unit to date <code>dateadd</code></a></div></details><details class="om-blk"><summary>Set operators <b>(4)</b> 🟢4</summary><div><a class="om-chip ok" href="../set/union.html" title="all ok">Union <code>union</code></a><a class="om-chip ok" href="../set/intersect.html" title="all ok">Intersection <code>intersect</code></a><a class="om-chip ok" href="../set/setdiff.html" title="all ok">Set difference <code>setdiff</code></a><a class="om-chip ok" href="../set/symdiff.html" title="all ok">Symmetric difference <code>symdiff</code></a></div></details><details class="om-blk"><summary>Aggregate and Analytic operators <b>(8)</b> 🟢3 🟡5</summary><div><a class="om-chip ok" href="../aggregate/aggregate_invocation.html" title="all ok">Aggregate invocation <code>group by</code></a><a class="om-chip partial" href="../aggregate/analytic_invocation.html" title="partially implemented">Analytic invocation <code>over</code></a><a class="om-chip partial" href="../aggregate/min.html" title="partially implemented">Minimum value <code>min</code></a><a class="om-chip partial" href="../aggregate/max.html" title="partially implemented">Maximum value <code>max</code></a><a class="om-chip ok" href="../aggregate/first_value.html" title="all ok">First value <code>first_value</code></a><a class="om-chip ok" href="../aggregate/last_value.html" title="all ok">Last value <code>last_value</code></a><a class="om-chip partial" href="../aggregate/lag.html" title="partially implemented">Lag <code>lag</code></a><a class="om-chip partial" href="../aggregate/lead.html" title="partially implemented">Lead <code>lead</code></a></div></details><details class="om-blk"><summary>Conditional operators <b>(3)</b> 🟢1 🟡2</summary><div><a class="om-chip ok" href="../conditional/if_then_else.html" title="all ok">if-then-else <code>if then else</code></a><a class="om-chip partial" href="../conditional/case.html" title="partially implemented">Case <code>case when</code></a><a class="om-chip partial" href="../conditional/nvl.html" title="partially implemented">Nvl <code>nvl</code></a></div></details><details class="om-blk"><summary>Clause operators <b>(9)</b> 🟢6 🟡2 🔴1</summary><div><a class="om-chip partial" href="../clause/calc.html" title="partially implemented">Calculation of a Component <code>calc</code></a><a class="om-chip partial" href="../clause/aggr.html" title="partially implemented">Aggregation <code>aggr</code></a><a class="om-chip ok" href="../clause/filter.html" title="all ok">Filtering Data Points <code>filter</code></a><a class="om-chip ok" href="../clause/keep.html" title="all ok">Maintaining Components <code>keep</code></a><a class="om-chip ok" href="../clause/drop.html" title="all ok">Removal of Components <code>drop</code></a><a class="om-chip ok" href="../clause/rename.html" title="all ok">Change of Component name <code>rename</code></a><a class="om-chip missing" href="../clause/pivot.html" title="not implemented or crash">Pivoting <code>pivot</code></a><a class="om-chip ok" href="../clause/unpivot.html" title="all ok">Unpivoting <code>unpivot</code></a><a class="om-chip ok" href="../clause/sub.html" title="all ok">Subspace <code>sub</code></a></div></details></details><details class="om-dir" open><summary><b>Comes from · hierarchical ruleset</b> — 1 operator in 1 block 🟡1</summary><details class="om-blk"><summary>Definitions (VTL-DL) <b>(1)</b> 🟡1</summary><div><a class="om-chip partial" href="../definitions/define_hierarchical_ruleset.html" title="partially implemented">define hierarchical ruleset</a></div></details></details></div><div class="om-col"><p class="om-line"><b>Goes to:</b> whatever takes its input&#x27;s type</p></div></div>
+   <div class="om-cols"><div class="om-col"><details class="om-dir"><summary><b>Comes from · number</b> — 45 operators in 6 blocks 🟢24 🟡16 🛡️2 🔵3</summary><details class="om-blk"><summary>General purpose operators <b>(2)</b> 🟡1 🔵1</summary><div><a class="om-chip partial" href="../general/eval.html" title="partially implemented">Evaluation of an external routine <code>eval</code></a><a class="om-chip diverge" href="../general/cast.html" title="engines differ">Type conversion <code>cast</code></a></div></details><details class="om-blk"><summary>String operators <b>(3)</b> 🟢2 🟡1</summary><div><a class="om-chip ok" href="../string/instr.html" title="all ok">String pattern location <code>instr</code></a><a class="om-chip ok" href="../string/length.html" title="all ok">String length <code>length</code></a><a class="om-chip partial" href="../string/string_distance.html" title="partially implemented">String distances <code>string_distance</code></a></div></details><details class="om-blk"><summary>Numeric operators <b>(18)</b> 🟢12 🟡5 🔵1</summary><div><a class="om-chip ok" href="../numeric/unary_plus.html" title="all ok">Unary plus <code>+</code></a><a class="om-chip ok" href="../numeric/unary_minus.html" title="all ok">Unary minus <code>-</code></a><a class="om-chip ok" href="../numeric/addition.html" title="all ok">Addition <code>+</code></a><a class="om-chip ok" href="../numeric/subtraction.html" title="all ok">Subtraction <code>-</code></a><a class="om-chip ok" href="../numeric/multiplication.html" title="all ok">Multiplication <code>*</code></a><a class="om-chip ok" href="../numeric/division.html" title="all ok">Division <code>/</code></a><a class="om-chip partial" href="../numeric/modulo.html" title="partially implemented">Modulo <code>mod</code></a><a class="om-chip partial" href="../numeric/round.html" title="partially implemented">Rounding <code>round</code></a><a class="om-chip partial" href="../numeric/trunc.html" title="partially implemented">Truncation <code>trunc</code></a><a class="om-chip partial" href="../numeric/ceil.html" title="partially implemented">Ceiling <code>ceil</code></a><a class="om-chip partial" href="../numeric/floor.html" title="partially implemented">Floor <code>floor</code></a><a class="om-chip ok" href="../numeric/abs.html" title="all ok">Absolute value <code>abs</code></a><a class="om-chip ok" href="../numeric/exp.html" title="all ok">Exponential <code>exp</code></a><a class="om-chip ok" href="../numeric/ln.html" title="all ok">Natural logarithm <code>ln</code></a><a class="om-chip ok" href="../numeric/sqrt.html" title="all ok">Square root <code>sqrt</code></a><a class="om-chip ok" href="../numeric/power.html" title="all ok">Power <code>power</code></a><a class="om-chip ok" href="../numeric/log.html" title="all ok">Logarithm <code>log</code></a><a class="om-chip diverge" href="../numeric/random.html" title="engines differ">Random <code>random</code></a></div></details><details class="om-blk"><summary>Time operators <b>(9)</b> 🟢7 🛡️2</summary><div><a class="om-chip ok" href="../time/flow_to_stock.html" title="all ok">Flow to stock <code>flow_to_stock</code></a><a class="om-chip ok" href="../time/stock_to_flow.html" title="all ok">Stock to flow <code>stock_to_flow</code></a><a class="om-chip ok" href="../time/datediff.html" title="all ok">Days between two dates <code>datediff</code></a><a class="om-chip ok" href="../time/getyear.html" title="all ok">Extract the year <code>getyear</code></a><a class="om-chip ok" href="../time/getmonth.html" title="all ok">Extract the month <code>getmonth</code></a><a class="om-chip ok" href="../time/dayofmonth.html" title="all ok">Extract the day of the month <code>dayofmonth</code></a><a class="om-chip ok" href="../time/dayofyear.html" title="all ok">Extract the day of the year <code>dayofyear</code></a><a class="om-chip refused" href="../time/yeartoday.html" title="refused with an error">Years and days to number of days <code>yeartoday</code></a><a class="om-chip refused" href="../time/monthtoday.html" title="refused with an error">Months and days to number of days <code>monthtoday</code></a></div></details><details class="om-blk"><summary>Aggregate and Analytic operators <b>(10)</b> 🟢2 🟡7 🔵1</summary><div><a class="om-chip diverge" href="../aggregate/count.html" title="engines differ">Counting the number of data points <code>count</code></a><a class="om-chip partial" href="../aggregate/median.html" title="partially implemented">Median value <code>median</code></a><a class="om-chip partial" href="../aggregate/sum.html" title="partially implemented">Sum <code>sum</code></a><a class="om-chip partial" href="../aggregate/avg.html" title="partially implemented">Average value <code>avg</code></a><a class="om-chip partial" href="../aggregate/stddev_pop.html" title="partially implemented">Population standard deviation <code>stddev_pop</code></a><a class="om-chip partial" href="../aggregate/stddev_samp.html" title="partially implemented">Sample standard deviation <code>stddev_samp</code></a><a class="om-chip partial" href="../aggregate/var_pop.html" title="partially implemented">Population variance <code>var_pop</code></a><a class="om-chip partial" href="../aggregate/var_samp.html" title="partially implemented">Sample variance <code>var_samp</code></a><a class="om-chip ok" href="../aggregate/rank.html" title="all ok">Rank <code>rank</code></a><a class="om-chip ok" href="../aggregate/ratio_to_report.html" title="all ok">Ratio to report <code>ratio_to_report</code></a></div></details><details class="om-blk"><summary>Data validation operators <b>(3)</b> 🟢1 🟡2</summary><div><a class="om-chip partial" href="../validation/check_datapoint.html" title="partially implemented">Check datapoint <code>check_datapoint</code></a><a class="om-chip partial" href="../validation/check_hierarchy.html" title="partially implemented">Check hierarchy <code>check_hierarchy</code></a><a class="om-chip ok" href="../validation/check.html" title="all ok">Check <code>check</code></a></div></details></details><details class="om-dir"><summary><b>Comes from · operators that return any type (their input&#x27;s)</b> — 36 operators in 7 blocks 🟢27 🟡8 🔴1</summary><details class="om-blk"><summary>General purpose operators <b>(5)</b> 🟢4 🟡1</summary><div><a class="om-chip ok" href="../general/parentheses.html" title="all ok">Parentheses <code>( )</code></a><a class="om-chip ok" href="../general/persistent_assignment.html" title="all ok">Persistent assignment <code>&lt;-</code></a><a class="om-chip ok" href="../general/non_persistent_assignment.html" title="all ok">Non-persistent assignment <code>:=</code></a><a class="om-chip partial" href="../general/membership.html" title="partially implemented">Membership <code>#</code></a><a class="om-chip ok" href="../general/udo_call.html" title="all ok">User-defined operator call <code>name( )</code></a></div></details><details class="om-blk"><summary>Join operators <b>(4)</b> 🟢2 🟡2</summary><div><a class="om-chip ok" href="../join/inner_join.html" title="all ok">Inner Join <code>inner_join</code></a><a class="om-chip partial" href="../join/left_join.html" title="partially implemented">Left Join <code>left_join</code></a><a class="om-chip partial" href="../join/full_join.html" title="partially implemented">Full Join <code>full_join</code></a><a class="om-chip ok" href="../join/cross_join.html" title="all ok">Cross Join <code>cross_join</code></a></div></details><details class="om-blk"><summary>Time operators <b>(3)</b> 🟢3</summary><div><a class="om-chip ok" href="../time/fill_time_series.html" title="all ok">Fill time series <code>fill_time_series</code></a><a class="om-chip ok" href="../time/timeshift.html" title="all ok">Time shift <code>timeshift</code></a><a class="om-chip ok" href="../time/dateadd.html" title="all ok">Add time unit to date <code>dateadd</code></a></div></details><details class="om-blk"><summary>Set operators <b>(4)</b> 🟢4</summary><div><a class="om-chip ok" href="../set/union.html" title="all ok">Union <code>union</code></a><a class="om-chip ok" href="../set/intersect.html" title="all ok">Intersection <code>intersect</code></a><a class="om-chip ok" href="../set/setdiff.html" title="all ok">Set difference <code>setdiff</code></a><a class="om-chip ok" href="../set/symdiff.html" title="all ok">Symmetric difference <code>symdiff</code></a></div></details><details class="om-blk"><summary>Aggregate and Analytic operators <b>(8)</b> 🟢6 🟡2</summary><div><a class="om-chip ok" href="../aggregate/aggregate_invocation.html" title="all ok">Aggregate invocation <code>group by</code></a><a class="om-chip ok" href="../aggregate/analytic_invocation.html" title="all ok">Analytic invocation <code>over</code></a><a class="om-chip partial" href="../aggregate/min.html" title="partially implemented">Minimum value <code>min</code></a><a class="om-chip partial" href="../aggregate/max.html" title="partially implemented">Maximum value <code>max</code></a><a class="om-chip ok" href="../aggregate/first_value.html" title="all ok">First value <code>first_value</code></a><a class="om-chip ok" href="../aggregate/last_value.html" title="all ok">Last value <code>last_value</code></a><a class="om-chip ok" href="../aggregate/lag.html" title="all ok">Lag <code>lag</code></a><a class="om-chip ok" href="../aggregate/lead.html" title="all ok">Lead <code>lead</code></a></div></details><details class="om-blk"><summary>Conditional operators <b>(3)</b> 🟢2 🟡1</summary><div><a class="om-chip ok" href="../conditional/if_then_else.html" title="all ok">if-then-else <code>if then else</code></a><a class="om-chip partial" href="../conditional/case.html" title="partially implemented">Case <code>case when</code></a><a class="om-chip ok" href="../conditional/nvl.html" title="all ok">Nvl <code>nvl</code></a></div></details><details class="om-blk"><summary>Clause operators <b>(9)</b> 🟢6 🟡2 🔴1</summary><div><a class="om-chip partial" href="../clause/calc.html" title="partially implemented">Calculation of a Component <code>calc</code></a><a class="om-chip partial" href="../clause/aggr.html" title="partially implemented">Aggregation <code>aggr</code></a><a class="om-chip ok" href="../clause/filter.html" title="all ok">Filtering Data Points <code>filter</code></a><a class="om-chip ok" href="../clause/keep.html" title="all ok">Maintaining Components <code>keep</code></a><a class="om-chip ok" href="../clause/drop.html" title="all ok">Removal of Components <code>drop</code></a><a class="om-chip ok" href="../clause/rename.html" title="all ok">Change of Component name <code>rename</code></a><a class="om-chip missing" href="../clause/pivot.html" title="not implemented or crash">Pivoting <code>pivot</code></a><a class="om-chip ok" href="../clause/unpivot.html" title="all ok">Unpivoting <code>unpivot</code></a><a class="om-chip ok" href="../clause/sub.html" title="all ok">Subspace <code>sub</code></a></div></details></details><details class="om-dir"><summary><b>Comes from · hierarchical ruleset</b> — 1 operator in 1 block 🟡1</summary><details class="om-blk"><summary>Definitions (VTL-DL) <b>(1)</b> 🟡1</summary><div><a class="om-chip partial" href="../definitions/define_hierarchical_ruleset.html" title="partially implemented">define hierarchical ruleset</a></div></details></details></div><div class="om-col"><p class="om-line"><b>Goes to:</b> whatever takes its input&#x27;s type</p></div></div>
 
 Forms
 ----------
@@ -166,7 +166,7 @@ hierarchy(DS, HR non\_null dataset computed) 🟢 · number, hierarchical rulese
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-null-dataset-computed-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-non-null-dataset-computed-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/non_null_dataset_computed/missing_null_and_zero_items/notes.rst
 
@@ -193,7 +193,7 @@ hierarchy(DS, HR non\_null dataset all) 🟢 · number, hierarchical ruleset →
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-null-dataset-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-non-null-dataset-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/non_null_dataset_all/missing_null_and_zero_items/notes.rst
 
@@ -220,7 +220,7 @@ hierarchy(DS, HR non\_null rule computed) 🟢 · number, hierarchical ruleset �
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-null-rule-computed-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-non-null-rule-computed-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/notes.rst
 
@@ -267,7 +267,7 @@ hierarchy(DS, HR non\_null rule all) 🟢 · number, hierarchical ruleset → an
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-null-rule-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-non-null-rule-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/non_null_rule_all/missing_null_and_zero_items/notes.rst
 
@@ -294,7 +294,7 @@ hierarchy(DS, HR non\_null rule\_priority computed) 🟢 · number, hierarchical
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-null-rule-priority-computed-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-non-null-rule-priority-computed-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/non_null_rule_priority_computed/missing_null_and_zero_items/notes.rst
 
@@ -341,7 +341,7 @@ hierarchy(DS, HR non\_null rule\_priority all) 🟢 · number, hierarchical rule
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-null-rule-priority-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-non-null-rule-priority-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/non_null_rule_priority_all/missing_null_and_zero_items/notes.rst
 
@@ -388,7 +388,7 @@ hierarchy(DS, HR non\_zero dataset computed) 🟢 · number, hierarchical rulese
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-zero-dataset-computed-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-non-zero-dataset-computed-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/non_zero_dataset_computed/missing_null_and_zero_items/notes.rst
 
@@ -415,7 +415,7 @@ hierarchy(DS, HR non\_zero dataset all) 🟢 · number, hierarchical ruleset →
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-zero-dataset-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-non-zero-dataset-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/non_zero_dataset_all/missing_null_and_zero_items/notes.rst
 
@@ -442,7 +442,7 @@ hierarchy(DS, HR non\_zero rule computed) 🟢 · number, hierarchical ruleset �
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-zero-rule-computed-manual-ex-2" open><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-non-zero-rule-computed-manual-ex-2"><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/notes.rst
 
@@ -489,7 +489,7 @@ hierarchy(DS, HR non\_zero rule all) 🟢 · number, hierarchical ruleset → an
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-zero-rule-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-non-zero-rule-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/non_zero_rule_all/missing_null_and_zero_items/notes.rst
 
@@ -516,7 +516,7 @@ hierarchy(DS, HR non\_zero rule\_priority computed) 🟢 · number, hierarchical
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-zero-rule-priority-computed-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-non-zero-rule-priority-computed-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/non_zero_rule_priority_computed/missing_null_and_zero_items/notes.rst
 
@@ -563,7 +563,7 @@ hierarchy(DS, HR non\_zero rule\_priority all) 🟢 · number, hierarchical rule
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-zero-rule-priority-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-non-zero-rule-priority-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/non_zero_rule_priority_all/missing_null_and_zero_items/notes.rst
 
@@ -610,7 +610,7 @@ hierarchy(DS, HR partial\_null dataset computed) 🟢 · number, hierarchical ru
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partial-null-dataset-computed-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-partial-null-dataset-computed-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/partial_null_dataset_computed/missing_null_and_zero_items/notes.rst
 
@@ -637,7 +637,7 @@ hierarchy(DS, HR partial\_null dataset all) 🟢 · number, hierarchical ruleset
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partial-null-dataset-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-partial-null-dataset-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/partial_null_dataset_all/missing_null_and_zero_items/notes.rst
 
@@ -664,7 +664,7 @@ hierarchy(DS, HR partial\_null rule computed) 🟢 · number, hierarchical rules
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partial-null-rule-computed-manual-ex-3" open><summary><span class="om-ex-title">Manual example 3</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-partial-null-rule-computed-manual-ex-3"><summary><span class="om-ex-title">Manual example 3</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/notes.rst
 
@@ -711,7 +711,7 @@ hierarchy(DS, HR partial\_null rule all) 🟢 · number, hierarchical ruleset �
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partial-null-rule-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-partial-null-rule-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/partial_null_rule_all/missing_null_and_zero_items/notes.rst
 
@@ -738,7 +738,7 @@ hierarchy(DS, HR partial\_null rule\_priority computed) 🟢 · number, hierarch
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partial-null-rule-priority-computed-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-partial-null-rule-priority-computed-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/partial_null_rule_priority_computed/missing_null_and_zero_items/notes.rst
 
@@ -785,7 +785,7 @@ hierarchy(DS, HR partial\_null rule\_priority all) 🟢 · number, hierarchical 
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partial-null-rule-priority-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-partial-null-rule-priority-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/partial_null_rule_priority_all/missing_null_and_zero_items/notes.rst
 
@@ -832,7 +832,7 @@ hierarchy(DS, HR partial\_zero dataset computed) 🟢 · number, hierarchical ru
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partial-zero-dataset-computed-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-partial-zero-dataset-computed-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/partial_zero_dataset_computed/missing_null_and_zero_items/notes.rst
 
@@ -859,7 +859,7 @@ hierarchy(DS, HR partial\_zero dataset all) 🟢 · number, hierarchical ruleset
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partial-zero-dataset-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-partial-zero-dataset-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/partial_zero_dataset_all/missing_null_and_zero_items/notes.rst
 
@@ -886,7 +886,7 @@ hierarchy(DS, HR partial\_zero rule computed) 🟢 · number, hierarchical rules
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partial-zero-rule-computed-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-partial-zero-rule-computed-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/partial_zero_rule_computed/missing_null_and_zero_items/notes.rst
 
@@ -913,7 +913,7 @@ hierarchy(DS, HR partial\_zero rule all) 🟢 · number, hierarchical ruleset �
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partial-zero-rule-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-partial-zero-rule-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/partial_zero_rule_all/missing_null_and_zero_items/notes.rst
 
@@ -940,7 +940,7 @@ hierarchy(DS, HR partial\_zero rule\_priority computed) 🟢 · number, hierarch
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partial-zero-rule-priority-computed-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-partial-zero-rule-priority-computed-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/partial_zero_rule_priority_computed/missing_null_and_zero_items/notes.rst
 
@@ -987,7 +987,7 @@ hierarchy(DS, HR partial\_zero rule\_priority all) 🟢 · number, hierarchical 
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partial-zero-rule-priority-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-partial-zero-rule-priority-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/partial_zero_rule_priority_all/missing_null_and_zero_items/notes.rst
 
@@ -1034,7 +1034,7 @@ hierarchy(DS, HR always\_null dataset computed) 🟡 · number, hierarchical rul
 
 .. raw:: html
 
-   <details class="om-example" id="ex-always-null-dataset-computed-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-always-null-dataset-computed-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">missing row Id_1=3, Id_2=C</p>
 
 .. include:: ../examples/hierarchy/hierarchy/always_null_dataset_computed/missing_null_and_zero_items/notes.rst
@@ -1062,7 +1062,7 @@ hierarchy(DS, HR always\_null dataset all) 🟡 · number, hierarchical ruleset 
 
 .. raw:: html
 
-   <details class="om-example" id="ex-always-null-dataset-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-always-null-dataset-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">missing row Id_1=3, Id_2=C</p>
 
 .. include:: ../examples/hierarchy/hierarchy/always_null_dataset_all/missing_null_and_zero_items/notes.rst
@@ -1090,7 +1090,7 @@ hierarchy(DS, HR always\_null rule computed) 🟡 · number, hierarchical rulese
 
 .. raw:: html
 
-   <details class="om-example" id="ex-always-null-rule-computed-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-always-null-rule-computed-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">missing row Id_1=3, Id_2=C</p>
 
 .. include:: ../examples/hierarchy/hierarchy/always_null_rule_computed/missing_null_and_zero_items/notes.rst
@@ -1118,7 +1118,7 @@ hierarchy(DS, HR always\_null rule all) 🟡 · number, hierarchical ruleset →
 
 .. raw:: html
 
-   <details class="om-example" id="ex-always-null-rule-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-always-null-rule-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">missing row Id_1=3, Id_2=C</p>
 
 .. include:: ../examples/hierarchy/hierarchy/always_null_rule_all/missing_null_and_zero_items/notes.rst
@@ -1146,7 +1146,7 @@ hierarchy(DS, HR always\_null rule\_priority computed) 🟡 · number, hierarchi
 
 .. raw:: html
 
-   <details class="om-example" id="ex-always-null-rule-priority-computed-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-always-null-rule-priority-computed-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">missing row Id_1=3, Id_2=C</p>
 
 .. include:: ../examples/hierarchy/hierarchy/always_null_rule_priority_computed/missing_null_and_zero_items/notes.rst
@@ -1195,7 +1195,7 @@ hierarchy(DS, HR always\_null rule\_priority all) 🟡 · number, hierarchical r
 
 .. raw:: html
 
-   <details class="om-example" id="ex-always-null-rule-priority-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-always-null-rule-priority-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">missing row Id_1=3, Id_2=C</p>
 
 .. include:: ../examples/hierarchy/hierarchy/always_null_rule_priority_all/missing_null_and_zero_items/notes.rst
@@ -1244,7 +1244,7 @@ hierarchy(DS, HR always\_zero dataset computed) 🟡 · number, hierarchical rul
 
 .. raw:: html
 
-   <details class="om-example" id="ex-always-zero-dataset-computed-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-always-zero-dataset-computed-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">missing row Id_1=3, Id_2=C</p>
 
 .. include:: ../examples/hierarchy/hierarchy/always_zero_dataset_computed/missing_null_and_zero_items/notes.rst
@@ -1272,7 +1272,7 @@ hierarchy(DS, HR always\_zero dataset all) 🟡 · number, hierarchical ruleset 
 
 .. raw:: html
 
-   <details class="om-example" id="ex-always-zero-dataset-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-always-zero-dataset-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">missing row Id_1=3, Id_2=C</p>
 
 .. include:: ../examples/hierarchy/hierarchy/always_zero_dataset_all/missing_null_and_zero_items/notes.rst
@@ -1300,7 +1300,7 @@ hierarchy(DS, HR always\_zero rule computed) 🟡 · number, hierarchical rulese
 
 .. raw:: html
 
-   <details class="om-example" id="ex-always-zero-rule-computed-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-always-zero-rule-computed-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">missing row Id_1=3, Id_2=C</p>
 
 .. include:: ../examples/hierarchy/hierarchy/always_zero_rule_computed/missing_null_and_zero_items/notes.rst
@@ -1328,7 +1328,7 @@ hierarchy(DS, HR always\_zero rule all) 🟡 · number, hierarchical ruleset →
 
 .. raw:: html
 
-   <details class="om-example" id="ex-always-zero-rule-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-always-zero-rule-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">missing row Id_1=3, Id_2=C</p>
 
 .. include:: ../examples/hierarchy/hierarchy/always_zero_rule_all/missing_null_and_zero_items/notes.rst
@@ -1356,7 +1356,7 @@ hierarchy(DS, HR always\_zero rule\_priority computed) 🟡 · number, hierarchi
 
 .. raw:: html
 
-   <details class="om-example" id="ex-always-zero-rule-priority-computed-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-always-zero-rule-priority-computed-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">missing row Id_1=3, Id_2=C</p>
 
 .. include:: ../examples/hierarchy/hierarchy/always_zero_rule_priority_computed/missing_null_and_zero_items/notes.rst
@@ -1405,7 +1405,7 @@ hierarchy(DS, HR always\_zero rule\_priority all) 🟡 · number, hierarchical r
 
 .. raw:: html
 
-   <details class="om-example" id="ex-always-zero-rule-priority-all-missing-null-and-zero-items" open><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-always-zero-rule-priority-all-missing-null-and-zero-items"><summary><span class="om-ex-title">Missing null and zero items</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">missing row Id_1=3, Id_2=C</p>
 
 .. include:: ../examples/hierarchy/hierarchy/always_zero_rule_priority_all/missing_null_and_zero_items/notes.rst
@@ -1454,7 +1454,7 @@ hierarchy(DS, HR condition C) 🟢 · number, hierarchical ruleset → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-condition-rule-only-where-the-condition-holds" open><summary><span class="om-ex-title">Rule only where the condition holds</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-condition-rule-only-where-the-condition-holds"><summary><span class="om-ex-title">Rule only where the condition holds</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/condition/rule_only_where_the_condition_holds/notes.rst
 
@@ -1501,7 +1501,7 @@ hierarchy(DS, HR rule R) 🟢 · number, hierarchical ruleset → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-valuedomain-rule-domain-ruleset-bound-by-rule" open><summary><span class="om-ex-title">Domain ruleset bound by rule</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-valuedomain-rule-domain-ruleset-bound-by-rule"><summary><span class="om-ex-title">Domain ruleset bound by rule</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/valuedomain_rule/domain_ruleset_bound_by_rule/notes.rst
 

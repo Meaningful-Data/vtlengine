@@ -4,7 +4,7 @@ Time operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 11 of 17 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 12 of 17 operators all ok, 2 refused</span> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -31,7 +31,7 @@ Time operators
        time__flow_to_stock["Flow to stock · flow_to_stock<br/>🟢3"]:::ok
        time__stock_to_flow["Stock to flow · stock_to_flow<br/>🟢3"]:::ok
        time__timeshift["Time shift · timeshift<br/>🟢3"]:::ok
-       time__time_agg["Time aggregation · time_agg<br/>🟢7 🛡️1"]:::partial
+       time__time_agg["Time aggregation · time_agg<br/>🟢8"]:::ok
        time__current_date["Actual time · current_date<br/>🟢1"]:::ok
        time__datediff["Days between two dates · datediff<br/>🟢4"]:::ok
        time__dateadd["Add time unit to date · dateadd<br/>🟢4"]:::ok
@@ -107,7 +107,7 @@ Time operators
      - 🟢
      - 3
    * - :doc:`Time aggregation <time_agg>` ``time_agg``
-     - 🟡
+     - 🟢
      - 8
    * - :doc:`Actual time <current_date>` ``current_date``
      - 🟢
@@ -316,13 +316,6 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - 💥 IndexError
      - 💥 IndexError
      - IndexError: list index out of range
-   * - :doc:`Time aggregation <time_agg>`
-     - `time\_agg(p, sc) on date <time_agg.html#form-sc-date>`__
-     - 🛡️
-     - `Without first or last <time_agg.html#ex-sc-date-without-first-or-last>`__
-     - 🛡 1-1-19-11
-     - 🛡 1-1-19-11
-     - SemanticError 1-1-19-11: At op time\_agg: If used over a Date, first/last parameter must be declared. Please check transformation with output Dataset DS\_r
    * - :doc:`Number of days to years and days <daytoyear>`
      - `calc daytoyear(comp) <daytoyear.html#form-comp>`__
      - 🟡

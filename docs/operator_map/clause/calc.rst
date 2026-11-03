@@ -4,7 +4,7 @@ Calculation of a Component · ``calc``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 5 of 6 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Calculation%20of%20a%20Component/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 5 of 6 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Calculation%20of%20a%20Component/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -60,7 +60,7 @@ Calculation of a Component · ``calc``
 
 .. raw:: html
 
-   <details class="om-dir" open><summary><b>Used with</b> — 21 operators in 2 blocks 🟢5 🟡15 🔵1</summary><details class="om-blk"><summary>Join operators <b>(4)</b> 🟢1 🟡3</summary><div><a class="om-chip partial" href="../join/inner_join.html" title="partially implemented">Inner Join <code>inner_join</code> <small>used by</small></a><a class="om-chip partial" href="../join/left_join.html" title="partially implemented">Left Join <code>left_join</code> <small>used by</small></a><a class="om-chip partial" href="../join/full_join.html" title="partially implemented">Full Join <code>full_join</code> <small>used by</small></a><a class="om-chip ok" href="../join/cross_join.html" title="all ok">Cross Join <code>cross_join</code> <small>used by</small></a></div></details><details class="om-blk"><summary>Aggregate and Analytic operators <b>(17)</b> 🟢4 🟡12 🔵1</summary><div><a class="om-chip partial" href="../aggregate/analytic_invocation.html" title="partially implemented">Analytic invocation <code>over</code> <small>uses</small></a><a class="om-chip diverge" href="../aggregate/count.html" title="engines differ">Counting the number of data points <code>count</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/min.html" title="partially implemented">Minimum value <code>min</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/max.html" title="partially implemented">Maximum value <code>max</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/median.html" title="partially implemented">Median value <code>median</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/sum.html" title="partially implemented">Sum <code>sum</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/avg.html" title="partially implemented">Average value <code>avg</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/stddev_pop.html" title="partially implemented">Population standard deviation <code>stddev_pop</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/stddev_samp.html" title="partially implemented">Sample standard deviation <code>stddev_samp</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/var_pop.html" title="partially implemented">Population variance <code>var_pop</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/var_samp.html" title="partially implemented">Sample variance <code>var_samp</code> <small>uses, in over()</small></a><a class="om-chip ok" href="../aggregate/first_value.html" title="all ok">First value <code>first_value</code> <small>uses, in over()</small></a><a class="om-chip ok" href="../aggregate/last_value.html" title="all ok">Last value <code>last_value</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/lag.html" title="partially implemented">Lag <code>lag</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/lead.html" title="partially implemented">Lead <code>lead</code> <small>uses, in over()</small></a><a class="om-chip ok" href="../aggregate/rank.html" title="all ok">Rank <code>rank</code> <small>uses, in over()</small></a><a class="om-chip ok" href="../aggregate/ratio_to_report.html" title="all ok">Ratio to report <code>ratio_to_report</code> <small>uses, in over()</small></a></div></details></details>
+   <details class="om-dir"><summary><b>Used with</b> — 21 operators in 2 blocks 🟢9 🟡11 🔵1</summary><details class="om-blk"><summary>Join operators <b>(4)</b> 🟢2 🟡2</summary><div><a class="om-chip ok" href="../join/inner_join.html" title="all ok">Inner Join <code>inner_join</code> <small>used by</small></a><a class="om-chip partial" href="../join/left_join.html" title="partially implemented">Left Join <code>left_join</code> <small>used by</small></a><a class="om-chip partial" href="../join/full_join.html" title="partially implemented">Full Join <code>full_join</code> <small>used by</small></a><a class="om-chip ok" href="../join/cross_join.html" title="all ok">Cross Join <code>cross_join</code> <small>used by</small></a></div></details><details class="om-blk"><summary>Aggregate and Analytic operators <b>(17)</b> 🟢7 🟡9 🔵1</summary><div><a class="om-chip ok" href="../aggregate/analytic_invocation.html" title="all ok">Analytic invocation <code>over</code> <small>uses</small></a><a class="om-chip diverge" href="../aggregate/count.html" title="engines differ">Counting the number of data points <code>count</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/min.html" title="partially implemented">Minimum value <code>min</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/max.html" title="partially implemented">Maximum value <code>max</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/median.html" title="partially implemented">Median value <code>median</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/sum.html" title="partially implemented">Sum <code>sum</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/avg.html" title="partially implemented">Average value <code>avg</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/stddev_pop.html" title="partially implemented">Population standard deviation <code>stddev_pop</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/stddev_samp.html" title="partially implemented">Sample standard deviation <code>stddev_samp</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/var_pop.html" title="partially implemented">Population variance <code>var_pop</code> <small>uses, in over()</small></a><a class="om-chip partial" href="../aggregate/var_samp.html" title="partially implemented">Sample variance <code>var_samp</code> <small>uses, in over()</small></a><a class="om-chip ok" href="../aggregate/first_value.html" title="all ok">First value <code>first_value</code> <small>uses, in over()</small></a><a class="om-chip ok" href="../aggregate/last_value.html" title="all ok">Last value <code>last_value</code> <small>uses, in over()</small></a><a class="om-chip ok" href="../aggregate/lag.html" title="all ok">Lag <code>lag</code> <small>uses, in over()</small></a><a class="om-chip ok" href="../aggregate/lead.html" title="all ok">Lead <code>lead</code> <small>uses, in over()</small></a><a class="om-chip ok" href="../aggregate/rank.html" title="all ok">Rank <code>rank</code> <small>uses, in over()</small></a><a class="om-chip ok" href="../aggregate/ratio_to_report.html" title="all ok">Ratio to report <code>ratio_to_report</code> <small>uses, in over()</small></a></div></details></details>
 
 Types
 ----------
@@ -82,7 +82,7 @@ DS[calc Me := expr] 🟡 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-measure-default-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-measure-default-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/calc/measure_default/manual_ex_1/notes.rst
 
@@ -150,7 +150,7 @@ DS[calc measure Me := expr] 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-measure-explicit-explicit-role-on-new-component" open><summary><span class="om-ex-title">Explicit role on new component</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-measure-explicit-explicit-role-on-new-component"><summary><span class="om-ex-title">Explicit role on new component</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/calc/measure_explicit/explicit_role_on_new_component/notes.rst
 
@@ -197,7 +197,7 @@ DS[calc identifier Id := expr] 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-identifier-new-identifier-from-measure" open><summary><span class="om-ex-title">New identifier from measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-identifier-new-identifier-from-measure"><summary><span class="om-ex-title">New identifier from measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/calc/identifier/new_identifier_from_measure/notes.rst
 
@@ -224,7 +224,7 @@ DS[calc attribute At := expr] 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-attribute-manual-ex-2" open><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-attribute-manual-ex-2"><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/calc/attribute/manual_ex_2/notes.rst
 
@@ -251,7 +251,7 @@ DS[calc viral attribute At := expr] 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-viral-attribute-constant-viral-attribute" open><summary><span class="om-ex-title">Constant viral attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-viral-attribute-constant-viral-attribute"><summary><span class="om-ex-title">Constant viral attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/calc/viral_attribute/constant_viral_attribute/notes.rst
 
@@ -278,7 +278,7 @@ DS[calc Me := expr, attribute At := expr] 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-multiple-default-and-explicit-roles" open><summary><span class="om-ex-title">Default and explicit roles</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-multiple-default-and-explicit-roles"><summary><span class="om-ex-title">Default and explicit roles</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/calc/multiple/default_and_explicit_roles/notes.rst
 

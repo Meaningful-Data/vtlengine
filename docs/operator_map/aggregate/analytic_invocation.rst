@@ -4,7 +4,7 @@ Analytic invocation · ``over``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 8 of 9 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 9 of 9 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -29,7 +29,7 @@ Analytic invocation · ``over``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Analytic invocation · over<br/>🟢8 🟡1"]:::partial
+       O["Analytic invocation · over<br/>🟢9"]:::ok
        subgraph G_ds["Dataset"]
            direction LR
            v_window_data_points["an(DS over (order by Id data points between n preceding and n following))"]:::ok
@@ -38,7 +38,7 @@ Analytic invocation · ``over``
            direction LR
            v_partition_by["an(Me over (partition by Id))"]:::ok
            v_partition_except["an(Me over (partition except Id))"]:::ok
-           v_partition_except_all["an(over (partition except all order by Id))"]:::partial
+           v_partition_except_all["an(over (partition except all order by Id))"]:::ok
            v_order_asc["an(over (partition by Id order by Me asc))"]:::ok
            v_order_desc["an(over (partition by Id order by Me desc))"]:::ok
            v_window_range["an(Me over (partition by Id order by Me range between n preceding and n following))"]:::ok
@@ -91,7 +91,7 @@ an(DS over (order by Id data points between n preceding and n following)) 🟢 �
 
 .. raw:: html
 
-   <details class="om-example" id="ex-window-data-points-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-window-data-points-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/analytic_invocation/window_data_points/manual_ex_1/notes.rst
 
@@ -118,7 +118,7 @@ an(Me over (partition by Id)) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partition-by-sum-per-quarter" open><summary><span class="om-ex-title">Sum per quarter</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-partition-by-sum-per-quarter"><summary><span class="om-ex-title">Sum per quarter</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/analytic_invocation/partition_by/sum_per_quarter/notes.rst
 
@@ -145,7 +145,7 @@ an(Me over (partition except Id)) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partition-except-partition-by-unlisted-identifier" open><summary><span class="om-ex-title">Partition by unlisted identifier</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-partition-except-partition-by-unlisted-identifier"><summary><span class="om-ex-title">Partition by unlisted identifier</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/analytic_invocation/partition_except/partition_by_unlisted_identifier/notes.rst
 
@@ -167,12 +167,12 @@ an(Me over (partition except Id)) 🟢 · any scalar → any type
 
    <span class="om-anchor" id="form-partition-except-all"></span>
 
-an(over (partition except all order by Id)) 🟡 · any scalar → any type
+an(over (partition except all order by Id)) 🟢 · any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partition-except-all-manual-ex-2" open><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-1-10</code> · DuckDB 🛡 <code>1-1-1-10</code></span></summary>
+   <details class="om-example" id="ex-partition-except-all-manual-ex-2"><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-1-10</code> · DuckDB 🛡 <code>1-1-1-10</code></span></summary>
    <p class="om-detail">SemanticError 1-1-1-10: Component id_1 not found in Dataset DS_1. Please check transformation with output Dataset DS_r</p>
 
 .. include:: ../examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/notes.rst
@@ -220,7 +220,7 @@ an(over (partition by Id order by Me asc)) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-order-asc-ascending-rank-with-tie" open><summary><span class="om-ex-title">Ascending rank with tie</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-order-asc-ascending-rank-with-tie"><summary><span class="om-ex-title">Ascending rank with tie</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/analytic_invocation/order_asc/ascending_rank_with_tie/notes.rst
 
@@ -247,7 +247,7 @@ an(over (partition by Id order by Me desc)) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-order-desc-descending-rank-with-tie" open><summary><span class="om-ex-title">Descending rank with tie</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-order-desc-descending-rank-with-tie"><summary><span class="om-ex-title">Descending rank with tie</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/analytic_invocation/order_desc/descending_rank_with_tie/notes.rst
 
@@ -274,7 +274,7 @@ an(Me over (partition by Id order by Me range between n preceding and n followin
 
 .. raw:: html
 
-   <details class="om-example" id="ex-window-range-range-bounds-are-inclusive" open><summary><span class="om-ex-title">Range bounds are inclusive</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-window-range-range-bounds-are-inclusive"><summary><span class="om-ex-title">Range bounds are inclusive</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/analytic_invocation/window_range/range_bounds_are_inclusive/notes.rst
 
@@ -301,7 +301,7 @@ an(Me over (\.\.\. data points between unbounded preceding and unbounded followi
 
 .. raw:: html
 
-   <details class="om-example" id="ex-window-unbounded-unbounded-covers-whole-partition" open><summary><span class="om-ex-title">Unbounded covers whole partition</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-window-unbounded-unbounded-covers-whole-partition"><summary><span class="om-ex-title">Unbounded covers whole partition</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/analytic_invocation/window_unbounded/unbounded_covers_whole_partition/notes.rst
 
@@ -328,7 +328,7 @@ an(Me over (\.\.\. data points between n preceding and current data point)) 🟢
 
 .. raw:: html
 
-   <details class="om-example" id="ex-window-current-one-preceding-to-current" open><summary><span class="om-ex-title">One preceding to current</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-window-current-one-preceding-to-current"><summary><span class="om-ex-title">One preceding to current</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/analytic_invocation/window_current/one_preceding_to_current/notes.rst
 

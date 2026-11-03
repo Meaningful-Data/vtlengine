@@ -11,7 +11,7 @@ How to read
 
 - **Pages.** The map has three parts: this overview, the operators and the definitions of the VTL-DL. The operators have a page for each block (a chapter of the manual), and the blocks a page for each operator; the definitions have a page for each definition. The sidebar, the tables and the diagrams lead to them.
 - **Diagrams.** The overview and the page of a block have the map or the block in the middle, and its blocks or its operators on both sides. The page of an operator has the operator on top. When its forms use two kinds of operands or more, they are in a light box for each kind: a solid border for the forms on datasets, a dashed one for components and a dotted one for scalars, as the key above the diagram shows. Otherwise its forms are on both sides of it. The forms of a definition of the VTL-DL stand for the parts of its syntax, and are in light boxes with a thin solid border, titled after them: Signature, Body, Return type. A box with a thin, sparsely dotted border, "Used with", has the operators that it is combined with. Where the viewer supports links in diagrams, a node opens its page, and a form its section; the tables and the lists are the reliable way.
-- **Statuses.** The colour of a node, and the emoji of a chip or a heading, say its status: 🟢 all its examples give the expected result on both engines; 🟡 partially implemented, a mix, or a result that is wrong on both engines; 🛡️ refused with an error: both engines raise an error of vtlengine with a code where the manual defines a result, and the code is not one of those that say that something is not implemented (the list below); 🔴 not implemented, or a crash; 🔵 the engines differ. A form takes the status of its examples, an operator that of its forms, and a block that of its operators: 🔵 when any of them is 🔵, 🟢, 🛡️ or 🔴 when all of them are, and 🟡 otherwise. The tallies count the forms of an operator, and the operators of a block.
+- **Statuses.** The colour of a node, and the emoji of a chip or a heading, say its status: 🟢 all its examples give the expected result on both engines, or are refused on purpose; 🟡 partially implemented, a mix, or a result that is wrong on both engines; 🛡️ refused with an error: both engines raise an error of vtlengine with a code where the manual defines a result, and the code is not one of those that say that something is not implemented (the list below); 🔴 not implemented, or a crash; 🔵 the engines differ. A form takes the status of its examples, an operator that of its forms, and a block that of its operators: 🔵 when any of them is 🔵, 🛡️ or 🔴 when all of them are, 🟢 when all of them are 🟢 or 🛡️, and 🟡 otherwise. The tallies count the forms of an operator, and the operators of a block.
 - **Marks.** An example shows what each engine gave: ✅ a match, the expected output or the expected error; ❌ a wrong result; 🛡 a guarded error, an error that vtlengine raises on purpose, with its code, such as 🛡 2-1-15-6; 💥 a crash, an exception that vtlengine does not handle (such as ``KeyError``), or a run that did not end.
 - **Examples.** An example is a folder with a ``script.vtl``, its ``input/`` data and its ``expected/`` output, or the error that it expects, and its notes: what it tests, the rule of the manual and how the result follows from it. The expected outputs come from the manual, or are derived by hand from its semantics, and never from the output of an engine. The page of an operator shows all of it, with links to the files.
 - **Types.** A form takes and gives types. The page of an operator lists the operators that give what it takes ("Comes from") and those that take what it gives ("Goes to"), by block. An integer is a number, so a producer of an integer feeds an operator that takes a number.
@@ -40,17 +40,17 @@ A node for each block, with how many operators it has, and how many of them are 
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        R["VTL 2.2<br/>Reference Manual"]:::block
        chapter__general["General purpose operators<br/>7 operators · 🟢4 🟡2 🔵1"]:::diverge
-       chapter__join["Join operators<br/>4 operators · 🟢1 🟡3"]:::partial
+       chapter__join["Join operators<br/>4 operators · 🟢2 🟡2"]:::partial
        chapter__string["String operators<br/>11 operators · 🟢10 🟡1"]:::partial
        chapter__numeric["Numeric operators<br/>18 operators · 🟢12 🟡5 🔵1"]:::diverge
        chapter__comparison["Comparison operators<br/>12 operators · 🟢12"]:::ok
        chapter__boolean["Boolean operators<br/>4 operators · 🟢4"]:::ok
-       chapter__time["Time operators<br/>17 operators · 🟢11 🟡4 🛡️2"]:::partial
+       chapter__time["Time operators<br/>17 operators · 🟢12 🟡3 🛡️2"]:::partial
        chapter__set["Set operators<br/>4 operators · 🟢4"]:::ok
        chapter__hierarchy["Hierarchical aggregation<br/>1 operator · 🟡1"]:::partial
-       chapter__aggregate["Aggregate and Analytic operators<br/>18 operators · 🟢5 🟡12 🔵1"]:::diverge
+       chapter__aggregate["Aggregate and Analytic operators<br/>18 operators · 🟢8 🟡9 🔵1"]:::diverge
        chapter__validation["Data validation operators<br/>3 operators · 🟢1 🟡2"]:::partial
-       chapter__conditional["Conditional operators<br/>3 operators · 🟢1 🟡2"]:::partial
+       chapter__conditional["Conditional operators<br/>3 operators · 🟢2 🟡1"]:::partial
        chapter__clause["Clause operators<br/>9 operators · 🟢6 🟡2 🔴1"]:::partial
        chapter__definitions["Definitions (VTL-DL)<br/>4 operators · 🟡4"]:::partial
        chapter__general --- R
@@ -117,8 +117,8 @@ The counts are over the forms of the operators of each block.
      - 🟡
      - 4
      - 89
-     - 83
-     - 5
+     - 86
+     - 2
      - 1
      - 0
      - 0
@@ -162,9 +162,9 @@ The counts are over the forms of the operators of each block.
      - 🟡
      - 17
      - 54
-     - 44
+     - 45
      - 4
-     - 5
+     - 4
      - 1
      - 0
    * - :doc:`Set operators <set/index>`
@@ -189,17 +189,17 @@ The counts are over the forms of the operators of each block.
      - 🔵
      - 18
      - 110
-     - 87
-     - 20
-     - 2
+     - 100
+     - 9
+     - 0
      - 0
      - 1
    * - :doc:`Data validation operators <validation/index>`
      - 🟡
      - 3
      - 53
-     - 37
-     - 16
+     - 39
+     - 14
      - 0
      - 0
      - 0
@@ -234,9 +234,9 @@ The counts are over the forms of the operators of each block.
      - 🔵
      - 115
      - 727
-     - 607
-     - 76
-     - 15
+     - 626
+     - 60
+     - 12
      - 21
      - 8
 

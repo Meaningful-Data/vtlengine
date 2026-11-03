@@ -34,8 +34,8 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🟡
      - 4
      - 89
-     - 83
-     - 5
+     - 86
+     - 2
      - 1
      - 0
      - 0
@@ -79,9 +79,9 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🟡
      - 17
      - 54
-     - 44
+     - 45
      - 4
-     - 5
+     - 4
      - 1
      - 0
    * - :doc:`Set operators <set/index>`
@@ -106,17 +106,17 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🔵
      - 18
      - 110
-     - 87
-     - 20
-     - 2
+     - 100
+     - 9
+     - 0
      - 0
      - 1
    * - :doc:`Data validation operators <validation/index>`
      - 🟡
      - 3
      - 53
-     - 37
-     - 16
+     - 39
+     - 14
      - 0
      - 0
      - 0
@@ -142,9 +142,9 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🔵
      - 111
      - 698
-     - 586
-     - 73
-     - 14
+     - 605
+     - 57
+     - 11
      - 17
      - 8
 

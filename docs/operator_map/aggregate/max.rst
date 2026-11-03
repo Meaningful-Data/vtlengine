@@ -4,7 +4,7 @@ Maximum value · ``max``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 6 of 8 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Maximum%20value/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 7 of 8 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Maximum%20value/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -29,14 +29,14 @@ Maximum value · ``max``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Maximum value · max<br/>🟢6 🟡2"]:::partial
+       O["Maximum value · max<br/>🟢7 🟡1"]:::partial
        subgraph G_ds["Dataset"]
            direction LR
            v_ds_no_group["max(DS)"]:::ok
            v_ds_group_by["max(DS group by Id)"]:::ok
            v_ds_group_except["max(DS group except Id)"]:::ok
            v_ds_group_all["max(DS group all time_agg(#quot;A#quot;))"]:::ok
-           v_ds_having["max(DS group by Id having cond)"]:::partial
+           v_ds_having["max(DS group by Id having cond)"]:::ok
            v_analytic_ds["max(DS over (partition by Id))"]:::partial
        end
        subgraph G_comp["Component"]
@@ -91,7 +91,7 @@ max(DS) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-no-group-single-group-no-identifiers" open><summary><span class="om-ex-title">Single group no identifiers</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-ds-no-group-single-group-no-identifiers"><summary><span class="om-ex-title">Single group no identifiers</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/max/ds_no_group/single_group_no_identifiers/notes.rst
 
@@ -118,7 +118,7 @@ max(DS group by Id) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-group-by-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-ds-group-by-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/max/ds_group_by/manual_ex_1/notes.rst
 
@@ -165,7 +165,7 @@ max(DS group except Id) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-group-except-drops-the-listed-identifier" open><summary><span class="om-ex-title">Drops the listed identifier</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-ds-group-except-drops-the-listed-identifier"><summary><span class="om-ex-title">Drops the listed identifier</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/max/ds_group_except/drops_the_listed_identifier/notes.rst
 
@@ -192,7 +192,7 @@ max(DS group all time\_agg(\"A\")) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-group-all-quarters-to-years" open><summary><span class="om-ex-title">Quarters to years</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-ds-group-all-quarters-to-years"><summary><span class="om-ex-title">Quarters to years</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/max/ds_group_all/quarters_to_years/notes.rst
 
@@ -214,12 +214,12 @@ max(DS group all time\_agg(\"A\")) 🟢 · any scalar → any type
 
    <span class="om-anchor" id="form-ds-having"></span>
 
-max(DS group by Id having cond) 🟡 · any scalar, boolean → any type
+max(DS group by Id having cond) 🟢 · any scalar, boolean → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-having-two-measures" open><summary><span class="om-ex-title">Two measures</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-1-4</code> · DuckDB 🛡 <code>1-1-1-4</code></span></summary>
+   <details class="om-example" id="ex-ds-having-two-measures"><summary><span class="om-ex-title">Two measures</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-1-4</code> · DuckDB 🛡 <code>1-1-1-4</code></span></summary>
    <p class="om-detail">SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r</p>
 
 .. include:: ../examples/aggregate/max/ds_having/two_measures/notes.rst
@@ -267,7 +267,7 @@ max(DS over (partition by Id)) 🟡 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-analytic-ds-whole-partition-without-order" open><summary><span class="om-ex-title">Whole partition without order</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-analytic-ds-whole-partition-without-order"><summary><span class="om-ex-title">Whole partition without order</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">row Id_1=A, Id_2=2020Q1: Me_1 expected 5 got 3.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 3.500000 got 1.5; row Id_1=A, Id_2=2020Q2: Me_1 expected 5 got 3.0</p>
 
 .. include:: ../examples/aggregate/max/analytic_ds/whole_partition_without_order/notes.rst
@@ -295,7 +295,7 @@ DS[aggr Me := max(Me) group by Id] 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-comp-in-aggr-keeps-only-calculated-measure" open><summary><span class="om-ex-title">Keeps only calculated measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-comp-in-aggr-keeps-only-calculated-measure"><summary><span class="om-ex-title">Keeps only calculated measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/max/comp_in_aggr/keeps_only_calculated_measure/notes.rst
 
@@ -322,7 +322,7 @@ DS[calc Me := max(Me over (partition by Id))] 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-analytic-comp-whole-partition-without-order" open><summary><span class="om-ex-title">Whole partition without order</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-analytic-comp-whole-partition-without-order"><summary><span class="om-ex-title">Whole partition without order</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/max/analytic_comp/whole_partition_without_order/notes.rst
 

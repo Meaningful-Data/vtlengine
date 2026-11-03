@@ -220,7 +220,7 @@ def _lag_or_lead(op_id: str, name: str, comp_slug: str) -> Operator:
             Variant(
                 "ds_no_offset",
                 f"{op_id}(DS over (partition by Id order by Id))",
-                (authored("offset_defaults_to_one"),),
+                (authored("no_default_offset"),),
                 takes=(ANY_SCALAR,),
                 gives=(ANY_TYPE,),
             ),

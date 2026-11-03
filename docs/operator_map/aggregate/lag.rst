@@ -4,7 +4,7 @@ Lag · ``lag``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 3 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Lag/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 4 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Lag/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -29,10 +29,10 @@ Lag · ``lag``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Lag · lag<br/>🟢3 🛡️1"]:::partial
+       O["Lag · lag<br/>🟢4"]:::ok
        subgraph G_ds["Dataset"]
            direction LR
-           v_ds_no_offset["lag(DS over (partition by Id order by Id))"]:::refused
+           v_ds_no_offset["lag(DS over (partition by Id order by Id))"]:::ok
            v_ds_offset["lag(DS, n over (partition by Id order by Id))"]:::ok
            v_ds_offset_default["lag(DS, n, default over (partition by Id order by Id))"]:::ok
        end
@@ -76,28 +76,28 @@ Forms
 
    <span class="om-anchor" id="form-ds-no-offset"></span>
 
-lag(DS over (partition by Id order by Id)) 🛡️ · any scalar → any type
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+lag(DS over (partition by Id order by Id)) 🟢 · any scalar → any type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-no-offset-offset-defaults-to-one" open><summary><span class="om-ex-title">Offset defaults to one</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>0-5-1-3</code> · DuckDB 🛡 <code>0-5-1-3</code></span></summary>
-   <p class="om-detail">InputValidationException 0-5-1-3: lag requires an offset parameter.</p>
+   <details class="om-example" id="ex-ds-no-offset-no-default-offset"><summary><span class="om-ex-title">No default offset</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
-.. include:: ../examples/aggregate/lag/ds_no_offset/offset_defaults_to_one/notes.rst
+.. include:: ../examples/aggregate/lag/ds_no_offset/no_default_offset/notes.rst
 
-.. literalinclude:: ../examples/aggregate/lag/ds_no_offset/offset_defaults_to_one/script.vtl
+.. literalinclude:: ../examples/aggregate/lag/ds_no_offset/no_default_offset/script.vtl
    :caption: script.vtl
    :language: none
 
 .. raw:: html
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>A</td><td>2020Q1</td><td>3</td><td>1.500000</td></tr><tr><td>A</td><td>2020Q2</td><td>1</td><td>3.500000</td></tr><tr><td>A</td><td>2021Q1</td><td>5</td><td>2.500000</td></tr><tr><td>A</td><td>2021Q2</td><td>1</td><td>0.500000</td></tr><tr><td>B</td><td>2020Q1</td><td>4</td><td>6.500000</td></tr><tr><td>B</td><td>2020Q2</td><td>8</td><td>4.500000</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>A</td><td>2020Q1</td><td></td><td></td></tr><tr><td>A</td><td>2020Q2</td><td>3</td><td>1.500000</td></tr><tr><td>A</td><td>2021Q1</td><td>1</td><td>3.500000</td></tr><tr><td>A</td><td>2021Q2</td><td>5</td><td>2.500000</td></tr><tr><td>B</td><td>2020Q1</td><td></td><td></td></tr><tr><td>B</td><td>2020Q2</td><td>4</td><td>6.500000</td></tr></tbody></table>
+
+Expected error ``0-5-1-3``: {op} requires an offset parameter.
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/aggregate/lag/ds_no_offset/offset_defaults_to_one/script.vtl">script.vtl</a> · <a href="../examples/aggregate/lag/ds_no_offset/offset_defaults_to_one/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/aggregate/lag/ds_no_offset/offset_defaults_to_one/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/aggregate/lag/ds_no_offset/offset_defaults_to_one/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/aggregate/lag/ds_no_offset/offset_defaults_to_one/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/aggregate/lag/ds_no_offset/offset_defaults_to_one/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/aggregate/lag/ds_no_offset/no_default_offset/script.vtl">script.vtl</a> · <a href="../examples/aggregate/lag/ds_no_offset/no_default_offset/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/aggregate/lag/ds_no_offset/no_default_offset/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/aggregate/lag/ds_no_offset/no_default_offset/expected/error.json">expected/error.json</a> · <a href="../examples/aggregate/lag/ds_no_offset/no_default_offset/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -109,7 +109,7 @@ lag(DS, n over (partition by Id order by Id)) 🟢 · any scalar, integer → an
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-offset-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-ds-offset-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/lag/ds_offset/manual_ex_1/notes.rst
 
@@ -136,7 +136,7 @@ lag(DS, n, default over (partition by Id order by Id)) 🟢 · any scalar, integ
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-offset-default-offset-two-default-zero" open><summary><span class="om-ex-title">Offset two default zero</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-ds-offset-default-offset-two-default-zero"><summary><span class="om-ex-title">Offset two default zero</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/lag/ds_offset_default/offset_two_default_zero/notes.rst
 
@@ -163,7 +163,7 @@ DS[calc Me := lag(Me, n over (partition by Id order by Id))] 🟢 · any scalar,
 
 .. raw:: html
 
-   <details class="om-example" id="ex-comp-offset-previous-value-or-null" open><summary><span class="om-ex-title">Previous value or null</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-comp-offset-previous-value-or-null"><summary><span class="om-ex-title">Previous value or null</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/lag/comp_offset/previous_value_or_null/notes.rst
 

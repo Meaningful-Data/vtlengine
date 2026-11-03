@@ -4,7 +4,7 @@ Aggregate and Analytic operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 5 of 18 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip diverge">🔵 8 of 18 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -27,21 +27,21 @@ Aggregate and Analytic operators
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Aggregate and Analytic operators"]:::block
        aggregate__aggregate_invocation["Aggregate invocation · group by<br/>🟢4"]:::ok
-       aggregate__analytic_invocation["Analytic invocation · over<br/>🟢8 🟡1"]:::partial
-       aggregate__count["Counting the number of data points · count 📌<br/>🟢7 🟡1 🔵1"]:::diverge
-       aggregate__min["Minimum value · min<br/>🟢6 🟡2"]:::partial
-       aggregate__max["Maximum value · max<br/>🟢6 🟡2"]:::partial
-       aggregate__median["Median value · median<br/>🟢6 🟡2"]:::partial
-       aggregate__sum["Sum · sum<br/>🟢6 🟡2"]:::partial
-       aggregate__avg["Average value · avg<br/>🟢6 🟡2"]:::partial
-       aggregate__stddev_pop["Population standard deviation · stddev_pop<br/>🟢6 🟡2"]:::partial
-       aggregate__stddev_samp["Sample standard deviation · stddev_samp<br/>🟢6 🟡2"]:::partial
-       aggregate__var_pop["Population variance · var_pop<br/>🟢6 🟡2"]:::partial
-       aggregate__var_samp["Sample variance · var_samp<br/>🟢6 🟡2"]:::partial
+       aggregate__analytic_invocation["Analytic invocation · over<br/>🟢9"]:::ok
+       aggregate__count["Counting the number of data points · count 📌<br/>🟢8 🔵1"]:::diverge
+       aggregate__min["Minimum value · min<br/>🟢7 🟡1"]:::partial
+       aggregate__max["Maximum value · max<br/>🟢7 🟡1"]:::partial
+       aggregate__median["Median value · median<br/>🟢7 🟡1"]:::partial
+       aggregate__sum["Sum · sum<br/>🟢7 🟡1"]:::partial
+       aggregate__avg["Average value · avg<br/>🟢7 🟡1"]:::partial
+       aggregate__stddev_pop["Population standard deviation · stddev_pop<br/>🟢7 🟡1"]:::partial
+       aggregate__stddev_samp["Sample standard deviation · stddev_samp<br/>🟢7 🟡1"]:::partial
+       aggregate__var_pop["Population variance · var_pop<br/>🟢7 🟡1"]:::partial
+       aggregate__var_samp["Sample variance · var_samp<br/>🟢7 🟡1"]:::partial
        aggregate__first_value["First value · first_value<br/>🟢2"]:::ok
        aggregate__last_value["Last value · last_value<br/>🟢2"]:::ok
-       aggregate__lag["Lag · lag<br/>🟢3 🛡️1"]:::partial
-       aggregate__lead["Lead · lead<br/>🟢3 🛡️1"]:::partial
+       aggregate__lag["Lag · lag<br/>🟢4"]:::ok
+       aggregate__lead["Lead · lead<br/>🟢4"]:::ok
        aggregate__rank["Rank · rank<br/>🟢2"]:::ok
        aggregate__ratio_to_report["Ratio to report · ratio_to_report<br/>🟢2"]:::ok
        aggregate__aggregate_invocation --- B
@@ -98,7 +98,7 @@ Aggregate and Analytic operators
      - 🟢
      - 4
    * - :doc:`Analytic invocation <analytic_invocation>` ``over``
-     - 🟡
+     - 🟢
      - 9
    * - :doc:`Counting the number of data points <count>` ``count``
      - 🔵
@@ -137,10 +137,10 @@ Aggregate and Analytic operators
      - 🟢
      - 2
    * - :doc:`Lag <lag>` ``lag``
-     - 🟡
+     - 🟢
      - 4
    * - :doc:`Lead <lead>` ``lead``
-     - 🟡
+     - 🟢
      - 4
    * - :doc:`Rank <rank>` ``rank``
      - 🟢
@@ -285,20 +285,6 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - pandas
      - DuckDB
      - Detail
-   * - :doc:`Analytic invocation <analytic_invocation>`
-     - `an(over (partition except all order by Id)) <analytic_invocation.html#form-partition-except-all>`__
-     - 🟡
-     - `Manual example 2 <analytic_invocation.html#ex-partition-except-all-manual-ex-2>`__
-     - 🛡 1-1-1-10
-     - 🛡 1-1-1-10
-     - SemanticError 1-1-1-10: Component id\_1 not found in Dataset DS\_1. Please check transformation with output Dataset DS\_r
-   * - :doc:`Counting the number of data points <count>`
-     - `count(DS group by Id having cond) <count.html#form-ds-having>`__
-     - 🟡
-     - `Two measures <count.html#ex-ds-having-two-measures>`__
-     - 🛡 1-1-1-4
-     - 🛡 1-1-1-4
-     - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
    * - :doc:`Counting the number of data points <count>`
      - `count(DS over (partition by Id)) <count.html#form-analytic-ds>`__
      - 🔵
@@ -307,26 +293,12 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - 💥 KeyError
      - pandas: missing components: int\_var; unexpected components: Me\_1, Me\_2; DuckDB: KeyError: Me\_1
    * - :doc:`Minimum value <min>`
-     - `min(DS group by Id having cond) <min.html#form-ds-having>`__
-     - 🟡
-     - `Two measures <min.html#ex-ds-having-two-measures>`__
-     - 🛡 1-1-1-4
-     - 🛡 1-1-1-4
-     - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
-   * - :doc:`Minimum value <min>`
      - `min(DS over (partition by Id)) <min.html#form-analytic-ds>`__
      - 🟡
      - `Whole partition without order <min.html#ex-analytic-ds-whole-partition-without-order>`__
      - ❌
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 1 got 3.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 0.500000 got 1.5; row Id\_1=A, Id\_2=2020Q2: Me\_2 expected 0.500000 got 1.5
-   * - :doc:`Maximum value <max>`
-     - `max(DS group by Id having cond) <max.html#form-ds-having>`__
-     - 🟡
-     - `Two measures <max.html#ex-ds-having-two-measures>`__
-     - 🛡 1-1-1-4
-     - 🛡 1-1-1-4
-     - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
    * - :doc:`Maximum value <max>`
      - `max(DS over (partition by Id)) <max.html#form-analytic-ds>`__
      - 🟡
@@ -335,26 +307,12 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 5 got 3.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 3.500000 got 1.5; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 5 got 3.0
    * - :doc:`Median value <median>`
-     - `median(DS group by Id having cond) <median.html#form-ds-having>`__
-     - 🟡
-     - `Two measures <median.html#ex-ds-having-two-measures>`__
-     - 🛡 1-1-1-4
-     - 🛡 1-1-1-4
-     - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
-   * - :doc:`Median value <median>`
      - `median(DS over (partition by Id)) <median.html#form-analytic-ds>`__
      - 🟡
      - `Whole partition without order <median.html#ex-analytic-ds-whole-partition-without-order>`__
      - ❌
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 2 got 3.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 2 got 1.5; row Id\_1=A, Id\_2=2020Q2: Me\_2 expected 2 got 2.5
-   * - :doc:`Sum <sum>`
-     - `sum(DS group by Id having cond) <sum.html#form-ds-having>`__
-     - 🟡
-     - `Two measures <sum.html#ex-ds-having-two-measures>`__
-     - 🛡 1-1-1-4
-     - 🛡 1-1-1-4
-     - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
    * - :doc:`Sum <sum>`
      - `sum(DS over (partition by Id)) <sum.html#form-analytic-ds>`__
      - 🟡
@@ -363,26 +321,12 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 10 got 3.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 8 got 1.5; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 10 got 4.0
    * - :doc:`Average value <avg>`
-     - `avg(DS group by Id having cond) <avg.html#form-ds-having>`__
-     - 🟡
-     - `Two measures <avg.html#ex-ds-having-two-measures>`__
-     - 🛡 1-1-1-4
-     - 🛡 1-1-1-4
-     - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
-   * - :doc:`Average value <avg>`
      - `avg(DS over (partition by Id)) <avg.html#form-analytic-ds>`__
      - 🟡
      - `Whole partition without order <avg.html#ex-analytic-ds-whole-partition-without-order>`__
      - ❌
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 2.500000 got 3.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 2 got 1.5; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 2.500000 got 2.0
-   * - :doc:`Population standard deviation <stddev_pop>`
-     - `stddev\_pop(DS group by Id having cond) <stddev_pop.html#form-ds-having>`__
-     - 🟡
-     - `Two measures <stddev_pop.html#ex-ds-having-two-measures>`__
-     - 🛡 1-1-1-4
-     - 🛡 1-1-1-4
-     - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
    * - :doc:`Population standard deviation <stddev_pop>`
      - `stddev\_pop(DS over (partition by Id)) <stddev_pop.html#form-analytic-ds>`__
      - 🟡
@@ -391,26 +335,12 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 1.658312 got 0.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 1.118034 got 0.0; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 1.658312 got 1.0
    * - :doc:`Sample standard deviation <stddev_samp>`
-     - `stddev\_samp(DS group by Id having cond) <stddev_samp.html#form-ds-having>`__
-     - 🟡
-     - `Two measures <stddev_samp.html#ex-ds-having-two-measures>`__
-     - 🛡 1-1-1-4
-     - 🛡 1-1-1-4
-     - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
-   * - :doc:`Sample standard deviation <stddev_samp>`
      - `stddev\_samp(DS over (partition by Id)) <stddev_samp.html#form-analytic-ds>`__
      - 🟡
      - `Whole partition without order <stddev_samp.html#ex-analytic-ds-whole-partition-without-order>`__
      - ❌
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 1.914854 got null; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 1.290994 got null; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 1.914854 got 1.4142135623730951
-   * - :doc:`Population variance <var_pop>`
-     - `var\_pop(DS group by Id having cond) <var_pop.html#form-ds-having>`__
-     - 🟡
-     - `Two measures <var_pop.html#ex-ds-having-two-measures>`__
-     - 🛡 1-1-1-4
-     - 🛡 1-1-1-4
-     - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
    * - :doc:`Population variance <var_pop>`
      - `var\_pop(DS over (partition by Id)) <var_pop.html#form-analytic-ds>`__
      - 🟡
@@ -419,33 +349,12 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 2.750000 got 0.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 1.250000 got 0.0; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 2.750000 got 1.0
    * - :doc:`Sample variance <var_samp>`
-     - `var\_samp(DS group by Id having cond) <var_samp.html#form-ds-having>`__
-     - 🟡
-     - `Two measures <var_samp.html#ex-ds-having-two-measures>`__
-     - 🛡 1-1-1-4
-     - 🛡 1-1-1-4
-     - SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS\_r
-   * - :doc:`Sample variance <var_samp>`
      - `var\_samp(DS over (partition by Id)) <var_samp.html#form-analytic-ds>`__
      - 🟡
      - `Whole partition without order <var_samp.html#ex-analytic-ds-whole-partition-without-order>`__
      - ❌
      - ❌
      - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 3.666667 got null; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 1.666667 got null; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 3.666667 got 2.0
-   * - :doc:`Lag <lag>`
-     - `lag(DS over (partition by Id order by Id)) <lag.html#form-ds-no-offset>`__
-     - 🛡️
-     - `Offset defaults to one <lag.html#ex-ds-no-offset-offset-defaults-to-one>`__
-     - 🛡 0-5-1-3
-     - 🛡 0-5-1-3
-     - InputValidationException 0-5-1-3: lag requires an offset parameter.
-   * - :doc:`Lead <lead>`
-     - `lead(DS over (partition by Id order by Id)) <lead.html#form-ds-no-offset>`__
-     - 🛡️
-     - `Offset defaults to one <lead.html#ex-ds-no-offset-offset-defaults-to-one>`__
-     - 🛡 0-5-1-3
-     - 🛡 0-5-1-3
-     - InputValidationException 0-5-1-3: lead requires an offset parameter.
 
 .. toctree::
    :maxdepth: 1

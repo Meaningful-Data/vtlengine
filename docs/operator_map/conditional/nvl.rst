@@ -4,7 +4,7 @@ Nvl · ``nvl``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 5 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Nvl/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 5 of 7 forms all ok, 2 refused</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Nvl/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -29,7 +29,7 @@ Nvl · ``nvl``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Nvl · nvl<br/>🟢5 🛡️2"]:::partial
+       O["Nvl · nvl<br/>🟢5 🛡️2"]:::ok
        subgraph G_ds["Dataset"]
            direction LR
            v_ds_sc["nvl(DS, sc)"]:::ok
@@ -85,7 +85,7 @@ nvl(DS, sc) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-sc-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-ds-sc-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/nvl/ds_sc/manual_ex_1/notes.rst
 
@@ -112,7 +112,7 @@ nvl(DS, DS) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-ds-partly-different-identifiers" open><summary><span class="om-ex-title">Partly different identifiers</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-ds-ds-partly-different-identifiers"><summary><span class="om-ex-title">Partly different identifiers</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/nvl/ds_ds/partly_different_identifiers/notes.rst
 
@@ -140,7 +140,7 @@ nvl(sc, DS) 🛡️ · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-sc-ds-non-null-scalar-first-operand" open><summary><span class="om-ex-title">Non null scalar first operand</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-9-2</code> · DuckDB 🛡 <code>1-1-9-2</code></span></summary>
+   <details class="om-example" id="ex-sc-ds-non-null-scalar-first-operand"><summary><span class="om-ex-title">Non null scalar first operand</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-9-2</code> · DuckDB 🛡 <code>1-1-9-2</code></span></summary>
    <p class="om-detail">SemanticError 1-1-9-2: At op None: The applicable operand cannot be a Dataset when the operand is a Scalar. Please check transformation with output Dataset DS_r</p>
 
 .. include:: ../examples/conditional/nvl/sc_ds/non_null_scalar_first_operand/notes.rst
@@ -168,7 +168,7 @@ nvl(comp, sc) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-comp-sc-null-replaced-by-zero" open><summary><span class="om-ex-title">Null replaced by zero</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-comp-sc-null-replaced-by-zero"><summary><span class="om-ex-title">Null replaced by zero</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/nvl/comp_sc/null_replaced_by_zero/notes.rst
 
@@ -195,7 +195,7 @@ nvl(comp, comp) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-comp-comp-second-component-fills-nulls" open><summary><span class="om-ex-title">Second component fills nulls</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-comp-comp-second-component-fills-nulls"><summary><span class="om-ex-title">Second component fills nulls</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/nvl/comp_comp/second_component_fills_nulls/notes.rst
 
@@ -222,7 +222,7 @@ nvl(sc, comp) 🛡️ · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-sc-comp-non-null-scalar-first-operand" open><summary><span class="om-ex-title">Non null scalar first operand</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-9-2</code> · DuckDB 🛡 <code>1-1-9-2</code></span></summary>
+   <details class="om-example" id="ex-sc-comp-non-null-scalar-first-operand"><summary><span class="om-ex-title">Non null scalar first operand</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-9-2</code> · DuckDB 🛡 <code>1-1-9-2</code></span></summary>
    <p class="om-detail">SemanticError 1-1-9-2: At op None: The applicable operand cannot be a DataComponent when the operand is a Scalar. Please check transformation with output Dataset DS_r</p>
 
 .. include:: ../examples/conditional/nvl/sc_comp/non_null_scalar_first_operand/notes.rst
@@ -250,7 +250,7 @@ nvl(sc, sc) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-sc-sc-null-first-operand" open><summary><span class="om-ex-title">Null first operand</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-sc-sc-null-first-operand"><summary><span class="om-ex-title">Null first operand</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/nvl/sc_sc/null_first_operand/notes.rst
 

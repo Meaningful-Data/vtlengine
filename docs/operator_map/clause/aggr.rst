@@ -4,7 +4,7 @@ Aggregation · ``aggr``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 8 of 9 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Aggregation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 8 of 9 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Aggregation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -71,7 +71,7 @@ Aggregation · ``aggr``
 
 .. raw:: html
 
-   <details class="om-dir" open><summary><b>Used with</b> — 16 operators in 3 blocks 🟢2 🟡13 🔵1</summary><details class="om-blk"><summary>Join operators <b>(4)</b> 🟢1 🟡3</summary><div><a class="om-chip partial" href="../join/inner_join.html" title="partially implemented">Inner Join <code>inner_join</code> <small>used by</small></a><a class="om-chip partial" href="../join/left_join.html" title="partially implemented">Left Join <code>left_join</code> <small>used by</small></a><a class="om-chip partial" href="../join/full_join.html" title="partially implemented">Full Join <code>full_join</code> <small>used by</small></a><a class="om-chip ok" href="../join/cross_join.html" title="all ok">Cross Join <code>cross_join</code> <small>used by</small></a></div></details><details class="om-blk"><summary>Time operators <b>(1)</b> 🟡1</summary><div><a class="om-chip partial" href="../time/time_agg.html" title="partially implemented">Time aggregation <code>time_agg</code> <small>uses, in group all</small></a></div></details><details class="om-blk"><summary>Aggregate and Analytic operators <b>(11)</b> 🟢1 🟡9 🔵1</summary><div><a class="om-chip ok" href="../aggregate/aggregate_invocation.html" title="all ok">Aggregate invocation <code>group by</code> <small>uses</small></a><a class="om-chip diverge" href="../aggregate/count.html" title="engines differ">Counting the number of data points <code>count</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/min.html" title="partially implemented">Minimum value <code>min</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/max.html" title="partially implemented">Maximum value <code>max</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/median.html" title="partially implemented">Median value <code>median</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/sum.html" title="partially implemented">Sum <code>sum</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/avg.html" title="partially implemented">Average value <code>avg</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/stddev_pop.html" title="partially implemented">Population standard deviation <code>stddev_pop</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/stddev_samp.html" title="partially implemented">Sample standard deviation <code>stddev_samp</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/var_pop.html" title="partially implemented">Population variance <code>var_pop</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/var_samp.html" title="partially implemented">Sample variance <code>var_samp</code> <small>uses</small></a></div></details></details>
+   <details class="om-dir"><summary><b>Used with</b> — 16 operators in 3 blocks 🟢4 🟡11 🔵1</summary><details class="om-blk"><summary>Join operators <b>(4)</b> 🟢2 🟡2</summary><div><a class="om-chip ok" href="../join/inner_join.html" title="all ok">Inner Join <code>inner_join</code> <small>used by</small></a><a class="om-chip partial" href="../join/left_join.html" title="partially implemented">Left Join <code>left_join</code> <small>used by</small></a><a class="om-chip partial" href="../join/full_join.html" title="partially implemented">Full Join <code>full_join</code> <small>used by</small></a><a class="om-chip ok" href="../join/cross_join.html" title="all ok">Cross Join <code>cross_join</code> <small>used by</small></a></div></details><details class="om-blk"><summary>Time operators <b>(1)</b> 🟢1</summary><div><a class="om-chip ok" href="../time/time_agg.html" title="all ok">Time aggregation <code>time_agg</code> <small>uses, in group all</small></a></div></details><details class="om-blk"><summary>Aggregate and Analytic operators <b>(11)</b> 🟢1 🟡9 🔵1</summary><div><a class="om-chip ok" href="../aggregate/aggregate_invocation.html" title="all ok">Aggregate invocation <code>group by</code> <small>uses</small></a><a class="om-chip diverge" href="../aggregate/count.html" title="engines differ">Counting the number of data points <code>count</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/min.html" title="partially implemented">Minimum value <code>min</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/max.html" title="partially implemented">Maximum value <code>max</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/median.html" title="partially implemented">Median value <code>median</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/sum.html" title="partially implemented">Sum <code>sum</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/avg.html" title="partially implemented">Average value <code>avg</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/stddev_pop.html" title="partially implemented">Population standard deviation <code>stddev_pop</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/stddev_samp.html" title="partially implemented">Sample standard deviation <code>stddev_samp</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/var_pop.html" title="partially implemented">Population variance <code>var_pop</code> <small>uses</small></a><a class="om-chip partial" href="../aggregate/var_samp.html" title="partially implemented">Sample variance <code>var_samp</code> <small>uses</small></a></div></details></details>
 
 Types
 ----------
@@ -94,7 +94,7 @@ DS[aggr Me := agg(Me)] 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-no-group-single-group-no-identifiers" open><summary><span class="om-ex-title">Single group no identifiers</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-no-group-single-group-no-identifiers"><summary><span class="om-ex-title">Single group no identifiers</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/aggr/no_group/single_group_no_identifiers/notes.rst
 
@@ -121,7 +121,7 @@ DS[aggr Me := agg(Me) group by Id] 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-group-by-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-group-by-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/aggr/group_by/manual_ex_1/notes.rst
 
@@ -148,7 +148,7 @@ DS[aggr Me := agg(Me) group except Id] 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-group-except-manual-ex-2" open><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-group-except-manual-ex-2"><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/aggr/group_except/manual_ex_2/notes.rst
 
@@ -175,7 +175,7 @@ DS[aggr Me := agg(Me) group all time\_agg(\"A\")] 🟢 · any scalar → any typ
 
 .. raw:: html
 
-   <details class="om-example" id="ex-group-all-quarters-to-years" open><summary><span class="om-ex-title">Quarters to years</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-group-all-quarters-to-years"><summary><span class="om-ex-title">Quarters to years</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/aggr/group_all/quarters_to_years/notes.rst
 
@@ -202,7 +202,7 @@ DS[aggr Me := agg(Me) group by Id having cond] 🟢 · any scalar, boolean → a
 
 .. raw:: html
 
-   <details class="om-example" id="ex-having-manual-ex-3" open><summary><span class="om-ex-title">Manual example 3</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-having-manual-ex-3"><summary><span class="om-ex-title">Manual example 3</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/aggr/having/manual_ex_3/notes.rst
 
@@ -229,7 +229,7 @@ DS[aggr measure Me := agg(Me) group by Id] 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-measure-role-only-the-new-measure-kept" open><summary><span class="om-ex-title">Only the new measure kept</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-measure-role-only-the-new-measure-kept"><summary><span class="om-ex-title">Only the new measure kept</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/aggr/measure_role/only_the_new_measure_kept/notes.rst
 
@@ -256,7 +256,7 @@ DS[aggr attribute At := agg(Me) group by Id] 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-attribute-role-attribute-next-to-measure" open><summary><span class="om-ex-title">Attribute next to measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-attribute-role-attribute-next-to-measure"><summary><span class="om-ex-title">Attribute next to measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/aggr/attribute_role/attribute_next_to_measure/notes.rst
 
@@ -303,7 +303,7 @@ DS[aggr viral attribute At := agg(Me) group by Id] 🟢 · any scalar → any ty
 
 .. raw:: html
 
-   <details class="om-example" id="ex-viral-attribute-role-viral-attribute-next-to-measure" open><summary><span class="om-ex-title">Viral attribute next to measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-viral-attribute-role-viral-attribute-next-to-measure"><summary><span class="om-ex-title">Viral attribute next to measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/aggr/viral_attribute_role/viral_attribute_next_to_measure/notes.rst
 
@@ -350,7 +350,7 @@ DS[aggr At := agg(At) group by Id] 🟡 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-role-omitted-attribute-existing-attribute-keeps-role" open><summary><span class="om-ex-title">Existing attribute keeps role</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-role-omitted-attribute-existing-attribute-keeps-role"><summary><span class="om-ex-title">Existing attribute keeps role</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">role of At_1 expected Attribute got Measure</p>
 
 .. include:: ../examples/clause/aggr/role_omitted_attribute/existing_attribute_keeps_role/notes.rst

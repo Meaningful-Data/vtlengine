@@ -4,7 +4,7 @@ Inner Join · ``inner_join``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 19 of 22 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 22 of 22 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -25,10 +25,10 @@ Inner Join · ``inner_join``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Inner Join · inner_join<br/>🟢19 🟡3"]:::partial
-       v_bare["inner_join(DS, DS)"]:::partial
+       O["Inner Join · inner_join<br/>🟢22"]:::ok
+       v_bare["inner_join(DS, DS)"]:::ok
        v_aliases["inner_join(DS as a, DS as b)"]:::ok
-       v_using["inner_join(DS, DS using Id)"]:::partial
+       v_using["inner_join(DS, DS using Id)"]:::ok
        v_filter["inner_join(DS, DS filter cond)"]:::ok
        v_apply["inner_join(DS, DS apply expr)"]:::ok
        v_calc_default["inner_join(DS, DS calc C #58;#61; expr)"]:::ok
@@ -47,7 +47,7 @@ Inner Join · ``inner_join``
        v_keep["inner_join(DS, DS keep C)"]:::ok
        v_drop["inner_join(DS, DS drop C)"]:::ok
        v_rename["inner_join(DS, DS rename C to C2)"]:::ok
-       v_nary["inner_join(DS, DS, DS)"]:::partial
+       v_nary["inner_join(DS, DS, DS)"]:::ok
        subgraph G_use["Used with"]
            direction LR
            used__clause__filter["filter ↗<br/><small>uses</small>"]:::ext
@@ -130,12 +130,12 @@ Forms
 
    <span class="om-anchor" id="form-bare"></span>
 
-inner\_join(DS, DS) 🟡 · any scalar → any type
+inner\_join(DS, DS) 🟢 · any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-bare-common-keys-only" open><summary><span class="om-ex-title">Common keys only</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-bare-common-keys-only"><summary><span class="om-ex-title">Common keys only</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/bare/common_keys_only/notes.rst
 
@@ -191,7 +191,7 @@ inner\_join(DS, DS) 🟡 · any scalar → any type
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>10</td></tr><tr><td>2</td><td>20</td></tr></tbody></table>
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_2</code></span></caption><thead><tr><th class="head">Id_2</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>A</td><td>1</td></tr><tr><td>B</td><td>2</td></tr></tbody></table>
 
-Expected error ``1-1-13-11``
+Expected error ``1-1-13-11``: At op {op}: Invalid subcase A, {dataset\_reference} should be a superset but {component} not found.
 
 .. raw:: html
 
@@ -207,7 +207,7 @@ inner\_join(DS as a, DS as b) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aliases-aliases-without-clause" open><summary><span class="om-ex-title">Aliases without clause</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aliases-aliases-without-clause"><summary><span class="om-ex-title">Aliases without clause</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/aliases/aliases_without_clause/notes.rst
 
@@ -251,12 +251,12 @@ inner\_join(DS as a, DS as b) 🟢 · any scalar → any type
 
    <span class="om-anchor" id="form-using"></span>
 
-inner\_join(DS, DS using Id) 🟡 · any scalar → any type
+inner\_join(DS, DS using Id) 🟢 · any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-using-all-common-identifiers" open><summary><span class="om-ex-title">All common identifiers</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-using-all-common-identifiers"><summary><span class="om-ex-title">All common identifiers</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/using/all_common_identifiers/notes.rst
 
@@ -306,7 +306,7 @@ inner\_join(DS, DS filter cond) 🟢 · any scalar, boolean → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-filter-filter-on-measure" open><summary><span class="om-ex-title">Filter on measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-filter-filter-on-measure"><summary><span class="om-ex-title">Filter on measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/filter/filter_on_measure/notes.rst
 
@@ -334,7 +334,7 @@ inner\_join(DS, DS apply expr) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-apply-manual-ex-4" open><summary><span class="om-ex-title">Manual example 4</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-apply-manual-ex-4"><summary><span class="om-ex-title">Manual example 4</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/apply/manual_ex_4/notes.rst
 
@@ -383,7 +383,7 @@ inner\_join(DS, DS calc C := expr) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-calc-default-manual-ex-3" open><summary><span class="om-ex-title">Manual example 3</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-calc-default-manual-ex-3"><summary><span class="om-ex-title">Manual example 3</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/calc_default/manual_ex_3/notes.rst
 
@@ -452,7 +452,7 @@ inner\_join(DS, DS calc measure C := expr) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-calc-measure-explicit-measure-role" open><summary><span class="om-ex-title">Explicit measure role</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-calc-measure-explicit-measure-role"><summary><span class="om-ex-title">Explicit measure role</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/calc_measure/explicit_measure_role/notes.rst
 
@@ -480,7 +480,7 @@ inner\_join(DS, DS calc identifier C := expr) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-calc-identifier-constant-identifier" open><summary><span class="om-ex-title">Constant identifier</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-calc-identifier-constant-identifier"><summary><span class="om-ex-title">Constant identifier</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/calc_identifier/constant_identifier/notes.rst
 
@@ -508,7 +508,7 @@ inner\_join(DS, DS calc attribute C := expr) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-calc-attribute-constant-attribute" open><summary><span class="om-ex-title">Constant attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-calc-attribute-constant-attribute"><summary><span class="om-ex-title">Constant attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/calc_attribute/constant_attribute/notes.rst
 
@@ -536,7 +536,7 @@ inner\_join(DS, DS calc viral attribute C := expr) 🟢 · any scalar → any ty
 
 .. raw:: html
 
-   <details class="om-example" id="ex-calc-viral-attribute-constant-viral-attribute" open><summary><span class="om-ex-title">Constant viral attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-calc-viral-attribute-constant-viral-attribute"><summary><span class="om-ex-title">Constant viral attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/calc_viral_attribute/constant_viral_attribute/notes.rst
 
@@ -564,7 +564,7 @@ inner\_join(DS, DS aggr C := agg) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-no-group-sum-without-grouping" open><summary><span class="om-ex-title">Sum without grouping</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-no-group-sum-without-grouping"><summary><span class="om-ex-title">Sum without grouping</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/aggr_no_group/sum_without_grouping/notes.rst
 
@@ -592,7 +592,7 @@ inner\_join(DS, DS aggr C := agg group by Id) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-group-by-sum-by-id-1" open><summary><span class="om-ex-title">Sum by id 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-group-by-sum-by-id-1"><summary><span class="om-ex-title">Sum by id 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/aggr_group_by/sum_by_id_1/notes.rst
 
@@ -641,7 +641,7 @@ inner\_join(DS, DS aggr C := agg group except Id) 🟢 · any scalar → any typ
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-group-except-sum-except-id-2" open><summary><span class="om-ex-title">Sum except id 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-group-except-sum-except-id-2"><summary><span class="om-ex-title">Sum except id 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/aggr_group_except/sum_except_id_2/notes.rst
 
@@ -669,7 +669,7 @@ inner\_join(DS, DS aggr C := agg group all time\_agg(p)) 🟢 · any scalar → 
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-group-all-quarters-to-years" open><summary><span class="om-ex-title">Quarters to years</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-group-all-quarters-to-years"><summary><span class="om-ex-title">Quarters to years</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/aggr_group_all/quarters_to_years/notes.rst
 
@@ -697,7 +697,7 @@ inner\_join(DS, DS aggr C := agg group by Id having cond) 🟢 · any scalar, bo
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-having-having-min-above-15" open><summary><span class="om-ex-title">Having min above 15</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-having-having-min-above-15"><summary><span class="om-ex-title">Having min above 15</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/aggr_having/having_min_above_15/notes.rst
 
@@ -725,7 +725,7 @@ inner\_join(DS, DS aggr measure C := agg group by Id) 🟢 · any scalar → any
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-measure-explicit-measure-role" open><summary><span class="om-ex-title">Explicit measure role</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-measure-explicit-measure-role"><summary><span class="om-ex-title">Explicit measure role</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/aggr_measure/explicit_measure_role/notes.rst
 
@@ -753,7 +753,7 @@ inner\_join(DS, DS aggr C := agg, attribute A := agg group by Id) 🟢 · any sc
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-attribute-max-as-attribute" open><summary><span class="om-ex-title">Max as attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-attribute-max-as-attribute"><summary><span class="om-ex-title">Max as attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/aggr_attribute/max_as_attribute/notes.rst
 
@@ -781,7 +781,7 @@ inner\_join(DS, DS aggr C := agg, viral attribute A := agg group by Id) 🟢 · 
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-viral-attribute-max-as-viral-attribute" open><summary><span class="om-ex-title">Max as viral attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-viral-attribute-max-as-viral-attribute"><summary><span class="om-ex-title">Max as viral attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/aggr_viral_attribute/max_as_viral_attribute/notes.rst
 
@@ -809,7 +809,7 @@ inner\_join(DS, DS keep C) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-keep-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-keep-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/keep/manual_ex_1/notes.rst
 
@@ -858,7 +858,7 @@ inner\_join(DS, DS drop C) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-drop-manual-ex-2" open><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-drop-manual-ex-2"><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/drop/manual_ex_2/notes.rst
 
@@ -907,7 +907,7 @@ inner\_join(DS, DS rename C to C2) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-rename-rename-measure" open><summary><span class="om-ex-title">Rename measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-rename-rename-measure"><summary><span class="om-ex-title">Rename measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/rename/rename_measure/notes.rst
 
@@ -930,12 +930,12 @@ inner\_join(DS, DS rename C to C2) 🟢 · any scalar → any type
 
    <span class="om-anchor" id="form-nary"></span>
 
-inner\_join(DS, DS, DS) 🟡 · any scalar → any type
+inner\_join(DS, DS, DS) 🟢 · any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-nary-manual-ex-5" open><summary><span class="om-ex-title">Manual example 5</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-13-11</code> · DuckDB 🛡 <code>1-1-13-11</code></span></summary>
+   <details class="om-example" id="ex-nary-manual-ex-5"><summary><span class="om-ex-title">Manual example 5</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-13-11</code> · DuckDB 🛡 <code>1-1-13-11</code></span></summary>
    <p class="om-detail">SemanticError 1-1-13-11: At op inner_join: Invalid subcase A, DS_5 should be a superset but Id_1 not found. Please check transformation with output Dataset IBSC</p>
 
 .. include:: ../examples/join/inner_join/nary/manual_ex_5/notes.rst

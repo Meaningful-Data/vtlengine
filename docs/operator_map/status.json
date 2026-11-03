@@ -608,21 +608,21 @@
       },
       "status": "ok"
     },
-    "aggregate/lag/ds_no_offset/offset_defaults_to_one": {
+    "aggregate/lag/ds_no_offset/no_default_offset": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-3: lag requires an offset parameter.",
+        "detail": "",
         "error_code": "0-5-1-3",
         "error_type": "InputValidationException",
-        "outcome": "error"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-3: lag requires an offset parameter.",
+        "detail": "",
         "error_code": "0-5-1-3",
         "error_type": "InputValidationException",
-        "outcome": "error"
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "aggregate/lag/ds_offset/manual_ex_1": {
       "duckdb": {
@@ -704,21 +704,21 @@
       },
       "status": "ok"
     },
-    "aggregate/lead/ds_no_offset/offset_defaults_to_one": {
+    "aggregate/lead/ds_no_offset/no_default_offset": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-3: lead requires an offset parameter.",
+        "detail": "",
         "error_code": "0-5-1-3",
         "error_type": "InputValidationException",
-        "outcome": "error"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-3: lead requires an offset parameter.",
+        "detail": "",
         "error_code": "0-5-1-3",
         "error_type": "InputValidationException",
-        "outcome": "error"
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "aggregate/lead/ds_offset/manual_ex_1": {
       "duckdb": {
@@ -14082,19 +14082,19 @@
     },
     "time/time_agg/sc_date/without_first_or_last": {
       "duckdb": {
-        "detail": "SemanticError 1-1-19-11: At op time_agg: If used over a Date, first/last parameter must be declared. Please check transformation with output Dataset DS_r",
+        "detail": "",
         "error_code": "1-1-19-11",
         "error_type": "SemanticError",
-        "outcome": "error"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-19-11: At op time_agg: If used over a Date, first/last parameter must be declared. Please check transformation with output Dataset DS_r",
+        "detail": "",
         "error_code": "1-1-19-11",
         "error_type": "SemanticError",
-        "outcome": "error"
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "time/time_agg/sc_time_period/month_to_quarter": {
       "duckdb": {
@@ -15110,7 +15110,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "55780655",
+    "vtlengine_commit": "d5c65271",
     "vtlengine_version": "1.9.7rc1"
   }
 }

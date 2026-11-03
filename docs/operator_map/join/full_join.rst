@@ -4,7 +4,7 @@ Full Join · ``full_join``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 21 of 23 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Full%20Join/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 21 of 23 forms all ok, 1 refused</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Full%20Join/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -138,7 +138,7 @@ full\_join(DS, DS) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-bare-keys-of-both-kept" open><summary><span class="om-ex-title">Keys of both kept</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-bare-keys-of-both-kept"><summary><span class="om-ex-title">Keys of both kept</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/bare/keys_of_both_kept/notes.rst
 
@@ -166,7 +166,7 @@ full\_join(DS as a, DS as b) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aliases-aliases-without-clause" open><summary><span class="om-ex-title">Aliases without clause</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aliases-aliases-without-clause"><summary><span class="om-ex-title">Aliases without clause</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/aliases/aliases_without_clause/notes.rst
 
@@ -215,7 +215,7 @@ full\_join(DS, DS using Id) 🛡️ · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-using-all-common-identifiers" open><summary><span class="om-ex-title">All common identifiers</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-13-8</code> · DuckDB 🛡 <code>1-1-13-8</code></span></summary>
+   <details class="om-example" id="ex-using-all-common-identifiers"><summary><span class="om-ex-title">All common identifiers</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-13-8</code> · DuckDB 🛡 <code>1-1-13-8</code></span></summary>
    <p class="om-detail">SemanticError 1-1-13-8: At op full_join: No available using clause. Please check transformation with output Dataset DS_r</p>
 
 .. include:: ../examples/join/full_join/using/all_common_identifiers/notes.rst
@@ -244,7 +244,7 @@ full\_join(DS, DS using Id, nvl(Id, c)) 🟡 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-using-nvl-nvl-for-extra-identifier" open><summary><span class="om-ex-title">Nvl for extra identifier</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-13-8</code> · DuckDB 🛡 <code>1-1-13-8</code></span></summary>
+   <details class="om-example" id="ex-using-nvl-nvl-for-extra-identifier"><summary><span class="om-ex-title">Nvl for extra identifier</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-13-8</code> · DuckDB 🛡 <code>1-1-13-8</code></span></summary>
    <p class="om-detail">SemanticError 1-1-13-8: At op full_join: No available using clause. Please check transformation with output Dataset DS_r</p>
 
 .. include:: ../examples/join/full_join/using_nvl/nvl_for_extra_identifier/notes.rst
@@ -295,7 +295,7 @@ full\_join(DS, DS filter cond) 🟢 · any scalar, boolean → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-filter-filter-on-measure" open><summary><span class="om-ex-title">Filter on measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-filter-filter-on-measure"><summary><span class="om-ex-title">Filter on measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/filter/filter_on_measure/notes.rst
 
@@ -323,7 +323,7 @@ full\_join(DS, DS apply expr) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-apply-sum-of-homonym-measures" open><summary><span class="om-ex-title">Sum of homonym measures</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-apply-sum-of-homonym-measures"><summary><span class="om-ex-title">Sum of homonym measures</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/apply/sum_of_homonym_measures/notes.rst
 
@@ -351,7 +351,7 @@ full\_join(DS, DS calc C := expr) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-calc-default-default-role-is-measure" open><summary><span class="om-ex-title">Default role is measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-calc-default-default-role-is-measure"><summary><span class="om-ex-title">Default role is measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/calc_default/default_role_is_measure/notes.rst
 
@@ -406,7 +406,7 @@ full\_join(DS, DS calc C := expr) 🟢 · any scalar → any type
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>10</td></tr><tr><td>1</td><td>B</td><td>20</td></tr><tr><td>2</td><td>A</td><td>30</td></tr><tr><td>2</td><td>B</td><td>40</td></tr></tbody></table>
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_2</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>1</td></tr><tr><td>1</td><td>C</td><td>2</td></tr><tr><td>2</td><td>A</td><td>3</td></tr><tr><td>2</td><td>B</td><td>4</td></tr></tbody></table>
 
-Expected error ``1-1-6-13``
+Expected error ``1-1-6-13``: At op {op}: Not allowed to overwrite an Identifier: {comp\_name}
 
 .. raw:: html
 
@@ -422,7 +422,7 @@ full\_join(DS, DS calc measure C := expr) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-calc-measure-explicit-measure-role" open><summary><span class="om-ex-title">Explicit measure role</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-calc-measure-explicit-measure-role"><summary><span class="om-ex-title">Explicit measure role</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/calc_measure/explicit_measure_role/notes.rst
 
@@ -450,7 +450,7 @@ full\_join(DS, DS calc identifier C := expr) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-calc-identifier-constant-identifier" open><summary><span class="om-ex-title">Constant identifier</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-calc-identifier-constant-identifier"><summary><span class="om-ex-title">Constant identifier</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/calc_identifier/constant_identifier/notes.rst
 
@@ -478,7 +478,7 @@ full\_join(DS, DS calc attribute C := expr) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-calc-attribute-constant-attribute" open><summary><span class="om-ex-title">Constant attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-calc-attribute-constant-attribute"><summary><span class="om-ex-title">Constant attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/calc_attribute/constant_attribute/notes.rst
 
@@ -506,7 +506,7 @@ full\_join(DS, DS calc viral attribute C := expr) 🟢 · any scalar → any typ
 
 .. raw:: html
 
-   <details class="om-example" id="ex-calc-viral-attribute-constant-viral-attribute" open><summary><span class="om-ex-title">Constant viral attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-calc-viral-attribute-constant-viral-attribute"><summary><span class="om-ex-title">Constant viral attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/calc_viral_attribute/constant_viral_attribute/notes.rst
 
@@ -534,7 +534,7 @@ full\_join(DS, DS aggr C := agg) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-no-group-sum-without-grouping" open><summary><span class="om-ex-title">Sum without grouping</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-no-group-sum-without-grouping"><summary><span class="om-ex-title">Sum without grouping</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/aggr_no_group/sum_without_grouping/notes.rst
 
@@ -562,7 +562,7 @@ full\_join(DS, DS aggr C := agg group by Id) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-group-by-sum-by-id-1" open><summary><span class="om-ex-title">Sum by id 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-group-by-sum-by-id-1"><summary><span class="om-ex-title">Sum by id 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/aggr_group_by/sum_by_id_1/notes.rst
 
@@ -611,7 +611,7 @@ full\_join(DS, DS aggr C := agg group except Id) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-group-except-sum-except-id-2" open><summary><span class="om-ex-title">Sum except id 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-group-except-sum-except-id-2"><summary><span class="om-ex-title">Sum except id 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/aggr_group_except/sum_except_id_2/notes.rst
 
@@ -639,7 +639,7 @@ full\_join(DS, DS aggr C := agg group all time\_agg(p)) 🟢 · any scalar → a
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-group-all-quarters-to-years" open><summary><span class="om-ex-title">Quarters to years</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-group-all-quarters-to-years"><summary><span class="om-ex-title">Quarters to years</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/aggr_group_all/quarters_to_years/notes.rst
 
@@ -667,7 +667,7 @@ full\_join(DS, DS aggr C := agg group by Id having cond) 🟢 · any scalar, boo
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-having-having-min-above-15" open><summary><span class="om-ex-title">Having min above 15</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-having-having-min-above-15"><summary><span class="om-ex-title">Having min above 15</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/aggr_having/having_min_above_15/notes.rst
 
@@ -695,7 +695,7 @@ full\_join(DS, DS aggr measure C := agg group by Id) 🟢 · any scalar → any 
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-measure-explicit-measure-role" open><summary><span class="om-ex-title">Explicit measure role</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-measure-explicit-measure-role"><summary><span class="om-ex-title">Explicit measure role</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/aggr_measure/explicit_measure_role/notes.rst
 
@@ -723,7 +723,7 @@ full\_join(DS, DS aggr C := agg, attribute A := agg group by Id) 🟢 · any sca
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-attribute-max-as-attribute" open><summary><span class="om-ex-title">Max as attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-attribute-max-as-attribute"><summary><span class="om-ex-title">Max as attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/aggr_attribute/max_as_attribute/notes.rst
 
@@ -751,7 +751,7 @@ full\_join(DS, DS aggr C := agg, viral attribute A := agg group by Id) 🟢 · a
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-viral-attribute-max-as-viral-attribute" open><summary><span class="om-ex-title">Max as viral attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-viral-attribute-max-as-viral-attribute"><summary><span class="om-ex-title">Max as viral attribute</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/aggr_viral_attribute/max_as_viral_attribute/notes.rst
 
@@ -779,7 +779,7 @@ full\_join(DS, DS keep C) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-keep-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-keep-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/keep/manual_ex_1/notes.rst
 
@@ -828,7 +828,7 @@ full\_join(DS, DS drop C) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-drop-drop-one-measure" open><summary><span class="om-ex-title">Drop one measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-drop-drop-one-measure"><summary><span class="om-ex-title">Drop one measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/drop/drop_one_measure/notes.rst
 
@@ -856,7 +856,7 @@ full\_join(DS, DS rename C to C2) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-rename-rename-measure" open><summary><span class="om-ex-title">Rename measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-rename-rename-measure"><summary><span class="om-ex-title">Rename measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/rename/rename_measure/notes.rst
 
@@ -884,7 +884,7 @@ full\_join(DS, DS, DS) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-nary-three-operands" open><summary><span class="om-ex-title">Three operands</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-nary-three-operands"><summary><span class="om-ex-title">Three operands</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/nary/three_operands/notes.rst
 

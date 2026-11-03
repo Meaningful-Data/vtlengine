@@ -4,7 +4,7 @@ Join operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 1 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 2 of 4 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -26,7 +26,7 @@ Join operators
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Join operators"]:::block
-       join__inner_join["Inner Join · inner_join<br/>🟢19 🟡3"]:::partial
+       join__inner_join["Inner Join · inner_join<br/>🟢22"]:::ok
        join__left_join["Left Join · left_join<br/>🟢22 🟡1"]:::partial
        join__full_join["Full Join · full_join<br/>🟢21 🟡1 🛡️1"]:::partial
        join__cross_join["Cross Join · cross_join<br/>🟢21"]:::ok
@@ -53,7 +53,7 @@ Join operators
      - Status
      - Forms
    * - :doc:`Inner Join <inner_join>` ``inner_join``
-     - 🟡
+     - 🟢
      - 22
    * - :doc:`Left Join <left_join>` ``left_join``
      - 🟡
@@ -107,27 +107,6 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - pandas
      - DuckDB
      - Detail
-   * - :doc:`Inner Join <inner_join>`
-     - `inner\_join(DS, DS) <inner_join.html#form-bare>`__
-     - 🟡
-     - `One shared identifier <inner_join.html#ex-bare-one-shared-identifier>`__
-     - 🛡 1-1-13-11
-     - 🛡 1-1-13-11
-     - SemanticError 1-1-13-11: At op inner\_join: Invalid subcase A, DS\_1 should be a superset but Id\_3 not found. Please check transformation with output Dataset DS\_r
-   * - :doc:`Inner Join <inner_join>`
-     - `inner\_join(DS, DS using Id) <inner_join.html#form-using>`__
-     - 🟡
-     - `Subset of identifiers <inner_join.html#ex-using-subset-of-identifiers>`__
-     - 🛡 1-1-13-4
-     - 🛡 1-1-13-4
-     - SemanticError 1-1-13-4: At op inner\_join: Using clause, using=[\'Id\_1\'], does not define all the Identifiers, of non reference Dataset d2. Please check transformation with output Dataset DS\_r
-   * - :doc:`Inner Join <inner_join>`
-     - `inner\_join(DS, DS, DS) <inner_join.html#form-nary>`__
-     - 🟡
-     - `Manual example 5 <inner_join.html#ex-nary-manual-ex-5>`__
-     - 🛡 1-1-13-11
-     - 🛡 1-1-13-11
-     - SemanticError 1-1-13-11: At op inner\_join: Invalid subcase A, DS\_5 should be a superset but Id\_1 not found. Please check transformation with output Dataset IBSC
    * - :doc:`Left Join <left_join>`
      - `left\_join(DS, DS using Id, nvl(Id, c)) <left_join.html#form-using-nvl>`__
      - 🟡

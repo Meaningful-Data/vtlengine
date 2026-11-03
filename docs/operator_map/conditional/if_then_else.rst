@@ -4,7 +4,7 @@ if-then-else · ``if then else``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 5 of 5 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/if-then-else/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 5 of 5 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/if-then-else/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -80,7 +80,7 @@ if DS then DS else DS 🟢 · boolean, any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-ds-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/if_then_else/ds/manual_ex_1/notes.rst
 
@@ -109,7 +109,7 @@ if DS then DS\|sc else sc\|DS 🟢 · boolean, any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-scalar-branch-scalar-else-feeds-all-measures" open><summary><span class="om-ex-title">Scalar else feeds all measures</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-ds-scalar-branch-scalar-else-feeds-all-measures"><summary><span class="om-ex-title">Scalar else feeds all measures</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/if_then_else/ds_scalar_branch/scalar_else_feeds_all_measures/notes.rst
 
@@ -156,7 +156,7 @@ if comp then comp else comp 🟢 · boolean, any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-comp-larger-of-two-components" open><summary><span class="om-ex-title">Larger of two components</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-comp-larger-of-two-components"><summary><span class="om-ex-title">Larger of two components</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/if_then_else/comp/larger_of_two_components/notes.rst
 
@@ -183,7 +183,7 @@ if comp then sc else sc 🟢 · boolean, any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-comp-scalar-branch-flag-from-a-threshold" open><summary><span class="om-ex-title">Flag from a threshold</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-comp-scalar-branch-flag-from-a-threshold"><summary><span class="om-ex-title">Flag from a threshold</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/if_then_else/comp_scalar_branch/flag_from_a_threshold/notes.rst
 
@@ -210,7 +210,7 @@ if sc then sc else sc 🟢 · boolean, any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-sc-true-condition-gives-then-operand" open><summary><span class="om-ex-title">True condition gives then operand</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-sc-true-condition-gives-then-operand"><summary><span class="om-ex-title">True condition gives then operand</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/if_then_else/sc/true_condition_gives_then_operand/notes.rst
 

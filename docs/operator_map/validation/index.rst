@@ -4,7 +4,7 @@ Data validation operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 1 of 3 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 1 of 3 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -26,8 +26,8 @@ Data validation operators
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Data validation operators"]:::block
-       validation__check_datapoint["Check datapoint · check_datapoint<br/>🟢3 🟡4"]:::partial
-       validation__check_hierarchy["Check hierarchy · check_hierarchy<br/>🟢28 🟡12"]:::partial
+       validation__check_datapoint["Check datapoint · check_datapoint<br/>🟢4 🟡3"]:::partial
+       validation__check_hierarchy["Check hierarchy · check_hierarchy<br/>🟢29 🟡11"]:::partial
        validation__check["Check · check<br/>🟢6"]:::ok
        validation__check_datapoint --- B
        validation__check_hierarchy --- B
@@ -132,13 +132,6 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - ❌
      - type of errorlevel expected Integer got Number
    * - :doc:`Check datapoint <check_datapoint>`
-     - `check\_datapoint(DS, DPR components C1, C2) <check_datapoint.html#form-components>`__
-     - 🟡
-     - `Value domains bound to components <check_datapoint.html#ex-components-value-domains-bound-to-components>`__
-     - 🛡 1-1-1-10
-     - 🛡 1-1-1-10
-     - SemanticError 1-1-1-10: Component VD\_2 not found in Dataset DS\_1. Please check transformation with output Dataset DS\_r
-   * - :doc:`Check datapoint <check_datapoint>`
      - `check\_datapoint(DS, DPR all), rules with errorlevel <check_datapoint.html#form-errorlevel>`__
      - 🟡
      - `Integer level on false results <check_datapoint.html#ex-errorlevel-integer-level-on-false-results>`__
@@ -215,13 +208,6 @@ Every form that is not 🟢, with the example that shows its status: the first t
      - ❌
      - ❌
      - missing row Id\_1=1, Id\_2=Y, ruleid=R5
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR rule C) <check_hierarchy.html#form-rule>`__
-     - 🟡
-     - `Manual example 1 <check_hierarchy.html#ex-rule-manual-ex-1>`__
-     - 🛡 1-3-2-3
-     - 🛡 1-3-2-3
-     - SemanticError 1-3-2-3: At op hierarchy: Vtl Script contains Cycles, no DAG established. Nodes involved: {2: StatementDeps(inputs=[\'M\', \'N\', \'O\'], outputs=[\'B\'], persistent=[], unknown\_variables=[]), …
    * - :doc:`Check hierarchy <check_hierarchy>`
      - `check\_hierarchy(DS, HR partial\_zero dataset all), rules with errorlevel <check_hierarchy.html#form-errorlevel>`__
      - 🟡

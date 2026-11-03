@@ -4,7 +4,7 @@ Change of Component name · ``rename``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 2 of 2 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Change%20of%20Component%20name/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 2 of 2 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Change%20of%20Component%20name/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -70,7 +70,7 @@ DS[rename comp to comp] 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-basic-measure-renamed" open><summary><span class="om-ex-title">Measure renamed</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-basic-measure-renamed"><summary><span class="om-ex-title">Measure renamed</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/rename/basic/measure_renamed/notes.rst
 
@@ -122,7 +122,7 @@ DS[rename comp to comp] 🟢 · any scalar → any type
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>10</td><td>100</td></tr><tr><td>2</td><td>20</td><td>200</td></tr></tbody></table>
 
-Expected error ``1-1-6-8``
+Expected error ``1-1-6-8``: Cannot use component {comp\_name} for rename, it is already in the Dataset {dataset\_name}.
 
 .. raw:: html
 
@@ -138,7 +138,7 @@ DS[rename comp to comp, comp to comp] 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-multiple-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-multiple-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/rename/multiple/manual_ex_1/notes.rst
 

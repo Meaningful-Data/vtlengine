@@ -303,13 +303,13 @@
     "status": "ok",
     "title": "Previous value or null"
   },
-  "aggregate/lag/ds_no_offset/offset_defaults_to_one": {
-    "anchor": "ex-ds-no-offset-offset-defaults-to-one",
-    "duckdb": "🛡 0-5-1-3",
+  "aggregate/lag/ds_no_offset/no_default_offset": {
+    "anchor": "ex-ds-no-offset-no-default-offset",
+    "duckdb": "✅",
     "operator_page": "aggregate/lag.html",
-    "pandas": "🛡 0-5-1-3",
-    "status": "refused",
-    "title": "Offset defaults to one"
+    "pandas": "✅",
+    "status": "ok",
+    "title": "No default offset"
   },
   "aggregate/lag/ds_offset/manual_ex_1": {
     "anchor": "ex-ds-offset-manual-ex-1",
@@ -351,13 +351,13 @@
     "status": "ok",
     "title": "Next value or null"
   },
-  "aggregate/lead/ds_no_offset/offset_defaults_to_one": {
-    "anchor": "ex-ds-no-offset-offset-defaults-to-one",
-    "duckdb": "🛡 0-5-1-3",
+  "aggregate/lead/ds_no_offset/no_default_offset": {
+    "anchor": "ex-ds-no-offset-no-default-offset",
+    "duckdb": "✅",
     "operator_page": "aggregate/lead.html",
-    "pandas": "🛡 0-5-1-3",
-    "status": "refused",
-    "title": "Offset defaults to one"
+    "pandas": "✅",
+    "status": "ok",
+    "title": "No default offset"
   },
   "aggregate/lead/ds_offset/manual_ex_1": {
     "anchor": "ex-ds-offset-manual-ex-1",
@@ -7041,10 +7041,10 @@
   },
   "time/time_agg/sc_date/without_first_or_last": {
     "anchor": "ex-sc-date-without-first-or-last",
-    "duckdb": "🛡 1-1-19-11",
+    "duckdb": "✅",
     "operator_page": "time/time_agg.html",
-    "pandas": "🛡 1-1-19-11",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Without first or last"
   },
   "time/time_agg/sc_time_period/month_to_quarter": {

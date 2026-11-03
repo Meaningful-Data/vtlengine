@@ -4,7 +4,7 @@ define operator
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 9 of 13 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 9 of 13 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -73,7 +73,7 @@ Types
 .. raw:: html
 
    <p class="om-takes"><b>Takes</b> number, integer, string, boolean, time, date, time_period, duration, set, value domain, datapoint ruleset, hierarchical ruleset, any scalar · <b>Gives</b> operator</p>
-   <div class="om-cols"><div class="om-col"><p class="om-line"><b>Comes from:</b> any operator that returns a value</p><details class="om-dir" open><summary><b>Comes from · set, value domain, datapoint ruleset, hierarchical ruleset</b> — 2 operators in 1 block 🟡2</summary><details class="om-blk"><summary>Definitions (VTL-DL) <b>(2)</b> 🟡2</summary><div><a class="om-chip partial" href="../definitions/define_datapoint_ruleset.html" title="partially implemented">define datapoint ruleset</a><a class="om-chip partial" href="../definitions/define_hierarchical_ruleset.html" title="partially implemented">define hierarchical ruleset</a></div></details></details></div><div class="om-col"><details class="om-dir" open><summary><b>Goes to · operator</b> — 1 operator in 1 block 🟢1</summary><details class="om-blk"><summary>General purpose operators <b>(1)</b> 🟢1</summary><div><a class="om-chip ok" href="../general/udo_call.html" title="all ok">User-defined operator call <code>name( )</code></a></div></details></details></div></div>
+   <div class="om-cols"><div class="om-col"><p class="om-line"><b>Comes from:</b> any operator that returns a value</p><details class="om-dir"><summary><b>Comes from · set, value domain, datapoint ruleset, hierarchical ruleset</b> — 2 operators in 1 block 🟡2</summary><details class="om-blk"><summary>Definitions (VTL-DL) <b>(2)</b> 🟡2</summary><div><a class="om-chip partial" href="../definitions/define_datapoint_ruleset.html" title="partially implemented">define datapoint ruleset</a><a class="om-chip partial" href="../definitions/define_hierarchical_ruleset.html" title="partially implemented">define hierarchical ruleset</a></div></details></details></div><div class="om-col"><details class="om-dir"><summary><b>Goes to · operator</b> — 1 operator in 1 block 🟢1</summary><details class="om-blk"><summary>General purpose operators <b>(1)</b> 🟢1</summary><div><a class="om-chip ok" href="../general/udo_call.html" title="all ok">User-defined operator call <code>name( )</code></a></div></details></details></div></div>
 
 Forms
 ----------
@@ -91,7 +91,7 @@ f () 🟢 · nothing → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-no-parameters-call-without-arguments" open><summary><span class="om-ex-title">Call without arguments</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-no-parameters-call-without-arguments"><summary><span class="om-ex-title">Call without arguments</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/no_parameters/call_without_arguments/notes.rst
 
@@ -124,7 +124,7 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 
 .. raw:: html
 
-   <details class="om-example" id="ex-scalar-type-integer-argument" open><summary><span class="om-ex-title">Integer argument</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-scalar-type-integer-argument"><summary><span class="om-ex-title">Integer argument</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/scalar_type/integer_argument/notes.rst
 
@@ -401,7 +401,7 @@ x <value domain> 🔴 · value domain → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-value-domain-string-value-of-the-domain" open><summary><span class="om-ex-title">String value of the domain</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>0-5-1-10</code> · DuckDB 🛡 <code>0-5-1-10</code></span></summary>
+   <details class="om-example" id="ex-value-domain-string-value-of-the-domain"><summary><span class="om-ex-title">String value of the domain</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>0-5-1-10</code> · DuckDB 🛡 <code>0-5-1-10</code></span></summary>
    <p class="om-detail">InputValidationException 0-5-1-10: Invalid parameter type definition &#x27;VD_1&#x27; (line 1, column 32).</p>
 
 .. include:: ../examples/definitions/define_operator/value_domain/string_value_of_the_domain/notes.rst
@@ -439,7 +439,7 @@ x <scalar type> [value …] \| { … } \| not null 🟢 · integer → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-constrained-scalar-value-condition-holds" open><summary><span class="om-ex-title">Value condition holds</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-constrained-scalar-value-condition-holds"><summary><span class="om-ex-title">Value condition holds</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/constrained_scalar/value_condition_holds/notes.rst
 
@@ -536,7 +536,7 @@ s set<…> 🔴 · set → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-set-value-domain-as-the-set" open><summary><span class="om-ex-title">Value domain as the set</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <details class="om-example" id="ex-set-value-domain-as-the-set"><summary><span class="om-ex-title">Value domain as the set</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
    <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: set type &#x27;set&lt;string&gt;&#x27; (line 1, column 36).</p>
 
 .. include:: ../examples/definitions/define_operator/set/value_domain_as_the_set/notes.rst
@@ -574,7 +574,7 @@ c component \| identifier \| measure \| attribute \| viral attribute <…> 🟡 
 
 .. raw:: html
 
-   <details class="om-example" id="ex-component-component-role-in-calc" open><summary><span class="om-ex-title">Component role in calc</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-component-component-role-in-calc"><summary><span class="om-ex-title">Component role in calc</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/component/component_role_in_calc/notes.rst
 
@@ -683,7 +683,7 @@ ds dataset [{ … }] 🟢 · any scalar → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-dataset-dataset-argument" open><summary><span class="om-ex-title">Dataset argument</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-dataset-dataset-argument"><summary><span class="om-ex-title">Dataset argument</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/dataset/dataset_argument/notes.rst
 
@@ -790,7 +790,7 @@ r <ruleset type> 🔴 · datapoint ruleset, hierarchical ruleset → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ruleset-datapoint-type" open><summary><span class="om-ex-title">Datapoint type</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <details class="om-example" id="ex-ruleset-datapoint-type"><summary><span class="om-ex-title">Datapoint type</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
    <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: ruleset type &#x27;datapoint&#x27; (line 5, column 49).</p>
 
 .. include:: ../examples/definitions/define_operator/ruleset/datapoint_type/notes.rst
@@ -944,7 +944,7 @@ y <type> default … 🟢 · integer → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-default-value-last-argument-omitted" open><summary><span class="om-ex-title">Last argument omitted</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-default-value-last-argument-omitted"><summary><span class="om-ex-title">Last argument omitted</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/default_value/last_argument_omitted/notes.rst
 
@@ -1015,7 +1015,7 @@ no returns 🟢 · any scalar → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-returns-omitted-type-of-the-body" open><summary><span class="om-ex-title">Type of the body</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-returns-omitted-type-of-the-body"><summary><span class="om-ex-title">Type of the body</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/returns_omitted/type_of_the_body/notes.rst
 
@@ -1052,7 +1052,7 @@ returns <scalar type> 🟢 · integer → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-returns-scalar-larger-of-two-integers" open><summary><span class="om-ex-title">Larger of two integers</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-returns-scalar-larger-of-two-integers"><summary><span class="om-ex-title">Larger of two integers</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/returns_scalar/larger_of_two_integers/notes.rst
 
@@ -1089,7 +1089,7 @@ returns component<…> 🟢 · integer → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-returns-component-component-in-calc" open><summary><span class="om-ex-title">Component in calc</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-returns-component-component-in-calc"><summary><span class="om-ex-title">Component in calc</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/returns_component/component_in_calc/notes.rst
 
@@ -1116,7 +1116,7 @@ returns dataset 🟢 · any scalar → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-returns-dataset-every-measure-plus-one" open><summary><span class="om-ex-title">Every measure plus one</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-returns-dataset-every-measure-plus-one"><summary><span class="om-ex-title">Every measure plus one</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/returns_dataset/every_measure_plus_one/notes.rst
 

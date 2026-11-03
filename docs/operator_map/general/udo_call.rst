@@ -4,7 +4,7 @@ User-defined operator call · ``name( )``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 4 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/User-defined%20operator%20call/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 4 of 4 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/User-defined%20operator%20call/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -49,7 +49,7 @@ Types
 .. raw:: html
 
    <p class="om-takes"><b>Takes</b> operator, any scalar · <b>Gives</b> any type</p>
-   <div class="om-cols"><div class="om-col"><p class="om-line"><b>Comes from:</b> any operator that returns a value</p><details class="om-dir" open><summary><b>Comes from · operator</b> — 1 operator in 1 block 🟡1</summary><details class="om-blk"><summary>Definitions (VTL-DL) <b>(1)</b> 🟡1</summary><div><a class="om-chip partial" href="../definitions/define_operator.html" title="partially implemented">define operator</a></div></details></details></div><div class="om-col"><p class="om-line"><b>Goes to:</b> whatever takes its input&#x27;s type</p></div></div>
+   <div class="om-cols"><div class="om-col"><p class="om-line"><b>Comes from:</b> any operator that returns a value</p><details class="om-dir"><summary><b>Comes from · operator</b> — 1 operator in 1 block 🟡1</summary><details class="om-blk"><summary>Definitions (VTL-DL) <b>(1)</b> 🟡1</summary><div><a class="om-chip partial" href="../definitions/define_operator.html" title="partially implemented">define operator</a></div></details></details></div><div class="om-col"><p class="om-line"><b>Goes to:</b> whatever takes its input&#x27;s type</p></div></div>
 
 Forms
 ----------
@@ -63,7 +63,7 @@ op() 🟢 · operator → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-no-args-empty-argument-list" open><summary><span class="om-ex-title">Empty argument list</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-no-args-empty-argument-list"><summary><span class="om-ex-title">Empty argument list</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/udo_call/no_args/empty_argument_list/notes.rst
 
@@ -96,7 +96,7 @@ op(a, b) 🟢 · operator, any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-all-args-positional-order" open><summary><span class="om-ex-title">Positional order</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-all-args-positional-order"><summary><span class="om-ex-title">Positional order</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/udo_call/all_args/positional_order/notes.rst
 
@@ -133,7 +133,7 @@ op(a) 🟢 · operator, any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-default-omitted-trailing-default" open><summary><span class="om-ex-title">Trailing default</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-default-omitted-trailing-default"><summary><span class="om-ex-title">Trailing default</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/udo_call/default_omitted/trailing_default/notes.rst
 
@@ -170,7 +170,7 @@ op(a, \_, c) 🟢 · operator, any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-placeholder-arg-underscore-in-the-middle" open><summary><span class="om-ex-title">Underscore in the middle</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-placeholder-arg-underscore-in-the-middle"><summary><span class="om-ex-title">Underscore in the middle</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/udo_call/placeholder_arg/underscore_in_the_middle/notes.rst
 

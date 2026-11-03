@@ -4,7 +4,7 @@ Last value · ``last_value``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 2 of 2 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Last%20value/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 2 of 2 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Last%20value/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -77,7 +77,7 @@ last\_value(DS over (partition by Id order by Id data points \.\.\.)) 🟢 · an
 
 .. raw:: html
 
-   <details class="om-example" id="ex-analytic-ds-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-analytic-ds-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/last_value/analytic_ds/manual_ex_1/notes.rst
 
@@ -104,7 +104,7 @@ DS[calc Me := last\_value(Me over (partition by Id order by Id data points \.\.\
 
 .. raw:: html
 
-   <details class="om-example" id="ex-analytic-comp-last-in-order-not-greatest" open><summary><span class="om-ex-title">Last in order not greatest</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-analytic-comp-last-in-order-not-greatest"><summary><span class="om-ex-title">Last in order not greatest</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/last_value/analytic_comp/last_in_order_not_greatest/notes.rst
 

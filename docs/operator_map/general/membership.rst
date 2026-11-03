@@ -4,7 +4,7 @@ Membership · ``#``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 4 of 5 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Membership/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 4 of 5 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Membership/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -66,7 +66,7 @@ DS#Id 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-identifier-manual-ex-2" open><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-identifier-manual-ex-2"><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/membership/identifier/manual_ex_2/notes.rst
 
@@ -113,7 +113,7 @@ DS#Me 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-measure-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-measure-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/membership/measure/manual_ex_1/notes.rst
 
@@ -160,7 +160,7 @@ DS#At 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-attribute-manual-ex-3" open><summary><span class="om-ex-title">Manual example 3</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-attribute-manual-ex-3"><summary><span class="om-ex-title">Manual example 3</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/membership/attribute/manual_ex_3/notes.rst
 
@@ -217,7 +217,7 @@ DS#At (viral) 🟡 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-viral-attribute-manual-ex-6" open><summary><span class="om-ex-title">Manual example 6</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-viral-attribute-manual-ex-6"><summary><span class="om-ex-title">Manual example 6</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">missing components: str_var</p>
 
 .. include:: ../examples/general/membership/viral_attribute/manual_ex_6/notes.rst
@@ -266,7 +266,7 @@ agg(DS)#Me 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-on-aggregate-manual-ex-7" open><summary><span class="om-ex-title">Manual example 7</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-on-aggregate-manual-ex-7"><summary><span class="om-ex-title">Manual example 7</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/membership/on_aggregate/manual_ex_7/notes.rst
 

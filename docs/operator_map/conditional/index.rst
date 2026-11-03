@@ -4,7 +4,7 @@ Conditional operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 1 of 3 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip partial">🟡 2 of 3 operators all ok</span> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -28,7 +28,7 @@ Conditional operators
        B["Conditional operators"]:::block
        conditional__if_then_else["if-then-else · if then else<br/>🟢5"]:::ok
        conditional__case["Case · case when<br/>🟢4 🟡3"]:::partial
-       conditional__nvl["Nvl · nvl<br/>🟢5 🛡️2"]:::partial
+       conditional__nvl["Nvl · nvl<br/>🟢5 🛡️2"]:::ok
        conditional__if_then_else --- B
        conditional__case --- B
        B --- conditional__nvl
@@ -56,7 +56,7 @@ Conditional operators
      - 🟡
      - 7
    * - :doc:`Nvl <nvl>` ``nvl``
-     - 🟡
+     - 🟢
      - 7
 
 .. rubric:: Types

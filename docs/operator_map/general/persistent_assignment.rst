@@ -4,7 +4,7 @@ Persistent assignment · ``<-``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 3 of 3 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Persistent%20assignment/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (55780655) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
+   <div class="om-head"><span class="om-chip ok">🟢 3 of 3 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Persistent%20assignment/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">vtlengine 1.9.7rc1 (d5c65271) · pandas 3.0.6 · DuckDB 1.5.5</span></div>
 
 .. raw:: html
 
@@ -71,7 +71,7 @@ DS\_r <- DS 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-identity-manual-ex-1" open><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-identity-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/persistent_assignment/identity/manual_ex_1/notes.rst
 
@@ -98,7 +98,7 @@ DS\_r <- expr 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-expression-dataset-subtraction" open><summary><span class="om-ex-title">Dataset subtraction</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-expression-dataset-subtraction"><summary><span class="om-ex-title">Dataset subtraction</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/persistent_assignment/expression/dataset_subtraction/notes.rst
 
@@ -126,7 +126,7 @@ SC\_r <- sc 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-sc-integer-literal" open><summary><span class="om-ex-title">Integer literal</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-sc-integer-literal"><summary><span class="om-ex-title">Integer literal</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/persistent_assignment/sc/integer_literal/notes.rst
 
