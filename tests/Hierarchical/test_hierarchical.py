@@ -5201,3 +5201,34 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=exception_code
         )
+
+    def test_GH_1223_10(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define viral propagation VP_1 (variable At_1) is
+                        aggregate max
+                    end viral propagation;
+
+                    define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: when At_1 = "y" then A = B + F errorcode "E1" errorlevel 1;
+                        R2: when At_1 = "x" then A = B + C errorcode "E2" errorlevel 2;
+                        R3: when At_1 = "x" then D = A + E errorcode "E3" errorlevel 3
+                    end hierarchical ruleset;
+
+                    DS_r <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 partial_zero);
+
+        Description: The rule component is the only identifier of DS_1. R1 and R2 may both
+        compute A, but only R1 does, so D combines the viral At_1 that R1 gives to A.
+
+        Git Branch: #1223.
+        Goal: Check the viral attributes of a code item that only some of the rules that may
+        compute it compute, without other identifiers.
+        """
+
+        code = "GH_1223_10"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

@@ -423,6 +423,9 @@ class Hierarchy(Operators.Operator):
                 if other_ids:
                     computed_groups = computed_dict[rule_name][other_ids].drop_duplicates()
                     nv = merge_frames(nv, computed_groups, on=other_ids, how="inner")
+                elif len(computed_dict[rule_name]) == 0:
+                    # The rule computed no data point (issue #1223)
+                    nv = nv.iloc[0:0]
             if node in node_viral:
                 # A later rule combines the values of the last rule that computed the node
                 # for a group, the rule whose measure it reads (issue #1193)
