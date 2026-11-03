@@ -486,6 +486,10 @@ class Hierarchy(Operators.Operator):
                     how="left",
                 )
         computed_data = computed_data.drop(columns=RULE, errors="ignore")
+        for name in viral_names:
+            if name not in computed_data.columns:
+                # No rule computed a data point (issue #1223)
+                computed_data[name] = None
 
         rules_per_node = Counter(node for node, _ in (node_children or {}).values())
         repeated_nodes = max(rules_per_node.values(), default=0) > 1

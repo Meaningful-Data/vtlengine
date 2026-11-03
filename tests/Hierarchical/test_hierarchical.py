@@ -5111,3 +5111,33 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
         references_names = ["1", "2", "3", "4"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1223_7(self):
+        """
+        HIERARCHICAL RULSET: hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define viral propagation VP_1 (variable At_1) is
+                        aggregate max
+                    end viral propagation;
+
+                    define hierarchical ruleset HR_1 (variable condition At_1 rule Id_2) is
+                        R1: when At_1 = "w" then A = B + C errorcode "E1" errorlevel 1
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2);
+                    DS_r2 <- hierarchy(DS_1, HR_1 condition At_1 rule Id_2 all);
+
+        Description: No data point satisfies the condition on the viral attribute At_1, so
+        the rule computes no data point. The result keeps At_1.
+
+        Git Branch: #1223.
+        Goal: Check a hierarchy that computes no data point of an operand with a viral
+        attribute.
+        """
+
+        code = "GH_1223_7"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
