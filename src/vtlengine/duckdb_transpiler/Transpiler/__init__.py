@@ -3467,18 +3467,7 @@ FROM (
         the measure values from the first (or relevant) dataset.  This differs
         from SQL INTERSECT/EXCEPT which compare all columns.
         """
-        child_sqls = []
-        for child in node.children:
-            child_sql = self.visit(child)
-            if not child_sql.strip().upper().startswith("SELECT"):
-                child_sql = (
-                    f"SELECT * FROM "
-                    f"{quote_name(child.value if hasattr(child, 'value') else child_sql)}"
-                )
-            checked_sql = self._materialize_raising_operand(f"({child_sql})")
-            if checked_sql != f"({child_sql})":
-                child_sql = f"SELECT * FROM {checked_sql}"
-            child_sqls.append(child_sql)
+        child_sqls = [f"SELECT * FROM {self._get_dataset_sql(child)}" for child in node.children]
 
         if op == tokens.UNION:
             first_child = node.children[0]
