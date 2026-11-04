@@ -600,6 +600,9 @@ class ExprComp:
             for operand in ctx_list
             if not operand.is_terminal and operand.rule_index == RC.EXPR_COMPONENT[0]
         ]
+        if not operand_node:
+            # period_indicator() reads the time Identifier of the clause's Data Set (#1247)
+            operand_node = [Identifier(value="", kind="ComponentID", **extract_token_info(ctx))]
 
         return UnaryOp(op=op, operand=operand_node[0], **extract_token_info(ctx))
 

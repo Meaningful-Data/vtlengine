@@ -1,7 +1,6 @@
 from copy import copy
 from typing import Dict, List, Optional
 
-import duckdb
 import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
@@ -41,6 +40,7 @@ from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
+from vtlengine.Utils._duckdb import query_connection
 from vtlengine.ViralPropagation import (
     apply_viral_return_types,
     get_current_registry,
@@ -340,17 +340,15 @@ class Analytic(Operator.Unary):
         identifiers_sql = ", ".join(f'"{name}"' for name in identifier_names)
         query = f"SELECT {identifiers_sql} , {measures_sql} FROM df"
 
-        conn = duckdb.connect(database=":memory:", read_only=False)
         try:
-            conn.register("df", df)
-            result = conn.execute(query).fetchdf()
+            with query_connection() as conn:
+                conn.register("df", df)
+                result = conn.execute(query).fetchdf()
         except RuntimeError as e:
             if "Conversion" in e.args[0]:
                 raise RunTimeError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
             else:
                 raise RunTimeError("2-1-1-1", op=cls.op, error=e)
-        finally:
-            conn.close()
         if cls.op == RATIO_TO_REPORT:
             for col_name in measure_names:
                 if (result[f"{denominator_prefix}{col_name}"] == 0).any():

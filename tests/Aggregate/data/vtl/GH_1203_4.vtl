@@ -1,0 +1,6 @@
+DS_r1 <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having if sum(Me_1) > 5 then true else false];
+DS_r2 <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having if sum(Me_1) > 5 then false else true];
+DS_r3 <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having case when sum(Me_1) > 5 then true else false];
+DS_r4 <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having case when sum(Me_1) > 5 then false when count() > 1 then true else false];
+DS_r5 <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having (if sum(Me_1) > 5 then true else false) and count() = 1];
+DS_r6 <- sum(DS_1 group by Id_1 having case when sum(Me_1) > 5 then true else null);

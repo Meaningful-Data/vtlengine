@@ -74,6 +74,7 @@ from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_out
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Operators.Analytic import DEFAULT_ANALYTIC_WINDOW
 from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.Operators.Time import Period_indicator
 from vtlengine.Utils._recursion import recursion_headroom
 from vtlengine.ViralPropagation import apply_viral_return_types, get_current_registry
 from vtlengine.ViralPropagation.sql import (
@@ -103,7 +104,7 @@ _VTL_PERIOD_PARSE_LITERAL = re.compile(
 # Left-nested chains of a dataset operation that gives its operands' types back, with
 # at least this many operands, are computed by one grouped query (see
 # SQLTranspiler._build_ds_ds_chain). Each operator maps to the Measure types it folds.
-# Division, mod, power and log keep the joins: they can fail at a data point, which
+# Division, power and log keep the joins: they can fail at a data point, which
 # must raise even when a later operand does not have it, and the grouped
 # query only computes the data points found in every operand.
 _NUMERIC_TYPES = frozenset({Integer, Number})
@@ -1670,6 +1671,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def _visit_period_indicator(self, node: AST.UnaryOp) -> str:
         """Visit PERIOD_INDICATOR: extract period indicator from TimePeriod."""
+        operand = node.operand
+        if isinstance(operand, AST.Identifier) and not operand.value and self._current_dataset:
+            # period_indicator() reads the time Identifier of the clause's Data Set (#1247)
+            time_id = Period_indicator._get_time_id(self._current_dataset)
+            return f"vtl_period_parse({quote_name(time_id)}).period_indicator"
         operand_type = self._get_node_type(node.operand)
 
         ds = self._get_dataset_structure(node.operand)
@@ -3709,9 +3715,9 @@ FROM (
         cases: List[Any],
         else_op: AST.AST,
     ) -> str:
-        """Build a scalar CASE WHEN SQL with reversed order (VTL last-match-wins)."""
+        """Build a scalar CASE WHEN SQL, keeping the order of the VTL WHEN branches."""
         parts = ["CASE"]
-        for case_obj in reversed(cases):
+        for case_obj in cases:
             cond_sql = self.visit(case_obj.condition)
             then_sql = self.visit(case_obj.thenOp)
             parts.append(f"WHEN {cond_sql} THEN {then_sql}")
@@ -3721,9 +3727,8 @@ FROM (
     def visit_Case(self, node: AST.Case) -> str:
         """Visit CASE expression.
 
-        VTL CASE uses last-match-wins semantics (later conditions override earlier
-        ones), while SQL CASE uses first-match-wins.  We reverse the WHEN order so
-        the SQL engine evaluates conditions with the same priority as VTL.
+        VTL CASE returns the THEN operand of the first condition that is true, as SQL
+        CASE does, so the WHEN branches keep their order (issue #1251).
 
         For dataset-level CASE (where conditions are boolean datasets), we build
         JOINs similar to ``_build_dataset_if``.
@@ -3810,7 +3815,7 @@ FROM (
         cols: List[str] = [f"{alias_src}.{quote_name(id_)}" for id_ in source_ids]
         for measure in output_measures:
             case_parts = ["CASE"]
-            for i in reversed(range(len(node.cases))):
+            for i in range(len(node.cases)):
                 then_ref = (
                     f"{then_aliases[i]}.{quote_name(measure)}"
                     if then_types[i] == _DATASET
@@ -3844,25 +3849,24 @@ FROM (
 
         builder.select(*cols)
 
-        # Filter: only keep rows where the selected branch has a matching row.
+        # Filter: only keep rows where the selected branch (the one of the first true
+        # condition, or the else one when none is true) has a matching row (issue #1251).
         # Scalar/null branches always match; dataset branches need a LEFT JOIN hit.
         has_ds_branch = any(t == _DATASET for t in then_types) or e_type == _DATASET
         if has_ds_branch:
             id_col = quote_name(source_ids[0])
-            filter_parts: List[str] = []
+            filter_parts = ["CASE"]
             for i in range(len(node.cases)):
                 if then_types[i] == _DATASET:
                     match_check = f"{then_aliases[i]}.{id_col} IS NOT NULL"
                 else:
                     match_check = "TRUE"
-                filter_parts.append(f"({cond_exprs[i]} AND {match_check})")
-            # Else branch: applies when no condition is true
-            neg = " AND ".join(f"(NOT {c} OR {c} IS NULL)" for c in cond_exprs)
+                filter_parts.append(f"WHEN {cond_exprs[i]} THEN {match_check}")
             if e_type == _DATASET:
-                filter_parts.append(f"(({neg}) AND {e_alias}.{id_col} IS NOT NULL)")
+                filter_parts.append(f"ELSE {e_alias}.{id_col} IS NOT NULL END")
             else:
-                filter_parts.append(f"({neg})")
-            builder.where(" OR ".join(filter_parts))
+                filter_parts.append("ELSE TRUE END")
+            builder.where(" ".join(filter_parts))
 
         return builder.build()
 

@@ -1,0 +1,94 @@
+name: Build the C++ parser
+description: >-
+  Put the compiled VTL parser next to its __init__.py: restored from the cache, or built against
+  an ANTLR4 runtime that is cached too. Every job that needs the parser uses this action, so the
+  cache keys are the same in the test workflows and in build_cache.yml, which saves them on the
+  base branch.
+
+inputs:
+  python-version:
+    description: Python version the extension is built for, part of the cache keys.
+    required: true
+  cache-prefix:
+    description: Platform part of the cache keys (default runner.os).
+    required: false
+    default: ""
+  save-cache:
+    description: >-
+      Whether to save what this job had to build. Of the jobs that share the keys, one saves,
+      so that they do not race for the same entry ("Unable to reserve cache").
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Restore ANTLR4 runtime prebuilt
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      id: antlr4-cache
+      with:
+        path: build/antlr4-prefix
+        # The runtime does not depend on Python, but a key per Python version gives each job
+        # that saves the parser an entry of its own for the runtime too.
+        key: antlr4-runtime-${{ inputs.cache-prefix || runner.os }}-py${{ inputs.python-version }}-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
+    - name: Restore compiled C++ parser
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      id: cpp-cache
+      with:
+        # Just the compiled extension binary — restoring it puts it back
+        # next to its __init__.py with no .py files riding along.
+        path: src/vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*
+        # The files the binary is built from. Not pyproject.toml: its version and dependency
+        # bumps do not change the binary.
+        key: cpp-parser-${{ inputs.cache-prefix || runner.os }}-py${{ inputs.python-version }}-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'scripts/setup_antlr4_runtime.sh') }}
+    - name: Download ANTLR4 C++ runtime source
+      if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: bash scripts/setup_antlr4_runtime.sh
+    - name: Build ANTLR4 runtime
+      if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        # On Windows, let CMake pick its default generator: it selects the
+        # newest installed Visual Studio (MSVC), matching what
+        # scikit-build-core uses for the wheel build so the prebuilt static
+        # library stays ABI-compatible. Pinning an explicit version (e.g.
+        # "Visual Studio 17 2022") breaks whenever the runner image bumps
+        # the bundled VS. On Linux/macOS, Ninja parallelises better than the
+        # default Unix Makefiles generator.
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          cmake -S . -B build/antlr4-build \
+            -DVTLENGINE_BUILD_ANTLR4_PREBUILT=ON
+        else
+          cmake -S . -B build/antlr4-build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DVTLENGINE_BUILD_ANTLR4_PREBUILT=ON
+        fi
+        cmake --build build/antlr4-build --target antlr4_runtime --config Release
+        cmake --install build/antlr4-build --prefix "$PWD/build/antlr4-prefix" --config Release
+    - name: Save ANTLR4 runtime prebuilt
+      if: inputs.save-cache == 'true' && steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: build/antlr4-prefix
+        key: ${{ steps.antlr4-cache.outputs.cache-primary-key }}
+    - name: Build C++ parser binary
+      if: steps.cpp-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        # Build the wheel only to fish out the compiled extension; throw
+        # the rest away. The cached entry above is just the binary.
+        pip wheel . -w .build_wheel --no-deps -v \
+          -C cmake.define.VTLENGINE_USE_PREBUILT_ANTLR4=ON \
+          -C "cmake.define.VTLENGINE_ANTLR4_PREFIX=$PWD/build/antlr4-prefix"
+        unzip -o -j .build_wheel/*.whl \
+          'vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*' \
+          -d src/vtlengine/AST/Grammar/_cpp_parser/
+        rm -rf .build_wheel
+    - name: Save compiled C++ parser
+      if: inputs.save-cache == 'true' && steps.cpp-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: src/vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*
+        key: ${{ steps.cpp-cache.outputs.cache-primary-key }}

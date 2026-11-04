@@ -253,20 +253,14 @@ DATA_STRUCTURES = {
             "multiplicity modifier in 'measure<number> _*' (line 1, column 83)",
         ),
         (
-            "DS_r <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having true];",
-            "having condition 'true' (line 1, column 58)",
+            "define operator f (x\n    set<integer>) returns boolean is true end operator;",
+            "set type 'set<integer>' (line 2, column 5)",
         ),
         (
-            "DS_r <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1\n"
-            "    having if sum(Me_1) > 0\n"
-            "        then true else false];",
-            "having condition 'if sum(Me_1) > 0 then true else false' (line 2, column 12)",
-        ),
-        (
-            "DS_r <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having if sum(Me_1) > 0 "
-            "and sum(Me_1) < 100 and avg(Me_1) > 5 then true else false];",
-            "having condition 'if sum(Me_1) > 0 and sum(Me_1) < 100 and avg(Me_1) > 5 th...' "
-            "(line 1, column 58)",
+            'DS_r <- eval(SQL1(DS_1) language "SQL" returns dataset {identifier<integer> Id_1, '
+            "measure<integer[value > 1 and value < 100 and value <> 50 and value <> 60]> Me_1});",
+            "type constraint in 'integer[value > 1 and value < 100 and value <> 50 and val...' "
+            "(line 1, column 91)",
         ),
     ],
 )

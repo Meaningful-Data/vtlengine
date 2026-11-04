@@ -23,7 +23,7 @@
         },
         {
           "name": "PRTCTN_VLTN_APPRCH_PRTCTN_VL",
-          "role": "Measure",
+          "role": "Attribute",
           "type": "String",
           "nullable": false
         },

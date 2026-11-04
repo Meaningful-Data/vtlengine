@@ -287,7 +287,6 @@ class TestDatasetChainSQL:
         "expression",
         [
             "DS_1 / DS_2 / DS_3",
-            "mod(mod(DS_1, DS_2), DS_3)",
             "power(power(DS_1, DS_2), DS_3)",
             "log(log(DS_1, DS_2), DS_3)",
         ],

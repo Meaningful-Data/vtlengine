@@ -928,6 +928,21 @@ class NumericOperatorsTest(AdditionalHelper):
             references_names=references_names,
         )
 
+    def test_13(self):
+        """
+        Without its number of digits, trunc keeps every Number Measure of a multi-measure
+        Data Set, as Integer, like round (issue #1248).
+        """
+        code = "4-13"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
     def test_15(self):
         """
         Basic behaviour for components with null values.
@@ -4232,6 +4247,41 @@ class TimeOperatorsTest(AdditionalHelper):
 
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_1247_1(self):
+        """period_indicator without its operand in a filter reads the time_period Identifier"""
+        code = "GH_1247_1"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            text=None,
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_GH_1247_2(self):
+        """Semantic error 1-3-2-8: period_indicator without its operand outside a clause"""
+        code = "GH_1247_2"
+        number_inputs = 0
+        exception_code = "1-3-2-8"
+
+        self.NewSemanticExceptionTest(
+            text=None, code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_1247_3(self):
+        """Semantic error 1-3-2-8: period_indicator without its operand in a datapoint ruleset,
+        which is not a clause
+        """
+        code = "GH_1247_3"
+        number_inputs = 1
+        exception_code = "1-3-2-8"
+
+        self.NewSemanticExceptionTest(
+            text=None, code=code, number_inputs=number_inputs, exception_code=exception_code
         )
 
 

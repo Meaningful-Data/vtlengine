@@ -867,7 +867,8 @@ class ASTString(ASTTemplate):
         return _format_name(node.value)
 
     def visit_Identifier(self, node: AST.Identifier) -> Any:
-        return _format_name(node.value)
+        # An empty name is the omitted operand of period_indicator() in a clause
+        return _format_name(node.value) if node.value else ""
 
     def visit_Constant(self, node: AST.Constant) -> str:
         if node.value is None:
