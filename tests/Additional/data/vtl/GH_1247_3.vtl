@@ -1,0 +1,5 @@
+define datapoint ruleset dpr_1 (variable Id_2, Me_1) is
+    rule_1: period_indicator() = cast("Q", duration) errorcode "E1"
+end datapoint ruleset;
+
+DS_r <- check_datapoint(DS_1, dpr_1);
