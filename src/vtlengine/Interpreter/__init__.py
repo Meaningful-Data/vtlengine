@@ -1382,6 +1382,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         if self.condition_stack is None:
             self.condition_stack = []
+        depth = len(self.condition_stack)
 
         for case in node.cases:
             conditions.append(self.visit(case.condition))
@@ -1395,9 +1396,16 @@ class InterpreterAnalyzer(ASTTemplate):
             thenOps.append(self.visit(case.thenOp))
             self.condition_stack.pop()
 
-        self.condition_stack.append(else_ds)
+            if isinstance(conditions[-1], DataComponent):
+                # case returns the then operand of the first true condition (issue #1251). At
+                # Component level, as in a chain of if-then-else, the later conditions, their
+                # then operands and the else operand only see the data points this one leaves.
+                self.condition_stack.append(else_ds)
+
+        if len(self.condition_stack) == depth:
+            self.condition_stack.append(else_ds)
         elseOp = self.visit(node.elseOp)
-        self.condition_stack.pop()
+        del self.condition_stack[depth:]
 
         return Case.analyze(conditions, thenOps, elseOp, self.is_from_having)
 

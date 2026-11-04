@@ -1167,6 +1167,23 @@ class NumericBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": -1}
         )
 
+    def test_GH_1245(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_5 := mod(Me_1, Me_3), Me_6 := mod(Me_2, Me_4), ...];
+        Description: The remainder of mod takes the sign of the divisor (mod(5, -2) is -1,
+                     not 1) and a zero divisor gives the dividend back (mod(9, 0) is 9, where
+                     both engines raised 2-1-15-6), on Integer and Number components, with
+                     another component or a scalar, and with null values.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1245
+        Goal: Check Result.
+        """
+        code = "GH_1245"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ComparisonBugs(BugHelper):
     """ """
@@ -3463,6 +3480,26 @@ class ConditionalBugs(BugHelper):
         """
         code = "GH_1225_6"
         number_inputs = 3
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1251(self):
+        """
+        Expression: DS_r1 <- case when DS_1 > 20 then DS_2 when DS_1 > 10 then DS_3 else DS_1;
+                    DS_r2 <- case when DS_C1 then DS_2 when DS_C2 then DS_3 else DS_1;
+                    DS_r3 <- case when DS_1 > 20 then DS_4 when DS_1 > 10 then DS_3 else DS_2;
+                    DS_r4 <- case when DS_1 > 20 then 1000 when DS_1 > 10 then DS_3 else 0;
+        Description: case on Data Sets returned the Data Point of the last true condition
+            instead of the first (Id_1 3 and 5). The Data Point comes from the operand of
+            the first true condition also when its Measure is null (DS_r1 Id_1 5), and it is
+            left out when that operand does not have it (DS_r3 Id_1 3). A null condition is
+            not true (DS_r2 Id_1 2 and 3), and DS_C2 lists its Data Points in another order.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1251
+        Goal: Check Result.
+        """
+        code = "GH_1251"
+        number_inputs = 6
         references_names = ["1", "2", "3", "4"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

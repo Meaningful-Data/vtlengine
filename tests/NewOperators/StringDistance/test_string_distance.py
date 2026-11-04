@@ -24,6 +24,18 @@ ds_param = [
     ),
     pytest.param("4", "DS_r := string_distance(jaro_winkler, DS_1, DS_2);", id="jaro_winkler"),
     pytest.param("5", "DS_r := string_distance(hamming, DS_1, DS_2);", id="hamming_ds_ds"),
+    pytest.param(
+        "8", "DS_r := string_distance(jaro_winkler, DS_1, DS_2);", id="jaro_winkler_edge_cases"
+    ),
+    pytest.param(
+        "9",
+        'DS_r := DS_1[calc Me_2 := string_distance(jaro_winkler, "FOO", "FOO"), '
+        'Me_3 := string_distance(jaro_winkler, "FOO", "BAR"), '
+        'Me_4 := string_distance(jaro_winkler, "", ""), '
+        'Me_5 := string_distance(jaro_winkler, "", "FOO"), '
+        'Me_6 := string_distance(jaro_winkler, null, "FOO")];',
+        id="jaro_winkler_scalars",
+    ),
 ]
 
 _VIRAL_RULE = (

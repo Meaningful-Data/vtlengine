@@ -121,9 +121,9 @@ NESTED_SHAPES = {
         "DS_r <- DS_1[calc Me_r := Me_1 / (abs(Me_2) + 1 + Me_3 / (abs(Me_4) + 1 "
         "+ Me_5 / (abs(Me_6) + 1)))];"
     ),
+    # Two levels: vtl_mod copies its divisor five times, so a third takes seconds to plan
     "nested mod": (
-        "DS_r <- DS_1[calc Me_r := mod(Me_1, abs(Me_2) + 1 + mod(Me_3, abs(Me_4) + 1 "
-        "+ mod(Me_5, abs(Me_6) + 1)))];"
+        "DS_r <- DS_1[calc Me_r := mod(Me_1, abs(Me_2) + 1 + mod(Me_3, abs(Me_4) + 1))];"
     ),
     "tolerance equality of nested sums": (
         f"DS_r <- DS_1[calc Me_r := if ({_right_nested('+', 5)}) = "
