@@ -22,8 +22,6 @@ jobs:
 
       - name: Install the dependencies
         uses: ./.github/actions/install-ubuntu-2404-deps
-        with:
-          save-cache: "true"
 
       - name: Build the C++ parser
         uses: ./.github/actions/build-cpp-parser
