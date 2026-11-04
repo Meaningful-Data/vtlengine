@@ -7,7 +7,7 @@ import pandas as pd
 from pandas import DataFrame
 
 import vtlengine.Operators as Operators
-from vtlengine.AST.Grammar.tokens import HIERARCHY, NON_NULL, NON_ZERO
+from vtlengine.AST.Grammar.tokens import ALWAYS_NULL, ALWAYS_ZERO, HIERARCHY, NON_NULL, NON_ZERO
 from vtlengine.DataTypes import Boolean, Number
 from vtlengine.Exceptions import RunTimeError
 from vtlengine.Model import Component, DataComponent, Dataset, Role
@@ -107,6 +107,9 @@ class HRBinOp(Operators.Binary):
         left_aligned = left_aligned.where(left_aligned != REMOVE, fill_value)
         right_aligned = right_aligned.where(right_aligned != REMOVE, fill_value)
 
+        if mode in (ALWAYS_NULL, ALWAYS_ZERO):
+            # The data point is produced in any case (issue #1250)
+            return left_aligned, right_aligned
         if mode == NON_NULL:
             mask_remove |= left_aligned.isna() | right_aligned.isna()
         elif mode == NON_ZERO:
@@ -311,6 +314,10 @@ class HAAssignment(Operators.Binary):
 
     @classmethod
     def handle_mode(cls, x: Any, hr_mode: str) -> Any:
+        if isinstance(x, str) and hr_mode in (ALWAYS_NULL, ALWAYS_ZERO):
+            # A missing right side gives null or 0: the data point is produced in any case
+            # (issue #1250)
+            return 0 if hr_mode == ALWAYS_ZERO else None
         # A right side whose code items are all excluded reads as missing (issue #1168)
         remove = (
             isinstance(x, str)
