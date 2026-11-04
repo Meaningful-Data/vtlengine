@@ -541,6 +541,35 @@ CREATE OR REPLACE MACRO vtl_random_index(x) AS (
     END
 );
 
+-- A step of the SplitMix64 mixer on a UHUGEINT below 2^64: a xor-shift, then a product
+-- modulo 2^64. UBIGINT arithmetic raises on overflow instead of wrapping around, and the
+-- mask keeps the low 64 bits much faster than a UHUGEINT modulo.
+CREATE OR REPLACE MACRO vtl_random_mix(z, shift, factor) AS (
+    (xor(z, z >> shift) * factor) & 18446744073709551615
+);
+
+-- Random number at index i of the SplitMix64 sequence seeded with the bits of the Number s
+-- (adding 0 turns -0.0 into 0.0), kept to 6 decimals, the same number as the pandas engine
+-- (issue #1253). The last step has factor 1, a xor-shift alone.
+CREATE OR REPLACE MACRO vtl_random(s, i) AS (
+    CAST(
+        CAST(
+            vtl_random_mix(
+                vtl_random_mix(
+                    vtl_random_mix(
+                        (CAST(CAST(CAST(s AS DOUBLE) + 0 AS BIT) AS UBIGINT)
+                         + (CAST(i AS UHUGEINT) + 1) * 11400714819323198485)
+                        & 18446744073709551615,
+                        30, 13787848793156543929
+                    ),
+                    27, 10723151780598845931
+                ),
+                31, 1
+            ) AS UBIGINT
+        ) % 1000000 AS DOUBLE
+    ) / 1000000
+);
+
 -- Square root that mirrors VTL error 2-1-15-2 on negative values.
 CREATE OR REPLACE MACRO vtl_sqrt(x) AS (
     CASE WHEN x IS NULL OR isnan(CAST(x AS DOUBLE)) THEN NULL

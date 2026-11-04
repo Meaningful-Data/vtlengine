@@ -4216,6 +4216,41 @@ class ClauseBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1265(self):
+        """
+        Status: OK
+        Expression: SC_1 <- 5;
+                    DS_r <- DS_1[calc Me_2 := SC_1];
+        Description: The DuckDB engine dropped the table of a persistent Scalar once it
+                     returned it, so a clause of a later statement could not read it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1265
+        Goal: Check Result.
+        """
+        code = "GH_1265"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1252(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- DS_1 [ calc At_1 := "X" ];
+                    DS_r2 <- DS_2 [ aggr Me_1 := sum ( Me_1 ), At_1 := max ( At_1 ) group by Id_1 ];
+                    DS_r3 <- DS_2 [ calc At_1 := "X" ] [ aggr Me_1 := sum ( Me_1 ), At_1 := max ( At_1 ) group by Id_1 ] * 2;
+        Description: calc and aggr turned the Attribute At_1, computed with no role, into a
+                     Measure. A Component of the operand keeps its role when the role is omitted.
+                     In DS_r3 the String Attribute At_1 is dropped by *, which DuckDB only does
+                     when its own structures of the two clauses keep At_1 an Attribute.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1252
+        Goal: Check Result.
+        """
+        code = "GH_1252"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class DefinedBugs(BugHelper):
     """ """

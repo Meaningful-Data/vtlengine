@@ -571,7 +571,10 @@ def cleanup_scheduled_datasets(
                 representation=representation,
                 output_format=output_format,
             )
-            conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
+            # A Scalar keeps its table: a clause of a later statement can read it, and the
+            # schedule leaves a persistent one out of that statement's inputs (issue #1265)
+            if ds_name not in output_scalars:
+                conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
         else:
             # Drop non-persistent intermediate results
             conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
