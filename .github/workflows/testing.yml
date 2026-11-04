@@ -37,24 +37,36 @@ jobs:
         run: poetry run mypy --show-error-codes --pretty
 
   testing:
-    name: testing (${{ matrix.os }}, ${{ matrix.python-version }}, ${{ matrix.backend }})
+    # "testing (<os>, <python>)" runs both backends; Windows, the slowest runner, runs each
+    # backend in a job of its own, "testing (<os>, <python>, <backend>)". The jobs are few on
+    # purpose: the account runs 20 jobs at a time, for every workflow and pull request.
+    name: >-
+      ${{ matrix.backend == 'both'
+        && format('testing ({0}, {1})', matrix.os, matrix.python-version)
+        || format('testing ({0}, {1}, {2})', matrix.os, matrix.python-version, matrix.backend) }}
     runs-on: ${{matrix.os}}
 
     strategy:
       fail-fast: true
       matrix:
-        # Every Python version on Ubuntu, and 3.12 on macOS and Windows, each backend in a
-        # job of its own. Ubuntu with 3.12 is the coverage job.
-        os: [ubuntu-latest]
-        python-version: ["3.10", "3.11", "3.13", "3.14"]
-        backend: [pandas, duckdb]
+        # Every Python version on Ubuntu, and 3.12 on macOS and Windows. Ubuntu with 3.12 is
+        # the coverage job.
         include:
+          - os: ubuntu-latest
+            python-version: "3.10"
+            backend: both
+          - os: ubuntu-latest
+            python-version: "3.11"
+            backend: both
+          - os: ubuntu-latest
+            python-version: "3.13"
+            backend: both
+          - os: ubuntu-latest
+            python-version: "3.14"
+            backend: both
           - os: macos-latest
             python-version: "3.12"
-            backend: pandas
-          - os: macos-latest
-            python-version: "3.12"
-            backend: duckdb
+            backend: both
           - os: windows-latest
             python-version: "3.12"
             backend: pandas
@@ -75,17 +87,23 @@ jobs:
         uses: ./.github/actions/build-cpp-parser
         with:
           python-version: ${{ matrix.python-version }}
-          # Both backends of an OS and Python share the caches; one of them saves them
-          save-cache: ${{ matrix.backend == 'duckdb' }}
+          # The two Windows jobs share the caches; one of them saves them
+          save-cache: ${{ matrix.backend != 'pandas' }}
       - name: Install dependencies
         shell: bash
         run: poetry install --no-root --all-extras
-      - name: Run tests with ${{ matrix.backend }} backend
+      - name: Run tests with pandas backend
+        if: matrix.backend != 'duckdb'
         env:
-          VTL_ENGINE_BACKEND: ${{ matrix.backend }}
-        run: poetry run pytest -n auto --dist worksteal --verbose --tb=short --strict-markers --strict-config --durations=10 --junitxml=test-results/${{ matrix.backend }}.xml
+          VTL_ENGINE_BACKEND: pandas
+        run: poetry run pytest -n auto --dist worksteal --verbose --tb=short --strict-markers --strict-config --durations=10 --junitxml=test-results/pandas.xml
+      - name: Run tests with duckdb backend
+        if: matrix.backend != 'pandas'
+        env:
+          VTL_ENGINE_BACKEND: duckdb
+        run: poetry run pytest -n auto --dist worksteal --verbose --tb=short --strict-markers --strict-config --durations=10 --junitxml=test-results/duckdb.xml
       - name: Keep the test results
-        # The Test summary job reads them: the JUnit XML of the backend and the job.
+        # The Test summary job reads them: the JUnit XML of each backend and the job.
         if: ${{ !cancelled() }}
         shell: bash
         run: |
