@@ -1,0 +1,13 @@
+Id_1,Id_2,ruleid,bool_var,errorcode,errorlevel,imbalance
+1,A,R1,False,,,-1.0
+1,C,R2,False,,,-5.0
+1,Y,R3,False,,,0.0
+2,A,R1,False,,,-24.0
+2,C,R2,,,,
+2,Y,R3,False,,,0.0
+3,A,R1,True,,,0.0
+3,C,R2,True,,,0.0
+3,Y,R3,False,,,0.0
+4,A,R1,True,,,0.0
+4,C,R2,True,,,0.0
+4,Y,R3,False,,,0.0

@@ -4255,6 +4255,7 @@ FROM (
         parsed_rules: List[_ParsedHRRule],
         rule_comp: str,
         cond_mapping: Dict[str, str],
+        mode: str,
     ) -> Tuple[str, str, List[str]]:
         """Build the pivot SELECT SQL and metadata for hierarchy operations.
 
@@ -4323,11 +4324,12 @@ FROM (
                             found.append(f"({rc})")
                 structs.append(f"struct_pack({', '.join(fields)}) AS _r{parsed.index}")
         src = self._hoisted_source(table_src, hoisted) if hoisted else table_src
-        group_by = f" GROUP BY {', '.join(group_cols)}" if group_cols else ""
-        pivot_sql = (
-            f"SELECT {', '.join([*group_cols, *structs])} "
-            f"FROM {src} WHERE {' OR '.join(dict.fromkeys(found))}{group_by}"
-        )
+        # The always modes give a result for every group of the operand (issue #1250). An
+        # aggregate without GROUP BY gives a row even without data points: HAVING drops it.
+        always = mode in ("always_null", "always_zero")
+        where = "" if always else f" WHERE {' OR '.join(dict.fromkeys(found))}"
+        group_by = f" GROUP BY {', '.join(group_cols)}" if group_cols else " HAVING COUNT(*) > 0"
+        pivot_sql = f"SELECT {', '.join([*group_cols, *structs])} FROM {src}{where}{group_by}"
         return pivot_sql, measure_name, other_ids
 
     def _hr_rule_source(
@@ -4433,7 +4435,7 @@ FROM (
             return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
 
         pivot_sql, measure_name, other_ids = self._build_hr_pivot(
-            table_src, ds, parsed_rules, rule_comp, cond_mapping
+            table_src, ds, parsed_rules, rule_comp, cond_mapping, mode
         )
         cte = CTEBuilder()
         # MATERIALIZED so the pivot aggregation is computed once, not once per
@@ -4833,7 +4835,7 @@ FROM (
             return f"SELECT {all_cols_csv} FROM {table_src}"
 
         pivot_sql, measure, other_ids = self._build_hr_pivot(
-            table_src, ds, parsed_rules, rule_comp, cond_mapping
+            table_src, ds, parsed_rules, rule_comp, cond_mapping, mode
         )
         cte = CTEBuilder()
         # MATERIALIZED so the pivot aggregation is computed once, not once per rule.
@@ -4994,7 +4996,8 @@ FROM (
         right_presence = [
             f"{self._hr_item_sql(parsed, j)[1]} = 1" for j in range(len(parsed.right_code_items))
         ]
-        if right_presence:
+        # The always modes compute the data point in any case (issue #1250)
+        if right_presence and mode not in ("always_null", "always_zero"):
             where_parts.append(f"({' OR '.join(right_presence)})")
         if parsed.has_when:
             # The rule only computes where its condition holds: another rule may compute
@@ -5021,7 +5024,8 @@ FROM (
     ) -> List[str]:
         """Generate WHERE filter clauses for the validation mode from the rule source.
 
-        An excluded right code item is not involved in the rule.
+        An excluded right code item is not involved in the rule. The always modes have none:
+        the data point is produced in any case (issue #1250).
         """
         positions = range(len(parsed.right_code_items))
         left_sql = self._hr_item_sql(parsed)
@@ -5054,10 +5058,6 @@ FROM (
             checks = [f"{has} = 1" for _, has, _ in items_sql]
             if checks:
                 filters.append(f"({' OR '.join(checks)})")
-
-        elif mode in ("always_null", "always_zero"):
-            presence = [f"{has} = 1" for _, has, _ in all_items_sql]
-            filters.append(f"({' OR '.join(presence)})")
 
         return filters
 
