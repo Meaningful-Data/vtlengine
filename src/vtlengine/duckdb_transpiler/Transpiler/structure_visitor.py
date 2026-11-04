@@ -26,7 +26,7 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS, get
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators.CastOperator import Cast
-from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.Operators.Join import drop_non_viral_attributes, merged_viral_attribute_names
 
 
 def _try_normalize_time_period(value: str) -> Optional[str]:
@@ -1120,7 +1120,8 @@ class StructureVisitor(ASTTemplate):
                 # Use the dataset name as alias (same convention as interpreter)
                 alias = ds.name if ds else chr(ord("a") + i)
             if ds:
-                clause_datasets.append((alias, ds))
+                # VDS₁ keeps only the viral attributes of the operands (issue #1258)
+                clause_datasets.append((alias, drop_non_viral_attributes(ds, using_ids)))
 
         if not clause_datasets:
             return self._get_output_dataset()

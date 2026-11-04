@@ -73,7 +73,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Operators.Analytic import DEFAULT_ANALYTIC_WINDOW
-from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.Operators.Join import drop_non_viral_attributes, merged_viral_attribute_names
 from vtlengine.Utils._recursion import recursion_headroom
 from vtlengine.ViralPropagation import apply_viral_return_types, get_current_registry
 from vtlengine.ViralPropagation.sql import (
@@ -5243,6 +5243,8 @@ FROM (
 
             ds = self._get_dataset_structure(actual_node)
             alias = alias or ds.name
+            # VDS₁ keeps only the viral attributes of the operands (issue #1258)
+            ds = drop_non_viral_attributes(ds, node.using)
             clause_info.append(
                 {
                     "node": actual_node,

@@ -1,6 +1,6 @@
 from copy import copy
 from functools import reduce
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Iterable, List, Optional, Set
 
 import pandas as pd
 
@@ -40,6 +40,29 @@ def merged_viral_attribute_names(
         ):
             merged.add(name)
     return merged
+
+
+def join_operand_components(
+    components: Dict[str, Component], using: Optional[Iterable[str]] = None
+) -> Dict[str, Component]:
+    """The components an operand brings to the DataSet of a join."""
+    keep = set(using or ())
+    return {
+        name: comp
+        for name, comp in components.items()
+        if comp.role != Role.ATTRIBUTE or name in keep
+    }
+
+
+def drop_non_viral_attributes(dataset: Dataset, using: Optional[Iterable[str]] = None) -> Dataset:
+    """The operand of a join without its non-viral Attributes."""
+    components = join_operand_components(dataset.components, using)
+    if len(components) == len(dataset.components):
+        return dataset
+    data = dataset.data[list(components)] if dataset.data is not None else None
+    return Dataset(
+        name=dataset.name, components=components, data=data, persistent=dataset.persistent
+    )
 
 
 class Join(Operator):
@@ -180,13 +203,23 @@ class Join(Operator):
         return components
 
     @classmethod
+    def _vds_operands(cls, operands: List[Any], using: Optional[List[str]]) -> List[Any]:
+        """The operands without their non-viral Attributes (issue #1258). Any operand that
+        is not a Dataset is kept, so that validate raises its error."""
+        return [
+            drop_non_viral_attributes(op, using) if isinstance(op, Dataset) else op
+            for op in operands
+        ]
+
+    @classmethod
     def evaluate(
         cls,
         operands: List[Dataset],
         using: List[str],
         nvl: Optional[Dict[str, Any]] = None,
     ) -> Dataset:
-        result = cls.execute([copy(operand) for operand in operands], using)
+        operands = cls._vds_operands([copy(op) for op in operands], using)
+        result = cls.execute(operands, using)
         if result.data is not None:
             extra_cols = [c for c in result.data.columns if c not in result.components]
             if extra_cols:
@@ -300,6 +333,7 @@ class Join(Operator):
         using: Optional[List[str]],
         nvl: Optional[Dict[str, Any]] = None,
     ) -> Dataset:
+        operands = cls._vds_operands(operands, using)
         if nvl:
             cls._validate_nvl(operands, nvl)
         dataset_name = VirtualCounter._new_ds_name()
