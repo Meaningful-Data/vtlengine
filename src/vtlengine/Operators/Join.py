@@ -204,8 +204,6 @@ class Join(Operator):
 
     @classmethod
     def _vds_operands(cls, operands: List[Any], using: Optional[List[str]]) -> List[Any]:
-        """The operands without their non-viral Attributes (issue #1258). Any operand that
-        is not a Dataset is kept, so that validate raises its error."""
         return [
             drop_non_viral_attributes(op, using) if isinstance(op, Dataset) else op
             for op in operands
