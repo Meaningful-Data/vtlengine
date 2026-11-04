@@ -464,12 +464,17 @@ class Hamming(StringDistance):
 
 
 class JaroWinkler(StringDistance):
-    """Jaro-Winkler similarity in [0, 1] (1.0 == identical)."""
+    """Jaro-Winkler distance in [0, 1] (0.0 == identical): 1 - the Jaro-Winkler similarity."""
 
     method_name = JARO_WINKLER
 
+    @classmethod
+    def py_op(cls, s1: str, s2: str) -> float:
+        return 1 - cls.similarity(s1, s2)
+
     @staticmethod
-    def py_op(s1: str, s2: str) -> float:
+    def similarity(s1: str, s2: str) -> float:
+        """Jaro-Winkler similarity in [0, 1] (1.0 == identical)."""
         if s1 == s2:
             return 1.0
         len1, len2 = len(s1), len(s2)
@@ -509,7 +514,8 @@ class JaroWinkler(StringDistance):
                 prefix += 1
             else:
                 break
-        # 0.1 is the standard Winkler prefix scaling factor (per Wikipedia / GfG).
+        # 0.1 is the standard Winkler prefix scaling factor (per Wikipedia / GfG). As in the
+        # Wikipedia definition, the bonus applies at any Jaro similarity: no 0.7 boost threshold.
         return jaro + prefix * 0.1 * (1 - jaro)
 
 
