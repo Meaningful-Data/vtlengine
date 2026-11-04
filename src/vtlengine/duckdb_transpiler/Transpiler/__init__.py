@@ -286,6 +286,18 @@ _TEXT_CASTS = {
 }
 _TEXT_CASTS["timeinterval"] = _TEXT_CASTS["time"]
 
+# Casts to text that write the value as the pandas engine does, by the lower case names of
+# the source and target types ({0}: the value, issue #1254)
+_CASTS_TO_TEXT = {
+    ("date", "string"): "vtl_date_to_text({0})",
+    ("date", "time"): "vtl_date_to_text({0}) || '/' || vtl_date_to_text({0})",
+    ("duration", "string"): "vtl_duration_to_text({0})",
+    ("timeperiod", "time"): (
+        "vtl_tp_start_date(vtl_period_parse({0})) || '/' || vtl_tp_end_date(vtl_period_parse({0}))"
+    ),
+}
+_CASTS_TO_TEXT["time_period", "time"] = _CASTS_TO_TEXT["timeperiod", "time"]
+
 
 def _contains_analytic(node: Any) -> bool:
     """Return True if any descendant of ``node`` is an ``AST.Analytic``."""
@@ -2377,6 +2389,14 @@ FROM (
             return self._get_node_value(type_node)
         if isinstance(node, AST.TimeAggregation):
             return "TimePeriod"
+        if isinstance(node, AST.VarID):
+            # A name is read as visit_VarID reads it: a parameter of a user defined
+            # operator has the type of its argument, then a scalar its own (issue #1254)
+            argument = self._get_udo_param(node.value)
+            if isinstance(argument, AST.AST) and argument is not node:
+                return self._get_source_vtl_type(argument)
+            if node.value in self.scalars:
+                return self.scalars[node.value].data_type.__name__
         if isinstance(node, AST.VarID) and self._current_dataset:
             comp = self._current_dataset.components.get(node.value)
             if comp and comp.data_type:
@@ -2480,6 +2500,9 @@ FROM (
         if source_lower == "string" and target_lower in _TEXT_CASTS:
             # Text the pandas engine does not cast raises its error (issue #1192)
             return _TEXT_CASTS[target_lower].format(expr, duckdb_type)
+
+        if (source_lower, target_lower) in _CASTS_TO_TEXT:
+            return _CASTS_TO_TEXT[source_lower, target_lower].format(expr)
 
         if target_type_str == "Integer":
             if source_lower == "boolean":
