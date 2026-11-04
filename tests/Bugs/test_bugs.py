@@ -1167,6 +1167,23 @@ class NumericBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": -1}
         )
 
+    def test_GH_1245(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[calc Me_5 := mod(Me_1, Me_3), Me_6 := mod(Me_2, Me_4), ...];
+        Description: The remainder of mod takes the sign of the divisor (mod(5, -2) is -1,
+                     not 1) and a zero divisor gives the dividend back (mod(9, 0) is 9, where
+                     both engines raised 2-1-15-6), on Integer and Number components, with
+                     another component or a scalar, and with null values.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1245
+        Goal: Check Result.
+        """
+        code = "GH_1245"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ComparisonBugs(BugHelper):
     """ """
