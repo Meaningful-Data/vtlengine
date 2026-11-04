@@ -10,7 +10,7 @@ from vtlengine.DataTypes import (
     binary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import DataComponent, Dataset, Role, Scalar
+from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import Binary, Operator, _id_type_promotion_join_keys
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
@@ -95,11 +95,15 @@ class If(Operator):
         validate: Class method that has two branches so datacomponent and datasets can be validated. With datacomponent,
         the code reviews if it is actually a Measure and if it is a binary operation. Dataset branch reviews if the
         identifiers are the same in 'if', 'then' and 'else'.
+        is_from_having: Boolean flag indicating if the evaluation is being performed in the context of a HAVING clause.
+
     """  # noqa E501
 
     @classmethod
-    def evaluate(cls, condition: Any, true_branch: Any, false_branch: Any) -> Any:
-        result = cls.validate(condition, true_branch, false_branch)
+    def evaluate(
+        cls, condition: Any, true_branch: Any, false_branch: Any, is_from_having: bool = False
+    ) -> Any:
+        result = cls.validate(condition, true_branch, false_branch, is_from_having)
         if isinstance(result, DataComponent):
             result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
         elif isinstance(result, Dataset):
@@ -158,7 +162,7 @@ class If(Operator):
 
     @classmethod
     def validate(  # noqa: C901
-        cls, condition: Any, true_branch: Any, false_branch: Any
+        cls, condition: Any, true_branch: Any, false_branch: Any, is_from_having: bool = False
     ) -> Union[Scalar, DataComponent, Dataset]:
         nullable = False
         left = true_branch
@@ -202,7 +206,7 @@ class If(Operator):
             )
 
         # Dataset
-        if isinstance(left, Scalar) and isinstance(right, Scalar):
+        if isinstance(left, Scalar) and isinstance(right, Scalar) and not is_from_having:
             raise SemanticError(
                 "1-1-9-12", op=cls.op, then_symbol=left.name, else_symbol=right.name
             )
@@ -404,9 +408,9 @@ class Nvl(Binary):
 class Case(Operator):
     @classmethod
     def evaluate(
-        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
+        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any, is_from_having: bool = False
     ) -> Union[Scalar, DataComponent, Dataset]:
-        result = cls.validate(conditions, thenOps, elseOp)
+        result = cls.validate(conditions, thenOps, elseOp, is_from_having)
         if isinstance(result, Scalar):
             # Take the value of the then operand whose condition holds, following the
             # same order validate uses to take the data type (issue #1008).
@@ -477,7 +481,7 @@ class Case(Operator):
 
     @classmethod
     def validate(
-        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any
+        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any, is_from_having: bool = False
     ) -> Union[Scalar, DataComponent, Dataset]:
         dataset_name = VirtualCounter._new_ds_name()
         comp_name = VirtualCounter._new_dc_name()
@@ -540,7 +544,21 @@ class Case(Operator):
                 raise SemanticError("1-1-9-18", op=cls.op, name=condition.name)
 
         if Dataset not in then_else_types:
-            raise SemanticError("1-1-9-19", op=cls.op)
+            if not is_from_having:
+                raise SemanticError("1-1-9-19", op=cls.op)
+
+            data_type = ops[0].data_type
+            for branch in ops[1:]:
+                data_type = binary_implicit_promotion(data_type, branch.data_type)
+            measure_name = condition.get_measures_names()[0]
+            components = {comp.name: comp for comp in conditions[0].get_identifiers()}
+            components[measure_name] = Component(
+                name=measure_name,
+                data_type=data_type,
+                role=Role.MEASURE,
+                nullable=any(branch.nullable or branch.data_type == Null for branch in ops),
+            )
+            return Dataset(name=dataset_name, components=components, data=None)
 
         # Rebuild the dict: the result must never share it with the branch dataset, as
         # apply_viral_return_types may replace entries in it.

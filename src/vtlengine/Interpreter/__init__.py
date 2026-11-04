@@ -1373,7 +1373,7 @@ class InterpreterAnalyzer(ASTTemplate):
         elseOp = self.visit(node.elseOp)
         self.condition_stack.pop()
 
-        return If.analyze(condition, thenOp, elseOp)
+        return If.analyze(condition, thenOp, elseOp, self.is_from_having)
 
     def visit_Case(self, node: AST.Case) -> Any:
         conditions: List[Any] = []
@@ -1399,7 +1399,7 @@ class InterpreterAnalyzer(ASTTemplate):
         elseOp = self.visit(node.elseOp)
         self.condition_stack.pop()
 
-        return Case.analyze(conditions, thenOps, elseOp)
+        return Case.analyze(conditions, thenOps, elseOp, self.is_from_having)
 
     def generate_then_else_datasets(
         self,
