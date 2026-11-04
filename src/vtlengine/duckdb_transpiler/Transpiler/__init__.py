@@ -2383,6 +2383,14 @@ FROM (
             return self._get_node_value(type_node)
         if isinstance(node, AST.TimeAggregation):
             return "TimePeriod"
+        if isinstance(node, AST.VarID):
+            # A name is read as visit_VarID reads it: a parameter of a user defined
+            # operator has the type of its argument, then a scalar its own (issue #1254)
+            argument = self._get_udo_param(node.value)
+            if isinstance(argument, AST.AST) and argument is not node:
+                return self._get_source_vtl_type(argument)
+            if node.value in self.scalars:
+                return self.scalars[node.value].data_type.__name__
         if isinstance(node, AST.VarID) and self._current_dataset:
             comp = self._current_dataset.components.get(node.value)
             if comp and comp.data_type:

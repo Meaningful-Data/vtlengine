@@ -35,5 +35,11 @@
         }
       ]
     }
+  ],
+  "scalars": [
+    {
+      "name": "SC_1",
+      "type": "Date"
+    }
   ]
 }

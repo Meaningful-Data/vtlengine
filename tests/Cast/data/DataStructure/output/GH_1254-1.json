@@ -68,6 +68,18 @@
           "role": "Measure",
           "type": "String",
           "nullable": true
+        },
+        {
+          "name": "Me_11",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "Me_12",
+          "role": "Measure",
+          "type": "Time",
+          "nullable": true
         }
       ]
     }
