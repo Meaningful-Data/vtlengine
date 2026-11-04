@@ -49,8 +49,6 @@ from vtlengine.ViralPropagation import (
 
 return_integer_operators = [MAX, MIN, SUM]
 
-DEFAULT_ANALYTIC_WINDOW = "ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING"
-
 
 # noinspection PyMethodOverriding
 class Analytic(Operator.Unary):
@@ -209,16 +207,17 @@ class Analytic(Operator.Unary):
                     new_measure.data_type = cls.return_type
                     result_components[measure.name] = new_measure
 
-            if cls.op == COUNT and len(measures) <= 1:
+            if cls.op == COUNT:
+                # count gives the number of Data Points whatever the Measures of the operand,
+                # so the result holds the single Measure int_var (issue #1249)
                 measure_name = COMP_NAME_MAPPING[cls.return_type]
-                nullable = False if len(measures) == 0 else measures[0].nullable
-                if len(measures) == 1:
-                    del result_components[measures[0].name]
+                for measure in measures:
+                    del result_components[measure.name]
                 result_components[measure_name] = Component(
                     name=measure_name,
                     data_type=cls.return_type,
                     role=Role.MEASURE,
-                    nullable=nullable,
+                    nullable=any(measure.nullable for measure in measures),
                 )
 
             if cls.op in (LAG, LEAD):
@@ -259,8 +258,10 @@ class Analytic(Operator.Unary):
             window: ...
             params: No params are related to this class.
         """
-        # Windowing
-        window_str = DEFAULT_ANALYTIC_WINDOW
+        # Windowing: with no window clause, the default frame of SQL is the default window of
+        # VTL 2.2, range between unbounded preceding and current data point with an order
+        # clause and the whole partition without one (issue #1249)
+        window_str = ""
         if window is not None:
             mode = "ROWS" if window.type_ == "data" else "RANGE"
             start_mode = (
@@ -314,17 +315,20 @@ class Analytic(Operator.Unary):
                 measure_query = f'{cls.sql_op}("{measure}"{args})'
             else:
                 measure_query = f'{cls.sql_op}("{measure}")'
-            if cls.op == COUNT and len(measure_names) == 1:
-                measure_query += f' {analytic_str} as "{COMP_NAME_MAPPING[cls.return_type]}"'
-            elif cls.op in return_integer_operators and cls.return_integer:
+            if cls.op in return_integer_operators and cls.return_integer:
                 measure_query = f'CAST({measure_query} {analytic_str} AS INTEGER) as "{measure}"'
             else:
                 measure_query += f' {analytic_str} as "{measure}"'
             measure_queries.append(measure_query)
-        if cls.op == COUNT and len(measure_names) == 0:
-            measure_queries.append(
-                f'COUNT(*) {analytic_str} as "{COMP_NAME_MAPPING[cls.return_type]}"'
-            )
+        if cls.op == COUNT:
+            # count gives the number of Data Points of the window as the single Measure
+            # int_var, in place of one per Measure. A Data Point whose Measures are all null
+            # is not counted, as in the Aggregate invocation (issue #1049)
+            any_non_null = " OR ".join(f'"{name}" IS NOT NULL' for name in measure_names)
+            measure_queries = [
+                f"COUNT(CASE WHEN {any_non_null} THEN 1 END) {analytic_str} "
+                f'as "{COMP_NAME_MAPPING[cls.return_type]}"'
+            ]
 
         # ratio_to_report divides by the partition sum: select it too, so that a
         # zero denominator (including 0/0, which yields NaN, not inf) is detected

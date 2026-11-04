@@ -2919,9 +2919,10 @@ class AggregationBugs(BugHelper):
                      Measure int_var (DS_r1, DS_r2, issue #1049); a Component operand
                      counts its values and reports 0 where a group holds none (DS_r3);
                      count() with no operand counts the Data Points (DS_r4);
-                     an analytic count reports 0 for a partition of nulls (DS_r5) and
-                     covers the whole partition where the window clause is omitted
-                     (DS_r6); a having condition keeps the viral attributes (DS_r7);
+                     an analytic count reports 0 for a partition of nulls (DS_r5) and,
+                     with an order clause and no window clause, counts up to the
+                     current Data Point (DS_r6, issue #1249); a having condition keeps
+                     the viral attributes (DS_r7);
                      an analytic count over a String Measure counts its values
                      (DS_r8); and count() reports the Data Points of a Data Set that
                      is not grouped (DS_r9).
@@ -5850,7 +5851,7 @@ class CastBugs(BugHelper):
                      analysed the whole Data Set as a single partition and
                      disagreed with the Pandas engine for every analytic operator.
                      No window clause is given either, so each value covers the
-                     whole partition (see issue #1002).
+                     partition up to the current Data Point (see issue #1249).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/995
         Goal: Check Result.
         """
@@ -5869,12 +5870,11 @@ class CastBugs(BugHelper):
                                         m4 := sum(... data points between
                                               unbounded preceding and current
                                               data point) ];
-        Description: an omitted window clause defaults to the whole partition,
-                     so every Data Point of a partition gets the same value.
-                     Both engines instead inherited the SQL default of every
-                     Data Point up to the current one and returned a running
-                     aggregate. m4 gives that running aggregate explicitly and
-                     must keep working.
+        Description: with an order clause, an omitted window clause defaults to
+                     range between unbounded preceding and current data point
+                     (VTL 2.2, issue #1249), so m1, m2 and m3 run from the first
+                     Data Point of the partition to the current one, as m4 does
+                     with its explicit window.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1002
         Goal: Check Result.
         """

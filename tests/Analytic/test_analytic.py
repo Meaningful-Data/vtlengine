@@ -733,9 +733,9 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Description: Baseline `partition by Id_1` — sum partitioned per Id_1,
                      ordered by Id_2. Companion test to GH_750_9/_10 so the
                      three variants can be visually compared with the same data.
-                     No window clause is given, so the window spans the whole
-                     partition and every Data Point of a partition gets its
-                     total (see issue #1002).
+                     No window clause is given, so with the order clause the
+                     window runs from the first Data Point of the partition to
+                     the current one (see issue #1249).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/750
         Goal: Check Result.
         """
@@ -765,8 +765,8 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Description: `partition except all` collapses every identifier into a
                      single global window. Same dataset as GH_750_8/_9 so the
                      three forms can be directly compared. No window clause is
-                     given, so every Data Point gets the total of that single
-                     partition (see issue #1002).
+                     given, so the window runs to the current Data Point and the
+                     ones that tie with it on Id_2 (see issue #1249).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/750
         Goal: Check Result.
         """
@@ -838,6 +838,21 @@ class AnalyticOperatorsTest(AnalyticHelper):
         Goal: Check Result.
         """
         code = "GH_751_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1249_1(self):
+        """
+        Description: ``count(DS_1 over (partition by Id_1))`` with no order and no
+                     window clause covers the whole partition, the default window
+                     of VTL 2.2, and gives the single Measure int_var although
+                     DS_1 has two Measures.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1249
+        Goal: Check Result.
+        """
+        code = "GH_1249_1"
         number_inputs = 1
         references_names = ["1"]
 
