@@ -33,8 +33,11 @@ The authored examples share one input, ``DS_1`` with a String and a Time_Period 
 two Number measures, and no null. The exceptions are the ``one_measure`` examples of
 ``ds_having``, which drop the second measure, and the second examples of ``ds_group_by``: that of
 ``count`` has a data point whose measures are all null and one with a single null measure, that
-of ``avg`` has one null value, and those of ``min`` and ``max`` have a String measure. The notes
-of each example say what it tests and why it gives its expected output.
+of ``avg`` has one null value, and those of ``min`` and ``max`` have a String measure. The
+``ties_count_together`` and ``string_order_key`` examples of the default window have a ``DS_1``
+of their own, with an Integer ``Id_2`` and a String ``Id_3``, so that data points of a partition
+tie on the order key. The notes of each example say what it tests and why it gives its expected
+output.
 """
 
 from __future__ import annotations
@@ -405,6 +408,29 @@ _ANALYTIC_INVOCATION = Operator(
             takes=_INVOCATION_TAKES,
             gives=_INVOCATION_GIVES,
             kind="comp",
+        ),
+        # With an order clause, an omitted window is range between unbounded preceding and
+        # current data point (#1249); without one, it is the whole partition, which the
+        # analytic forms of the ten aggregate functions test.
+        Variant(
+            "window_default",
+            "an(Me over (partition by Id order by Id))",
+            (
+                authored("running_total_in_time_order"),
+                authored("ties_count_together"),
+                authored("string_order_key"),
+            ),
+            takes=_INVOCATION_TAKES,
+            gives=_INVOCATION_GIVES,
+            kind="comp",
+        ),
+        Variant(
+            "window_default_ds",
+            "an(DS over (partition by Id order by Id))",
+            (authored("running_total_in_time_order"), authored("ties_count_together")),
+            takes=_INVOCATION_TAKES,
+            gives=_INVOCATION_GIVES,
+            kind="ds",
         ),
     ),
     links=(Link("clause.calc", "used in"),),

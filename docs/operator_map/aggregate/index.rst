@@ -4,7 +4,7 @@ Aggregate and Analytic operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 8 of 18 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip diverge">🔵 7 of 18 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -34,7 +34,7 @@ Aggregate and Analytic operators
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Aggregate and Analytic operators"]:::block
        aggregate__aggregate_invocation["Aggregate invocation · group by<br/>🟢4"]:::ok
-       aggregate__analytic_invocation["Analytic invocation · over<br/>🟢9"]:::ok
+       aggregate__analytic_invocation["Analytic invocation · over<br/>🟢9 🟡2"]:::partial
        aggregate__count["Counting the number of data points · count 📌<br/>🟢8 🔵1"]:::diverge
        aggregate__min["Minimum value · min<br/>🟢7 🟡1"]:::partial
        aggregate__max["Maximum value · max<br/>🟢7 🟡1"]:::partial
@@ -105,8 +105,8 @@ Aggregate and Analytic operators
      - 🟢
      - 4
    * - :doc:`Analytic invocation <analytic_invocation>` ``over``
-     - 🟢
-     - 9
+     - 🟡
+     - 11
    * - :doc:`Counting the number of data points <count>` ``count``
      - 🔵
      - 9
@@ -292,6 +292,20 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
      - pandas
      - DuckDB
      - Detail
+   * - :doc:`Analytic invocation <analytic_invocation>`
+     - `an(DS over (partition by Id order by Id)) <analytic_invocation.html#form-window-default-ds>`__
+     - 🟡
+     - `Ties count together <analytic_invocation.html#ex-window-default-ds-ties-count-together>`__
+     - ❌
+     - ❌
+     - row Id\_1=A, Id\_2=1, Id\_3=x: Me\_1 expected 3 got 1.0
+   * - :doc:`Analytic invocation <analytic_invocation>`
+     - `an(Me over (partition by Id order by Id)) <analytic_invocation.html#form-window-default>`__
+     - 🟡
+     - `Running total in time order <analytic_invocation.html#ex-window-default-running-total-in-time-order>`__
+     - ❌
+     - ❌
+     - row Id\_1=A, Id\_2=2020Q1: Me\_3 expected 3 got 10.0; row Id\_1=A, Id\_2=2020Q2: Me\_3 expected 4 got 10.0; row Id\_1=A, Id\_2=2021Q1: Me\_3 expected 9 got 10.0
    * - :doc:`Counting the number of data points <count>`
      - `count(DS over (partition by Id)) <count.html#form-analytic-ds>`__
      - 🔵

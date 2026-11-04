@@ -35,7 +35,7 @@ A node for each block, with how many operators it has, and how many of them are 
        chapter__time["Time operators<br/>17 operators · 🟢16 🟡1"]:::partial
        chapter__set["Set operators<br/>4 operators · 🟢4"]:::ok
        chapter__hierarchy["Hierarchical aggregation<br/>1 operator · 🟡1"]:::partial
-       chapter__aggregate["Aggregate and Analytic operators<br/>18 operators · 🟢8 🟡9 🔵1"]:::diverge
+       chapter__aggregate["Aggregate and Analytic operators<br/>18 operators · 🟢7 🟡10 🔵1"]:::diverge
        chapter__validation["Data validation operators<br/>3 operators · 🟢1 🟡2"]:::partial
        chapter__conditional["Conditional operators<br/>3 operators · 🟢2 🟡1"]:::partial
        chapter__clause["Clause operators<br/>9 operators · 🟢6 🟡2 🔴1"]:::partial
@@ -174,9 +174,9 @@ The blocks of operators, one for each chapter of operators of the manual. The co
    * - :doc:`Aggregate and Analytic operators <aggregate/index>`
      - 🔵
      - 18
-     - 110
+     - 112
      - 100
-     - 9
+     - 11
      - 0
      - 0
      - 1
@@ -210,9 +210,9 @@ The blocks of operators, one for each chapter of operators of the manual. The co
    * - **Total**
      - 🔵
      - 111
-     - 698
+     - 700
      - 624
-     - 49
+     - 51
      - 1
      - 16
      - 8

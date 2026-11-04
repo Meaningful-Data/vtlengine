@@ -4,7 +4,7 @@ Analytic invocation · ``over``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 9 of 9 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip partial">🟡 9 of 11 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -36,10 +36,11 @@ Analytic invocation · ``over``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Analytic invocation · over<br/>🟢9"]:::ok
+       O["Analytic invocation · over<br/>🟢9 🟡2"]:::partial
        subgraph G_ds["Dataset"]
            direction LR
            v_window_data_points["an(DS over (order by Id data points between n preceding and n following))"]:::ok
+           v_window_default_ds["an(DS over (partition by Id order by Id))"]:::partial
        end
        subgraph G_comp["Component"]
            direction LR
@@ -51,6 +52,7 @@ Analytic invocation · ``over``
            v_window_range["an(Me over (partition by Id order by Me range between n preceding and n following))"]:::ok
            v_window_unbounded["an(Me over (... data points between unbounded preceding and unbounded following))"]:::ok
            v_window_current["an(Me over (... data points between n preceding and current data point))"]:::ok
+           v_window_default["an(Me over (partition by Id order by Id))"]:::partial
        end
        subgraph G_use["Used with"]
            direction LR
@@ -71,6 +73,8 @@ Analytic invocation · ``over``
        click v_window_range href "#form-window-range"
        click v_window_unbounded href "#form-window-unbounded"
        click v_window_current href "#form-window-current"
+       click v_window_default href "#form-window-default"
+       click v_window_default_ds href "#form-window-default-ds"
        click used__clause__calc href "../clause/calc.html" "Calculation of a Component · calc"
 
 .. raw:: html
@@ -114,6 +118,54 @@ an(DS over (order by Id data points between n preceding and n following)) 🟢 �
 .. raw:: html
 
    <p class="om-files">Files: <a href="../examples/aggregate/analytic_invocation/window_data_points/manual_ex_1/script.vtl">script.vtl</a> · <a href="../examples/aggregate/analytic_invocation/window_data_points/manual_ex_1/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/aggregate/analytic_invocation/window_data_points/manual_ex_1/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/aggregate/analytic_invocation/window_data_points/manual_ex_1/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/aggregate/analytic_invocation/window_data_points/manual_ex_1/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/aggregate/analytic_invocation/window_data_points/manual_ex_1/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <span class="om-anchor" id="form-window-default-ds"></span>
+
+an(DS over (partition by Id order by Id)) 🟡 · any scalar → any type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. raw:: html
+
+   <details class="om-example" id="ex-window-default-ds-running-total-in-time-order"><summary><span class="om-ex-title">Running total in time order</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/aggregate/analytic_invocation/window_default_ds/running_total_in_time_order/notes.rst
+
+.. literalinclude:: ../examples/aggregate/analytic_invocation/window_default_ds/running_total_in_time_order/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>A</td><td>2020Q1</td><td>3</td><td>1.500000</td></tr><tr><td>A</td><td>2020Q2</td><td>1</td><td>3.500000</td></tr><tr><td>A</td><td>2021Q1</td><td>5</td><td>2.500000</td></tr><tr><td>A</td><td>2021Q2</td><td>1</td><td>0.500000</td></tr><tr><td>B</td><td>2020Q1</td><td>4</td><td>6.500000</td></tr><tr><td>B</td><td>2020Q2</td><td>8</td><td>4.500000</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>A</td><td>2020Q1</td><td>3</td><td>1.5</td></tr><tr><td>A</td><td>2020Q2</td><td>4</td><td>5</td></tr><tr><td>A</td><td>2021Q1</td><td>9</td><td>7.5</td></tr><tr><td>A</td><td>2021Q2</td><td>10</td><td>8</td></tr><tr><td>B</td><td>2020Q1</td><td>4</td><td>6.5</td></tr><tr><td>B</td><td>2020Q2</td><td>12</td><td>11</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/aggregate/analytic_invocation/window_default_ds/running_total_in_time_order/script.vtl">script.vtl</a> · <a href="../examples/aggregate/analytic_invocation/window_default_ds/running_total_in_time_order/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/aggregate/analytic_invocation/window_default_ds/running_total_in_time_order/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/aggregate/analytic_invocation/window_default_ds/running_total_in_time_order/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/aggregate/analytic_invocation/window_default_ds/running_total_in_time_order/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/aggregate/analytic_invocation/window_default_ds/running_total_in_time_order/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-window-default-ds-ties-count-together"><summary><span class="om-ex-title">Ties count together</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <p class="om-detail">row Id_1=A, Id_2=1, Id_3=x: Me_1 expected 3 got 1.0</p>
+
+.. include:: ../examples/aggregate/analytic_invocation/window_default_ds/ties_count_together/notes.rst
+
+.. literalinclude:: ../examples/aggregate/analytic_invocation/window_default_ds/ties_count_together/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Id_3</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>A</td><td>1</td><td>x</td><td>1</td></tr><tr><td>A</td><td>1</td><td>y</td><td>2</td></tr><tr><td>A</td><td>2</td><td>x</td><td>3</td></tr><tr><td>A</td><td>3</td><td>x</td><td>4</td></tr><tr><td>B</td><td>1</td><td>x</td><td>5</td></tr><tr><td>B</td><td>2</td><td>x</td><td>6</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Id_3</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>A</td><td>1</td><td>x</td><td>3</td></tr><tr><td>A</td><td>1</td><td>y</td><td>3</td></tr><tr><td>A</td><td>2</td><td>x</td><td>6</td></tr><tr><td>A</td><td>3</td><td>x</td><td>10</td></tr><tr><td>B</td><td>1</td><td>x</td><td>5</td></tr><tr><td>B</td><td>2</td><td>x</td><td>11</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/aggregate/analytic_invocation/window_default_ds/ties_count_together/script.vtl">script.vtl</a> · <a href="../examples/aggregate/analytic_invocation/window_default_ds/ties_count_together/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/aggregate/analytic_invocation/window_default_ds/ties_count_together/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/aggregate/analytic_invocation/window_default_ds/ties_count_together/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/aggregate/analytic_invocation/window_default_ds/ties_count_together/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/aggregate/analytic_invocation/window_default_ds/ties_count_together/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -351,4 +403,74 @@ an(Me over (\.\.\. data points between n preceding and current data point)) 🟢
 .. raw:: html
 
    <p class="om-files">Files: <a href="../examples/aggregate/analytic_invocation/window_current/one_preceding_to_current/script.vtl">script.vtl</a> · <a href="../examples/aggregate/analytic_invocation/window_current/one_preceding_to_current/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/aggregate/analytic_invocation/window_current/one_preceding_to_current/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/aggregate/analytic_invocation/window_current/one_preceding_to_current/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/aggregate/analytic_invocation/window_current/one_preceding_to_current/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/aggregate/analytic_invocation/window_current/one_preceding_to_current/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <span class="om-anchor" id="form-window-default"></span>
+
+an(Me over (partition by Id order by Id)) 🟡 · any scalar → any type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. raw:: html
+
+   <details class="om-example" id="ex-window-default-running-total-in-time-order"><summary><span class="om-ex-title">Running total in time order</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <p class="om-detail">row Id_1=A, Id_2=2020Q1: Me_3 expected 3 got 10.0; row Id_1=A, Id_2=2020Q2: Me_3 expected 4 got 10.0; row Id_1=A, Id_2=2021Q1: Me_3 expected 9 got 10.0</p>
+
+.. include:: ../examples/aggregate/analytic_invocation/window_default/running_total_in_time_order/notes.rst
+
+.. literalinclude:: ../examples/aggregate/analytic_invocation/window_default/running_total_in_time_order/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>A</td><td>2020Q1</td><td>3</td><td>1.500000</td></tr><tr><td>A</td><td>2020Q2</td><td>1</td><td>3.500000</td></tr><tr><td>A</td><td>2021Q1</td><td>5</td><td>2.500000</td></tr><tr><td>A</td><td>2021Q2</td><td>1</td><td>0.500000</td></tr><tr><td>B</td><td>2020Q1</td><td>4</td><td>6.500000</td></tr><tr><td>B</td><td>2020Q2</td><td>8</td><td>4.500000</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_1</th><th class="head">Me_2</th><th class="head">Me_3</th></tr></thead><tbody><tr><td>A</td><td>2020Q1</td><td>3</td><td>1.500000</td><td>3</td></tr><tr><td>A</td><td>2020Q2</td><td>1</td><td>3.500000</td><td>4</td></tr><tr><td>A</td><td>2021Q1</td><td>5</td><td>2.500000</td><td>9</td></tr><tr><td>A</td><td>2021Q2</td><td>1</td><td>0.500000</td><td>10</td></tr><tr><td>B</td><td>2020Q1</td><td>4</td><td>6.500000</td><td>4</td></tr><tr><td>B</td><td>2020Q2</td><td>8</td><td>4.500000</td><td>12</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/aggregate/analytic_invocation/window_default/running_total_in_time_order/script.vtl">script.vtl</a> · <a href="../examples/aggregate/analytic_invocation/window_default/running_total_in_time_order/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/aggregate/analytic_invocation/window_default/running_total_in_time_order/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/aggregate/analytic_invocation/window_default/running_total_in_time_order/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/aggregate/analytic_invocation/window_default/running_total_in_time_order/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/aggregate/analytic_invocation/window_default/running_total_in_time_order/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-window-default-ties-count-together"><summary><span class="om-ex-title">Ties count together</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <p class="om-detail">row Id_1=A, Id_2=1, Id_3=x: Me_2 expected 3 got 10.0; row Id_1=A, Id_2=1, Id_3=y: Me_2 expected 3 got 10.0; row Id_1=A, Id_2=2, Id_3=x: Me_2 expected 6 got 10.0</p>
+
+.. include:: ../examples/aggregate/analytic_invocation/window_default/ties_count_together/notes.rst
+
+.. literalinclude:: ../examples/aggregate/analytic_invocation/window_default/ties_count_together/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Id_3</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>A</td><td>1</td><td>x</td><td>1</td></tr><tr><td>A</td><td>1</td><td>y</td><td>2</td></tr><tr><td>A</td><td>2</td><td>x</td><td>3</td></tr><tr><td>A</td><td>3</td><td>x</td><td>4</td></tr><tr><td>B</td><td>1</td><td>x</td><td>5</td></tr><tr><td>B</td><td>2</td><td>x</td><td>6</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Id_3</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>A</td><td>1</td><td>x</td><td>1</td><td>3</td></tr><tr><td>A</td><td>1</td><td>y</td><td>2</td><td>3</td></tr><tr><td>A</td><td>2</td><td>x</td><td>3</td><td>6</td></tr><tr><td>A</td><td>3</td><td>x</td><td>4</td><td>10</td></tr><tr><td>B</td><td>1</td><td>x</td><td>5</td><td>5</td></tr><tr><td>B</td><td>2</td><td>x</td><td>6</td><td>11</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/aggregate/analytic_invocation/window_default/ties_count_together/script.vtl">script.vtl</a> · <a href="../examples/aggregate/analytic_invocation/window_default/ties_count_together/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/aggregate/analytic_invocation/window_default/ties_count_together/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/aggregate/analytic_invocation/window_default/ties_count_together/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/aggregate/analytic_invocation/window_default/ties_count_together/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/aggregate/analytic_invocation/window_default/ties_count_together/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-window-default-string-order-key"><summary><span class="om-ex-title">String order key</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <p class="om-detail">row Id_1=A, Id_2=1, Id_3=x: Me_2 expected 8 got 10.0; row Id_1=A, Id_2=2, Id_3=x: Me_2 expected 8 got 10.0; row Id_1=A, Id_2=3, Id_3=x: Me_2 expected 8 got 10.0</p>
+
+.. include:: ../examples/aggregate/analytic_invocation/window_default/string_order_key/notes.rst
+
+.. literalinclude:: ../examples/aggregate/analytic_invocation/window_default/string_order_key/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Id_3</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>A</td><td>1</td><td>x</td><td>1</td></tr><tr><td>A</td><td>1</td><td>y</td><td>2</td></tr><tr><td>A</td><td>2</td><td>x</td><td>3</td></tr><tr><td>A</td><td>3</td><td>x</td><td>4</td></tr><tr><td>B</td><td>1</td><td>x</td><td>5</td></tr><tr><td>B</td><td>2</td><td>x</td><td>6</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Id_3</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>A</td><td>1</td><td>x</td><td>1</td><td>8</td></tr><tr><td>A</td><td>1</td><td>y</td><td>2</td><td>10</td></tr><tr><td>A</td><td>2</td><td>x</td><td>3</td><td>8</td></tr><tr><td>A</td><td>3</td><td>x</td><td>4</td><td>8</td></tr><tr><td>B</td><td>1</td><td>x</td><td>5</td><td>11</td></tr><tr><td>B</td><td>2</td><td>x</td><td>6</td><td>11</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/aggregate/analytic_invocation/window_default/string_order_key/script.vtl">script.vtl</a> · <a href="../examples/aggregate/analytic_invocation/window_default/string_order_key/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/aggregate/analytic_invocation/window_default/string_order_key/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/aggregate/analytic_invocation/window_default/string_order_key/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/aggregate/analytic_invocation/window_default/string_order_key/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/aggregate/analytic_invocation/window_default/string_order_key/index.html">example page ↗</a></p>
    </details>

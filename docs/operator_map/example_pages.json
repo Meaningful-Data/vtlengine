@@ -95,6 +95,46 @@
     "status": "ok",
     "title": "Manual example 1"
   },
+  "aggregate/analytic_invocation/window_default/running_total_in_time_order": {
+    "anchor": "ex-window-default-running-total-in-time-order",
+    "duckdb": "❌",
+    "operator_page": "aggregate/analytic_invocation.html",
+    "pandas": "❌",
+    "status": "partial",
+    "title": "Running total in time order"
+  },
+  "aggregate/analytic_invocation/window_default/string_order_key": {
+    "anchor": "ex-window-default-string-order-key",
+    "duckdb": "❌",
+    "operator_page": "aggregate/analytic_invocation.html",
+    "pandas": "❌",
+    "status": "partial",
+    "title": "String order key"
+  },
+  "aggregate/analytic_invocation/window_default/ties_count_together": {
+    "anchor": "ex-window-default-ties-count-together",
+    "duckdb": "❌",
+    "operator_page": "aggregate/analytic_invocation.html",
+    "pandas": "❌",
+    "status": "partial",
+    "title": "Ties count together"
+  },
+  "aggregate/analytic_invocation/window_default_ds/running_total_in_time_order": {
+    "anchor": "ex-window-default-ds-running-total-in-time-order",
+    "duckdb": "✅",
+    "operator_page": "aggregate/analytic_invocation.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Running total in time order"
+  },
+  "aggregate/analytic_invocation/window_default_ds/ties_count_together": {
+    "anchor": "ex-window-default-ds-ties-count-together",
+    "duckdb": "❌",
+    "operator_page": "aggregate/analytic_invocation.html",
+    "pandas": "❌",
+    "status": "partial",
+    "title": "Ties count together"
+  },
   "aggregate/analytic_invocation/window_range/range_bounds_are_inclusive": {
     "anchor": "ex-window-range-range-bounds-are-inclusive",
     "duckdb": "✅",

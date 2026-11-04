@@ -105,9 +105,9 @@ The blocks of operators, one for each chapter of operators of the manual. The co
    * - :doc:`Aggregate and Analytic operators <aggregate/index>`
      - 🔵
      - 18
-     - 110
+     - 112
      - 100
-     - 9
+     - 11
      - 0
      - 0
      - 1
@@ -141,9 +141,9 @@ The blocks of operators, one for each chapter of operators of the manual. The co
    * - **Total**
      - 🔵
      - 111
-     - 698
+     - 700
      - 624
-     - 49
+     - 51
      - 1
      - 16
      - 8

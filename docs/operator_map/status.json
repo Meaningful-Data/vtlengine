@@ -192,6 +192,86 @@
       },
       "status": "ok"
     },
+    "aggregate/analytic_invocation/window_default/running_total_in_time_order": {
+      "duckdb": {
+        "detail": "row Id_1=A, Id_2=2020Q1: Me_3 expected 3 got 10.0; row Id_1=A, Id_2=2020Q2: Me_3 expected 4 got 10.0; row Id_1=A, Id_2=2021Q1: Me_3 expected 9 got 10.0",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "row Id_1=A, Id_2=2020Q1: Me_3 expected 3 got 10.0; row Id_1=A, Id_2=2020Q2: Me_3 expected 4 got 10.0; row Id_1=A, Id_2=2021Q1: Me_3 expected 9 got 10.0",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "status": "partial"
+    },
+    "aggregate/analytic_invocation/window_default/string_order_key": {
+      "duckdb": {
+        "detail": "row Id_1=A, Id_2=1, Id_3=x: Me_2 expected 8 got 10.0; row Id_1=A, Id_2=2, Id_3=x: Me_2 expected 8 got 10.0; row Id_1=A, Id_2=3, Id_3=x: Me_2 expected 8 got 10.0",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "row Id_1=A, Id_2=1, Id_3=x: Me_2 expected 8 got 10.0; row Id_1=A, Id_2=2, Id_3=x: Me_2 expected 8 got 10.0; row Id_1=A, Id_2=3, Id_3=x: Me_2 expected 8 got 10.0",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "status": "partial"
+    },
+    "aggregate/analytic_invocation/window_default/ties_count_together": {
+      "duckdb": {
+        "detail": "row Id_1=A, Id_2=1, Id_3=x: Me_2 expected 3 got 10.0; row Id_1=A, Id_2=1, Id_3=y: Me_2 expected 3 got 10.0; row Id_1=A, Id_2=2, Id_3=x: Me_2 expected 6 got 10.0",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "row Id_1=A, Id_2=1, Id_3=x: Me_2 expected 3 got 10.0; row Id_1=A, Id_2=1, Id_3=y: Me_2 expected 3 got 10.0; row Id_1=A, Id_2=2, Id_3=x: Me_2 expected 6 got 10.0",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "status": "partial"
+    },
+    "aggregate/analytic_invocation/window_default_ds/running_total_in_time_order": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "aggregate/analytic_invocation/window_default_ds/ties_count_together": {
+      "duckdb": {
+        "detail": "row Id_1=A, Id_2=1, Id_3=x: Me_1 expected 3 got 1.0",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "row Id_1=A, Id_2=1, Id_3=x: Me_1 expected 3 got 1.0",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "status": "partial"
+    },
     "aggregate/analytic_invocation/window_range/range_bounds_are_inclusive": {
       "duckdb": {
         "detail": "",
@@ -15110,7 +15190,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "c239070b",
+    "vtlengine_commit": "aab95c63",
     "vtlengine_version": "1.9.7rc1"
   }
 }

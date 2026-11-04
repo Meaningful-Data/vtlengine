@@ -1,0 +1,4 @@
+:Tests: ``sum`` in ``calc``, partitioned by ``Id_1`` and ordered by ``Id_2``, with no window clause.
+:Manual: `Analytic invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html>`__: "If the whole windowClause is omitted, then the default is either range between unbounded preceding and current data point or data points between unbounded preceding and unbounded following, depending respectively on whether orderClause clause was specified or not". sdmx-twg/vtl#694 made it the default window of SQL. The Behaviour section of the page still says that the window is the whole partition, the rule of VTL 2.1.
+:Expected: in ``A`` (3, 1, 5, 1), ``Me_3`` is 3, 3 + 1 = 4, 4 + 5 = 9 and 9 + 1 = 10; in ``B`` (4, 8), 4 and 12.
+:Finding: both engines give the whole partition, 10 in ``A`` and 12 in ``B`` (`#1249 <https://github.com/Meaningful-Data/vtlengine/issues/1249>`__).
