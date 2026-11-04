@@ -2542,17 +2542,11 @@ FROM (
             # semantic analysis, so the query checks it (issue #1192)
             index_sql = f"vtl_random_index({index_sql})"
 
-        index_nullable = index_node is not None and not isinstance(index_node, AST.Constant)
-
         if seed_type == _DATASET and seed_node is not None:
-            return self._apply_measures(
-                seed_node,
-                lambda col: self._random_hash_expr(col, index_sql, True, index_nullable),
-            )
+            return self._apply_measures(seed_node, lambda col: f"vtl_random({col}, {index_sql})")
 
         seed_sql = self.visit(seed_node) if seed_node else "0"
-        seed_nullable = seed_node is not None and not isinstance(seed_node, AST.Constant)
-        return self._random_hash_expr(seed_sql, index_sql, seed_nullable, index_nullable)
+        return f"vtl_random({seed_sql}, {index_sql})"
 
     def visit_ParamOp_random(self, node: AST.ParamOp) -> str:
         """Visit RANDOM operator (ParamOp form)."""
@@ -2563,28 +2557,6 @@ FROM (
     def visit_BinOp_random(self, node: AST.BinOp) -> str:
         """Visit RANDOM operator (BinOp form, e.g. inside calc)."""
         return self._visit_random_impl(node.left, node.right)
-
-    @staticmethod
-    def _random_hash_expr(
-        seed_sql: str, index_sql: str, seed_nullable: bool = False, index_nullable: bool = False
-    ) -> str:
-        """Build a deterministic hash-based random expression in [0, 1).
-
-        The hash of a null is a number, so a seed or an index that can be null gives null
-        explicitly (issue #1192).
-        """
-        random_sql = (
-            f"(ABS(hash(CAST({seed_sql} AS VARCHAR) || '_' || "
-            f"CAST({index_sql} AS VARCHAR))) % 1000000) / 1000000.0"
-        )
-        nulls = [
-            f"{sql} IS NULL"
-            for sql, nullable in ((seed_sql, seed_nullable), (index_sql, index_nullable))
-            if nullable
-        ]
-        if not nulls:
-            return random_sql
-        return f"CASE WHEN {' OR '.join(nulls)} THEN NULL ELSE {random_sql} END"
 
     # Clause visitor
 
