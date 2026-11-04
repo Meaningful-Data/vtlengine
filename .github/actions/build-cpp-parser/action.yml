@@ -22,8 +22,9 @@ runs:
       id: antlr4-cache
       with:
         path: build/antlr4-prefix
-        # A C++ static library, the same for every Python version.
-        key: antlr4-runtime-${{ inputs.cache-prefix || runner.os }}-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
+        # The runtime does not depend on Python, but one key per job keeps the jobs of a
+        # cold run from racing to save the same entry ("Unable to reserve cache").
+        key: antlr4-runtime-${{ inputs.cache-prefix || runner.os }}-py${{ inputs.python-version }}-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
     - name: Cache compiled C++ parser
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       id: cpp-cache
