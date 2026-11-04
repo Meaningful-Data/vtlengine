@@ -5,10 +5,12 @@
 ``FOLDER`` has a folder per job of the matrix, as the jobs upload their results: a
 ``job.json`` with its ``os`` and ``python``, the JUnit XML file that pytest wrote for each
 backend it ran (``pandas.xml``, ``duckdb.xml``), and ``coverage.txt`` with the total coverage,
-when the job measured one. The folders of one OS and Python are one job of the summary. It has:
+when the job measured one, with ``coverage.json``, the report of ``coverage json``. The folders
+of one OS and Python are one job of the summary. It has:
 
 * a row per job and backend: its tests, passed, failed, errors, skipped, time and coverage; a
   backend without its file did not run (an earlier step failed, or the job was cancelled);
+* the coverage of each folder of the package, from ``coverage.json``;
 * the slowest tests, each once, with the job and the backend where it was slowest;
 * the tests that failed or errored, with the first line of their message.
 
@@ -22,7 +24,7 @@ import html
 import json
 import sys
 import xml.etree.ElementTree as ET  # noqa: S405  (the files are pytest's own, on the runner)
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -55,6 +57,43 @@ class Job:
     def sort_key(self) -> tuple[str, tuple[int, ...]]:
         numbers = tuple(int(part) for part in self.python.split(".") if part.isdigit())
         return self.os_name, numbers
+
+
+@dataclass
+class FolderCoverage:
+    """The statements of the files of a folder, and those that no test ran."""
+
+    statements: int = 0
+    missing: int = 0
+
+    def percent(self) -> str:
+        if not self.statements:
+            return NONE
+        return f"{100 * (self.statements - self.missing) / self.statements:.1f}%"
+
+
+def folder_of(file_name: str) -> str:
+    """
+    The folder whose coverage a file counts in: the first level below the package, as
+    ``vtlengine/AST`` for ``src/vtlengine/AST/Grammar/tokens.py``, or the package itself
+    for the modules directly in it.
+    """
+    parts = file_name.replace("\\", "/").split("/")
+    if "src" in parts:
+        parts = parts[parts.index("src") + 1 :]
+    return "/".join(parts[:2]) if len(parts) > 2 else parts[0] if len(parts) > 1 else "."
+
+
+def read_folder_coverage(folder: Path) -> dict[str, FolderCoverage]:
+    """The coverage of each folder of the package, from the ``coverage.json`` of the jobs."""
+    folders: dict[str, FolderCoverage] = {}
+    for report in sorted(folder.glob("*/coverage.json")):
+        files = json.loads(report.read_text(encoding="utf-8")).get("files", {})
+        for file_name, data in files.items():
+            coverage = folders.setdefault(folder_of(file_name), FolderCoverage())
+            coverage.statements += int(data["summary"]["num_statements"])
+            coverage.missing += int(data["summary"]["missing_lines"])
+    return folders
 
 
 def read_run(path: Path) -> Run:
@@ -118,8 +157,12 @@ def summarize(
     backends: Sequence[str] = ("pandas", "duckdb"),
     slowest: int = 5,
     limit: int = 30,
+    folders: Mapping[str, FolderCoverage] | None = None,
 ) -> str:
-    """The Markdown summary of ``jobs``: a row per job and backend, the slowest tests, failures."""
+    """
+    The Markdown summary of ``jobs``: a row per job and backend, the coverage of each folder
+    in ``folders``, the slowest tests and the failures.
+    """
     lines = [
         f"### {title}",
         "",
@@ -147,6 +190,24 @@ def summarize(
                 if test not in slow or seconds > slow[test][0]:
                     slow[test] = (seconds, where)
             failed += [(where, test, message) for test, message in run.failed]
+    if folders:
+        total = FolderCoverage(
+            sum(coverage.statements for coverage in folders.values()),
+            sum(coverage.missing for coverage in folders.values()),
+        )
+        lines += [
+            "",
+            "#### 📊 Coverage by folder",
+            "",
+            "| Folder | Statements | Missed | Coverage |",
+            "| --- | ---: | ---: | ---: |",
+        ]
+        lines += [
+            f"| `{escaped(name)}` | {coverage.statements} | {coverage.missing} "
+            f"| {coverage.percent()} |"
+            for name, coverage in sorted(folders.items(), key=lambda item: item[0].lower())
+        ]
+        lines.append(f"| **Total** | {total.statements} | {total.missing} | {total.percent()} |")
     if slow:
         ranked = sorted(slow.items(), key=lambda item: -item[1][0])[:slowest]
         lines += [
@@ -212,7 +273,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     backends = [name for name in args.backends.split(",") if name]
     jobs = read_jobs(args.folder) if args.folder.is_dir() else []
-    sys.stdout.write(summarize(args.title, jobs, backends, args.slowest, args.limit))
+    folders = read_folder_coverage(args.folder) if args.folder.is_dir() else {}
+    sys.stdout.write(summarize(args.title, jobs, backends, args.slowest, args.limit, folders))
     return 0
 
 

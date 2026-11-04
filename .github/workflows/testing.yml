@@ -206,11 +206,13 @@ jobs:
       - name: Combine the coverage of both passes
         run: poetry run coverage combine
       - name: Keep the coverage
-        # The Test summary job shows it in the Ubuntu 3.12 rows of the passes.
+        # The Test summary job shows the total in the Ubuntu 3.12 rows of the passes, and the
+        # coverage of each folder of the package from the JSON report.
         run: |
           mkdir -p test-results
           printf '{"os": "ubuntu-latest", "python": "3.12"}\n' > test-results/job.json
           poetry run coverage report --format=total > test-results/coverage.txt
+          poetry run coverage json -q -o test-results/coverage.json
       - name: Upload the coverage for the summary
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
