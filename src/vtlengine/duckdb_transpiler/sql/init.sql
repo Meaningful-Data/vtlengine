@@ -643,12 +643,32 @@ CREATE OR REPLACE MACRO vtl_hamming(s1 VARCHAR, s2 VARCHAR) AS (
     END
 );
 
--- Jaro–Winkler similarity in [0, 1] (1.0 == identical), matches the spec example
--- "a value between 0 and 1" and the GeeksforGeeks reference cited in issue #742.
+-- Length of the common prefix of s1 and s2, capped at the 4 characters Winkler's
+-- bonus counts. Equal strings shorter than 4 characters pass the first test too,
+-- hence least().
+CREATE OR REPLACE MACRO vtl_winkler_prefix(s1 VARCHAR, s2 VARCHAR) AS (
+    CASE
+        WHEN left(s1, 4) = left(s2, 4) THEN least(length(s1), 4)
+        WHEN left(s1, 3) = left(s2, 3) THEN 3
+        WHEN left(s1, 2) = left(s2, 2) THEN 2
+        WHEN left(s1, 1) = left(s2, 1) THEN 1
+        ELSE 0
+    END
+);
+
+-- Jaro–Winkler distance in [0, 1] (0.0 == identical): 1 minus the Jaro–Winkler
+-- similarity, as defined on the Wikipedia page the VTL 2.2 manual links to. The
+-- prefix bonus (scaling factor 0.1) applies at any Jaro similarity, like the pandas
+-- engine, whereas jaro_winkler_similarity only adds it above Winkler's 0.7 boost
+-- threshold. The DOUBLE cast keeps 0.1 out of DECIMAL arithmetic, so the result
+-- matches the pandas engine bit for bit.
 CREATE OR REPLACE MACRO vtl_jaro_winkler(s1 VARCHAR, s2 VARCHAR) AS (
     CASE
         WHEN s1 IS NULL OR s2 IS NULL THEN NULL
-        WHEN s1 = s2 THEN 1.0
-        ELSE jaro_winkler_similarity(s1, s2)
+        WHEN s1 = s2 THEN 0.0
+        ELSE 1 - (
+            jaro_similarity(s1, s2)
+            + vtl_winkler_prefix(s1, s2) * CAST(0.1 AS DOUBLE) * (1 - jaro_similarity(s1, s2))
+        )
     END
 );
