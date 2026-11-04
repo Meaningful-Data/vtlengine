@@ -2,7 +2,7 @@ name: Pyodide test
 
 on:
   pull_request:
-    branches: ["main", "1.6.X", "1.9.X"]
+    branches: ["main", "1.9.X"]
     # Only pull requests that change what the wheel depends on, or the check itself; the
     # weekly run below covers everything else (no merge_group trigger for the same reason).
     paths:
