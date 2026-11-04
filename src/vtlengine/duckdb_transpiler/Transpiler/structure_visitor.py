@@ -896,9 +896,9 @@ class StructureVisitor(ASTTemplate):
     @staticmethod
     def _omitted_role(node: AST.RegularAggregation, comp: Optional[Component]) -> Role:
         """Role of a Component that a calc or aggr clause computes without naming one: a
-        Measure or an Attribute of the operand keeps its role and any other Component is a
-        Measure, as is every one in the clauses of a join (issue #1252)."""
-        if comp is None or comp.role == Role.IDENTIFIER:
+        Component of the operand keeps its role and any other is a Measure, as is every one
+        in the clauses of a join (issue #1252)."""
+        if comp is None:
             return Role.MEASURE
         dataset = node.dataset
         while isinstance(dataset, AST.RegularAggregation) and not dataset.isLast:

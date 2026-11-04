@@ -674,13 +674,15 @@ class InterpreterAnalyzer(ASTTemplate):
         return UNARY_MAPPING[node.op].analyze(operand)
 
     def _omitted_role(self, name: str) -> Role:
-        """Role of a Component that calc or aggr compute without naming one: a Measure or an
-        Attribute of the operand keeps its role and any other Component is a Measure, as is
-        every one in a join (issue #1252)."""
+        """Role of a Component that calc or aggr compute without naming one: a Component of the
+        operand keeps its role and any other is a Measure, as is every one in a join (issue
+        #1252). An Identifier would keep its role, but they cannot overwrite it."""
         dataset = self.regular_aggregation_dataset
         component = None if dataset is None else dataset.components.get(name)
-        if self.is_from_join or component is None or component.role == Role.IDENTIFIER:
+        if self.is_from_join or component is None:
             return Role.MEASURE
+        if component.role == Role.IDENTIFIER:
+            raise SemanticError("1-1-6-13", op=self.regular_aggregation_op, comp_name=name)
         return component.role
 
     @staticmethod
@@ -1301,12 +1303,14 @@ class InterpreterAnalyzer(ASTTemplate):
                             role = role_info[role_key]
                 else:
                     role = role_info[operand.name]
+                # Also with a role, aggr cannot overwrite an Identifier of the operand
+                kept_role = self._omitted_role(operand.name)
                 aux_operands.append(
                     DataComponent(
                         name=operand.name,
                         data=data,
                         data_type=measure.data_type,
-                        role=role if role is not None else self._omitted_role(operand.name),
+                        role=role if role is not None else kept_role,
                         nullable=measure.nullable,
                     )
                 )
