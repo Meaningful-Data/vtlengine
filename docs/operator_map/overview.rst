@@ -94,8 +94,8 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🔵
      - 7
      - 62
-     - 41
-     - 3
+     - 43
+     - 1
      - 0
      - 14
      - 4
@@ -211,8 +211,8 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🔵
      - 111
      - 698
-     - 626
-     - 47
+     - 628
+     - 45
      - 1
      - 16
      - 8

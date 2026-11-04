@@ -86,6 +86,14 @@ _OPTIONAL_MASK: Final[tuple[tuple[str, str, str, str], ...]] = (
 )
 
 
+# The text of a cast follows the pandas engine (team decision #1254), where the manual writes
+# another one: ``True``/``False`` for a boolean, and the period code for a time_period.
+_DECIDED: Final[dict[tuple[str, str, str], int]] = {
+    ("boolean", "string", "true_and_false"): 1254,
+    ("time_period", "string", "start_and_end_dates"): 1254,
+}
+
+
 # The manual's default measure name of a string, ``string_var``, is one that "can be personalised
 # in the implementations" (typical behaviour, "Default Names"); vtlengine documents ``str_var``.
 _STR_VAR = (
@@ -109,7 +117,9 @@ def _cast(source: str, target: str, names: tuple[str, ...], *, mask: bool = Fals
     return Variant(
         id=f"{source}_to_{target}{suffix}",
         label=f"cast(comp<{source}>, {target}{', mask' if mask else ''})",
-        examples=tuple(authored(name) for name in names),
+        examples=tuple(
+            authored(name, decision=_DECIDED.get((source, target, name))) for name in names
+        ),
         takes=takes,
         gives=(target,),
         kind="comp",

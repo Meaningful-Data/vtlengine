@@ -4,7 +4,7 @@ Type conversion · ``cast``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 21 of 41 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip diverge">🔵 23 of 41 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -36,7 +36,7 @@ Type conversion · ``cast``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Type conversion · cast<br/>🟢21 🟡2 🔴14 🔵4"]:::diverge
+       O["Type conversion · cast 📌<br/>🟢23 🔴14 🔵4"]:::diverge
        subgraph G_ds["Dataset"]
            direction LR
            v_string_to_integer_ds["cast(DS#60;string#62;, integer)"]:::ok
@@ -53,7 +53,7 @@ Type conversion · ``cast``
            v_time_period_to_date["cast(comp#60;time_period#62;, date)"]:::ok
            v_string_to_boolean["cast(comp#60;string#62;, boolean)"]:::ok
            v_integer_to_number["cast(comp#60;integer#62;, number)"]:::ok
-           v_boolean_to_string["cast(comp#60;boolean#62;, string)"]:::partial
+           v_boolean_to_string["cast(comp#60;boolean#62;, string) 📌"]:::ok
            v_date_to_time["cast(comp#60;date#62;, time)"]:::diverge
            v_time_period_to_time["cast(comp#60;time_period#62;, time)"]:::diverge
            v_integer_to_string["cast(comp#60;integer#62;, string)"]:::ok
@@ -64,7 +64,7 @@ Type conversion · ``cast``
            v_time_to_string_mask["cast(comp#60;time#62;, string, mask)"]:::missing
            v_date_to_string["cast(comp#60;date#62;, string)"]:::diverge
            v_date_to_string_mask["cast(comp#60;date#62;, string, mask)"]:::missing
-           v_time_period_to_string["cast(comp#60;time_period#62;, string)"]:::partial
+           v_time_period_to_string["cast(comp#60;time_period#62;, string) 📌"]:::ok
            v_time_period_to_string_mask["cast(comp#60;time_period#62;, string, mask)"]:::missing
            v_duration_to_string["cast(comp#60;duration#62;, string)"]:::diverge
            v_duration_to_string_mask["cast(comp#60;duration#62;, string, mask)"]:::missing
@@ -492,13 +492,12 @@ cast(comp<integer>, number) 🟢 · integer → number
 
    <span class="om-anchor" id="form-boolean-to-string"></span>
 
-cast(comp<boolean>, string) 🟡 · boolean → string
+cast(comp<boolean>, string) 🟢 · boolean → string
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-boolean-to-string-true-and-false"><summary><span class="om-ex-title">True and false</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">row Id_1=1: Me_2 expected true got True; row Id_1=2: Me_2 expected false got False</p>
+   <details class="om-example" id="ex-boolean-to-string-true-and-false"><summary><span class="om-ex-title">True and false</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/cast/boolean_to_string/true_and_false/notes.rst
 
@@ -509,7 +508,7 @@ cast(comp<boolean>, string) 🟡 · boolean → string
 .. raw:: html
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>true</td></tr><tr><td>2</td><td>false</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>true</td><td>true</td></tr><tr><td>2</td><td>false</td><td>false</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>true</td><td>True</td></tr><tr><td>2</td><td>false</td><td>False</td></tr></tbody></table>
 
 .. raw:: html
 
@@ -797,13 +796,12 @@ cast(comp<date>, string, mask) 🔴 · date, string → string
 
    <span class="om-anchor" id="form-time-period-to-string"></span>
 
-cast(comp<time\_period>, string) 🟡 · time_period → string
+cast(comp<time\_period>, string) 🟢 · time_period → string
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-time-period-to-string-start-and-end-dates"><summary><span class="om-ex-title">Start and end dates</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">row Id_1=1: Me_2 expected 2020-01-01/2020-03-31 got 2020Q1; row Id_1=2: Me_2 expected 2021-02-01/2021-02-28 got 2021M2</p>
+   <details class="om-example" id="ex-time-period-to-string-start-and-end-dates"><summary><span class="om-ex-title">Start and end dates</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/cast/time_period_to_string/start_and_end_dates/notes.rst
 
@@ -814,7 +812,7 @@ cast(comp<time\_period>, string) 🟡 · time_period → string
 .. raw:: html
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2020Q1</td></tr><tr><td>2</td><td>2021M02</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2020Q1</td><td>2020-01-01/2020-03-31</td></tr><tr><td>2</td><td>2021M02</td><td>2021-02-01/2021-02-28</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2020Q1</td><td>2020Q1</td></tr><tr><td>2</td><td>2021M02</td><td>2021M2</td></tr></tbody></table>
 
 .. raw:: html
 

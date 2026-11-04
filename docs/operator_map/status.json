@@ -6370,19 +6370,19 @@
     },
     "general/cast/boolean_to_string/true_and_false": {
       "duckdb": {
-        "detail": "row Id_1=1: Me_2 expected true got True; row Id_1=2: Me_2 expected false got False",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=1: Me_2 expected true got True; row Id_1=2: Me_2 expected false got False",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "general/cast/date_to_string/iso_8601_dates": {
       "duckdb": {
@@ -6898,19 +6898,19 @@
     },
     "general/cast/time_period_to_string/start_and_end_dates": {
       "duckdb": {
-        "detail": "row Id_1=1: Me_2 expected 2020-01-01/2020-03-31 got 2020Q1; row Id_1=2: Me_2 expected 2021-02-01/2021-02-28 got 2021M2",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=1: Me_2 expected 2020-01-01/2020-03-31 got 2020Q1; row Id_1=2: Me_2 expected 2021-02-01/2021-02-28 got 2021M2",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "general/cast/time_period_to_string_mask/monthly_period_mask": {
       "duckdb": {
@@ -15106,11 +15106,11 @@
     }
   },
   "meta": {
-    "date": "2026-11-03",
+    "date": "2026-11-04",
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "7e1d60e7",
+    "vtlengine_commit": "cd9856e8",
     "vtlengine_version": "1.9.7rc1"
   }
 }

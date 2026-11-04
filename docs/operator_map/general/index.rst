@@ -39,7 +39,7 @@ General purpose operators
        general__membership["Membership · #35;<br/>🟢4 🟡1"]:::partial
        general__udo_call["User-defined operator call · name( )<br/>🟢4"]:::ok
        general__eval["Evaluation of an external routine · eval<br/>🟢4"]:::ok
-       general__cast["Type conversion · cast<br/>🟢21 🟡2 🔴14 🔵4"]:::diverge
+       general__cast["Type conversion · cast 📌<br/>🟢23 🔴14 🔵4"]:::diverge
        general__parentheses --- B
        general__persistent_assignment --- B
        general__non_persistent_assignment --- B
@@ -232,13 +232,6 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
      - ❌
      - missing components: str\_var
    * - :doc:`Type conversion <cast>`
-     - `cast(comp<boolean>, string) <cast.html#form-boolean-to-string>`__
-     - 🟡
-     - `True and false <cast.html#ex-boolean-to-string-true-and-false>`__
-     - ❌
-     - ❌
-     - row Id\_1=1: Me\_2 expected true got True; row Id\_1=2: Me\_2 expected false got False
-   * - :doc:`Type conversion <cast>`
      - `cast(comp<date>, time) <cast.html#form-date-to-time>`__
      - 🔵
      - `Same start and end <cast.html#ex-date-to-time-same-start-and-end>`__
@@ -287,13 +280,6 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
      - 🛡 1-3-13
      - 🛡 1-3-13
      - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYYMMDD\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<time\_period>, string) <cast.html#form-time-period-to-string>`__
-     - 🟡
-     - `Start and end dates <cast.html#ex-time-period-to-string-start-and-end-dates>`__
-     - ❌
-     - ❌
-     - row Id\_1=1: Me\_2 expected 2020-01-01/2020-03-31 got 2020Q1; row Id\_1=2: Me\_2 expected 2021-02-01/2021-02-28 got 2021M2
    * - :doc:`Type conversion <cast>`
      - `cast(comp<time\_period>, string, mask) <cast.html#form-time-period-to-string-mask>`__
      - 🔴

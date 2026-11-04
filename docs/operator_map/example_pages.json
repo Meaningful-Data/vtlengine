@@ -3185,10 +3185,10 @@
   },
   "general/cast/boolean_to_string/true_and_false": {
     "anchor": "ex-boolean-to-string-true-and-false",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "True and false"
   },
   "general/cast/date_to_string/iso_8601_dates": {
@@ -3449,10 +3449,10 @@
   },
   "general/cast/time_period_to_string/start_and_end_dates": {
     "anchor": "ex-time-period-to-string-start-and-end-dates",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Start and end dates"
   },
   "general/cast/time_period_to_string_mask/monthly_period_mask": {

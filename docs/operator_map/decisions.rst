@@ -9,6 +9,8 @@ The examples whose expected output does not come from the manual as it is writte
 
 Expected outputs that follow a recorded team decision. The notes of an example say what the manual says and how its output was derived.
 
+- `📌 #1254 <https://github.com/Meaningful-Data/vtlengine/issues/1254>`__ · `Type conversion · True and false <general/cast.html#ex-boolean-to-string-true-and-false>`__ (General purpose operators › ``cast(comp<boolean>, string)``)
+- `📌 #1254 <https://github.com/Meaningful-Data/vtlengine/issues/1254>`__ · `Type conversion · Start and end dates <general/cast.html#ex-time-period-to-string-start-and-end-dates>`__ (General purpose operators › ``cast(comp<time_period>, string)``)
 - `📌 #394 <https://github.com/Meaningful-Data/vtlengine/issues/394>`__ · `Number of days to years and days · Manual example 1 <time/daytoyear.html#ex-comp-manual-ex-1>`__ (Time operators › ``calc daytoyear(comp)``)
 - `📌 #394 <https://github.com/Meaningful-Data/vtlengine/issues/394>`__ · `Number of days to years and days · Years of 365 days <time/daytoyear.html#ex-sc-years-of-365-days>`__ (Time operators › ``daytoyear(sc)``)
 - `📌 #394 <https://github.com/Meaningful-Data/vtlengine/issues/394>`__ · `Number of days to months and days · Manual example 2 <time/daytomonth.html#ex-comp-manual-ex-2>`__ (Time operators › ``calc daytomonth(comp)``)
