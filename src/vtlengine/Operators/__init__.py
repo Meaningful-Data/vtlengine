@@ -16,6 +16,7 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     OR,
     ROUND,
+    TRUNC,
     XOR,
 )
 from vtlengine.DataTypes import (
@@ -44,10 +45,11 @@ from vtlengine.ViralPropagation import (
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
 
-# This allows changing the data type of the Measure in the result Data Set
-# when the operator is applied to mono-measure Data Sets.
+# Operators allowed to change the data type of the Measures of a multi-measure Data Set, which
+# keep their names (a mono-measure Data Set gets the generic Measure of the new type instead).
+# trunc without its number of digits gives Integer Measures, as round does (issue #1248).
 # TODO: Check if there are more operators that allow this
-MONOMEASURE_CHANGED_ALLOWED = [CEIL, FLOOR, ROUND]
+MONOMEASURE_CHANGED_ALLOWED = [CEIL, FLOOR, ROUND, TRUNC]
 BINARY_COMPARISON_OPERATORS = [EQ, NEQ, GT, GTE, LT, LTE]
 BINARY_BOOLEAN_OPERATORS = [AND, OR, XOR]
 
