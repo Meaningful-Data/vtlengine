@@ -1,0 +1,14 @@
+python3-pip
+python3-httpx
+python3-pandas
+python3-dateutil
+python3-lxml
+python3-xmltodict
+python3-jsonschema
+python3-networkx
+python3-sqlglot
+python3-pytest
+python3-pytest-xdist
+cmake
+g++
+pybind11-dev

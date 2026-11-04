@@ -20,52 +20,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Use the official Ubuntu mirrors
-        # The runner image tries azure.archive.ubuntu.com first and only falls
-        # back on errors, so a slow Azure mirror stalls apt for minutes.
-        run: |
-          sudo tee /etc/apt/sources.list.d/ubuntu.sources > /dev/null <<'EOF'
-          Types: deb
-          URIs: https://archive.ubuntu.com/ubuntu/
-          Suites: noble noble-updates noble-backports
-          Components: main universe restricted multiverse
-          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-
-          Types: deb
-          URIs: https://security.ubuntu.com/ubuntu/
-          Suites: noble-security
-          Components: main universe restricted multiverse
-          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-          EOF
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            python3-pip \
-            python3-httpx \
-            python3-pandas \
-            python3-dateutil \
-            python3-lxml \
-            python3-xmltodict \
-            python3-jsonschema \
-            python3-networkx \
-            python3-sqlglot \
-            python3-pytest \
-            python3-pytest-xdist \
-            cmake \
-            g++ \
-            pybind11-dev
-
-      - name: Install pip-only dependencies
-        run: |
-          pip install --no-dependencies --break-system-packages \
-            pyarrow==24.0.0 \
-            sdmxschemas==1.1.0 \
-            parsy==2.2 \
-            msgspec==0.21.1 \
-            duckdb==1.4.5 \
-            pysdmx==1.20.0
+      - name: Install the dependencies
+        uses: ./.github/actions/install-ubuntu-2404-deps
 
       - name: Build the C++ parser
         uses: ./.github/actions/build-cpp-parser

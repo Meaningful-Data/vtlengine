@@ -1,9 +1,10 @@
 name: Build caches
 
-# Saves the ANTLR4 runtime and the compiled C++ parser of every test job on the branch itself.
-# A cache saved by a pull request or a merge-queue run is only visible to that run's branch,
-# while pull requests restore the caches of their base branch. The keys come from
-# .github/actions/build-cpp-parser, which the test jobs use too.
+# Saves the ANTLR4 runtime and the compiled C++ parser of every test job, and the dependencies of
+# ubuntu_test_24_04.yml, on the branch itself. A cache saved by a pull request or a merge-queue
+# run is only visible to that run's branch, while pull requests restore the caches of their base
+# branch. The keys come from .github/actions/build-cpp-parser and
+# .github/actions/install-ubuntu-2404-deps, which the test jobs use too.
 
 on:
   push:
@@ -69,3 +70,18 @@ jobs:
           cache-prefix: ubuntu2404
         env:
           PIP_BREAK_SYSTEM_PACKAGES: "1"
+
+  ubuntu-24-04-deps:
+    # The APT and pip packages of ubuntu_test_24_04.yml, installed on a clean runner. Saved only
+    # when no entry has the key yet: the mirrors have a new version of one of the packages, or
+    # the action changed.
+    name: Dependencies (Ubuntu 24.04)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install the dependencies
+        uses: ./.github/actions/install-ubuntu-2404-deps
+        with:
+          save-cache: "true"
