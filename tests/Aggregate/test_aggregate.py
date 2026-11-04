@@ -1486,3 +1486,52 @@ class AggregateOperatorsTest(TestAggregateHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1203_1(self):
+        """
+        Description: The having condition accepts any boolean expression that invokes
+                     aggregate operators, not only a comparison, in/not_in or and/or/xor:
+                     parentheses, not, between and isnull, inside aggr and in the aggregate
+                     operators. A group whose aggregate is null is kept when the condition
+                     selects it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1203
+        Goal: Check Result.
+        """
+        code = "GH_1203_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1203_2(self):
+        """
+        Description: An aggregate operator with a having condition runs on a Data Set
+                     with several Measures, aggregating each of them.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1203
+        Goal: Check Result.
+        """
+        code = "GH_1203_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1203_3(self):
+        """
+        Description: A having condition that invokes no aggregate operator, or that is not
+                     boolean, raises a semantic error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1203
+        Goal: Check Exception.
+        """
+        code = "GH_1203_1"
+        number_inputs = 1
+        cases = [("true", "1-1-2-4"), ("Me_1 > 2", "1-1-2-4"), ("sum(Me_1)", "1-1-2-3")]
+
+        for condition, exception_code in cases:
+            with self.subTest(condition=condition):
+                self.NewSemanticExceptionTest(
+                    code=code,
+                    number_inputs=number_inputs,
+                    exception_code=exception_code,
+                    text=f"DS_r <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having {condition}];",
+                )
