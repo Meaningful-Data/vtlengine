@@ -4,7 +4,7 @@ Join operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 2 of 4 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip partial">🟡 0 of 4 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -33,10 +33,10 @@ Join operators
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Join operators"]:::block
-       join__inner_join["Inner Join · inner_join<br/>🟢22"]:::ok
+       join__inner_join["Inner Join · inner_join<br/>🟢20 🟡2"]:::partial
        join__left_join["Left Join · left_join<br/>🟢22 🟡1"]:::partial
        join__full_join["Full Join · full_join<br/>🟢21 🟡1 🛡️1"]:::partial
-       join__cross_join["Cross Join · cross_join<br/>🟢21"]:::ok
+       join__cross_join["Cross Join · cross_join<br/>🟢19 🟡2"]:::partial
        join__inner_join --- B
        join__left_join --- B
        B --- join__full_join
@@ -60,7 +60,7 @@ Join operators
      - Status
      - Forms
    * - :doc:`Inner Join <inner_join>` ``inner_join``
-     - 🟢
+     - 🟡
      - 22
    * - :doc:`Left Join <left_join>` ``left_join``
      - 🟡
@@ -69,7 +69,7 @@ Join operators
      - 🟡
      - 23
    * - :doc:`Cross Join <cross_join>` ``cross_join``
-     - 🟢
+     - 🟡
      - 21
 
 .. rubric:: Types
@@ -114,6 +114,20 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
      - pandas
      - DuckDB
      - Detail
+   * - :doc:`Inner Join <inner_join>`
+     - `inner\_join(DS, DS calc C := expr) <inner_join.html#form-calc-default>`__
+     - 🟡
+     - `Attribute becomes measure <inner_join.html#ex-calc-default-attribute-becomes-measure>`__
+     - ❌
+     - ❌
+     - expected error 1-1-1-10, ran without an error
+   * - :doc:`Inner Join <inner_join>`
+     - `inner\_join(DS, DS aggr C := agg group by Id) <inner_join.html#form-aggr-group-by>`__
+     - 🟡
+     - `Attribute becomes measure <inner_join.html#ex-aggr-group-by-attribute-becomes-measure>`__
+     - ❌
+     - ❌
+     - expected error 1-1-1-10, ran without an error
    * - :doc:`Left Join <left_join>`
      - `left\_join(DS, DS using Id, nvl(Id, c)) <left_join.html#form-using-nvl>`__
      - 🟡
@@ -128,6 +142,20 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
      - 💥 AttributeError
      - 💥 AttributeError
      - AttributeError: \'BinOp\' object has no attribute \'value\'
+   * - :doc:`Cross Join <cross_join>`
+     - `cross\_join(DS, DS calc C := expr) <cross_join.html#form-calc-default>`__
+     - 🟡
+     - `Attribute becomes measure <cross_join.html#ex-calc-default-attribute-becomes-measure>`__
+     - ❌
+     - ❌
+     - expected error 1-1-1-10, ran without an error
+   * - :doc:`Cross Join <cross_join>`
+     - `cross\_join(DS, DS aggr C := agg group by Id) <cross_join.html#form-aggr-group-by>`__
+     - 🟡
+     - `Attribute becomes measure <cross_join.html#ex-aggr-group-by-attribute-becomes-measure>`__
+     - ❌
+     - ❌
+     - expected error 1-1-1-10, ran without an error
 
 .. toctree::
    :maxdepth: 1

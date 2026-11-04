@@ -4249,10 +4249,10 @@
   },
   "join/cross_join/aggr_group_by/attribute_becomes_measure": {
     "anchor": "ex-aggr-group-by-attribute-becomes-measure",
-    "duckdb": "✅",
+    "duckdb": "❌",
     "operator_page": "join/cross_join.html",
-    "pandas": "✅",
-    "status": "ok",
+    "pandas": "❌",
+    "status": "partial",
     "title": "Attribute becomes measure"
   },
   "join/cross_join/aggr_group_by/sum_by_id_1": {
@@ -4353,10 +4353,10 @@
   },
   "join/cross_join/calc_default/attribute_becomes_measure": {
     "anchor": "ex-calc-default-attribute-becomes-measure",
-    "duckdb": "✅",
+    "duckdb": "❌",
     "operator_page": "join/cross_join.html",
-    "pandas": "✅",
-    "status": "ok",
+    "pandas": "❌",
+    "status": "partial",
     "title": "Attribute becomes measure"
   },
   "join/cross_join/calc_default/default_role_is_measure": {
@@ -4689,10 +4689,10 @@
   },
   "join/inner_join/aggr_group_by/attribute_becomes_measure": {
     "anchor": "ex-aggr-group-by-attribute-becomes-measure",
-    "duckdb": "✅",
+    "duckdb": "❌",
     "operator_page": "join/inner_join.html",
-    "pandas": "✅",
-    "status": "ok",
+    "pandas": "❌",
+    "status": "partial",
     "title": "Attribute becomes measure"
   },
   "join/inner_join/aggr_group_by/sum_by_id_1": {
@@ -4809,10 +4809,10 @@
   },
   "join/inner_join/calc_default/attribute_becomes_measure": {
     "anchor": "ex-calc-default-attribute-becomes-measure",
-    "duckdb": "✅",
+    "duckdb": "❌",
     "operator_page": "join/inner_join.html",
-    "pandas": "✅",
-    "status": "ok",
+    "pandas": "❌",
+    "status": "partial",
     "title": "Attribute becomes measure"
   },
   "join/inner_join/calc_default/default_role_is_measure": {

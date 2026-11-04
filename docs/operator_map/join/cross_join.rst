@@ -4,7 +4,7 @@ Cross Join · ``cross_join``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 21 of 21 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Cross%20Join/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip partial">🟡 19 of 21 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Cross%20Join/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -32,18 +32,18 @@ Cross Join · ``cross_join``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Cross Join · cross_join<br/>🟢21"]:::ok
+       O["Cross Join · cross_join<br/>🟢19 🟡2"]:::partial
        v_bare["cross_join(DS, DS)"]:::ok
        v_aliases["cross_join(DS as a, DS as b)"]:::ok
        v_filter["cross_join(DS, DS filter cond)"]:::ok
        v_apply["cross_join(DS, DS apply expr)"]:::ok
-       v_calc_default["cross_join(DS, DS calc C #58;#61; expr)"]:::ok
+       v_calc_default["cross_join(DS, DS calc C #58;#61; expr)"]:::partial
        v_calc_measure["cross_join(DS, DS calc measure C #58;#61; expr)"]:::ok
        v_calc_identifier["cross_join(DS, DS calc identifier C #58;#61; expr)"]:::ok
        v_calc_attribute["cross_join(DS, DS calc attribute C #58;#61; expr)"]:::ok
        v_calc_viral_attribute["cross_join(DS, DS calc viral attribute C #58;#61; expr)"]:::ok
        v_aggr_no_group["cross_join(DS, DS aggr C #58;#61; agg)"]:::ok
-       v_aggr_group_by["cross_join(DS, DS aggr C #58;#61; agg group by Id)"]:::ok
+       v_aggr_group_by["cross_join(DS, DS aggr C #58;#61; agg group by Id)"]:::partial
        v_aggr_group_except["cross_join(DS, DS aggr C #58;#61; agg group except Id)"]:::ok
        v_aggr_group_all["cross_join(DS, DS aggr C #58;#61; agg group all time_agg(p))"]:::ok
        v_aggr_having["cross_join(DS, DS aggr C #58;#61; agg group by Id having cond)"]:::ok
@@ -289,7 +289,7 @@ cross\_join(DS, DS apply expr) 🟢 · any scalar → any type
 
    <span class="om-anchor" id="form-calc-default"></span>
 
-cross\_join(DS, DS calc C := expr) 🟢 · any scalar → any type
+cross\_join(DS, DS calc C := expr) 🟡 · any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -315,7 +315,8 @@ cross\_join(DS, DS calc C := expr) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-calc-default-attribute-becomes-measure"><summary><span class="om-ex-title">Attribute becomes measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-calc-default-attribute-becomes-measure"><summary><span class="om-ex-title">Attribute becomes measure</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <p class="om-detail">expected error 1-1-1-10, ran without an error</p>
 
 .. include:: ../examples/join/cross_join/calc_default/attribute_becomes_measure/notes.rst
 
@@ -327,11 +328,12 @@ cross\_join(DS, DS calc C := expr) 🟢 · any scalar → any type
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">At_1</th></tr></thead><tbody><tr><td>1</td><td>10</td><td>a</td></tr><tr><td>2</td><td>20</td><td>b</td></tr></tbody></table>
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_2</code></span></caption><thead><tr><th class="head">Id_2</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>A</td><td>1</td></tr><tr><td>B</td><td>2</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_1</th><th class="head">Me_2</th><th class="head">At_1</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>10</td><td>1</td><td>ax</td></tr><tr><td>1</td><td>B</td><td>10</td><td>2</td><td>ax</td></tr><tr><td>2</td><td>A</td><td>20</td><td>1</td><td>bx</td></tr><tr><td>2</td><td>B</td><td>20</td><td>2</td><td>bx</td></tr></tbody></table>
+
+Expected error ``1-1-1-10``: Component {comp\_name} not found in Dataset {dataset\_name}.
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/join/cross_join/calc_default/attribute_becomes_measure/script.vtl">script.vtl</a> · <a href="../examples/join/cross_join/calc_default/attribute_becomes_measure/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/join/cross_join/calc_default/attribute_becomes_measure/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/join/cross_join/calc_default/attribute_becomes_measure/input/DS_2.csv">input/DS_2.csv</a> · <a href="../examples/join/cross_join/calc_default/attribute_becomes_measure/input/DS_2.json">input/DS_2.json</a> · <a href="../examples/join/cross_join/calc_default/attribute_becomes_measure/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/join/cross_join/calc_default/attribute_becomes_measure/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/join/cross_join/calc_default/attribute_becomes_measure/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/join/cross_join/calc_default/attribute_becomes_measure/script.vtl">script.vtl</a> · <a href="../examples/join/cross_join/calc_default/attribute_becomes_measure/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/join/cross_join/calc_default/attribute_becomes_measure/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/join/cross_join/calc_default/attribute_becomes_measure/input/DS_2.csv">input/DS_2.csv</a> · <a href="../examples/join/cross_join/calc_default/attribute_becomes_measure/input/DS_2.json">input/DS_2.json</a> · <a href="../examples/join/cross_join/calc_default/attribute_becomes_measure/expected/error.json">expected/error.json</a> · <a href="../examples/join/cross_join/calc_default/attribute_becomes_measure/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -478,7 +480,7 @@ cross\_join(DS, DS aggr C := agg) 🟢 · any scalar → any type
 
    <span class="om-anchor" id="form-aggr-group-by"></span>
 
-cross\_join(DS, DS aggr C := agg group by Id) 🟢 · any scalar → any type
+cross\_join(DS, DS aggr C := agg group by Id) 🟡 · any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -504,7 +506,8 @@ cross\_join(DS, DS aggr C := agg group by Id) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-group-by-attribute-becomes-measure"><summary><span class="om-ex-title">Attribute becomes measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-aggr-group-by-attribute-becomes-measure"><summary><span class="om-ex-title">Attribute becomes measure</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <p class="om-detail">expected error 1-1-1-10, ran without an error</p>
 
 .. include:: ../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/notes.rst
 
@@ -516,11 +519,12 @@ cross\_join(DS, DS aggr C := agg group by Id) 🟢 · any scalar → any type
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">At_1</th></tr></thead><tbody><tr><td>1</td><td>10</td><td>a</td></tr><tr><td>2</td><td>20</td><td>b</td></tr></tbody></table>
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_2</code></span></caption><thead><tr><th class="head">Id_2</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>A</td><td>1</td></tr><tr><td>B</td><td>2</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">At_1</th></tr></thead><tbody><tr><td>1</td><td>a</td></tr><tr><td>2</td><td>b</td></tr></tbody></table>
+
+Expected error ``1-1-1-10``: Component {comp\_name} not found in Dataset {dataset\_name}.
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/script.vtl">script.vtl</a> · <a href="../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/input/DS_2.csv">input/DS_2.csv</a> · <a href="../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/input/DS_2.json">input/DS_2.json</a> · <a href="../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/script.vtl">script.vtl</a> · <a href="../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/input/DS_2.csv">input/DS_2.csv</a> · <a href="../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/input/DS_2.json">input/DS_2.json</a> · <a href="../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/expected/error.json">expected/error.json</a> · <a href="../examples/join/cross_join/aggr_group_by/attribute_becomes_measure/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html

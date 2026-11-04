@@ -8498,19 +8498,19 @@
     },
     "join/cross_join/aggr_group_by/attribute_becomes_measure": {
       "duckdb": {
-        "detail": "",
+        "detail": "expected error 1-1-1-10, ran without an error",
         "error_code": null,
         "error_type": null,
-        "outcome": "match"
+        "outcome": "mismatch"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "",
+        "detail": "expected error 1-1-1-10, ran without an error",
         "error_code": null,
         "error_type": null,
-        "outcome": "match"
+        "outcome": "mismatch"
       },
-      "status": "ok"
+      "status": "partial"
     },
     "join/cross_join/aggr_group_by/sum_by_id_1": {
       "duckdb": {
@@ -8706,19 +8706,19 @@
     },
     "join/cross_join/calc_default/attribute_becomes_measure": {
       "duckdb": {
-        "detail": "",
+        "detail": "expected error 1-1-1-10, ran without an error",
         "error_code": null,
         "error_type": null,
-        "outcome": "match"
+        "outcome": "mismatch"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "",
+        "detail": "expected error 1-1-1-10, ran without an error",
         "error_code": null,
         "error_type": null,
-        "outcome": "match"
+        "outcome": "mismatch"
       },
-      "status": "ok"
+      "status": "partial"
     },
     "join/cross_join/calc_default/default_role_is_measure": {
       "duckdb": {
@@ -9378,19 +9378,19 @@
     },
     "join/inner_join/aggr_group_by/attribute_becomes_measure": {
       "duckdb": {
-        "detail": "",
+        "detail": "expected error 1-1-1-10, ran without an error",
         "error_code": null,
         "error_type": null,
-        "outcome": "match"
+        "outcome": "mismatch"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "",
+        "detail": "expected error 1-1-1-10, ran without an error",
         "error_code": null,
         "error_type": null,
-        "outcome": "match"
+        "outcome": "mismatch"
       },
-      "status": "ok"
+      "status": "partial"
     },
     "join/inner_join/aggr_group_by/sum_by_id_1": {
       "duckdb": {
@@ -9618,19 +9618,19 @@
     },
     "join/inner_join/calc_default/attribute_becomes_measure": {
       "duckdb": {
-        "detail": "",
+        "detail": "expected error 1-1-1-10, ran without an error",
         "error_code": null,
         "error_type": null,
-        "outcome": "match"
+        "outcome": "mismatch"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "",
+        "detail": "expected error 1-1-1-10, ran without an error",
         "error_code": null,
         "error_type": null,
-        "outcome": "match"
+        "outcome": "mismatch"
       },
-      "status": "ok"
+      "status": "partial"
     },
     "join/inner_join/calc_default/default_role_is_measure": {
       "duckdb": {
@@ -15110,7 +15110,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "cd9856e8",
+    "vtlengine_commit": "d84c5b7a",
     "vtlengine_version": "1.9.7rc1"
   }
 }
