@@ -8,9 +8,19 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, Optional
 
+import duckdb
 import pandas as pd
+import pytest
 
+from tests.Helper import _use_duckdb_backend
 from vtlengine import run
+from vtlengine.Utils import _duckdb
+from vtlengine.Utils._duckdb import query_connection
+
+# run() executes these scripts on the pandas engine, so the pandas pass is enough
+pytestmark = pytest.mark.skipif(
+    _use_duckdb_backend(), reason="Runs the pandas engine, in the pandas pass only"
+)
 
 DATA_STRUCTURES: Dict[str, Any] = {
     "datasets": [
@@ -126,3 +136,32 @@ class TestConcurrentEval:
             assert len(df) == 5
             doubled = dict(zip(df["Id_2"], df["Me_1"]))
             assert doubled["A"] in {20.0, 60.0, 100.0}
+
+
+class TestQueryConnection:
+    """The pandas operators query their frames on connections to one shared database."""
+
+    def test_registered_frames_stay_private(self) -> None:
+        with query_connection() as first, query_connection() as second:
+            first.register("df", pd.DataFrame({"x": [1, 2]}))
+            assert first.execute("SELECT sum(x) FROM df").fetchone() == (3,)
+            with pytest.raises(duckdb.CatalogException):
+                second.execute("SELECT * FROM df")
+        with query_connection() as third, pytest.raises(duckdb.CatalogException):
+            third.execute("SELECT * FROM df")
+
+    def test_fatal_error_opens_another_database(self) -> None:
+        with query_connection():
+            before = _duckdb._database.connection
+        with pytest.raises(duckdb.FatalException):
+            _fail_in_a_query()
+        with query_connection():
+            after = _duckdb._database.connection
+        assert before is not None
+        assert after is not None
+        assert after is not before
+
+
+def _fail_in_a_query() -> None:
+    with query_connection():
+        raise duckdb.FatalException("invalidated")

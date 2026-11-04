@@ -87,3 +87,26 @@ def test_configure_duckdb_connection_applies_post_import_env() -> None:
     # the value is in the right ballpark for 2GB (it reports ~1.8 GiB after
     # reserving overhead). The threads check above is the authoritative one.
     assert "GiB" in settings["memory_limit"] or "MiB" in settings["memory_limit"]
+
+
+def test_create_configured_connection_applies_the_same_settings() -> None:
+    """The settings given to duckdb.connect are those configure_duckdb_connection sets."""
+    env = {"VTL_MEMORY_LIMIT": "2GB", "VTL_THREADS": "3", "VTL_MAX_TEMP_DIRECTORY_SIZE": "10GB"}
+    with mock.patch.dict(os.environ, env, clear=False):
+        names = list(cfg._connection_settings())
+        query = (
+            "SELECT name, value FROM duckdb_settings() "
+            f"WHERE name IN ({', '.join(repr(name) for name in names)}) ORDER BY name"
+        )
+        opened = cfg.create_configured_connection()
+        configured = duckdb.connect(":memory:")
+        try:
+            cfg.configure_duckdb_connection(configured)
+            settings = opened.execute(query).fetchall()
+            assert settings == configured.execute(query).fetchall()
+        finally:
+            opened.close()
+            configured.close()
+
+    assert len(settings) == len(names) == 8
+    assert dict(settings)["threads"] == "3"

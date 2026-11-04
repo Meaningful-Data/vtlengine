@@ -1,7 +1,6 @@
 from copy import copy
 from typing import Any, Callable, List, Optional
 
-import duckdb
 import pandas as pd
 
 import vtlengine.Operators as Operator
@@ -36,6 +35,7 @@ from vtlengine.DataTypes.TimeHandling import (
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils._dataframe import merge_frames
+from vtlengine.Utils._duckdb import query_connection
 from vtlengine.ViralPropagation import (
     apply_viral_return_types,
     get_current_registry,
@@ -219,12 +219,9 @@ class Aggregation(Operator.Unary):
                 # registered, so the count is taken off the frame itself (issue #996).
                 return pd.DataFrame({"int_var": [len(df)]})
             query = f"SELECT {', '.join(grouping_names)}, COUNT() AS int_var from df {grouping}"
-            conn = duckdb.connect(database=":memory:", read_only=False)
-            try:
+            with query_connection() as conn:
                 conn.register("df", df)
                 return conn.execute(query).fetchdf()
-            finally:
-                conn.close()
 
         if measure_names is not None and len(measure_names) > 0:
             functions = ""
@@ -251,17 +248,15 @@ class Aggregation(Operator.Unary):
         else:
             query = f"SELECT {', '.join(grouping_names or [])} from df {grouping}"
 
-        conn = duckdb.connect(database=":memory:", read_only=False)
         try:
-            conn.register("df", df)
-            result = conn.execute(query).fetchdf()
+            with query_connection() as conn:
+                conn.register("df", df)
+                result = conn.execute(query).fetchdf()
         except RuntimeError as e:
             if "Conversion" in e.args[0]:
                 raise RunTimeError("2-3-8", op=cls.op, msg=e.args[0].split(":")[-1])
             else:
                 raise RunTimeError("2-1-1-1", op=cls.op, error=e)
-        finally:
-            conn.close()
         return result
 
     @classmethod

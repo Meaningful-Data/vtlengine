@@ -5,6 +5,7 @@ from typing import Optional
 import pandas as pd
 import pytest
 
+from tests.Helper import engine_params
 from vtlengine import run, semantic_analysis
 from vtlengine.API import create_ast
 from vtlengine.DataTypes import Integer, Number, String
@@ -174,7 +175,7 @@ class TestViralPropagationEndToEnd:
         # C+M→N (binary); M+F→M (unary "M"); X+Y→" " (else)
         assert list(result["DS_r"].data["VAt_1"]) == ["N", "M", " "]
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_null_condition_matches_null_value(self, use_duckdb: bool) -> None:
         """A `when null` clause must match a null (pd.NA/None) viral value, not fall to else."""
         result = run(
@@ -241,7 +242,7 @@ class TestViralPropagationEndToEnd:
         # min/max skip nulls (LEAST/GREATEST); sum/avg propagate nulls (a + b).
         [("min", 10, 5), ("max", 20, 5), ("sum", 30, None), ("avg", 15, None)],
     )
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_aggregate_binary_with_nulls(
         self, agg: str, both_present: int, one_null: Optional[int], use_duckdb: bool
     ) -> None:
@@ -450,7 +451,7 @@ class TestViralRuleCombinesInGroupAndPartition:
         # group Id_1=1 = {10, null, 30}; nulls are skipped: min 10, max 30, sum 40, avg 20.
         [("min", 10.0), ("max", 30.0), ("sum", 40.0), ("avg", 20.0)],
     )
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_aggregate_rule_combines_per_group_skipping_nulls(
         self, agg_fn: str, group1: float, use_duckdb: bool
     ) -> None:
@@ -470,7 +471,7 @@ class TestViralRuleCombinesInGroupAndPartition:
         assert d["VAt_1"].iloc[0] == group1
         assert d["VAt_1"].iloc[1] == 5.0
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_analytic_rule_combines_per_partition_and_broadcasts(self, use_duckdb: bool) -> None:
         result = run(
             script=AGGR_MAX_RULE + "DS_r <- sum(DS_1 over (partition by Id_1));",
@@ -483,7 +484,7 @@ class TestViralRuleCombinesInGroupAndPartition:
         assert list(d[d["Id_1"] == 1]["VAt_1"]) == [30.0, 30.0, 30.0]
         assert list(d[d["Id_1"] == 2]["VAt_1"]) == [5.0]
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_enumerated_rule_combines_per_group(self, use_duckdb: bool) -> None:
         result = run(
             script=_ENUM_PAIR_RULE + "DS_r <- sum(DS_1 group by Id_1);",
@@ -495,7 +496,7 @@ class TestViralRuleCombinesInGroupAndPartition:
         # group {"A","B"} matches the binary clause -> "AB"; group {"C","D"} -> "CD".
         assert list(d["VAt_1"]) == ["AB", "CD"]
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_enumerated_rule_combines_per_partition(self, use_duckdb: bool) -> None:
         result = run(
             script=_ENUM_PAIR_RULE + "DS_r <- sum(DS_1 over (partition by Id_1));",
@@ -512,7 +513,7 @@ class TestViralRuleCombinesInGroupAndPartition:
         "invocation",
         ["sum(DS_1 group by Id_1)", "sum(DS_1 over (partition by Id_1))"],
     )
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_enumerated_rule_applies_to_single_element_group(
         self, invocation: str, use_duckdb: bool
     ) -> None:
@@ -829,7 +830,7 @@ class TestViralPropagationJoinNulls:
     """A shared viral attribute where one operand's value is null must still go
     through the propagation rule in a join, exactly like in a binary operator."""
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     @pytest.mark.parametrize("join_op", ["inner_join", "left_join", "full_join"])
     def test_null_pair_applies_rule(self, join_op: str, use_duckdb: bool) -> None:
         """(null, X) and (X, null) resolve through the rule, not leaking X."""
@@ -860,7 +861,7 @@ class TestViralPropagationJoinNulls:
         # The lone non-null value must NOT survive unchanged.
         assert "Z" not in list(d["VAt_1"])
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_join_viral_matches_binary_plus(self, use_duckdb: bool) -> None:
         """The join's viral combination is identical to the binary ``+`` one for
         the same viral data (including null operands). The ``+`` uses a matching
@@ -892,7 +893,7 @@ class TestViralPropagationJoinNulls:
         j = join["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
         assert list(p["VAt_1"]) == list(j["VAt_1"])
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_aggregate_rule_ignores_nulls_in_join(self, use_duckdb: bool) -> None:
         """An aggregate (max) viral rule ignores nulls in a join: (null, X)->X,
         (null, null)->null."""
@@ -929,7 +930,7 @@ class TestKeepPreservesViralAttributes:
     """A keep clause restricts identifiers/measures/non-viral attributes, but viral
     attributes always propagate and survive implicitly (without being listed)."""
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_standalone_keep_preserves_viral_drops_rest(self, use_duckdb: bool) -> None:
         """Keep Me_1 keeps the viral attr but drops the other measure and the
         non-viral attribute."""
@@ -957,7 +958,7 @@ class TestKeepPreservesViralAttributes:
         assert "VAt_1" in d.columns
         assert list(d["VAt_1"]) == ["C", "N"]
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_keep_listing_viral_no_duplicate(self, use_duckdb: bool) -> None:
         """Listing the viral attribute explicitly in keep does not duplicate it."""
         result = run(
@@ -980,7 +981,7 @@ class TestKeepPreservesViralAttributes:
         assert set(ds.components) == {"Id_1", "Me_1", "VAt_1"}
         assert list(ds.data.columns).count("VAt_1") == 1
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_keep_preserves_multiple_viral(self, use_duckdb: bool) -> None:
         """All viral attributes survive a keep (each has a declared rule)."""
         result = run(
@@ -995,7 +996,7 @@ class TestKeepPreservesViralAttributes:
         assert set(ds.components) == {"Id_1", "Me_1", "VAt_1", "VAt_2"}
         assert ds.components["VAt_2"].role == Role.VIRAL_ATTRIBUTE
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     @pytest.mark.parametrize("join_op", ["inner_join", "left_join", "full_join"])
     def test_keep_in_join_preserves_combined_viral(self, join_op: str, use_duckdb: bool) -> None:
         """A keep inside a join keeps the merged viral attribute, combined by the
@@ -1016,7 +1017,7 @@ class TestKeepPreservesViralAttributes:
         # C+N->C (unary "C"); N+F->N (unary "N")
         assert list(d["VAt_1"]) == ["C", "N"]
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_keep_nonviral_attr_in_join_keeps_viral_with_null(self, use_duckdb: bool) -> None:
         """The reported scenario: keeping a non-viral attribute in a join still
         propagates the viral attribute, and a (null, X) pair resolves via the rule."""
@@ -1094,7 +1095,7 @@ class TestAvgRulePromotesIntegerViral:
     attribute is promoted to Number in the result — mirroring the Avg operator's
     return type; `sum` keeps the input type, mirroring Sum (issue #910)."""
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_avg_binary_promotes_to_number(self, use_duckdb: bool) -> None:
         result = run(
             script=_AVG_RULE + "DS_r <- DS_1 + DS_2;",
@@ -1107,7 +1108,7 @@ class TestAvgRulePromotesIntegerViral:
         d = ds_r.data.sort_values("Id_1").reset_index(drop=True)
         assert list(d["VAt_1"]) == [1.5, 2.5]
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_avg_join_promotes_to_number(self, use_duckdb: bool) -> None:
         # Distinct measure names per operand: a shared non-identifier would be ambiguous.
         ds_2 = {
@@ -1132,7 +1133,7 @@ class TestAvgRulePromotesIntegerViral:
         d = ds_r.data.sort_values("Id_1").reset_index(drop=True)
         assert list(d["VAt_1"]) == [1.5, 2.5]
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_avg_aggregation_promotes_to_number(self, use_duckdb: bool) -> None:
         result = run(
             script=_AVG_RULE + "DS_r <- sum(DS_1 group by Id_1);",
@@ -1146,7 +1147,7 @@ class TestAvgRulePromotesIntegerViral:
         # group Id_1=1 avg(1, 2) = 1.5; group Id_1=2 keeps its lone value 5.
         assert list(d["VAt_1"]) == [1.5, 5.0]
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_avg_analytic_promotes_and_input_untouched(self, use_duckdb: bool) -> None:
         result = run(
             script=_AVG_RULE + "DS_r <- sum(DS_1 over (partition by Id_1)); DS_r2 <- DS_1;",
@@ -1164,7 +1165,7 @@ class TestAvgRulePromotesIntegerViral:
         # must not leak into the input dataset structure (DS_r2 copies DS_1).
         assert result["DS_r2"].components["VAt_1"].data_type == Integer
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_avg_case_promotes_and_input_untouched(self, use_duckdb: bool) -> None:
         result = run(
             script=_AVG_RULE
@@ -1181,7 +1182,7 @@ class TestAvgRulePromotesIntegerViral:
         # Case reuses the first branch dataset's components: no leak into the input.
         assert result["DS_r2"].components["VAt_1"].data_type == Integer
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_sum_binary_stays_integer(self, use_duckdb: bool) -> None:
         result = run(
             script=_SUM_RULE + "DS_r <- DS_1 + DS_2;",

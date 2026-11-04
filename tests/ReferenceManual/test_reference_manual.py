@@ -242,7 +242,9 @@ def test_reference_defined_operators_duckdb(input_datasets, reference_datasets, 
     assert result == reference_datasets
 
 
-@pytest.mark.parametrize("param", params)
+# The tests below run the pandas interpreter, so only in the pandas pass, as the DuckDB
+# tests above only run in the DuckDB pass
+@pytest.mark.parametrize("param", params if not _use_duckdb_backend() else [])
 def test_reference(input_datasets, reference_datasets, ast, param, value_domains):
     warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
@@ -252,7 +254,7 @@ def test_reference(input_datasets, reference_datasets, ast, param, value_domains
     assert result == reference_datasets
 
 
-@pytest.mark.parametrize("param", params)
+@pytest.mark.parametrize("param", params if not _use_duckdb_backend() else [])
 def test_reference_defined_operators(
     input_datasets, reference_datasets, ast_defined_operators, param, value_domains
 ):
@@ -264,7 +266,7 @@ def test_reference_defined_operators(
     assert result == reference_datasets
 
 
-@pytest.mark.parametrize("param", exceptions_tests)
+@pytest.mark.parametrize("param", exceptions_tests if not _use_duckdb_backend() else [])
 def test_reference_exceptions(input_datasets, reference_datasets, ast, param):
     warnings.filterwarnings("ignore", category=FutureWarning)
     input_datasets = load_dataset(*input_datasets, dp_dir=input_dp_dir, param=param)
