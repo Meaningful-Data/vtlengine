@@ -4216,6 +4216,22 @@ class ClauseBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1265(self):
+        """
+        Status: OK
+        Expression: SC_1 <- 5;
+                    DS_r <- DS_1[calc Me_2 := SC_1];
+        Description: The DuckDB engine dropped the table of a persistent Scalar once it
+                     returned it, so a clause of a later statement could not read it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1265
+        Goal: Check Result.
+        """
+        code = "GH_1265"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class DefinedBugs(BugHelper):
     """ """
