@@ -66,11 +66,6 @@ time_operators.remove(100)
 # Remove HR Rules cyclic graph
 validation_operators.remove(159)
 
-# Remove random tests if duckdb
-if _use_duckdb_backend():
-    new_operators.remove(184)
-    new_operators.remove(185)
-
 # Multimeasures on specific operators that must raise errors
 exceptions_tests = [27, 31]
 
