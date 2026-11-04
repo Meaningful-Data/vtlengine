@@ -3467,6 +3467,26 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1251(self):
+        """
+        Expression: DS_r1 <- case when DS_1 > 20 then DS_2 when DS_1 > 10 then DS_3 else DS_1;
+                    DS_r2 <- case when DS_C1 then DS_2 when DS_C2 then DS_3 else DS_1;
+                    DS_r3 <- case when DS_1 > 20 then DS_4 when DS_1 > 10 then DS_3 else DS_2;
+                    DS_r4 <- case when DS_1 > 20 then 1000 when DS_1 > 10 then DS_3 else 0;
+        Description: case on Data Sets returned the Data Point of the last true condition
+            instead of the first (Id_1 3 and 5). The Data Point comes from the operand of
+            the first true condition also when its Measure is null (DS_r1 Id_1 5), and it is
+            left out when that operand does not have it (DS_r3 Id_1 3). A null condition is
+            not true (DS_r2 Id_1 2 and 3), and DS_C2 lists its Data Points in another order.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1251
+        Goal: Check Result.
+        """
+        code = "GH_1251"
+        number_inputs = 6
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """
