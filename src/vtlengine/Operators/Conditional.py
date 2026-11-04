@@ -408,12 +408,9 @@ class Case(Operator):
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(conditions, thenOps, elseOp)
         if isinstance(result, Scalar):
-            # Take the value of the then operand whose condition holds, following the
-            # same order validate uses to take the data type (issue #1008).
-            result.value = elseOp.value
-            for condition, thenOp in zip(conditions, thenOps):
-                if condition.value:
-                    result.value = thenOp.value
+            # Take the value of the same operand validate takes the data type from
+            # (issue #1008).
+            result.value = cls._selected_scalar(conditions, thenOps, elseOp).value
         else:
             operation_level = list({type(c) for c in conditions if not isinstance(c, Scalar)})
             if operation_level[0] == DataComponent:
@@ -424,6 +421,15 @@ class Case(Operator):
             else:
                 cls.dataset_level_evaluation(result, conditions, thenOps, elseOp)
         return result
+
+    @staticmethod
+    def _selected_scalar(conditions: List[Scalar], thenOps: List[Scalar], elseOp: Scalar) -> Scalar:
+        """The then operand of the first true condition, or the else operand if none is
+        (issue #1251)."""
+        return next(
+            (thenOp for condition, thenOp in zip(conditions, thenOps) if condition.value),
+            elseOp,
+        )
 
     @classmethod
     def component_level_evaluation(
@@ -438,7 +444,9 @@ class Case(Operator):
         else:
             result = pd.Series(elseOp.value, index=conditions[0].data.index, dtype=object)
 
-        for i in range(len(conditions)):
+        # The branches are written from the last to the first: where several conditions
+        # are true, the then operand of the first one is the one that stays (issue #1251).
+        for i in reversed(range(len(conditions))):
             case = conditions[i].data[conditions[i].data.fillna(False).astype("bool[pyarrow]")]
             case_result = component_assign(case, thenOps[i])
             result = result.reindex(result.index.union(case.index))
@@ -453,26 +461,26 @@ class Case(Operator):
         ids = result.get_identifiers_names()
         measures = result.get_measures_names()
 
-        else_cond = conditions[0].data[ids].copy()
-        else_cond[COND_COL] = ~pd.concat(
-            [c.data[c.get_measures_names()[0]].fillna(False) for c in conditions],
-            axis=1,
-        ).any(axis=1)
-        result.data = dataset_assign(else_cond[else_cond[COND_COL]], elseOp, ids, measures)
-
-        for i in range(len(conditions)):
-            case = conditions[i].data.rename(
-                columns={conditions[i].get_measures_names()[0]: COND_COL}
-            )
+        # Each data point takes the operand of the first condition that is true on it, or
+        # the else operand when none is (issue #1251): the true data points of a condition
+        # that no earlier condition took are inner joined with its then operand, the data
+        # points no condition took with the else operand, and the result is the union.
+        parts = []
+        taken = pd.MultiIndex.from_frame(conditions[0].data[ids])[:0]
+        for condition, thenOp in zip(conditions, thenOps):
+            case = condition.data.rename(columns={condition.get_measures_names()[0]: COND_COL})
             case = case[ids + [COND_COL]]
-            case_result = dataset_assign(
-                case[case[COND_COL].fillna(False)], thenOps[i], ids, measures
-            )
-            result.data = (
-                case_result.set_index(ids).combine_first(result.data.set_index(ids)).reset_index()
-            )
+            case = case[case[COND_COL].fillna(False)]
+            keys = pd.MultiIndex.from_frame(case[ids])
+            parts.append(dataset_assign(case[~keys.isin(taken)], thenOp, ids, measures))
+            taken = taken.append(keys)
 
-        result.data.drop(columns=COND_COL, inplace=True)
+        else_cond = conditions[0].data[ids].copy()
+        else_cond[COND_COL] = True
+        else_cond = else_cond[~pd.MultiIndex.from_frame(else_cond[ids]).isin(taken)]
+        parts.append(dataset_assign(else_cond, elseOp, ids, measures))
+
+        result.data = pd.concat(parts, ignore_index=True).drop(columns=COND_COL)
         _combine_viral_attributes(result, [*thenOps, elseOp])
 
     @classmethod
@@ -495,12 +503,7 @@ class Case(Operator):
             if list(then_else_types) != [Scalar]:
                 raise SemanticError("1-1-9-16", op=cls.op)
 
-            # The output data type is the data type of the last then operation that has a true
-            # condition, defaulting to the data type of the else operation if no condition is true
-            output_data_type = elseOp.data_type
-            for i in range(len(conditions)):
-                if conditions[i].value:
-                    output_data_type = thenOps[i].data_type
+            output_data_type = cls._selected_scalar(conditions, thenOps, elseOp).data_type
 
             nullable = any(op.nullable or op.data_type == Null for op in ops)
             return Scalar(
