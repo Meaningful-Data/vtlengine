@@ -515,6 +515,24 @@ CREATE OR REPLACE MACRO vtl_text_to_date(x) AS (
     END
 );
 
+-- Date cast to text, as the pandas engine writes it: the date, and its time unless it is
+-- midnight (a Date read from a CSV file is a TIMESTAMP even when the file wrote no time).
+CREATE OR REPLACE MACRO vtl_date_to_text(d TIMESTAMP) AS (
+    CASE WHEN microsecond(d) % 1000000 != 0 THEN STRFTIME(d, '%Y-%m-%d %H:%M:%S.%f')
+         WHEN CAST(d AS DATE) != d THEN STRFTIME(d, '%Y-%m-%d %H:%M:%S')
+         ELSE STRFTIME(d, '%Y-%m-%d')
+    END
+);
+
+-- Duration cast to text: the ISO-8601 duration of the code, as on the pandas engine.
+CREATE OR REPLACE MACRO vtl_duration_to_text(x) AS (
+    CASE x
+        WHEN 'A' THEN 'P1Y' WHEN 'S' THEN 'P6M' WHEN 'Q' THEN 'P3M'
+        WHEN 'M' THEN 'P1M' WHEN 'W' THEN 'P1W' WHEN 'D' THEN 'P1D'
+        ELSE x
+    END
+);
+
 -- Random index computed in the script or read from a Component, which mirrors VTL error
 -- 2-1-15-2 when negative (a literal or a scalar value is checked before any SQL runs).
 CREATE OR REPLACE MACRO vtl_random_index(x) AS (
