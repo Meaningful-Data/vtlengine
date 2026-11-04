@@ -446,12 +446,18 @@ CREATE OR REPLACE MACRO vtl_round_sig(x, digits) AS (
     END
 );
 
--- Modulo that mirrors VTL error 2-1-15-6: raise when the divisor is 0.
--- BIGINT operands keep exact integer semantics, DOUBLE uses fmod like pandas.
+-- Modulo whose remainder takes the sign of the divisor, as in the pandas engine
+-- (mod(5, -2) is -1), and which gives the dividend back for a zero divisor
+-- (mod(9, 0) is 9). DuckDB's % gives the remainder the sign of the dividend,
+-- so a remainder of the sign opposite to the divisor's gets the divisor added,
+-- the same float operations Python's % makes. BIGINT operands keep exact
+-- integer semantics.
 -- (Never put a semicolon inside a comment here: the macro loader splits
 -- statements on that character before stripping comments.)
 CREATE OR REPLACE MACRO vtl_mod(a, b) AS (
-    CASE WHEN b = 0 THEN error('VTL 2-1-15-6 mod: Scalar division by Zero') ELSE a % b END
+    CASE WHEN b = 0 THEN a
+         ELSE a % b + CASE WHEN sign(a % b) = -sign(b) THEN b ELSE 0 END
+    END
 );
 
 -- Power that mirrors VTL error 2-1-15-2: a negative base raised to a

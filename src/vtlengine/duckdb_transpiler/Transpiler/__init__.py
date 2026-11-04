@@ -103,7 +103,7 @@ _VTL_PERIOD_PARSE_LITERAL = re.compile(
 # Left-nested chains of a dataset operation that gives its operands' types back, with
 # at least this many operands, are computed by one grouped query (see
 # SQLTranspiler._build_ds_ds_chain). Each operator maps to the Measure types it folds.
-# Division, mod, power and log keep the joins: they can fail at a data point, which
+# Division, power and log keep the joins: they can fail at a data point, which
 # must raise even when a later operand does not have it, and the grouped
 # query only computes the data points found in every operand.
 _NUMERIC_TYPES = frozenset({Integer, Number})

@@ -95,20 +95,14 @@ class Binary(Operator.Binary):
                 raise RunTimeError("2-1-15-6", op=cls.op, value=y)
             if cls.op == RANDOM:
                 return cls.py_op(x, y)
-            if cls.op in (PLUS, MINUS, MULT):
+            if cls.op in (PLUS, MINUS, MULT, MOD):
                 # Exact integer arithmetic, matching DuckDB BIGINT semantics.
                 return cls.py_op(x, y)
         x = float(x)
         y = float(y)
         if cls.op == DIV and y == 0:
             raise RunTimeError("2-1-15-6", op=cls.op, value=y)
-        if cls.op == MOD:
-            if y == 0:
-                raise RunTimeError("2-1-15-6", op=cls.op, value=y)
-            # fmod keeps the dividend's sign, like DuckDB ``%`` (and the former
-            # Decimal remainder): -5 mod 3 is -2, not Python's 1.
-            result = math.fmod(x, y)
-        elif cls.op == POWER:
+        if cls.op == POWER:
             if x < 0 and not y.is_integer():
                 raise RunTimeError("2-1-15-2", op=cls.op, value=x)
             if x == 0 and y < 0:
@@ -358,7 +352,12 @@ class Modulo(Binary):
     """  # noqa E501
 
     op = MOD
-    py_op = operator.mod
+
+    @classmethod
+    def py_op(cls, x: Any, param: Any) -> Any:
+        # The remainder takes the sign of the divisor, as Python's ``%`` gives it
+        # (mod(5, -2) is -1), and a zero divisor gives the dividend back (mod(9, 0) is 9)
+        return x if param == 0 else x % param
 
 
 class Power(Binary):
