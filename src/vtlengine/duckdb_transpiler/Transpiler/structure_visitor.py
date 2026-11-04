@@ -874,6 +874,8 @@ class StructureVisitor(ASTTemplate):
                 assignment = child.operand
             if isinstance(assignment, AST.Assignment):
                 col = self._resolve_udo_name(self._resolve_name(assignment.left))
+                if getattr(child, "is_implicit_role", False):
+                    calc_role = self._omitted_role(node, input_ds.components.get(col))
                 if col in comps and comps[col].role != calc_role:
                     old = comps[col]
                     nullable = old.nullable if calc_role != Role.IDENTIFIER else False
@@ -890,6 +892,20 @@ class StructureVisitor(ASTTemplate):
                         calc_role != Role.IDENTIFIER,
                     )
         return Dataset(name=input_ds.name, components=comps, data=None)
+
+    @staticmethod
+    def _omitted_role(node: AST.RegularAggregation, comp: Optional[Component]) -> Role:
+        """Role of a Component that a calc or aggr clause computes without naming one: a
+        Measure or an Attribute of the operand keeps its role and any other Component is a
+        Measure, as is every one in the clauses of a join (issue #1252)."""
+        if comp is None or comp.role == Role.IDENTIFIER:
+            return Role.MEASURE
+        dataset = node.dataset
+        while isinstance(dataset, AST.RegularAggregation) and not dataset.isLast:
+            dataset = dataset.dataset
+        if isinstance(dataset, AST.JoinOp) and not dataset.isLast:
+            return Role.MEASURE
+        return comp.role
 
     def _calc_value_type(self, node: AST.AST, source: Dataset) -> Any:
         """Data type of a calc expression, defaulting to ``Number`` when unknown.
@@ -956,7 +972,7 @@ class StructureVisitor(ASTTemplate):
         all_input_ids = {n for n, c in input_ds.components.items() if c.role == Role.IDENTIFIER}
         group_ids: Set[str] = set()
         grouping_op: str = ""
-        measure_names: List[str] = []
+        computed_roles: Dict[str, Role] = {}
 
         for assignment in self._iter_assignments(node.children):
             agg_node = assignment.right
@@ -965,7 +981,10 @@ class StructureVisitor(ASTTemplate):
                 for g in agg_node.grouping:
                     if isinstance(g, (AST.VarID, AST.Identifier)):
                         group_ids.add(self._resolve_udo_name(g.value))
-            measure_names.append(self._resolve_udo_name(self._resolve_name(assignment.left)))
+            name = self._resolve_udo_name(self._resolve_name(assignment.left))
+            computed_roles[name] = getattr(assignment.left, "role", None) or self._omitted_role(
+                node, input_ds.components.get(name)
+            )
 
         if grouping_op == tokens.GROUP_BY:
             kept_ids = group_ids
@@ -979,8 +998,8 @@ class StructureVisitor(ASTTemplate):
             for name, comp in input_ds.components.items()
             if comp.role == Role.IDENTIFIER and name in kept_ids
         }
-        for col_name in measure_names:
-            comps[col_name] = self._make_comp(col_name, Number)
+        for col_name, role in computed_roles.items():
+            comps[col_name] = self._make_comp(col_name, Number, role)
 
         return Dataset(name=input_ds.name, components=comps, data=None)
 

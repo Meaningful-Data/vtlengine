@@ -667,8 +667,21 @@ class InterpreterAnalyzer(ASTTemplate):
                 data_size = 0
             else:
                 data_size = len(self.regular_aggregation_dataset.data)
-            return ROLE_SETTER_MAPPING[node.op].analyze(operand, data_size)
+            role = node.op
+            if getattr(node, "is_implicit_role", False):
+                role = self._omitted_role(operand.name).value.lower()
+            return ROLE_SETTER_MAPPING[role].analyze(operand, data_size)
         return UNARY_MAPPING[node.op].analyze(operand)
+
+    def _omitted_role(self, name: str) -> Role:
+        """Role of a Component that calc or aggr compute without naming one: a Measure or an
+        Attribute of the operand keeps its role and any other Component is a Measure, as is
+        every one in a join (issue #1252)."""
+        dataset = self.regular_aggregation_dataset
+        component = None if dataset is None else dataset.components.get(name)
+        if self.is_from_join or component is None or component.role == Role.IDENTIFIER:
+            return Role.MEASURE
+        return component.role
 
     @staticmethod
     def _apply_time_agg_grouping(
@@ -1293,7 +1306,7 @@ class InterpreterAnalyzer(ASTTemplate):
                         name=operand.name,
                         data=data,
                         data_type=measure.data_type,
-                        role=role if role is not None else measure.role,
+                        role=role if role is not None else self._omitted_role(operand.name),
                         nullable=measure.nullable,
                     )
                 )
