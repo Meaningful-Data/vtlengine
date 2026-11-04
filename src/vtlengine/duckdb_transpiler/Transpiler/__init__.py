@@ -74,6 +74,7 @@ from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_out
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Operators.Analytic import DEFAULT_ANALYTIC_WINDOW
 from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.Operators.Time import Period_indicator
 from vtlengine.Utils._recursion import recursion_headroom
 from vtlengine.ViralPropagation import apply_viral_return_types, get_current_registry
 from vtlengine.ViralPropagation.sql import (
@@ -1670,6 +1671,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def _visit_period_indicator(self, node: AST.UnaryOp) -> str:
         """Visit PERIOD_INDICATOR: extract period indicator from TimePeriod."""
+        operand = node.operand
+        if isinstance(operand, AST.Identifier) and not operand.value and self._current_dataset:
+            # period_indicator() reads the time Identifier of the clause's Data Set (#1247)
+            time_id = Period_indicator._get_time_id(self._current_dataset)
+            return f"vtl_period_parse({quote_name(time_id)}).period_indicator"
         operand_type = self._get_node_type(node.operand)
 
         ds = self._get_dataset_structure(node.operand)

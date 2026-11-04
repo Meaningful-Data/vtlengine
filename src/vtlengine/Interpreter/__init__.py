@@ -106,6 +106,7 @@ from vtlengine.Operators.Time import (
     Current_Date,
     Date_Add,
     Fill_time_series,
+    Period_indicator,
     Time_Aggregation,
 )
 from vtlengine.Operators.Validation import Check, Check_Datapoint, Check_Hierarchy
@@ -644,7 +645,19 @@ class InterpreterAnalyzer(ASTTemplate):
         return BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> None:
-        operand = self.visit(node.operand)
+        operand_node = node.operand
+        if isinstance(operand_node, AST.Identifier) and not operand_node.value:
+            # period_indicator() reads the time Identifier of the clause's Data Set (#1247)
+            if not self.is_from_regular_aggregation or self.regular_aggregation_dataset is None:
+                raise SemanticError("1-3-2-8", op=node.op)
+            operand_node = AST.VarID(
+                value=Period_indicator._get_time_id(self.regular_aggregation_dataset),
+                line_start=operand_node.line_start,
+                column_start=operand_node.column_start,
+                line_stop=operand_node.line_stop,
+                column_stop=operand_node.column_stop,
+            )
+        operand = self.visit(operand_node)
         if (
             node.op in (PLUS, MINUS)
             and isinstance(operand, Scalar)

@@ -911,6 +911,9 @@ class Expr:
             for operand in ctx_list
             if not operand.is_terminal and operand.rule_index == RC.EXPR[0]
         ]
+        if not operand_node:
+            # Only a clause has a Data Set whose time Identifier period_indicator() can read
+            raise SemanticError("1-3-2-8", op=op)
 
         return UnaryOp(op=op, operand=operand_node[0], **extract_token_info(ctx))
 

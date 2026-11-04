@@ -1409,6 +1409,11 @@ centralised_messages = {
         "description": "Raised when eval is used inside a clause, on Components, as it only "
         "applies to Data Sets.",
     },
+    "1-3-2-8": {
+        "message": "At op {op}: the operand can only be omitted inside a clause.",
+        "description": "Raised when period_indicator is written without its operand outside a "
+        "clause, where there is no Data Set whose time_period Identifier it could read.",
+    },
     # ---------- Viral Propagation ----------
     "1-3-3-1": {
         "message": "Duplicate viral propagation rule for variable {name}.",
