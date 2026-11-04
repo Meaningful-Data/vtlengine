@@ -3,6 +3,7 @@
 import pandas as pd
 import pytest
 
+from tests.Helper import engine_params
 from vtlengine import run, semantic_analysis
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Role
@@ -198,7 +199,7 @@ class TestViralAttributeOtherOps:
             "DS_1[aggr Me_3 := max(Me_1) group by Id_1]",
         ],
     )
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
     def test_aggr_clause_preserves_viral_attrs(
         self, expr: str, num_viral: int, use_duckdb: bool
@@ -239,7 +240,7 @@ class TestViralAttributeConditionalOps:
     viral attribute itself combines across branches like a binary operator; with
     an identity rule (each value maps to itself) the per-row value is preserved."""
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
     def test_if_dataset_condition_preserves_viral_attrs(
         self, num_viral: int, use_duckdb: bool
@@ -270,7 +271,7 @@ class TestViralAttributeConditionalOps:
             expected = sorted([VA_VALUES[i][0], VA_VALUES[i][0], VA_VALUES[i][1]])
             assert sorted(result["DS_r"].data[va].tolist()) == expected
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
     def test_count_over_if_dataset_condition(self, num_viral: int, use_duckdb: bool) -> None:
         """count() over an if-then-else result must not crash on viral attrs."""
@@ -296,7 +297,7 @@ class TestViralAttributeConditionalOps:
         for va_name in VA_NAMES[:num_viral]:
             assert va_name in result["DS_r"].data.columns, f"{va_name} missing from result data"
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     @pytest.mark.parametrize("num_viral", [1, 2, 3])
     def test_case_dataset_condition_preserves_viral_attrs(
         self, num_viral: int, use_duckdb: bool
@@ -323,7 +324,7 @@ class TestViralAttributeConditionalOps:
         _assert_viral_attrs(result, num_viral)
         _assert_component_data_parity(result)
 
-    @pytest.mark.parametrize("use_duckdb", [False, True])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     @pytest.mark.parametrize(
         "expr",
         ["nvl(DS_1, DS_2)", "nvl(DS_1, 0.0)"],
@@ -507,9 +508,9 @@ class TestViralAttributeSpecialCases:
         assert list(result["DS_r"].data["VAt_2"]) == ["X", "Y"]
 
 
-# -- Backends exercised by the operator-specific suites below (issue #877) --
+# -- The engine of this pass, for the operator-specific suites below (issue #877) --
 
-BACKENDS = [False, True]
+BACKENDS = engine_params()
 
 
 # -- Unpivot clause --

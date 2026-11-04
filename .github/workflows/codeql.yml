@@ -1,0 +1,64 @@
+name: CodeQL
+
+# The advanced setup of code scanning, in place of the default setup and Code Quality, which ran
+# a job per language and product (six per push) while the account runs 20 jobs at a time. The
+# interpreted languages are analyzed in one job, with the security and the quality queries.
+
+on:
+  pull_request:
+    branches: ["main", "1.9.X"]
+  push:
+    branches: ["main", "1.9.X"]
+  schedule:
+    # Weekly, Mondays 05:00 UTC, on the default branch: new queries meet unchanged code
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (actions, python, javascript-typescript)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write  # to upload the results
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+        with:
+          # Several languages share a job only without a build mode, which takes one language
+          languages: actions, python, javascript-typescript
+          queries: security-extended, security-and-quality
+      - name: Analyze
+        uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+
+  analyze-cpp:
+    # The C++ is the generated ANTLR parser and its pybind11 bindings: analyzed when it reaches
+    # a branch and weekly, not on every pull request.
+    name: Analyze (c-cpp)
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write  # to upload the results
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+        with:
+          languages: c-cpp
+          build-mode: none
+          queries: security-extended, security-and-quality
+      - name: Analyze
+        uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2

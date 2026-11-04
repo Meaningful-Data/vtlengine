@@ -111,24 +111,50 @@ def configure_duckdb_connection(conn: duckdb.DuckDBPyConnection) -> None:
         over all its data points, so an operation failing at a data point that a later filter
         drops still raises its error, as in the pandas engine.
     """
-    max_temp_dir_size = _max_temp_directory_size()
-    statements = [
-        f"SET temp_directory = '{_temp_directory()}'",
-        "SET preserve_insertion_order = false",
-        "SET max_expression_depth TO 10000",
-        "SET enable_object_cache = true",
-        "SET disabled_optimizers = 'cte_filter_pusher'",
-        f"SET threads = {_threads()}",
-    ]
+    _set(conn, _connection_settings())
+    _register_python_functions(conn)
+
+
+# Settings that only an open connection takes: DuckDB 1.4 refuses them in duckdb.connect
+_SESSION_SETTINGS = ("max_expression_depth",)
+
+
+def _connection_settings() -> dict[str, Union[str, int, bool]]:
+    """The settings of a connection (see configure_duckdb_connection), by DuckDB option name."""
+    settings: dict[str, Union[str, int, bool]] = {}
     memory_limit = _duckdb_memory_limit()
     if memory_limit is not None:
-        statements.insert(0, f"SET memory_limit = '{memory_limit}'")
+        settings["memory_limit"] = memory_limit
+    settings.update(
+        temp_directory=_temp_directory(),
+        preserve_insertion_order=False,
+        max_expression_depth=10000,
+        enable_object_cache=True,
+        disabled_optimizers="cte_filter_pusher",
+        threads=_threads(),
+    )
+    max_temp_dir_size = _max_temp_directory_size()
     if max_temp_dir_size:
-        statements.append(f"SET max_temp_directory_size = '{max_temp_dir_size}'")
+        settings["max_temp_directory_size"] = max_temp_dir_size
+    return settings
 
-    conn.execute(";\n".join(statements))
 
-    # Register Python UDFs (regex fallback for patterns RE2 cannot compile, time checks).
+def _set(conn: duckdb.DuckDBPyConnection, settings: dict[str, Union[str, int, bool]]) -> None:
+    conn.execute(
+        ";\n".join(f"SET {name} = {_sql_literal(value)}" for name, value in settings.items())
+    )
+
+
+def _sql_literal(value: Union[str, int, bool]) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int):
+        return str(value)
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _register_python_functions(conn: duckdb.DuckDBPyConnection) -> None:
+    """Register Python UDFs (regex fallback for patterns RE2 cannot compile, time checks)."""
     register_regex_functions(conn)
     register_time_functions(conn)
 
@@ -137,16 +163,23 @@ def create_configured_connection(database: str = ":memory:") -> duckdb.DuckDBPyC
     """
     Create a new DuckDB connection with configured limits.
 
+    The settings are given to duckdb.connect rather than set afterwards: a database opened
+    with the default settings starts one thread per CPU core, which ``SET threads`` then stops.
+
     Args:
         database: Database path or ":memory:" for in-memory
 
     Returns:
         Configured DuckDB connection
     """
+    settings = _connection_settings()
+    session = {name: settings.pop(name) for name in _SESSION_SETTINGS}
     conn = duckdb.connect(
-        database, config={"storage_compatibility_version": STORAGE_COMPATIBILITY_VERSION}
+        database,
+        config={"storage_compatibility_version": STORAGE_COMPATIBILITY_VERSION, **settings},
     )
-    configure_duckdb_connection(conn)
+    _set(conn, session)
+    _register_python_functions(conn)
     return conn
 
 
