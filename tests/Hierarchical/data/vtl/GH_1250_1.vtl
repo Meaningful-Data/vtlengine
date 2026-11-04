@@ -1,0 +1,10 @@
+define hierarchical ruleset HR_1 (variable rule Id_2) is
+    R1: A = B + C;
+    R2: C = D + E;
+    R3: Y < Z
+end hierarchical ruleset;
+
+DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2 always_null dataset all);
+DS_r2 <- hierarchy(DS_1, HR_1 rule Id_2 always_zero dataset all);
+DS_r3 <- check_hierarchy(DS_1, HR_1 rule Id_2 always_null all);
+DS_r4 <- check_hierarchy(DS_1, HR_1 rule Id_2 always_zero all);

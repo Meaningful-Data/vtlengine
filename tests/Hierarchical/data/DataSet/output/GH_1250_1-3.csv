@@ -1,0 +1,13 @@
+Id_1,Id_2,ruleid,bool_var,errorcode,errorlevel,imbalance
+1,A,R1,,,,
+1,C,R2,,,,
+1,Y,R3,,,,
+2,A,R1,,,,
+2,C,R2,,,,
+2,Y,R3,,,,
+3,A,R1,,,,
+3,C,R2,,,,
+3,Y,R3,,,,
+4,A,R1,,,,
+4,C,R2,,,,
+4,Y,R3,,,,
