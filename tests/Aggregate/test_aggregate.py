@@ -1525,7 +1525,12 @@ class AggregateOperatorsTest(TestAggregateHelper):
         """
         code = "GH_1203_1"
         number_inputs = 1
-        cases = [("true", "1-1-2-4"), ("Me_1 > 2", "1-1-2-4"), ("sum(Me_1)", "1-1-2-3")]
+        cases = [
+            ("true", "1-1-2-4"),
+            ("Me_1 > 2", "1-1-2-4"),
+            ("sum(Me_1)", "1-1-2-3"),
+            ("case when sum(Me_1) > 5 then 1 else 0", "1-1-2-3"),
+        ]
 
         for condition, exception_code in cases:
             with self.subTest(condition=condition):
@@ -1535,3 +1540,17 @@ class AggregateOperatorsTest(TestAggregateHelper):
                     exception_code=exception_code,
                     text=f"DS_r <- DS_1[aggr Me_2 := sum(Me_1) group by Id_1 having {condition}];",
                 )
+
+    def test_GH_1203_4(self):
+        """
+        Description: The having condition accepts if-then-else and case whose branches are
+                     all Scalars, as the condition invokes aggregate operators and so is
+                     evaluated for each group.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1203
+        Goal: Check Result.
+        """
+        code = "GH_1203_4"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
