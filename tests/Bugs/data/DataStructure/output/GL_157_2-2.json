@@ -34,18 +34,6 @@
           "nullable": false
         },
         {
-          "name": "NEVS_DFLT_STTS",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "NEVS_DT_DFLT_STTS",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
-        },
-        {
           "name": "OBSRVD_AGNT_CD",
           "role": "Identifier",
           "type": "String",
@@ -56,12 +44,6 @@
           "role": "Identifier",
           "type": "Date",
           "nullable": false
-        },
-        {
-          "name": "NEVS_PD",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
         },
         {
           "name": "PD",

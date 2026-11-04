@@ -406,9 +406,11 @@ class JoinOperatorsTest(TestAttributesHelper):
         """
         code = "2-4-1-1"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        # A non-viral Attribute is not in the virtual Data Set of the join (issue #1258)
+        message = "1-1-1-10"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_2(self):
         """
@@ -427,9 +429,11 @@ class JoinOperatorsTest(TestAttributesHelper):
         """
         code = "2-4-1-2"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        # A non-viral Attribute is not in the virtual Data Set of the join (issue #1258)
+        message = "1-1-1-10"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_3(self):
         """
@@ -448,9 +452,11 @@ class JoinOperatorsTest(TestAttributesHelper):
         """
         code = "2-4-1-3"
         number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        # A non-viral Attribute is not in the virtual Data Set of the join (issue #1258)
+        message = "1-1-1-10"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_4(self):
         """
@@ -1695,9 +1701,11 @@ class JoinOperatorsTest(TestAttributesHelper):
         """
         code = "2-4-1-58"
         number_inputs = 2
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        # A non-viral Attribute is not in the virtual Data Set of the join (issue #1258)
+        message = "1-1-6-9"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_59(self):
         """
@@ -1723,9 +1731,11 @@ class JoinOperatorsTest(TestAttributesHelper):
         """
         code = "2-4-1-59"
         number_inputs = 2
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        # A non-viral Attribute is not in the virtual Data Set of the join (issue #1258)
+        message = "1-1-6-9"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_60(self):
         """
@@ -1777,9 +1787,11 @@ class JoinOperatorsTest(TestAttributesHelper):
         """
         code = "2-4-1-61"
         number_inputs = 2
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        # A non-viral Attribute is not in the virtual Data Set of the join (issue #1258)
+        message = "1-1-1-10"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_62(self):
         """
@@ -1916,9 +1928,11 @@ class JoinOperatorsTest(TestAttributesHelper):
         """
         code = "2-4-1-67"
         number_inputs = 2
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        # A non-viral Attribute is not in the virtual Data Set of the join (issue #1258)
+        message = "1-1-1-10"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     def test_68(self):
         """
@@ -1938,9 +1952,11 @@ class JoinOperatorsTest(TestAttributesHelper):
         """
         code = "2-4-1-68"
         number_inputs = 2
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        # A non-viral Attribute is not in the virtual Data Set of the join (issue #1258)
+        message = "1-1-1-10"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
 
 class StringOperatorsTest(TestAttributesHelper):

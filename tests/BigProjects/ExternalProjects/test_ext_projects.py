@@ -97,10 +97,10 @@ class AnaMart(ExternalProjectsHelper):
         #     vd_names=vd_names,
         #     sql_names=sql_names
         # )
-        # Attributes are maintained through a join, so the join in the mart that
-        # references an input attribute finds it and fails on the using clause with
-        # 1-1-13-4 (using does not define all Identifiers of the non-reference Dataset).
-        exception_code = "1-1-13-4"
+        # A join leaves out the non-viral Attributes of its operands (issue #1258), so
+        # the mart that later drops NEVS_JNT_LBLTY_AMNT, an Attribute of the joined
+        # A07.ENTTY_INSTRMNT_JN_LBLTS, does not find it.
+        exception_code = "1-1-1-10"
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
