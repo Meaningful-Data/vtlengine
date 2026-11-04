@@ -123,7 +123,7 @@ jobs:
     # The tests on Ubuntu with Python 3.12, recording their coverage, one backend per job.
     # The sys.monitoring core (Python 3.12+) records it at no visible cost; the default
     # tracer slowed the DuckDB pass by a fifth.
-    name: coverage (${{ matrix.backend }})
+    name: coverage (ubuntu-latest, 3.12, ${{ matrix.backend }})
     runs-on: ubuntu-latest
 
     strategy:
