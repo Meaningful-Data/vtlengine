@@ -1591,23 +1591,33 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
 
     def test_GH_1276_1(self):
         """
-        Count, lag and avg: count, lag, avg
+        Computed Data Set operands: count, lag, avg, =, user defined operator, union, case, if
         Dataset --> Dataset
         Status: OK
         Expression: DS_r1 <- count ( DS_1 over ( partition by Id_1 order by Id_2 ) ) + 1;
                     DS_r2 <- abs ( lag ( DS_1 , 1 over ( partition by Id_1 order by Id_2 ) ) );
                     DS_r3 <- DS_1 + avg ( DS_1 over ( partition by Id_1 order by Id_2 ) );
+                    DS_r4 <- DS_1 = abs ( DS_1 );
+                    DS_r5 <- to_abs ( DS_1 ) + 1;
+                    DS_r6 <- sum ( union ( DS_1 + DS_1 , DS_1 + DS_1 ) group by Id_1 );
+                    DS_r7 <- abs ( case when DS_1 > 0 then DS_1 else DS_1 * -1 );
+                    DS_r8 <- abs ( if DS_1 > 0 then DS_1 * 2 else DS_1 * -1 );
+                    DS_r9 <- if DS_1 [ filter Me_1 > 0 or isnull ( Me_1 ) ] > 0
+                        then DS_1 [ filter Me_1 > 0 or isnull ( Me_1 ) ] else DS_1;
 
-        Description: an analytic invocation on a Data Set is the operand of another
-        operator. The DuckDB engine wrote the query of the analytic inside the expression
-        of the outer operator and failed with a ParserException, while the pandas engine
-        gave these results. count gives its int_var Measure and avg a Number.
+        Description: a computed Data Set is the operand of another operator. On the DuckDB
+        engine, an analytic (DS_r1 to DS_r3) and a user defined operator call (DS_r5) were
+        written inline in the outer expression; the operand of a comparison (DS_r4) took the
+        name bool_var of the result; a union (DS_r6) took the columns of the result and
+        failed on computed operands; a case (DS_r7) and an if (DS_r8) took the bool_var of
+        their condition. On the pandas engine, an if whose operands are clauses (DS_r9) lost
+        the Data Points of its true branch.
 
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
         Goal: Check Result.
         """
         code = "GH_1276_1"
         number_inputs = 1
-        references_names = ["1", "2", "3"]
+        references_names = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

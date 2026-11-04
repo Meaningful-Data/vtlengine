@@ -671,6 +671,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return False
         return True
 
+    def _get_dataset_sql(self, node: Optional[AST.AST]) -> str:
+        """Get the SQL FROM source for a dataset node, built without the result of the statement:
+        its names and columns are the operand's own, not the outer operator's (issue #1276)."""
+        with self._stash_assignment():
+            return super()._get_dataset_sql(node)
+
     def _as_subquery(self, src: str) -> str:
         """Wrap *src* as a parenthesized subquery, adding ``SELECT *`` if needed."""
         stripped = src.strip().upper()
@@ -1182,10 +1188,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         op: str,
     ) -> _PairwiseJoin:
         """Work out the columns and the join of a dataset-dataset binary operation."""
-        left_ds = self._get_dataset_structure(left_node)
-        right_ds = self._get_dataset_structure(right_node)
         output_ds = self._get_output_dataset()
-
+        # Resolved without the result too, as _get_dataset_sql builds the operands, so that
+        # each structure is looked up once
+        with self._stash_assignment():
+            left_ds = self._get_dataset_structure(left_node)
+            right_ds = self._get_dataset_structure(right_node)
         left_src = self._get_dataset_sql(left_node)
         right_src = self._get_dataset_sql(right_node)
 
@@ -3522,16 +3530,19 @@ FROM (
 
                 id_names = order_ds.get_identifiers_names()
                 if id_names:
-                    inner_sql = registry.sql(op, *ordered_sqls)
+                    # Match pandas drop_duplicates(keep="first"): QUALIFY keeps the data point of
+                    # the first operand that has it, the identifiers being unique in an operand.
+                    # Each branch carries its position, as ROW_NUMBER() OVER () on the UNION ALL
+                    # of computed operands fails to bind on DuckDB 1.5 (issue #1276).
+                    tagged_sqls = [
+                        f"SELECT {ordered_cols}, {k} AS _union_pos FROM ({sql}) AS _ord"
+                        for k, sql in enumerate(child_sqls)
+                    ]
+                    inner_sql = registry.sql(op, *tagged_sqls)
                     id_cols = ", ".join(quote_name(i) for i in id_names)
-                    # Preserve UNION ALL row order to match pandas drop_duplicates(keep="first").
-                    # QUALIFY keeps the first occurrence per identifier group by insertion order.
                     return (
-                        f"SELECT {ordered_cols} FROM ("
-                        f"SELECT *, ROW_NUMBER() OVER () AS _rn "
-                        f"FROM ({inner_sql}) AS _union_inner"
-                        f") AS _union_t "
-                        f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {id_cols} ORDER BY _rn) = 1"
+                        f"SELECT {ordered_cols} FROM ({inner_sql}) AS _union_t QUALIFY "
+                        f"ROW_NUMBER() OVER (PARTITION BY {id_cols} ORDER BY _union_pos) = 1"
                     )
                 return registry.sql(op, *ordered_sqls)
             return registry.sql(op, *child_sqls)
@@ -3659,7 +3670,8 @@ FROM (
         elif e_type == _DATASET and _is_plain_dataset(node.elseOp):
             ref_ds = self._get_dataset_structure(node.elseOp)
         if ref_ds is None:
-            ref_ds = self._get_output_dataset() or source_ds
+            # As an operand, the if has its own structure and not the result's (issue #1276)
+            ref_ds = self._get_output_dataset() or self._get_dataset_structure(node) or source_ds
         output_measures = list(ref_ds.get_measures_names())
         output_attributes = list(ref_ds.get_attributes_names())
         output_viral = list(ref_ds.get_viral_attributes_names())
@@ -3784,7 +3796,8 @@ FROM (
         source_ids = list(source_ds.get_identifiers_names())
         alias_src = "src"
 
-        output_ds = self._get_output_dataset() or source_ds
+        # As an operand, the case has its own structure and not the result's (issue #1276)
+        output_ds = self._get_output_dataset() or self._get_dataset_structure(node) or source_ds
         output_measures = output_ds.get_measures_names()
         output_viral = output_ds.get_viral_attributes_names()
         builder = SQLBuilder().from_table(source_sql, alias_src)

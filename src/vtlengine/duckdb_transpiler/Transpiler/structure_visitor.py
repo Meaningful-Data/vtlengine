@@ -280,7 +280,13 @@ class StructureVisitor(ASTTemplate):
         elif isinstance(node, AST.Case):
             children = [c.thenOp for c in node.cases]
         elif isinstance(node, AST.UDOCall) and node.op in self._udos:
-            children = [self._udos[node.op]["expression"]]
+            # The body is typed with the arguments of the call bound (issue #1276)
+            udo_def = self._udos[node.op]
+            self._push_udo_params(self._build_udo_bindings(udo_def, node.params))
+            try:
+                return self._get_node_type(udo_def["expression"])
+            finally:
+                self._pop_udo_params()
         else:
             return _SCALAR
         return self._get_op_type(children)
