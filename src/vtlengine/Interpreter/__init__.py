@@ -705,45 +705,45 @@ class InterpreterAnalyzer(ASTTemplate):
         data = operand.data[list(components)].copy() if operand.data is not None else None
         return Dataset(name=operand.name, components=components, data=data)
 
+    @staticmethod
+    def _component_aggregation_operand(operand: Dataset, op_comp: DataComponent) -> Dataset:
+        """Builds the Data Set an aggregation of one Component reads: the Identifiers and
+        viral Attributes of the operand, with that Component as its only Measure."""
+        comps_to_keep = {
+            comp_name: copy(comp)
+            for comp_name, comp in operand.components.items()
+            if comp.role in (Role.IDENTIFIER, Role.VIRAL_ATTRIBUTE)
+        }
+        agg_name = op_comp.name
+        if op_comp.role == Role.IDENTIFIER:
+            agg_name = f"__agg_{op_comp.name}__"
+        comps_to_keep[agg_name] = Component(
+            name=agg_name,
+            data_type=op_comp.data_type,
+            role=Role.MEASURE,
+            nullable=op_comp.nullable,
+        )
+        if operand.data is not None:
+            cols_to_keep = operand.get_identifiers_names() + operand.get_viral_attributes_names()
+            data_to_keep = operand.data[cols_to_keep].copy()
+            data_to_keep[agg_name] = op_comp.data
+        else:
+            data_to_keep = None
+        return Dataset(name=operand.name, components=comps_to_keep, data=data_to_keep)
+
     def _resolve_aggregation_operand(self, node: AST.Aggregation) -> Any:
         """Resolve the operand for an aggregation node."""
         if self.is_from_having:
-            if node.operand is not None:
-                self.visit(node.operand)
-            return self._data_point_count_operand(node, self.aggregation_dataset)
+            operand = self.aggregation_dataset
+            if node.operand is not None and operand is not None:
+                return self._component_aggregation_operand(operand, self.visit(node.operand))
+            return self._data_point_count_operand(node, operand)
         if self.is_from_regular_aggregation and self.regular_aggregation_dataset is not None:
-            # calc and filter are evaluated for each Data Point, so an aggregation has no
-            # grouping context there however deeply it is nested in the expression.
             if self.regular_aggregation_op in (CALC, FILTER):
                 raise SemanticError("1-2-14", op=self.regular_aggregation_op)
             operand = self.regular_aggregation_dataset
             if node.operand is not None and operand is not None:
-                op_comp: DataComponent = self.visit(node.operand)
-                comps_to_keep = {}
-                for (
-                    comp_name,
-                    comp,
-                ) in self.regular_aggregation_dataset.components.items():
-                    if comp.role in (Role.IDENTIFIER, Role.VIRAL_ATTRIBUTE):
-                        comps_to_keep[comp_name] = copy(comp)
-                agg_name = op_comp.name
-                if op_comp.role == Role.IDENTIFIER:
-                    agg_name = f"__agg_{op_comp.name}__"
-                comps_to_keep[agg_name] = Component(
-                    name=agg_name,
-                    data_type=op_comp.data_type,
-                    role=Role.MEASURE,
-                    nullable=op_comp.nullable,
-                )
-                if operand.data is not None:
-                    cols_to_keep = (
-                        operand.get_identifiers_names() + operand.get_viral_attributes_names()
-                    )
-                    data_to_keep = operand.data[cols_to_keep].copy()
-                    data_to_keep[agg_name] = op_comp.data
-                else:
-                    data_to_keep = None
-                return Dataset(name=operand.name, components=comps_to_keep, data=data_to_keep)
+                return self._component_aggregation_operand(operand, self.visit(node.operand))
             return self._data_point_count_operand(node, operand)
         return self.visit(node.operand)
 
@@ -782,20 +782,22 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.aggregation_dataset = Dataset(
                     name=operand.name,
                     components=deepcopy(operand.components),
-                    data=pd.DataFrame(columns=operand.get_components_names()),
+                    data=(
+                        pd.DataFrame(columns=operand.get_components_names())
+                        if operand.data is None
+                        else operand.data.copy()
+                    ),
                 )
                 self.aggregation_grouping = extract_grouping_identifiers(
                     operand.get_identifiers_names(), node.grouping_op, groupings
                 )
                 self.is_from_having = True
-                # Empty data analysis on having - we do not care about the result
-                self.visit(node.having_clause)
-                # Reset to default values
-                self.is_from_having = False
-                self.aggregation_grouping = None
-                self.aggregation_dataset = None
-                having = getattr(node.having_clause, "expr", "")
-                having = self._format_having_expression_udo(having)
+                try:
+                    having = self.visit(node.having_clause)
+                finally:
+                    self.is_from_having = False
+                    self.aggregation_grouping = None
+                    self.aggregation_dataset = None
 
         elif self.is_from_having:
             groupings = self.aggregation_grouping
@@ -806,25 +808,6 @@ class InterpreterAnalyzer(ASTTemplate):
         if not self.is_from_regular_aggregation:
             result.name = VirtualCounter._new_ds_name()
         return result
-
-    def _format_having_expression_udo(self, having: str) -> str:
-        if self.udo_params is None:
-            return having
-        for k, v in self.udo_params[-1].items():
-            old_param = None
-            if f"{k} " in having:
-                old_param = f"{k} "
-            elif f" {k}" in having:
-                old_param = f" {k}"
-            if old_param is not None:
-                if isinstance(v, str):
-                    new_param = f" {v}"
-                elif isinstance(v, (Dataset, Scalar)):
-                    new_param = f" {v.name}"
-                else:
-                    new_param = f" {v.value}"
-                having = having.replace(old_param, new_param)
-        return having
 
     def visit_Analytic(self, node: AST.Analytic) -> Any:  # noqa: C901
         if self.is_from_having:
@@ -1390,7 +1373,7 @@ class InterpreterAnalyzer(ASTTemplate):
         elseOp = self.visit(node.elseOp)
         self.condition_stack.pop()
 
-        return If.analyze(condition, thenOp, elseOp)
+        return If.analyze(condition, thenOp, elseOp, self.is_from_having)
 
     def visit_Case(self, node: AST.Case) -> Any:
         conditions: List[Any] = []
@@ -1399,6 +1382,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         if self.condition_stack is None:
             self.condition_stack = []
+        depth = len(self.condition_stack)
 
         for case in node.cases:
             conditions.append(self.visit(case.condition))
@@ -1412,11 +1396,18 @@ class InterpreterAnalyzer(ASTTemplate):
             thenOps.append(self.visit(case.thenOp))
             self.condition_stack.pop()
 
-        self.condition_stack.append(else_ds)
-        elseOp = self.visit(node.elseOp)
-        self.condition_stack.pop()
+            if isinstance(conditions[-1], DataComponent):
+                # case returns the then operand of the first true condition (issue #1251). At
+                # Component level, as in a chain of if-then-else, the later conditions, their
+                # then operands and the else operand only see the data points this one leaves.
+                self.condition_stack.append(else_ds)
 
-        return Case.analyze(conditions, thenOps, elseOp)
+        if len(self.condition_stack) == depth:
+            self.condition_stack.append(else_ds)
+        elseOp = self.visit(node.elseOp)
+        del self.condition_stack[depth:]
+
+        return Case.analyze(conditions, thenOps, elseOp, self.is_from_having)
 
     def generate_then_else_datasets(
         self,
@@ -1556,7 +1547,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_ParamConstant(self, node: AST.ParamConstant) -> str:
         return node.value
 
-    def visit_ParamOp(self, node: AST.ParamOp) -> None:  # noqa: C901
+    def visit_ParamOp(self, node: AST.ParamOp) -> Any:  # noqa: C901
         if node.op == ROUND:
             op_element = self.visit(node.children[0])
             param_element = self.visit(node.params[0]) if len(node.params) != 0 else None
@@ -1598,8 +1589,6 @@ class InterpreterAnalyzer(ASTTemplate):
                             comp_name=id_name,
                             dataset_name=self.aggregation_dataset.name,
                         )
-                if len(self.aggregation_dataset.get_measures()) != 1:
-                    raise SemanticError("1-1-1-4", op=node.op)
                 # Deepcopy is necessary for components to avoid changing the original dataset
                 self.aggregation_dataset.components = {
                     comp_name: deepcopy(comp)
@@ -1618,10 +1607,13 @@ class InterpreterAnalyzer(ASTTemplate):
                     else None
                 )
             result = self.visit(node.params)
-            measure = result.get_measures()[0]
-            if measure.data_type != Boolean:
-                raise SemanticError("1-1-2-3", type=SCALAR_TYPES_CLASS_REVERSE[Boolean])
-            return None
+            if not isinstance(result, Dataset):
+                raise SemanticError("1-1-2-4")
+            measures = result.get_measures()
+            if len(measures) != 1 or measures[0].data_type != Boolean:
+                found = [SCALAR_TYPES_CLASS_REVERSE[measure.data_type] for measure in measures]
+                raise SemanticError("1-1-2-3", type=", ".join(found))
+            return result
         elif node.op == FILL_TIME_SERIES:
             mode = self.visit(node.params[0]) if len(node.params) == 1 else "all"
             return Fill_time_series.analyze(self.visit(node.children[0]), mode)
