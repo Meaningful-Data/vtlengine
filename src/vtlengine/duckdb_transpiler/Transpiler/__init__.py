@@ -3709,9 +3709,9 @@ FROM (
         cases: List[Any],
         else_op: AST.AST,
     ) -> str:
-        """Build a scalar CASE WHEN SQL with reversed order (VTL last-match-wins)."""
+        """Build a scalar CASE WHEN SQL, keeping the order of the VTL WHEN branches."""
         parts = ["CASE"]
-        for case_obj in reversed(cases):
+        for case_obj in cases:
             cond_sql = self.visit(case_obj.condition)
             then_sql = self.visit(case_obj.thenOp)
             parts.append(f"WHEN {cond_sql} THEN {then_sql}")
@@ -3721,9 +3721,8 @@ FROM (
     def visit_Case(self, node: AST.Case) -> str:
         """Visit CASE expression.
 
-        VTL CASE uses last-match-wins semantics (later conditions override earlier
-        ones), while SQL CASE uses first-match-wins.  We reverse the WHEN order so
-        the SQL engine evaluates conditions with the same priority as VTL.
+        VTL CASE returns the THEN operand of the first condition that is true, as SQL
+        CASE does, so the WHEN branches keep their order (issue #1251).
 
         For dataset-level CASE (where conditions are boolean datasets), we build
         JOINs similar to ``_build_dataset_if``.
@@ -3810,7 +3809,7 @@ FROM (
         cols: List[str] = [f"{alias_src}.{quote_name(id_)}" for id_ in source_ids]
         for measure in output_measures:
             case_parts = ["CASE"]
-            for i in reversed(range(len(node.cases))):
+            for i in range(len(node.cases)):
                 then_ref = (
                     f"{then_aliases[i]}.{quote_name(measure)}"
                     if then_types[i] == _DATASET
@@ -3844,25 +3843,24 @@ FROM (
 
         builder.select(*cols)
 
-        # Filter: only keep rows where the selected branch has a matching row.
+        # Filter: only keep rows where the selected branch (the one of the first true
+        # condition, or the else one when none is true) has a matching row (issue #1251).
         # Scalar/null branches always match; dataset branches need a LEFT JOIN hit.
         has_ds_branch = any(t == _DATASET for t in then_types) or e_type == _DATASET
         if has_ds_branch:
             id_col = quote_name(source_ids[0])
-            filter_parts: List[str] = []
+            filter_parts = ["CASE"]
             for i in range(len(node.cases)):
                 if then_types[i] == _DATASET:
                     match_check = f"{then_aliases[i]}.{id_col} IS NOT NULL"
                 else:
                     match_check = "TRUE"
-                filter_parts.append(f"({cond_exprs[i]} AND {match_check})")
-            # Else branch: applies when no condition is true
-            neg = " AND ".join(f"(NOT {c} OR {c} IS NULL)" for c in cond_exprs)
+                filter_parts.append(f"WHEN {cond_exprs[i]} THEN {match_check}")
             if e_type == _DATASET:
-                filter_parts.append(f"(({neg}) AND {e_alias}.{id_col} IS NOT NULL)")
+                filter_parts.append(f"ELSE {e_alias}.{id_col} IS NOT NULL END")
             else:
-                filter_parts.append(f"({neg})")
-            builder.where(" OR ".join(filter_parts))
+                filter_parts.append("ELSE TRUE END")
+            builder.where(" ".join(filter_parts))
 
         return builder.build()
 
