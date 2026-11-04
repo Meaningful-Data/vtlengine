@@ -27,6 +27,7 @@ from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.Utils import ANALYTIC_MAPPING
 
 
 def _try_normalize_time_period(value: str) -> Optional[str]:
@@ -256,9 +257,10 @@ class StructureVisitor(ASTTemplate):
 
     def _resolve_node_type(self, node: AST.AST) -> str:  # noqa: C901
         """Work out the operand type of a node."""
-        if isinstance(node, (AST.Analytic, AST.Identifier)) or (
-            isinstance(node, AST.BinOp) and self._in_clause
-        ):
+        if isinstance(node, AST.Analytic):
+            # An analytic on a Data Set gives a Data Set (issue #1276)
+            return _DATASET if node.operand and self._is_dataset(node.operand) else _COMPONENT
+        elif isinstance(node, AST.Identifier) or (isinstance(node, AST.BinOp) and self._in_clause):
             return _COMPONENT
         elif isinstance(
             node,
@@ -480,6 +482,8 @@ class StructureVisitor(ASTTemplate):
             return self._resolve_paramop_structure(node)
         if isinstance(node, AST.Aggregation) and node.operand:
             return self._build_aggregation_structure(node)
+        if isinstance(node, AST.Analytic) and node.operand:
+            return self._build_analytic_structure(node)
         if isinstance(node, AST.JoinOp):
             return self._build_join_structure(node)
         if isinstance(node, AST.UDOCall):
@@ -679,6 +683,23 @@ class StructureVisitor(ASTTemplate):
         for name, comp in ds.components.items():
             if comp.role == Role.VIRAL_ATTRIBUTE:
                 comps[name] = comp
+        return Dataset(name=ds.name, components=comps, data=None)
+
+    def _build_analytic_structure(self, node: AST.Analytic) -> Optional[Dataset]:
+        """Resolve an analytic on a Data Set to the structure of its query: the identifiers,
+        the Measures (``int_var`` for count) and the viral attributes (issue #1276)."""
+        ds = self._without_attributes(self._get_dataset_structure(node.operand))
+        if ds is not None and node.op == tokens.COUNT:
+            return self._build_integer_result_structure(ds)
+        # avg, median, ratio_to_report, the deviations and the variances give Number Measures
+        if ds is None or ANALYTIC_MAPPING[node.op].return_type is not Number:
+            return ds
+        comps = {
+            name: self._make_comp(name, Number, comp.role, comp.nullable)
+            if comp.role == Role.MEASURE
+            else comp
+            for name, comp in ds.components.items()
+        }
         return Dataset(name=ds.name, components=comps, data=None)
 
     def _build_udo_bindings(
