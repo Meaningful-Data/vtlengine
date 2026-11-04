@@ -72,7 +72,6 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
-from vtlengine.Operators.Analytic import DEFAULT_ANALYTIC_WINDOW
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.Operators.Time import Period_indicator
 from vtlengine.Utils._recursion import recursion_headroom
@@ -899,7 +898,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     or name in self.input_datasets[ds.name].get_measures_names()
                 ):
                     out_name = output_measures[0]
-                cols.append(f"{expr} AS {quote_name(out_name)}")
+                column = f"{expr} AS {quote_name(out_name)}"
+                # An expression on all the Measures at once, as the analytic count, gives
+                # the same column for each of them, which is selected once (issue #1249)
+                if column not in cols:
+                    cols.append(column)
             elif comp.role == Role.VIRAL_ATTRIBUTE:
                 if viral_expr_fn is not None:
                     cols.append(f"{viral_expr_fn(name, comp)} AS {quote_name(name)}")
@@ -3224,8 +3227,8 @@ FROM (
                 order_is_date = comp is not None and comp.data_type == Date
             window_sql = self.visit_Windowing(node.window, order_is_date=order_is_date)
             over_parts.append(window_sql)
-        else:
-            over_parts.append(DEFAULT_ANALYTIC_WINDOW)
+        # With no window clause, the default frame of SQL is the default window of VTL 2.2
+        # (issue #1249)
         return " ".join(over_parts)
 
     def _resolve_partition_cols(self, node: AST.Analytic) -> List[str]:
@@ -3321,6 +3324,13 @@ FROM (
         over_clause = self._build_over_clause(node)
 
         def _analytic_expr(col_ref: str) -> str:
+            if op == tokens.COUNT:
+                # count gives the number of Data Points of the window as the single Measure
+                # int_var. A Data Point whose Measures are all null is not counted, as in the
+                # Aggregate invocation (issue #1049)
+                measures = self._get_dataset_structure(node.operand).get_measures_names()
+                any_non_null = " OR ".join(f"{quote_name(m)} IS NOT NULL" for m in measures)
+                col_ref = f"CASE WHEN {any_non_null} THEN 1 END"
             func_sql = self._build_analytic_expr(op, col_ref, node)
             if op == tokens.RATIO_TO_REPORT:
                 return func_sql

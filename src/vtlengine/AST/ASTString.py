@@ -887,14 +887,6 @@ class ASTString(ASTTemplate):
         return f"{{{sep.join([self.visit(x) for x in node.children])}}}"
 
     def visit_Windowing(self, node: AST.Windowing) -> str:
-        if (
-            node.type_ == "data"
-            and node.start == -1
-            and node.start_mode == "preceding"
-            and node.stop == 0
-            and node.stop_mode == "current"
-        ):
-            return ""
         if node.start == -1:
             start = f"unbounded {node.start_mode}"
         elif node.start_mode == "current":
