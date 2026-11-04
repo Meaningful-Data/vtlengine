@@ -446,12 +446,18 @@ CREATE OR REPLACE MACRO vtl_round_sig(x, digits) AS (
     END
 );
 
--- Modulo that mirrors VTL error 2-1-15-6: raise when the divisor is 0.
--- BIGINT operands keep exact integer semantics, DOUBLE uses fmod like pandas.
+-- Modulo whose remainder takes the sign of the divisor, as in the pandas engine
+-- (mod(5, -2) is -1), and which gives the dividend back for a zero divisor
+-- (mod(9, 0) is 9). DuckDB's % gives the remainder the sign of the dividend,
+-- so a remainder of the sign opposite to the divisor's gets the divisor added,
+-- the same float operations Python's % makes. BIGINT operands keep exact
+-- integer semantics.
 -- (Never put a semicolon inside a comment here: the macro loader splits
 -- statements on that character before stripping comments.)
 CREATE OR REPLACE MACRO vtl_mod(a, b) AS (
-    CASE WHEN b = 0 THEN error('VTL 2-1-15-6 mod: Scalar division by Zero') ELSE a % b END
+    CASE WHEN b = 0 THEN a
+         ELSE a % b + CASE WHEN sign(a % b) = -sign(b) THEN b ELSE 0 END
+    END
 );
 
 -- Power that mirrors VTL error 2-1-15-2: a negative base raised to a
@@ -643,12 +649,32 @@ CREATE OR REPLACE MACRO vtl_hamming(s1 VARCHAR, s2 VARCHAR) AS (
     END
 );
 
--- Jaro–Winkler similarity in [0, 1] (1.0 == identical), matches the spec example
--- "a value between 0 and 1" and the GeeksforGeeks reference cited in issue #742.
+-- Length of the common prefix of s1 and s2, capped at the 4 characters Winkler's
+-- bonus counts. Equal strings shorter than 4 characters pass the first test too,
+-- hence least().
+CREATE OR REPLACE MACRO vtl_winkler_prefix(s1 VARCHAR, s2 VARCHAR) AS (
+    CASE
+        WHEN left(s1, 4) = left(s2, 4) THEN least(length(s1), 4)
+        WHEN left(s1, 3) = left(s2, 3) THEN 3
+        WHEN left(s1, 2) = left(s2, 2) THEN 2
+        WHEN left(s1, 1) = left(s2, 1) THEN 1
+        ELSE 0
+    END
+);
+
+-- Jaro–Winkler distance in [0, 1] (0.0 == identical): 1 minus the Jaro–Winkler
+-- similarity, as defined on the Wikipedia page the VTL 2.2 manual links to. The
+-- prefix bonus (scaling factor 0.1) applies at any Jaro similarity, like the pandas
+-- engine, whereas jaro_winkler_similarity only adds it above Winkler's 0.7 boost
+-- threshold. The DOUBLE cast keeps 0.1 out of DECIMAL arithmetic, so the result
+-- matches the pandas engine bit for bit.
 CREATE OR REPLACE MACRO vtl_jaro_winkler(s1 VARCHAR, s2 VARCHAR) AS (
     CASE
         WHEN s1 IS NULL OR s2 IS NULL THEN NULL
-        WHEN s1 = s2 THEN 1.0
-        ELSE jaro_winkler_similarity(s1, s2)
+        WHEN s1 = s2 THEN 0.0
+        ELSE 1 - (
+            jaro_similarity(s1, s2)
+            + vtl_winkler_prefix(s1, s2) * CAST(0.1 AS DOUBLE) * (1 - jaro_similarity(s1, s2))
+        )
     END
 );

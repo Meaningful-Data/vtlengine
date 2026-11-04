@@ -928,6 +928,21 @@ class NumericOperatorsTest(AdditionalHelper):
             references_names=references_names,
         )
 
+    def test_13(self):
+        """
+        Without its number of digits, trunc keeps every Number Measure of a multi-measure
+        Data Set, as Integer, like round (issue #1248).
+        """
+        code = "4-13"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
     def test_15(self):
         """
         Basic behaviour for components with null values.

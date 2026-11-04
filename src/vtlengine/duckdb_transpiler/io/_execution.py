@@ -121,12 +121,9 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
         op = "daytoyear" if "daytoyear" in msg_lower else "daytomonth"
         return RunTimeError("2-1-19-16", op=op)
 
-    # VTL macros vtl_div / vtl_mod / vtl_power: divisor was 0 (mirrors 2-1-15-6)
+    # VTL macros vtl_div / vtl_power: divisor was 0 (mirrors 2-1-15-6)
     if "vtl 2-1-15-6" in msg_lower:
-        op = "/"
-        for macro_op in ("mod", "power"):
-            if f"2-1-15-6 {macro_op}:" in msg_lower:
-                op = macro_op
+        op = "power" if "2-1-15-6 power:" in msg_lower else "/"
         return RunTimeError("2-1-15-6", op=op)
 
     # VTL macros vtl_power / vtl_sqrt / vtl_random_index: negative operand (mirrors 2-1-15-2)
@@ -574,7 +571,10 @@ def cleanup_scheduled_datasets(
                 representation=representation,
                 output_format=output_format,
             )
-            conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
+            # A Scalar keeps its table: a clause of a later statement can read it, and the
+            # schedule leaves a persistent one out of that statement's inputs (issue #1265)
+            if ds_name not in output_scalars:
+                conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
         else:
             # Drop non-persistent intermediate results
             conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
