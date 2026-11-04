@@ -6,9 +6,9 @@ name: CodeQL
 
 on:
   pull_request:
-    branches: ["main", "1.6.X", "1.9.X"]
+    branches: ["main", "1.9.X"]
   push:
-    branches: ["main", "1.6.X", "1.9.X"]
+    branches: ["main", "1.9.X"]
   schedule:
     # Weekly, Mondays 05:00 UTC, on the default branch: new queries meet unchanged code
     - cron: "0 5 * * 1"
