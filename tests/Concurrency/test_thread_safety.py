@@ -152,9 +152,16 @@ class TestQueryConnection:
 
     def test_fatal_error_opens_another_database(self) -> None:
         with query_connection():
-            database = _duckdb._database
-        with pytest.raises(duckdb.FatalException), query_connection():
-            raise duckdb.FatalException("invalidated")
+            before = _duckdb._database.connection
+        with pytest.raises(duckdb.FatalException):
+            _fail_in_a_query()
         with query_connection():
-            assert _duckdb._database is not None
-            assert _duckdb._database is not database
+            after = _duckdb._database.connection
+        assert before is not None
+        assert after is not None
+        assert after is not before
+
+
+def _fail_in_a_query() -> None:
+    with query_connection():
+        raise duckdb.FatalException("invalidated")
