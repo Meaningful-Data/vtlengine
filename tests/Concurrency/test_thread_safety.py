@@ -9,8 +9,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, Optional
 
 import pandas as pd
+import pytest
 
+from tests.Helper import _use_duckdb_backend
 from vtlengine import run
+
+# run() executes these scripts on the pandas engine, so the pandas pass is enough
+pytestmark = pytest.mark.skipif(
+    _use_duckdb_backend(), reason="Runs the pandas engine, in the pandas pass only"
+)
 
 DATA_STRUCTURES: Dict[str, Any] = {
     "datasets": [

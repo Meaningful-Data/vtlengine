@@ -16,8 +16,14 @@ from typing import Any, Dict, Optional
 import pandas as pd
 import pytest
 
+from tests.Helper import _use_duckdb_backend
 from vtlengine.API import run
 from vtlengine.Exceptions import RunTimeError
+
+# Each test runs both engines, so the DuckDB pass is enough
+pytestmark = pytest.mark.skipif(
+    not _use_duckdb_backend(), reason="Runs both engines, in the DuckDB pass only"
+)
 
 NUMBER_DS: Dict[str, Any] = {
     "datasets": [

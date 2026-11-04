@@ -43,6 +43,15 @@ def _use_duckdb_backend() -> bool:
     return VTL_ENGINE_BACKEND == "duckdb"
 
 
+def engine_params() -> List[Any]:
+    """
+    The use_duckdb parameter of a test that runs on either engine: the engine of this pass.
+    The suite runs once per VTL_ENGINE_BACKEND, so each pass checks its own engine.
+    """
+    use_duckdb = _use_duckdb_backend()
+    return [pytest.param(use_duckdb, id="duckdb" if use_duckdb else "pandas")]
+
+
 def _error_class(code: str) -> type:
     """The exception class an error code belongs to: input, semantic or runtime (issue #1192)."""
     if code.startswith("0-3"):

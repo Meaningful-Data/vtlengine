@@ -23,7 +23,7 @@ from typing import Any, Dict, List
 import pandas as pd
 import pytest
 
-from tests.Helper import TestHelper
+from tests.Helper import TestHelper, engine_params
 from vtlengine import run
 from vtlengine.API._InternalApi import (
     _load_single_external_routine_from_file,
@@ -1053,7 +1053,7 @@ BOM = b"\xef\xbb\xbf"
 class TestBOMHandling:
     """Tests that UTF-8 BOM files are handled transparently."""
 
-    @pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_bom_csv(self, tmp_path: Path, use_duckdb: bool) -> None:
         """CSV with BOM loads correctly, first column name is clean.
 
@@ -1194,7 +1194,7 @@ class TestBOMHandling:
         assert not content.startswith("\ufeff")
         assert content == "DS_r <- DS_1;"
 
-    @pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_bom_dataframe_columns(self, use_duckdb: bool) -> None:
         """DataFrame with BOM in column names is handled transparently on both engines."""
         script = "DS_r <- DS_1;"
@@ -1247,7 +1247,7 @@ def _dataframe_structures(measure_type: str) -> Dict[str, Any]:
     }
 
 
-@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+@pytest.mark.parametrize("use_duckdb", engine_params())
 def test_non_string_dataframe_column_label_is_an_extra_column(use_duckdb: bool) -> None:
     """A DataFrame label that is not a string is reported as a column the
     DataStructure does not define (0-3-1-15) on both engines, the way the pandas
@@ -1263,7 +1263,7 @@ def test_non_string_dataframe_column_label_is_an_extra_column(use_duckdb: bool) 
     assert context.value.args[1] == "0-3-1-15"
 
 
-@pytest.mark.parametrize("use_duckdb", [False, True])
+@pytest.mark.parametrize("use_duckdb", engine_params())
 class TestBooleanFromDataFrame:
     """A DataFrame is read on the documented Boolean set, the same on both engines
     and the same as a CSV (issue #1068)."""
@@ -1326,7 +1326,7 @@ _EMPTY_STRING_LITERALS = {
 }
 
 
-@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+@pytest.mark.parametrize("use_duckdb", engine_params())
 class TestEmptyStringFromDataFrame:
     """An empty string in a DataFrame column is a null for every type but String, the
     same on both engines and the same as an empty field of a CSV. The pandas loader
@@ -1380,7 +1380,7 @@ _STRING_STRUCTURE = {
 }
 
 
-@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+@pytest.mark.parametrize("use_duckdb", engine_params())
 class TestStringKeepsItsQuotes:
     """A double quote a String value holds is part of it, whichever of the four ways
     the value reaches the engine (issue #1073)."""
@@ -1433,7 +1433,7 @@ def _nullability_structures(nullable: bool) -> Dict[str, Any]:
     }
 
 
-@pytest.mark.parametrize("use_duckdb", [False, True])
+@pytest.mark.parametrize("use_duckdb", engine_params())
 class TestNullabilityFromDataFrame:
     """A DataFrame is held to the nullability the DataStructure declares, the same
     on both engines and the same as a CSV (issue #1069)."""
@@ -1474,7 +1474,7 @@ class TestNullabilityFromDataFrame:
         assert result["DS_r"].data["Me_1"].isnull().tolist() == [False, True]
 
 
-@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+@pytest.mark.parametrize("use_duckdb", engine_params())
 class TestInputDataFrameIsLeftUntouched:
     """The DataFrame passed in ``datapoints`` belongs to the caller: loading it must not
     add the components it does not carry, rename its labels or replace its values, on
