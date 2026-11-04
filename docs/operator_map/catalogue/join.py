@@ -130,7 +130,7 @@ CHAPTER = Chapter(
                     _CALC,
                     manual("ex_3"),
                     authored("default_role_is_measure"),
-                    authored("attribute_becomes_measure"),
+                    authored("plain_attribute_not_found"),
                 ),
                 _form(
                     "calc_measure",
@@ -167,7 +167,7 @@ CHAPTER = Chapter(
                     "inner_join(DS, DS aggr C := agg group by Id)",
                     _AGGR,
                     authored("sum_by_id_1"),
-                    authored("attribute_becomes_measure"),
+                    authored("plain_attribute_not_found"),
                 ),
                 _form(
                     "aggr_group_except",
@@ -584,7 +584,7 @@ CHAPTER = Chapter(
                     "cross_join(DS, DS calc C := expr)",
                     _CALC,
                     authored("default_role_is_measure"),
-                    authored("attribute_becomes_measure"),
+                    authored("plain_attribute_not_found"),
                 ),
                 _form(
                     "calc_measure",
@@ -621,7 +621,7 @@ CHAPTER = Chapter(
                     "cross_join(DS, DS aggr C := agg group by Id)",
                     _AGGR,
                     authored("sum_by_id_1"),
-                    authored("attribute_becomes_measure"),
+                    authored("plain_attribute_not_found"),
                 ),
                 _form(
                     "aggr_group_except",

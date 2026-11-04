@@ -117,14 +117,14 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
    * - :doc:`Inner Join <inner_join>`
      - `inner\_join(DS, DS calc C := expr) <inner_join.html#form-calc-default>`__
      - 🟡
-     - `Attribute becomes measure <inner_join.html#ex-calc-default-attribute-becomes-measure>`__
+     - `Plain attribute not found <inner_join.html#ex-calc-default-plain-attribute-not-found>`__
      - ❌
      - ❌
      - expected error 1-1-1-10, ran without an error
    * - :doc:`Inner Join <inner_join>`
      - `inner\_join(DS, DS aggr C := agg group by Id) <inner_join.html#form-aggr-group-by>`__
      - 🟡
-     - `Attribute becomes measure <inner_join.html#ex-aggr-group-by-attribute-becomes-measure>`__
+     - `Plain attribute not found <inner_join.html#ex-aggr-group-by-plain-attribute-not-found>`__
      - ❌
      - ❌
      - expected error 1-1-1-10, ran without an error
@@ -145,14 +145,14 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
    * - :doc:`Cross Join <cross_join>`
      - `cross\_join(DS, DS calc C := expr) <cross_join.html#form-calc-default>`__
      - 🟡
-     - `Attribute becomes measure <cross_join.html#ex-calc-default-attribute-becomes-measure>`__
+     - `Plain attribute not found <cross_join.html#ex-calc-default-plain-attribute-not-found>`__
      - ❌
      - ❌
      - expected error 1-1-1-10, ran without an error
    * - :doc:`Cross Join <cross_join>`
      - `cross\_join(DS, DS aggr C := agg group by Id) <cross_join.html#form-aggr-group-by>`__
      - 🟡
-     - `Attribute becomes measure <cross_join.html#ex-aggr-group-by-attribute-becomes-measure>`__
+     - `Plain attribute not found <cross_join.html#ex-aggr-group-by-plain-attribute-not-found>`__
      - ❌
      - ❌
      - expected error 1-1-1-10, ran without an error

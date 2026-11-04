@@ -431,12 +431,12 @@ inner\_join(DS, DS calc C := expr) 🟡 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-calc-default-attribute-becomes-measure"><summary><span class="om-ex-title">Attribute becomes measure</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-calc-default-plain-attribute-not-found"><summary><span class="om-ex-title">Plain attribute not found</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">expected error 1-1-1-10, ran without an error</p>
 
-.. include:: ../examples/join/inner_join/calc_default/attribute_becomes_measure/notes.rst
+.. include:: ../examples/join/inner_join/calc_default/plain_attribute_not_found/notes.rst
 
-.. literalinclude:: ../examples/join/inner_join/calc_default/attribute_becomes_measure/script.vtl
+.. literalinclude:: ../examples/join/inner_join/calc_default/plain_attribute_not_found/script.vtl
    :caption: script.vtl
    :language: none
 
@@ -449,7 +449,7 @@ Expected error ``1-1-1-10``: Component {comp\_name} not found in Dataset {datase
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/join/inner_join/calc_default/attribute_becomes_measure/script.vtl">script.vtl</a> · <a href="../examples/join/inner_join/calc_default/attribute_becomes_measure/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/join/inner_join/calc_default/attribute_becomes_measure/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/join/inner_join/calc_default/attribute_becomes_measure/input/DS_2.csv">input/DS_2.csv</a> · <a href="../examples/join/inner_join/calc_default/attribute_becomes_measure/input/DS_2.json">input/DS_2.json</a> · <a href="../examples/join/inner_join/calc_default/attribute_becomes_measure/expected/error.json">expected/error.json</a> · <a href="../examples/join/inner_join/calc_default/attribute_becomes_measure/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/join/inner_join/calc_default/plain_attribute_not_found/script.vtl">script.vtl</a> · <a href="../examples/join/inner_join/calc_default/plain_attribute_not_found/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/join/inner_join/calc_default/plain_attribute_not_found/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/join/inner_join/calc_default/plain_attribute_not_found/input/DS_2.csv">input/DS_2.csv</a> · <a href="../examples/join/inner_join/calc_default/plain_attribute_not_found/input/DS_2.json">input/DS_2.json</a> · <a href="../examples/join/inner_join/calc_default/plain_attribute_not_found/expected/error.json">expected/error.json</a> · <a href="../examples/join/inner_join/calc_default/plain_attribute_not_found/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -622,12 +622,12 @@ inner\_join(DS, DS aggr C := agg group by Id) 🟡 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-group-by-attribute-becomes-measure"><summary><span class="om-ex-title">Attribute becomes measure</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <details class="om-example" id="ex-aggr-group-by-plain-attribute-not-found"><summary><span class="om-ex-title">Plain attribute not found</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
    <p class="om-detail">expected error 1-1-1-10, ran without an error</p>
 
-.. include:: ../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/notes.rst
+.. include:: ../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/notes.rst
 
-.. literalinclude:: ../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/script.vtl
+.. literalinclude:: ../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/script.vtl
    :caption: script.vtl
    :language: none
 
@@ -640,7 +640,7 @@ Expected error ``1-1-1-10``: Component {comp\_name} not found in Dataset {datase
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/script.vtl">script.vtl</a> · <a href="../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/input/DS_2.csv">input/DS_2.csv</a> · <a href="../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/input/DS_2.json">input/DS_2.json</a> · <a href="../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/expected/error.json">expected/error.json</a> · <a href="../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/script.vtl">script.vtl</a> · <a href="../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/input/DS_2.csv">input/DS_2.csv</a> · <a href="../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/input/DS_2.json">input/DS_2.json</a> · <a href="../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/expected/error.json">expected/error.json</a> · <a href="../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
