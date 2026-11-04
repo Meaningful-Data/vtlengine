@@ -1298,10 +1298,8 @@ class TestRandomOperator:
 
         result = transpiler.visit(random_op)
 
-        # Full SQL: hash-based deterministic random
-        expected_sql = (
-            "(ABS(hash(CAST(42 AS VARCHAR) || '_' || CAST(5 AS VARCHAR))) % 1000000) / 1000000.0"
-        )
+        # Full SQL: the macro gives the same number as the pandas engine
+        expected_sql = "vtl_random(42, 5)"
         assert_sql_equal(result, expected_sql)
 
     def test_random_dataset(self):
@@ -1316,14 +1314,8 @@ class TestRandomOperator:
 
         result = transpiler.visit(random_op)
 
-        # Full SQL: applies random to each measure, which gives null for a null value
-        expected_sql = (
-            'SELECT "Id_1", '
-            'CASE WHEN "Me_1" IS NULL THEN NULL ELSE '
-            "(ABS(hash(CAST(\"Me_1\" AS VARCHAR) || '_' || CAST(3 AS VARCHAR))) % 1000000) "
-            '/ 1000000.0 END AS "Me_1" '
-            'FROM "DS_1"'
-        )
+        # Full SQL: applies random to each measure
+        expected_sql = 'SELECT "Id_1", vtl_random("Me_1", 3) AS "Me_1" FROM "DS_1"'
         assert_sql_equal(result, expected_sql)
 
 

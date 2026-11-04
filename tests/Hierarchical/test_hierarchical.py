@@ -5652,3 +5652,33 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
             exception_code=exception_code,
             exception_message=exception_message,
         )
+
+    def test_GH_1250_1(self):
+        """
+        HIERARCHICAL RULSET: hierarchy, check_hierarchy
+        Dataset --> Dataset
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 (variable rule Id_2) is
+                        R1: A = B + C;
+                        R2: C = D + E;
+                        R3: Y < Z
+                    end hierarchical ruleset;
+
+                    DS_r1 <- hierarchy(DS_1, HR_1 rule Id_2 always_null dataset all);
+                    DS_r2 <- hierarchy(DS_1, HR_1 rule Id_2 always_zero dataset all);
+                    DS_r3 <- check_hierarchy(DS_1, HR_1 rule Id_2 always_null all);
+                    DS_r4 <- check_hierarchy(DS_1, HR_1 rule Id_2 always_zero all);
+
+        Description: Id_1 3 has neither D nor E, Id_1 4 has no code item of the ruleset, and
+        no Id_1 has Y or Z.
+
+        Git Branch: #1250.
+        Goal: Check the always modes produce the result of a rule whose code items are all
+        missing.
+        """
+
+        code = "GH_1250_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

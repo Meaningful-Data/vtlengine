@@ -13,3 +13,7 @@ Id1,Id2,ruleid,bool_var,errorcode,errorlevel,imbalance
 1,A,4,True,,,0.0
 2,A,4,False,error4,5.0,200.0
 3,A,4,False,error4,5.0,300.0
+1,D,5,True,,,0.0
+2,C,6,True,,,0.0
+2,D,5,True,,,0.0
+3,D,5,True,,,0.0

@@ -106,6 +106,22 @@ class CastExplicitWithoutMask(CastHelper):
 
         self.BaseTest(code, number_inputs, references_names=reference_names)
 
+    def test_GH_1254(self):
+        """
+        Solves bug report in github issue #1254: on the DuckDB backend, cast(Date, string)
+        and cast(Date, time) kept the midnight of a Date read from a CSV file, cast(Duration,
+        string) returned the code instead of the ISO-8601 duration and cast(Time_Period, time)
+        the period instead of its start/end. The text of cast follows the pandas engine,
+        which cast(Boolean, string) and cast(Time_Period, string) already did. The same
+        holds for a cast in a user defined operator and on an input Date Scalar.
+        """
+        code = "GH_1254"
+        number_inputs = 1
+        reference_names = ["1"]
+        scalars = {"SC_1": "2020-01-15"}
+
+        self.BaseTest(code, number_inputs, references_names=reference_names, scalars=scalars)
+
 
 # ===========================================================================
 # Comprehensive explicit cast tests (VTL 2.2) - Without mask

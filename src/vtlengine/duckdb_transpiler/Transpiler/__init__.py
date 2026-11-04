@@ -286,6 +286,18 @@ _TEXT_CASTS = {
 }
 _TEXT_CASTS["timeinterval"] = _TEXT_CASTS["time"]
 
+# Casts to text that write the value as the pandas engine does, by the lower case names of
+# the source and target types ({0}: the value, issue #1254)
+_CASTS_TO_TEXT = {
+    ("date", "string"): "vtl_date_to_text({0})",
+    ("date", "time"): "vtl_date_to_text({0}) || '/' || vtl_date_to_text({0})",
+    ("duration", "string"): "vtl_duration_to_text({0})",
+    ("timeperiod", "time"): (
+        "vtl_tp_start_date(vtl_period_parse({0})) || '/' || vtl_tp_end_date(vtl_period_parse({0}))"
+    ),
+}
+_CASTS_TO_TEXT["time_period", "time"] = _CASTS_TO_TEXT["timeperiod", "time"]
+
 
 def _contains_analytic(node: Any) -> bool:
     """Return True if any descendant of ``node`` is an ``AST.Analytic``."""
@@ -2377,6 +2389,14 @@ FROM (
             return self._get_node_value(type_node)
         if isinstance(node, AST.TimeAggregation):
             return "TimePeriod"
+        if isinstance(node, AST.VarID):
+            # A name is read as visit_VarID reads it: a parameter of a user defined
+            # operator has the type of its argument, then a scalar its own (issue #1254)
+            argument = self._get_udo_param(node.value)
+            if isinstance(argument, AST.AST) and argument is not node:
+                return self._get_source_vtl_type(argument)
+            if node.value in self.scalars:
+                return self.scalars[node.value].data_type.__name__
         if isinstance(node, AST.VarID) and self._current_dataset:
             comp = self._current_dataset.components.get(node.value)
             if comp and comp.data_type:
@@ -2481,6 +2501,9 @@ FROM (
             # Text the pandas engine does not cast raises its error (issue #1192)
             return _TEXT_CASTS[target_lower].format(expr, duckdb_type)
 
+        if (source_lower, target_lower) in _CASTS_TO_TEXT:
+            return _CASTS_TO_TEXT[source_lower, target_lower].format(expr)
+
         if target_type_str == "Integer":
             if source_lower == "boolean":
                 return f"CAST({expr} AS {duckdb_type})"
@@ -2548,17 +2571,11 @@ FROM (
             # semantic analysis, so the query checks it (issue #1192)
             index_sql = f"vtl_random_index({index_sql})"
 
-        index_nullable = index_node is not None and not isinstance(index_node, AST.Constant)
-
         if seed_type == _DATASET and seed_node is not None:
-            return self._apply_measures(
-                seed_node,
-                lambda col: self._random_hash_expr(col, index_sql, True, index_nullable),
-            )
+            return self._apply_measures(seed_node, lambda col: f"vtl_random({col}, {index_sql})")
 
         seed_sql = self.visit(seed_node) if seed_node else "0"
-        seed_nullable = seed_node is not None and not isinstance(seed_node, AST.Constant)
-        return self._random_hash_expr(seed_sql, index_sql, seed_nullable, index_nullable)
+        return f"vtl_random({seed_sql}, {index_sql})"
 
     def visit_ParamOp_random(self, node: AST.ParamOp) -> str:
         """Visit RANDOM operator (ParamOp form)."""
@@ -2569,28 +2586,6 @@ FROM (
     def visit_BinOp_random(self, node: AST.BinOp) -> str:
         """Visit RANDOM operator (BinOp form, e.g. inside calc)."""
         return self._visit_random_impl(node.left, node.right)
-
-    @staticmethod
-    def _random_hash_expr(
-        seed_sql: str, index_sql: str, seed_nullable: bool = False, index_nullable: bool = False
-    ) -> str:
-        """Build a deterministic hash-based random expression in [0, 1).
-
-        The hash of a null is a number, so a seed or an index that can be null gives null
-        explicitly (issue #1192).
-        """
-        random_sql = (
-            f"(ABS(hash(CAST({seed_sql} AS VARCHAR) || '_' || "
-            f"CAST({index_sql} AS VARCHAR))) % 1000000) / 1000000.0"
-        )
-        nulls = [
-            f"{sql} IS NULL"
-            for sql, nullable in ((seed_sql, seed_nullable), (index_sql, index_nullable))
-            if nullable
-        ]
-        if not nulls:
-            return random_sql
-        return f"CASE WHEN {' OR '.join(nulls)} THEN NULL ELSE {random_sql} END"
 
     # Clause visitor
 
@@ -4261,6 +4256,7 @@ FROM (
         parsed_rules: List[_ParsedHRRule],
         rule_comp: str,
         cond_mapping: Dict[str, str],
+        mode: str,
     ) -> Tuple[str, str, List[str]]:
         """Build the pivot SELECT SQL and metadata for hierarchy operations.
 
@@ -4329,11 +4325,12 @@ FROM (
                             found.append(f"({rc})")
                 structs.append(f"struct_pack({', '.join(fields)}) AS _r{parsed.index}")
         src = self._hoisted_source(table_src, hoisted) if hoisted else table_src
-        group_by = f" GROUP BY {', '.join(group_cols)}" if group_cols else ""
-        pivot_sql = (
-            f"SELECT {', '.join([*group_cols, *structs])} "
-            f"FROM {src} WHERE {' OR '.join(dict.fromkeys(found))}{group_by}"
-        )
+        # The always modes give a result for every group of the operand (issue #1250). An
+        # aggregate without GROUP BY gives a row even without data points: HAVING drops it.
+        always = mode in ("always_null", "always_zero")
+        where = "" if always else f" WHERE {' OR '.join(dict.fromkeys(found))}"
+        group_by = f" GROUP BY {', '.join(group_cols)}" if group_cols else " HAVING COUNT(*) > 0"
+        pivot_sql = f"SELECT {', '.join([*group_cols, *structs])} FROM {src}{where}{group_by}"
         return pivot_sql, measure_name, other_ids
 
     def _hr_rule_source(
@@ -4439,7 +4436,7 @@ FROM (
             return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
 
         pivot_sql, measure_name, other_ids = self._build_hr_pivot(
-            table_src, ds, parsed_rules, rule_comp, cond_mapping
+            table_src, ds, parsed_rules, rule_comp, cond_mapping, mode
         )
         cte = CTEBuilder()
         # MATERIALIZED so the pivot aggregation is computed once, not once per
@@ -4839,7 +4836,7 @@ FROM (
             return f"SELECT {all_cols_csv} FROM {table_src}"
 
         pivot_sql, measure, other_ids = self._build_hr_pivot(
-            table_src, ds, parsed_rules, rule_comp, cond_mapping
+            table_src, ds, parsed_rules, rule_comp, cond_mapping, mode
         )
         cte = CTEBuilder()
         # MATERIALIZED so the pivot aggregation is computed once, not once per rule.
@@ -5000,7 +4997,8 @@ FROM (
         right_presence = [
             f"{self._hr_item_sql(parsed, j)[1]} = 1" for j in range(len(parsed.right_code_items))
         ]
-        if right_presence:
+        # The always modes compute the data point in any case (issue #1250)
+        if right_presence and mode not in ("always_null", "always_zero"):
             where_parts.append(f"({' OR '.join(right_presence)})")
         if parsed.has_when:
             # The rule only computes where its condition holds: another rule may compute
@@ -5027,7 +5025,8 @@ FROM (
     ) -> List[str]:
         """Generate WHERE filter clauses for the validation mode from the rule source.
 
-        An excluded right code item is not involved in the rule.
+        An excluded right code item is not involved in the rule. The always modes have none:
+        the data point is produced in any case (issue #1250).
         """
         positions = range(len(parsed.right_code_items))
         left_sql = self._hr_item_sql(parsed)
@@ -5060,10 +5059,6 @@ FROM (
             checks = [f"{has} = 1" for _, has, _ in items_sql]
             if checks:
                 filters.append(f"({' OR '.join(checks)})")
-
-        elif mode in ("always_null", "always_zero"):
-            presence = [f"{has} = 1" for _, has, _ in all_items_sql]
-            filters.append(f"({' OR '.join(presence)})")
 
         return filters
 
