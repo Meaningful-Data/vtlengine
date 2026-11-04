@@ -37,26 +37,30 @@ jobs:
         run: poetry run mypy --show-error-codes --pretty
 
   testing:
+    name: testing (${{ matrix.os }}, ${{ matrix.python-version }}, ${{ matrix.backend }})
     runs-on: ${{matrix.os}}
 
     strategy:
       fail-fast: true
       matrix:
-        # Every Python version on Ubuntu, and 3.12 on macOS and Windows. Ubuntu with 3.12 is
-        # the coverage job.
+        # Every Python version on Ubuntu, and 3.12 on macOS and Windows, each backend in a
+        # job of its own. Ubuntu with 3.12 is the coverage job.
+        os: [ubuntu-latest]
+        python-version: ["3.10", "3.11", "3.13", "3.14"]
+        backend: [pandas, duckdb]
         include:
-          - os: ubuntu-latest
-            python-version: "3.10"
-          - os: ubuntu-latest
-            python-version: "3.11"
-          - os: ubuntu-latest
-            python-version: "3.13"
-          - os: ubuntu-latest
-            python-version: "3.14"
           - os: macos-latest
             python-version: "3.12"
+            backend: pandas
+          - os: macos-latest
+            python-version: "3.12"
+            backend: duckdb
           - os: windows-latest
             python-version: "3.12"
+            backend: pandas
+          - os: windows-latest
+            python-version: "3.12"
+            backend: duckdb
 
     steps:
       - name: Checkout code
@@ -71,25 +75,31 @@ jobs:
         uses: ./.github/actions/build-cpp-parser
         with:
           python-version: ${{ matrix.python-version }}
+          # Both backends of an OS and Python share the caches; one of them saves them
+          save-cache: ${{ matrix.backend == 'duckdb' }}
       - name: Install dependencies
         shell: bash
         run: poetry install --no-root --all-extras
-      - name: Run tests with pandas backend
+      - name: Run tests with ${{ matrix.backend }} backend
         env:
-          VTL_ENGINE_BACKEND: pandas
-        run: poetry run pytest -n auto --dist worksteal --verbose --tb=short --durations=10
-      - name: Run tests with duckdb backend
-        env:
-          VTL_ENGINE_BACKEND: duckdb
+          VTL_ENGINE_BACKEND: ${{ matrix.backend }}
         run: poetry run pytest -n auto --dist worksteal --verbose --tb=short --strict-markers --strict-config --durations=10
 
-  coverage:
-    # The tests on Ubuntu with Python 3.12, measuring the coverage of both passes. The
-    # sys.monitoring core (Python 3.12+) measures it at no visible cost; the default tracer
-    # slowed the DuckDB pass by a fifth.
+  coverage-pass:
+    # The tests on Ubuntu with Python 3.12, recording their coverage, one backend per job.
+    # The sys.monitoring core (Python 3.12+) records it at no visible cost; the default
+    # tracer slowed the DuckDB pass by a fifth.
+    name: coverage (${{ matrix.backend }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        backend: [pandas, duckdb]
+
     env:
       COVERAGE_CORE: sysmon
+      COVERAGE_FILE: .coverage.${{ matrix.backend }}
 
     steps:
       - name: Checkout code
@@ -104,15 +114,48 @@ jobs:
         uses: ./.github/actions/build-cpp-parser
         with:
           python-version: "3.12"
+          save-cache: ${{ matrix.backend == 'duckdb' }}
       - name: Install dependencies
         run: poetry install --no-root --all-extras
-      - name: Run tests with pandas backend
+      - name: Run tests with ${{ matrix.backend }} backend
         env:
-          VTL_ENGINE_BACKEND: pandas
-        run: poetry run pytest --cov=vtlengine --cov-append --cov-report= -n auto --dist worksteal --verbose --tb=short --durations=10
-      - name: Run tests with duckdb backend
-        env:
-          VTL_ENGINE_BACKEND: duckdb
-        run: poetry run pytest --cov=vtlengine --cov-append -n auto --dist worksteal --verbose --tb=short --strict-markers --strict-config --durations=10
+          VTL_ENGINE_BACKEND: ${{ matrix.backend }}
+        run: poetry run pytest --cov=vtlengine --cov-report= -n auto --dist worksteal --verbose --tb=short --strict-markers --strict-config --durations=10
+      - name: Upload the coverage data
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-${{ matrix.backend }}
+          path: .coverage.${{ matrix.backend }}
+          include-hidden-files: true
+          retention-days: 1
+
+  coverage:
+    # The coverage of both passes together, against the minimum.
+    needs: coverage-pass
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Stop if a pass did not succeed
+        if: needs.coverage-pass.result != 'success'
+        run: exit 1
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install poetry
+        run: pipx install poetry
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install coverage
+        # The dev group holds pytest-cov and with it coverage, at the version of the passes.
+        run: poetry install --no-root --only dev
+      - name: Download the coverage data
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: coverage-*
+          merge-multiple: true
       - name: Check coverage
-        run: poetry run coverage report --fail-under=85
+        run: |
+          poetry run coverage combine
+          poetry run coverage report --fail-under=85

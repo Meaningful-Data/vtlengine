@@ -7,26 +7,32 @@ description: >-
 
 inputs:
   python-version:
-    description: Python version the extension is built for, part of the parser's cache key.
+    description: Python version the extension is built for, part of the cache keys.
     required: true
   cache-prefix:
     description: Platform part of the cache keys (default runner.os).
     required: false
     default: ""
+  save-cache:
+    description: >-
+      Whether to save what this job had to build. Of the jobs that share the keys, one saves,
+      so that they do not race for the same entry ("Unable to reserve cache").
+    required: false
+    default: "true"
 
 runs:
   using: composite
   steps:
-    - name: Cache ANTLR4 runtime prebuilt
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    - name: Restore ANTLR4 runtime prebuilt
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       id: antlr4-cache
       with:
         path: build/antlr4-prefix
-        # The runtime does not depend on Python, but one key per job keeps the jobs of a
-        # cold run from racing to save the same entry ("Unable to reserve cache").
+        # The runtime does not depend on Python, but a key per Python version gives each job
+        # that saves the parser an entry of its own for the runtime too.
         key: antlr4-runtime-${{ inputs.cache-prefix || runner.os }}-py${{ inputs.python-version }}-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
-    - name: Cache compiled C++ parser
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    - name: Restore compiled C++ parser
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       id: cpp-cache
       with:
         # Just the compiled extension binary — restoring it puts it back
@@ -61,6 +67,12 @@ runs:
         fi
         cmake --build build/antlr4-build --target antlr4_runtime --config Release
         cmake --install build/antlr4-build --prefix "$PWD/build/antlr4-prefix" --config Release
+    - name: Save ANTLR4 runtime prebuilt
+      if: inputs.save-cache == 'true' && steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: build/antlr4-prefix
+        key: ${{ steps.antlr4-cache.outputs.cache-primary-key }}
     - name: Build C++ parser binary
       if: steps.cpp-cache.outputs.cache-hit != 'true'
       shell: bash
@@ -74,3 +86,9 @@ runs:
           'vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*' \
           -d src/vtlengine/AST/Grammar/_cpp_parser/
         rm -rf .build_wheel
+    - name: Save compiled C++ parser
+      if: inputs.save-cache == 'true' && steps.cpp-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: src/vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*
+        key: ${{ steps.cpp-cache.outputs.cache-primary-key }}

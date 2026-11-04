@@ -14,7 +14,13 @@ permissions:
 
 jobs:
   test:
+    name: test (${{ matrix.backend }})
     runs-on: ubuntu-24.04
+
+    strategy:
+      fail-fast: true
+      matrix:
+        backend: [pandas, duckdb]
 
     steps:
       - name: Checkout repository
@@ -72,15 +78,12 @@ jobs:
         with:
           python-version: "3.12"
           cache-prefix: ubuntu2404
+          # Both backends share the caches; one of them saves them
+          save-cache: ${{ matrix.backend == 'duckdb' }}
         env:
           PIP_BREAK_SYSTEM_PACKAGES: "1"
 
-      - name: Run tests (pandas backend)
+      - name: Run tests (${{ matrix.backend }} backend)
         env:
-          VTL_ENGINE_BACKEND: pandas
-        run: pytest -n auto --dist worksteal --verbose --tb=short --strict-markers --strict-config --durations=10
-
-      - name: Run tests (duckdb backend)
-        env:
-          VTL_ENGINE_BACKEND: duckdb
+          VTL_ENGINE_BACKEND: ${{ matrix.backend }}
         run: pytest -n auto --dist worksteal --verbose --tb=short --strict-markers --strict-config --durations=10
