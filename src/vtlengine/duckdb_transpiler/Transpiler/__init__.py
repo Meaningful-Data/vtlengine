@@ -86,6 +86,14 @@ from vtlengine.ViralPropagation.sql import (
     vp_reduce_refs,
 )
 
+# Start of the error message of a value that breaks a type constraint of a UDO,
+# read back by _map_udo_constraint_error (duckdb_transpiler/io/_execution.py)
+_UDO_CHECK_MARKER = "VTL 2-3-9"
+# Key of a UDO scope with the SQL that a parameter stands for, written already
+_UDO_SQL_PREFIX = "__sql__"
+# Parameter of the lambda that checks the type constraints of a value written once
+_UDO_CHECK_LAMBDA_VALUE = "_vtl_value"
+
 # Matches a pure single-quoted SQL string literal: 'foo' (no embedded quotes).
 _SQL_PLAIN_STRING_LITERAL = re.compile(r"^'([^'\\]*)'$")
 
@@ -699,8 +707,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         return self._to_sql_literal(sc.value, getattr(sc.data_type, "__name__", ""))
 
     def _resolve_udo_param(self, name: str, udo_val: Any) -> str:
-        sql = self._resolve_udo_param_sql(name, udo_val)
         scope = self._find_udo_scope(name)
+        if scope is not None and f"{_UDO_SQL_PREFIX}{name}" in scope:
+            return str(scope[f"{_UDO_SQL_PREFIX}{name}"])
+        sql = self._resolve_udo_param_sql(name, udo_val)
         checks = scope.get(f"{_UDO_CHECKS_PREFIX}{name}") if scope is not None else None
         if not checks:
             return sql
@@ -734,21 +744,33 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """sql, the values of a component, raising VTL 2-3-9 at the first of the checks
         (operator, element, constraint) whose constraint a value breaks: not null, a condition
         on value (the value AST, written with value_depth UDO scopes) or the values allowed.
-        All the checks are written in one CASE, so that sql is not written again inside the
-        check of each operator that passed it on."""
-        shown = f"COALESCE(CAST({sql} AS VARCHAR), 'null')"
+
+        All the checks are written in one CASE, where value stands for sql, not for the SQL of
+        its AST written again. When sql holds the check of another operator, as when the
+        argument of a constrained parameter reads another one, sql is written once, as the
+        argument of a lambda: written in each place the CASE reads it, the SQL would grow
+        threefold with each operator."""
+        nested = _UDO_CHECK_MARKER in sql
+        target = _UDO_CHECK_LAMBDA_VALUE if nested else sql
+        shown = f"COALESCE(CAST({target} AS VARCHAR), 'null')"
         branches = []
         for op, element, constraint in checks:
             broken = []
             if constraint.not_null:
-                broken.append(f"{sql} IS NULL")
+                broken.append(f"{target} IS NULL")
             if constraint.values is not None:
                 allowed = ", ".join(
                     self.visit(allowed_value) for allowed_value in constraint.values
                 )
-                broken.append(f"{sql} NOT IN ({allowed})")
+                broken.append(f"{target} NOT IN ({allowed})")
             if constraint.condition is not None:
-                self._push_udo_params({"value": value, f"{_UDO_DEPTH_PREFIX}value": value_depth})
+                self._push_udo_params(
+                    {
+                        "value": value,
+                        f"{_UDO_DEPTH_PREFIX}value": value_depth,
+                        f"{_UDO_SQL_PREFIX}value": target,
+                    }
+                )
                 try:
                     condition = self.visit(deepcopy(constraint.condition))
                 finally:
@@ -757,13 +779,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if not broken:
                 continue
             text = "\u00a6".join(
-                [f"VTL 2-3-9 {op}", element, _format_constraint(constraint).strip(), ""]
+                [f"{_UDO_CHECK_MARKER} {op}", element, _format_constraint(constraint).strip(), ""]
             )
             message = "'" + text.replace("'", "''") + "'"
             branches.append(f"WHEN {' OR '.join(broken)} THEN error({message} || {shown})")
         if not branches:
             return sql
-        return f"CASE {' '.join(branches)} ELSE {sql} END"
+        checked = f"CASE {' '.join(branches)} ELSE {target} END"
+        if not nested:
+            return checked
+        return f"list_transform([{sql}], lambda {target}: {checked})[1]"
 
     def _udo_checked_dataset_sql(
         self,
