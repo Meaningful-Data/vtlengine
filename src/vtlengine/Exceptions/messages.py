@@ -823,7 +823,8 @@ centralised_messages = {
     # Join Operators
     "1-1-13-1": {
         "message": "At op {op}: Duplicated alias {duplicates}.",
-        "description": "Raised when an alias is used more than once in the same operation.",
+        "description": "Raised when two operands of a join have the same name inside it: the "
+        "same alias, or an alias equal to the Data Set name of an operand without one.",
     },
     "1-1-13-2": {
         "message": "At op {op}: the operand {operand} needs an alias. Aliases are mandatory for "
