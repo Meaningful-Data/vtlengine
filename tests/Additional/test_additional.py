@@ -2532,7 +2532,7 @@ class JoinOperatorsTest(AdditionalHelper):
         text = """DS_r := inner_join ( DS_1, DS_2 using Id_1 );"""
         code = "2-25"
         number_inputs = 2
-        message = "1-1-13-4"
+        message = "1-1-13-9"
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2549,7 +2549,7 @@ class JoinOperatorsTest(AdditionalHelper):
         text = """DS_r := inner_join ( DS_1, DS_2 using Id_2 );"""
         code = "2-26"
         number_inputs = 2
-        message = "1-1-13-4"
+        message = "1-1-13-9"
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2587,7 +2587,7 @@ class JoinOperatorsTest(AdditionalHelper):
         text = """DS_r := inner_join ( DS_1, DS_2, DS_3 using Id_1 );"""
         code = "2-28"
         number_inputs = 3
-        message = "1-1-13-4"
+        message = "1-1-13-9"
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2604,7 +2604,7 @@ class JoinOperatorsTest(AdditionalHelper):
         text = """DS_r := inner_join ( DS_1, DS_2, DS_3 using Id_1 );"""
         code = "2-29"
         number_inputs = 3
-        message = "1-1-13-4"
+        message = "1-1-13-9"
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=message
         )

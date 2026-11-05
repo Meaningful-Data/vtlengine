@@ -893,6 +893,13 @@ centralised_messages = {
         "description": "Raised when the constant of a nvl rule of a join does not have the type "
         "of the component it gives a value to.",
     },
+    "1-1-13-26": {
+        "message": "At op {op}: The operands cannot be ordered so that each one has an "
+        "identifier in common with one before it, as {dataset} has none in common with the "
+        "others.",
+        "description": "Raised when the operands of an inner_join without using cannot be "
+        "ordered so that each one shares an identifier with an operand before it.",
+    },
     "1-1-13-9": {
         "message": "Ambiguity for this variable {comp_name} inside a Join clause.",
         "description": "Raised when a component name is ambiguous in a Join operation.",

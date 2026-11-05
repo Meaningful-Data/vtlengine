@@ -54,8 +54,27 @@ class Join(Operator):
     @classmethod
     def _keys_only(cls, using: Optional[List[str]]) -> bool:
         """Whether only the using identifiers are join keys, so that the other identifiers
-        that the operands share are kept for each of them, as in left_join and full_join."""
-        return using is not None and cls.how in ("left", "outer")
+        that the operands share are kept for each of them, as in left_join, full_join and
+        inner_join."""
+        return using is not None and cls.how in ("left", "outer", "inner")
+
+    @classmethod
+    def _join_order(cls, operands: List[Dataset]) -> List[Dataset]:
+        """The operands from the reference one, in an order where each one has an identifier
+        in common with one before it, as inner_join requires."""
+        ordered = [cls.reference_dataset]
+        identifiers = set(cls.reference_dataset.get_identifiers_names())
+        remaining = [op for op in operands if op is not cls.reference_dataset]
+        while remaining:
+            following = next(
+                (op for op in remaining if identifiers & set(op.get_identifiers_names())), None
+            )
+            if following is None:
+                raise SemanticError("1-1-13-26", op=cls.op, dataset=remaining[0].name)
+            ordered.append(following)
+            identifiers |= set(following.get_identifiers_names())
+            remaining = [op for op in remaining if op is not following]
+        return ordered
 
     @classmethod
     def get_components_union(cls, datasets: List[Dataset]) -> List[Component]:
@@ -303,11 +322,17 @@ class Join(Operator):
         result.data = copy(cls.reference_dataset.data)
 
         join_keys = using if using else result.get_identifiers_names()
+        ordered = cls._join_order(operands) if not using and cls.how == "inner" else operands
 
-        for op in operands:
+        for op in ordered:
             if op is not cls.reference_dataset:
                 merge_join_keys = (
-                    [key for key in join_keys if key in op.data.columns.tolist()]
+                    [
+                        key
+                        for key in join_keys
+                        if key in op.data.columns.tolist()
+                        and (result.data is None or key in result.data.columns)
+                    ]
                     if (op.data is not None)
                     else []
                 )
@@ -444,7 +469,9 @@ class Join(Operator):
                         raise SemanticError(
                             "1-1-13-4", op=cls.op, using_names=using, dataset=op_name
                         )
-                    cls._check_nvl_rules(op_name, set(identifiers) - set(using), nvl)
+                    # An inner_join keeps only the data points that match
+                    if cls.how != "inner":
+                        cls._check_nvl_rules(op_name, set(identifiers) - set(using), nvl)
             reference_components = cls.reference_dataset.get_components_names()
             if not set(using).issubset(reference_components):
                 raise SemanticError(
@@ -476,6 +503,28 @@ class Join(Operator):
 class InnerJoin(Join):
     op = INNER_JOIN
     how = "inner"
+
+    @classmethod
+    def identifiers_validation(
+        cls,
+        operands: List[Dataset],
+        using: Optional[List[str]],
+        nvl: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Without using, the operands need no superset of the identifiers of the others: an
+        order where each one has an identifier in common with one before it, and the join keys
+        are the identifiers in more than one operand."""
+        if using is not None:
+            super().identifiers_validation(operands, using, nvl)
+            return
+        for op in operands:
+            if len(op.get_identifiers_names()) == 0:
+                raise SemanticError("1-1-13-14", op=cls.op, name=op.name)
+        cls._join_order(operands)
+        cls._validate_join_key_types(
+            operands,
+            cls.get_components_intersection([op.get_identifiers_names() for op in operands]),
+        )
 
     @classmethod
     def generate_result_components(

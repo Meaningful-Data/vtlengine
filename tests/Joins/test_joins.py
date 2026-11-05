@@ -1893,7 +1893,7 @@ class JoinUsingTests(JoinHelper):
         """
         code = "GL_342_19"
         number_inputs = 3
-        error_code = "1-1-13-4"
+        error_code = "1-1-13-9"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -1912,7 +1912,7 @@ class JoinUsingTests(JoinHelper):
         """
         code = "GL_384_1"
         number_inputs = 2
-        error_code = "1-1-13-4"
+        error_code = "1-1-13-9"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2191,7 +2191,7 @@ class JoinsGeneralTests(JoinHelper):
 
         #
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-        error_code = "1-1-13-11"
+        error_code = "1-1-13-9"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2271,7 +2271,7 @@ class JoinsGeneralTests(JoinHelper):
         """
         code = "GL_384_7"
         number_inputs = 3
-        error_code = "1-1-13-11"
+        error_code = "1-1-13-9"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2290,7 +2290,7 @@ class JoinsGeneralTests(JoinHelper):
         """
         code = "GL_384_8"
         number_inputs = 3
-        error_code = "1-1-13-4"
+        error_code = "1-1-13-9"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2837,3 +2837,82 @@ class JoinsGeneralTests(JoinHelper):
         code = "GH_1238_2"
         rendered = ASTString().render(create_ast(self.LoadVTL(code)))
         self.BaseTest(code=code, number_inputs=2, references_names=["1"], text=rendered)
+
+    def test_GH_1239_1(self):
+        """
+        Expression: DS_r <- inner_join(DS_3, DS_4);
+        Description: No operand has all the identifiers: the join is on Id_2, the identifier both have.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_1"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1239_2(self):
+        """
+        Expression: DS_r <- inner_join(DS_1 as d1, DS_2 as d2 using Id_1 rename d1#Id_2 to Id_21, d2#Id_2 to Id_22);
+        Description: A using clause on part of the identifiers joins on them, and the other identifiers are kept for each operand.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_2"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1239_3(self):
+        """
+        Expression: DS_r <- inner_join(DS_3, DS_4, DS_5);
+        Description: Three operands, each with an identifier in common with the one before it.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_3"
+        number_inputs = 3
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1239_4(self):
+        """
+        Expression: DS_r <- inner_join(DS_3, DS_5, DS_4);
+        Description: The same operands written in another order: DS_5 has no identifier in common with DS_3, so DS_4 is joined before it.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_4"
+        number_inputs = 3
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1239_5(self):
+        """
+        Expression: DS_r <- inner_join(DS_4, IBSC[drop Me_3][rename ...] as IBSC, IBSD[rename ...] as IBSD);
+        Description: The Inner Join Example 5 of the VTL 2.2 manual, with Me_3 dropped from IBSC as only one Me_3 is in its result.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_5"
+        number_inputs = 3
+        references_names = ["1", "2", "3"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1239_6(self):
+        """
+        Expression: DS_r <- inner_join(DS_4, IBSC[rename ...] as IBSC, IBSD[rename ...] as IBSD);
+        Description: The Example 5 as the manual writes it: IBSC and IBSD both have Me_3, which gives two Me_3 when the prefixes are taken out.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_6"
+        number_inputs = 3
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-9"
+        )
+
+    def test_GH_1239_7(self):
+        """
+        Expression: DS_r <- inner_join(DS_3, DS_6);
+        Description: Operands with no identifier in common.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_7"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-26"
+        )
