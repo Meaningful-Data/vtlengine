@@ -1796,6 +1796,25 @@ class ComparisonBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1282(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := isnull ( not Me_1 ),
+                                        Me_3 := between ( not Me_1 , true , true ),
+                                        Me_4 := cast ( not Me_1 , string ) ];
+        Description: The DuckDB engine wrote not as NOT x, without parentheses, so it read
+                     NOT x IS NULL and NOT x BETWEEN ... as NOT (x IS NULL) and
+                     NOT (x BETWEEN ...), which inverted isnull, between and the cast to string
+                     of a not.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1282
+        Goal: Check Result.
+        """
+        code = "GH_1282"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class TimeBugs(BugHelper):
     """ """

@@ -1,0 +1,6 @@
+pyarrow==24.0.0
+sdmxschemas==1.1.0
+parsy==2.2
+msgspec==0.21.1
+duckdb==1.4.5
+pysdmx==1.20.0

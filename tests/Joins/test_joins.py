@@ -2659,3 +2659,32 @@ class JoinsGeneralTests(JoinHelper):
         number_inputs = 2
         references_names = ["1", "2"]
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1281_1(self):
+        """
+        Expression: DS_r <- inner_join ( DS_1 as DS_2 , DS_2 as B ); DS_r2 <- DS_2;
+        Description: An alias is valid only within its join: the alias DS_2 replaces neither
+                     the operand DS_2 of the same join nor the input DS_2 after the join.
+        Git Issue: GH_1281.
+        """
+        code = "GH_1281_1"
+        number_inputs = 2
+        references_names = ["1", "2"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1281_2(self):
+        """
+        Expression: DS_r <- inner_join ( DS_1 as DS_2 , DS_2 );
+        Description: The names of the operands inside a join, their aliases or else their Data
+                     Set names, must be all distinct: the alias DS_2 repeats the name of the
+                     operand DS_2, which has no alias.
+        Git Issue: GH_1281.
+        """
+        code = "GH_1281_2"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-13-1",
+            exception_message="At op inner_join: Duplicated name DS_2 among the join operands.",
+        )
