@@ -621,7 +621,8 @@ class Terminals:
         ctx_list = ctx.children
 
         try:
-            return str(self.visitConstant(ctx_list[1]).value)
+            value = self.visitConstant(ctx_list[1]).value
+            return str(value).lower() if isinstance(value, bool) else str(value)
         except Exception:
             raise InputValidationException(code="0-5-1-5", definition=script_location(ctx_list[1]))
 
