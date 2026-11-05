@@ -1283,10 +1283,14 @@ class InterpreterAnalyzer(ASTTemplate):
                 self._strip_join_prefixes(result)
                 self.is_from_join = False
             return result
+        # The conditions of an if or a case around the clause hold Data Points of another
+        # Data Set, so its Components are not split by them (issue #1276)
+        condition_stack, self.condition_stack = self.condition_stack, None
         for child in node.children:
             self.is_from_regular_aggregation = True
             operands.append(self.visit(child))
             self.is_from_regular_aggregation = False
+        self.condition_stack = condition_stack
         if node.op in (CALC, FILTER) and any(isinstance(operand, Dataset) for operand in operands):
             raise SemanticError("1-2-14", op=node.op)
         if node.op == AGGREGATE:

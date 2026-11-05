@@ -1,0 +1,5 @@
+DS_r1 <- union ( ( sum ( DS_1 group by Id_1 ) / 2 ) [ filter Me_1 > 2 ] ,
+    ( sum ( DS_1 group by Id_1 ) / 2 ) [ filter Me_1 <= 2 ] );
+DS_r2 <- union ( ( sum ( DS_1 group by Id_1 ) / 2 ) [ filter Me_1 > 5 ] ,
+    ( sum ( DS_1 group by Id_1 ) / 2 ) [ filter Me_1 > 1 ] [ calc Me_1 := Me_1 + 100 ] ,
+    ( sum ( DS_1 group by Id_1 ) / 2 ) [ calc Me_1 := Me_1 + 1000 ] );
