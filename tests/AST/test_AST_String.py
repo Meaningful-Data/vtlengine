@@ -45,6 +45,8 @@ params = [
     "GH_1150.vtl",
     "GH_1160.vtl",
     "GH_1166.vtl",
+    "GH_1156.vtl",
+    "GH_1247.vtl",
 ]
 
 params_prettier = [

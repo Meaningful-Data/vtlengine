@@ -62,7 +62,7 @@ tab = "\t"
 RESERVED_WORDS = {x.replace("'", ""): x for x in LITERAL_NAMES}
 # A name the lexer reads as an IDENTIFIER without quotes (VtlTokens.g4)
 UNQUOTED_NAME = re.compile(
-    r"(?:[0-9][A-Za-z0-9_.]*)?[A-Za-z][A-Za-z0-9_.]*"
+    r"[A-Za-z_][A-Za-z0-9_.]*"
     r"|[A-Za-z_][A-Za-z0-9_.]*:[A-Za-z_][A-Za-z0-9_.]*"
     r"(?:\((?:[0-9]+(?:\.[0-9]+)*(?:\.[_+*~])?|[_+*~])\))?(?::[.A-Za-z0-9_]+)?"
 )
@@ -867,7 +867,8 @@ class ASTString(ASTTemplate):
         return _format_name(node.value)
 
     def visit_Identifier(self, node: AST.Identifier) -> Any:
-        return _format_name(node.value)
+        # An empty name is the omitted operand of period_indicator() in a clause
+        return _format_name(node.value) if node.value else ""
 
     def visit_Constant(self, node: AST.Constant) -> str:
         if node.value is None:
@@ -886,14 +887,6 @@ class ASTString(ASTTemplate):
         return f"{{{sep.join([self.visit(x) for x in node.children])}}}"
 
     def visit_Windowing(self, node: AST.Windowing) -> str:
-        if (
-            node.type_ == "data"
-            and node.start == -1
-            and node.start_mode == "preceding"
-            and node.stop == 0
-            and node.stop_mode == "current"
-        ):
-            return ""
         if node.start == -1:
             start = f"unbounded {node.start_mode}"
         elif node.start_mode == "current":

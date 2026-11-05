@@ -1,0 +1,5 @@
+DS_r1 <- abs ( case when DS_1 > 0 then DS_1 else DS_1 * -1 );
+DS_r2 <- abs ( if DS_1 > 0 then DS_1 * 2 else DS_1 * -1 );
+DS_r3 <- if DS_1 [ filter Me_1 > 0 or isnull ( Me_1 ) ] > 0
+    then DS_1 [ filter Me_1 > 0 or isnull ( Me_1 ) ]
+    else DS_1;

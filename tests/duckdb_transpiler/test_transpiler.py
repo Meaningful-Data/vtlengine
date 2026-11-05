@@ -389,7 +389,8 @@ class TestSetOperations:
         assert_sql_equal(sql, expected_sql)
 
     def test_union_with_dedup(self):
-        """Test union with complete SQL output including DISTINCT ON."""
+        """Test union with complete SQL output: each operand adds the data points whose
+        identifiers are in no operand before it."""
         ds1 = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
         ds2 = create_simple_dataset("DS_2", ["Id_1"], ["Me_1"])
         transpiler = create_transpiler(
@@ -411,18 +412,12 @@ class TestSetOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        # Verify union structure with dedup
-        assert_sql_contains(
-            sql,
-            [
-                "QUALIFY",
-                "ROW_NUMBER() OVER",
-                '"Id_1"',
-                "UNION ALL",
-                '"DS_1"',
-                '"DS_2"',
-            ],
+        expected_sql = (
+            '(SELECT u."Id_1", u."Me_1" FROM "DS_1" AS u) UNION ALL '
+            '(SELECT u."Id_1", u."Me_1" FROM "DS_2" AS u '
+            'ANTI JOIN "DS_1" AS p0 ON u."Id_1" = p0."Id_1")'
         )
+        assert_sql_equal(sql, expected_sql)
 
 
 # =============================================================================
@@ -1298,10 +1293,8 @@ class TestRandomOperator:
 
         result = transpiler.visit(random_op)
 
-        # Full SQL: hash-based deterministic random
-        expected_sql = (
-            "(ABS(hash(CAST(42 AS VARCHAR) || '_' || CAST(5 AS VARCHAR))) % 1000000) / 1000000.0"
-        )
+        # Full SQL: the macro gives the same number as the pandas engine
+        expected_sql = "vtl_random(42, 5)"
         assert_sql_equal(result, expected_sql)
 
     def test_random_dataset(self):
@@ -1316,14 +1309,8 @@ class TestRandomOperator:
 
         result = transpiler.visit(random_op)
 
-        # Full SQL: applies random to each measure, which gives null for a null value
-        expected_sql = (
-            'SELECT "Id_1", '
-            'CASE WHEN "Me_1" IS NULL THEN NULL ELSE '
-            "(ABS(hash(CAST(\"Me_1\" AS VARCHAR) || '_' || CAST(3 AS VARCHAR))) % 1000000) "
-            '/ 1000000.0 END AS "Me_1" '
-            'FROM "DS_1"'
-        )
+        # Full SQL: applies random to each measure
+        expected_sql = 'SELECT "Id_1", vtl_random("Me_1", 3) AS "Me_1" FROM "DS_1"'
         assert_sql_equal(result, expected_sql)
 
 
@@ -1863,7 +1850,7 @@ class TestBooleanOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = 'SELECT "Id_1", NOT "Me_1" AS "Me_1", NOT "Me_2" AS "Me_2" FROM "DS_1"'
+        expected_sql = 'SELECT "Id_1", (NOT "Me_1") AS "Me_1", (NOT "Me_2") AS "Me_2" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
     def test_boolean_dataset_multi_measure(self):

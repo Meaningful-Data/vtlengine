@@ -1133,3 +1133,15 @@ class UdoTest(UDOHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1279_1(self):
+        """
+        Status: OK
+        Description: An operator passes its dataset parameter, as it is, to another operator
+        Goal: Check Result.
+        """
+        code = "GH_1279_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

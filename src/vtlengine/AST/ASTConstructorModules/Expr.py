@@ -33,7 +33,6 @@ from vtlengine.AST import (
     ValidationMode,
     ValidationOutput,
     VarID,
-    Windowing,
 )
 from vtlengine.AST.ASTConstructorModules import extract_token_info
 from vtlengine.AST.ASTConstructorModules.ExprComponents import ExprComp
@@ -904,6 +903,9 @@ class Expr:
             for operand in ctx_list
             if not operand.is_terminal and operand.rule_index == RC.EXPR[0]
         ]
+        if not operand_node:
+            # Only a clause has a Data Set whose time Identifier period_indicator() can read
+            raise SemanticError("1-3-2-8", op=op)
 
         return UnaryOp(op=op, operand=operand_node[0], **extract_token_info(ctx))
 
@@ -1454,16 +1456,6 @@ class Expr:
             elif not c.is_terminal and c.rule_index == RC.WINDOWING_CLAUSE[0]:
                 window = Terminals().visitWindowingClause(c)
                 continue
-
-        if window is None and (partition_by is not None or order_by is not None):
-            window = Windowing(
-                type_="data",
-                start=-1,
-                stop=0,
-                start_mode="preceding",
-                stop_mode="current",
-                **extract_token_info(ctx),
-            )
 
         return Analytic(
             op=op_node,

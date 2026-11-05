@@ -822,8 +822,9 @@ centralised_messages = {
     },
     # Join Operators
     "1-1-13-1": {
-        "message": "At op {op}: Duplicated alias {duplicates}.",
-        "description": "Raised when an alias is used more than once in the same operation.",
+        "message": "At op {op}: Duplicated name {duplicates} among the join operands.",
+        "description": "Raised when two operands of a join have the same name inside it: the "
+        "same alias, or an alias equal to the Data Set name of an operand without one.",
     },
     "1-1-13-2": {
         "message": "At op {op}: the operand {operand} needs an alias. Aliases are mandatory for "
@@ -1413,6 +1414,11 @@ centralised_messages = {
         "to Data Sets.",
         "description": "Raised when eval is used inside a clause, on Components, as it only "
         "applies to Data Sets.",
+    },
+    "1-3-2-8": {
+        "message": "At op {op}: the operand can only be omitted inside a clause.",
+        "description": "Raised when period_indicator is written without its operand outside a "
+        "clause, where there is no Data Set whose time_period Identifier it could read.",
     },
     # ---------- Viral Propagation ----------
     "1-3-3-1": {

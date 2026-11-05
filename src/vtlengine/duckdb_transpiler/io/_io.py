@@ -9,19 +9,17 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import duckdb
 import pandas as pd
 
-from vtlengine.DataTypes import Date, String, TimeInterval, TimePeriod
+from vtlengine.DataTypes import Date, Integer, Number, String, TimeInterval, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
-    VALID_DATE_REGEX,
-    VALID_DATE_YEAR_REGEX,
-    build_boolean_cast,
     build_create_table_sql,
     build_csv_column_types,
     build_select_columns,
+    build_value_cast,
     check_extra_columns,
     check_missing_identifiers,
     get_column_sql_type,
@@ -32,6 +30,7 @@ from vtlengine.duckdb_transpiler.io._validation import (
     validate_temporal_columns,
 )
 from vtlengine.Exceptions import DataLoadError, InputValidationException
+from vtlengine.files.parser import string_value
 from vtlengine.files.sdmx_handler import (
     extract_sdmx_dataset_name,
     is_sdmx_csv_file,
@@ -484,6 +483,10 @@ def _load_parquet(
     """Load a Parquet file into a DuckDB table via read_parquet."""
     id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
 
+    # Kept out of the try so a failure can be traced back to the column that caused it
+    read_expr = ""
+    select_exprs: List[str] = []
+
     try:
         parquet_cols, parquet_types = _read_parquet_columns(conn, file_path)
 
@@ -517,17 +520,15 @@ def _load_parquet(
             action_filter = 'WHERE "ACTION" != \'D\' OR "ACTION" IS NULL'
 
         col_list = ", ".join(f'"{c}"' for c in components)
-        insert_sql = (
-            f'INSERT INTO "{dataset_name}" ({col_list}) '
-            f"SELECT {', '.join(select_exprs)} "
-            f"FROM read_parquet('{file_path}') "
-            f"{action_filter}"
-        )
-        conn.execute(insert_sql)
+        read_expr = f"FROM read_parquet('{file_path}') {action_filter}"
+        select_list = ", ".join(select_exprs)
+        conn.execute(f'INSERT INTO "{dataset_name}" ({col_list}) SELECT {select_list} {read_expr}')
 
     except duckdb.Error as e:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
-        raise map_duckdb_error(e, dataset_name, components)
+        raise map_duckdb_error(
+            e, dataset_name, components, _cast_probe(conn, read_expr, components, select_exprs)
+        )
     except Exception:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
         raise
@@ -781,6 +782,28 @@ def _is_string_like(source_type: str) -> bool:
     return "VARCHAR" in source_type or source_type.startswith("ENUM")
 
 
+def _boolean_as_number(value: Any) -> Any:
+    """A Python boolean as the number 1 or 0, any other value as it is."""
+    return int(value) if pd.api.types.is_bool(value) else value
+
+
+def _write_python_booleans(df: pd.DataFrame, components: Dict[str, Component]) -> None:
+    """Write the Python booleans of a column of mixed values as its type reads them.
+
+    DuckDB reads a column of booleans as BOOLEAN, which casts to true and false, and to
+    1 and 0, but writes the booleans of a column of mixed values with str(), as True and
+    False, which no number reads. A boolean is true or false in a String, and 1 or 0 in
+    an Integer or a Number, on both engines (issue #1284). Only a column of mixed values
+    is rewritten, so a column of text or of numbers is left as it is.
+    """
+    for comp_name, comp in components.items():
+        if comp.data_type not in (String, Integer, Number) or comp_name not in df.columns:
+            continue
+        if pd.api.types.infer_dtype(df[comp_name], skipna=True).startswith("mixed"):
+            convert = string_value if comp.data_type == String else _boolean_as_number
+            df[comp_name] = df[comp_name].map(convert, na_action="ignore")
+
+
 def _build_dataframe_select_columns(
     components: Dict[str, Component],
     dataset_name: str,
@@ -790,7 +813,10 @@ def _build_dataframe_select_columns(
 ) -> List[str]:
     """Build SELECT expressions with explicit CAST for DataFrame → DuckDB table insertion.
 
-    Ensures type enforcement matches the CSV loading path (load_datapoints_duckdb).
+    Each value is read by ``build_value_cast``, as the CSV loading path reads it
+    (load_datapoints_duckdb), so a DataFrame, a Parquet file and a CSV file are read on
+    the rules of the pandas loader: a plain cast rounded 1.5 into an Integer and read a
+    boolean as a Number (issue #1284).
     A missing column is filled with NULL, and, when the component is not nullable,
     reported as missing the way the CSV path and the pandas loader report it: filling
     it left a DataFrame with no rows loading a structure it did not carry.
@@ -803,52 +829,22 @@ def _build_dataframe_select_columns(
     exprs: List[str] = []
     for comp_name, comp in components.items():
         target_type = overrides.get(comp_name, get_column_sql_type(comp))
-        source_type = src_types.get(comp_name, "VARCHAR").upper()
-        source = f'"{comp_name}"'
-        if _is_string_like(source_type) and comp.data_type != String:
-            # An empty string in a text column is a null for every type but String,
-            # as the pandas loader reads it and as an empty CSV field loads.
-            source = f"NULLIF(CAST({source} AS VARCHAR), '')"
         if df_col_set is not None and comp_name not in df_col_set:
             if not comp.nullable:
                 raise DataLoadError("0-3-1-5", name=dataset_name, comp_name=comp_name)
             exprs.append(f'CAST(NULL AS {target_type}) AS "{comp_name}"')
-        elif comp.data_type == Date and _is_string_like(source_type):
-            # Accept only a bare date, or a date with a COMPLETE, in-range time
-            # (HH:MM:SS, optional fractional seconds / timezone), matching the strict
-            # rule on the pandas path. This rejects partial times ("...HH" / "...HH:MM"),
-            # a bad separator ("2020-01-01X12:30:45") and out-of-range times
-            # ("2020-01-01T25:00:00") here with a clear message, instead of letting the
-            # cast silently truncate them or surface a cryptic out-of-range error.
-            # The guard only applies to string-like source columns (VARCHAR, or ENUM
-            # from pandas categoricals): a temporal source (DATE/TIMESTAMP/TIMESTAMPTZ)
-            # cannot hold a malformed string, and its VARCHAR rendering (e.g. a "+01"
-            # offset) is not the input format the regex validates, so those keep the
-            # plain CAST.
-            col_as_varchar = f"TRIM(CAST({source} AS VARCHAR))"
-            err = (
-                f"'Column {comp_name}: Date ' || {col_as_varchar} || "
-                f"' has an invalid or incomplete time; expected YYYY-MM-DD HH:MM:SS.'"
-            )
-            year_err = (
-                f"'Date ' || {col_as_varchar} || ' is invalid. Year must be between 1800 and 9999.'"
-            )
-            exprs.append(
-                f"CASE WHEN {source} IS NOT NULL "
-                f"AND NOT regexp_matches({col_as_varchar}, '{VALID_DATE_REGEX}') "
-                f"THEN error({err}) "
-                f"WHEN {source} IS NOT NULL "
-                f"AND NOT regexp_matches({col_as_varchar}, '{VALID_DATE_YEAR_REGEX}') "
-                f"THEN error({year_err}) "
-                f'ELSE CAST({col_as_varchar} AS {target_type}) END AS "{comp_name}"'
-            )
-        elif target_type == "BOOLEAN":
-            # A Boolean is read on the documented set, not on DuckDB's wider one,
-            # so a DataFrame and a CSV are read the same way (issue #1068).
-            boolean_cast = build_boolean_cast(source, comp_name)
-            exprs.append(f'{boolean_cast} AS "{comp_name}"')
-        else:
-            exprs.append(f'CAST({source} AS {target_type}) AS "{comp_name}"')
+            continue
+        source_type = src_types.get(comp_name, "VARCHAR").upper()
+        value = f'"{comp_name}"'
+        if _is_string_like(source_type):
+            # Text is read as VARCHAR, a pandas categorical (ENUM) as well. An empty
+            # string is a null for every type but String, as the pandas loader reads it
+            # and as an empty CSV field loads.
+            value = f"CAST({value} AS VARCHAR)"
+            if comp.data_type != String:
+                value = f"NULLIF({value}, '')"
+            source_type = "VARCHAR"
+        exprs.append(f'{build_value_cast(value, comp, target_type, source_type)} AS "{comp_name}"')
     return exprs
 
 
@@ -884,6 +880,8 @@ def register_dataframes(
         # out before what is left is checked against the DataStructure.
         check_extra_columns(handle_sdmx_columns(list(df.columns), components), components, name)
 
+        _write_python_booleans(df, components)
+
         # Detect Date columns that contain time values → TIMESTAMP instead of DATE
         type_overrides = _detect_date_type_overrides(df, components)
 
@@ -893,6 +891,7 @@ def register_dataframes(
         # Register DataFrame and insert data with explicit type casting
         temp_view = f"_temp_{name}"
         conn.register(temp_view, df)
+        select_exprs: List[str] = []
         try:
             source_types = {
                 str(row[0]): str(row[1])
@@ -908,7 +907,10 @@ def register_dataframes(
             )
         except duckdb.Error as e:
             conn.execute(f'DROP TABLE IF EXISTS "{name}"')
-            raise map_duckdb_error(e, name, components)
+            # The column a failed cast belongs to is found by reading each one on its
+            # own, as the CSV path does: it was reported as "unknown" (issue #1284)
+            probe = _cast_probe(conn, f'FROM "{temp_view}"', components, select_exprs)
+            raise map_duckdb_error(e, name, components, probe)
         finally:
             conn.unregister(temp_view)
 

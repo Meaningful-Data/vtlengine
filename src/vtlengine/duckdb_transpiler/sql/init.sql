@@ -515,12 +515,59 @@ CREATE OR REPLACE MACRO vtl_text_to_date(x) AS (
     END
 );
 
+-- Date cast to text, as the pandas engine writes it: the date, and its time unless it is
+-- midnight (a Date read from a CSV file is a TIMESTAMP even when the file wrote no time).
+CREATE OR REPLACE MACRO vtl_date_to_text(d TIMESTAMP) AS (
+    CASE WHEN microsecond(d) % 1000000 != 0 THEN STRFTIME(d, '%Y-%m-%d %H:%M:%S.%f')
+         WHEN CAST(d AS DATE) != d THEN STRFTIME(d, '%Y-%m-%d %H:%M:%S')
+         ELSE STRFTIME(d, '%Y-%m-%d')
+    END
+);
+
+-- Duration cast to text: the ISO-8601 duration of the code, as on the pandas engine.
+CREATE OR REPLACE MACRO vtl_duration_to_text(x) AS (
+    CASE x
+        WHEN 'A' THEN 'P1Y' WHEN 'S' THEN 'P6M' WHEN 'Q' THEN 'P3M'
+        WHEN 'M' THEN 'P1M' WHEN 'W' THEN 'P1W' WHEN 'D' THEN 'P1D'
+        ELSE x
+    END
+);
+
 -- Random index computed in the script or read from a Component, which mirrors VTL error
 -- 2-1-15-2 when negative (a literal or a scalar value is checked before any SQL runs).
 CREATE OR REPLACE MACRO vtl_random_index(x) AS (
     CASE WHEN x < 0 THEN error('VTL 2-1-15-2 random: negative index ' || CAST(x AS VARCHAR))
          ELSE x
     END
+);
+
+-- A step of the SplitMix64 mixer on a UHUGEINT below 2^64: a xor-shift, then a product
+-- modulo 2^64. UBIGINT arithmetic raises on overflow instead of wrapping around, and the
+-- mask keeps the low 64 bits much faster than a UHUGEINT modulo.
+CREATE OR REPLACE MACRO vtl_random_mix(z, shift, factor) AS (
+    (xor(z, z >> shift) * factor) & 18446744073709551615
+);
+
+-- Random number at index i of the SplitMix64 sequence seeded with the bits of the Number s
+-- (adding 0 turns -0.0 into 0.0), kept to 6 decimals, the same number as the pandas engine
+-- (issue #1253). The last step has factor 1, a xor-shift alone.
+CREATE OR REPLACE MACRO vtl_random(s, i) AS (
+    CAST(
+        CAST(
+            vtl_random_mix(
+                vtl_random_mix(
+                    vtl_random_mix(
+                        (CAST(CAST(CAST(s AS DOUBLE) + 0 AS BIT) AS UBIGINT)
+                         + (CAST(i AS UHUGEINT) + 1) * 11400714819323198485)
+                        & 18446744073709551615,
+                        30, 13787848793156543929
+                    ),
+                    27, 10723151780598845931
+                ),
+                31, 1
+            ) AS UBIGINT
+        ) % 1000000 AS DOUBLE
+    ) / 1000000
 );
 
 -- Square root that mirrors VTL error 2-1-15-2 on negative values.

@@ -72,8 +72,8 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
-from vtlengine.Operators.Analytic import DEFAULT_ANALYTIC_WINDOW
 from vtlengine.Operators.Join import drop_non_viral_attributes, merged_viral_attribute_names
+from vtlengine.Operators.Time import Period_indicator
 from vtlengine.Utils._recursion import recursion_headroom
 from vtlengine.ViralPropagation import apply_viral_return_types, get_current_registry
 from vtlengine.ViralPropagation.sql import (
@@ -284,6 +284,18 @@ _TEXT_CASTS = {
     ),
 }
 _TEXT_CASTS["timeinterval"] = _TEXT_CASTS["time"]
+
+# Casts to text that write the value as the pandas engine does, by the lower case names of
+# the source and target types ({0}: the value, issue #1254)
+_CASTS_TO_TEXT = {
+    ("date", "string"): "vtl_date_to_text({0})",
+    ("date", "time"): "vtl_date_to_text({0}) || '/' || vtl_date_to_text({0})",
+    ("duration", "string"): "vtl_duration_to_text({0})",
+    ("timeperiod", "time"): (
+        "vtl_tp_start_date(vtl_period_parse({0})) || '/' || vtl_tp_end_date(vtl_period_parse({0}))"
+    ),
+}
+_CASTS_TO_TEXT["time_period", "time"] = _CASTS_TO_TEXT["timeperiod", "time"]
 
 
 def _contains_analytic(node: Any) -> bool:
@@ -601,41 +613,41 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                         one_row = self._hoisted_source("(SELECT 1)", hoisted)
                         value_sql += f" FROM {one_row} AS t"
             return name, value_sql, is_persistent
-        query = self.visit(child)
-        query = self._unqualify_join_columns(name, query)
-        return name, query, is_persistent
+        return name, self.visit(child), is_persistent
 
-    def _unqualify_join_columns(self, ds_name: str, query: str) -> str:
+    def visit(self, node: Any) -> Any:
+        """Dispatch as StructureVisitor does. The last clause of a join ends it, and there the
+        Components lose the alias prefix, as the interpreter strips it, so that an operator
+        that reads the join, as a membership does, finds them by name (issue #1276)."""
+        sql = super().visit(node)
+        if isinstance(node, AST.RegularAggregation) and node.isLast:
+            return self._unqualify_join_columns(node, sql)
+        return sql
+
+    def _unqualify_join_columns(self, node: AST.RegularAggregation, query: str) -> str:
         """Rename remaining alias#comp columns to plain component names."""
         if not self._join_alias_map:
             return query
 
-        output_ds = self.output_datasets.get(ds_name)
+        output_ds = self._get_dataset_structure(node)
         if output_ds is None:
             return query
 
-        output_comp_names = set(output_ds.components.keys())
         unqual_to_qual: Dict[str, str] = {}
         for qualified in self._join_alias_map:
-            if qualified in self._consumed_join_aliases or qualified in output_comp_names:
+            if qualified in self._consumed_join_aliases:
                 continue
-            if "#" in qualified:
-                unqualified = qualified.split("#", 1)[1]
-                if unqualified in output_comp_names and unqualified not in unqual_to_qual:
-                    unqual_to_qual[unqualified] = qualified
+            unqualified = qualified.split("#", 1)[1]
+            if unqualified in output_ds.components and unqualified not in unqual_to_qual:
+                unqual_to_qual[unqualified] = qualified
 
         if not unqual_to_qual:
             return query
 
-        cols: List[str] = []
-        for comp_name in output_ds.components:
-            qual = unqual_to_qual.get(comp_name)
-            if qual is not None:
-                cols.append(f"{quote_name(qual)} AS {quote_name(comp_name)}")
-            else:
-                cols.append(quote_name(comp_name))
-
-        return f"SELECT {', '.join(cols)} FROM ({query})"
+        renames = ", ".join(
+            f"{quote_name(q)} AS {quote_name(u)}" for u, q in unqual_to_qual.items()
+        )
+        return f"SELECT * RENAME ({renames}) FROM ({query})"
 
     def visit_Assignment(self, node: AST.Assignment) -> str:
         """Visit an assignment and return the SQL for its right-hand side."""
@@ -658,6 +670,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         except (ValueError, TypeError):
             return False
         return True
+
+    def _get_dataset_sql(self, node: Optional[AST.AST]) -> str:
+        """Get the SQL FROM source for a dataset node, built without the result of the statement:
+        its names and columns are the operand's own, not the outer operator's (issue #1276)."""
+        with self._stash_assignment():
+            return super()._get_dataset_sql(node)
 
     def _as_subquery(self, src: str) -> str:
         """Wrap *src* as a parenthesized subquery, adding ``SELECT *`` if needed."""
@@ -886,7 +904,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     or name in self.input_datasets[ds.name].get_measures_names()
                 ):
                     out_name = output_measures[0]
-                cols.append(f"{expr} AS {quote_name(out_name)}")
+                column = f"{expr} AS {quote_name(out_name)}"
+                # An expression on all the Measures at once, as the analytic count, gives
+                # the same column for each of them, which is selected once (issue #1249)
+                if column not in cols:
+                    cols.append(column)
             elif comp.role == Role.VIRAL_ATTRIBUTE:
                 if viral_expr_fn is not None:
                     cols.append(f"{viral_expr_fn(name, comp)} AS {quote_name(name)}")
@@ -1166,10 +1188,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         op: str,
     ) -> _PairwiseJoin:
         """Work out the columns and the join of a dataset-dataset binary operation."""
-        left_ds = self._get_dataset_structure(left_node)
-        right_ds = self._get_dataset_structure(right_node)
         output_ds = self._get_output_dataset()
-
+        # Resolved without the result too, as _get_dataset_sql builds the operands, so that
+        # each structure is looked up once
+        with self._stash_assignment():
+            left_ds = self._get_dataset_structure(left_node)
+            right_ds = self._get_dataset_structure(right_node)
         left_src = self._get_dataset_sql(left_node)
         right_src = self._get_dataset_sql(right_node)
 
@@ -1670,6 +1694,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def _visit_period_indicator(self, node: AST.UnaryOp) -> str:
         """Visit PERIOD_INDICATOR: extract period indicator from TimePeriod."""
+        operand = node.operand
+        if isinstance(operand, AST.Identifier) and not operand.value and self._current_dataset:
+            # period_indicator() reads the time Identifier of the clause's Data Set (#1247)
+            time_id = Period_indicator._get_time_id(self._current_dataset)
+            return f"vtl_period_parse({quote_name(time_id)}).period_indicator"
         operand_type = self._get_node_type(node.operand)
 
         ds = self._get_dataset_structure(node.operand)
@@ -2371,6 +2400,14 @@ FROM (
             return self._get_node_value(type_node)
         if isinstance(node, AST.TimeAggregation):
             return "TimePeriod"
+        if isinstance(node, AST.VarID):
+            # A name is read as visit_VarID reads it: a parameter of a user defined
+            # operator has the type of its argument, then a scalar its own (issue #1254)
+            argument = self._get_udo_param(node.value)
+            if isinstance(argument, AST.AST) and argument is not node:
+                return self._get_source_vtl_type(argument)
+            if node.value in self.scalars:
+                return self.scalars[node.value].data_type.__name__
         if isinstance(node, AST.VarID) and self._current_dataset:
             comp = self._current_dataset.components.get(node.value)
             if comp and comp.data_type:
@@ -2475,6 +2512,9 @@ FROM (
             # Text the pandas engine does not cast raises its error (issue #1192)
             return _TEXT_CASTS[target_lower].format(expr, duckdb_type)
 
+        if (source_lower, target_lower) in _CASTS_TO_TEXT:
+            return _CASTS_TO_TEXT[source_lower, target_lower].format(expr)
+
         if target_type_str == "Integer":
             if source_lower == "boolean":
                 return f"CAST({expr} AS {duckdb_type})"
@@ -2542,17 +2582,11 @@ FROM (
             # semantic analysis, so the query checks it (issue #1192)
             index_sql = f"vtl_random_index({index_sql})"
 
-        index_nullable = index_node is not None and not isinstance(index_node, AST.Constant)
-
         if seed_type == _DATASET and seed_node is not None:
-            return self._apply_measures(
-                seed_node,
-                lambda col: self._random_hash_expr(col, index_sql, True, index_nullable),
-            )
+            return self._apply_measures(seed_node, lambda col: f"vtl_random({col}, {index_sql})")
 
         seed_sql = self.visit(seed_node) if seed_node else "0"
-        seed_nullable = seed_node is not None and not isinstance(seed_node, AST.Constant)
-        return self._random_hash_expr(seed_sql, index_sql, seed_nullable, index_nullable)
+        return f"vtl_random({seed_sql}, {index_sql})"
 
     def visit_ParamOp_random(self, node: AST.ParamOp) -> str:
         """Visit RANDOM operator (ParamOp form)."""
@@ -2563,28 +2597,6 @@ FROM (
     def visit_BinOp_random(self, node: AST.BinOp) -> str:
         """Visit RANDOM operator (BinOp form, e.g. inside calc)."""
         return self._visit_random_impl(node.left, node.right)
-
-    @staticmethod
-    def _random_hash_expr(
-        seed_sql: str, index_sql: str, seed_nullable: bool = False, index_nullable: bool = False
-    ) -> str:
-        """Build a deterministic hash-based random expression in [0, 1).
-
-        The hash of a null is a number, so a seed or an index that can be null gives null
-        explicitly (issue #1192).
-        """
-        random_sql = (
-            f"(ABS(hash(CAST({seed_sql} AS VARCHAR) || '_' || "
-            f"CAST({index_sql} AS VARCHAR))) % 1000000) / 1000000.0"
-        )
-        nulls = [
-            f"{sql} IS NULL"
-            for sql, nullable in ((seed_sql, seed_nullable), (index_sql, index_nullable))
-            if nullable
-        ]
-        if not nulls:
-            return random_sql
-        return f"CASE WHEN {' OR '.join(nulls)} THEN NULL ELSE {random_sql} END"
 
     # Clause visitor
 
@@ -3223,8 +3235,8 @@ FROM (
                 order_is_date = comp is not None and comp.data_type == Date
             window_sql = self.visit_Windowing(node.window, order_is_date=order_is_date)
             over_parts.append(window_sql)
-        else:
-            over_parts.append(DEFAULT_ANALYTIC_WINDOW)
+        # With no window clause, the default frame of SQL is the default window of VTL 2.2
+        # (issue #1249)
         return " ".join(over_parts)
 
     def _resolve_partition_cols(self, node: AST.Analytic) -> List[str]:
@@ -3320,6 +3332,13 @@ FROM (
         over_clause = self._build_over_clause(node)
 
         def _analytic_expr(col_ref: str) -> str:
+            if op == tokens.COUNT:
+                # count gives the number of Data Points of the window as the single Measure
+                # int_var. A Data Point whose Measures are all null is not counted, as in the
+                # Aggregate invocation (issue #1049)
+                measures = self._get_dataset_structure(node.operand).get_measures_names()
+                any_non_null = " OR ".join(f"{quote_name(m)} IS NOT NULL" for m in measures)
+                col_ref = f"CASE WHEN {any_non_null} THEN 1 END"
             func_sql = self._build_analytic_expr(op, col_ref, node)
             if op == tokens.RATIO_TO_REPORT:
                 return func_sql
@@ -3495,7 +3514,8 @@ FROM (
         the measure values from the first (or relevant) dataset.  This differs
         from SQL INTERSECT/EXCEPT which compare all columns.
         """
-        child_sqls = [f"SELECT * FROM {self._get_dataset_sql(child)}" for child in node.children]
+        sources = [self._get_dataset_sql(child) for child in node.children]
+        child_sqls = [f"SELECT * FROM {source}" for source in sources]
 
         if op == tokens.UNION:
             first_child = node.children[0]
@@ -3506,22 +3526,11 @@ FROM (
                 output_ds = self._get_output_dataset()
                 order_ds = output_ds if output_ds else ds
                 col_order = list(order_ds.components.keys())
-                ordered_cols = ", ".join(quote_name(c) for c in col_order)
-                ordered_sqls = [f"SELECT {ordered_cols} FROM ({sql}) AS _ord" for sql in child_sqls]
-
                 id_names = order_ds.get_identifiers_names()
                 if id_names:
-                    inner_sql = registry.sql(op, *ordered_sqls)
-                    id_cols = ", ".join(quote_name(i) for i in id_names)
-                    # Preserve UNION ALL row order to match pandas drop_duplicates(keep="first").
-                    # QUALIFY keeps the first occurrence per identifier group by insertion order.
-                    return (
-                        f"SELECT {ordered_cols} FROM ("
-                        f"SELECT *, ROW_NUMBER() OVER () AS _rn "
-                        f"FROM ({inner_sql}) AS _union_inner"
-                        f") AS _union_t "
-                        f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {id_cols} ORDER BY _rn) = 1"
-                    )
+                    return self._union_by_identifiers(sources, col_order, id_names)
+                ordered_cols = ", ".join(quote_name(c) for c in col_order)
+                ordered_sqls = [f"SELECT {ordered_cols} FROM ({sql}) AS _ord" for sql in child_sqls]
                 return registry.sql(op, *ordered_sqls)
             return registry.sql(op, *child_sqls)
 
@@ -3569,6 +3578,31 @@ FROM (
             )
 
         return registry.sql(op, *child_sqls)
+
+    def _union_by_identifiers(
+        self, sources: List[str], columns: List[str], id_names: List[str]
+    ) -> str:
+        """Union the operands by their Identifiers: each operand gives the Data Points whose
+        Identifiers are in no operand before it, so a repeated Data Point comes from the
+        left-most operand. A row-number filter over the UNION ALL of the operands gives wrong
+        values on DuckDB 1.5 when the operands repeat a MATERIALIZED CTE (issue #1283).
+        An operand that the next ones read again is computed once, unless it is a table."""
+        cte = CTEBuilder()
+        refs: List[str] = []
+        for k, source in enumerate(sources):
+            if source.startswith("(") and k < len(sources) - 1:
+                cte.cte(f"_union_{k}", f"SELECT * FROM {source}", materialized=True)
+                source = f"_union_{k}"
+            refs.append(source)
+        cols = ", ".join(f"u.{quote_name(c)}" for c in columns)
+        branches: List[str] = []
+        for k, ref in enumerate(refs):
+            anti_joins = "".join(
+                f" ANTI JOIN {prev} AS p{j} ON {self._join_on_clause(id_names, 'u', f'p{j}')}"
+                for j, prev in enumerate(refs[:k])
+            )
+            branches.append(f"(SELECT {cols} FROM {ref} AS u{anti_joins})")
+        return cte.select(" UNION ALL ".join(branches))
 
     # =========================================================================
     # Conditional visitors (If, Case)
@@ -3648,7 +3682,8 @@ FROM (
         elif e_type == _DATASET and _is_plain_dataset(node.elseOp):
             ref_ds = self._get_dataset_structure(node.elseOp)
         if ref_ds is None:
-            ref_ds = self._get_output_dataset() or source_ds
+            # As an operand, the if has its own structure and not the result's (issue #1276)
+            ref_ds = self._get_output_dataset() or self._get_dataset_structure(node) or source_ds
         output_measures = list(ref_ds.get_measures_names())
         output_attributes = list(ref_ds.get_attributes_names())
         output_viral = list(ref_ds.get_viral_attributes_names())
@@ -3773,7 +3808,8 @@ FROM (
         source_ids = list(source_ds.get_identifiers_names())
         alias_src = "src"
 
-        output_ds = self._get_output_dataset() or source_ds
+        # As an operand, the case has its own structure and not the result's (issue #1276)
+        output_ds = self._get_output_dataset() or self._get_dataset_structure(node) or source_ds
         output_measures = output_ds.get_measures_names()
         output_viral = output_ds.get_viral_attributes_names()
         builder = SQLBuilder().from_table(source_sql, alias_src)
@@ -4255,6 +4291,7 @@ FROM (
         parsed_rules: List[_ParsedHRRule],
         rule_comp: str,
         cond_mapping: Dict[str, str],
+        mode: str,
     ) -> Tuple[str, str, List[str]]:
         """Build the pivot SELECT SQL and metadata for hierarchy operations.
 
@@ -4323,11 +4360,12 @@ FROM (
                             found.append(f"({rc})")
                 structs.append(f"struct_pack({', '.join(fields)}) AS _r{parsed.index}")
         src = self._hoisted_source(table_src, hoisted) if hoisted else table_src
-        group_by = f" GROUP BY {', '.join(group_cols)}" if group_cols else ""
-        pivot_sql = (
-            f"SELECT {', '.join([*group_cols, *structs])} "
-            f"FROM {src} WHERE {' OR '.join(dict.fromkeys(found))}{group_by}"
-        )
+        # The always modes give a result for every group of the operand (issue #1250). An
+        # aggregate without GROUP BY gives a row even without data points: HAVING drops it.
+        always = mode in ("always_null", "always_zero")
+        where = "" if always else f" WHERE {' OR '.join(dict.fromkeys(found))}"
+        group_by = f" GROUP BY {', '.join(group_cols)}" if group_cols else " HAVING COUNT(*) > 0"
+        pivot_sql = f"SELECT {', '.join([*group_cols, *structs])} FROM {src}{where}{group_by}"
         return pivot_sql, measure_name, other_ids
 
     def _hr_rule_source(
@@ -4433,7 +4471,7 @@ FROM (
             return f"SELECT {', '.join(cols)} FROM {table_src} WHERE 1=0"
 
         pivot_sql, measure_name, other_ids = self._build_hr_pivot(
-            table_src, ds, parsed_rules, rule_comp, cond_mapping
+            table_src, ds, parsed_rules, rule_comp, cond_mapping, mode
         )
         cte = CTEBuilder()
         # MATERIALIZED so the pivot aggregation is computed once, not once per
@@ -4833,7 +4871,7 @@ FROM (
             return f"SELECT {all_cols_csv} FROM {table_src}"
 
         pivot_sql, measure, other_ids = self._build_hr_pivot(
-            table_src, ds, parsed_rules, rule_comp, cond_mapping
+            table_src, ds, parsed_rules, rule_comp, cond_mapping, mode
         )
         cte = CTEBuilder()
         # MATERIALIZED so the pivot aggregation is computed once, not once per rule.
@@ -4994,7 +5032,8 @@ FROM (
         right_presence = [
             f"{self._hr_item_sql(parsed, j)[1]} = 1" for j in range(len(parsed.right_code_items))
         ]
-        if right_presence:
+        # The always modes compute the data point in any case (issue #1250)
+        if right_presence and mode not in ("always_null", "always_zero"):
             where_parts.append(f"({' OR '.join(right_presence)})")
         if parsed.has_when:
             # The rule only computes where its condition holds: another rule may compute
@@ -5021,7 +5060,8 @@ FROM (
     ) -> List[str]:
         """Generate WHERE filter clauses for the validation mode from the rule source.
 
-        An excluded right code item is not involved in the rule.
+        An excluded right code item is not involved in the rule. The always modes have none:
+        the data point is produced in any case (issue #1250).
         """
         positions = range(len(parsed.right_code_items))
         left_sql = self._hr_item_sql(parsed)
@@ -5054,10 +5094,6 @@ FROM (
             checks = [f"{has} = 1" for _, has, _ in items_sql]
             if checks:
                 filters.append(f"({' OR '.join(checks)})")
-
-        elif mode in ("always_null", "always_zero"):
-            presence = [f"{has} = 1" for _, has, _ in all_items_sql]
-            filters.append(f"({' OR '.join(presence)})")
 
         return filters
 
@@ -5305,6 +5341,7 @@ FROM (
 
         cols: List[str] = []
         self._join_alias_map = {}
+        self._consumed_join_aliases = set()
         seen_identifiers: Set[str] = set()
         for info in clause_info:
             sa = info["sql_alias"]
@@ -5458,7 +5495,8 @@ FROM (
     def visit_EvalOp(self, node: AST.EvalOp) -> str:
         """Visit EVAL operator (external routine execution)."""
         routine = self.external_routines[node.name]
-        query = routine.query.replace('"', "'")
+        # Without its closing semicolon, the query can be the operand of another (issue #1276)
+        query = routine.query.replace('"', "'").strip().rstrip(";")
 
         # Map SQL table names to actual DuckDB table names.
         for table_name in routine.dataset_names:
@@ -5484,6 +5522,6 @@ FROM (
         infinite = " OR ".join(f"isinf(TRY_CAST({name} AS DOUBLE))" for name in numeric)
         error = "'VTL Error 2-1-3-1: Division by zero produced infinite values in eval'"
         return (
-            f"SELECT * FROM ({query.strip().rstrip(';')}) AS eval_result "
+            f"SELECT * FROM ({query}) AS eval_result "
             f"WHERE CASE WHEN {infinite} THEN error({error}) ELSE TRUE END"
         )

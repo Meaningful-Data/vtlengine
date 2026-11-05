@@ -1,0 +1,45 @@
+{
+  "datasets": [
+    {
+      "name": "DS_1",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "type": "Integer",
+          "nullable": false,
+          "role": "Identifier"
+        },
+        {
+          "name": "Me_1",
+          "type": "Date",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "Me_2",
+          "type": "Duration",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "Me_3",
+          "type": "Time_Period",
+          "nullable": true,
+          "role": "Measure"
+        },
+        {
+          "name": "Me_4",
+          "type": "Boolean",
+          "nullable": true,
+          "role": "Measure"
+        }
+      ]
+    }
+  ],
+  "scalars": [
+    {
+      "name": "SC_1",
+      "type": "Date"
+    }
+  ]
+}

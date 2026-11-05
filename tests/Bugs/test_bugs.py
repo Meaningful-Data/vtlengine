@@ -1780,6 +1780,41 @@ class ComparisonBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1276_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 = abs ( DS_1 );
+        Description: The operand abs ( DS_1 ) of a comparison was built with the structure of
+                     the statement's result, so its Measure was named bool_var and the DuckDB
+                     engine failed with a BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
+        Goal: Check Result.
+        """
+        code = "GH_1276_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1282(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := isnull ( not Me_1 ),
+                                        Me_3 := between ( not Me_1 , true , true ),
+                                        Me_4 := cast ( not Me_1 , string ) ];
+        Description: The DuckDB engine wrote not as NOT x, without parentheses, so it read
+                     NOT x IS NULL and NOT x BETWEEN ... as NOT (x IS NULL) and
+                     NOT (x BETWEEN ...), which inverted isnull, between and the cast to string
+                     of a not.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1282
+        Goal: Check Result.
+        """
+        code = "GH_1282"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class TimeBugs(BugHelper):
     """ """
@@ -2280,6 +2315,25 @@ class TimeBugs(BugHelper):
             scalars={"sc_1": None},
         )
 
+    def test_GH_1276_2(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- cast ( time_agg ( "A" , _ , DS_1 ) , string );
+                    DS_r2 <- min ( time_agg ( "A" , _ , DS_1 ) );
+                    DS_r3 <- inner_join ( time_agg ( "A" , _ , DS_1 ) as a , DS_2 as b );
+        Description: A time_agg on a Data Set is the operand of another operator. The DuckDB
+                     engine wrote its query inside the expression of cast and min and failed
+                     with a ParserException. As on the pandas engine, the time_agg drops the
+                     Attribute At_1 of DS_1 that is not viral, so the join takes At_1 from DS_2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
+        Goal: Check Result.
+        """
+        code = "GH_1276_2"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class SetBugs(BugHelper):
     """ """
@@ -2571,6 +2625,45 @@ class SetBugs(BugHelper):
         """
         code = "GH_1225_5"
         number_inputs = 2
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1283_1(self):
+        """
+        Expression: DS_r1 <- union((sum(DS_1 group by Id_1) / 2)[filter Me_1 > 2],
+                                   (sum(DS_1 group by Id_1) / 2)[filter Me_1 <= 2]);
+                    DS_r2 <- union((sum(DS_1 group by Id_1) / 2)[filter Me_1 > 5],
+                                   (sum(DS_1 group by Id_1) / 2)[filter Me_1 > 1]
+                                       [calc Me_1 := Me_1 + 100],
+                                   (sum(DS_1 group by Id_1) / 2)[calc Me_1 := Me_1 + 1000]);
+        Description: The operands repeat the same division, which DuckDB computes in a
+            MATERIALIZED CTE, and the union kept the first Data Point of each Identifier with a
+            row-number filter over the UNION ALL of the operands, where DuckDB 1.5 returned
+            0.0 or other wrong values. Each operand gives the Data Points whose Identifiers are
+            in no operand before it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1283
+        Goal: Check Result.
+        """
+        code = "GH_1283_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1276_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( union ( DS_1 + DS_1 , DS_1 + DS_1 ) group by Id_1 );
+        Description: A union used as an operand took the columns of the statement's result, so
+                     inside the aggregation it lost Id_2 and the sum was silently wrong on the
+                     DuckDB engine, and its computed operands made DuckDB fail with an internal
+                     error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
+        Goal: Check Result.
+        """
+        code = "GH_1276_7"
+        number_inputs = 1
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
@@ -2919,9 +3012,10 @@ class AggregationBugs(BugHelper):
                      Measure int_var (DS_r1, DS_r2, issue #1049); a Component operand
                      counts its values and reports 0 where a group holds none (DS_r3);
                      count() with no operand counts the Data Points (DS_r4);
-                     an analytic count reports 0 for a partition of nulls (DS_r5) and
-                     covers the whole partition where the window clause is omitted
-                     (DS_r6); a having condition keeps the viral attributes (DS_r7);
+                     an analytic count reports 0 for a partition of nulls (DS_r5) and,
+                     with an order clause and no window clause, counts up to the
+                     current Data Point (DS_r6, issue #1249); a having condition keeps
+                     the viral attributes (DS_r7);
                      an analytic count over a String Measure counts its values
                      (DS_r8); and count() reports the Data Points of a Data Set that
                      is not grouped (DS_r9).
@@ -3501,6 +3595,25 @@ class ConditionalBugs(BugHelper):
         code = "GH_1251"
         number_inputs = 6
         references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1276_8(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- abs ( case when DS_1 > 0 then DS_1 else DS_1 * -1 );
+                    DS_r2 <- abs ( if DS_1 > 0 then DS_1 * 2 else DS_1 * -1 );
+                    DS_r3 <- if DS_1 [ filter Me_1 > 0 or isnull ( Me_1 ) ] > 0
+                        then DS_1 [ filter Me_1 > 0 or isnull ( Me_1 ) ] else DS_1;
+        Description: On the DuckDB engine, a case (DS_r1) and an if (DS_r2) used as operands
+                     took the bool_var Measure of their condition. On the pandas engine, an if
+                     whose operands are clauses (DS_r3) lost the Data Points of its true branch.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
+        Goal: Check Result.
+        """
+        code = "GH_1276_8"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -4232,6 +4345,25 @@ class ClauseBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1252(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- DS_1 [ calc At_1 := "X" ];
+                    DS_r2 <- DS_2 [ aggr Me_1 := sum ( Me_1 ), At_1 := max ( At_1 ) group by Id_1 ];
+                    DS_r3 <- DS_2 [ calc At_1 := "X" ] [ aggr Me_1 := sum ( Me_1 ), At_1 := max ( At_1 ) group by Id_1 ] * 2;
+        Description: calc and aggr turned the Attribute At_1, computed with no role, into a
+                     Measure. A Component of the operand keeps its role when the role is omitted.
+                     In DS_r3 the String Attribute At_1 is dropped by *, which DuckDB only does
+                     when its own structures of the two clauses keep At_1 an Attribute.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1252
+        Goal: Check Result.
+        """
+        code = "GH_1252"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class DefinedBugs(BugHelper):
     """ """
@@ -4878,6 +5010,24 @@ class DefinedBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": "D"}
         )
+
+    def test_GH_1276_6(self):
+        """
+        Status: OK
+        Expression: define operator to_abs ( ds dataset ) returns dataset is abs ( ds )
+                        end operator;
+                    DS_r <- to_abs ( DS_1 ) + 1;
+        Description: A user defined operator call used as an operand was typed from the body
+                     of the operator with its arguments unbound, so the DuckDB engine wrote the
+                     call inside the outer expression and failed with a ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
+        Goal: Check Result.
+        """
+        code = "GH_1276_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
 
 class OtherBugs(BugHelper):
@@ -5831,7 +5981,7 @@ class CastBugs(BugHelper):
                      analysed the whole Data Set as a single partition and
                      disagreed with the Pandas engine for every analytic operator.
                      No window clause is given either, so each value covers the
-                     whole partition (see issue #1002).
+                     partition up to the current Data Point (see issue #1249).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/995
         Goal: Check Result.
         """
@@ -5850,12 +6000,11 @@ class CastBugs(BugHelper):
                                         m4 := sum(... data points between
                                               unbounded preceding and current
                                               data point) ];
-        Description: an omitted window clause defaults to the whole partition,
-                     so every Data Point of a partition gets the same value.
-                     Both engines instead inherited the SQL default of every
-                     Data Point up to the current one and returned a running
-                     aggregate. m4 gives that running aggregate explicitly and
-                     must keep working.
+        Description: with an order clause, an omitted window clause defaults to
+                     range between unbounded preceding and current data point
+                     (VTL 2.2, issue #1249), so m1, m2 and m3 run from the first
+                     Data Point of the partition to the current one, as m4 does
+                     with its explicit window.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1002
         Goal: Check Result.
         """

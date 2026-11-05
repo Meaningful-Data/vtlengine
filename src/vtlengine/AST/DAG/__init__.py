@@ -285,16 +285,19 @@ class DAGAnalyzer(ASTTemplate):
         self.visit(node.right)
 
     def visit_RegularAggregation(self, node: RegularAggregation) -> None:
+        alias = self.alias
         self.visit(node.dataset)
-        if node.op in [KEEP, DROP, RENAME]:
-            return
-        saved_is_dataset = self.is_dataset
-        self.is_dataset = False
-        for child in node.children:
-            self.is_from_regular_aggregation = True
-            self.visit(child)
-            self.is_from_regular_aggregation = False
-        self.is_dataset = saved_is_dataset
+        if node.op not in [KEEP, DROP, RENAME]:
+            saved_is_dataset = self.is_dataset
+            self.is_dataset = False
+            for child in node.children:
+                self.is_from_regular_aggregation = True
+                self.visit(child)
+                self.is_from_regular_aggregation = False
+            self.is_dataset = saved_is_dataset
+        if node.isLast:
+            # The aliases of a join are not known after its last clause (issue #1281)
+            self.alias = alias
 
     def visit_BinOp(self, node: BinOp) -> None:
         if node.op == MEMBERSHIP:
@@ -304,7 +307,6 @@ class DAGAnalyzer(ASTTemplate):
             self.visit(node.right)
         elif node.op == AS or node.op == TO:
             self.visit(node.left)
-            self.alias.add(node.right.value)
         else:
             self.visit(node.left)
             self.visit(node.right)
@@ -353,6 +355,14 @@ class DAGAnalyzer(ASTTemplate):
     def visit_JoinOp(self, node: JoinOp) -> None:
         for clause in node.clauses:
             self.visit(clause)
+        if not node.isLast:
+            # The aliases name the operands in the clauses of the join only, so an operand
+            # with the name of an alias is still an input (issue #1281)
+            self.alias = self.alias | {
+                clause.right.value
+                for clause in node.clauses
+                if isinstance(clause, BinOp) and clause.op == AS
+            }
 
     def visit_UDOCall(self, node: UDOCall) -> None:
         node_args = (self.udos or {}).get(node.op)
