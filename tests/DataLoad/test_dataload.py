@@ -20,7 +20,6 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List
 
-import duckdb
 import pandas as pd
 import pytest
 
@@ -29,10 +28,8 @@ from vtlengine import run
 from vtlengine.API._InternalApi import (
     _load_single_external_routine_from_file,
     _load_single_value_domain,
-    load_datasets_with_data,
     load_vtl,
 )
-from vtlengine.duckdb_transpiler.io import register_dataframes
 from vtlengine.Exceptions import VTLEngineException
 
 
@@ -1072,32 +1069,6 @@ class DataLoadTest(DataLoadHelper):
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-3-1-3")
 
 
-@pytest.mark.parametrize("use_duckdb", engine_params())
-def test_GH_1284_3(use_duckdb: bool) -> None:
-    """A Python boolean loads as true or false in a String and as 1.0 or 0.0 in a Number,
-    in a column of booleans and in one of mixed values, which DuckDB writes with str()
-    (issue #1284)."""
-    data = pd.DataFrame(
-        {
-            "Id_1": [1, 2],
-            "Me_1": [True, False],
-            "Me_2": pd.Series([True, "x"], dtype=object),
-            "Me_3": [True, False],
-            "Me_4": pd.Series([True, "2.5"], dtype=object),
-        }
-    )
-    columns = ["Me_1", "Me_2", "Me_3", "Me_4"]
-    structures = DataLoadHelper.filepath_json / "GH_1284_3-1.json"
-    datasets, _, _ = load_datasets_with_data(structures, {"DS_1": data})
-    loaded = datasets["DS_1"].data[columns].values.tolist()
-    if use_duckdb:
-        with duckdb.connect() as conn:
-            register_dataframes(conn, {"DS_1": data}, datasets)
-            query = f'SELECT {", ".join(columns)} FROM "DS_1" ORDER BY "Id_1"'
-            loaded = conn.execute(query).fetchall()
-    assert [list(row) for row in loaded] == [["true", "true", 1.0, 1.0], ["false", "x", 0.0, 2.5]]
-
-
 BOM = b"\xef\xbb\xbf"
 
 
@@ -1364,6 +1335,69 @@ class TestBooleanFromDataFrame:
             use_duckdb=use_duckdb,
         )
         assert result["DS_r"].data["Me_1"].tolist() == [1, 0]
+
+    def test_number_booleans(self, use_duckdb: bool) -> None:
+        """A boolean in a Number column is 1.0 or 0.0, as in an Integer (issue #1284)."""
+        data_df = pd.DataFrame({"Id_1": [1, 2], "Me_1": [True, False]})
+        result = run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("Number"),
+            datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
+        )
+        assert result["DS_r"].data["Me_1"].tolist() == [1.0, 0.0]
+
+    def test_number_mixed_booleans(self, use_duckdb: bool) -> None:
+        """A boolean among other values of a Number column is 1.0 or 0.0 too (issue #1284)."""
+        data_df = pd.DataFrame({"Id_1": [1, 2], "Me_1": pd.Series([True, "2.5"], dtype=object)})
+        result = run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("Number"),
+            datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
+        )
+        assert result["DS_r"].data["Me_1"].tolist() == [1.0, 2.5]
+
+    def test_string_booleans(self, use_duckdb: bool) -> None:
+        """A boolean in a String column is written true or false (issue #1284)."""
+        data_df = pd.DataFrame({"Id_1": [1, 2], "Me_1": [True, False]})
+        result = run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("String"),
+            datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
+        )
+        assert result["DS_r"].data["Me_1"].tolist() == ["true", "false"]
+
+    def test_string_mixed_booleans(self, use_duckdb: bool) -> None:
+        """A boolean among other values of a String column is written true or false too
+        (issue #1284)."""
+        data_df = pd.DataFrame({"Id_1": [1, 2], "Me_1": pd.Series([True, "x"], dtype=object)})
+        result = run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("String"),
+            datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
+        )
+        assert result["DS_r"].data["Me_1"].tolist() == ["true", "x"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+class TestIntegerFromDataFrame:
+    """A DataFrame is read on the Integer rules of the pandas loader, the same on both
+    engines and the same as a CSV (issue #1284)."""
+
+    def test_integer_decimals(self, use_duckdb: bool) -> None:
+        """A value with decimals is refused, where DuckDB rounded it (1.5 to 2)."""
+        data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [1.5, 2.5, -0.7]})
+        with pytest.raises(VTLEngineException) as context:
+            run(
+                script="DS_r <- DS_1;",
+                data_structures=_dataframe_structures("Integer"),
+                datapoints={"DS_1": data_df},
+                use_duckdb=use_duckdb,
+            )
+        assert context.value.args[1] == "0-3-1-6"
 
 
 _EMPTY_STRING_LITERALS = {
