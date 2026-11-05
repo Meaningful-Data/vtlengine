@@ -667,9 +667,7 @@ class ASTVisitor:
 
     def visitCodeItemRelation(self, ctx):
         """
-        codeItemRelation: ( WHEN expr THEN )? codeItemRef codeItemRelationClause (codeItemRelationClause)* ;
-                        ( WHEN exprComponent THEN )? codetemRef=valueDomainValue comparisonOperand? codeItemRelationClause (codeItemRelationClause)*
-
+        codeItemRelation: ( WHEN exprComponent THEN )? codetemRef=valueDomainValue hrComparisonOperand codeItemRelationClause (codeItemRelationClause)* ;
         """  # noqa E501
 
         ctx_list = ctx.children
@@ -680,13 +678,13 @@ class ASTVisitor:
             when = ctx_list[0].text
             vd_value = Terminals().visitValueDomainValue(ctx_list[3])
             vd_quoted = is_quoted_identifier(ctx_list[3])
-            op = Terminals().visitComparisonOperand(ctx_list[4])
+            op = Terminals().visitHrComparisonOperand(ctx_list[4])
             token_info_value = extract_token_info(ctx_list[3])
             token_info_op = extract_token_info(ctx_list[4])
         else:
             vd_value = Terminals().visitValueDomainValue(ctx_list[0])
             vd_quoted = is_quoted_identifier(ctx_list[0])
-            op = Terminals().visitComparisonOperand(ctx_list[1])
+            op = Terminals().visitHrComparisonOperand(ctx_list[1])
             token_info_value = extract_token_info(ctx_list[0])
             token_info_op = extract_token_info(ctx_list[1])
 
