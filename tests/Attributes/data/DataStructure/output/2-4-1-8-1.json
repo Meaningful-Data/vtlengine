@@ -4,12 +4,6 @@
       "name": "DS_r",
       "DataStructure": [
         {
-          "name": "At_3",
-          "role": "Attribute",
-          "type": "Integer",
-          "nullable": false
-        },
-        {
           "name": "At_4",
           "role": "Measure",
           "type": "Integer",
@@ -43,18 +37,6 @@
           "name": "Me_3",
           "role": "Measure",
           "type": "String",
-          "nullable": true
-        },
-        {
-          "name": "At_1",
-          "role": "Attribute",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "At_2",
-          "role": "Attribute",
-          "type": "Number",
           "nullable": true
         }
       ]

@@ -720,15 +720,17 @@ class UdoTest(UDOHelper):
         """
         Status: OK
         Description: The join body references ``A#CONF_STATUS`` / ``B#CONF_STATUS``
-            in calc and keeps CONF_STATUS. Attributes are visible to the join body
-            clauses (VTL 2.2) and the explicit keep retains CONF_STATUS.
-        Goal: Check Result.
+            in calc. CONF_STATUS is a non-viral Attribute, which VTL 2.2 leaves out of
+            the virtual Data Set of the join, so the clause cannot read it (issue #1258).
+        Goal: Check Exception.
         """
         code = "GL_476_1"
         number_inputs = 2
-        references_names = ["1"]
+        exception_code = "1-1-1-10"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
 
     def test_GH_1162_1(self):
         """

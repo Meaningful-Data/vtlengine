@@ -22,12 +22,6 @@
           "nullable": false
         },
         {
-          "name": "CONF_STATUS",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
-        },
-        {
           "name": "COUNTERPART_AREA",
           "role": "Identifier",
           "type": "String",
@@ -44,12 +38,6 @@
           "role": "Identifier",
           "type": "String",
           "nullable": false
-        },
-        {
-          "name": "DECIMALS",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
         },
         {
           "name": "FLOW_STOCK_ENTRY",
@@ -88,12 +76,6 @@
           "nullable": false
         },
         {
-          "name": "OBS_STATUS",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
-        },
-        {
           "name": "OBS_VALUE",
           "role": "Measure",
           "type": "Number",
@@ -118,12 +100,6 @@
           "nullable": false
         },
         {
-          "name": "TIME_PER_COLLECT",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
-        },
-        {
           "name": "TIME_PERIOD",
           "role": "Identifier",
           "type": "Date",
@@ -134,12 +110,6 @@
           "role": "Identifier",
           "type": "String",
           "nullable": false
-        },
-        {
-          "name": "UNIT_MULT",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
         },
         {
           "name": "VALUATION",

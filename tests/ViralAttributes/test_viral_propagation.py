@@ -1018,11 +1018,12 @@ class TestKeepPreservesViralAttributes:
         assert list(d["VAt_1"]) == ["C", "N"]
 
     @pytest.mark.parametrize("use_duckdb", engine_params())
-    def test_keep_nonviral_attr_in_join_keeps_viral_with_null(self, use_duckdb: bool) -> None:
-        """The reported scenario: keeping a non-viral attribute in a join still
-        propagates the viral attribute, and a (null, X) pair resolves via the rule."""
+    def test_keep_in_join_keeps_viral_with_null(self, use_duckdb: bool) -> None:
+        """Keeping a measure in a join still propagates the viral attribute, and a
+        (null, X) pair resolves via the rule. The non-viral attribute is not in the
+        virtual Data Set of the join, so it is not in the result (issue #1258)."""
         result = run(
-            script=CONF_RULE + "DS_r <- inner_join(DS_1, DS_2 keep DS_2#At_1);",
+            script=CONF_RULE + "DS_r <- inner_join(DS_1, DS_2 keep Me_2);",
             data_structures={"datasets": [DS_NA_VA_1, DS_NA_VA_2]},
             datapoints={
                 "DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [10.0], "At_1": ["x"], "VAt_1": [None]}),
@@ -1031,13 +1032,30 @@ class TestKeepPreservesViralAttributes:
             use_duckdb=use_duckdb,
         )
         ds = result["DS_r"]
-        # The explicitly kept non-viral attribute and the viral attribute survive.
-        assert set(ds.components) == {"Id_1", "At_1", "VAt_1"}
+        assert set(ds.components) == {"Id_1", "Me_2", "VAt_1"}
         assert ds.components["VAt_1"].role == Role.VIRAL_ATTRIBUTE
-        assert ds.components["At_1"].role == Role.ATTRIBUTE
         # (null, "Z") -> "F" (else), not the leaked "Z".
         assert ds.data["VAt_1"].iloc[0] == "F"
-        assert ds.data["At_1"].iloc[0] == "y"
+
+    @pytest.mark.parametrize("use_duckdb", engine_params())
+    def test_keep_nonviral_attr_in_join_not_found(self, use_duckdb: bool) -> None:
+        """A non-viral attribute is not in the virtual Data Set of the join, so a
+        clause cannot keep it (issue #1258)."""
+        with pytest.raises(SemanticError) as exc:
+            run(
+                script=CONF_RULE + "DS_r <- inner_join(DS_1, DS_2 keep DS_2#At_1);",
+                data_structures={"datasets": [DS_NA_VA_1, DS_NA_VA_2]},
+                datapoints={
+                    "DS_1": pd.DataFrame(
+                        {"Id_1": [1], "Me_1": [10.0], "At_1": ["x"], "VAt_1": [None]}
+                    ),
+                    "DS_2": pd.DataFrame(
+                        {"Id_1": [1], "Me_2": [5.0], "At_1": ["y"], "VAt_1": ["Z"]}
+                    ),
+                },
+                use_duckdb=use_duckdb,
+            )
+        assert "1-1-1-10" in str(exc.value)
 
 
 # -- avg promotes a combined Integer viral attribute to Number (issue #910) --

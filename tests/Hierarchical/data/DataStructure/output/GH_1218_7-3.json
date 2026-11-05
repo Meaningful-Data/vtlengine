@@ -28,12 +28,6 @@
           "nullable": true
         },
         {
-          "name": "At_3",
-          "role": "Attribute",
-          "type": "String",
-          "nullable": true
-        },
-        {
           "name": "At_1",
           "role": "Attribute",
           "type": "String",

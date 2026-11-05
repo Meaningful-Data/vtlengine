@@ -2477,15 +2477,77 @@ class JoinsGeneralTests(JoinHelper):
     def test_GH_847_9(self):
         """
         Expression: DS_r := inner_join(DS_1, DS_2);
-        Description: Attributes are maintained through a join. DS_1's attribute
-                     At_1 is not present in DS_2, so it carries over unchanged and
-                     the result keeps Id_1, Me_1, At_1, Me_2.
-        Git Issue: GH_847, GH_881.
+        Description: A non-viral Attribute is not in the virtual Data Set of a join,
+                     so DS_1's attribute At_1 is dropped and the result keeps
+                     Id_1, Me_1, Me_2.
+        Git Issue: GH_847, GH_881, GH_1258.
         """
         code = "GH_847_9"
         number_inputs = 2
         references_names = ["1"]
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1258_1(self):
+        """
+        Expression: DS_r := inner_join(DS_1, DS_2);
+        Description: The non-viral Attribute At_1 of DS_1 is not in the virtual Data Set of
+                     the join, so it is not in the result.
+        Git Issue: GH_1258.
+        """
+        code = "GH_1258_1"
+        number_inputs = 3
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1258_2(self):
+        """
+        Expression: DS_r := cross_join(DS_1, DS_3);
+        Description: The non-viral Attribute At_1 of DS_1 is not in the result of a cross_join.
+        Git Issue: GH_1258.
+        """
+        code = "GH_1258_2"
+        number_inputs = 3
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1258_3(self):
+        """
+        Expression: DS_r := inner_join(DS_1, DS_2 calc At_1 := At_1 || "x");
+        Description: A calc clause of the join cannot read the non-viral Attribute At_1.
+        Git Issue: GH_1258.
+        """
+        code = "GH_1258_3"
+        number_inputs = 3
+        exception_code = "1-1-1-10"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_1258_4(self):
+        """
+        Expression: DS_r := inner_join(DS_1, DS_2 aggr At_1 := max(At_1) group by Id_1);
+        Description: An aggr clause of the join cannot read the non-viral Attribute At_1.
+        Git Issue: GH_1258.
+        """
+        code = "GH_1258_4"
+        number_inputs = 3
+        exception_code = "1-1-1-10"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
+
+    def test_GH_1258_5(self):
+        """
+        Expression: DS_r := cross_join(DS_1, DS_3 calc At_1 := At_1 || "x");
+        Description: A calc clause of a cross_join cannot read the non-viral Attribute At_1.
+        Git Issue: GH_1258.
+        """
+        code = "GH_1258_5"
+        number_inputs = 3
+        exception_code = "1-1-1-10"
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=exception_code
+        )
 
     def test_GH_1202_1(self):
         """
