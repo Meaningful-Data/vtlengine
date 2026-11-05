@@ -1246,7 +1246,13 @@ class StructureVisitor(ASTTemplate):
                             comp_name, comp.data_type, role=comp.role, nullable=nullable
                         )
                     continue
-                is_join_id = comp.role == Role.IDENTIFIER or comp_name in all_join_ids
+                keys_only = using_ids is not None and node.op in (
+                    tokens.LEFT_JOIN,
+                    tokens.FULL_JOIN,
+                )
+                is_join_id = (comp.role == Role.IDENTIFIER and not keys_only) or (
+                    comp_name in all_join_ids
+                )
                 if comp_name in duplicate_comps and (not is_join_id or is_cross):
                     qualified = f"{alias}#{comp_name}"
                     comps[qualified] = self._make_comp(

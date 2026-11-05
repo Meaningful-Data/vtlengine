@@ -5219,7 +5219,16 @@ FROM (
             all_components.update(info["ds"].components)
         defaults: Dict[str, str] = {}
         for pair in node.nvl:
-            if pair.component not in all_components:
+            # alias#name names the component of one operand (issue #1238)
+            alias, _, name = pair.component.rpartition("#")
+            found = (
+                any(
+                    info["alias"] == alias and name in info["ds"].components for info in clause_info
+                )
+                if alias
+                else name in all_components
+            )
+            if not found:
                 raise SemanticError(
                     "1-1-1-10",
                     op=node.op,
@@ -5228,6 +5237,15 @@ FROM (
                 )
             defaults[pair.component] = self._constant_to_sql(pair.default)
         return defaults
+
+    @staticmethod
+    def _join_nvl_expr(
+        column: str, nvl_defaults: Dict[str, str], info: Dict[str, Any], name: str
+    ) -> str:
+        """A join column with the default of its nvl rule, the one written for its operand
+        (alias#name) before the one written for every operand (name)."""
+        default = nvl_defaults.get(f"{info['alias']}#{name}", nvl_defaults.get(name))
+        return column if default is None else f"COALESCE({column}, {default})"
 
     @staticmethod
     def _build_join_viral_cols(
@@ -5290,6 +5308,7 @@ FROM (
 
         is_cross_join = node.op == tokens.CROSS_JOIN
         explicit_using = list(node.using) if node.using else None
+        keys_only = explicit_using is not None and node.op in (tokens.LEFT_JOIN, tokens.FULL_JOIN)
 
         # Pairwise keys: for each secondary dataset, the identifiers it shares with any
         # preceding dataset (or the explicit USING list).
@@ -5308,7 +5327,8 @@ FROM (
         if not is_cross_join:
             all_join_ids.update(*pairwise_keys)
             for info in clause_info:
-                all_join_ids |= info["id_names"]
+                if not keys_only:
+                    all_join_ids |= info["id_names"]
 
         comp_count: Counter[str] = Counter(
             name
@@ -5348,7 +5368,7 @@ FROM (
                     # Merged viral attrs are emitted once by _build_join_viral_cols.
                     continue
                 is_join_col = (
-                    comp.role == Role.IDENTIFIER and not is_cross_join
+                    comp.role == Role.IDENTIFIER and not is_cross_join and not keys_only
                 ) or name in all_join_ids
                 if is_join_col:
                     if name in seen_identifiers:
@@ -5366,16 +5386,13 @@ FROM (
                         cols.append(f"{sa}.{quote_name(name)}")
                 elif name in duplicate_comps:
                     qualified_name = f"{info['alias']}#{name}"
-                    expr = f"{sa}.{quote_name(name)}"
-                    if name in nvl_defaults:
-                        expr = f"COALESCE({expr}, {nvl_defaults[name]})"
+                    expr = self._join_nvl_expr(f"{sa}.{quote_name(name)}", nvl_defaults, info, name)
                     cols.append(f"{expr} AS {quote_name(qualified_name)}")
                     self._join_alias_map[qualified_name] = qualified_name
                 else:
-                    expr = f"{sa}.{quote_name(name)}"
-                    if name in nvl_defaults:
-                        expr = f"COALESCE({expr}, {nvl_defaults[name]}) AS {quote_name(name)}"
-                    cols.append(expr)
+                    column = f"{sa}.{quote_name(name)}"
+                    expr = self._join_nvl_expr(column, nvl_defaults, info, name)
+                    cols.append(column if expr == column else f"{expr} AS {quote_name(name)}")
 
         cols.extend(self._build_join_viral_cols(clause_info, vp_registry, merged_viral))
 
