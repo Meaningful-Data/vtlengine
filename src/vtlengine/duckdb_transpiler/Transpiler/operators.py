@@ -274,8 +274,9 @@ def _create_default_registry() -> OperatorRegistry:
     ops.register(tokens.EXP, "EXP({0})")
     ops.register(tokens.LN, "vtl_ln({0})")
     ops.register(tokens.SQRT, "vtl_sqrt({0})")
-    # Logical
-    ops.register(tokens.NOT, "NOT {0}", is_prefix=True)
+    # Logical. NOT goes in parentheses: IS NULL, BETWEEN, IN and the comparisons bind tighter
+    # than NOT, so wrapping NOT x would apply them to x alone (issue #1282)
+    ops.register(tokens.NOT, "(NOT {0})", is_prefix=True)
     # String functions
     ops.register(tokens.LEN, "LENGTH({0})")
     ops.register(tokens.TRIM, "TRIM({0})")
