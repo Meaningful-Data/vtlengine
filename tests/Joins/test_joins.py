@@ -2669,7 +2669,5 @@ class JoinsGeneralTests(JoinHelper):
             code=code,
             number_inputs=number_inputs,
             exception_code="1-1-13-1",
-            exception_message="At op inner_join: these names are given to more than one operand of "
-            "the join: DS_2. Each operand of a join needs a different name: its alias, or its Data "
-            "Set name when it has no alias.",
+            exception_message="At op inner_join: Duplicated name DS_2 among the join operands.",
         )
