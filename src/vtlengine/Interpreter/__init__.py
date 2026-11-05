@@ -1535,6 +1535,7 @@ class InterpreterAnalyzer(ASTTemplate):
             self.is_from_join
             and self.regular_aggregation_dataset is not None
             and node.old_name not in self.regular_aggregation_dataset.components
+            and "#" in node.old_name
         ):
             node.old_name = node.old_name.split("#")[1]
 
