@@ -640,6 +640,9 @@ public:
   virtual void enterCodeItemRelationClause(Vtl::CodeItemRelationClauseContext * /*ctx*/) override { }
   virtual void exitCodeItemRelationClause(Vtl::CodeItemRelationClauseContext * /*ctx*/) override { }
 
+  virtual void enterHrComparisonOperand(Vtl::HrComparisonOperandContext * /*ctx*/) override { }
+  virtual void exitHrComparisonOperand(Vtl::HrComparisonOperandContext * /*ctx*/) override { }
+
   virtual void enterValueDomainValue(Vtl::ValueDomainValueContext * /*ctx*/) override { }
   virtual void exitValueDomainValue(Vtl::ValueDomainValueContext * /*ctx*/) override { }
 
