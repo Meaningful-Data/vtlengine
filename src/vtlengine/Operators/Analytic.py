@@ -163,12 +163,14 @@ class Analytic(Operator.Unary):
                     nullable=operand.components[component_name].nullable,
                 )
             if cls.op == COUNT:
+                # count never returns null, whatever the nullability of its operand: a
+                # window with nothing to count gives 0 (issue #1277)
                 measure_name = COMP_NAME_MAPPING[cls.return_type]
                 result_components[measure_name] = Component(
                     name=measure_name,
                     data_type=cls.return_type,
                     role=Role.MEASURE,
-                    nullable=operand.components[component_name].nullable,
+                    nullable=False,
                 )
                 if component_name in result_components:
                     del result_components[component_name]
@@ -209,16 +211,16 @@ class Analytic(Operator.Unary):
 
             if cls.op == COUNT:
                 # count gives the number of Data Points whatever the Measures of the operand,
-                # so the result holds the single Measure int_var (issue #1249)
+                # so the result holds the single Measure int_var (issue #1249), never null
+                # (issue #1277)
                 measure_name = COMP_NAME_MAPPING[cls.return_type]
-                nullable = False if len(measures) == 0 else measures[0].nullable
                 for measure in measures:
                     del result_components[measure.name]
                 result_components[measure_name] = Component(
                     name=measure_name,
                     data_type=cls.return_type,
                     role=Role.MEASURE,
-                    nullable=nullable,
+                    nullable=False,
                 )
 
             if cls.op in (LAG, LEAD):

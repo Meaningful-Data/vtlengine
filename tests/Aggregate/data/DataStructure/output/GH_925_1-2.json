@@ -7,7 +7,7 @@
           "name": "X",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         }
       ]
     }

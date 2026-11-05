@@ -7,7 +7,7 @@
           "name": "int_var",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         }
       ]
     }

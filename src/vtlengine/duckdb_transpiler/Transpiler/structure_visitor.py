@@ -674,7 +674,8 @@ class StructureVisitor(ASTTemplate):
             if is_kept_id or is_kept_measure:
                 comps[name] = comp
         if is_count:
-            comps["int_var"] = self._make_comp("int_var", Integer)
+            # count never returns null (issue #1277)
+            comps["int_var"] = self._make_comp("int_var", Integer, nullable=False)
         # Viral attributes propagate through the aggregation (issue #944).
         for name, comp in ds.components.items():
             if comp.role == Role.VIRAL_ATTRIBUTE:
