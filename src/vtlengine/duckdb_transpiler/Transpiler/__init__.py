@@ -3514,7 +3514,8 @@ FROM (
         the measure values from the first (or relevant) dataset.  This differs
         from SQL INTERSECT/EXCEPT which compare all columns.
         """
-        child_sqls = [f"SELECT * FROM {self._get_dataset_sql(child)}" for child in node.children]
+        sources = [self._get_dataset_sql(child) for child in node.children]
+        child_sqls = [f"SELECT * FROM {source}" for source in sources]
 
         if op == tokens.UNION:
             first_child = node.children[0]
@@ -3525,25 +3526,11 @@ FROM (
                 output_ds = self._get_output_dataset()
                 order_ds = output_ds if output_ds else ds
                 col_order = list(order_ds.components.keys())
-                ordered_cols = ", ".join(quote_name(c) for c in col_order)
-                ordered_sqls = [f"SELECT {ordered_cols} FROM ({sql}) AS _ord" for sql in child_sqls]
-
                 id_names = order_ds.get_identifiers_names()
                 if id_names:
-                    # Match pandas drop_duplicates(keep="first"): QUALIFY keeps the data point of
-                    # the first operand that has it, the identifiers being unique in an operand.
-                    # Each branch carries its position, as ROW_NUMBER() OVER () on the UNION ALL
-                    # of computed operands fails to bind on DuckDB 1.5 (issue #1276).
-                    tagged_sqls = [
-                        f"SELECT {ordered_cols}, {k} AS _union_pos FROM ({sql}) AS _ord"
-                        for k, sql in enumerate(child_sqls)
-                    ]
-                    inner_sql = registry.sql(op, *tagged_sqls)
-                    id_cols = ", ".join(quote_name(i) for i in id_names)
-                    return (
-                        f"SELECT {ordered_cols} FROM ({inner_sql}) AS _union_t QUALIFY "
-                        f"ROW_NUMBER() OVER (PARTITION BY {id_cols} ORDER BY _union_pos) = 1"
-                    )
+                    return self._union_by_identifiers(sources, col_order, id_names)
+                ordered_cols = ", ".join(quote_name(c) for c in col_order)
+                ordered_sqls = [f"SELECT {ordered_cols} FROM ({sql}) AS _ord" for sql in child_sqls]
                 return registry.sql(op, *ordered_sqls)
             return registry.sql(op, *child_sqls)
 
@@ -3591,6 +3578,31 @@ FROM (
             )
 
         return registry.sql(op, *child_sqls)
+
+    def _union_by_identifiers(
+        self, sources: List[str], columns: List[str], id_names: List[str]
+    ) -> str:
+        """Union the operands by their Identifiers: each operand gives the Data Points whose
+        Identifiers are in no operand before it, so a repeated Data Point comes from the
+        left-most operand. A row-number filter over the UNION ALL of the operands gives wrong
+        values on DuckDB 1.5 when the operands repeat a MATERIALIZED CTE (issue #1283).
+        An operand that the next ones read again is computed once, unless it is a table."""
+        cte = CTEBuilder()
+        refs: List[str] = []
+        for k, source in enumerate(sources):
+            if source.startswith("(") and k < len(sources) - 1:
+                cte.cte(f"_union_{k}", f"SELECT * FROM {source}", materialized=True)
+                source = f"_union_{k}"
+            refs.append(source)
+        cols = ", ".join(f"u.{quote_name(c)}" for c in columns)
+        branches: List[str] = []
+        for k, ref in enumerate(refs):
+            anti_joins = "".join(
+                f" ANTI JOIN {prev} AS p{j} ON {self._join_on_clause(id_names, 'u', f'p{j}')}"
+                for j, prev in enumerate(refs[:k])
+            )
+            branches.append(f"(SELECT {cols} FROM {ref} AS u{anti_joins})")
+        return cte.select(" UNION ALL ".join(branches))
 
     # =========================================================================
     # Conditional visitors (If, Case)
