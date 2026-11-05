@@ -4,7 +4,7 @@ Clause operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 6 of 9 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip partial">🟡 8 of 9 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -33,8 +33,8 @@ Clause operators
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Clause operators"]:::block
-       clause__calc["Calculation of a Component · calc<br/>🟢5 🟡1"]:::partial
-       clause__aggr["Aggregation · aggr<br/>🟢8 🟡1"]:::partial
+       clause__calc["Calculation of a Component · calc<br/>🟢6"]:::ok
+       clause__aggr["Aggregation · aggr<br/>🟢9"]:::ok
        clause__filter["Filtering Data Points · filter<br/>🟢1"]:::ok
        clause__keep["Maintaining Components · keep<br/>🟢1"]:::ok
        clause__drop["Removal of Components · drop<br/>🟢1"]:::ok
@@ -75,10 +75,10 @@ Clause operators
      - Status
      - Forms
    * - :doc:`Calculation of a Component <calc>` ``calc``
-     - 🟡
+     - 🟢
      - 6
    * - :doc:`Aggregation <aggr>` ``aggr``
-     - 🟡
+     - 🟢
      - 9
    * - :doc:`Filtering Data Points <filter>` ``filter``
      - 🟢
@@ -164,20 +164,6 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
      - pandas
      - DuckDB
      - Detail
-   * - :doc:`Calculation of a Component <calc>`
-     - `DS[calc Me := expr] <calc.html#form-measure-default>`__
-     - 🟡
-     - `Existing attribute keeps role <calc.html#ex-measure-default-existing-attribute-keeps-role>`__
-     - ❌
-     - ❌
-     - role of At\_1 expected Attribute got Measure
-   * - :doc:`Aggregation <aggr>`
-     - `DS[aggr At := agg(At) group by Id] <aggr.html#form-role-omitted-attribute>`__
-     - 🟡
-     - `Existing attribute keeps role <aggr.html#ex-role-omitted-attribute-existing-attribute-keeps-role>`__
-     - ❌
-     - ❌
-     - role of At\_1 expected Attribute got Measure
    * - :doc:`Pivoting <pivot>`
      - `DS[pivot Id, Me] <pivot.html#form-basic>`__
      - 🔴

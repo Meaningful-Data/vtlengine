@@ -4,7 +4,7 @@ Aggregate and Analytic operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 7 of 18 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 18 of 18 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -34,17 +34,17 @@ Aggregate and Analytic operators
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Aggregate and Analytic operators"]:::block
        aggregate__aggregate_invocation["Aggregate invocation · group by<br/>🟢4"]:::ok
-       aggregate__analytic_invocation["Analytic invocation · over<br/>🟢9 🟡2"]:::partial
-       aggregate__count["Counting the number of data points · count 📌<br/>🟢8 🔵1"]:::diverge
-       aggregate__min["Minimum value · min<br/>🟢7 🟡1"]:::partial
-       aggregate__max["Maximum value · max<br/>🟢7 🟡1"]:::partial
-       aggregate__median["Median value · median<br/>🟢7 🟡1"]:::partial
-       aggregate__sum["Sum · sum<br/>🟢7 🟡1"]:::partial
-       aggregate__avg["Average value · avg<br/>🟢7 🟡1"]:::partial
-       aggregate__stddev_pop["Population standard deviation · stddev_pop<br/>🟢7 🟡1"]:::partial
-       aggregate__stddev_samp["Sample standard deviation · stddev_samp<br/>🟢7 🟡1"]:::partial
-       aggregate__var_pop["Population variance · var_pop<br/>🟢7 🟡1"]:::partial
-       aggregate__var_samp["Sample variance · var_samp<br/>🟢7 🟡1"]:::partial
+       aggregate__analytic_invocation["Analytic invocation · over<br/>🟢11"]:::ok
+       aggregate__count["Counting the number of data points · count 📌<br/>🟢9"]:::ok
+       aggregate__min["Minimum value · min<br/>🟢8"]:::ok
+       aggregate__max["Maximum value · max<br/>🟢8"]:::ok
+       aggregate__median["Median value · median<br/>🟢8"]:::ok
+       aggregate__sum["Sum · sum<br/>🟢8"]:::ok
+       aggregate__avg["Average value · avg<br/>🟢8"]:::ok
+       aggregate__stddev_pop["Population standard deviation · stddev_pop<br/>🟢8"]:::ok
+       aggregate__stddev_samp["Sample standard deviation · stddev_samp<br/>🟢8"]:::ok
+       aggregate__var_pop["Population variance · var_pop<br/>🟢8"]:::ok
+       aggregate__var_samp["Sample variance · var_samp<br/>🟢8"]:::ok
        aggregate__first_value["First value · first_value<br/>🟢2"]:::ok
        aggregate__last_value["Last value · last_value<br/>🟢2"]:::ok
        aggregate__lag["Lag · lag<br/>🟢4"]:::ok
@@ -105,37 +105,37 @@ Aggregate and Analytic operators
      - 🟢
      - 4
    * - :doc:`Analytic invocation <analytic_invocation>` ``over``
-     - 🟡
+     - 🟢
      - 11
    * - :doc:`Counting the number of data points <count>` ``count``
-     - 🔵
+     - 🟢
      - 9
    * - :doc:`Minimum value <min>` ``min``
-     - 🟡
+     - 🟢
      - 8
    * - :doc:`Maximum value <max>` ``max``
-     - 🟡
+     - 🟢
      - 8
    * - :doc:`Median value <median>` ``median``
-     - 🟡
+     - 🟢
      - 8
    * - :doc:`Sum <sum>` ``sum``
-     - 🟡
+     - 🟢
      - 8
    * - :doc:`Average value <avg>` ``avg``
-     - 🟡
+     - 🟢
      - 8
    * - :doc:`Population standard deviation <stddev_pop>` ``stddev_pop``
-     - 🟡
+     - 🟢
      - 8
    * - :doc:`Sample standard deviation <stddev_samp>` ``stddev_samp``
-     - 🟡
+     - 🟢
      - 8
    * - :doc:`Population variance <var_pop>` ``var_pop``
-     - 🟡
+     - 🟢
      - 8
    * - :doc:`Sample variance <var_samp>` ``var_samp``
-     - 🟡
+     - 🟢
      - 8
    * - :doc:`First value <first_value>` ``first_value``
      - 🟢
@@ -279,103 +279,7 @@ Aggregate and Analytic operators
 
 .. rubric:: Forms that are not green
 
-Every form that is neither 🟢 nor 🛡️, with the example that shows its status: the first that is neither, or the first that diverges for a 🔵 form.
-
-.. list-table::
-   :header-rows: 1
-   :widths: auto
-
-   * - Operator
-     - Form
-     - Status
-     - Example
-     - pandas
-     - DuckDB
-     - Detail
-   * - :doc:`Analytic invocation <analytic_invocation>`
-     - `an(DS over (partition by Id order by Id)) <analytic_invocation.html#form-window-default-ds>`__
-     - 🟡
-     - `Ties count together <analytic_invocation.html#ex-window-default-ds-ties-count-together>`__
-     - ❌
-     - ❌
-     - row Id\_1=A, Id\_2=1, Id\_3=x: Me\_1 expected 3 got 1.0
-   * - :doc:`Analytic invocation <analytic_invocation>`
-     - `an(Me over (partition by Id order by Id)) <analytic_invocation.html#form-window-default>`__
-     - 🟡
-     - `Running total in time order <analytic_invocation.html#ex-window-default-running-total-in-time-order>`__
-     - ❌
-     - ❌
-     - row Id\_1=A, Id\_2=2020Q1: Me\_3 expected 3 got 10.0; row Id\_1=A, Id\_2=2020Q2: Me\_3 expected 4 got 10.0; row Id\_1=A, Id\_2=2021Q1: Me\_3 expected 9 got 10.0
-   * - :doc:`Counting the number of data points <count>`
-     - `count(DS over (partition by Id)) <count.html#form-analytic-ds>`__
-     - 🔵
-     - `Whole partition without order <count.html#ex-analytic-ds-whole-partition-without-order>`__
-     - ❌
-     - 💥 KeyError
-     - pandas: missing components: int\_var; unexpected components: Me\_1, Me\_2; DuckDB: KeyError: Me\_1
-   * - :doc:`Minimum value <min>`
-     - `min(DS over (partition by Id)) <min.html#form-analytic-ds>`__
-     - 🟡
-     - `Whole partition without order <min.html#ex-analytic-ds-whole-partition-without-order>`__
-     - ❌
-     - ❌
-     - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 1 got 3.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 0.500000 got 1.5; row Id\_1=A, Id\_2=2020Q2: Me\_2 expected 0.500000 got 1.5
-   * - :doc:`Maximum value <max>`
-     - `max(DS over (partition by Id)) <max.html#form-analytic-ds>`__
-     - 🟡
-     - `Whole partition without order <max.html#ex-analytic-ds-whole-partition-without-order>`__
-     - ❌
-     - ❌
-     - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 5 got 3.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 3.500000 got 1.5; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 5 got 3.0
-   * - :doc:`Median value <median>`
-     - `median(DS over (partition by Id)) <median.html#form-analytic-ds>`__
-     - 🟡
-     - `Whole partition without order <median.html#ex-analytic-ds-whole-partition-without-order>`__
-     - ❌
-     - ❌
-     - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 2 got 3.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 2 got 1.5; row Id\_1=A, Id\_2=2020Q2: Me\_2 expected 2 got 2.5
-   * - :doc:`Sum <sum>`
-     - `sum(DS over (partition by Id)) <sum.html#form-analytic-ds>`__
-     - 🟡
-     - `Whole partition without order <sum.html#ex-analytic-ds-whole-partition-without-order>`__
-     - ❌
-     - ❌
-     - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 10 got 3.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 8 got 1.5; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 10 got 4.0
-   * - :doc:`Average value <avg>`
-     - `avg(DS over (partition by Id)) <avg.html#form-analytic-ds>`__
-     - 🟡
-     - `Whole partition without order <avg.html#ex-analytic-ds-whole-partition-without-order>`__
-     - ❌
-     - ❌
-     - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 2.500000 got 3.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 2 got 1.5; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 2.500000 got 2.0
-   * - :doc:`Population standard deviation <stddev_pop>`
-     - `stddev\_pop(DS over (partition by Id)) <stddev_pop.html#form-analytic-ds>`__
-     - 🟡
-     - `Whole partition without order <stddev_pop.html#ex-analytic-ds-whole-partition-without-order>`__
-     - ❌
-     - ❌
-     - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 1.658312 got 0.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 1.118034 got 0.0; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 1.658312 got 1.0
-   * - :doc:`Sample standard deviation <stddev_samp>`
-     - `stddev\_samp(DS over (partition by Id)) <stddev_samp.html#form-analytic-ds>`__
-     - 🟡
-     - `Whole partition without order <stddev_samp.html#ex-analytic-ds-whole-partition-without-order>`__
-     - ❌
-     - ❌
-     - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 1.914854 got null; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 1.290994 got null; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 1.914854 got 1.4142135623730951
-   * - :doc:`Population variance <var_pop>`
-     - `var\_pop(DS over (partition by Id)) <var_pop.html#form-analytic-ds>`__
-     - 🟡
-     - `Whole partition without order <var_pop.html#ex-analytic-ds-whole-partition-without-order>`__
-     - ❌
-     - ❌
-     - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 2.750000 got 0.0; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 1.250000 got 0.0; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 2.750000 got 1.0
-   * - :doc:`Sample variance <var_samp>`
-     - `var\_samp(DS over (partition by Id)) <var_samp.html#form-analytic-ds>`__
-     - 🟡
-     - `Whole partition without order <var_samp.html#ex-analytic-ds-whole-partition-without-order>`__
-     - ❌
-     - ❌
-     - row Id\_1=A, Id\_2=2020Q1: Me\_1 expected 3.666667 got null; row Id\_1=A, Id\_2=2020Q1: Me\_2 expected 1.666667 got null; row Id\_1=A, Id\_2=2020Q2: Me\_1 expected 3.666667 got 2.0
+Every form is 🟢 or 🛡️.
 
 .. toctree::
    :maxdepth: 1

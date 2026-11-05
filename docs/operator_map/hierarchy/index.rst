@@ -4,7 +4,7 @@ Hierarchical aggregation
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 0 of 1 operator all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 1 of 1 operator all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -33,7 +33,7 @@ Hierarchical aggregation
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Hierarchical aggregation"]:::block
-       hierarchy__hierarchy["Hierarchical roll-up · hierarchy 📌<br/>🟢26 🟡12"]:::partial
+       hierarchy__hierarchy["Hierarchical roll-up · hierarchy 📌<br/>🟢38"]:::ok
        hierarchy__hierarchy --- B
        click hierarchy__hierarchy href "hierarchy.html"
 
@@ -51,7 +51,7 @@ Hierarchical aggregation
      - Status
      - Forms
    * - :doc:`Hierarchical roll-up <hierarchy>` ``hierarchy``
-     - 🟡
+     - 🟢
      - 38
 
 .. rubric:: Types
@@ -71,103 +71,7 @@ Hierarchical aggregation
 
 .. rubric:: Forms that are not green
 
-Every form that is neither 🟢 nor 🛡️, with the example that shows its status: the first that is neither, or the first that diverges for a 🔵 form.
-
-.. list-table::
-   :header-rows: 1
-   :widths: auto
-
-   * - Operator
-     - Form
-     - Status
-     - Example
-     - pandas
-     - DuckDB
-     - Detail
-   * - :doc:`Hierarchical roll-up <hierarchy>`
-     - `hierarchy(DS, HR always\_null dataset computed) <hierarchy.html#form-always-null-dataset-computed>`__
-     - 🟡
-     - `Missing null and zero items <hierarchy.html#ex-always-null-dataset-computed-missing-null-and-zero-items>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=3, Id\_2=C
-   * - :doc:`Hierarchical roll-up <hierarchy>`
-     - `hierarchy(DS, HR always\_null dataset all) <hierarchy.html#form-always-null-dataset-all>`__
-     - 🟡
-     - `Missing null and zero items <hierarchy.html#ex-always-null-dataset-all-missing-null-and-zero-items>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=3, Id\_2=C
-   * - :doc:`Hierarchical roll-up <hierarchy>`
-     - `hierarchy(DS, HR always\_null rule computed) <hierarchy.html#form-always-null-rule-computed>`__
-     - 🟡
-     - `Missing null and zero items <hierarchy.html#ex-always-null-rule-computed-missing-null-and-zero-items>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=3, Id\_2=C
-   * - :doc:`Hierarchical roll-up <hierarchy>`
-     - `hierarchy(DS, HR always\_null rule all) <hierarchy.html#form-always-null-rule-all>`__
-     - 🟡
-     - `Missing null and zero items <hierarchy.html#ex-always-null-rule-all-missing-null-and-zero-items>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=3, Id\_2=C
-   * - :doc:`Hierarchical roll-up <hierarchy>`
-     - `hierarchy(DS, HR always\_null rule\_priority computed) <hierarchy.html#form-always-null-rule-priority-computed>`__
-     - 🟡
-     - `Missing null and zero items <hierarchy.html#ex-always-null-rule-priority-computed-missing-null-and-zero-items>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=3, Id\_2=C
-   * - :doc:`Hierarchical roll-up <hierarchy>`
-     - `hierarchy(DS, HR always\_null rule\_priority all) <hierarchy.html#form-always-null-rule-priority-all>`__
-     - 🟡
-     - `Missing null and zero items <hierarchy.html#ex-always-null-rule-priority-all-missing-null-and-zero-items>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=3, Id\_2=C
-   * - :doc:`Hierarchical roll-up <hierarchy>`
-     - `hierarchy(DS, HR always\_zero dataset computed) <hierarchy.html#form-always-zero-dataset-computed>`__
-     - 🟡
-     - `Missing null and zero items <hierarchy.html#ex-always-zero-dataset-computed-missing-null-and-zero-items>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=3, Id\_2=C
-   * - :doc:`Hierarchical roll-up <hierarchy>`
-     - `hierarchy(DS, HR always\_zero dataset all) <hierarchy.html#form-always-zero-dataset-all>`__
-     - 🟡
-     - `Missing null and zero items <hierarchy.html#ex-always-zero-dataset-all-missing-null-and-zero-items>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=3, Id\_2=C
-   * - :doc:`Hierarchical roll-up <hierarchy>`
-     - `hierarchy(DS, HR always\_zero rule computed) <hierarchy.html#form-always-zero-rule-computed>`__
-     - 🟡
-     - `Missing null and zero items <hierarchy.html#ex-always-zero-rule-computed-missing-null-and-zero-items>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=3, Id\_2=C
-   * - :doc:`Hierarchical roll-up <hierarchy>`
-     - `hierarchy(DS, HR always\_zero rule all) <hierarchy.html#form-always-zero-rule-all>`__
-     - 🟡
-     - `Missing null and zero items <hierarchy.html#ex-always-zero-rule-all-missing-null-and-zero-items>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=3, Id\_2=C
-   * - :doc:`Hierarchical roll-up <hierarchy>`
-     - `hierarchy(DS, HR always\_zero rule\_priority computed) <hierarchy.html#form-always-zero-rule-priority-computed>`__
-     - 🟡
-     - `Missing null and zero items <hierarchy.html#ex-always-zero-rule-priority-computed-missing-null-and-zero-items>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=3, Id\_2=C
-   * - :doc:`Hierarchical roll-up <hierarchy>`
-     - `hierarchy(DS, HR always\_zero rule\_priority all) <hierarchy.html#form-always-zero-rule-priority-all>`__
-     - 🟡
-     - `Missing null and zero items <hierarchy.html#ex-always-zero-rule-priority-all-missing-null-and-zero-items>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=3, Id\_2=C
+Every form is 🟢 or 🛡️.
 
 .. toctree::
    :maxdepth: 1

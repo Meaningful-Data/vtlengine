@@ -194,51 +194,51 @@
     },
     "aggregate/analytic_invocation/window_default/running_total_in_time_order": {
       "duckdb": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_3 expected 3 got 10.0; row Id_1=A, Id_2=2020Q2: Me_3 expected 4 got 10.0; row Id_1=A, Id_2=2021Q1: Me_3 expected 9 got 10.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_3 expected 3 got 10.0; row Id_1=A, Id_2=2020Q2: Me_3 expected 4 got 10.0; row Id_1=A, Id_2=2021Q1: Me_3 expected 9 got 10.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "aggregate/analytic_invocation/window_default/string_order_key": {
       "duckdb": {
-        "detail": "row Id_1=A, Id_2=1, Id_3=x: Me_2 expected 8 got 10.0; row Id_1=A, Id_2=2, Id_3=x: Me_2 expected 8 got 10.0; row Id_1=A, Id_2=3, Id_3=x: Me_2 expected 8 got 10.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=A, Id_2=1, Id_3=x: Me_2 expected 8 got 10.0; row Id_1=A, Id_2=2, Id_3=x: Me_2 expected 8 got 10.0; row Id_1=A, Id_2=3, Id_3=x: Me_2 expected 8 got 10.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "aggregate/analytic_invocation/window_default/ties_count_together": {
       "duckdb": {
-        "detail": "row Id_1=A, Id_2=1, Id_3=x: Me_2 expected 3 got 10.0; row Id_1=A, Id_2=1, Id_3=y: Me_2 expected 3 got 10.0; row Id_1=A, Id_2=2, Id_3=x: Me_2 expected 6 got 10.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=A, Id_2=1, Id_3=x: Me_2 expected 3 got 10.0; row Id_1=A, Id_2=1, Id_3=y: Me_2 expected 3 got 10.0; row Id_1=A, Id_2=2, Id_3=x: Me_2 expected 6 got 10.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "aggregate/analytic_invocation/window_default_ds/running_total_in_time_order": {
       "duckdb": {
@@ -258,19 +258,19 @@
     },
     "aggregate/analytic_invocation/window_default_ds/ties_count_together": {
       "duckdb": {
-        "detail": "row Id_1=A, Id_2=1, Id_3=x: Me_1 expected 3 got 1.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=A, Id_2=1, Id_3=x: Me_1 expected 3 got 1.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "aggregate/analytic_invocation/window_range/range_bounds_are_inclusive": {
       "duckdb": {
@@ -322,19 +322,19 @@
     },
     "aggregate/avg/analytic_ds/whole_partition_without_order": {
       "duckdb": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 2.500000 got 3.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 2 got 1.5; row Id_1=A, Id_2=2020Q2: Me_1 expected 2.500000 got 2.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 2.500000 got 3.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 2 got 1.5; row Id_1=A, Id_2=2020Q2: Me_1 expected 2.500000 got 2.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "aggregate/avg/comp_in_aggr/keeps_only_calculated_measure": {
       "duckdb": {
@@ -434,19 +434,19 @@
     },
     "aggregate/avg/ds_having/two_measures": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "aggregate/avg/ds_no_group/single_group_no_identifiers": {
       "duckdb": {
@@ -482,19 +482,19 @@
     },
     "aggregate/count/analytic_ds/whole_partition_without_order": {
       "duckdb": {
-        "detail": "KeyError: Me_1",
-        "error_code": null,
-        "error_type": "KeyError",
-        "outcome": "error"
-      },
-      "engines_agree": false,
-      "pandas": {
-        "detail": "missing components: int_var; unexpected components: Me_1, Me_2",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "diverge"
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
     },
     "aggregate/count/comp_in_aggr/keeps_only_calculated_measure": {
       "duckdb": {
@@ -610,19 +610,19 @@
     },
     "aggregate/count/ds_having/two_measures": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "aggregate/count/ds_no_group/single_group_no_identifiers": {
       "duckdb": {
@@ -850,19 +850,19 @@
     },
     "aggregate/max/analytic_ds/whole_partition_without_order": {
       "duckdb": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 5 got 3.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 3.500000 got 1.5; row Id_1=A, Id_2=2020Q2: Me_1 expected 5 got 3.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 5 got 3.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 3.500000 got 1.5; row Id_1=A, Id_2=2020Q2: Me_1 expected 5 got 3.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "aggregate/max/comp_in_aggr/keeps_only_calculated_measure": {
       "duckdb": {
@@ -962,19 +962,19 @@
     },
     "aggregate/max/ds_having/two_measures": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "aggregate/max/ds_no_group/single_group_no_identifiers": {
       "duckdb": {
@@ -1010,19 +1010,19 @@
     },
     "aggregate/median/analytic_ds/whole_partition_without_order": {
       "duckdb": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 2 got 3.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 2 got 1.5; row Id_1=A, Id_2=2020Q2: Me_2 expected 2 got 2.5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 2 got 3.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 2 got 1.5; row Id_1=A, Id_2=2020Q2: Me_2 expected 2 got 2.5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "aggregate/median/comp_in_aggr/keeps_only_calculated_measure": {
       "duckdb": {
@@ -1106,19 +1106,19 @@
     },
     "aggregate/median/ds_having/two_measures": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "aggregate/median/ds_no_group/single_group_no_identifiers": {
       "duckdb": {
@@ -1154,19 +1154,19 @@
     },
     "aggregate/min/analytic_ds/whole_partition_without_order": {
       "duckdb": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 1 got 3.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 0.500000 got 1.5; row Id_1=A, Id_2=2020Q2: Me_2 expected 0.500000 got 1.5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 1 got 3.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 0.500000 got 1.5; row Id_1=A, Id_2=2020Q2: Me_2 expected 0.500000 got 1.5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "aggregate/min/comp_in_aggr/keeps_only_calculated_measure": {
       "duckdb": {
@@ -1266,19 +1266,19 @@
     },
     "aggregate/min/ds_having/two_measures": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "aggregate/min/ds_no_group/single_group_no_identifiers": {
       "duckdb": {
@@ -1378,19 +1378,19 @@
     },
     "aggregate/stddev_pop/analytic_ds/whole_partition_without_order": {
       "duckdb": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 1.658312 got 0.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 1.118034 got 0.0; row Id_1=A, Id_2=2020Q2: Me_1 expected 1.658312 got 1.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 1.658312 got 0.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 1.118034 got 0.0; row Id_1=A, Id_2=2020Q2: Me_1 expected 1.658312 got 1.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "aggregate/stddev_pop/comp_in_aggr/keeps_only_calculated_measure": {
       "duckdb": {
@@ -1474,19 +1474,19 @@
     },
     "aggregate/stddev_pop/ds_having/two_measures": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "aggregate/stddev_pop/ds_no_group/single_group_no_identifiers": {
       "duckdb": {
@@ -1522,19 +1522,19 @@
     },
     "aggregate/stddev_samp/analytic_ds/whole_partition_without_order": {
       "duckdb": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 1.914854 got null; row Id_1=A, Id_2=2020Q1: Me_2 expected 1.290994 got null; row Id_1=A, Id_2=2020Q2: Me_1 expected 1.914854 got 1.4142135623730951",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 1.914854 got null; row Id_1=A, Id_2=2020Q1: Me_2 expected 1.290994 got null; row Id_1=A, Id_2=2020Q2: Me_1 expected 1.914854 got 1.4142135623730951",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "aggregate/stddev_samp/comp_in_aggr/keeps_only_calculated_measure": {
       "duckdb": {
@@ -1618,19 +1618,19 @@
     },
     "aggregate/stddev_samp/ds_having/two_measures": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "aggregate/stddev_samp/ds_no_group/single_group_no_identifiers": {
       "duckdb": {
@@ -1666,19 +1666,19 @@
     },
     "aggregate/sum/analytic_ds/whole_partition_without_order": {
       "duckdb": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 10 got 3.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 8 got 1.5; row Id_1=A, Id_2=2020Q2: Me_1 expected 10 got 4.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 10 got 3.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 8 got 1.5; row Id_1=A, Id_2=2020Q2: Me_1 expected 10 got 4.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "aggregate/sum/comp_in_aggr/keeps_only_calculated_measure": {
       "duckdb": {
@@ -1762,19 +1762,19 @@
     },
     "aggregate/sum/ds_having/two_measures": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "aggregate/sum/ds_no_group/single_group_no_identifiers": {
       "duckdb": {
@@ -1810,19 +1810,19 @@
     },
     "aggregate/var_pop/analytic_ds/whole_partition_without_order": {
       "duckdb": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 2.750000 got 0.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 1.250000 got 0.0; row Id_1=A, Id_2=2020Q2: Me_1 expected 2.750000 got 1.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 2.750000 got 0.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 1.250000 got 0.0; row Id_1=A, Id_2=2020Q2: Me_1 expected 2.750000 got 1.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "aggregate/var_pop/comp_in_aggr/keeps_only_calculated_measure": {
       "duckdb": {
@@ -1906,19 +1906,19 @@
     },
     "aggregate/var_pop/ds_having/two_measures": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "aggregate/var_pop/ds_no_group/single_group_no_identifiers": {
       "duckdb": {
@@ -1954,19 +1954,19 @@
     },
     "aggregate/var_samp/analytic_ds/whole_partition_without_order": {
       "duckdb": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 3.666667 got null; row Id_1=A, Id_2=2020Q1: Me_2 expected 1.666667 got null; row Id_1=A, Id_2=2020Q2: Me_1 expected 3.666667 got 2.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=A, Id_2=2020Q1: Me_1 expected 3.666667 got null; row Id_1=A, Id_2=2020Q1: Me_2 expected 1.666667 got null; row Id_1=A, Id_2=2020Q2: Me_1 expected 3.666667 got 2.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "aggregate/var_samp/comp_in_aggr/keeps_only_calculated_measure": {
       "duckdb": {
@@ -2050,19 +2050,19 @@
     },
     "aggregate/var_samp/ds_having/two_measures": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "aggregate/var_samp/ds_no_group/single_group_no_identifiers": {
       "duckdb": {
@@ -3010,19 +3010,19 @@
     },
     "clause/aggr/role_omitted_attribute/existing_attribute_keeps_role": {
       "duckdb": {
-        "detail": "role of At_1 expected Attribute got Measure",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "role of At_1 expected Attribute got Measure",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "clause/aggr/viral_attribute_role/viral_attribute_next_to_measure": {
       "duckdb": {
@@ -3090,19 +3090,19 @@
     },
     "clause/calc/measure_default/existing_attribute_keeps_role": {
       "duckdb": {
-        "detail": "role of At_1 expected Attribute got Measure",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "role of At_1 expected Attribute got Measure",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "clause/calc/measure_default/manual_ex_1": {
       "duckdb": {
@@ -4610,19 +4610,19 @@
     },
     "conditional/case/comp_multi_when/overlapping_descending_thresholds": {
       "duckdb": {
-        "detail": "row Id_1=3: Me_2 expected 10 got 1",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=3: Me_2 expected 10 got 1",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "conditional/case/ds/inline_dataset_condition": {
       "duckdb": {
@@ -4658,35 +4658,35 @@
     },
     "conditional/case/ds_multi_when/overlapping_inline_conditions": {
       "duckdb": {
-        "detail": "row Id_1=3: Me_1 expected 300 got 3",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=3: Me_1 expected 300 got 3",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "conditional/case/ds_multi_when/overlapping_named_conditions": {
       "duckdb": {
-        "detail": "row Id_1=3: Me_1 expected 300 got 3",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "row Id_1=3: Me_1 expected 300 got 3",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "conditional/case/ds_scalar_branch/scalar_else_feeds_all_measures": {
       "duckdb": {
@@ -4754,19 +4754,19 @@
     },
     "conditional/case/sc_multi_when/both_conditions_true": {
       "duckdb": {
-        "detail": "value expected 10 got 1",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "value expected 10 got 1",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "conditional/case/sc_multi_when/first_condition_true": {
       "duckdb": {
@@ -5522,19 +5522,19 @@
     },
     "definitions/define_operator/component/attribute_overwritten_in_calc": {
       "duckdb": {
-        "detail": "role of At_1 expected Attribute got Measure",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "role of At_1 expected Attribute got Measure",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "definitions/define_operator/component/component_role_in_calc": {
       "duckdb": {
@@ -5586,19 +5586,19 @@
     },
     "definitions/define_operator/component/viral_attribute_overwritten_in_calc": {
       "duckdb": {
-        "detail": "role of At_1 expected Viral Attribute got Measure",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "role of At_1 expected Viral Attribute got Measure",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "definitions/define_operator/constrained_scalar/non_null_argument": {
       "duckdb": {
@@ -6466,19 +6466,19 @@
     },
     "general/cast/date_to_string/iso_8601_dates": {
       "duckdb": {
-        "detail": "row Id_1=1: Me_2 expected 2020-01-15 got 2020-01-15 00:00:00; row Id_1=2: Me_2 expected 2021-12-31 got 2021-12-31 00:00:00",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "engines_agree": false,
+      "engines_agree": true,
       "pandas": {
         "detail": "",
         "error_code": null,
         "error_type": null,
         "outcome": "match"
       },
-      "status": "diverge"
+      "status": "ok"
     },
     "general/cast/date_to_string_mask/year_month_day_mask": {
       "duckdb": {
@@ -6498,19 +6498,19 @@
     },
     "general/cast/date_to_time/same_start_and_end": {
       "duckdb": {
-        "detail": "row Id_1=1: Me_2 expected 2020-01-15/2020-01-15 got 2020-01-15 00:00:00; row Id_1=2: Me_2 expected 2021-12-31/2021-12-31 got 2021-12-31 00:00:00",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "engines_agree": false,
+      "engines_agree": true,
       "pandas": {
         "detail": "",
         "error_code": null,
         "error_type": null,
         "outcome": "match"
       },
-      "status": "diverge"
+      "status": "ok"
     },
     "general/cast/date_to_time_period/daily_periods": {
       "duckdb": {
@@ -6530,19 +6530,19 @@
     },
     "general/cast/duration_to_string/iso_8601_durations": {
       "duckdb": {
-        "detail": "row Id_1=1: Me_2 expected P1Y got A; row Id_1=2: Me_2 expected P1M got M; row Id_1=3: Me_2 expected P1D got D",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "engines_agree": false,
+      "engines_agree": true,
       "pandas": {
         "detail": "",
         "error_code": null,
         "error_type": null,
         "outcome": "match"
       },
-      "status": "diverge"
+      "status": "ok"
     },
     "general/cast/duration_to_string_mask/period_indicator_mask": {
       "duckdb": {
@@ -7010,19 +7010,19 @@
     },
     "general/cast/time_period_to_time/start_and_end_of_the_period": {
       "duckdb": {
-        "detail": "row Id_1=1: Me_2 expected 2020-01-01/2020-03-31 got 2020-Q1; row Id_1=2: Me_2 expected 2021-02-01/2021-02-28 got 2021-M02",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "engines_agree": false,
+      "engines_agree": true,
       "pandas": {
         "detail": "",
         "error_code": null,
         "error_type": null,
         "outcome": "match"
       },
-      "status": "diverge"
+      "status": "ok"
     },
     "general/cast/time_to_date/single_day_intervals": {
       "duckdb": {
@@ -7682,259 +7682,259 @@
     },
     "hierarchy/hierarchy/always_null_dataset_all/missing_null_and_zero_items": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/always_null_dataset_computed/missing_null_and_zero_items": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/always_null_rule_all/missing_null_and_zero_items": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/always_null_rule_computed/missing_null_and_zero_items": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/always_null_rule_priority_all/computed_item_takes_precedence": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/always_null_rule_priority_all/missing_null_and_zero_items": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/always_null_rule_priority_computed/computed_item_takes_precedence": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/always_null_rule_priority_computed/missing_null_and_zero_items": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/always_zero_dataset_all/missing_null_and_zero_items": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/always_zero_dataset_computed/missing_null_and_zero_items": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/always_zero_rule_all/missing_null_and_zero_items": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/always_zero_rule_computed/missing_null_and_zero_items": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/always_zero_rule_priority_all/computed_item_takes_precedence": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/always_zero_rule_priority_all/missing_null_and_zero_items": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/always_zero_rule_priority_computed/computed_item_takes_precedence": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/always_zero_rule_priority_computed/missing_null_and_zero_items": {
       "duckdb": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=3, Id_2=C",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "hierarchy/hierarchy/condition/overlapping_rules_that_agree": {
       "duckdb": {
@@ -11106,19 +11106,19 @@
     },
     "numeric/modulo/sc_sc/negative_divisor": {
       "duckdb": {
-        "detail": "value expected -1 got 1",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "value expected -1 got 1",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "numeric/modulo/sc_sc/positive_operands": {
       "duckdb": {
@@ -11138,19 +11138,19 @@
     },
     "numeric/modulo/sc_sc/zero_divisor": {
       "duckdb": {
-        "detail": "RunTimeError 2-1-15-6: At op mod: Scalar division by Zero. Please check transformation with output Dataset SC_r",
-        "error_code": "2-1-15-6",
-        "error_type": "RunTimeError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "RunTimeError 2-1-15-6: At op mod: Scalar division by Zero. Please check transformation with output Dataset SC_r",
-        "error_code": "2-1-15-6",
-        "error_type": "RunTimeError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "numeric/multiplication/comp_comp/manual_ex_3": {
       "duckdb": {
@@ -11351,14 +11351,14 @@
         "error_type": null,
         "outcome": "match"
       },
-      "engines_agree": false,
+      "engines_agree": true,
       "pandas": {
         "detail": "",
         "error_code": null,
         "error_type": null,
         "outcome": "match"
       },
-      "status": "diverge"
+      "status": "ok"
     },
     "numeric/random/comp/seed_replaced_by_draws": {
       "duckdb": {
@@ -11367,14 +11367,14 @@
         "error_type": null,
         "outcome": "match"
       },
-      "engines_agree": false,
+      "engines_agree": true,
       "pandas": {
         "detail": "",
         "error_code": null,
         "error_type": null,
         "outcome": "match"
       },
-      "status": "diverge"
+      "status": "ok"
     },
     "numeric/random/ds/manual_ex_1": {
       "duckdb": {
@@ -11383,14 +11383,14 @@
         "error_type": null,
         "outcome": "match"
       },
-      "engines_agree": false,
+      "engines_agree": true,
       "pandas": {
         "detail": "",
         "error_code": null,
         "error_type": null,
         "outcome": "match"
       },
-      "status": "diverge"
+      "status": "ok"
     },
     "numeric/random/sc/single_draw": {
       "duckdb": {
@@ -11399,14 +11399,14 @@
         "error_type": null,
         "outcome": "match"
       },
-      "engines_agree": false,
+      "engines_agree": true,
       "pandas": {
         "detail": "",
         "error_code": null,
         "error_type": null,
         "outcome": "match"
       },
-      "status": "diverge"
+      "status": "ok"
     },
     "numeric/round/comp_comp_digits/digits_from_component": {
       "duckdb": {
@@ -11858,19 +11858,19 @@
     },
     "numeric/trunc/ds_no_digits/two_number_measures": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-4: At op trunc: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-4: At op trunc: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "numeric/trunc/ds_placeholder/placeholder_for_digits": {
       "duckdb": {
@@ -12930,35 +12930,35 @@
     },
     "string/string_distance/jaro_winkler_sc/disjoint_strings": {
       "duckdb": {
-        "detail": "value expected 1 got 0.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "value expected 1 got 0.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "string/string_distance/jaro_winkler_sc/identical_strings": {
       "duckdb": {
-        "detail": "value expected 0 got 1.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "value expected 0 got 1.0",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "string/string_distance/levenshtein_comp_comp/kitten_sitting_and_null": {
       "duckdb": {
@@ -13970,19 +13970,19 @@
     },
     "time/period_indicator/in_filter_no_operand/keeps_the_quarterly_data_point": {
       "duckdb": {
-        "detail": "IndexError: list index out of range",
+        "detail": "",
         "error_code": null,
-        "error_type": "IndexError",
-        "outcome": "error"
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "IndexError: list index out of range",
+        "detail": "",
         "error_code": null,
-        "error_type": "IndexError",
-        "outcome": "error"
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "time/period_indicator/sc/quarterly_period": {
       "duckdb": {
@@ -14514,35 +14514,35 @@
     },
     "validation/check_hierarchy/always_null_dataset_all/rule_with_no_item_found_is_null": {
       "duckdb": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "validation/check_hierarchy/always_null_dataset_all_measures/rule_with_no_item_found_is_null": {
       "duckdb": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "validation/check_hierarchy/always_null_dataset_invalid/rule_with_no_item_found_is_null": {
       "duckdb": {
@@ -14562,35 +14562,35 @@
     },
     "validation/check_hierarchy/always_null_dataset_priority_all/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "validation/check_hierarchy/always_null_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "validation/check_hierarchy/always_null_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
       "duckdb": {
@@ -14610,99 +14610,99 @@
     },
     "validation/check_hierarchy/always_zero_dataset_all/rule_with_no_item_found_is_false": {
       "duckdb": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "validation/check_hierarchy/always_zero_dataset_all_measures/rule_with_no_item_found_is_false": {
       "duckdb": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "validation/check_hierarchy/always_zero_dataset_invalid/rule_with_no_item_found_is_false": {
       "duckdb": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "validation/check_hierarchy/always_zero_dataset_priority_all/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "validation/check_hierarchy/always_zero_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "validation/check_hierarchy/always_zero_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
       "duckdb": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing row Id_1=1, Id_2=Y, ruleid=R5",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "validation/check_hierarchy/condition/conditioning_value_domain_bound": {
       "duckdb": {
@@ -15186,11 +15186,11 @@
     }
   },
   "meta": {
-    "date": "2026-11-04",
+    "date": "2026-11-05",
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "aab95c63",
-    "vtlengine_version": "1.9.7rc1"
+    "vtlengine_commit": "bca942b6",
+    "vtlengine_version": "1.9.7rc2"
   }
 }

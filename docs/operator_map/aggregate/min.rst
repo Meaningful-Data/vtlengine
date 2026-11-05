@@ -4,7 +4,7 @@ Minimum value · ``min``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 7 of 8 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Minimun%20value/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 8 of 8 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Minimun%20value/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -36,7 +36,7 @@ Minimum value · ``min``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Minimum value · min<br/>🟢7 🟡1"]:::partial
+       O["Minimum value · min<br/>🟢8"]:::ok
        subgraph G_ds["Dataset"]
            direction LR
            v_ds_no_group["min(DS)"]:::ok
@@ -44,7 +44,7 @@ Minimum value · ``min``
            v_ds_group_except["min(DS group except Id)"]:::ok
            v_ds_group_all["min(DS group all time_agg(#quot;A#quot;))"]:::ok
            v_ds_having["min(DS group by Id having cond)"]:::ok
-           v_analytic_ds["min(DS over (partition by Id))"]:::partial
+           v_analytic_ds["min(DS over (partition by Id))"]:::ok
        end
        subgraph G_comp["Component"]
            direction LR
@@ -226,8 +226,7 @@ min(DS group by Id having cond) 🟢 · any scalar, boolean → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-having-two-measures"><summary><span class="om-ex-title">Two measures</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-1-4</code> · DuckDB 🛡 <code>1-1-1-4</code></span></summary>
-   <p class="om-detail">SemanticError 1-1-1-4: At op having: Operation not allowed for multimeasure Datasets. Please check transformation with output Dataset DS_r</p>
+   <details class="om-example" id="ex-ds-having-two-measures"><summary><span class="om-ex-title">Two measures</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/min/ds_having/two_measures/notes.rst
 
@@ -269,13 +268,12 @@ min(DS group by Id having cond) 🟢 · any scalar, boolean → any type
 
    <span class="om-anchor" id="form-analytic-ds"></span>
 
-min(DS over (partition by Id)) 🟡 · any scalar → any type
+min(DS over (partition by Id)) 🟢 · any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-analytic-ds-whole-partition-without-order"><summary><span class="om-ex-title">Whole partition without order</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">row Id_1=A, Id_2=2020Q1: Me_1 expected 1 got 3.0; row Id_1=A, Id_2=2020Q1: Me_2 expected 0.500000 got 1.5; row Id_1=A, Id_2=2020Q2: Me_2 expected 0.500000 got 1.5</p>
+   <details class="om-example" id="ex-analytic-ds-whole-partition-without-order"><summary><span class="om-ex-title">Whole partition without order</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/min/analytic_ds/whole_partition_without_order/notes.rst
 

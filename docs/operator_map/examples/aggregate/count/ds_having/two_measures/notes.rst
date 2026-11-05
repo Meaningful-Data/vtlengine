@@ -1,5 +1,4 @@
 :Tests: ``count`` with ``having``, over the two measures of the shared input.
 :Manual: `Aggregate invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Aggregate%20invocation/index.html>`__: the havingCondition "must invoke aggregate operators", and "only groups for which havingCondition evaluates to true appear in the result". The condition aggregates ``Me_1`` only, where the manual and the reading of #1119 agree.
 :Expected: ``count ( Me_1 ) > 2`` is 4 for ``A`` and 2 for ``B``, so only ``A`` is kept, with ``int_var`` = 4.
-:Finding: both engines refuse it with SemanticError ``1-1-1-4``, "Operation not allowed for multimeasure Datasets"; *One measure* passes.
 :Team decision: `#1049 <https://github.com/Meaningful-Data/vtlengine/issues/1049>`__: over a data set, ``count`` gives one Integer measure ``int_var`` whatever the measures of the operand, and ignores the data points whose measures are all null. With two measures, this settles the conflict between the count page's ``int_var`` and the Aggregate invocation's "the resulting Data Set has the same Measures as the operand".

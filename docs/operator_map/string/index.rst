@@ -4,7 +4,7 @@ String operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 10 of 11 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 11 of 11 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -43,7 +43,7 @@ String operators
        string__replace["String pattern replacement · replace<br/>🟢6"]:::ok
        string__instr["String pattern location · instr<br/>🟢8"]:::ok
        string__length["String length · length<br/>🟢3"]:::ok
-       string__string_distance["String distances · string_distance<br/>🟢10 🟡1"]:::partial
+       string__string_distance["String distances · string_distance<br/>🟢11"]:::ok
        string__concat --- B
        string__trim --- B
        string__ltrim --- B
@@ -111,7 +111,7 @@ String operators
      - 🟢
      - 3
    * - :doc:`String distances <string_distance>` ``string_distance``
-     - 🟡
+     - 🟢
      - 11
 
 .. rubric:: Types
@@ -171,26 +171,7 @@ String operators
 
 .. rubric:: Forms that are not green
 
-Every form that is neither 🟢 nor 🛡️, with the example that shows its status: the first that is neither, or the first that diverges for a 🔵 form.
-
-.. list-table::
-   :header-rows: 1
-   :widths: auto
-
-   * - Operator
-     - Form
-     - Status
-     - Example
-     - pandas
-     - DuckDB
-     - Detail
-   * - :doc:`String distances <string_distance>`
-     - `string\_distance(jaro\_winkler, sc, sc) <string_distance.html#form-jaro-winkler-sc>`__
-     - 🟡
-     - `Identical strings <string_distance.html#ex-jaro-winkler-sc-identical-strings>`__
-     - ❌
-     - ❌
-     - value expected 0 got 1.0
+Every form is 🟢 or 🛡️.
 
 .. toctree::
    :maxdepth: 1

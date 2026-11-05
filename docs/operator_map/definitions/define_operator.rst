@@ -4,7 +4,7 @@ define operator
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 9 of 13 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip partial">🟡 10 of 13 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -32,7 +32,7 @@ define operator
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["define operator<br/>🟢9 🟡1 🔴3"]:::partial
+       O["define operator<br/>🟢10 🔴3"]:::partial
        subgraph G_b1["Signature"]
            direction LR
            v_no_parameters["f ()"]:::ok
@@ -40,7 +40,7 @@ define operator
            v_value_domain["x #60;value domain#62;"]:::missing
            v_constrained_scalar["x #60;scalar type#62; #91;value …#93; #124; #123; … #125; #124; not null"]:::ok
            v_set["s set#60;…#62;"]:::missing
-           v_component["c component #124; identifier #124; measure #124; attribute #124; viral attribute #60;…#62;"]:::partial
+           v_component["c component #124; identifier #124; measure #124; attribute #124; viral attribute #60;…#62;"]:::ok
            v_dataset["ds dataset #91;#123; … #125;#93;"]:::ok
            v_ruleset["r #60;ruleset type#62;"]:::missing
            v_default_value["y #60;type#62; default …"]:::ok
@@ -576,7 +576,7 @@ s set<…> 🔴 · set → operator
 
    <span class="om-anchor" id="form-component"></span>
 
-c component \| identifier \| measure \| attribute \| viral attribute <…> 🟡 · any scalar, integer, string → operator
+c component \| identifier \| measure \| attribute \| viral attribute <…> 🟢 · any scalar, integer, string → operator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -641,8 +641,7 @@ c component \| identifier \| measure \| attribute \| viral attribute <…> 🟡 
 
 .. raw:: html
 
-   <details class="om-example" id="ex-component-attribute-overwritten-in-calc"><summary><span class="om-ex-title">Attribute overwritten in calc</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">role of At_1 expected Attribute got Measure</p>
+   <details class="om-example" id="ex-component-attribute-overwritten-in-calc"><summary><span class="om-ex-title">Attribute overwritten in calc</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/component/attribute_overwritten_in_calc/notes.rst
 
@@ -662,8 +661,7 @@ c component \| identifier \| measure \| attribute \| viral attribute <…> 🟡 
 
 .. raw:: html
 
-   <details class="om-example" id="ex-component-viral-attribute-overwritten-in-calc"><summary><span class="om-ex-title">Viral attribute overwritten in calc</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">role of At_1 expected Viral Attribute got Measure</p>
+   <details class="om-example" id="ex-component-viral-attribute-overwritten-in-calc"><summary><span class="om-ex-title">Viral attribute overwritten in calc</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/component/viral_attribute_overwritten_in_calc/notes.rst
 

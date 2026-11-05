@@ -34,7 +34,7 @@ Data validation operators
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Data validation operators"]:::block
        validation__check_datapoint["Check datapoint · check_datapoint<br/>🟢4 🟡3"]:::partial
-       validation__check_hierarchy["Check hierarchy · check_hierarchy<br/>🟢29 🟡11"]:::partial
+       validation__check_hierarchy["Check hierarchy · check_hierarchy<br/>🟢39 🟡1"]:::partial
        validation__check["Check · check<br/>🟢6"]:::ok
        validation__check_datapoint --- B
        validation__check_hierarchy --- B
@@ -145,76 +145,6 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
      - ❌
      - ❌
      - type of errorlevel expected Integer got Number
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR always\_null dataset all) <check_hierarchy.html#form-always-null-dataset-all>`__
-     - 🟡
-     - `Rule with no item found is null <check_hierarchy.html#ex-always-null-dataset-all-rule-with-no-item-found-is-null>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=1, Id\_2=Y, ruleid=R5
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR always\_null dataset all\_measures) <check_hierarchy.html#form-always-null-dataset-all-measures>`__
-     - 🟡
-     - `Rule with no item found is null <check_hierarchy.html#ex-always-null-dataset-all-measures-rule-with-no-item-found-is-null>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=1, Id\_2=Y, ruleid=R5
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR always\_null dataset\_priority all) <check_hierarchy.html#form-always-null-dataset-priority-all>`__
-     - 🟡
-     - `Null item from the rule computing it <check_hierarchy.html#ex-always-null-dataset-priority-all-null-item-from-the-rule-computing-it>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=1, Id\_2=Y, ruleid=R5
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR always\_null dataset\_priority all\_measures) <check_hierarchy.html#form-always-null-dataset-priority-all-measures>`__
-     - 🟡
-     - `Null item from the rule computing it <check_hierarchy.html#ex-always-null-dataset-priority-all-measures-null-item-from-the-rule-computing-it>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=1, Id\_2=Y, ruleid=R5
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR always\_zero dataset invalid) <check_hierarchy.html#form-always-zero-dataset-invalid>`__
-     - 🟡
-     - `Rule with no item found is false <check_hierarchy.html#ex-always-zero-dataset-invalid-rule-with-no-item-found-is-false>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=1, Id\_2=Y, ruleid=R5
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR always\_zero dataset all) <check_hierarchy.html#form-always-zero-dataset-all>`__
-     - 🟡
-     - `Rule with no item found is false <check_hierarchy.html#ex-always-zero-dataset-all-rule-with-no-item-found-is-false>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=1, Id\_2=Y, ruleid=R5
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR always\_zero dataset all\_measures) <check_hierarchy.html#form-always-zero-dataset-all-measures>`__
-     - 🟡
-     - `Rule with no item found is false <check_hierarchy.html#ex-always-zero-dataset-all-measures-rule-with-no-item-found-is-false>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=1, Id\_2=Y, ruleid=R5
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR always\_zero dataset\_priority invalid) <check_hierarchy.html#form-always-zero-dataset-priority-invalid>`__
-     - 🟡
-     - `Null item from the rule computing it <check_hierarchy.html#ex-always-zero-dataset-priority-invalid-null-item-from-the-rule-computing-it>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=1, Id\_2=Y, ruleid=R5
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR always\_zero dataset\_priority all) <check_hierarchy.html#form-always-zero-dataset-priority-all>`__
-     - 🟡
-     - `Null item from the rule computing it <check_hierarchy.html#ex-always-zero-dataset-priority-all-null-item-from-the-rule-computing-it>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=1, Id\_2=Y, ruleid=R5
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR always\_zero dataset\_priority all\_measures) <check_hierarchy.html#form-always-zero-dataset-priority-all-measures>`__
-     - 🟡
-     - `Null item from the rule computing it <check_hierarchy.html#ex-always-zero-dataset-priority-all-measures-null-item-from-the-rule-computing-it>`__
-     - ❌
-     - ❌
-     - missing row Id\_1=1, Id\_2=Y, ruleid=R5
    * - :doc:`Check hierarchy <check_hierarchy>`
      - `check\_hierarchy(DS, HR partial\_zero dataset all), rules with errorlevel <check_hierarchy.html#form-errorlevel>`__
      - 🟡

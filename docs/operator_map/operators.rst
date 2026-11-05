@@ -22,14 +22,14 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🔴
      - 🔵
    * - :doc:`General purpose operators <general/index>`
-     - 🔵
+     - 🟡
      - 7
      - 62
-     - 43
+     - 47
      - 1
      - 0
      - 14
-     - 4
+     - 0
    * - :doc:`Join operators <join/index>`
      - 🟡
      - 4
@@ -40,23 +40,23 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 0
      - 0
    * - :doc:`String operators <string/index>`
-     - 🟡
+     - 🟢
      - 11
      - 58
-     - 57
-     - 1
+     - 58
+     - 0
      - 0
      - 0
      - 0
    * - :doc:`Numeric operators <numeric/index>`
-     - 🔵
+     - 🟢
      - 18
      - 94
-     - 90
-     - 1
+     - 94
      - 0
      - 0
-     - 3
+     - 0
+     - 0
    * - :doc:`Comparison operators <comparison/index>`
      - 🟢
      - 12
@@ -76,13 +76,13 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 0
      - 0
    * - :doc:`Time operators <time/index>`
-     - 🟡
+     - 🟢
      - 17
      - 54
-     - 53
+     - 54
      - 0
      - 0
-     - 1
+     - 0
      - 0
    * - :doc:`Set operators <set/index>`
      - 🟢
@@ -94,38 +94,38 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 0
      - 0
    * - :doc:`Hierarchical aggregation <hierarchy/index>`
-     - 🟡
+     - 🟢
      - 1
      - 38
-     - 26
-     - 12
+     - 38
+     - 0
      - 0
      - 0
      - 0
    * - :doc:`Aggregate and Analytic operators <aggregate/index>`
-     - 🔵
+     - 🟢
      - 18
      - 112
-     - 100
-     - 11
+     - 112
      - 0
      - 0
-     - 1
+     - 0
+     - 0
    * - :doc:`Data validation operators <validation/index>`
      - 🟡
      - 3
      - 53
-     - 39
-     - 14
+     - 49
+     - 4
      - 0
      - 0
      - 0
    * - :doc:`Conditional operators <conditional/index>`
-     - 🟡
+     - 🟢
      - 3
      - 19
-     - 16
-     - 3
+     - 19
+     - 0
      - 0
      - 0
      - 0
@@ -133,20 +133,20 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🟡
      - 9
      - 24
-     - 21
-     - 2
+     - 23
+     - 0
      - 0
      - 1
      - 0
    * - **Total**
-     - 🔵
+     - 🟡
      - 111
      - 700
-     - 624
-     - 51
+     - 673
+     - 11
      - 1
-     - 16
-     - 8
+     - 15
+     - 0
 
 .. toctree::
    :maxdepth: 1

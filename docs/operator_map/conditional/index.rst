@@ -4,7 +4,7 @@ Conditional operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 2 of 3 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 3 of 3 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -34,7 +34,7 @@ Conditional operators
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Conditional operators"]:::block
        conditional__if_then_else["if-then-else · if then else<br/>🟢5"]:::ok
-       conditional__case["Case · case when<br/>🟢4 🟡3"]:::partial
+       conditional__case["Case · case when<br/>🟢7"]:::ok
        conditional__nvl["Nvl · nvl<br/>🟢7"]:::ok
        conditional__if_then_else --- B
        conditional__case --- B
@@ -60,7 +60,7 @@ Conditional operators
      - 🟢
      - 5
    * - :doc:`Case <case>` ``case when``
-     - 🟡
+     - 🟢
      - 7
    * - :doc:`Nvl <nvl>` ``nvl``
      - 🟢
@@ -91,40 +91,7 @@ Conditional operators
 
 .. rubric:: Forms that are not green
 
-Every form that is neither 🟢 nor 🛡️, with the example that shows its status: the first that is neither, or the first that diverges for a 🔵 form.
-
-.. list-table::
-   :header-rows: 1
-   :widths: auto
-
-   * - Operator
-     - Form
-     - Status
-     - Example
-     - pandas
-     - DuckDB
-     - Detail
-   * - :doc:`Case <case>`
-     - `case when DS then DS when DS then DS \.\.\. else DS <case.html#form-ds-multi-when>`__
-     - 🟡
-     - `Overlapping inline conditions <case.html#ex-ds-multi-when-overlapping-inline-conditions>`__
-     - ❌
-     - ❌
-     - row Id\_1=3: Me\_1 expected 300 got 3
-   * - :doc:`Case <case>`
-     - `case when comp then sc when comp then sc \.\.\. else sc <case.html#form-comp-multi-when>`__
-     - 🟡
-     - `Overlapping descending thresholds <case.html#ex-comp-multi-when-overlapping-descending-thresholds>`__
-     - ❌
-     - ❌
-     - row Id\_1=3: Me\_2 expected 10 got 1
-   * - :doc:`Case <case>`
-     - `case when sc then sc when sc then sc \.\.\. else sc <case.html#form-sc-multi-when>`__
-     - 🟡
-     - `Both conditions true <case.html#ex-sc-multi-when-both-conditions-true>`__
-     - ❌
-     - ❌
-     - value expected 10 got 1
+Every form is 🟢 or 🛡️.
 
 .. toctree::
    :maxdepth: 1

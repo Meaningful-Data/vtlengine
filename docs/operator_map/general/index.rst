@@ -4,7 +4,7 @@ General purpose operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 5 of 7 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip partial">🟡 5 of 7 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -39,7 +39,7 @@ General purpose operators
        general__membership["Membership · #35;<br/>🟢4 🟡1"]:::partial
        general__udo_call["User-defined operator call · name( )<br/>🟢4"]:::ok
        general__eval["Evaluation of an external routine · eval<br/>🟢4"]:::ok
-       general__cast["Type conversion · cast 📌<br/>🟢23 🔴14 🔵4"]:::diverge
+       general__cast["Type conversion · cast 📌<br/>🟢27 🔴14"]:::partial
        general__parentheses --- B
        general__persistent_assignment --- B
        general__non_persistent_assignment --- B
@@ -87,7 +87,7 @@ General purpose operators
      - 🟢
      - 4
    * - :doc:`Type conversion <cast>` ``cast``
-     - 🔵
+     - 🟡
      - 41
 
 .. rubric:: Types
@@ -232,20 +232,6 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
      - ❌
      - missing components: str\_var
    * - :doc:`Type conversion <cast>`
-     - `cast(comp<date>, time) <cast.html#form-date-to-time>`__
-     - 🔵
-     - `Same start and end <cast.html#ex-date-to-time-same-start-and-end>`__
-     - ✅
-     - ❌
-     - DuckDB: row Id\_1=1: Me\_2 expected 2020-01-15/2020-01-15 got 2020-01-15 00:00:00; row Id\_1=2: Me\_2 expected 2021-12-31/2021-12-31 got 2021-12-31 00:00:00
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<time\_period>, time) <cast.html#form-time-period-to-time>`__
-     - 🔵
-     - `Start and end of the period <cast.html#ex-time-period-to-time-start-and-end-of-the-period>`__
-     - ✅
-     - ❌
-     - DuckDB: row Id\_1=1: Me\_2 expected 2020-01-01/2020-03-31 got 2020-Q1; row Id\_1=2: Me\_2 expected 2021-02-01/2021-02-28 got 2021-M02
-   * - :doc:`Type conversion <cast>`
      - `cast(comp<integer>, string, mask) <cast.html#form-integer-to-string-mask>`__
      - 🔴
      - `Two digit mask <cast.html#ex-integer-to-string-mask-two-digit-mask>`__
@@ -267,13 +253,6 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
      - 🛡 1-3-13
      - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY-MM-DD/YYYY-MM-DD\". Please check transformation with output Dataset DS\_r
    * - :doc:`Type conversion <cast>`
-     - `cast(comp<date>, string) <cast.html#form-date-to-string>`__
-     - 🔵
-     - `Iso 8601 dates <cast.html#ex-date-to-string-iso-8601-dates>`__
-     - ✅
-     - ❌
-     - DuckDB: row Id\_1=1: Me\_2 expected 2020-01-15 got 2020-01-15 00:00:00; row Id\_1=2: Me\_2 expected 2021-12-31 got 2021-12-31 00:00:00
-   * - :doc:`Type conversion <cast>`
      - `cast(comp<date>, string, mask) <cast.html#form-date-to-string-mask>`__
      - 🔴
      - `Year month day mask <cast.html#ex-date-to-string-mask-year-month-day-mask>`__
@@ -287,13 +266,6 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
      - 🛡 1-3-13
      - 🛡 1-3-13
      - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY\\MMM\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<duration>, string) <cast.html#form-duration-to-string>`__
-     - 🔵
-     - `Iso 8601 durations <cast.html#ex-duration-to-string-iso-8601-durations>`__
-     - ✅
-     - ❌
-     - DuckDB: row Id\_1=1: Me\_2 expected P1Y got A; row Id\_1=2: Me\_2 expected P1M got M; row Id\_1=3: Me\_2 expected P1D got D
    * - :doc:`Type conversion <cast>`
      - `cast(comp<duration>, string, mask) <cast.html#form-duration-to-string-mask>`__
      - 🔴

@@ -4,7 +4,7 @@ Time operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 16 of 17 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 17 of 17 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -33,7 +33,7 @@ Time operators
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Time operators"]:::block
-       time__period_indicator["Period indicator · period_indicator<br/>🟢3 🔴1"]:::partial
+       time__period_indicator["Period indicator · period_indicator<br/>🟢4"]:::ok
        time__fill_time_series["Fill time series · fill_time_series<br/>🟢8"]:::ok
        time__flow_to_stock["Flow to stock · flow_to_stock<br/>🟢3"]:::ok
        time__stock_to_flow["Stock to flow · stock_to_flow<br/>🟢3"]:::ok
@@ -99,7 +99,7 @@ Time operators
      - Status
      - Forms
    * - :doc:`Period indicator <period_indicator>` ``period_indicator``
-     - 🟡
+     - 🟢
      - 4
    * - :doc:`Fill time series <fill_time_series>` ``fill_time_series``
      - 🟢
@@ -303,26 +303,7 @@ Time operators
 
 .. rubric:: Forms that are not green
 
-Every form that is neither 🟢 nor 🛡️, with the example that shows its status: the first that is neither, or the first that diverges for a 🔵 form.
-
-.. list-table::
-   :header-rows: 1
-   :widths: auto
-
-   * - Operator
-     - Form
-     - Status
-     - Example
-     - pandas
-     - DuckDB
-     - Detail
-   * - :doc:`Period indicator <period_indicator>`
-     - `filter period\_indicator() <period_indicator.html#form-in-filter-no-operand>`__
-     - 🔴
-     - `Keeps the quarterly data point <period_indicator.html#ex-in-filter-no-operand-keeps-the-quarterly-data-point>`__
-     - 💥 IndexError
-     - 💥 IndexError
-     - IndexError: list index out of range
+Every form is 🟢 or 🛡️.
 
 .. toctree::
    :maxdepth: 1

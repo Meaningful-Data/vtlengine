@@ -4,7 +4,7 @@ Numeric operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 16 of 18 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 18 of 18 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -39,7 +39,7 @@ Numeric operators
        numeric__subtraction["Subtraction · -<br/>🟢7"]:::ok
        numeric__multiplication["Multiplication · *<br/>🟢7"]:::ok
        numeric__division["Division · /<br/>🟢7"]:::ok
-       numeric__modulo["Modulo · mod<br/>🟢6 🟡1"]:::partial
+       numeric__modulo["Modulo · mod<br/>🟢7"]:::ok
        numeric__round["Rounding · round<br/>🟢11"]:::ok
        numeric__trunc["Truncation · trunc<br/>🟢11"]:::ok
        numeric__ceil["Ceiling · ceil<br/>🟢3"]:::ok
@@ -50,7 +50,7 @@ Numeric operators
        numeric__sqrt["Square root · sqrt<br/>🟢3"]:::ok
        numeric__power["Power · power<br/>🟢5"]:::ok
        numeric__log["Logarithm · log<br/>🟢5"]:::ok
-       numeric__random["Random · random<br/>🔵3"]:::diverge
+       numeric__random["Random · random<br/>🟢3"]:::ok
        numeric__unary_plus --- B
        numeric__unary_minus --- B
        numeric__addition --- B
@@ -120,7 +120,7 @@ Numeric operators
      - 🟢
      - 7
    * - :doc:`Modulo <modulo>` ``mod``
-     - 🟡
+     - 🟢
      - 7
    * - :doc:`Rounding <round>` ``round``
      - 🟢
@@ -153,7 +153,7 @@ Numeric operators
      - 🟢
      - 5
    * - :doc:`Random <random>` ``random``
-     - 🔵
+     - 🟢
      - 3
 
 .. rubric:: Types
@@ -222,47 +222,7 @@ Numeric operators
 
 .. rubric:: Forms that are not green
 
-Every form that is neither 🟢 nor 🛡️, with the example that shows its status: the first that is neither, or the first that diverges for a 🔵 form.
-
-.. list-table::
-   :header-rows: 1
-   :widths: auto
-
-   * - Operator
-     - Form
-     - Status
-     - Example
-     - pandas
-     - DuckDB
-     - Detail
-   * - :doc:`Modulo <modulo>`
-     - `mod(sc, sc) <modulo.html#form-sc-sc>`__
-     - 🟡
-     - `Negative divisor <modulo.html#ex-sc-sc-negative-divisor>`__
-     - ❌
-     - ❌
-     - value expected -1 got 1
-   * - :doc:`Random <random>`
-     - `random(DS, n) <random.html#form-ds>`__
-     - 🔵
-     - `Manual example 1 <random.html#ex-ds-manual-ex-1>`__
-     - ✅
-     - ✅
-     - the engines give different outputs
-   * - :doc:`Random <random>`
-     - `random(comp, n) <random.html#form-comp>`__
-     - 🔵
-     - `Manual example 2 <random.html#ex-comp-manual-ex-2>`__
-     - ✅
-     - ✅
-     - the engines give different outputs
-   * - :doc:`Random <random>`
-     - `random(sc, n) <random.html#form-sc>`__
-     - 🔵
-     - `Single draw <random.html#ex-sc-single-draw>`__
-     - ✅
-     - ✅
-     - the engines give different outputs
+Every form is 🟢 or 🛡️.
 
 .. toctree::
    :maxdepth: 1

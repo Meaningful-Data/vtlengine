@@ -4,7 +4,7 @@ Case · ``case when``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 4 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Case/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 7 of 7 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Case/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -36,22 +36,22 @@ Case · ``case when``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Case · case when<br/>🟢4 🟡3"]:::partial
+       O["Case · case when<br/>🟢7"]:::ok
        subgraph G_ds["Dataset"]
            direction LR
            v_ds["case when DS then DS else DS"]:::ok
            v_ds_scalar_branch["case when DS then DS#124;sc else sc#124;DS"]:::ok
-           v_ds_multi_when["case when DS then DS when DS then DS ... else DS"]:::partial
+           v_ds_multi_when["case when DS then DS when DS then DS ... else DS"]:::ok
        end
        subgraph G_comp["Component"]
            direction LR
            v_comp["case when comp then comp else comp"]:::ok
-           v_comp_multi_when["case when comp then sc when comp then sc ... else sc"]:::partial
+           v_comp_multi_when["case when comp then sc when comp then sc ... else sc"]:::ok
        end
        subgraph G_sc["Scalar"]
            direction LR
            v_sc["case when sc then sc else sc"]:::ok
-           v_sc_multi_when["case when sc then sc when sc then sc ... else sc"]:::partial
+           v_sc_multi_when["case when sc then sc when sc then sc ... else sc"]:::ok
        end
        O --- G_ds
        O --- G_comp
@@ -184,13 +184,12 @@ case when DS then DS\|sc else sc\|DS 🟢 · boolean, any scalar → any type
 
    <span class="om-anchor" id="form-ds-multi-when"></span>
 
-case when DS then DS when DS then DS \.\.\. else DS 🟡 · boolean, any scalar → any type
+case when DS then DS when DS then DS \.\.\. else DS 🟢 · boolean, any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-multi-when-overlapping-inline-conditions"><summary><span class="om-ex-title">Overlapping inline conditions</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">row Id_1=3: Me_1 expected 300 got 3</p>
+   <details class="om-example" id="ex-ds-multi-when-overlapping-inline-conditions"><summary><span class="om-ex-title">Overlapping inline conditions</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/case/ds_multi_when/overlapping_inline_conditions/notes.rst
 
@@ -212,8 +211,7 @@ case when DS then DS when DS then DS \.\.\. else DS 🟡 · boolean, any scalar 
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ds-multi-when-overlapping-named-conditions"><summary><span class="om-ex-title">Overlapping named conditions</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">row Id_1=3: Me_1 expected 300 got 3</p>
+   <details class="om-example" id="ex-ds-multi-when-overlapping-named-conditions"><summary><span class="om-ex-title">Overlapping named conditions</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/case/ds_multi_when/overlapping_named_conditions/notes.rst
 
@@ -264,7 +262,7 @@ case when comp then comp else comp 🟢 · boolean, any scalar → any type
 
    <span class="om-anchor" id="form-comp-multi-when"></span>
 
-case when comp then sc when comp then sc \.\.\. else sc 🟡 · boolean, any scalar → any type
+case when comp then sc when comp then sc \.\.\. else sc 🟢 · boolean, any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -289,8 +287,7 @@ case when comp then sc when comp then sc \.\.\. else sc 🟡 · boolean, any sca
 
 .. raw:: html
 
-   <details class="om-example" id="ex-comp-multi-when-overlapping-descending-thresholds"><summary><span class="om-ex-title">Overlapping descending thresholds</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">row Id_1=3: Me_2 expected 10 got 1</p>
+   <details class="om-example" id="ex-comp-multi-when-overlapping-descending-thresholds"><summary><span class="om-ex-title">Overlapping descending thresholds</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/case/comp_multi_when/overlapping_descending_thresholds/notes.rst
 
@@ -379,7 +376,7 @@ case when sc then sc else sc 🟢 · boolean, any scalar → any type
 
    <span class="om-anchor" id="form-sc-multi-when"></span>
 
-case when sc then sc when sc then sc \.\.\. else sc 🟡 · boolean, any scalar → any type
+case when sc then sc when sc then sc \.\.\. else sc 🟢 · boolean, any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -474,8 +471,7 @@ case when sc then sc when sc then sc \.\.\. else sc 🟡 · boolean, any scalar 
 
 .. raw:: html
 
-   <details class="om-example" id="ex-sc-multi-when-both-conditions-true"><summary><span class="om-ex-title">Both conditions true</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">value expected 10 got 1</p>
+   <details class="om-example" id="ex-sc-multi-when-both-conditions-true"><summary><span class="om-ex-title">Both conditions true</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/conditional/case/sc_multi_when/both_conditions_true/notes.rst
 

@@ -33,7 +33,7 @@ Definitions (VTL-DL)
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Definitions (VTL-DL)"]:::block
-       definitions__define_operator["define operator<br/>🟢9 🟡1 🔴3"]:::partial
+       definitions__define_operator["define operator<br/>🟢10 🔴3"]:::partial
        definitions__define_datapoint_ruleset["define datapoint ruleset<br/>🟢3 🟡1 🛡️1"]:::partial
        definitions__define_hierarchical_ruleset["define hierarchical ruleset<br/>🟢6 🟡1"]:::partial
        definitions__define_viral_propagation["define viral propagation<br/>🟢3 🔴1"]:::partial
@@ -188,13 +188,6 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
      - 🛡 1-3-13
      - 🛡 1-3-13
      - SemanticError 1-3-13: Unsupported VTL construct: set type \'set<string>\' (line 1, column 36).
-   * - :doc:`define operator <define_operator>`
-     - `c component \| identifier \| measure \| attribute \| viral attribute <…> <define_operator.html#form-component>`__
-     - 🟡
-     - `Attribute overwritten in calc <define_operator.html#ex-component-attribute-overwritten-in-calc>`__
-     - ❌
-     - ❌
-     - role of At\_1 expected Attribute got Measure
    * - :doc:`define operator <define_operator>`
      - `r <ruleset type> <define_operator.html#form-ruleset>`__
      - 🔴

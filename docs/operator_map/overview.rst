@@ -26,19 +26,19 @@ A node for each block, with how many operators it has, and how many of them are 
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        R["VTL 2.2<br/>Reference Manual"]:::block
-       chapter__general["General purpose operators<br/>7 operators · 🟢5 🟡1 🔵1"]:::diverge
+       chapter__general["General purpose operators<br/>7 operators · 🟢5 🟡2"]:::partial
        chapter__join["Join operators<br/>4 operators · 🟡4"]:::partial
-       chapter__string["String operators<br/>11 operators · 🟢10 🟡1"]:::partial
-       chapter__numeric["Numeric operators<br/>18 operators · 🟢16 🟡1 🔵1"]:::diverge
+       chapter__string["String operators<br/>11 operators · 🟢11"]:::ok
+       chapter__numeric["Numeric operators<br/>18 operators · 🟢18"]:::ok
        chapter__comparison["Comparison operators<br/>12 operators · 🟢12"]:::ok
        chapter__boolean["Boolean operators<br/>4 operators · 🟢4"]:::ok
-       chapter__time["Time operators<br/>17 operators · 🟢16 🟡1"]:::partial
+       chapter__time["Time operators<br/>17 operators · 🟢17"]:::ok
        chapter__set["Set operators<br/>4 operators · 🟢4"]:::ok
-       chapter__hierarchy["Hierarchical aggregation<br/>1 operator · 🟡1"]:::partial
-       chapter__aggregate["Aggregate and Analytic operators<br/>18 operators · 🟢7 🟡10 🔵1"]:::diverge
+       chapter__hierarchy["Hierarchical aggregation<br/>1 operator · 🟢1"]:::ok
+       chapter__aggregate["Aggregate and Analytic operators<br/>18 operators · 🟢18"]:::ok
        chapter__validation["Data validation operators<br/>3 operators · 🟢1 🟡2"]:::partial
-       chapter__conditional["Conditional operators<br/>3 operators · 🟢2 🟡1"]:::partial
-       chapter__clause["Clause operators<br/>9 operators · 🟢6 🟡2 🔴1"]:::partial
+       chapter__conditional["Conditional operators<br/>3 operators · 🟢3"]:::ok
+       chapter__clause["Clause operators<br/>9 operators · 🟢8 🔴1"]:::partial
        chapter__definitions["Definitions (VTL-DL)<br/>4 operators · 🟡4"]:::partial
        chapter__general --- R
        chapter__join --- R
@@ -91,14 +91,14 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🔴
      - 🔵
    * - :doc:`General purpose operators <general/index>`
-     - 🔵
+     - 🟡
      - 7
      - 62
-     - 43
+     - 47
      - 1
      - 0
      - 14
-     - 4
+     - 0
    * - :doc:`Join operators <join/index>`
      - 🟡
      - 4
@@ -109,23 +109,23 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 0
      - 0
    * - :doc:`String operators <string/index>`
-     - 🟡
+     - 🟢
      - 11
      - 58
-     - 57
-     - 1
+     - 58
+     - 0
      - 0
      - 0
      - 0
    * - :doc:`Numeric operators <numeric/index>`
-     - 🔵
+     - 🟢
      - 18
      - 94
-     - 90
-     - 1
+     - 94
      - 0
      - 0
-     - 3
+     - 0
+     - 0
    * - :doc:`Comparison operators <comparison/index>`
      - 🟢
      - 12
@@ -145,13 +145,13 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 0
      - 0
    * - :doc:`Time operators <time/index>`
-     - 🟡
+     - 🟢
      - 17
      - 54
-     - 53
+     - 54
      - 0
      - 0
-     - 1
+     - 0
      - 0
    * - :doc:`Set operators <set/index>`
      - 🟢
@@ -163,38 +163,38 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 0
      - 0
    * - :doc:`Hierarchical aggregation <hierarchy/index>`
-     - 🟡
+     - 🟢
      - 1
      - 38
-     - 26
-     - 12
+     - 38
+     - 0
      - 0
      - 0
      - 0
    * - :doc:`Aggregate and Analytic operators <aggregate/index>`
-     - 🔵
+     - 🟢
      - 18
      - 112
-     - 100
-     - 11
+     - 112
      - 0
      - 0
-     - 1
+     - 0
+     - 0
    * - :doc:`Data validation operators <validation/index>`
      - 🟡
      - 3
      - 53
-     - 39
-     - 14
+     - 49
+     - 4
      - 0
      - 0
      - 0
    * - :doc:`Conditional operators <conditional/index>`
-     - 🟡
+     - 🟢
      - 3
      - 19
-     - 16
-     - 3
+     - 19
+     - 0
      - 0
      - 0
      - 0
@@ -202,20 +202,20 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🟡
      - 9
      - 24
-     - 21
-     - 2
+     - 23
+     - 0
      - 0
      - 1
      - 0
    * - **Total**
-     - 🔵
+     - 🟡
      - 111
      - 700
-     - 624
-     - 51
+     - 673
+     - 11
      - 1
-     - 16
-     - 8
+     - 15
+     - 0
 
 .. rubric:: Definitions (VTL-DL)
 
@@ -236,8 +236,8 @@ The definitions of the VTL-DL. The counts are over the forms of each one. Their 
    * - :doc:`define operator <definitions/define_operator>`
      - 🟡
      - 13
-     - 9
-     - 1
+     - 10
+     - 0
      - 0
      - 3
      - 0
@@ -268,8 +268,8 @@ The definitions of the VTL-DL. The counts are over the forms of each one. Their 
    * - **Total**
      - 🟡
      - 29
-     - 21
-     - 3
+     - 22
+     - 2
      - 1
      - 4
      - 0

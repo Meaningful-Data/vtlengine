@@ -1,4 +1,3 @@
 :Tests: ``count`` as an analytic function at data set level, partitioned by ``Id_1``, with no order and no window clause.
 :Manual: `Analytic invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html>`__: "If windowClause is not specified, then the set of Data Points which contribute to the analytic operation is the whole partition which the current Data Point belongs to".
 :Expected: ``int_var`` = 4 on the data points of ``A`` and 2 on those of ``B``: the count page's result type ``dataset { measure<integer> int_var }`` is read as prevailing over the invocation's "same Identifiers and Measures as the input Data Set". #1049 covers the Aggregate invocation only (PR #1050), so it does not apply here.
-:Finding: pandas returns ``Me_1`` and ``Me_2`` in place of ``int_var``, and DuckDB crashes with ``KeyError: Me_1``.

@@ -1,4 +1,3 @@
 :Tests: ``case when SC_1 > 10 then 10 when SC_1 > 1 then 1 else 0`` with ``SC_1`` = 15: two conditions that are both true, the usual descending-threshold form, to tell the first true ``when`` from the last. In the other examples of this form at most one condition is true.
 :Manual: `Case <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Case/index.html>`__: "The **case** operator returns the first *thenOperand* whose corresponding *condition* evaluates to **true**, *elseOperand* if none of the **when** conditions evaluates to **true**."
 :Expected: ``SC_r = 10``, an Integer: ``SC_1 > 10`` and ``SC_1 > 1`` are both true for 15, and the first gives 10, not the 1 of the second. No recorded team decision applies, so the expected output follows the manual's "first".
-:Finding: both engines return 1: the last true condition wins ("last-match-wins" in the comment of ``visit_Case`` in the DuckDB transpiler).

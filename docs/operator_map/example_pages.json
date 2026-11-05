@@ -97,26 +97,26 @@
   },
   "aggregate/analytic_invocation/window_default/running_total_in_time_order": {
     "anchor": "ex-window-default-running-total-in-time-order",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "aggregate/analytic_invocation.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Running total in time order"
   },
   "aggregate/analytic_invocation/window_default/string_order_key": {
     "anchor": "ex-window-default-string-order-key",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "aggregate/analytic_invocation.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "String order key"
   },
   "aggregate/analytic_invocation/window_default/ties_count_together": {
     "anchor": "ex-window-default-ties-count-together",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "aggregate/analytic_invocation.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Ties count together"
   },
   "aggregate/analytic_invocation/window_default_ds/running_total_in_time_order": {
@@ -129,10 +129,10 @@
   },
   "aggregate/analytic_invocation/window_default_ds/ties_count_together": {
     "anchor": "ex-window-default-ds-ties-count-together",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "aggregate/analytic_invocation.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Ties count together"
   },
   "aggregate/analytic_invocation/window_range/range_bounds_are_inclusive": {
@@ -161,10 +161,10 @@
   },
   "aggregate/avg/analytic_ds/whole_partition_without_order": {
     "anchor": "ex-analytic-ds-whole-partition-without-order",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "aggregate/avg.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Whole partition without order"
   },
   "aggregate/avg/comp_in_aggr/keeps_only_calculated_measure": {
@@ -217,10 +217,10 @@
   },
   "aggregate/avg/ds_having/two_measures": {
     "anchor": "ex-ds-having-two-measures",
-    "duckdb": "🛡 1-1-1-4",
+    "duckdb": "✅",
     "operator_page": "aggregate/avg.html",
-    "pandas": "🛡 1-1-1-4",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Two measures"
   },
   "aggregate/avg/ds_no_group/single_group_no_identifiers": {
@@ -241,10 +241,10 @@
   },
   "aggregate/count/analytic_ds/whole_partition_without_order": {
     "anchor": "ex-analytic-ds-whole-partition-without-order",
-    "duckdb": "💥 KeyError",
+    "duckdb": "✅",
     "operator_page": "aggregate/count.html",
-    "pandas": "❌",
-    "status": "diverge",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Whole partition without order"
   },
   "aggregate/count/comp_in_aggr/keeps_only_calculated_measure": {
@@ -305,10 +305,10 @@
   },
   "aggregate/count/ds_having/two_measures": {
     "anchor": "ex-ds-having-two-measures",
-    "duckdb": "🛡 1-1-1-4",
+    "duckdb": "✅",
     "operator_page": "aggregate/count.html",
-    "pandas": "🛡 1-1-1-4",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Two measures"
   },
   "aggregate/count/ds_no_group/single_group_no_identifiers": {
@@ -425,10 +425,10 @@
   },
   "aggregate/max/analytic_ds/whole_partition_without_order": {
     "anchor": "ex-analytic-ds-whole-partition-without-order",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "aggregate/max.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Whole partition without order"
   },
   "aggregate/max/comp_in_aggr/keeps_only_calculated_measure": {
@@ -481,10 +481,10 @@
   },
   "aggregate/max/ds_having/two_measures": {
     "anchor": "ex-ds-having-two-measures",
-    "duckdb": "🛡 1-1-1-4",
+    "duckdb": "✅",
     "operator_page": "aggregate/max.html",
-    "pandas": "🛡 1-1-1-4",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Two measures"
   },
   "aggregate/max/ds_no_group/single_group_no_identifiers": {
@@ -505,10 +505,10 @@
   },
   "aggregate/median/analytic_ds/whole_partition_without_order": {
     "anchor": "ex-analytic-ds-whole-partition-without-order",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "aggregate/median.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Whole partition without order"
   },
   "aggregate/median/comp_in_aggr/keeps_only_calculated_measure": {
@@ -553,10 +553,10 @@
   },
   "aggregate/median/ds_having/two_measures": {
     "anchor": "ex-ds-having-two-measures",
-    "duckdb": "🛡 1-1-1-4",
+    "duckdb": "✅",
     "operator_page": "aggregate/median.html",
-    "pandas": "🛡 1-1-1-4",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Two measures"
   },
   "aggregate/median/ds_no_group/single_group_no_identifiers": {
@@ -577,10 +577,10 @@
   },
   "aggregate/min/analytic_ds/whole_partition_without_order": {
     "anchor": "ex-analytic-ds-whole-partition-without-order",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "aggregate/min.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Whole partition without order"
   },
   "aggregate/min/comp_in_aggr/keeps_only_calculated_measure": {
@@ -633,10 +633,10 @@
   },
   "aggregate/min/ds_having/two_measures": {
     "anchor": "ex-ds-having-two-measures",
-    "duckdb": "🛡 1-1-1-4",
+    "duckdb": "✅",
     "operator_page": "aggregate/min.html",
-    "pandas": "🛡 1-1-1-4",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Two measures"
   },
   "aggregate/min/ds_no_group/single_group_no_identifiers": {
@@ -689,10 +689,10 @@
   },
   "aggregate/stddev_pop/analytic_ds/whole_partition_without_order": {
     "anchor": "ex-analytic-ds-whole-partition-without-order",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "aggregate/stddev_pop.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Whole partition without order"
   },
   "aggregate/stddev_pop/comp_in_aggr/keeps_only_calculated_measure": {
@@ -737,10 +737,10 @@
   },
   "aggregate/stddev_pop/ds_having/two_measures": {
     "anchor": "ex-ds-having-two-measures",
-    "duckdb": "🛡 1-1-1-4",
+    "duckdb": "✅",
     "operator_page": "aggregate/stddev_pop.html",
-    "pandas": "🛡 1-1-1-4",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Two measures"
   },
   "aggregate/stddev_pop/ds_no_group/single_group_no_identifiers": {
@@ -761,10 +761,10 @@
   },
   "aggregate/stddev_samp/analytic_ds/whole_partition_without_order": {
     "anchor": "ex-analytic-ds-whole-partition-without-order",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "aggregate/stddev_samp.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Whole partition without order"
   },
   "aggregate/stddev_samp/comp_in_aggr/keeps_only_calculated_measure": {
@@ -809,10 +809,10 @@
   },
   "aggregate/stddev_samp/ds_having/two_measures": {
     "anchor": "ex-ds-having-two-measures",
-    "duckdb": "🛡 1-1-1-4",
+    "duckdb": "✅",
     "operator_page": "aggregate/stddev_samp.html",
-    "pandas": "🛡 1-1-1-4",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Two measures"
   },
   "aggregate/stddev_samp/ds_no_group/single_group_no_identifiers": {
@@ -833,10 +833,10 @@
   },
   "aggregate/sum/analytic_ds/whole_partition_without_order": {
     "anchor": "ex-analytic-ds-whole-partition-without-order",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "aggregate/sum.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Whole partition without order"
   },
   "aggregate/sum/comp_in_aggr/keeps_only_calculated_measure": {
@@ -881,10 +881,10 @@
   },
   "aggregate/sum/ds_having/two_measures": {
     "anchor": "ex-ds-having-two-measures",
-    "duckdb": "🛡 1-1-1-4",
+    "duckdb": "✅",
     "operator_page": "aggregate/sum.html",
-    "pandas": "🛡 1-1-1-4",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Two measures"
   },
   "aggregate/sum/ds_no_group/single_group_no_identifiers": {
@@ -905,10 +905,10 @@
   },
   "aggregate/var_pop/analytic_ds/whole_partition_without_order": {
     "anchor": "ex-analytic-ds-whole-partition-without-order",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "aggregate/var_pop.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Whole partition without order"
   },
   "aggregate/var_pop/comp_in_aggr/keeps_only_calculated_measure": {
@@ -953,10 +953,10 @@
   },
   "aggregate/var_pop/ds_having/two_measures": {
     "anchor": "ex-ds-having-two-measures",
-    "duckdb": "🛡 1-1-1-4",
+    "duckdb": "✅",
     "operator_page": "aggregate/var_pop.html",
-    "pandas": "🛡 1-1-1-4",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Two measures"
   },
   "aggregate/var_pop/ds_no_group/single_group_no_identifiers": {
@@ -977,10 +977,10 @@
   },
   "aggregate/var_samp/analytic_ds/whole_partition_without_order": {
     "anchor": "ex-analytic-ds-whole-partition-without-order",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "aggregate/var_samp.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Whole partition without order"
   },
   "aggregate/var_samp/comp_in_aggr/keeps_only_calculated_measure": {
@@ -1025,10 +1025,10 @@
   },
   "aggregate/var_samp/ds_having/two_measures": {
     "anchor": "ex-ds-having-two-measures",
-    "duckdb": "🛡 1-1-1-4",
+    "duckdb": "✅",
     "operator_page": "aggregate/var_samp.html",
-    "pandas": "🛡 1-1-1-4",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Two measures"
   },
   "aggregate/var_samp/ds_no_group/single_group_no_identifiers": {
@@ -1505,10 +1505,10 @@
   },
   "clause/aggr/role_omitted_attribute/existing_attribute_keeps_role": {
     "anchor": "ex-role-omitted-attribute-existing-attribute-keeps-role",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "clause/aggr.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Existing attribute keeps role"
   },
   "clause/aggr/viral_attribute_role/viral_attribute_next_to_measure": {
@@ -1545,10 +1545,10 @@
   },
   "clause/calc/measure_default/existing_attribute_keeps_role": {
     "anchor": "ex-measure-default-existing-attribute-keeps-role",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "clause/calc.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Existing attribute keeps role"
   },
   "clause/calc/measure_default/manual_ex_1": {
@@ -2305,10 +2305,10 @@
   },
   "conditional/case/comp_multi_when/overlapping_descending_thresholds": {
     "anchor": "ex-comp-multi-when-overlapping-descending-thresholds",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "conditional/case.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Overlapping descending thresholds"
   },
   "conditional/case/ds/inline_dataset_condition": {
@@ -2329,18 +2329,18 @@
   },
   "conditional/case/ds_multi_when/overlapping_inline_conditions": {
     "anchor": "ex-ds-multi-when-overlapping-inline-conditions",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "conditional/case.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Overlapping inline conditions"
   },
   "conditional/case/ds_multi_when/overlapping_named_conditions": {
     "anchor": "ex-ds-multi-when-overlapping-named-conditions",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "conditional/case.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Overlapping named conditions"
   },
   "conditional/case/ds_scalar_branch/scalar_else_feeds_all_measures": {
@@ -2377,10 +2377,10 @@
   },
   "conditional/case/sc_multi_when/both_conditions_true": {
     "anchor": "ex-sc-multi-when-both-conditions-true",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "conditional/case.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Both conditions true"
   },
   "conditional/case/sc_multi_when/first_condition_true": {
@@ -2761,10 +2761,10 @@
   },
   "definitions/define_operator/component/attribute_overwritten_in_calc": {
     "anchor": "ex-component-attribute-overwritten-in-calc",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Attribute overwritten in calc"
   },
   "definitions/define_operator/component/component_role_in_calc": {
@@ -2793,10 +2793,10 @@
   },
   "definitions/define_operator/component/viral_attribute_overwritten_in_calc": {
     "anchor": "ex-component-viral-attribute-overwritten-in-calc",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Viral attribute overwritten in calc"
   },
   "definitions/define_operator/constrained_scalar/non_null_argument": {
@@ -3233,10 +3233,10 @@
   },
   "general/cast/date_to_string/iso_8601_dates": {
     "anchor": "ex-date-to-string-iso-8601-dates",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
     "pandas": "✅",
-    "status": "diverge",
+    "status": "ok",
     "title": "Iso 8601 dates"
   },
   "general/cast/date_to_string_mask/year_month_day_mask": {
@@ -3249,10 +3249,10 @@
   },
   "general/cast/date_to_time/same_start_and_end": {
     "anchor": "ex-date-to-time-same-start-and-end",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
     "pandas": "✅",
-    "status": "diverge",
+    "status": "ok",
     "title": "Same start and end"
   },
   "general/cast/date_to_time_period/daily_periods": {
@@ -3265,10 +3265,10 @@
   },
   "general/cast/duration_to_string/iso_8601_durations": {
     "anchor": "ex-duration-to-string-iso-8601-durations",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
     "pandas": "✅",
-    "status": "diverge",
+    "status": "ok",
     "title": "Iso 8601 durations"
   },
   "general/cast/duration_to_string_mask/period_indicator_mask": {
@@ -3505,10 +3505,10 @@
   },
   "general/cast/time_period_to_time/start_and_end_of_the_period": {
     "anchor": "ex-time-period-to-time-start-and-end-of-the-period",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
     "pandas": "✅",
-    "status": "diverge",
+    "status": "ok",
     "title": "Start and end of the period"
   },
   "general/cast/time_to_date/single_day_intervals": {
@@ -3841,130 +3841,130 @@
   },
   "hierarchy/hierarchy/always_null_dataset_all/missing_null_and_zero_items": {
     "anchor": "ex-always-null-dataset-all-missing-null-and-zero-items",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Missing null and zero items"
   },
   "hierarchy/hierarchy/always_null_dataset_computed/missing_null_and_zero_items": {
     "anchor": "ex-always-null-dataset-computed-missing-null-and-zero-items",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Missing null and zero items"
   },
   "hierarchy/hierarchy/always_null_rule_all/missing_null_and_zero_items": {
     "anchor": "ex-always-null-rule-all-missing-null-and-zero-items",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Missing null and zero items"
   },
   "hierarchy/hierarchy/always_null_rule_computed/missing_null_and_zero_items": {
     "anchor": "ex-always-null-rule-computed-missing-null-and-zero-items",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Missing null and zero items"
   },
   "hierarchy/hierarchy/always_null_rule_priority_all/computed_item_takes_precedence": {
     "anchor": "ex-always-null-rule-priority-all-computed-item-takes-precedence",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Computed item takes precedence"
   },
   "hierarchy/hierarchy/always_null_rule_priority_all/missing_null_and_zero_items": {
     "anchor": "ex-always-null-rule-priority-all-missing-null-and-zero-items",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Missing null and zero items"
   },
   "hierarchy/hierarchy/always_null_rule_priority_computed/computed_item_takes_precedence": {
     "anchor": "ex-always-null-rule-priority-computed-computed-item-takes-precedence",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Computed item takes precedence"
   },
   "hierarchy/hierarchy/always_null_rule_priority_computed/missing_null_and_zero_items": {
     "anchor": "ex-always-null-rule-priority-computed-missing-null-and-zero-items",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Missing null and zero items"
   },
   "hierarchy/hierarchy/always_zero_dataset_all/missing_null_and_zero_items": {
     "anchor": "ex-always-zero-dataset-all-missing-null-and-zero-items",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Missing null and zero items"
   },
   "hierarchy/hierarchy/always_zero_dataset_computed/missing_null_and_zero_items": {
     "anchor": "ex-always-zero-dataset-computed-missing-null-and-zero-items",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Missing null and zero items"
   },
   "hierarchy/hierarchy/always_zero_rule_all/missing_null_and_zero_items": {
     "anchor": "ex-always-zero-rule-all-missing-null-and-zero-items",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Missing null and zero items"
   },
   "hierarchy/hierarchy/always_zero_rule_computed/missing_null_and_zero_items": {
     "anchor": "ex-always-zero-rule-computed-missing-null-and-zero-items",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Missing null and zero items"
   },
   "hierarchy/hierarchy/always_zero_rule_priority_all/computed_item_takes_precedence": {
     "anchor": "ex-always-zero-rule-priority-all-computed-item-takes-precedence",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Computed item takes precedence"
   },
   "hierarchy/hierarchy/always_zero_rule_priority_all/missing_null_and_zero_items": {
     "anchor": "ex-always-zero-rule-priority-all-missing-null-and-zero-items",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Missing null and zero items"
   },
   "hierarchy/hierarchy/always_zero_rule_priority_computed/computed_item_takes_precedence": {
     "anchor": "ex-always-zero-rule-priority-computed-computed-item-takes-precedence",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Computed item takes precedence"
   },
   "hierarchy/hierarchy/always_zero_rule_priority_computed/missing_null_and_zero_items": {
     "anchor": "ex-always-zero-rule-priority-computed-missing-null-and-zero-items",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Missing null and zero items"
   },
   "hierarchy/hierarchy/condition/overlapping_rules_that_agree": {
@@ -5553,10 +5553,10 @@
   },
   "numeric/modulo/sc_sc/negative_divisor": {
     "anchor": "ex-sc-sc-negative-divisor",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "numeric/modulo.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Negative divisor"
   },
   "numeric/modulo/sc_sc/positive_operands": {
@@ -5569,10 +5569,10 @@
   },
   "numeric/modulo/sc_sc/zero_divisor": {
     "anchor": "ex-sc-sc-zero-divisor",
-    "duckdb": "🛡 2-1-15-6",
+    "duckdb": "✅",
     "operator_page": "numeric/modulo.html",
-    "pandas": "🛡 2-1-15-6",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Zero divisor"
   },
   "numeric/multiplication/comp_comp/manual_ex_3": {
@@ -5676,7 +5676,7 @@
     "duckdb": "✅",
     "operator_page": "numeric/random.html",
     "pandas": "✅",
-    "status": "diverge",
+    "status": "ok",
     "title": "Manual example 2"
   },
   "numeric/random/comp/seed_replaced_by_draws": {
@@ -5684,7 +5684,7 @@
     "duckdb": "✅",
     "operator_page": "numeric/random.html",
     "pandas": "✅",
-    "status": "diverge",
+    "status": "ok",
     "title": "Seed replaced by draws"
   },
   "numeric/random/ds/manual_ex_1": {
@@ -5692,7 +5692,7 @@
     "duckdb": "✅",
     "operator_page": "numeric/random.html",
     "pandas": "✅",
-    "status": "diverge",
+    "status": "ok",
     "title": "Manual example 1"
   },
   "numeric/random/sc/single_draw": {
@@ -5700,7 +5700,7 @@
     "duckdb": "✅",
     "operator_page": "numeric/random.html",
     "pandas": "✅",
-    "status": "diverge",
+    "status": "ok",
     "title": "Single draw"
   },
   "numeric/round/comp_comp_digits/digits_from_component": {
@@ -5929,10 +5929,10 @@
   },
   "numeric/trunc/ds_no_digits/two_number_measures": {
     "anchor": "ex-ds-no-digits-two-number-measures",
-    "duckdb": "🛡 1-1-1-4",
+    "duckdb": "✅",
     "operator_page": "numeric/trunc.html",
-    "pandas": "🛡 1-1-1-4",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Two number measures"
   },
   "numeric/trunc/ds_placeholder/placeholder_for_digits": {
@@ -6465,18 +6465,18 @@
   },
   "string/string_distance/jaro_winkler_sc/disjoint_strings": {
     "anchor": "ex-jaro-winkler-sc-disjoint-strings",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "string/string_distance.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Disjoint strings"
   },
   "string/string_distance/jaro_winkler_sc/identical_strings": {
     "anchor": "ex-jaro-winkler-sc-identical-strings",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "string/string_distance.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Identical strings"
   },
   "string/string_distance/levenshtein_comp_comp/kitten_sitting_and_null": {
@@ -6985,10 +6985,10 @@
   },
   "time/period_indicator/in_filter_no_operand/keeps_the_quarterly_data_point": {
     "anchor": "ex-in-filter-no-operand-keeps-the-quarterly-data-point",
-    "duckdb": "💥 IndexError",
+    "duckdb": "✅",
     "operator_page": "time/period_indicator.html",
-    "pandas": "💥 IndexError",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Keeps the quarterly data point"
   },
   "time/period_indicator/sc/quarterly_period": {
@@ -7257,18 +7257,18 @@
   },
   "validation/check_hierarchy/always_null_dataset_all/rule_with_no_item_found_is_null": {
     "anchor": "ex-always-null-dataset-all-rule-with-no-item-found-is-null",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Rule with no item found is null"
   },
   "validation/check_hierarchy/always_null_dataset_all_measures/rule_with_no_item_found_is_null": {
     "anchor": "ex-always-null-dataset-all-measures-rule-with-no-item-found-is-null",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Rule with no item found is null"
   },
   "validation/check_hierarchy/always_null_dataset_invalid/rule_with_no_item_found_is_null": {
@@ -7281,18 +7281,18 @@
   },
   "validation/check_hierarchy/always_null_dataset_priority_all/null_item_from_the_rule_computing_it": {
     "anchor": "ex-always-null-dataset-priority-all-null-item-from-the-rule-computing-it",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/always_null_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
     "anchor": "ex-always-null-dataset-priority-all-measures-null-item-from-the-rule-computing-it",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/always_null_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
@@ -7305,50 +7305,50 @@
   },
   "validation/check_hierarchy/always_zero_dataset_all/rule_with_no_item_found_is_false": {
     "anchor": "ex-always-zero-dataset-all-rule-with-no-item-found-is-false",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Rule with no item found is false"
   },
   "validation/check_hierarchy/always_zero_dataset_all_measures/rule_with_no_item_found_is_false": {
     "anchor": "ex-always-zero-dataset-all-measures-rule-with-no-item-found-is-false",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Rule with no item found is false"
   },
   "validation/check_hierarchy/always_zero_dataset_invalid/rule_with_no_item_found_is_false": {
     "anchor": "ex-always-zero-dataset-invalid-rule-with-no-item-found-is-false",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Rule with no item found is false"
   },
   "validation/check_hierarchy/always_zero_dataset_priority_all/null_item_from_the_rule_computing_it": {
     "anchor": "ex-always-zero-dataset-priority-all-null-item-from-the-rule-computing-it",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/always_zero_dataset_priority_all_measures/null_item_from_the_rule_computing_it": {
     "anchor": "ex-always-zero-dataset-priority-all-measures-null-item-from-the-rule-computing-it",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/always_zero_dataset_priority_invalid/null_item_from_the_rule_computing_it": {
     "anchor": "ex-always-zero-dataset-priority-invalid-null-item-from-the-rule-computing-it",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Null item from the rule computing it"
   },
   "validation/check_hierarchy/condition/conditioning_value_domain_bound": {

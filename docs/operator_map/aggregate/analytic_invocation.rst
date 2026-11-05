@@ -4,7 +4,7 @@ Analytic invocation · ``over``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 9 of 11 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 11 of 11 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -36,11 +36,11 @@ Analytic invocation · ``over``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Analytic invocation · over<br/>🟢9 🟡2"]:::partial
+       O["Analytic invocation · over<br/>🟢11"]:::ok
        subgraph G_ds["Dataset"]
            direction LR
            v_window_data_points["an(DS over (order by Id data points between n preceding and n following))"]:::ok
-           v_window_default_ds["an(DS over (partition by Id order by Id))"]:::partial
+           v_window_default_ds["an(DS over (partition by Id order by Id))"]:::ok
        end
        subgraph G_comp["Component"]
            direction LR
@@ -52,7 +52,7 @@ Analytic invocation · ``over``
            v_window_range["an(Me over (partition by Id order by Me range between n preceding and n following))"]:::ok
            v_window_unbounded["an(Me over (... data points between unbounded preceding and unbounded following))"]:::ok
            v_window_current["an(Me over (... data points between n preceding and current data point))"]:::ok
-           v_window_default["an(Me over (partition by Id order by Id))"]:::partial
+           v_window_default["an(Me over (partition by Id order by Id))"]:::ok
        end
        subgraph G_use["Used with"]
            direction LR
@@ -124,7 +124,7 @@ an(DS over (order by Id data points between n preceding and n following)) 🟢 �
 
    <span class="om-anchor" id="form-window-default-ds"></span>
 
-an(DS over (partition by Id order by Id)) 🟡 · any scalar → any type
+an(DS over (partition by Id order by Id)) 🟢 · any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -149,8 +149,7 @@ an(DS over (partition by Id order by Id)) 🟡 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-window-default-ds-ties-count-together"><summary><span class="om-ex-title">Ties count together</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">row Id_1=A, Id_2=1, Id_3=x: Me_1 expected 3 got 1.0</p>
+   <details class="om-example" id="ex-window-default-ds-ties-count-together"><summary><span class="om-ex-title">Ties count together</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/analytic_invocation/window_default_ds/ties_count_together/notes.rst
 
@@ -409,13 +408,12 @@ an(Me over (\.\.\. data points between n preceding and current data point)) 🟢
 
    <span class="om-anchor" id="form-window-default"></span>
 
-an(Me over (partition by Id order by Id)) 🟡 · any scalar → any type
+an(Me over (partition by Id order by Id)) 🟢 · any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-window-default-running-total-in-time-order"><summary><span class="om-ex-title">Running total in time order</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">row Id_1=A, Id_2=2020Q1: Me_3 expected 3 got 10.0; row Id_1=A, Id_2=2020Q2: Me_3 expected 4 got 10.0; row Id_1=A, Id_2=2021Q1: Me_3 expected 9 got 10.0</p>
+   <details class="om-example" id="ex-window-default-running-total-in-time-order"><summary><span class="om-ex-title">Running total in time order</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/analytic_invocation/window_default/running_total_in_time_order/notes.rst
 
@@ -435,8 +433,7 @@ an(Me over (partition by Id order by Id)) 🟡 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-window-default-ties-count-together"><summary><span class="om-ex-title">Ties count together</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">row Id_1=A, Id_2=1, Id_3=x: Me_2 expected 3 got 10.0; row Id_1=A, Id_2=1, Id_3=y: Me_2 expected 3 got 10.0; row Id_1=A, Id_2=2, Id_3=x: Me_2 expected 6 got 10.0</p>
+   <details class="om-example" id="ex-window-default-ties-count-together"><summary><span class="om-ex-title">Ties count together</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/analytic_invocation/window_default/ties_count_together/notes.rst
 
@@ -456,8 +453,7 @@ an(Me over (partition by Id order by Id)) 🟡 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-window-default-string-order-key"><summary><span class="om-ex-title">String order key</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">row Id_1=A, Id_2=1, Id_3=x: Me_2 expected 8 got 10.0; row Id_1=A, Id_2=2, Id_3=x: Me_2 expected 8 got 10.0; row Id_1=A, Id_2=3, Id_3=x: Me_2 expected 8 got 10.0</p>
+   <details class="om-example" id="ex-window-default-string-order-key"><summary><span class="om-ex-title">String order key</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/analytic_invocation/window_default/string_order_key/notes.rst
 
