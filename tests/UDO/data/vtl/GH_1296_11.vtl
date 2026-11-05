@@ -1,0 +1,32 @@
+define operator c (x dataset)
+    returns dataset is
+        x
+end operator;
+
+define operator b (y dataset)
+    returns dataset is
+        c(y)
+end operator;
+
+define operator a (y dataset {measure<number [value > 0]> Me_1})
+    returns dataset is
+        b(y)
+end operator;
+
+define operator g3 (c component)
+    returns component is
+        c * 2
+end operator;
+
+define operator g2 (c component)
+    returns component is
+        g3(c)
+end operator;
+
+define operator f (y component<number [value > 0]>)
+    returns component is
+        g2(y)
+end operator;
+
+DS_r1 <- a(DS_1);
+DS_r2 <- DS_1[calc Me_2 := f(Me_1)];
