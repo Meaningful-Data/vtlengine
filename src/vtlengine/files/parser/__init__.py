@@ -214,6 +214,15 @@ def string_value(value: Any) -> str:
     return str(value)
 
 
+def _cast_number(value: Any) -> float:
+    """Cast Number input through its text, as float() reads it. A boolean is read as
+    1.0 or 0.0, the Number type's own reading of it and the DuckDb engine's, as an
+    Integer reads it as 1 or 0 (issue #1284)."""
+    if pd.api.types.is_bool(value):
+        return float(value)
+    return float(str(value))
+
+
 _INT64_MIN = -(2**63)
 _INT64_MAX = 2**63 - 1
 
@@ -314,7 +323,7 @@ def _validate_pandas(
             elif comp.data_type == Integer:
                 data[comp_name] = data[comp_name].map(_cast_exact_integer, na_action="ignore")
             elif comp.data_type == Number:
-                data[comp_name] = data[comp_name].map(lambda x: float((str(x))), na_action="ignore")
+                data[comp_name] = data[comp_name].map(_cast_number, na_action="ignore")
             elif comp.data_type == Boolean:
                 data[comp_name] = data[comp_name].map(_parse_boolean, na_action="ignore")
             elif comp.data_type == Duration:

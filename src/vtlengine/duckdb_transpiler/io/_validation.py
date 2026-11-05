@@ -559,17 +559,12 @@ def _integer_cast(value_expr: str, column_name: str, source_type: str) -> str:
     )
 
 
-def _number_cast(value_expr: str, column_name: str, source_type: str) -> str:
+def _number_cast(value_expr: str) -> str:
     """SQL reading a Number input value on the rules of the pandas loader.
 
     NaN is no value: kept as a value, it was shown as a null that isnull read as not
-    null. A boolean is refused rather than read as 1.0 or 0.0 (issue #1284).
+    null (issue #1284). A boolean is read as 1.0 or 0.0, as DuckDB casts it.
     """
-    if source_type == "BOOLEAN":
-        err = (
-            f"'Column {column_name}: value ' || CAST({value_expr} AS VARCHAR) || ' is not a Number'"
-        )
-        return f"CASE WHEN {value_expr} IS NULL THEN NULL ELSE error({err}) END"
     double = f"CAST({value_expr} AS DOUBLE)"
     return f"CASE WHEN isnan({double}) THEN NULL ELSE {double} END"
 
@@ -615,7 +610,7 @@ def build_value_cast(value_expr: str, comp: Component, target_type: str, source_
     if comp.data_type == Integer:
         return _integer_cast(value_expr, comp.name, source_type)
     if comp.data_type == Number:
-        return _number_cast(value_expr, comp.name, source_type)
+        return _number_cast(value_expr)
     if comp.data_type == Boolean:
         return build_boolean_cast(value_expr, comp.name)
     if comp.data_type == Date and not source_type.startswith(_TEMPORAL_SQL_TYPES):

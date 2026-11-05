@@ -1054,8 +1054,8 @@ class DataLoadTest(DataLoadHelper):
         Status: OK
         Expression: DS_r := DS_1 [ calc Me_4 := isnull ( Me_1 ), Me_5 := isnull ( Me_2 ) ];
         Description: NaN loads as a null in an Integer and in a Number, which isnull reads
-            as null, and a compact date (20200115) loads as the date it writes, on both
-            engines.
+            as null, a compact date (20200115) loads as the date it writes, and a time at
+            midnight (2020-01-17T00:00:00) loads as the bare date, on both engines.
         Git issue: 1284.
         Goal: Check Result.
         """
@@ -1074,19 +1074,28 @@ class DataLoadTest(DataLoadHelper):
 
 @pytest.mark.parametrize("use_duckdb", engine_params())
 def test_GH_1284_3(use_duckdb: bool) -> None:
-    """A Python boolean in a String loads as true or false, in a column of booleans and
-    in one of mixed values, which DuckDB writes with str() (issue #1284)."""
+    """A Python boolean loads as true or false in a String and as 1.0 or 0.0 in a Number,
+    in a column of booleans and in one of mixed values, which DuckDB writes with str()
+    (issue #1284)."""
     data = pd.DataFrame(
-        {"Id_1": [1, 2], "Me_1": [True, False], "Me_2": pd.Series([True, "x"], dtype=object)}
+        {
+            "Id_1": [1, 2],
+            "Me_1": [True, False],
+            "Me_2": pd.Series([True, "x"], dtype=object),
+            "Me_3": [True, False],
+            "Me_4": pd.Series([True, "2.5"], dtype=object),
+        }
     )
+    columns = ["Me_1", "Me_2", "Me_3", "Me_4"]
     structures = DataLoadHelper.filepath_json / "GH_1284_3-1.json"
     datasets, _, _ = load_datasets_with_data(structures, {"DS_1": data})
-    loaded = datasets["DS_1"].data[["Me_1", "Me_2"]].values.tolist()
+    loaded = datasets["DS_1"].data[columns].values.tolist()
     if use_duckdb:
         with duckdb.connect() as conn:
             register_dataframes(conn, {"DS_1": data}, datasets)
-            loaded = conn.execute('SELECT "Me_1", "Me_2" FROM "DS_1" ORDER BY "Id_1"').fetchall()
-    assert [list(row) for row in loaded] == [["true", "true"], ["false", "x"]]
+            query = f'SELECT {", ".join(columns)} FROM "DS_1" ORDER BY "Id_1"'
+            loaded = conn.execute(query).fetchall()
+    assert [list(row) for row in loaded] == [["true", "true", 1.0, 1.0], ["false", "x", 0.0, 2.5]]
 
 
 BOM = b"\xef\xbb\xbf"

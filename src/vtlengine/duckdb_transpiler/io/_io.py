@@ -9,12 +9,12 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import duckdb
 import pandas as pd
 
-from vtlengine.DataTypes import Date, String, TimeInterval, TimePeriod
+from vtlengine.DataTypes import Date, Integer, Number, String, TimeInterval, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     build_create_table_sql,
     build_csv_column_types,
@@ -782,19 +782,26 @@ def _is_string_like(source_type: str) -> bool:
     return "VARCHAR" in source_type or source_type.startswith("ENUM")
 
 
-def _write_booleans_as_strings(df: pd.DataFrame, components: Dict[str, Component]) -> None:
-    """Write the Python booleans of a String column of mixed values as true or false.
+def _boolean_as_number(value: Any) -> Any:
+    """A Python boolean as the number 1 or 0, any other value as it is."""
+    return int(value) if pd.api.types.is_bool(value) else value
 
-    DuckDB reads a column of booleans as BOOLEAN, which casts to true and false, but
-    writes the booleans of a column of mixed values with str(), as True and False. A
-    boolean is written true or false in a String on both engines (issue #1284). Only
-    a column of mixed values is rewritten, so a column of text is left as it is.
+
+def _write_python_booleans(df: pd.DataFrame, components: Dict[str, Component]) -> None:
+    """Write the Python booleans of a column of mixed values as its type reads them.
+
+    DuckDB reads a column of booleans as BOOLEAN, which casts to true and false, and to
+    1 and 0, but writes the booleans of a column of mixed values with str(), as True and
+    False, which no number reads. A boolean is true or false in a String, and 1 or 0 in
+    an Integer or a Number, on both engines (issue #1284). Only a column of mixed values
+    is rewritten, so a column of text or of numbers is left as it is.
     """
     for comp_name, comp in components.items():
-        if comp.data_type != String or comp_name not in df.columns:
+        if comp.data_type not in (String, Integer, Number) or comp_name not in df.columns:
             continue
         if pd.api.types.infer_dtype(df[comp_name], skipna=True).startswith("mixed"):
-            df[comp_name] = df[comp_name].map(string_value, na_action="ignore")
+            convert = string_value if comp.data_type == String else _boolean_as_number
+            df[comp_name] = df[comp_name].map(convert, na_action="ignore")
 
 
 def _build_dataframe_select_columns(
@@ -873,7 +880,7 @@ def register_dataframes(
         # out before what is left is checked against the DataStructure.
         check_extra_columns(handle_sdmx_columns(list(df.columns), components), components, name)
 
-        _write_booleans_as_strings(df, components)
+        _write_python_booleans(df, components)
 
         # Detect Date columns that contain time values → TIMESTAMP instead of DATE
         type_overrides = _detect_date_type_overrides(df, components)

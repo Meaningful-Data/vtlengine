@@ -555,8 +555,8 @@ params_validate_ds = [
     ),
     # A DataFrame is read on the rules of the pandas loader on both engines, which
     # name the column that failed and its type (issue #1284): decimals in an Integer
-    # are refused rather than rounded, a boolean is no Number, and a value DuckDB
-    # cannot cast is traced back to its column
+    # are refused rather than rounded, a boolean is a Number (1.0 or 0.0), and a value
+    # DuckDB cannot cast is traced back to its column
     (
         filepath_json / "GH_1284.json",
         {"DS_1": pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [1.5, 2.5, -0.7], "Me_2": 1.0})},
@@ -566,8 +566,8 @@ params_validate_ds = [
     (
         filepath_json / "GH_1284.json",
         {"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [1], "Me_2": [True]})},
-        False,
-        "not possible to cast column Me_2 to Number",
+        True,
+        None,
     ),
     (
         filepath_json / "GH_1284.json",
