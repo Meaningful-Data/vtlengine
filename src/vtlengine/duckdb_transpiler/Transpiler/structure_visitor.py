@@ -622,10 +622,10 @@ class StructureVisitor(ASTTemplate):
     # Operators whose result is an Integer whatever they are given.
     _INTEGER_RESULT_UNARY_OPS = frozenset({tokens.CEIL, tokens.FLOOR, tokens.LEN})
 
-    def _build_integer_result_structure(self, ds: Dataset) -> Dataset:
+    def _build_integer_result_structure(self, ds: Dataset, nullable: bool = True) -> Dataset:
         """Replace all measures with a single ``int_var`` Integer measure."""
         comps = self._identifiers_dict(ds)
-        comps["int_var"] = self._make_comp("int_var", Integer)
+        comps["int_var"] = self._make_comp("int_var", Integer, nullable=nullable)
         for name, comp in ds.components.items():
             if comp.role == Role.VIRAL_ATTRIBUTE:
                 comps[name] = comp
@@ -726,7 +726,8 @@ class StructureVisitor(ASTTemplate):
         the Measures (``int_var`` for count) and the viral attributes (issue #1276)."""
         ds = self._without_attributes(self._get_dataset_structure(node.operand))
         if ds is not None and node.op == tokens.COUNT:
-            return self._build_integer_result_structure(ds)
+            # count never returns null (issue #1277)
+            return self._build_integer_result_structure(ds, nullable=False)
         # avg, median, ratio_to_report, the deviations and the variances give Number Measures
         if ds is None or ANALYTIC_MAPPING[node.op].return_type is not Number:
             return ds
