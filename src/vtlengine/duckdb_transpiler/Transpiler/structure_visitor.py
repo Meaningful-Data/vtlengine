@@ -750,7 +750,13 @@ class StructureVisitor(ASTTemplate):
                 and call_params[i].type_ == "OPTIONAL"
             )
             if not omitted:
-                bindings[param_name] = call_params[i]
+                argument = call_params[i]
+                # A parameter of the enclosing call, passed on as it is, stands for what that
+                # call binds to it, as the interpreter binds it (issue #1279)
+                bound = (
+                    self._get_udo_param(argument.value) if isinstance(argument, AST.VarID) else None
+                )
+                bindings[param_name] = argument if bound is None else bound
             elif param_info.get("default") is not None:
                 bindings[param_name] = param_info["default"]
             if include_types:
