@@ -307,14 +307,7 @@ class StructureVisitor(ASTTemplate):
         """Determine operand type for a VarID."""
         name = node.value
         kind, val = self._resolve_udo_var(name)
-        if kind == "varid":
-            if val.value in self.available_tables:
-                return _DATASET
-            if val.value != name:
-                with self._udo_arg_scope(name):
-                    return self._get_node_type(val)
-            return _SCALAR
-        if kind == "ast":
+        if kind in ("varid", "ast"):
             with self._udo_arg_scope(name):
                 return self._get_node_type(val)
         if kind == "str":
@@ -424,7 +417,8 @@ class StructureVisitor(ASTTemplate):
 
     def _get_udo_param(self, name: str) -> Any:
         """Look up a UDO parameter by name from the current scope."""
-        return self._get_udo_binding(name)[0]
+        scope = self._find_udo_scope(name)
+        return scope[name] if scope is not None else None
 
     def _find_udo_scope(self, name: str) -> Optional[Dict[str, Any]]:
         """The innermost UDO scope that binds the parameter name."""
@@ -434,20 +428,18 @@ class StructureVisitor(ASTTemplate):
                     return scope
         return None
 
-    def _get_udo_binding(self, name: str) -> Tuple[Any, Optional[int]]:
-        """Look up a UDO parameter by name, with the size of the scope stack where its
-        argument was written (None when not recorded)."""
+    def _get_udo_depth(self, name: str) -> Optional[int]:
+        """The size of the UDO scope stack where the argument of the parameter name was
+        written (None when not recorded)."""
         scope = self._find_udo_scope(name)
-        if scope is None:
-            return None, None
-        return scope[name], scope.get(f"{_UDO_DEPTH_PREFIX}{name}")
+        return scope.get(f"{_UDO_DEPTH_PREFIX}{name}") if scope is not None else None
 
     @contextmanager
     def _udo_arg_scope(self, name: str) -> Generator[None, None, None]:
         """Resolve the argument bound to the parameter name in the scope of its caller: the
         UDO scope stack cut down to where it was written, so that no parameter of a called
         operator with the same name captures its names."""
-        depth = self._get_udo_binding(name)[1]
+        depth = self._get_udo_depth(name)
         saved = self._udo_params
         if depth is not None:
             self._udo_params = (saved[:depth] or None) if saved else None
@@ -558,15 +550,7 @@ class StructureVisitor(ASTTemplate):
     def _resolve_varid_structure(self, node: AST.VarID) -> Optional[Dataset]:
         """Resolve a VarID (including UDO bindings) to its dataset structure."""
         kind, val = self._resolve_udo_var(node.value)
-        if kind == "varid":
-            if val.value in self.available_tables:
-                return self.available_tables[val.value]
-            # Guard against recursion when param name matches argument name.
-            if val.value != node.value:
-                with self._udo_arg_scope(node.value):
-                    return self._get_dataset_structure(val)
-            return None
-        if kind == "ast":
+        if kind in ("varid", "ast"):
             with self._udo_arg_scope(node.value):
                 return self._get_dataset_structure(val)
         if kind == "str" and val in self.available_tables:

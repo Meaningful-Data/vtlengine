@@ -721,7 +721,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if isinstance(declared, Component) and constraints.value is not None
         ]
         if component_checks:
-            value_depth = self._get_udo_binding(name)[1]
+            value_depth = scope.get(f"{_UDO_DEPTH_PREFIX}{name}") if scope else None
             return self._udo_checked_sql(sql, udo_val, component_checks, value_depth)
         dataset_checks = [
             (op, f"parameter {param}", declared, constraints)
@@ -842,10 +842,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return f"SELECT * FROM {quote_name(resolved)}"
         if resolved in self.scalars:
             return self._scalar_literal(resolved)
-        if resolved != name:
-            with self._udo_arg_scope(name):
-                return self.visit(udo_val)
-        return quote_name(resolved)
+        with self._udo_arg_scope(name):
+            return self.visit(udo_val)
 
     def _resolve_clause_component(self, name: str) -> Optional[str]:
         if not (self._in_clause and self._current_dataset):
@@ -3984,7 +3982,6 @@ FROM (
         """Visit a UDO call by expanding its definition with parameter bindings."""
         udo_def = self._udos[node.op]
         bindings = self._build_udo_bindings(udo_def, node.params, include_types=True, op=node.op)
-        bindings["__udo__"] = node.op
         expression = deepcopy(udo_def["expression"])
 
         self._push_udo_params(bindings)
