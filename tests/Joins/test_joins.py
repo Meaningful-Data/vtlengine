@@ -2837,3 +2837,83 @@ class JoinsGeneralTests(JoinHelper):
         code = "GH_1238_2"
         rendered = ASTString().render(create_ast(self.LoadVTL(code)))
         self.BaseTest(code=code, number_inputs=2, references_names=["1"], text=rendered)
+
+    def test_GH_1299_1(self):
+        """
+        Expression: DS_r <- inner_join(DS_1, DS_2 rename Me_9 to Me_8);
+        Description: A rename in an inner_join of a Component the join does not have raises 1-1-1-10, as the rename of a Data Set does, instead of
+            an IndexError.
+        Git Issue: GH_1299.
+        """
+        code = "GH_1299_1"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-1-10",
+            exception_message="Component Me_9 not found",
+        )
+
+    def test_GH_1299_2(self):
+        """
+        Expression: DS_r <- left_join(DS_1, DS_2 rename Me_9 to Me_8);
+        Description: A rename in a left_join of a Component the join does not have raises 1-1-1-10, as the rename of a Data Set does, instead of
+            an IndexError.
+        Git Issue: GH_1299.
+        """
+        code = "GH_1299_2"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-1-10",
+            exception_message="Component Me_9 not found",
+        )
+
+    def test_GH_1299_3(self):
+        """
+        Expression: DS_r <- full_join(DS_1, DS_2 rename Me_9 to Me_8);
+        Description: A rename in a full_join of a Component the join does not have raises 1-1-1-10, as the rename of a Data Set does, instead of
+            an IndexError.
+        Git Issue: GH_1299.
+        """
+        code = "GH_1299_3"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-1-10",
+            exception_message="Component Me_9 not found",
+        )
+
+    def test_GH_1299_4(self):
+        """
+        Expression: DS_r <- cross_join(DS_1 as a, DS_2 as b rename a#Id_1 to Id_a, b#Id_1 to Id_b, Me_9 to Me_8);
+        Description: A rename in a cross_join of a Component the join does not have raises 1-1-1-10, as the rename of a Data Set does, instead of
+            an IndexError.
+        Git Issue: GH_1299.
+        """
+        code = "GH_1299_4"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-1-10",
+            exception_message="Component Me_9 not found",
+        )
+
+    def test_GH_1299_5(self):
+        """
+        Expression: DS_r <- inner_join(DS_1 as a, DS_2 as b rename a#Me_9 to Me_8);
+        Description: A rename in an inner_join of a qualified name the operand does not have raises 1-1-1-10, as the rename of a Data Set does, instead of
+            an IndexError.
+        Git Issue: GH_1299.
+        """
+        code = "GH_1299_5"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-1-10",
+            exception_message="Component Me_9 not found",
+        )
