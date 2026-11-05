@@ -244,8 +244,9 @@ DATA_STRUCTURES = {
             "set type 'set<integer>' (line 1, column 22)",
         ),
         (
-            "define operator f (x hierarchical) returns boolean is true end operator;",
-            "ruleset type 'hierarchical' (line 1, column 22)",
+            'DS_r <- eval(SQL1(DS_1) language "SQL" returns dataset\n'
+            "    {identifier<integer> Id_1, measure<number> _*});",
+            "multiplicity modifier in 'measure<number> _*' (line 2, column 32)",
         ),
         (
             'DS_r <- eval(SQL1(DS_1) language "SQL" returns dataset '

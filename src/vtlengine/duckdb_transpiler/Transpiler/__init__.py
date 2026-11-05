@@ -3940,8 +3940,22 @@ FROM (
             "signature_type": node.signature_type,
         }
 
+    def _resolve_ruleset_name(self, name: str) -> str:
+        """The ruleset a ruleset parameter of a user defined operator is bound to, through the
+        calls that pass it on, each resolved in the scope of its caller. The
+        body of the operator is a copy, so the name is replaced in it."""
+        for scope in reversed(self._udo_params or []):
+            bound = scope.get(name)
+            if not isinstance(bound, (AST.VarID, AST.Identifier)):
+                break
+            name = bound.value
+            if name in self._dprs or name in self._hrs:
+                break
+        return name
+
     def visit_DPValidation(self, node: AST.DPValidation) -> str:  # type: ignore[override]
         """Generate SQL for check_datapoint operator."""
+        node.ruleset_name = self._resolve_ruleset_name(node.ruleset_name)
         dpr_info = self._dprs[node.ruleset_name]
         ds = self._get_dataset_structure(node.dataset)
         table_src = self._get_dataset_sql(node.dataset)
@@ -4157,6 +4171,7 @@ FROM (
 
     def visit_HROperation(self, node: AST.HROperation) -> str:  # type: ignore[override]
         """Generate SQL for hierarchy or check_hierarchy operator."""
+        node.ruleset_name = self._resolve_ruleset_name(node.ruleset_name)
         hr_info = self._hrs[node.ruleset_name]
         ds = self._get_dataset_structure(node.dataset)
         table_src = self._get_dataset_sql(node.dataset)
