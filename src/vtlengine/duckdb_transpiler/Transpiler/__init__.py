@@ -67,6 +67,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _COMPONENT,
     _DATASET,
     _SCALAR,
+    _UDO_CHECKS_PREFIX,
     _UDO_DEPTH_PREFIX,
     StructureVisitor,
     _try_normalize_time_period,
@@ -676,6 +677,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Get the SQL FROM source for a dataset node, built without the result of the statement:
         its names and columns are the operand's own, not the outer operator's (issue #1276)."""
         with self._stash_assignment():
+            if isinstance(node, AST.VarID):
+                scope = self._find_udo_scope(node.value)
+                if scope is not None and scope.get(f"{_UDO_CHECKS_PREFIX}{node.value}"):
+                    return f"({self._resolve_udo_param(node.value, scope[node.value])})"
             return super()._get_dataset_sql(node)
 
     def _as_subquery(self, src: str) -> str:
@@ -695,18 +700,26 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def _resolve_udo_param(self, name: str, udo_val: Any) -> str:
         sql = self._resolve_udo_param_sql(name, udo_val)
-        constraints = self._get_udo_param(f"__constraints__{name}")
-        if constraints is None:
+        scope = self._find_udo_scope(name)
+        checks = scope.get(f"{_UDO_CHECKS_PREFIX}{name}") if scope is not None else None
+        if not checks:
             return sql
-        declared = self._get_udo_param(f"__type__{name}")
-        element = f"parameter {name}"
-        if isinstance(declared, Component) and constraints.value is not None:
-            value_depth = self._get_udo_binding(name)[1]
-            return self._udo_checked_sql(sql, udo_val, constraints.value, element, value_depth)
-        if isinstance(declared, Dataset):
-            with self._udo_arg_scope(name):
-                structure = self._get_dataset_structure(udo_val)
-            return self._udo_checked_dataset_sql(sql, structure, declared, constraints, element)
+        value_depth = self._get_udo_binding(name)[1]
+        structure = None
+        # The checks of the operators that passed the value on come first, so they raise first
+        for op, param, declared, constraints in checks:
+            element = f"parameter {param}"
+            if isinstance(declared, Component) and constraints.value is not None:
+                sql = self._udo_checked_sql(
+                    sql, udo_val, constraints.value, element, value_depth, op
+                )
+            elif isinstance(declared, Dataset):
+                if structure is None:
+                    with self._udo_arg_scope(name):
+                        structure = self._get_dataset_structure(udo_val)
+                sql = self._udo_checked_dataset_sql(
+                    sql, structure, declared, constraints, element, op
+                )
         return sql
 
     def _udo_checked_sql(
@@ -716,10 +729,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         constraint: AST.TypeConstraint,
         element: str,
         value_depth: Optional[int] = None,
+        op: Optional[str] = None,
     ) -> str:
         """sql, the values of a component, raising VTL 2-3-9 where a value breaks a constraint
-        of the type of a user defined operator: not null, a condition on value (the value AST,
-        written with value_depth UDO scopes) or the values allowed."""
+        of the type of the user defined operator op (the current one by default): not null, a
+        condition on value (the value AST, written with value_depth UDO scopes) or the values
+        allowed."""
+        op = op if op is not None else self._get_udo_param("__udo__")
         broken = []
         if constraint.not_null:
             broken.append(f"{sql} IS NULL")
@@ -735,7 +751,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             broken.append(f"({condition}) IS FALSE")
         text = "\u00a6".join(
             [
-                f"VTL 2-3-9 {self._get_udo_param('__udo__')}",
+                f"VTL 2-3-9 {op}",
                 element,
                 _format_constraint(constraint).strip(),
                 "",
@@ -754,14 +770,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         declared: Dataset,
         constraints: AST.SignatureConstraints,
         element: str,
+        op: Optional[str] = None,
     ) -> str:
-        """sql, a Data Set, with its components that a dataset type constrains checked by
-        _udo_checked_sql."""
+        """sql, a Data Set, with its components that a dataset type of the user defined
+        operator op (the current one by default) constrains checked by _udo_checked_sql."""
+        op = op if op is not None else self._get_udo_param("__udo__")
         # The semantic analysis already raised when the structure does not meet the type
         taken = (
-            udo_dataset_components(
-                self._get_udo_param("__udo__"), element, declared, constraints, structure
-            )
+            udo_dataset_components(op, element, declared, constraints, structure)
             if structure is not None
             else None
         )
@@ -781,6 +797,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 ),
                 constraint,
                 f"component {name} of {element}",
+                op=op,
             )
             + f" AS {quote_name(name)}"
             for name, constraint in checked.items()
@@ -3940,7 +3957,7 @@ FROM (
     def visit_UDOCall(self, node: AST.UDOCall) -> str:  # type: ignore[override]
         """Visit a UDO call by expanding its definition with parameter bindings."""
         udo_def = self._udos[node.op]
-        bindings = self._build_udo_bindings(udo_def, node.params, include_types=True)
+        bindings = self._build_udo_bindings(udo_def, node.params, include_types=True, op=node.op)
         bindings["__udo__"] = node.op
         expression = deepcopy(udo_def["expression"])
 

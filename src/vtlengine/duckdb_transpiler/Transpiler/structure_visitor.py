@@ -44,6 +44,9 @@ _COMPONENT = "Component"
 _SCALAR = "Scalar"
 # Key of a UDO scope that records where the argument of a parameter was written
 _UDO_DEPTH_PREFIX = "__depth__"
+# Key of a UDO scope with the type constraints that the value of a parameter must meet:
+# (operator, parameter, declared type, constraints), outermost first
+_UDO_CHECKS_PREFIX = "__checks__"
 
 # Role encoded in UnaryOp.op for calc clauses.
 _CALC_ROLE_BY_TOKEN: Dict[str, Role] = {
@@ -423,14 +426,21 @@ class StructureVisitor(ASTTemplate):
         """Look up a UDO parameter by name from the current scope."""
         return self._get_udo_binding(name)[0]
 
-    def _get_udo_binding(self, name: str) -> Tuple[Any, Optional[int]]:
-        """Look up a UDO parameter by name, with the size of the scope stack where its
-        argument was written (None when not recorded)."""
+    def _find_udo_scope(self, name: str) -> Optional[Dict[str, Any]]:
+        """The innermost UDO scope that binds the parameter name."""
         if self._udo_params:
             for scope in reversed(self._udo_params):
                 if name in scope:
-                    return scope[name], scope.get(f"{_UDO_DEPTH_PREFIX}{name}")
-        return None, None
+                    return scope
+        return None
+
+    def _get_udo_binding(self, name: str) -> Tuple[Any, Optional[int]]:
+        """Look up a UDO parameter by name, with the size of the scope stack where its
+        argument was written (None when not recorded)."""
+        scope = self._find_udo_scope(name)
+        if scope is None:
+            return None, None
+        return scope[name], scope.get(f"{_UDO_DEPTH_PREFIX}{name}")
 
     @contextmanager
     def _udo_arg_scope(self, name: str) -> Generator[None, None, None]:
@@ -766,9 +776,17 @@ class StructureVisitor(ASTTemplate):
         return Dataset(name=ds.name, components=comps, data=None)
 
     def _build_udo_bindings(
-        self, udo_def: Dict[str, Any], call_params: List[Any], include_types: bool = False
+        self,
+        udo_def: Dict[str, Any],
+        call_params: List[Any],
+        include_types: bool = False,
+        op: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Bind a UDO call's arguments (positional + defaults) to parameter names."""
+        """Bind a UDO call's arguments (positional + defaults) to parameter names.
+
+        With include_types, the constraints of the type of each parameter of the operator op
+        are kept under __checks__, with the ones of the parameter passed on to it, if any:
+        the values are checked where they are read, even inside another operator."""
         bindings: Dict[str, Any] = {}
         depth = len(self._udo_params or [])  # The arguments are written in the caller's scope
         for i, param_info in enumerate(udo_def["params"]):
@@ -778,23 +796,34 @@ class StructureVisitor(ASTTemplate):
                 or isinstance(call_params[i], AST.ID)
                 and call_params[i].type_ == "OPTIONAL"
             )
+            inherited: List[Any] = []
             if not omitted:
                 argument = call_params[i]
-                # A parameter of the enclosing call, passed on as it is, stands for what that
-                # call binds to it, as the interpreter binds it, written where it was (#1279)
-                bound = (
-                    self._get_udo_binding(argument.value)
+                scope = (
+                    self._find_udo_scope(argument.value)
                     if isinstance(argument, AST.VarID)
-                    else (None, None)
+                    else None
                 )
-                bindings[param_name], bindings[f"{_UDO_DEPTH_PREFIX}{param_name}"] = (
-                    bound if bound[0] is not None else (argument, depth)
-                )
+                if scope is None:
+                    bindings[param_name] = argument
+                    bindings[f"{_UDO_DEPTH_PREFIX}{param_name}"] = depth
+                else:
+                    bindings[param_name] = scope[argument.value]
+                    bindings[f"{_UDO_DEPTH_PREFIX}{param_name}"] = scope.get(
+                        f"{_UDO_DEPTH_PREFIX}{argument.value}"
+                    )
+                    inherited = scope.get(f"{_UDO_CHECKS_PREFIX}{argument.value}", [])
             elif param_info.get("default") is not None:
                 bindings[param_name] = param_info["default"]
             if include_types:
                 bindings[f"__type__{param_name}"] = param_info.get("type")
-                bindings[f"__constraints__{param_name}"] = param_info.get("constraints")
+                constraints = param_info.get("constraints")
+                own = (
+                    [(op, param_name, param_info.get("type"), constraints)]
+                    if constraints is not None
+                    else []
+                )
+                bindings[f"{_UDO_CHECKS_PREFIX}{param_name}"] = [*inherited, *own]
         return bindings
 
     def _resolve_udocall_structure(self, node: AST.UDOCall) -> Optional[Dataset]:
