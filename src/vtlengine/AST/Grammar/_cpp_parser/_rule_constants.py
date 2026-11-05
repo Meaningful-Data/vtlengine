@@ -195,86 +195,89 @@ CODE_ITEM_RELATION: Final[RuleConstant] = (88, -1)
 # RuleCodeItemRelationClause = 89
 CODE_ITEM_RELATION_CLAUSE: Final[RuleConstant] = (89, -1)
 
-# RuleValueDomainValue = 90
-VALUE_DOMAIN_VALUE: Final[RuleConstant] = (90, -1)
+# RuleHrComparisonOperand = 90
+HR_COMPARISON_OPERAND: Final[RuleConstant] = (90, -1)
 
-# RuleCompConstraint = 92
-COMP_CONSTRAINT: Final[RuleConstant] = (92, -1)
+# RuleValueDomainValue = 91
+VALUE_DOMAIN_VALUE: Final[RuleConstant] = (91, -1)
 
-# RuleMultModifier = 93
-MULT_MODIFIER: Final[RuleConstant] = (93, -1)
+# RuleCompConstraint = 93
+COMP_CONSTRAINT: Final[RuleConstant] = (93, -1)
 
-# RuleValidationOutput = 94
-VALIDATION_OUTPUT: Final[RuleConstant] = (94, -1)
+# RuleMultModifier = 94
+MULT_MODIFIER: Final[RuleConstant] = (94, -1)
 
-# RuleValidationMode = 95
-VALIDATION_MODE: Final[RuleConstant] = (95, -1)
+# RuleValidationOutput = 95
+VALIDATION_OUTPUT: Final[RuleConstant] = (95, -1)
 
-# RuleConditionClause = 96
-CONDITION_CLAUSE: Final[RuleConstant] = (96, -1)
+# RuleValidationMode = 96
+VALIDATION_MODE: Final[RuleConstant] = (96, -1)
 
-# RuleInputMode = 97
-INPUT_MODE: Final[RuleConstant] = (97, -1)
+# RuleConditionClause = 97
+CONDITION_CLAUSE: Final[RuleConstant] = (97, -1)
 
-# RuleImbalanceExpr = 98
-IMBALANCE_EXPR: Final[RuleConstant] = (98, -1)
+# RuleInputMode = 98
+INPUT_MODE: Final[RuleConstant] = (98, -1)
 
-# RuleInputModeHierarchy = 99
-INPUT_MODE_HIERARCHY: Final[RuleConstant] = (99, -1)
+# RuleImbalanceExpr = 99
+IMBALANCE_EXPR: Final[RuleConstant] = (99, -1)
 
-# RuleOutputModeHierarchy = 100
-OUTPUT_MODE_HIERARCHY: Final[RuleConstant] = (100, -1)
+# RuleInputModeHierarchy = 100
+INPUT_MODE_HIERARCHY: Final[RuleConstant] = (100, -1)
 
-# RuleAlias = 101
-ALIAS: Final[RuleConstant] = (101, -1)
+# RuleOutputModeHierarchy = 101
+OUTPUT_MODE_HIERARCHY: Final[RuleConstant] = (101, -1)
 
-# RuleVarID = 102
-VAR_ID: Final[RuleConstant] = (102, -1)
+# RuleAlias = 102
+ALIAS: Final[RuleConstant] = (102, -1)
 
-# RuleSimpleComponentId = 103
-SIMPLE_COMPONENT_ID: Final[RuleConstant] = (103, -1)
+# RuleVarID = 103
+VAR_ID: Final[RuleConstant] = (103, -1)
 
-# RuleComponentID = 104
-COMPONENT_ID: Final[RuleConstant] = (104, -1)
+# RuleSimpleComponentId = 104
+SIMPLE_COMPONENT_ID: Final[RuleConstant] = (104, -1)
 
-# RuleLists = 105
-LISTS: Final[RuleConstant] = (105, -1)
+# RuleComponentID = 105
+COMPONENT_ID: Final[RuleConstant] = (105, -1)
 
-# RuleErCode = 106
-ER_CODE: Final[RuleConstant] = (106, -1)
+# RuleLists = 106
+LISTS: Final[RuleConstant] = (106, -1)
 
-# RuleErLevel = 107
-ER_LEVEL: Final[RuleConstant] = (107, -1)
+# RuleErCode = 107
+ER_CODE: Final[RuleConstant] = (107, -1)
 
-# RuleComparisonOperand = 108
-COMPARISON_OPERAND: Final[RuleConstant] = (108, -1)
+# RuleErLevel = 108
+ER_LEVEL: Final[RuleConstant] = (108, -1)
 
-# RuleOptionalExpr = 109
-OPTIONAL_EXPR: Final[RuleConstant] = (109, -1)
+# RuleComparisonOperand = 109
+COMPARISON_OPERAND: Final[RuleConstant] = (109, -1)
 
-# RuleOptionalExprComponent = 110
-OPTIONAL_EXPR_COMPONENT: Final[RuleConstant] = (110, -1)
+# RuleOptionalExpr = 110
+OPTIONAL_EXPR: Final[RuleConstant] = (110, -1)
 
-# RuleComponentRole = 111
-COMPONENT_ROLE: Final[RuleConstant] = (111, -1)
+# RuleOptionalExprComponent = 111
+OPTIONAL_EXPR_COMPONENT: Final[RuleConstant] = (111, -1)
 
-# RuleViralAttribute = 112
-VIRAL_ATTRIBUTE: Final[RuleConstant] = (112, -1)
+# RuleComponentRole = 112
+COMPONENT_ROLE: Final[RuleConstant] = (112, -1)
 
-# RuleValueDomainID = 113
-VALUE_DOMAIN_ID: Final[RuleConstant] = (113, -1)
+# RuleViralAttribute = 113
+VIRAL_ATTRIBUTE: Final[RuleConstant] = (113, -1)
 
-# RuleOperatorID = 114
-OPERATOR_ID: Final[RuleConstant] = (114, -1)
+# RuleValueDomainID = 114
+VALUE_DOMAIN_ID: Final[RuleConstant] = (114, -1)
 
-# RuleRoutineName = 115
-ROUTINE_NAME: Final[RuleConstant] = (115, -1)
+# RuleOperatorID = 115
+OPERATOR_ID: Final[RuleConstant] = (115, -1)
 
-# RuleBasicScalarType = 117
-BASIC_SCALAR_TYPE: Final[RuleConstant] = (117, -1)
+# RuleRoutineName = 116
+ROUTINE_NAME: Final[RuleConstant] = (116, -1)
 
-# RuleRetainType = 118
-RETAIN_TYPE: Final[RuleConstant] = (118, -1)
+# RuleBasicScalarType = 118
+BASIC_SCALAR_TYPE: Final[RuleConstant] = (118, -1)
+
+# RuleRetainType = 119
+RETAIN_TYPE: Final[RuleConstant] = (119, -1)
 
 # =============================================================================
 # Rules WITH labeled alternatives
@@ -493,17 +496,17 @@ HR_RULESET_TYPE: Final[RuleConstant] = (77, 0)
 HR_RULESET_VD_TYPE: Final[RuleConstant] = (77, 1)
 HR_RULESET_VAR_TYPE: Final[RuleConstant] = (77, 2)
 
-# --- RuleScalarTypeConstraint = 91 ---
-CONDITION_CONSTRAINT: Final[RuleConstant] = (91, 0)
-RANGE_CONSTRAINT: Final[RuleConstant] = (91, 1)
+# --- RuleScalarTypeConstraint = 92 ---
+CONDITION_CONSTRAINT: Final[RuleConstant] = (92, 0)
+RANGE_CONSTRAINT: Final[RuleConstant] = (92, 1)
 
-# --- RuleConstant = 116 ---
-CONSTANT: Final[RuleConstant] = (116, -1)
-INTEGER_LITERAL: Final[RuleConstant] = (116, 0)
-NUMBER_LITERAL: Final[RuleConstant] = (116, 1)
-BOOLEAN_LITERAL: Final[RuleConstant] = (116, 2)
-STRING_LITERAL: Final[RuleConstant] = (116, 3)
-NULL_LITERAL: Final[RuleConstant] = (116, 4)
+# --- RuleConstant = 117 ---
+CONSTANT: Final[RuleConstant] = (117, -1)
+INTEGER_LITERAL: Final[RuleConstant] = (117, 0)
+NUMBER_LITERAL: Final[RuleConstant] = (117, 1)
+BOOLEAN_LITERAL: Final[RuleConstant] = (117, 2)
+STRING_LITERAL: Final[RuleConstant] = (117, 3)
+NULL_LITERAL: Final[RuleConstant] = (117, 4)
 
 
 class RC:
@@ -570,6 +573,7 @@ class RC:
     VALUE_DOMAIN_SIGNATURE = VALUE_DOMAIN_SIGNATURE
     CODE_ITEM_RELATION = CODE_ITEM_RELATION
     CODE_ITEM_RELATION_CLAUSE = CODE_ITEM_RELATION_CLAUSE
+    HR_COMPARISON_OPERAND = HR_COMPARISON_OPERAND
     VALUE_DOMAIN_VALUE = VALUE_DOMAIN_VALUE
     COMP_CONSTRAINT = COMP_CONSTRAINT
     MULT_MODIFIER = MULT_MODIFIER

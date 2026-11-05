@@ -1588,3 +1588,25 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code="1-1-13-9"
         )
+
+    def test_GH_1276_1(self):
+        """
+        Analytic invocations on a Data Set as operands: count, lag, avg
+        Dataset --> Dataset
+        Status: OK
+        Expression: DS_r1 <- count ( DS_1 over ( partition by Id_1 order by Id_2 ) ) + 1;
+                    DS_r2 <- abs ( lag ( DS_1 , 1 over ( partition by Id_1 order by Id_2 ) ) );
+                    DS_r3 <- DS_1 + avg ( DS_1 over ( partition by Id_1 order by Id_2 ) );
+
+        Description: an analytic invocation on a Data Set is the operand of another operator.
+        The DuckDB engine wrote the analytic query inside the outer expression and failed
+        with a ParserException, while the pandas engine gave these results.
+
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
+        Goal: Check Result.
+        """
+        code = "GH_1276_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
