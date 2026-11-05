@@ -1143,3 +1143,76 @@ class UdoTest(UDOHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1296_1(self):
+        """
+        Status: OK
+        Description: An argument that uses a parameter of the caller is read in the caller, not
+            in an operator called with a parameter of the same name: one level (h), a parameter
+            passed on as it is (j -> k -> m), four levels that all name it a (i4), and an
+            argument read in the caller while the called operator has a parameter x (jx)
+        Goal: Check Result.
+        """
+        code = "GH_1296_1"
+        number_inputs = 2
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1296_2(self):
+        """
+        Status: OK
+        Description: A Component (c2 -> c1) and a Scalar (s2 -> s1) argument that uses a
+            parameter of the caller with the same name as the parameter of the called operator
+        Goal: Check Result.
+        """
+        code = "GH_1296_2"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1296_3(self):
+        """
+        Status: OK
+        Description: The value constraint of a parameter checks its argument -c as the caller
+            reads it: the values 1, 2 and 3, that the constraint allows
+        Goal: Check Result.
+        """
+        code = "GH_1296_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1296_4(self):
+        """
+        Status: OK
+        Description: An operator called inside the argument of a call to itself, f(f(x)), and
+            the same operator called twice along one chain of calls are not recursive
+        Goal: Check Result.
+        """
+        code = "GH_1296_4"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1296_5(self):
+        """
+        Status: OK
+        Description: Operators that call each other through arguments that use parameters with
+            the same name (f -> g -> h -> f) are recursive
+        Goal: Check Exception.
+        """
+        code = "GH_1296_5"
+        number_inputs = 1
+        message = "1-3-2-7"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            exception_message="At op f: recursive user defined operators are not supported, "
+            "found the calls f -> g -> h -> f.",
+        )

@@ -1,0 +1,16 @@
+define operator f (x dataset)
+    returns dataset is
+        g(x * 2)
+end operator;
+
+define operator g (x dataset)
+    returns dataset is
+        h(x + 1)
+end operator;
+
+define operator h (x dataset)
+    returns dataset is
+        f(x)
+end operator;
+
+DS_r <- f(DS_1);
