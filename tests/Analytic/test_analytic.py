@@ -1621,3 +1621,27 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
         references_names = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1276_2(self):
+        """
+        Computed Data Set operands: time_agg
+        Dataset --> Dataset
+        Status: OK
+        Expression: DS_r1 <- cast ( time_agg ( "A" , _ , DS_1 ) , string );
+                    DS_r2 <- min ( time_agg ( "A" , _ , DS_1 ) );
+                    DS_r3 <- inner_join ( time_agg ( "A" , _ , DS_1 ) as a , DS_2 as b );
+
+        Description: a time_agg on a Data Set is the operand of another operator. The DuckDB
+        engine wrote its query inside the expression of cast and min and failed with a
+        ParserException, while the pandas engine gave these results. As on the pandas engine,
+        the time_agg drops the Attribute At_1 of DS_1 that is not viral, so the join (DS_r3)
+        takes At_1 from DS_2.
+
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
+        Goal: Check Result.
+        """
+        code = "GH_1276_2"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

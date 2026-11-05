@@ -613,41 +613,41 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                         one_row = self._hoisted_source("(SELECT 1)", hoisted)
                         value_sql += f" FROM {one_row} AS t"
             return name, value_sql, is_persistent
-        query = self.visit(child)
-        query = self._unqualify_join_columns(name, query)
-        return name, query, is_persistent
+        return name, self.visit(child), is_persistent
 
-    def _unqualify_join_columns(self, ds_name: str, query: str) -> str:
+    def visit(self, node: Any) -> Any:
+        """Dispatch as StructureVisitor does. The last clause of a join ends it, and there the
+        Components lose the alias prefix, as the interpreter strips it, so that an operator
+        that reads the join, as a membership does, finds them by name (issue #1276)."""
+        sql = super().visit(node)
+        if isinstance(node, AST.RegularAggregation) and node.isLast:
+            return self._unqualify_join_columns(node, sql)
+        return sql
+
+    def _unqualify_join_columns(self, node: AST.RegularAggregation, query: str) -> str:
         """Rename remaining alias#comp columns to plain component names."""
         if not self._join_alias_map:
             return query
 
-        output_ds = self.output_datasets.get(ds_name)
+        output_ds = self._get_dataset_structure(node)
         if output_ds is None:
             return query
 
-        output_comp_names = set(output_ds.components.keys())
         unqual_to_qual: Dict[str, str] = {}
         for qualified in self._join_alias_map:
-            if qualified in self._consumed_join_aliases or qualified in output_comp_names:
+            if qualified in self._consumed_join_aliases:
                 continue
-            if "#" in qualified:
-                unqualified = qualified.split("#", 1)[1]
-                if unqualified in output_comp_names and unqualified not in unqual_to_qual:
-                    unqual_to_qual[unqualified] = qualified
+            unqualified = qualified.split("#", 1)[1]
+            if unqualified in output_ds.components and unqualified not in unqual_to_qual:
+                unqual_to_qual[unqualified] = qualified
 
         if not unqual_to_qual:
             return query
 
-        cols: List[str] = []
-        for comp_name in output_ds.components:
-            qual = unqual_to_qual.get(comp_name)
-            if qual is not None:
-                cols.append(f"{quote_name(qual)} AS {quote_name(comp_name)}")
-            else:
-                cols.append(quote_name(comp_name))
-
-        return f"SELECT {', '.join(cols)} FROM ({query})"
+        renames = ", ".join(
+            f"{quote_name(q)} AS {quote_name(u)}" for u, q in unqual_to_qual.items()
+        )
+        return f"SELECT * RENAME ({renames}) FROM ({query})"
 
     def visit_Assignment(self, node: AST.Assignment) -> str:
         """Visit an assignment and return the SQL for its right-hand side."""
@@ -5327,6 +5327,7 @@ FROM (
 
         cols: List[str] = []
         self._join_alias_map = {}
+        self._consumed_join_aliases = set()
         seen_identifiers: Set[str] = set()
         for info in clause_info:
             sa = info["sql_alias"]
@@ -5480,7 +5481,8 @@ FROM (
     def visit_EvalOp(self, node: AST.EvalOp) -> str:
         """Visit EVAL operator (external routine execution)."""
         routine = self.external_routines[node.name]
-        query = routine.query.replace('"', "'")
+        # Without its closing semicolon, the query can be the operand of another (issue #1276)
+        query = routine.query.replace('"', "'").strip().rstrip(";")
 
         # Map SQL table names to actual DuckDB table names.
         for table_name in routine.dataset_names:
@@ -5506,6 +5508,6 @@ FROM (
         infinite = " OR ".join(f"isinf(TRY_CAST({name} AS DOUBLE))" for name in numeric)
         error = "'VTL Error 2-1-3-1: Division by zero produced infinite values in eval'"
         return (
-            f"SELECT * FROM ({query.strip().rstrip(';')}) AS eval_result "
+            f"SELECT * FROM ({query}) AS eval_result "
             f"WHERE CASE WHEN {infinite} THEN error({error}) ELSE TRUE END"
         )

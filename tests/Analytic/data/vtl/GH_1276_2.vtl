@@ -1,0 +1,3 @@
+DS_r1 <- cast ( time_agg ( "A" , _ , DS_1 ) , string );
+DS_r2 <- min ( time_agg ( "A" , _ , DS_1 ) );
+DS_r3 <- inner_join ( time_agg ( "A" , _ , DS_1 ) as a , DS_2 as b );
