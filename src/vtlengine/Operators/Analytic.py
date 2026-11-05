@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import pandas as pd
 import pyarrow as pa
@@ -36,6 +36,7 @@ from vtlengine.DataTypes import (
     TimePeriod,
     unary_implicit_promotion,
 )
+from vtlengine.DataTypes._time_checking import DATE_COMPARISON_DTYPE, _from_date_value
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -48,6 +49,15 @@ from vtlengine.ViralPropagation import (
 )
 
 return_integer_operators = [MAX, MIN, SUM]
+
+
+def _range_bound(value: Union[int, str], bound: str, by_days: bool) -> str:
+    """A bound of a range window. Where a Date orders the window it is a timestamp, which
+    an offset moves by days, as on the DuckDB engine: a date took the offset as days
+    itself (issue #1284)."""
+    if by_days and isinstance(value, int) and value > 0:
+        return f"INTERVAL '{value}' DAY"
+    return bound
 
 
 # noinspection PyMethodOverriding
@@ -285,6 +295,11 @@ class Analytic(Operator.Unary):
             stop = (
                 "CURRENT ROW" if window.stop == "current" or window.stop == 0 else str(window.stop)
             )
+            by_days = mode == "RANGE" and any(
+                str(df[x.component].dtype) == DATE_COMPARISON_DTYPE for x in ordering
+            )
+            start = _range_bound(window.start, start, by_days)
+            stop = _range_bound(window.stop, stop, by_days)
             window_str = f"{mode} BETWEEN {start} {start_mode} AND {stop} {stop_mode}"
 
         # Partitioning
@@ -428,8 +443,13 @@ class Analytic(Operator.Unary):
 
         if result.data is not None:
             for comp_name, comp in result.components.items():
-                if comp_name in result.data.columns:
-                    result.data[comp_name] = result.data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
+                if comp_name not in result.data.columns:
+                    continue
+                column = result.data[comp_name]
+                if comp.data_type is Date:
+                    # A Date is written back value by value, the bare date at midnight
+                    column = column.map(_from_date_value, na_action="ignore")
+                result.data[comp_name] = column.astype(comp.data_type.dtype())  # type: ignore[call-overload]
 
         return result
 
@@ -456,7 +476,7 @@ class Analytic(Operator.Unary):
             data = data.copy()
             for comp_name, comp in components.items():
                 if comp.data_type is Date:
-                    data[comp_name] = data[comp_name].astype("date64[pyarrow]")
+                    data[comp_name] = data[comp_name].astype(DATE_COMPARISON_DTYPE)
         return data
 
 

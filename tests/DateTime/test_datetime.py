@@ -36,7 +36,7 @@ check_date_valid_params = [
     pytest.param("2020-01-15", "2020-01-15", id="date_only"),
     pytest.param("2020-01-15T10:30:00", "2020-01-15 10:30:00", id="datetime_t_separator"),
     pytest.param("2020-01-15 10:30:00", "2020-01-15 10:30:00", id="datetime_space_separator"),
-    pytest.param("2020-01-15T00:00:00", "2020-01-15 00:00:00", id="datetime_midnight"),
+    pytest.param("2020-01-15T00:00:00", "2020-01-15", id="datetime_midnight"),
     pytest.param("2020-12-31T23:59:59", "2020-12-31 23:59:59", id="datetime_end_of_day"),
     pytest.param(
         "2020-01-15T10:30:00+02:00",
@@ -211,7 +211,7 @@ dateadd_params = [
 dataload_params = [
     pytest.param(
         ["2020-01-15 10:30:00", "2020-06-01 00:00:00", "2020-12-31 23:59:59"],
-        ["2020-01-15T10:30:00", "2020-06-01T00:00:00", "2020-12-31T23:59:59"],
+        ["2020-01-15T10:30:00", "2020-06-01", "2020-12-31T23:59:59"],
         id="datetime_values",
     ),
     pytest.param(
@@ -236,7 +236,7 @@ dataload_params = [
     ),
     pytest.param(
         ["2020-01-15T10:30:00", "2020-06-01T00:00:00"],
-        ["2020-01-15T10:30:00", "2020-06-01T00:00:00"],
+        ["2020-01-15T10:30:00", "2020-06-01"],
         id="t_separator_preserved",
     ),
     pytest.param(
@@ -246,9 +246,7 @@ dataload_params = [
     ),
     pytest.param(
         ["2020-01-15", "2020-06-01 10:00:00"],
-        ["2020-01-15T00:00:00", "2020-06-01T10:00:00"]
-        if _use_duckdb_backend()
-        else ["2020-01-15", "2020-06-01T10:00:00"],
+        ["2020-01-15", "2020-06-01T10:00:00"],
         id="mixed_date_and_datetime",
     ),
     pytest.param(
@@ -282,6 +280,21 @@ dataset_operator_params = [
         ["2020-01-15 10:30:00.123456"],
         ["2020-01-22T10:30:00.123456"],
         id="dateadd_day_preserves_microseconds",
+    ),
+    # A column of dates and date-times raised a raw ValueError on the pandas engine, and
+    # the result lost its time there (issue #1284)
+    pytest.param(
+        "DS_r <- max ( DS_1 );",
+        ["2020-01-15T10:30:00", "2020-01-16", "2020-01-16T08:00:00"],
+        ["2020-01-16T08:00:00"],
+        id="max_of_dates_and_datetimes",
+    ),
+    pytest.param(
+        "DS_r <- DS_1[calc Me_1 := min(Me_1 over (order by Id_1 "
+        "data points between unbounded preceding and unbounded following))];",
+        ["2020-01-15T10:30:00", "2020-01-16", "2020-01-16T08:00:00"],
+        ["2020-01-15T10:30:00"] * 3,
+        id="analytic_min_of_dates_and_datetimes",
     ),
 ]
 

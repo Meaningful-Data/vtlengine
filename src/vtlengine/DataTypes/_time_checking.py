@@ -2,7 +2,7 @@ import calendar
 import re
 from datetime import date, datetime
 from functools import lru_cache
-from typing import Any
+from typing import Any, Final
 
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException
@@ -13,6 +13,12 @@ _DATE_PART_RE = re.compile(r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})")
 def _has_time_component(value: str) -> bool:
     """Check if a date string includes a time component (T or space separator at position 10)."""
     return len(value) > 10 and value[10] in ("T", " ")
+
+
+# The type a Date is compared and aggregated as by the pandas engine: a timestamp keeps
+# the time a value carries and reads dates and date-times alike, and microseconds reach
+# the year 9999, which nanoseconds do not (issue #1284)
+DATE_COMPARISON_DTYPE: Final = "timestamp[us][pyarrow]"
 
 
 def _from_date_value(value: Any) -> str:
@@ -71,8 +77,9 @@ def normalize_datetime(value: str) -> str:
     digits) so ``datetime.fromisoformat`` parses it identically on every
     supported interpreter. Any timezone offset is discarded (the wall-clock time
     is kept) so the result is a naive datetime, consistent across backends.
-    Output uses a single space separator. Raises ``ValueError`` if the time
-    component is missing, truncated, malformed or out of range.
+    Output uses a single space separator. A time at midnight is no time: the value is
+    the bare date it stands for, on both engines (issue #1284). Raises ``ValueError``
+    if the time component is missing, truncated, malformed or out of range.
     """
     if _STRICT_DATETIME_RE.match(value) is None:
         raise InputValidationException(code="0-1-1-28", value=repr(value))
@@ -81,7 +88,7 @@ def normalize_datetime(value: str) -> str:
     # so 3.9/3.10 behave the same, then drop the offset (keep wall-clock -> naive).
     if normalized.endswith("Z"):
         normalized = normalized[:-1] + "+00:00"
-    return datetime.fromisoformat(normalized).replace(tzinfo=None).isoformat(sep=" ")
+    return _from_date_value(datetime.fromisoformat(normalized).replace(tzinfo=None))
 
 
 def parse_date_value(value: str) -> date:
@@ -114,6 +121,7 @@ def _build_date_error(value: str) -> InputValidationException:
 
 
 _unpadded_date_re = re.compile(r"^(\d{4})-(\d{1,2})-(\d{1,2})(.*)$", re.DOTALL)
+_compact_date_re = re.compile(r"^(\d{4})(\d{2})(\d{2})$")
 
 
 def _pad_date_parts(value: str) -> str:
@@ -122,7 +130,13 @@ def _pad_date_parts(value: str) -> str:
     Only the day was padded, and only where the value was nine characters long, so
     2020-01-5 was read and 2020-1-5 was not, while the DuckDb loader read both. What
     follows the date, a time component, is left as it was written.
+
+    A compact date, 20200115, is written with its dashes: Python reads it only from
+    3.11 on, and the DuckDb loader reads it the same way (issue #1284).
     """
+    compact = _compact_date_re.fullmatch(value)
+    if compact is not None:
+        return "-".join(compact.groups())
     match = _unpadded_date_re.fullmatch(value)
     if match is None:
         return value
