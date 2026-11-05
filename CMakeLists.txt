@@ -41,6 +41,9 @@ else()
         target_compile_options(antlr4_runtime PRIVATE /w)
         # Fix missing chrono include in ProfilingATNSimulator on MSVC
         target_compile_options(antlr4_runtime PRIVATE /FI"chrono")
+        # Compile the translation units in parallel: the Visual Studio generator
+        # otherwise builds them one at a time
+        target_compile_options(antlr4_runtime PRIVATE /MP)
     else()
         target_compile_options(antlr4_runtime PRIVATE -w)
     endif()
@@ -110,6 +113,8 @@ if(NOT VTLENGINE_BUILD_ANTLR4_PREBUILT)
     # Suppress warnings from generated parser code
     if(MSVC)
         target_compile_options(vtl_cpp_parser PRIVATE /w)
+        # Compile the parser sources in parallel, as for the runtime above
+        target_compile_options(vtl_cpp_parser PRIVATE /MP)
     else()
         target_compile_options(vtl_cpp_parser PRIVATE -w)
     endif()

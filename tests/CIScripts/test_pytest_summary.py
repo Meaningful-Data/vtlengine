@@ -7,7 +7,7 @@ import pytest
 # Add scripts/ to path so we can import the module
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 
-from pytest_summary import main, read_jobs, summarize
+from pytest_summary import main, read_folder_coverage, read_jobs, summarize
 
 
 def junit(*cases: str, tests: int, failures: int = 0, errors: int = 0, skipped: int = 0) -> str:
@@ -102,6 +102,77 @@ def test_failures_and_errors_name_the_job_and_the_backend(tmp_path: Path) -> Non
     assert "| macos-latest | 3.12 | duckdb | `tests.API.test_api::test_3` | KeyError: 'x' |" in (
         rows(text)
     )
+
+
+def test_the_folders_of_one_os_and_python_are_one_job(tmp_path: Path) -> None:
+    """A job per backend, and the coverage measured in a job of its own."""
+    labels = json.dumps({"os": "ubuntu-latest", "python": "3.12"})
+    for backend in ("pandas", "duckdb"):
+        folder = tmp_path / f"test-results-ubuntu-latest-3.12-{backend}"
+        folder.mkdir()
+        (folder / "job.json").write_text(labels)
+        (folder / f"{backend}.xml").write_text(junit(tests=10, skipped=2), encoding="utf-8")
+    coverage = tmp_path / "test-results-coverage"
+    coverage.mkdir()
+    (coverage / "job.json").write_text(labels)
+    (coverage / "coverage.txt").write_text("94\n")
+    lines = rows(summarize("Tests", read_jobs(tmp_path)))
+    assert [line for line in lines if line.startswith("| ubuntu-latest")] == [
+        "| ubuntu-latest | 3.12 | pandas | 10 | 8 | 0 | 0 | 2 | 2m31s | — |",
+        "| ubuntu-latest | 3.12 | duckdb | 10 | 8 | 0 | 0 | 2 | 2m31s | 94% |",
+    ]
+
+
+def coverage_report(*files: tuple[str, int, int]) -> str:
+    """A ``coverage json`` report with ``files`` as (name, statements, missed lines)."""
+    return json.dumps(
+        {
+            "files": {
+                name: {"summary": {"num_statements": statements, "missing_lines": missing}}
+                for name, statements, missing in files
+            }
+        }
+    )
+
+
+def test_the_coverage_of_each_folder_of_the_package_is_a_row(tmp_path: Path) -> None:
+    folder = job(tmp_path, "ubuntu-latest", "3.12", coverage="94")
+    (folder / "coverage.json").write_text(
+        coverage_report(
+            ("src/vtlengine/__init__.py", 20, 0),
+            ("src/vtlengine/API/__init__.py", 300, 30),
+            ("src/vtlengine/API/_InternalApi.py", 100, 10),
+            ("src/vtlengine/AST/Grammar/tokens.py", 80, 0),
+            ("src/vtlengine/Utils/_duckdb.py", 0, 0),
+        )
+    )
+    jobs, folders = read_jobs(tmp_path), read_folder_coverage(tmp_path)
+    text = summarize("Tests", jobs, folders=folders)
+    assert "#### 📊 Coverage by folder" in text
+    table = [line for line in rows(text) if line.startswith(("| `vtlengine", "| **Total"))]
+    assert table == [
+        "| `vtlengine` | 20 | 0 | 100.0% |",
+        "| `vtlengine/API` | 400 | 40 | 90.0% |",
+        "| `vtlengine/AST` | 80 | 0 | 100.0% |",
+        "| `vtlengine/Utils` | 0 | 0 | — |",
+        "| **Total** | 500 | 40 | 92.0% |",
+    ]
+
+
+def test_without_a_coverage_report_there_is_no_folder_table(tmp_path: Path) -> None:
+    job(tmp_path, "ubuntu-latest", "3.12", pandas=junit(tests=1))
+    folders = read_folder_coverage(tmp_path)
+    assert folders == {}
+    assert "Coverage by folder" not in summarize("Tests", read_jobs(tmp_path), folders=folders)
+
+
+def test_main_writes_the_coverage_of_each_folder(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    folder = job(tmp_path, "ubuntu-latest", "3.12", duckdb=junit(tests=1))
+    (folder / "coverage.json").write_text(coverage_report(("src/vtlengine/Model/x.py", 10, 1)))
+    assert main(["--title", "Tests", str(tmp_path)]) == 0
+    assert "| `vtlengine/Model` | 10 | 1 | 90.0% |" in rows(capsys.readouterr().out)
 
 
 def test_a_backend_without_its_file_did_not_run(tmp_path: Path) -> None:

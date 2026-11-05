@@ -121,12 +121,9 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
         op = "daytoyear" if "daytoyear" in msg_lower else "daytomonth"
         return RunTimeError("2-1-19-16", op=op)
 
-    # VTL macros vtl_div / vtl_mod / vtl_power: divisor was 0 (mirrors 2-1-15-6)
+    # VTL macros vtl_div / vtl_power: divisor was 0 (mirrors 2-1-15-6)
     if "vtl 2-1-15-6" in msg_lower:
-        op = "/"
-        for macro_op in ("mod", "power"):
-            if f"2-1-15-6 {macro_op}:" in msg_lower:
-                op = macro_op
+        op = "power" if "2-1-15-6 power:" in msg_lower else "/"
         return RunTimeError("2-1-15-6", op=op)
 
     # VTL macros vtl_power / vtl_sqrt / vtl_random_index: negative operand (mirrors 2-1-15-2)
@@ -378,16 +375,16 @@ def _build_dataset_fetch_select(
     in-memory DataFrame:
     - Column projection: only the columns declared in ds.components (in order)
     - DATE columns → strftime('%Y-%m-%d', col) → 'YYYY-MM-DD' strings
-    - TIMESTAMP with any non-midnight value → ISO 8601 'YYYY-MM-DDTHH:MM:SS'
-    - TIMESTAMP with all-midnight values → formatted as date-only
+    - TIMESTAMP columns → each value on its own, as the pandas engine writes it: the
+      bare 'YYYY-MM-DD' at midnight, ISO 8601 'YYYY-MM-DDTHH:MM:SS[.ffffff]' otherwise.
+      Deciding for the whole column wrote a midnight value with its time whenever
+      another value of the column held one (issue #1284).
     - BOOLEAN columns → Python-style 'True'/'False' text, only when
       ``csv_text_mode`` is set (CSV output; matches the pandas engine's
       ``to_csv`` serialization, issue #923). Parquet output and in-memory
       fetches keep the native BOOLEAN type.
     - Other columns → aligned with the declared component type via
       ``_declared_type_expr`` (issue #976)
-
-    The non-midnight check uses LIMIT 1 so DuckDB stops at the first match.
     """
     # Inspect schema without fetching data
     schema_rel = conn.execute(f'SELECT * FROM "{result_name}" LIMIT 0')
@@ -405,35 +402,20 @@ def _build_dataset_fetch_select(
     if not ordered_cols:
         return f'SELECT * FROM "{result_name}"'
 
-    timestamp_cols = [c for c in ordered_cols if "TIMESTAMP" in col_types.get(c, "")]
-    has_time_cols: Dict[str, bool] = {}
-    if timestamp_cols:
-        exists_clauses = ", ".join(
-            f'EXISTS (SELECT 1 FROM "{result_name}" WHERE "{c}" IS NOT NULL '
-            f'AND (hour("{c}") != 0 OR minute("{c}") != 0 '
-            f'OR second("{c}") != 0 OR microsecond("{c}") % 1000000 != 0)) '
-            f'AS "{c}"'
-            for c in timestamp_cols
-        )
-        row = conn.execute(f"SELECT {exists_clauses}").fetchone()
-        if row is not None:
-            has_time_cols = dict(zip(timestamp_cols, row))
-
     exprs = []
     for col in ordered_cols:
         col_type = col_types.get(col, "")
         if "TIMESTAMP" in col_type:
-            if has_time_cols.get(col, False):
-                exprs.append(
-                    f'CASE WHEN "{col}" IS NULL THEN NULL'
-                    f' WHEN microsecond("{col}") % 1000000 != 0'
-                    f" THEN strftime('%Y-%m-%dT%H:%M:%S', \"{col}\")"
-                    f" || '.' || printf('%06d', microsecond(\"{col}\") % 1000000)"
-                    f" ELSE strftime('%Y-%m-%dT%H:%M:%S', \"{col}\")"
-                    f' END AS "{col}"'
-                )
-            else:
-                exprs.append(f'strftime(\'%Y-%m-%d\', "{col}") AS "{col}"')
+            exprs.append(
+                f'CASE WHEN "{col}" IS NULL THEN NULL'
+                f' WHEN microsecond("{col}") % 1000000 != 0'
+                f" THEN strftime('%Y-%m-%dT%H:%M:%S', \"{col}\")"
+                f" || '.' || printf('%06d', microsecond(\"{col}\") % 1000000)"
+                f' WHEN CAST("{col}" AS DATE) != "{col}"'
+                f" THEN strftime('%Y-%m-%dT%H:%M:%S', \"{col}\")"
+                f" ELSE strftime('%Y-%m-%d', \"{col}\")"
+                f' END AS "{col}"'
+            )
         elif col_type == "DATE":
             exprs.append(f'strftime(\'%Y-%m-%d\', "{col}") AS "{col}"')
         elif col_type == "BOOLEAN" and csv_text_mode:
@@ -574,7 +556,10 @@ def cleanup_scheduled_datasets(
                 representation=representation,
                 output_format=output_format,
             )
-            conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
+            # A Scalar keeps its table: a clause of a later statement can read it, and the
+            # schedule leaves a persistent one out of that statement's inputs (issue #1265)
+            if ds_name not in output_scalars:
+                conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')
         else:
             # Drop non-persistent intermediate results
             conn.execute(f'DROP TABLE IF EXISTS "{ds_name}"')

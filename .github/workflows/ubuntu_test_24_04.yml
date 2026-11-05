@@ -2,7 +2,7 @@ name: Ubuntu 24.04 Tests
 
 on:
   pull_request:
-    branches: ["main", "1.6.X", "1.9.X"]
+    branches: ["main", "1.9.X"]
   merge_group:
 
 concurrency:
@@ -20,104 +20,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Cache ANTLR4 runtime prebuilt
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: antlr4-cache
+      - name: Install the dependencies
+        uses: ./.github/actions/install-ubuntu-2404-deps
+
+      - name: Build the C++ parser
+        uses: ./.github/actions/build-cpp-parser
         with:
-          path: build/antlr4-prefix
-          key: antlr4-runtime-ubuntu2404-py3.12-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
-
-      - name: Cache compiled C++ parser
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: cpp-cache
-        with:
-          # Just the compiled extension binary — restoring it puts it back
-          # next to its __init__.py with no .py files riding along.
-          path: src/vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*
-          key: cpp-parser-ubuntu2404-py3.12-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml') }}
-
-      - name: Use the official Ubuntu mirrors
-        # The runner image tries azure.archive.ubuntu.com first and only falls
-        # back on errors, so a slow Azure mirror stalls apt for minutes.
-        run: |
-          sudo tee /etc/apt/sources.list.d/ubuntu.sources > /dev/null <<'EOF'
-          Types: deb
-          URIs: https://archive.ubuntu.com/ubuntu/
-          Suites: noble noble-updates noble-backports
-          Components: main universe restricted multiverse
-          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-
-          Types: deb
-          URIs: https://security.ubuntu.com/ubuntu/
-          Suites: noble-security
-          Components: main universe restricted multiverse
-          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-          EOF
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            python3-pip \
-            python3-httpx \
-            python3-pandas \
-            python3-dateutil \
-            python3-lxml \
-            python3-xmltodict \
-            python3-jsonschema \
-            python3-networkx \
-            python3-sqlglot \
-            python3-pytest \
-            cmake \
-            g++ \
-            pybind11-dev
-
-      - name: Install pip-only dependencies
-        run: |
-          pip install --no-dependencies --break-system-packages \
-            pyarrow==24.0.0 \
-            sdmxschemas==1.1.0 \
-            parsy==2.2 \
-            msgspec==0.21.1 \
-            duckdb==1.4.5 \
-            pysdmx==1.20.0
-
-      - name: Download ANTLR4 C++ runtime source
-        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
-        run: bash scripts/setup_antlr4_runtime.sh
-
-      - name: Build ANTLR4 runtime
-        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
-        run: |
-          cmake -S . -B build/antlr4-build \
-            -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DVTLENGINE_BUILD_ANTLR4_PREBUILT=ON
-          cmake --build build/antlr4-build --target antlr4_runtime --config Release
-          cmake --install build/antlr4-build --prefix "$PWD/build/antlr4-prefix" --config Release
-
-      - name: Build C++ parser binary
-        if: steps.cpp-cache.outputs.cache-hit != 'true'
-        run: |
-          pip wheel . -w .build_wheel --no-deps -v \
-            -C cmake.define.VTLENGINE_USE_PREBUILT_ANTLR4=ON \
-            -C "cmake.define.VTLENGINE_ANTLR4_PREFIX=$PWD/build/antlr4-prefix"
-          unzip -o -j .build_wheel/*.whl \
-            'vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*' \
-            -d src/vtlengine/AST/Grammar/_cpp_parser/
-          rm -rf .build_wheel
+          python-version: "3.12"
+          cache-prefix: ubuntu2404
         env:
           PIP_BREAK_SYSTEM_PACKAGES: "1"
 
       - name: Run tests (pandas backend)
         env:
           VTL_ENGINE_BACKEND: pandas
-        run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
+        run: pytest -n auto --dist worksteal --verbose --tb=short --strict-markers --strict-config --durations=10
 
       - name: Run tests (duckdb backend)
         env:
           VTL_ENGINE_BACKEND: duckdb
-        run: pytest --verbose --tb=short --strict-markers --strict-config --durations=10
+        run: pytest -n auto --dist worksteal --verbose --tb=short --strict-markers --strict-config --durations=10
 
       - name: Run the operator map's tests
         run: >-

@@ -16,8 +16,14 @@ from typing import Any, Dict, Optional
 import pandas as pd
 import pytest
 
+from tests.Helper import _use_duckdb_backend
 from vtlengine.API import run
 from vtlengine.Exceptions import RunTimeError
+
+# Each test runs both engines, so the DuckDB pass is enough
+pytestmark = pytest.mark.skipif(
+    not _use_duckdb_backend(), reason="Runs both engines, in the DuckDB pass only"
+)
 
 NUMBER_DS: Dict[str, Any] = {
     "datasets": [
@@ -127,6 +133,8 @@ ARITHMETIC_SCRIPTS = {
     "literal_calc": "DS_r <- DS_1[calc Me_2 := 0.5];",
     "negative_zero": "DS_r <- DS_1[calc Me_1 := Me_1 * -1];",
     "mod_mixed_sign": "DS_r <- DS_1[calc Me_1 := mod(Me_1, 3)];",
+    "mod_negative_divisor": "DS_r <- DS_1[calc Me_1 := mod(Me_1, -3)];",
+    "mod_zero_divisor": "DS_r <- DS_1[calc Me_1 := mod(Me_1, 0)];",
     "power_int": "DS_r <- DS_1[calc Me_1 := power(Me_1, 2)];",
     "round_trunc": "DS_r <- DS_1[calc Me_1 := round(Me_1 / 7, 3) + trunc(Me_1 * 3, 2)];",
 }
@@ -247,7 +255,6 @@ def test_scalar_csv_parity() -> None:
 
 
 DOMAIN_ERROR_CASES = {
-    "mod_zero": ("DS_r <- DS_1[calc Me_1 := mod(Me_1, 0)];", [5.0], "2-1-15-6"),
     "power_negative_base": ("DS_r <- DS_1[calc Me_1 := power(Me_1, 0.5)];", [-8.0], "2-1-15-2"),
     "power_zero_negative_exp": ("DS_r <- DS_1[calc Me_1 := power(Me_1, -1)];", [0.0], "2-1-15-6"),
     "sqrt_negative": ("DS_r <- DS_1[calc Me_1 := sqrt(Me_1)];", [-1.0], "2-1-15-2"),

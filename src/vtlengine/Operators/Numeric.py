@@ -1,6 +1,6 @@
-import _random
 import math
 import operator
+import struct
 import warnings
 from typing import Any, Optional, Union
 
@@ -95,20 +95,14 @@ class Binary(Operator.Binary):
                 raise RunTimeError("2-1-15-6", op=cls.op, value=y)
             if cls.op == RANDOM:
                 return cls.py_op(x, y)
-            if cls.op in (PLUS, MINUS, MULT):
+            if cls.op in (PLUS, MINUS, MULT, MOD):
                 # Exact integer arithmetic, matching DuckDB BIGINT semantics.
                 return cls.py_op(x, y)
         x = float(x)
         y = float(y)
         if cls.op == DIV and y == 0:
             raise RunTimeError("2-1-15-6", op=cls.op, value=y)
-        if cls.op == MOD:
-            if y == 0:
-                raise RunTimeError("2-1-15-6", op=cls.op, value=y)
-            # fmod keeps the dividend's sign, like DuckDB ``%`` (and the former
-            # Decimal remainder): -5 mod 3 is -2, not Python's 1.
-            result = math.fmod(x, y)
-        elif cls.op == POWER:
+        if cls.op == POWER:
             if x < 0 and not y.is_integer():
                 raise RunTimeError("2-1-15-2", op=cls.op, value=x)
             if x == 0 and y < 0:
@@ -358,7 +352,12 @@ class Modulo(Binary):
     """  # noqa E501
 
     op = MOD
-    py_op = operator.mod
+
+    @classmethod
+    def py_op(cls, x: Any, param: Any) -> Any:
+        # The remainder takes the sign of the divisor, as Python's ``%`` gives it
+        # (mod(5, -2) is -1), and a zero divisor gives the dividend back (mod(9, 0) is 9)
+        return x if param == 0 else x % param
 
 
 class Power(Binary):
@@ -540,12 +539,6 @@ class Trunc(Parameterized):
         return int(truncated_value)
 
 
-class PseudoRandom(_random.Random):
-    def __init__(self, seed: Union[int, float]) -> None:
-        super().__init__()
-        self.seed(seed)
-
-
 class Random(Parameterized):
     op = RANDOM
     return_type = Number
@@ -580,7 +573,12 @@ class Random(Parameterized):
         if index < 0:
             # An index read from a Component (a scalar one is checked by the validation)
             raise RunTimeError("2-1-15-2", op=cls.op, value=index)
-        instance: PseudoRandom = PseudoRandom(seed)
-        for _ in range(index):
-            instance.random()
-        return instance.random().__round__(6)
+        # The number at the index of the SplitMix64 sequence seeded with the bits of the
+        # seed as a double (adding 0.0 turns -0.0 into 0.0), kept to 6 decimals. Integer
+        # arithmetic gives the same number on every platform and in the DuckDB macro
+        # vtl_random (issue #1253)
+        z = int.from_bytes(struct.pack("<d", float(seed) + 0.0), "little")
+        z = (z + (int(index) + 1) * 0x9E3779B97F4A7C15) % 2**64
+        for shift, factor in ((30, 0xBF58476D1CE4E5B9), (27, 0x94D049BB133111EB)):
+            z = ((z ^ (z >> shift)) * factor) % 2**64
+        return ((z ^ (z >> 31)) % 10**6) / 10**6

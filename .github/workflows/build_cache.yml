@@ -1,0 +1,87 @@
+name: Build caches
+
+# Saves the ANTLR4 runtime and the compiled C++ parser of every test job, and the dependencies of
+# ubuntu_test_24_04.yml, on the branch itself. A cache saved by a pull request or a merge-queue
+# run is only visible to that run's branch, while pull requests restore the caches of their base
+# branch. The keys come from .github/actions/build-cpp-parser and
+# .github/actions/install-ubuntu-2404-deps, which the test jobs use too.
+
+on:
+  push:
+    branches: ["1.9.X"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  cpp-parser:
+    name: C++ parser (${{ matrix.os }}, ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # The OS and Python of every job of testing.yml that builds the parser.
+        include:
+          - os: ubuntu-latest
+            python-version: "3.10"
+          - os: ubuntu-latest
+            python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.12"
+          - os: ubuntu-latest
+            python-version: "3.13"
+          - os: ubuntu-latest
+            python-version: "3.14"
+          - os: macos-latest
+            python-version: "3.12"
+          - os: windows-latest
+            python-version: "3.12"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build the C++ parser
+        uses: ./.github/actions/build-cpp-parser
+        with:
+          python-version: ${{ matrix.python-version }}
+
+  cpp-parser-ubuntu-24-04:
+    # The parser of ubuntu_test_24_04.yml, built with the system Python of Ubuntu 24.04.
+    name: C++ parser (Ubuntu 24.04, system Python)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build the C++ parser
+        uses: ./.github/actions/build-cpp-parser
+        with:
+          python-version: "3.12"
+          cache-prefix: ubuntu2404
+        env:
+          PIP_BREAK_SYSTEM_PACKAGES: "1"
+
+  ubuntu-24-04-deps:
+    # The APT and pip packages of ubuntu_test_24_04.yml, installed on a clean runner. Saved only
+    # when no entry has the key yet: the mirrors have a new version of one of the packages, or
+    # the action changed.
+    name: Dependencies (Ubuntu 24.04)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install the dependencies
+        uses: ./.github/actions/install-ubuntu-2404-deps
+        with:
+          save-cache: "true"

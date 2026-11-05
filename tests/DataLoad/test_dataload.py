@@ -23,7 +23,7 @@ from typing import Any, Dict, List
 import pandas as pd
 import pytest
 
-from tests.Helper import TestHelper
+from tests.Helper import TestHelper, engine_params
 from vtlengine import run
 from vtlengine.API._InternalApi import (
     _load_single_external_routine_from_file,
@@ -1046,6 +1046,28 @@ class DataLoadTest(DataLoadHelper):
         number_inputs = 1
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-3-1-6")
 
+    def test_GH_1284_1(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1 [ calc Me_4 := isnull ( Me_1 ), Me_5 := isnull ( Me_2 ) ];
+        Description: NaN loads as a null in an Integer and in a Number, which isnull reads
+            as null, a compact date (20200115) loads as the date it writes, and a time at
+            midnight (2020-01-17T00:00:00) loads as the bare date, on both engines.
+        Git issue: 1284.
+        Goal: Check Result.
+        """
+        code = "GH_1284_1"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1284_2(self):
+        """A NaN read as no value in an Identifier is a null Identifier, on both engines."""
+        code = "GH_1284_2"
+        number_inputs = 1
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-3-1-3")
+
 
 BOM = b"\xef\xbb\xbf"
 
@@ -1053,7 +1075,7 @@ BOM = b"\xef\xbb\xbf"
 class TestBOMHandling:
     """Tests that UTF-8 BOM files are handled transparently."""
 
-    @pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_bom_csv(self, tmp_path: Path, use_duckdb: bool) -> None:
         """CSV with BOM loads correctly, first column name is clean.
 
@@ -1194,7 +1216,7 @@ class TestBOMHandling:
         assert not content.startswith("\ufeff")
         assert content == "DS_r <- DS_1;"
 
-    @pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+    @pytest.mark.parametrize("use_duckdb", engine_params())
     def test_bom_dataframe_columns(self, use_duckdb: bool) -> None:
         """DataFrame with BOM in column names is handled transparently on both engines."""
         script = "DS_r <- DS_1;"
@@ -1247,7 +1269,7 @@ def _dataframe_structures(measure_type: str) -> Dict[str, Any]:
     }
 
 
-@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+@pytest.mark.parametrize("use_duckdb", engine_params())
 def test_non_string_dataframe_column_label_is_an_extra_column(use_duckdb: bool) -> None:
     """A DataFrame label that is not a string is reported as a column the
     DataStructure does not define (0-3-1-15) on both engines, the way the pandas
@@ -1263,7 +1285,7 @@ def test_non_string_dataframe_column_label_is_an_extra_column(use_duckdb: bool) 
     assert context.value.args[1] == "0-3-1-15"
 
 
-@pytest.mark.parametrize("use_duckdb", [False, True])
+@pytest.mark.parametrize("use_duckdb", engine_params())
 class TestBooleanFromDataFrame:
     """A DataFrame is read on the documented Boolean set, the same on both engines
     and the same as a CSV (issue #1068)."""
@@ -1314,6 +1336,69 @@ class TestBooleanFromDataFrame:
         )
         assert result["DS_r"].data["Me_1"].tolist() == [1, 0]
 
+    def test_number_booleans(self, use_duckdb: bool) -> None:
+        """A boolean in a Number column is 1.0 or 0.0, as in an Integer (issue #1284)."""
+        data_df = pd.DataFrame({"Id_1": [1, 2], "Me_1": [True, False]})
+        result = run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("Number"),
+            datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
+        )
+        assert result["DS_r"].data["Me_1"].tolist() == [1.0, 0.0]
+
+    def test_number_mixed_booleans(self, use_duckdb: bool) -> None:
+        """A boolean among other values of a Number column is 1.0 or 0.0 too (issue #1284)."""
+        data_df = pd.DataFrame({"Id_1": [1, 2], "Me_1": pd.Series([True, "2.5"], dtype=object)})
+        result = run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("Number"),
+            datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
+        )
+        assert result["DS_r"].data["Me_1"].tolist() == [1.0, 2.5]
+
+    def test_string_booleans(self, use_duckdb: bool) -> None:
+        """A boolean in a String column is written true or false (issue #1284)."""
+        data_df = pd.DataFrame({"Id_1": [1, 2], "Me_1": [True, False]})
+        result = run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("String"),
+            datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
+        )
+        assert result["DS_r"].data["Me_1"].tolist() == ["true", "false"]
+
+    def test_string_mixed_booleans(self, use_duckdb: bool) -> None:
+        """A boolean among other values of a String column is written true or false too
+        (issue #1284)."""
+        data_df = pd.DataFrame({"Id_1": [1, 2], "Me_1": pd.Series([True, "x"], dtype=object)})
+        result = run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("String"),
+            datapoints={"DS_1": data_df},
+            use_duckdb=use_duckdb,
+        )
+        assert result["DS_r"].data["Me_1"].tolist() == ["true", "x"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+class TestIntegerFromDataFrame:
+    """A DataFrame is read on the Integer rules of the pandas loader, the same on both
+    engines and the same as a CSV (issue #1284)."""
+
+    def test_integer_decimals(self, use_duckdb: bool) -> None:
+        """A value with decimals is refused, where DuckDB rounded it (1.5 to 2)."""
+        data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [1.5, 2.5, -0.7]})
+        with pytest.raises(VTLEngineException) as context:
+            run(
+                script="DS_r <- DS_1;",
+                data_structures=_dataframe_structures("Integer"),
+                datapoints={"DS_1": data_df},
+                use_duckdb=use_duckdb,
+            )
+        assert context.value.args[1] == "0-3-1-6"
+
 
 _EMPTY_STRING_LITERALS = {
     "Integer": "1",
@@ -1326,7 +1411,7 @@ _EMPTY_STRING_LITERALS = {
 }
 
 
-@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+@pytest.mark.parametrize("use_duckdb", engine_params())
 class TestEmptyStringFromDataFrame:
     """An empty string in a DataFrame column is a null for every type but String, the
     same on both engines and the same as an empty field of a CSV. The pandas loader
@@ -1380,7 +1465,7 @@ _STRING_STRUCTURE = {
 }
 
 
-@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+@pytest.mark.parametrize("use_duckdb", engine_params())
 class TestStringKeepsItsQuotes:
     """A double quote a String value holds is part of it, whichever of the four ways
     the value reaches the engine (issue #1073)."""
@@ -1433,7 +1518,7 @@ def _nullability_structures(nullable: bool) -> Dict[str, Any]:
     }
 
 
-@pytest.mark.parametrize("use_duckdb", [False, True])
+@pytest.mark.parametrize("use_duckdb", engine_params())
 class TestNullabilityFromDataFrame:
     """A DataFrame is held to the nullability the DataStructure declares, the same
     on both engines and the same as a CSV (issue #1069)."""
@@ -1474,7 +1559,7 @@ class TestNullabilityFromDataFrame:
         assert result["DS_r"].data["Me_1"].isnull().tolist() == [False, True]
 
 
-@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+@pytest.mark.parametrize("use_duckdb", engine_params())
 class TestInputDataFrameIsLeftUntouched:
     """The DataFrame passed in ``datapoints`` belongs to the caller: loading it must not
     add the components it does not carry, rename its labels or replace its values, on

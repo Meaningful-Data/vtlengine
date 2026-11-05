@@ -2,7 +2,7 @@ name: Testing
 
 on:
   pull_request:
-    branches: ["main", "1.6.X", "1.9.X"]
+    branches: ["main", "1.9.X"]
   merge_group:
   workflow_dispatch:
 
@@ -14,14 +14,65 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install poetry
+        run: pipx install poetry
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: poetry install --no-root --all-extras
+      - name: Check compliance with code formatting guidelines
+        run: poetry run ruff format --no-cache --check
+      - name: Run lint checks
+        run: poetry run ruff check --output-format=github
+      - name: Run type checks
+        # mypy passes without the compiled parser, so this job needs no C++ build.
+        run: poetry run mypy --show-error-codes --pretty
+
   testing:
+    # "testing (<os>, <python>)" runs both backends; Windows, the slowest runner, runs each
+    # backend in a job of its own, "testing (<os>, <python>, <backend>)". The jobs are few on
+    # purpose: the account runs 20 jobs at a time, for every workflow and pull request.
+    name: >-
+      ${{ matrix.backend == 'both'
+        && format('testing ({0}, {1})', matrix.os, matrix.python-version)
+        || format('testing ({0}, {1}, {2})', matrix.os, matrix.python-version, matrix.backend) }}
     runs-on: ${{matrix.os}}
 
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        # Every Python version on Ubuntu, and 3.12 on macOS and Windows. Ubuntu with 3.12 is
+        # the coverage job.
+        include:
+          - os: ubuntu-latest
+            python-version: "3.10"
+            backend: both
+          - os: ubuntu-latest
+            python-version: "3.11"
+            backend: both
+          - os: ubuntu-latest
+            python-version: "3.13"
+            backend: both
+          - os: ubuntu-latest
+            python-version: "3.14"
+            backend: both
+          - os: macos-latest
+            python-version: "3.12"
+            backend: both
+          - os: windows-latest
+            python-version: "3.12"
+            backend: pandas
+          - os: windows-latest
+            python-version: "3.12"
+            backend: duckdb
 
     steps:
       - name: Checkout code
@@ -32,103 +83,151 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
-          cache: poetry
-      - name: Cache ANTLR4 runtime prebuilt
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: antlr4-cache
+      - name: Build the C++ parser
+        uses: ./.github/actions/build-cpp-parser
         with:
-          path: build/antlr4-prefix
-          key: antlr4-runtime-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
-      - name: Cache compiled C++ parser
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: cpp-cache
-        with:
-          # Just the compiled extension binary — restoring it puts it back
-          # next to its __init__.py with no .py files riding along.
-          path: src/vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*
-          key: cpp-parser-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml') }}
-      - name: Download ANTLR4 C++ runtime source
-        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
-        shell: bash
-        run: bash scripts/setup_antlr4_runtime.sh
-      - name: Build ANTLR4 runtime
-        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
-        shell: bash
-        run: |
-          # On Windows, let CMake pick its default generator: it selects the
-          # newest installed Visual Studio (MSVC), matching what
-          # scikit-build-core uses for the wheel build so the prebuilt static
-          # library stays ABI-compatible. Pinning an explicit version (e.g.
-          # "Visual Studio 17 2022") breaks whenever the runner image bumps
-          # the bundled VS. On Linux/macOS, Ninja parallelises better than the
-          # default Unix Makefiles generator.
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            cmake -S . -B build/antlr4-build \
-              -DVTLENGINE_BUILD_ANTLR4_PREBUILT=ON
-          else
-            cmake -S . -B build/antlr4-build \
-              -G Ninja \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DVTLENGINE_BUILD_ANTLR4_PREBUILT=ON
-          fi
-          cmake --build build/antlr4-build --target antlr4_runtime --config Release
-          cmake --install build/antlr4-build --prefix "$PWD/build/antlr4-prefix" --config Release
-      - name: Build C++ parser binary
-        if: steps.cpp-cache.outputs.cache-hit != 'true'
-        shell: bash
-        run: |
-          # Build the wheel only to fish out the compiled extension; throw
-          # the rest away. The cached entry above is just the binary.
-          pip wheel . -w .build_wheel --no-deps -v \
-            -C cmake.define.VTLENGINE_USE_PREBUILT_ANTLR4=ON \
-            -C "cmake.define.VTLENGINE_ANTLR4_PREFIX=$PWD/build/antlr4-prefix"
-          unzip -o -j .build_wheel/*.whl \
-            'vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*' \
-            -d src/vtlengine/AST/Grammar/_cpp_parser/
-          rm -rf .build_wheel
+          python-version: ${{ matrix.python-version }}
+          # The two Windows jobs share the caches; one of them saves them
+          save-cache: ${{ matrix.backend != 'pandas' }}
       - name: Install dependencies
         shell: bash
         run: poetry install --no-root --all-extras
-      - name: Check compliance with code formatting guidelines
-        run: poetry run ruff format --no-cache --check
-      - name: Run lint checks
-        run: poetry run ruff check --output-format=github
-      - name: Run type checks
-        run: poetry run mypy --show-error-codes --pretty
       - name: Run tests with pandas backend
+        if: matrix.backend != 'duckdb'
         env:
           VTL_ENGINE_BACKEND: pandas
-        run: poetry run pytest -n auto --verbose --tb=short --durations=10 --junitxml=test-results/pandas.xml
+        run: poetry run pytest -n auto --dist worksteal --verbose --tb=short --strict-markers --strict-config --durations=10 --junitxml=test-results/pandas.xml
       - name: Run tests with duckdb backend
+        if: matrix.backend != 'pandas'
         env:
           VTL_ENGINE_BACKEND: duckdb
-        run: poetry run pytest --cov=vtlengine -n auto --verbose --tb=short --strict-markers --strict-config --durations=10 --junitxml=test-results/duckdb.xml
-      - name: Check coverage
-        run: poetry run coverage report --fail-under=85
+        run: poetry run pytest -n auto --dist worksteal --verbose --tb=short --strict-markers --strict-config --durations=10 --junitxml=test-results/duckdb.xml
       - name: Keep the test results
-        # The Test summary job reads them: the JUnit XML of each backend, the job and its coverage.
+        # The Test summary job reads them: the JUnit XML of each backend and the job.
         if: ${{ !cancelled() }}
         shell: bash
         run: |
           mkdir -p test-results
           printf '{"os": "%s", "python": "%s"}\n' "${{ matrix.os }}" "${{ matrix.python-version }}" \
             > test-results/job.json
-          poetry run coverage report --format=total > test-results/coverage.txt 2>/dev/null \
-            || rm -f test-results/coverage.txt
       - name: Upload the test results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
+          name: test-results-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.backend }}
           path: test-results/
           retention-days: 1  # the Test summary job removes them once it has read them
           overwrite: true  # a re-run of a failed job replaces the results of its first run
+
+  coverage-pass:
+    # The tests on Ubuntu with Python 3.12, recording their coverage, one backend per job.
+    # The sys.monitoring core (Python 3.12+) records it at no visible cost; the default
+    # tracer slowed the DuckDB pass by a fifth.
+    name: coverage (ubuntu-latest, 3.12, ${{ matrix.backend }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        backend: [pandas, duckdb]
+
+    env:
+      COVERAGE_CORE: sysmon
+      COVERAGE_FILE: .coverage.${{ matrix.backend }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install poetry
+        run: pipx install poetry
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Build the C++ parser
+        uses: ./.github/actions/build-cpp-parser
+        with:
+          python-version: "3.12"
+          save-cache: ${{ matrix.backend == 'duckdb' }}
+      - name: Install dependencies
+        run: poetry install --no-root --all-extras
+      - name: Run tests with ${{ matrix.backend }} backend
+        env:
+          VTL_ENGINE_BACKEND: ${{ matrix.backend }}
+        run: poetry run pytest --cov=vtlengine --cov-report= -n auto --dist worksteal --verbose --tb=short --strict-markers --strict-config --durations=10 --junitxml=test-results/${{ matrix.backend }}.xml
+      - name: Upload the coverage data
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-${{ matrix.backend }}
+          path: .coverage.${{ matrix.backend }}
+          include-hidden-files: true
+          retention-days: 1  # the Test summary job removes it once the coverage job has read it
+          overwrite: true
+      - name: Keep the test results
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p test-results
+          printf '{"os": "ubuntu-latest", "python": "3.12"}\n' > test-results/job.json
+      - name: Upload the test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-results-coverage-${{ matrix.backend }}
+          path: test-results/
+          retention-days: 1
+          overwrite: true
+
+  coverage:
+    # The coverage of both passes together, against the minimum.
+    needs: coverage-pass
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Stop if a pass did not succeed
+        if: needs.coverage-pass.result != 'success'
+        run: exit 1
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install poetry
+        run: pipx install poetry
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install coverage
+        # The dev group holds pytest-cov and with it coverage, at the version of the passes.
+        run: poetry install --no-root --only dev
+      - name: Download the coverage data
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+      - name: Combine the coverage of both passes
+        run: poetry run coverage combine
+      - name: Keep the coverage
+        # The Test summary job shows the total in the Ubuntu 3.12 rows of the passes, and the
+        # coverage of each folder of the package from the JSON report.
+        run: |
+          mkdir -p test-results
+          printf '{"os": "ubuntu-latest", "python": "3.12"}\n' > test-results/job.json
+          poetry run coverage report --format=total > test-results/coverage.txt
+          poetry run coverage json -q -o test-results/coverage.json
+      - name: Upload the coverage for the summary
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-results-coverage
+          path: test-results/
+          retention-days: 1
+          overwrite: true
+      - name: Check coverage
+        run: poetry run coverage report --fail-under=85
 
   # One summary of the whole matrix: a row per job and backend, the slowest tests with the job
   # where they were slowest, and the tests that failed.
   test-summary:
     name: Test summary
-    needs: [testing]
+    needs: [testing, coverage]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
@@ -146,14 +245,14 @@ jobs:
       - name: Summarize the tests
         run: python3 scripts/pytest_summary.py --title "Tests" test-results >> "$GITHUB_STEP_SUMMARY"
       - name: Remove the test results
-        # They are in the summary now. A token that cannot remove them (a PR from a fork) leaves
-        # them to their one day of retention.
+        # They are in the summary now, and the coverage data in the coverage job. A token that
+        # cannot remove them (a PR from a fork) leaves them to their one day of retention.
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh api --paginate "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
-            --jq '.artifacts[] | select(.name | startswith("test-results-")) | .id' |
+            --jq '.artifacts[] | select(.name | startswith("test-results-") or startswith("coverage-")) | .id' |
             while read -r id; do
               gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id"
             done
@@ -175,41 +274,12 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13"
-          cache: poetry
-      - name: Cache ANTLR4 runtime prebuilt
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: antlr4-cache
+      - name: Build the C++ parser
+        uses: ./.github/actions/build-cpp-parser
         with:
-          path: build/antlr4-prefix
-          key: antlr4-runtime-${{ runner.os }}-py3.13-${{ hashFiles('scripts/setup_antlr4_runtime.sh', 'CMakeLists.txt') }}
-      - name: Cache compiled C++ parser
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: cpp-cache
-        with:
-          path: src/vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*
-          key: cpp-parser-${{ runner.os }}-py3.13-${{ hashFiles('src/vtlengine/AST/Grammar/_cpp_parser/**', 'CMakeLists.txt', 'pyproject.toml') }}
-      - name: Download ANTLR4 C++ runtime source
-        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
-        run: bash scripts/setup_antlr4_runtime.sh
-      - name: Build ANTLR4 runtime
-        if: steps.cpp-cache.outputs.cache-hit != 'true' && steps.antlr4-cache.outputs.cache-hit != 'true'
-        run: |
-          cmake -S . -B build/antlr4-build \
-            -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DVTLENGINE_BUILD_ANTLR4_PREBUILT=ON
-          cmake --build build/antlr4-build --target antlr4_runtime --config Release
-          cmake --install build/antlr4-build --prefix "$PWD/build/antlr4-prefix" --config Release
-      - name: Build C++ parser binary
-        if: steps.cpp-cache.outputs.cache-hit != 'true'
-        run: |
-          pip wheel . -w .build_wheel --no-deps -v \
-            -C cmake.define.VTLENGINE_USE_PREBUILT_ANTLR4=ON \
-            -C "cmake.define.VTLENGINE_ANTLR4_PREFIX=$PWD/build/antlr4-prefix"
-          unzip -o -j .build_wheel/*.whl \
-            'vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*' \
-            -d src/vtlengine/AST/Grammar/_cpp_parser/
-          rm -rf .build_wheel
+          python-version: "3.13"
+          # The testing job on Ubuntu with Python 3.13 saves the entries of these keys
+          save-cache: false
       - name: Install dependencies
         run: poetry install --no-root --all-extras
       - name: Run the operator map's tests

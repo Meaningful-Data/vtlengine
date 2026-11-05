@@ -33,9 +33,8 @@ from vtlengine.AST import (
     ValidationMode,
     ValidationOutput,
     VarID,
-    Windowing,
 )
-from vtlengine.AST.ASTConstructorModules import extract_token_info, script_location
+from vtlengine.AST.ASTConstructorModules import extract_token_info
 from vtlengine.AST.ASTConstructorModules.ExprComponents import ExprComp
 from vtlengine.AST.ASTConstructorModules.Terminals import Terminals
 from vtlengine.AST.ASTDataExchange import de_ruleset_elements
@@ -44,13 +43,6 @@ from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
 from vtlengine.AST.Grammar.tokens import DATASET_PRIORITY, STRING_DISTANCE
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Role
-
-
-def _to_tokens_text(ctx: Any) -> str:
-    """Reconstruct text from parse tree by joining leaf tokens with spaces."""
-    if ctx.is_terminal:
-        return str(ctx.text)
-    return " ".join(_to_tokens_text(child) for child in ctx.children)
 
 
 class Expr:
@@ -911,6 +903,9 @@ class Expr:
             for operand in ctx_list
             if not operand.is_terminal and operand.rule_index == RC.EXPR[0]
         ]
+        if not operand_node:
+            # Only a clause has a Data Set whose time Identifier period_indicator() can read
+            raise SemanticError("1-3-2-8", op=op)
 
         return UnaryOp(op=op, operand=operand_node[0], **extract_token_info(ctx))
 
@@ -1415,8 +1410,7 @@ class Expr:
         if len(groups) != 0:
             grouping_op, group_node = self.visitGroupingClause(groups[0])
         if len(haves) != 0:
-            have_node, expr = self.visitHavingClause(haves[0])
-            have_node.expr = expr
+            have_node = self.visitHavingClause(haves[0])
 
         return Aggregation(
             op=op_node,
@@ -1462,16 +1456,6 @@ class Expr:
             elif not c.is_terminal and c.rule_index == RC.WINDOWING_CLAUSE[0]:
                 window = Terminals().visitWindowingClause(c)
                 continue
-
-        if window is None and (partition_by is not None or order_by is not None):
-            window = Windowing(
-                type_="data",
-                start=-1,
-                stop=0,
-                start_mode="preceding",
-                stop_mode="current",
-                **extract_token_info(ctx),
-            )
 
         return Analytic(
             op=op_node,
@@ -1727,8 +1711,7 @@ class Expr:
         if len(groups) != 0:
             grouping_op, group_node = self.visitGroupingClause(groups[0])
         if len(haves) > 0:
-            have_node, expr = self.visitHavingClause(haves[0])
-            have_node.expr = expr
+            have_node = self.visitHavingClause(haves[0])
         for element in aggregate_nodes:
             element.right = Aggregation(
                 op=element.right.op,
@@ -1757,37 +1740,15 @@ class Expr:
         elif ctx.ctx_id == RC.GROUP_ALL:
             return self.visitGroupAll(ctx)
 
-    def visitHavingClause(self, ctx: Any) -> Any:
+    def visitHavingClause(self, ctx: Any) -> ParamOp:
         """
         havingClause: HAVING exprComponent ;
         """
         ctx_list = ctx.children
-        op_node = ctx_list[0].text
-        expr_component = ctx_list[1]
-        expr = _to_tokens_text(ctx)
-
-        if "{" in expr or "}" in expr:
-            expr = expr.replace("{", "(")
-            expr = expr.replace("}", ")")
-        if "not_in" in expr:
-            expr = expr.replace("not_in", "not in")
-        if '"' in expr:
-            expr = expr.replace('"', "'")
-
-        if expr_component.ctx_id == RC.COMPARISON_EXPR_COMP:
-            param_nodes = ExprComp().visitComparisonExprComp(expr_component)
-        elif expr_component.ctx_id == RC.IN_NOT_IN_EXPR_COMP:
-            param_nodes = ExprComp().visitInNotInExprComp(expr_component)
-        elif expr_component.ctx_id == RC.BOOLEAN_EXPR_COMP:
-            param_nodes = ExprComp().visitBooleanExprComp(expr_component)
-        else:
-            raise SemanticError(
-                "1-3-13", construct=f"having condition {script_location(expr_component)}"
-            )
-
+        param_nodes = ExprComp().visitExprComponent(ctx_list[1])
         return ParamOp(
-            op=op_node, children=None, params=param_nodes, **extract_token_info(ctx)
-        ), expr
+            op=ctx_list[0].text, children=None, params=param_nodes, **extract_token_info(ctx)
+        )
 
     @staticmethod
     def _extract_time_agg_tokens(

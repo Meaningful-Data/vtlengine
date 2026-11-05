@@ -98,7 +98,8 @@ def _sorted(df: pd.DataFrame) -> pd.DataFrame:
     return df.sort_values(ids).reset_index(drop=True) if ids else df
 
 
-# Shapes whose nested SQL grows with every level, small enough to plan without binding
+# Shapes whose nested SQL grows with every level, small enough to plan without binding:
+# a fourth level of round or of division takes 6 to 18 s to plan instead of 0.2 to 1.2 s
 NESTED_SHAPES = {
     "right-nested sum": f"DS_r <- DS_1[calc Me_r := {_right_nested('+', 7)}];",
     "right-nested product and difference": (
@@ -106,9 +107,9 @@ NESTED_SHAPES = {
     ),
     "nested round": (
         "DS_r <- DS_1[calc Me_r := "
-        + "round(" * 4
+        + "round(" * 3
         + "Me_1 * Me_2 - Me_3 * Me_4"
-        + "".join(f" + Me_{i}, 5)" for i in range(5, 9))
+        + "".join(f" + Me_{i}, 5)" for i in range(5, 8))
         + "];"
     ),
     "nested trunc": f"DS_r <- DS_1[calc Me_r := {_nested('trunc', 4, 'Me_1 / Me_2', '3')}];",
@@ -118,11 +119,11 @@ NESTED_SHAPES = {
     "nested power": "DS_r <- DS_1[calc Me_r := power(power(abs(Me_1) + 1, 0.5) + 1, 1.5)];",
     "nested division": (
         "DS_r <- DS_1[calc Me_r := Me_1 / (abs(Me_2) + 1 + Me_3 / (abs(Me_4) + 1 "
-        "+ Me_5 / (abs(Me_6) + 1 + Me_7 / (abs(Me_8) + 1))))];"
+        "+ Me_5 / (abs(Me_6) + 1)))];"
     ),
+    # Two levels: vtl_mod copies its divisor five times, so a third takes seconds to plan
     "nested mod": (
-        "DS_r <- DS_1[calc Me_r := mod(Me_1, abs(Me_2) + 1 + mod(Me_3, abs(Me_4) + 1 "
-        "+ mod(Me_5, abs(Me_6) + 1)))];"
+        "DS_r <- DS_1[calc Me_r := mod(Me_1, abs(Me_2) + 1 + mod(Me_3, abs(Me_4) + 1))];"
     ),
     "tolerance equality of nested sums": (
         f"DS_r <- DS_1[calc Me_r := if ({_right_nested('+', 5)}) = "
@@ -245,8 +246,10 @@ class TestBoundResults:
         if name.startswith("sc_"):
             assert bound[name].value == nested[name].value == on_pandas[name].value
             return
+        # check_exact does not reach extension arrays: pandas compares their floats within
+        # rtol=1e-5 unless the tolerances are given
         pd.testing.assert_frame_equal(
-            _sorted(bound[name].data), _sorted(nested[name].data), check_exact=True
+            _sorted(bound[name].data), _sorted(nested[name].data), rtol=0, atol=0
         )
         assert bound[name] == on_pandas[name]
 

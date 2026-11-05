@@ -1,6 +1,6 @@
 [project]
 name = "vtlengine"
-version = "1.9.7rc1"
+version = "1.9.7rc2"
 description = "Run and Validate VTL Scripts"
 license = "AGPL-3.0"
 readme = "README.md"
@@ -55,11 +55,11 @@ python = ">=3.10,<4.0"
 # Dependency groups follow PEP 735 (https://peps.python.org/pep-0735/).
 [dependency-groups]
 dev = [
-    "pytest>=9.0.3,<10.0",
+    "pytest>=9.2.0,<10.0",
     "pytest-cov>=7.1.0,<8.0",
     "coverage>=7.14.0,<8.0",
     "pytest-xdist>=3.8.0,<4.0",
-    "mypy>=2.4.0,<3.0",
+    "mypy>=2.4.1,<3.0",
     "pyarrow-stubs>=14.0,<25.0",
     "pandas-stubs>=2.2.3.241009,<4.0",
     "ruff>=0.15.12,<1.0.0",

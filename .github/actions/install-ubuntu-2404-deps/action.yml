@@ -1,0 +1,96 @@
+name: Install the Ubuntu 24.04 dependencies
+description: >-
+  Install the APT packages of apt-packages.txt and the pip packages of pip-packages.txt, or unpack
+  the files that installing them left on a clean runner, cached by build_cache.yml. The cache key
+  hashes the version of every package APT would install from the mirrors, so a new version of one
+  of them, or of one of their dependencies, misses the cache and installs from the mirrors again.
+
+inputs:
+  save-cache:
+    description: >-
+      Whether to save what this job installs when the cache misses. Only build_cache.yml saves:
+      an entry saved by a pull request or a merge-queue run is only visible to that run's branch,
+      and every entry takes a few hundred MB of the repository's cache.
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Use the official Ubuntu mirrors
+      # The runner image tries azure.archive.ubuntu.com first and only falls
+      # back on errors, so a slow Azure mirror stalls apt for minutes.
+      shell: bash
+      run: |
+        sudo tee /etc/apt/sources.list.d/ubuntu.sources > /dev/null <<'EOF'
+        Types: deb
+        URIs: https://archive.ubuntu.com/ubuntu/
+        Suites: noble noble-updates noble-backports
+        Components: main universe restricted multiverse
+        Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+        Types: deb
+        URIs: https://security.ubuntu.com/ubuntu/
+        Suites: noble-security
+        Components: main universe restricted multiverse
+        Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+        EOF
+    - name: Plan the installation
+      id: plan
+      shell: bash
+      run: |
+        sudo apt-get update
+        # Every package APT would install on this runner, with its version (not the suite it
+        # comes from, which changes when a security update is copied to noble-updates).
+        xargs apt-get install --simulate --yes < "$GITHUB_ACTION_PATH/apt-packages.txt" \
+          | sed -nE '/^(Inst|Remv) /{s/ \(([^ ]+) .*/ \1/;p}' \
+          | LC_ALL=C sort > "$RUNNER_TEMP/apt-plan.txt"
+        echo "::group::APT plan ($(wc -l < "$RUNNER_TEMP/apt-plan.txt") packages)"
+        cat "$RUNNER_TEMP/apt-plan.txt"
+        echo "::endgroup::"
+        hash=$(cat "$GITHUB_ACTION_PATH"/{action.yml,apt-packages.txt,pip-packages.txt} \
+          "$RUNNER_TEMP/apt-plan.txt" | sha256sum | cut -d ' ' -f 1)
+        echo "key=ubuntu2404-deps-$hash" >> "$GITHUB_OUTPUT"
+    - name: Restore the installed files
+      id: cache
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/ubuntu-deps
+        key: ${{ steps.plan.outputs.key }}
+        # A job that saves only needs to know whether the entry exists.
+        lookup-only: ${{ inputs.save-cache }}
+    - name: Unpack the installed files
+      if: steps.cache.outputs.cache-hit == 'true' && inputs.save-cache != 'true'
+      shell: bash
+      run: |
+        sudo tar --extract --totals --keep-directory-symlink --directory=/ \
+          --file="$RUNNER_TEMP/ubuntu-deps/files.tar"
+        sudo ldconfig
+    - name: Install the packages
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        touch "$RUNNER_TEMP/ubuntu-deps-start"
+        xargs sudo apt-get install --yes < "$GITHUB_ACTION_PATH/apt-packages.txt"
+        pip install --no-dependencies --break-system-packages \
+          --requirement "$GITHUB_ACTION_PATH/pip-packages.txt"
+    - name: Pack the installed files
+      if: inputs.save-cache == 'true' && steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        mkdir -p "$RUNNER_TEMP/ubuntu-deps"
+        # Every path the installation created or changed, with what the maintainer scripts did
+        # (the BLAS and LAPACK alternatives numpy loads, the byte-compiled modules). Not
+        # /usr/local, which belongs to the runner image, nor ld.so.cache, which ldconfig
+        # rebuilds after unpacking.
+        sudo find /usr /etc "$HOME/.local" -xdev \
+            \( -path /usr/local -o -path /etc/ld.so.cache \) -prune \
+            -o -cnewer "$RUNNER_TEMP/ubuntu-deps-start" -print0 \
+          | sudo tar --create --totals --null --no-recursion --files-from=- \
+            --file="$RUNNER_TEMP/ubuntu-deps/files.tar"
+    - name: Save the installed files
+      if: inputs.save-cache == 'true' && steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/ubuntu-deps
+        key: ${{ steps.plan.outputs.key }}

@@ -4,7 +4,7 @@ import duckdb
 import pandas as pd
 import pytest
 
-from vtlengine import run
+from vtlengine import run, validate_dataset
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 
 SCRIPT = "DS_A <- DS_1 * 10;"
@@ -244,6 +244,16 @@ def test_parquet_duplicate_identifier_raises(tmp_path: Path) -> None:
             use_duckdb=True,
         )
     assert "0-3-1-7" in str(excinfo.value)
+
+
+def test_parquet_value_error_names_its_column(tmp_path: Path) -> None:
+    """A value DuckDB cannot read as its column's type is traced back to that column,
+    which was reported as "unknown" (issue #1284)."""
+    pq = tmp_path / "DS_1.parquet"
+    _write_parquet(pd.DataFrame({"Id_1": [1], "Me_1": ["0x10"]}), pq)
+
+    with pytest.raises(DataLoadError, match="not possible to cast column Me_1 to Number"):
+        validate_dataset(DATA_STRUCTURE, {"DS_1": pq}, use_duckdb=True)
 
 
 def test_parquet_nonexistent_path_is_rejected(tmp_path: Path) -> None:
