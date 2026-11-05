@@ -1780,6 +1780,22 @@ class ComparisonBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1276_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 = abs ( DS_1 );
+        Description: The operand abs ( DS_1 ) of a comparison was built with the structure of
+                     the statement's result, so its Measure was named bool_var and the DuckDB
+                     engine failed with a BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
+        Goal: Check Result.
+        """
+        code = "GH_1276_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class TimeBugs(BugHelper):
     """ """
@@ -2280,6 +2296,25 @@ class TimeBugs(BugHelper):
             scalars={"sc_1": None},
         )
 
+    def test_GH_1276_2(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- cast ( time_agg ( "A" , _ , DS_1 ) , string );
+                    DS_r2 <- min ( time_agg ( "A" , _ , DS_1 ) );
+                    DS_r3 <- inner_join ( time_agg ( "A" , _ , DS_1 ) as a , DS_2 as b );
+        Description: A time_agg on a Data Set is the operand of another operator. The DuckDB
+                     engine wrote its query inside the expression of cast and min and failed
+                     with a ParserException. As on the pandas engine, the time_agg drops the
+                     Attribute At_1 of DS_1 that is not viral, so the join takes At_1 from DS_2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
+        Goal: Check Result.
+        """
+        code = "GH_1276_2"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class SetBugs(BugHelper):
     """ """
@@ -2571,6 +2606,23 @@ class SetBugs(BugHelper):
         """
         code = "GH_1225_5"
         number_inputs = 2
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1276_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( union ( DS_1 + DS_1 , DS_1 + DS_1 ) group by Id_1 );
+        Description: A union used as an operand took the columns of the statement's result, so
+                     inside the aggregation it lost Id_2 and the sum was silently wrong on the
+                     DuckDB engine, and its computed operands made DuckDB fail with an internal
+                     error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
+        Goal: Check Result.
+        """
+        code = "GH_1276_7"
+        number_inputs = 1
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
@@ -3502,6 +3554,25 @@ class ConditionalBugs(BugHelper):
         code = "GH_1251"
         number_inputs = 6
         references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1276_8(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- abs ( case when DS_1 > 0 then DS_1 else DS_1 * -1 );
+                    DS_r2 <- abs ( if DS_1 > 0 then DS_1 * 2 else DS_1 * -1 );
+                    DS_r3 <- if DS_1 [ filter Me_1 > 0 or isnull ( Me_1 ) ] > 0
+                        then DS_1 [ filter Me_1 > 0 or isnull ( Me_1 ) ] else DS_1;
+        Description: On the DuckDB engine, a case (DS_r1) and an if (DS_r2) used as operands
+                     took the bool_var Measure of their condition. On the pandas engine, an if
+                     whose operands are clauses (DS_r3) lost the Data Points of its true branch.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
+        Goal: Check Result.
+        """
+        code = "GH_1276_8"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -4898,6 +4969,24 @@ class DefinedBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": "D"}
         )
+
+    def test_GH_1276_6(self):
+        """
+        Status: OK
+        Expression: define operator to_abs ( ds dataset ) returns dataset is abs ( ds )
+                        end operator;
+                    DS_r <- to_abs ( DS_1 ) + 1;
+        Description: A user defined operator call used as an operand was typed from the body
+                     of the operator with its arguments unbound, so the DuckDB engine wrote the
+                     call inside the outer expression and failed with a ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
+        Goal: Check Result.
+        """
+        code = "GH_1276_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
 
 class OtherBugs(BugHelper):

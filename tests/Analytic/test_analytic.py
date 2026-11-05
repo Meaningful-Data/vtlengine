@@ -1591,57 +1591,22 @@ class AnalyticOperatorsWithCalcTest(AnalyticHelper):
 
     def test_GH_1276_1(self):
         """
-        Computed Data Set operands: count, lag, avg, =, user defined operator, union, case, if
+        Analytic invocations on a Data Set as operands: count, lag, avg
         Dataset --> Dataset
         Status: OK
         Expression: DS_r1 <- count ( DS_1 over ( partition by Id_1 order by Id_2 ) ) + 1;
                     DS_r2 <- abs ( lag ( DS_1 , 1 over ( partition by Id_1 order by Id_2 ) ) );
                     DS_r3 <- DS_1 + avg ( DS_1 over ( partition by Id_1 order by Id_2 ) );
-                    DS_r4 <- DS_1 = abs ( DS_1 );
-                    DS_r5 <- to_abs ( DS_1 ) + 1;
-                    DS_r6 <- sum ( union ( DS_1 + DS_1 , DS_1 + DS_1 ) group by Id_1 );
-                    DS_r7 <- abs ( case when DS_1 > 0 then DS_1 else DS_1 * -1 );
-                    DS_r8 <- abs ( if DS_1 > 0 then DS_1 * 2 else DS_1 * -1 );
-                    DS_r9 <- if DS_1 [ filter Me_1 > 0 or isnull ( Me_1 ) ] > 0
-                        then DS_1 [ filter Me_1 > 0 or isnull ( Me_1 ) ] else DS_1;
 
-        Description: a computed Data Set is the operand of another operator. On the DuckDB
-        engine, an analytic (DS_r1 to DS_r3) and a user defined operator call (DS_r5) were
-        written inline in the outer expression; the operand of a comparison (DS_r4) took the
-        name bool_var of the result; a union (DS_r6) took the columns of the result and
-        failed on computed operands; a case (DS_r7) and an if (DS_r8) took the bool_var of
-        their condition. On the pandas engine, an if whose operands are clauses (DS_r9) lost
-        the Data Points of its true branch.
+        Description: an analytic invocation on a Data Set is the operand of another operator.
+        The DuckDB engine wrote the analytic query inside the outer expression and failed
+        with a ParserException, while the pandas engine gave these results.
 
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
         Goal: Check Result.
         """
         code = "GH_1276_1"
         number_inputs = 1
-        references_names = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-    def test_GH_1276_2(self):
-        """
-        Computed Data Set operands: time_agg
-        Dataset --> Dataset
-        Status: OK
-        Expression: DS_r1 <- cast ( time_agg ( "A" , _ , DS_1 ) , string );
-                    DS_r2 <- min ( time_agg ( "A" , _ , DS_1 ) );
-                    DS_r3 <- inner_join ( time_agg ( "A" , _ , DS_1 ) as a , DS_2 as b );
-
-        Description: a time_agg on a Data Set is the operand of another operator. The DuckDB
-        engine wrote its query inside the expression of cast and min and failed with a
-        ParserException, while the pandas engine gave these results. As on the pandas engine,
-        the time_agg drops the Attribute At_1 of DS_1 that is not viral, so the join (DS_r3)
-        takes At_1 from DS_2.
-
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
-        Goal: Check Result.
-        """
-        code = "GH_1276_2"
-        number_inputs = 2
         references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
