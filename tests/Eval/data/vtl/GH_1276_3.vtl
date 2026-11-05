@@ -1,0 +1,6 @@
+DS_r1 <- eval ( GH_1276_3 ( DS_1 ) language "SQL"
+    returns dataset { identifier<integer> Id_1 , measure<number> Me_1 } ) [ calc Me_2 := Me_1 * 2 ];
+DS_r2 <- eval ( GH_1276_3 ( DS_1 ) language "SQL"
+    returns dataset { identifier<integer> Id_1 , measure<number> Me_1 } ) * 2;
+DS_r3 <- isnull ( eval ( GH_1276_3 ( DS_1 ) language "SQL"
+    returns dataset { identifier<integer> Id_1 , measure<number> Me_1 } ) );
