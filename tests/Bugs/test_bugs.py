@@ -2575,6 +2575,28 @@ class SetBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1283_1(self):
+        """
+        Expression: DS_r1 <- union((sum(DS_1 group by Id_1) / 2)[filter Me_1 > 2],
+                                   (sum(DS_1 group by Id_1) / 2)[filter Me_1 <= 2]);
+                    DS_r2 <- union((sum(DS_1 group by Id_1) / 2)[filter Me_1 > 5],
+                                   (sum(DS_1 group by Id_1) / 2)[filter Me_1 > 1]
+                                       [calc Me_1 := Me_1 + 100],
+                                   (sum(DS_1 group by Id_1) / 2)[calc Me_1 := Me_1 + 1000]);
+        Description: The operands repeat the same division, which DuckDB computes in a
+            MATERIALIZED CTE, and the union kept the first Data Point of each Identifier with a
+            row-number filter over the UNION ALL of the operands, where DuckDB 1.5 returned
+            0.0 or other wrong values. Each operand gives the Data Points whose Identifiers are
+            in no operand before it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1283
+        Goal: Check Result.
+        """
+        code = "GH_1283_1"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class AggregationBugs(BugHelper):
     """ """
