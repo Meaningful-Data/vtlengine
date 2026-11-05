@@ -67,6 +67,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _COMPONENT,
     _DATASET,
     _SCALAR,
+    _UDO_DEPTH_PREFIX,
     StructureVisitor,
     _try_normalize_time_period,
 )
@@ -700,18 +701,25 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         declared = self._get_udo_param(f"__type__{name}")
         element = f"parameter {name}"
         if isinstance(declared, Component) and constraints.value is not None:
-            return self._udo_checked_sql(sql, udo_val, constraints.value, element)
+            value_depth = self._get_udo_binding(name)[1]
+            return self._udo_checked_sql(sql, udo_val, constraints.value, element, value_depth)
         if isinstance(declared, Dataset):
-            structure = self._get_dataset_structure(udo_val)
+            with self._udo_arg_scope(name):
+                structure = self._get_dataset_structure(udo_val)
             return self._udo_checked_dataset_sql(sql, structure, declared, constraints, element)
         return sql
 
     def _udo_checked_sql(
-        self, sql: str, value: AST.AST, constraint: AST.TypeConstraint, element: str
+        self,
+        sql: str,
+        value: AST.AST,
+        constraint: AST.TypeConstraint,
+        element: str,
+        value_depth: Optional[int] = None,
     ) -> str:
         """sql, the values of a component, raising VTL 2-3-9 where a value breaks a constraint
-        of the type of a user defined operator: not null, a condition on value (the value AST)
-        or the values allowed."""
+        of the type of a user defined operator: not null, a condition on value (the value AST,
+        written with value_depth UDO scopes) or the values allowed."""
         broken = []
         if constraint.not_null:
             broken.append(f"{sql} IS NULL")
@@ -719,7 +727,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             allowed = ", ".join(self.visit(allowed_value) for allowed_value in constraint.values)
             broken.append(f"{sql} NOT IN ({allowed})")
         if constraint.condition is not None:
-            self._push_udo_params({"value": value})
+            self._push_udo_params({"value": value, f"{_UDO_DEPTH_PREFIX}value": value_depth})
             try:
                 condition = self.visit(deepcopy(constraint.condition))
             finally:
@@ -780,8 +788,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         return f"SELECT * REPLACE ({replaced}) FROM ({sql})"
 
     def _resolve_udo_param_sql(self, name: str, udo_val: Any) -> str:
+        if not isinstance(udo_val, AST.AST):
+            return quote_name(udo_val)
         if not isinstance(udo_val, AST.VarID):
-            return self.visit(udo_val) if isinstance(udo_val, AST.AST) else quote_name(udo_val)
+            with self._udo_arg_scope(name):
+                return self.visit(udo_val)
         resolved = udo_val.value
         is_component = isinstance(self._get_udo_param(f"__type__{name}"), Component)
         if resolved in self.available_tables and not is_component:
@@ -789,7 +800,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if resolved in self.scalars:
             return self._scalar_literal(resolved)
         if resolved != name:
-            return self.visit(udo_val)
+            with self._udo_arg_scope(name):
+                return self.visit(udo_val)
         return quote_name(resolved)
 
     def _resolve_clause_component(self, name: str) -> Optional[str]:
@@ -2405,7 +2417,8 @@ FROM (
             # operator has the type of its argument, then a scalar its own (issue #1254)
             argument = self._get_udo_param(node.value)
             if isinstance(argument, AST.AST) and argument is not node:
-                return self._get_source_vtl_type(argument)
+                with self._udo_arg_scope(node.value):
+                    return self._get_source_vtl_type(argument)
             if node.value in self.scalars:
                 return self.scalars[node.value].data_type.__name__
         if isinstance(node, AST.VarID) and self._current_dataset:

@@ -42,6 +42,8 @@ def _try_normalize_time_period(value: str) -> Optional[str]:
 _DATASET = "Dataset"
 _COMPONENT = "Component"
 _SCALAR = "Scalar"
+# Key of a UDO scope that records where the argument of a parameter was written
+_UDO_DEPTH_PREFIX = "__depth__"
 
 # Role encoded in UnaryOp.op for calc clauses.
 _CALC_ROLE_BY_TOKEN: Dict[str, Role] = {
@@ -306,10 +308,12 @@ class StructureVisitor(ASTTemplate):
             if val.value in self.available_tables:
                 return _DATASET
             if val.value != name:
-                return self._get_node_type(val)
+                with self._udo_arg_scope(name):
+                    return self._get_node_type(val)
             return _SCALAR
         if kind == "ast":
-            return self._get_node_type(val)
+            with self._udo_arg_scope(name):
+                return self._get_node_type(val)
         if kind == "str":
             return _DATASET if val in self.available_tables else _SCALAR
         if self._in_clause and self._current_dataset and name in self._current_dataset.components:
@@ -370,7 +374,9 @@ class StructureVisitor(ASTTemplate):
             if kind == "varid":
                 return quote_name(val.value)
             if kind == "ast":
-                return self._materialize_raising_operand(f"({self.visit(val)})")
+                with self._udo_arg_scope(node.value):
+                    sql = self.visit(val)
+                return self._materialize_raising_operand(f"({sql})")
             return quote_name(node.value)
         return self._materialize_raising_operand(f"({self.visit(node)})")
 
@@ -402,7 +408,8 @@ class StructureVisitor(ASTTemplate):
             if kind == "varid":
                 return val.value
             if kind == "ast":
-                return self._resolve_dataset_name(val)
+                with self._udo_arg_scope(node.value):
+                    return self._resolve_dataset_name(val)
             if kind == "str":
                 return val
             return node.value
@@ -414,11 +421,30 @@ class StructureVisitor(ASTTemplate):
 
     def _get_udo_param(self, name: str) -> Any:
         """Look up a UDO parameter by name from the current scope."""
+        return self._get_udo_binding(name)[0]
+
+    def _get_udo_binding(self, name: str) -> Tuple[Any, Optional[int]]:
+        """Look up a UDO parameter by name, with the size of the scope stack where its
+        argument was written (None when not recorded)."""
         if self._udo_params:
             for scope in reversed(self._udo_params):
                 if name in scope:
-                    return scope[name]
-        return None
+                    return scope[name], scope.get(f"{_UDO_DEPTH_PREFIX}{name}")
+        return None, None
+
+    @contextmanager
+    def _udo_arg_scope(self, name: str) -> Generator[None, None, None]:
+        """Resolve the argument bound to the parameter name in the scope of its caller: the
+        UDO scope stack cut down to where it was written, so that no parameter of a called
+        operator with the same name captures its names."""
+        depth = self._get_udo_binding(name)[1]
+        saved = self._udo_params
+        if depth is not None:
+            self._udo_params = (saved[:depth] or None) if saved else None
+        try:
+            yield
+        finally:
+            self._udo_params = saved
 
     def _resolve_udo_var(self, name: str) -> Tuple[str, Any]:
         """Resolve a UDO parameter binding by name."""
@@ -527,10 +553,12 @@ class StructureVisitor(ASTTemplate):
                 return self.available_tables[val.value]
             # Guard against recursion when param name matches argument name.
             if val.value != node.value:
-                return self._get_dataset_structure(val)
+                with self._udo_arg_scope(node.value):
+                    return self._get_dataset_structure(val)
             return None
         if kind == "ast":
-            return self._get_dataset_structure(val)
+            with self._udo_arg_scope(node.value):
+                return self._get_dataset_structure(val)
         if kind == "str" and val in self.available_tables:
             return self.available_tables[val]
         return self.available_tables.get(node.value)
@@ -742,6 +770,7 @@ class StructureVisitor(ASTTemplate):
     ) -> Dict[str, Any]:
         """Bind a UDO call's arguments (positional + defaults) to parameter names."""
         bindings: Dict[str, Any] = {}
+        depth = len(self._udo_params or [])  # The arguments are written in the caller's scope
         for i, param_info in enumerate(udo_def["params"]):
             param_name = param_info["name"]
             omitted = (
@@ -752,11 +781,15 @@ class StructureVisitor(ASTTemplate):
             if not omitted:
                 argument = call_params[i]
                 # A parameter of the enclosing call, passed on as it is, stands for what that
-                # call binds to it, as the interpreter binds it (issue #1279)
+                # call binds to it, as the interpreter binds it, written where it was (#1279)
                 bound = (
-                    self._get_udo_param(argument.value) if isinstance(argument, AST.VarID) else None
+                    self._get_udo_binding(argument.value)
+                    if isinstance(argument, AST.VarID)
+                    else (None, None)
                 )
-                bindings[param_name] = argument if bound is None else bound
+                bindings[param_name], bindings[f"{_UDO_DEPTH_PREFIX}{param_name}"] = (
+                    bound if bound[0] is not None else (argument, depth)
+                )
             elif param_info.get("default") is not None:
                 bindings[param_name] = param_info["default"]
             if include_types:
