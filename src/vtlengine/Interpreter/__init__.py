@@ -1555,12 +1555,10 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def visit_JoinOp(self, node: AST.JoinOp) -> None:
         self._check_join_aliases(node)
-        clause_elements = []
-        for clause in node.clauses:
-            clause_elements.append(self.visit(clause))
-            if hasattr(clause, "op") and clause.op == AS:
-                # TODO: We need to delete somewhere the join datasets with alias that are added here
-                self.datasets[clause_elements[-1].name] = clause_elements[-1]
+        # An alias only names its operand, whose Components the clauses read as alias#comp:
+        # it is no Data Set of the script, neither for the other operands nor after the join
+        # (issue #1281)
+        clause_elements = [self.visit(clause) for clause in node.clauses]
 
         nvl_defaults: Optional[Dict[str, Any]] = None
         if node.nvl:
