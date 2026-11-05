@@ -43,6 +43,7 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     _NUMERIC_RESULT_BINOPS,
     _STRING_PARAM_OPS,
     _STRING_UNARY_OPS,
+    CAST_MASK_FUNCTION,
     COMPARISON_OPS,
     FALLBACK_MATCH_FUNCTION,
     NATIVE_MATCH_FUNCTION,
@@ -2488,6 +2489,9 @@ FROM (
             source_type = self._get_source_vtl_type(operand)
             if source_type is None and self._is_boolean_expr(operand):
                 source_type = "Boolean"
+            if source_type is None and mask is not None:
+                detected = self._detect_scalar_type(operand)
+                source_type = detected.__name__ if detected is not None else None
             return self._cast_expr(operand_sql, duckdb_type, target_type_str, mask, source_type)
 
     def _cast_expr(
@@ -2502,8 +2506,18 @@ FROM (
         target_lower = target_type_str.lower()
         source_lower = (source_type_str or "").lower()
 
-        if mask and target_type_str == "Date":
-            return f"STRFTIME(STRPTIME({expr}, '{mask}'), '%Y-%m-%d %H:%M:%S')"
+        if mask:
+            # The mask cast of the pandas engine, through a Python UDF (issue #1240). One of
+            # the types is a string, so the source is one when the target is not.
+            source_name = source_type_str if target_lower == "string" else "String"
+            quoted_mask = mask.replace("'", "''")
+            call = (
+                f"{CAST_MASK_FUNCTION}(CAST({expr} AS VARCHAR), '{source_name}', "
+                f"'{target_type_str}', '{quoted_mask}')"
+            )
+            if target_lower in ("date", "number", "integer"):
+                return f"CAST({call} AS {duckdb_type})"
+            return call
 
         if target_type_str == "Boolean" and source_lower == "string":
             return f"(LOWER(TRIM(CAST({expr} AS VARCHAR))) = 'true')"

@@ -19,6 +19,8 @@ from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Scalar
 from vtlengine.Operators.CastOperator import Cast
 
+DATE_LITERAL = 'cast("2020-01-15", date, "YYYY-MM-DD")'
+
 
 class CastHelper(TestHelper):
     base_path = Path(__file__).parent
@@ -121,6 +123,27 @@ class CastExplicitWithoutMask(CastHelper):
         scalars = {"SC_1": "2020-01-15"}
 
         self.BaseTest(code, number_inputs, references_names=reference_names, scalars=scalars)
+
+    def test_GH_1240_1(self):
+        """
+        Solves github issue #1240: cast with the masks YYYY-MM-DD, from a string to a date,
+        and DD.DDD, from a number to a string, the same on both engines.
+        """
+        code = "GH_1240_1"
+        number_inputs = 1
+        reference_names = ["1"]
+
+        self.BaseTest(code, number_inputs, references_names=reference_names)
+
+    def test_GH_1240_2(self):
+        """
+        Solves github issue #1240: a value that its mask does not describe, 2020-13-01 for
+        YYYY-MM-DD, raises RunTimeError 2-1-5-3 on both engines.
+        """
+        code = "GH_1240_2"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(code, number_inputs, exception_code="2-1-5-3")
 
 
 # ===========================================================================
@@ -642,24 +665,86 @@ class TestCastSemanticErrors:
 # ===========================================================================
 
 
-class TestCastMaskNotImplemented:
-    """Any cast with mask is an unsupported construct (SemanticError 1-3-13)."""
+class TestCastWithMask:
+    """cast with the formatting masks of VTL 2.2 between strings and the other scalar types,
+    in both directions, the same on both engines (issue #1240)."""
 
     @pytest.mark.parametrize(
-        "operand, to_type, mask",
+        "expr, expected_value, expected_type",
         [
-            (Scalar("x", String, "42"), Integer, "DD"),
-            (Scalar("x", String, "3.14"), Number, "D.DD"),
-            (Scalar("x", Integer, 42), String, "DD"),
-            (Scalar("x", String, "2020-01-01"), Date, "YYYY-MM-DD"),
-            (Scalar("x", Date, "2020-01-01"), String, "YYYY-MM-DD"),
-            (Scalar("x", String, "A"), Duration, "A"),
-            (Scalar("x", Duration, "A"), String, "A"),
+            # string -> date
+            ('cast("2020-01-15", date, "YYYY-MM-DD")', "2020-01-15", Date),
+            ('cast("20200115", date, "YYYYMMDD")', "2020-01-15", Date),
+            ('cast("15/1/2020", date, "DD/{M}M/YYYY")', "2020-01-15", Date),
+            ('cast("2020-015", date, "YYYY-DDD")', "2020-01-15", Date),
+            ('cast("2020-W03-3", date, "YYYY-\\WWW-D")', "2020-01-15", Date),
+            (
+                'cast("2020-01-15 10:30:45", date, "YYYY-MM-DD hh:mm:ss")',
+                "2020-01-15T10:30:45",
+                Date,
+            ),
+            # string -> time, time_period, duration
+            (
+                'cast("20200101/20201231", time, "YYYYMMDD/YYYYMMDD")',
+                "2020-01-01/2020-12-31",
+                TimeInterval,
+            ),
+            ('cast("2020Q3", time_period, "YYYY\\QQ")', "2020Q3", TimePeriod),
+            ('cast("2015M03", time_period, "YYYY\\MMM")', "2015M3", TimePeriod),
+            ('cast("2015D365", time_period, "YYYYP{ppp}")', "2015D365", TimePeriod),
+            ('cast("2015", time_period, "YYYY")', "2015", TimePeriod),
+            ('cast("M", duration, "P")', "M", Duration),
+            ('cast("P1Q", duration, "\\PpP")', "Q", Duration),
+            # string -> number, integer
+            ('cast("12.375", number, "DD.DDD")', 12.375, Number),
+            ('cast("12,375", number, "DD,DDD")', 12.375, Number),
+            ('cast("-1.5", number, "D*.D*")', -1.5, Number),
+            ('cast("07", integer, "DD")', 7, Integer),
+            # number, integer -> string
+            ('cast(12.375, string, "DDD.D")', "012.4", String),
+            ('cast(3.14159, string, "D.DD")', "3.14", String),
+            ('cast(7, string, "DDD")', "007", String),
+            ('cast(0.5, string, "D*,D+")', "0,50", String),
+            # date, time, time_period, duration -> string
+            ('cast(DATE, string, "DD/MM/YYYY")', "15/01/2020", String),
+            ('cast(DATE, string, "YYYY-\\WWW-D")', "2020-W03-3", String),
+            ('cast(cast("2020Q1", time_period, "YYYY\\QQ"), string, "YYYYPp")', "2020Q1", String),
+            (
+                'cast(cast("20200101/20201231", time, "YYYYMMDD/YYYYMMDD"), string, '
+                '"DD.MM.YYYY/DD.MM.YYYY")',
+                "01.01.2020/31.12.2020",
+                String,
+            ),
+            ('cast(cast("M", duration, "P"), string, "\\PppP")', "P01M", String),
         ],
     )
-    def test_mask_raises_not_implemented(self, operand: Scalar, to_type: type, mask: str) -> None:
-        with pytest.raises(SemanticError, match="1-3-13"):
-            Cast.validate(operand=operand, scalarType=to_type, mask=mask)
+    def test_cast(self, expr: str, expected_value: object, expected_type: type) -> None:
+        result = TestCastInterpreter._execute_expression(expr.replace("DATE", DATE_LITERAL))
+        assert result.value == expected_value
+        assert result.data_type == expected_type
+
+    @pytest.mark.parametrize(
+        "expr, code",
+        [
+            # A mask only between a string and the other scalar types
+            ('cast("D", boolean, "D")', "1-1-5-5"),
+            ('cast(5, number, "D")', "1-1-5-5"),
+            # A mask that is not one of the type
+            ('cast("2020-01", date, "YYYY-MM")', "1-1-5-4"),
+            ('cast("12.5", integer, "DD.D")', "1-1-5-4"),
+            # The parts of the masks that are not supported
+            ('cast("1", number, "DD.DDEE")', "1-3-13"),
+            ('cast("MON", date, "DAY3")', "1-3-13"),
+            ('cast("P1Y2M", duration, "\\PY\\YM\\M")', "1-3-13"),
+            ('cast("2020-01-01/P1Y", time, "YYYY-MM-DD/PY\\Y")', "1-3-13"),
+            # A literal that its mask does not describe
+            ('cast("2020-13-01", date, "YYYY-MM-DD")', "1-1-5-6"),
+        ],
+    )
+    def test_error(self, expr: str, code: str) -> None:
+        with pytest.raises(SemanticError) as context:
+            TestCastInterpreter._execute_expression(expr)
+        assert context.value.args[1] == code
 
 
 # ===========================================================================
