@@ -73,7 +73,8 @@ String
       - Any text value. Surrounding double quotes are
         stripped automatically.
     * - **Input (DataFrame)**
-      - Any value (all values pass validation).
+      - Any value (all values pass validation). A native
+        Python ``bool`` is written ``true`` or ``false``.
     * - **Internal representation**
       - Python ``str``, stored as ``string[pyarrow]``.
     * - **Output dtype**
@@ -88,11 +89,13 @@ Integer
 
     * - **Input (CSV)**
       - Whole numbers: ``"42"``, ``"0"``, ``"-7"``.
+        ``NaN`` is read as null.
     * - **Input (DataFrame)**
       - Values are cast via ``str → float → int``.
-        Non-integer floats (e.g. ``3.5``) are rejected.
-        A native Python ``bool`` is read as ``1`` or
-        ``0``.
+        Non-integer floats (e.g. ``3.5``) and text that
+        is no number (e.g. ``"0x10"``) are rejected.
+        ``NaN`` is read as null. A native Python
+        ``bool`` is read as ``1`` or ``0``.
     * - **Internal representation**
       - Python ``int``, stored as ``int64[pyarrow]``.
     * - **Output dtype**
@@ -110,9 +113,11 @@ Number
 
     * - **Input (CSV)**
       - Decimal or integer numbers: ``"3.14"``, ``"1e5"``,
-        ``"42"``.
+        ``"42"``. ``NaN`` is read as null.
     * - **Input (DataFrame)**
-      - Values are cast via ``str → float``.
+      - Values are cast via ``str → float``; ``NaN`` is
+        read as null. A native Python ``bool`` is
+        rejected.
     * - **Internal representation**
       - IEEE 754 float64 in both execution engines: Python ``float`` stored as
         ``double[pyarrow]`` (pandas engine) and ``DOUBLE`` (DuckDB engine).
@@ -157,7 +162,7 @@ Date
 
     * - **Input (CSV)**
       - ISO 8601 date: ``"2020-01-15"``,
-        ``"2020-01-15 10:30:00"``,
+        ``"20200115"``, ``"2020-01-15 10:30:00"``,
         ``"2020-01-15T10:30:00"``.
         A time component, when present, must be a
         complete ``HH:MM:SS`` (``T`` or space

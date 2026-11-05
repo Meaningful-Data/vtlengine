@@ -20,6 +20,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List
 
+import duckdb
 import pandas as pd
 import pytest
 
@@ -28,8 +29,10 @@ from vtlengine import run
 from vtlengine.API._InternalApi import (
     _load_single_external_routine_from_file,
     _load_single_value_domain,
+    load_datasets_with_data,
     load_vtl,
 )
+from vtlengine.duckdb_transpiler.io import register_dataframes
 from vtlengine.Exceptions import VTLEngineException
 
 
@@ -1045,6 +1048,45 @@ class DataLoadTest(DataLoadHelper):
         code = "GH_1068_3"
         number_inputs = 1
         self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-3-1-6")
+
+    def test_GH_1284_1(self):
+        """
+        Status: OK
+        Expression: DS_r := DS_1 [ calc Me_4 := isnull ( Me_1 ), Me_5 := isnull ( Me_2 ) ];
+        Description: NaN loads as a null in an Integer and in a Number, which isnull reads
+            as null, and a compact date (20200115) loads as the date it writes, on both
+            engines.
+        Git issue: 1284.
+        Goal: Check Result.
+        """
+        code = "GH_1284_1"
+        number_inputs = 1
+        references_names = ["DS_r"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1284_2(self):
+        """A NaN read as no value in an Identifier is a null Identifier, on both engines."""
+        code = "GH_1284_2"
+        number_inputs = 1
+        self.DataLoadExceptionTest(code=code, number_inputs=number_inputs, exception_code="0-3-1-3")
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1284_3(use_duckdb: bool) -> None:
+    """A Python boolean in a String loads as true or false, in a column of booleans and
+    in one of mixed values, which DuckDB writes with str() (issue #1284)."""
+    data = pd.DataFrame(
+        {"Id_1": [1, 2], "Me_1": [True, False], "Me_2": pd.Series([True, "x"], dtype=object)}
+    )
+    structures = DataLoadHelper.filepath_json / "GH_1284_3-1.json"
+    datasets, _, _ = load_datasets_with_data(structures, {"DS_1": data})
+    loaded = datasets["DS_1"].data[["Me_1", "Me_2"]].values.tolist()
+    if use_duckdb:
+        with duckdb.connect() as conn:
+            register_dataframes(conn, {"DS_1": data}, datasets)
+            loaded = conn.execute('SELECT "Me_1", "Me_2" FROM "DS_1" ORDER BY "Id_1"').fetchall()
+    assert [list(row) for row in loaded] == [["true", "true"], ["false", "x"]]
 
 
 BOM = b"\xef\xbb\xbf"

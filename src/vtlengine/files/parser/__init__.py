@@ -205,6 +205,15 @@ def _parse_boolean(value: Any) -> bool:
     return bool(Boolean.cast(text))
 
 
+def string_value(value: Any) -> str:
+    """Read a String input value as text. A boolean is written true or false, as VTL
+    writes it and as the DuckDb engine reads a column of booleans, rather than the
+    True or False str() writes (issue #1284)."""
+    if pd.api.types.is_bool(value):
+        return "true" if value else "false"
+    return str(value)
+
+
 _INT64_MIN = -(2**63)
 _INT64_MAX = 2**63 - 1
 
@@ -241,11 +250,16 @@ def _check_non_nullable_components(
 ) -> None:
     """A component the DataStructure declares as not nullable cannot carry a null,
     whatever its role: an empty value in one used to load as a null and leave the
-    declared structure violated with no error. An Identifier keeps its
-    own error, which is checked before this one."""
+    declared structure violated with no error. An Identifier keeps its own error.
+
+    It runs on the values as their types read them, so a NaN, which a Number and an
+    Integer read as no value, is a null here as well (issue #1284)."""
     for comp_name, comp in components.items():
-        if not comp.nullable and comp.role != Role.IDENTIFIER and data[comp_name].isnull().any():
-            raise DataLoadError("0-3-1-17", name=dataset_name, comp_name=comp_name)
+        if comp.nullable or not data[comp_name].isnull().any():
+            continue
+        if comp.role == Role.IDENTIFIER:
+            raise DataLoadError("0-3-1-3", null_identifier=comp_name, name=dataset_name)
+        raise DataLoadError("0-3-1-17", name=dataset_name, comp_name=comp_name)
 
 
 def _validate_pandas(
@@ -289,8 +303,6 @@ def _validate_pandas(
 
     data = data.fillna(value=pd.NA)
 
-    _check_non_nullable_components(components, data, dataset_name)
-
     # Checking data types on all data types
     comp_name = ""
     try:
@@ -329,7 +341,7 @@ def _validate_pandas(
                     except ValueError:
                         raise InputValidationException(code="0-1-1-34", comp_name=comp_name)
             else:
-                data[comp_name] = data[comp_name].map(str, na_action="ignore")
+                data[comp_name] = data[comp_name].map(string_value, na_action="ignore")
             data[comp_name] = data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
 
     except (ValueError, InputValidationException) as e:
@@ -338,6 +350,8 @@ def _validate_pandas(
         raise DataLoadError(
             "0-3-1-6", name=dataset_name, column=comp_name, type=str_comp, error=error
         ) from None
+
+    _check_non_nullable_components(components, data, dataset_name)
 
     if id_names:
         check_identifiers_duplicity(data, id_names, dataset_name)

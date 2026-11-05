@@ -21,7 +21,6 @@ from vtlengine.DataTypes import (
     Duration,
     Integer,
     Number,
-    String,
     TimeInterval,
     TimePeriod,
 )
@@ -70,14 +69,16 @@ DURATION_PATTERN = r"^(A|S|Q|M|W|D)$"  # Year, Semester, Quarter, Month, Week, D
 # kept in sync with the pandas validator (_time_checking._STRICT_DATETIME_RE):
 # a bare date, or a date + (T|space) + complete HH:MM:SS + optional fractional seconds
 # + optional timezone (+HH:MM or Z). Month/day allow 1-2 digits (DuckDB casts them).
+# A compact date, 20200115, is read as well, as the pandas loader reads it (issue #1284).
 VALID_DATE_REGEX = (
+    r"^\d{8}$|"
     r"^\d{4}-\d{1,2}-\d{1,2}"
     r"([ T]([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d+)?([+-]\d{2}:\d{2}|Z)?)?$"
 )
 
 # A Date runs from the year 1800 to 9999, which the pandas loader reads it under, and
 # reports apart from a value of the wrong shape (issue #1065).
-VALID_DATE_YEAR_REGEX = r"^(1[89]\d{2}|[2-9]\d{3})-"
+VALID_DATE_YEAR_REGEX = r"^(1[89]\d{2}|[2-9]\d{3})(-|\d{4}$)"
 
 
 # =============================================================================
@@ -248,12 +249,12 @@ def get_csv_read_type(comp: Component) -> str:
     Note: Integer columns are read as VARCHAR so integer text casts exactly to
     BIGINT (a DOUBLE hop would corrupt values beyond 2^53, issue #985); the
     strict validation that rejects non-integer values (e.g., 1.5) happens in
-    ``build_select_columns``.
+    ``build_value_cast``.
     Date columns are read as VARCHAR to preserve original format (date-only vs datetime).
     Boolean columns are read as VARCHAR to handle quoted values (e.g., ``"TRUE"``).
     """
     if comp.data_type == Integer:
-        return "VARCHAR"  # Exact BIGINT cast + strict validation in build_select_columns
+        return "VARCHAR"  # Exact BIGINT cast + strict validation in build_value_cast
     elif comp.data_type == Number:
         return "DOUBLE"  # float64, matching the pandas engine's parse
     elif comp.data_type == Boolean:
@@ -509,6 +510,119 @@ def build_boolean_cast(value_expr: str, column_name: str) -> str:
     END"""
 
 
+# The source types holding a number with a fractional part, which an Integer reads only
+# where it is whole
+_FRACTIONAL_SQL_TYPES = ("FLOAT", "DOUBLE", "DECIMAL")
+
+# The source types DuckDB already holds a Date input value as, which are read as they are
+_TEMPORAL_SQL_TYPES = ("DATE", "TIMESTAMP")
+
+# A compact date, 20200115, and the same date written in full
+_COMPACT_DATE_REGEX = r"^(\d{4})(\d{2})(\d{2})$"
+_FULL_DATE_REPLACEMENT = r"\1-\2-\3"
+
+
+def _integer_cast(value_expr: str, column_name: str, source_type: str) -> str:
+    """SQL reading an Integer input value on the rules of the pandas loader.
+
+    Text writing a whole number casts straight to BIGINT, so values beyond 2^53 stay
+    exact (issue #985). Any other text, and a number held with a fractional part (the
+    float column of a DataFrame), is read as a DOUBLE: NaN is no value, a value with
+    decimals is refused, and so is text that writes no number, where DuckDB's own cast
+    rounds 1.5 and reads hexadecimal text (issue #1284). A whole number or a boolean
+    keeps DuckDB's cast.
+    """
+    is_text = source_type == "VARCHAR"
+    if not is_text and not source_type.startswith(_FRACTIONAL_SQL_TYPES):
+        return f"CAST({value_expr} AS BIGINT)"
+    double = f"CAST({value_expr} AS DOUBLE)"
+    decimal_msg = (
+        f"'Column {column_name}: value ' || CAST({value_expr} AS VARCHAR) || "
+        f"' has non-zero decimal component for Integer type'"
+    )
+    text_checks = ""
+    if is_text:
+        convert_msg = (
+            f"'Column {column_name}: could not convert value ' || {value_expr} || "
+            f"' to Integer type'"
+        )
+        text_checks = (
+            f"WHEN regexp_matches(TRIM({value_expr}), '^[+-]?[0-9]+$') "
+            f"THEN CAST({value_expr} AS BIGINT) "
+            f"WHEN TRY_CAST({value_expr} AS DOUBLE) IS NULL THEN error({convert_msg}) "
+        )
+    return (
+        f"CASE WHEN {value_expr} IS NULL THEN NULL {text_checks}"
+        f"WHEN isnan({double}) THEN NULL "
+        f"WHEN {double} <> FLOOR({double}) THEN error({decimal_msg}) "
+        f"ELSE CAST({double} AS BIGINT) END"
+    )
+
+
+def _number_cast(value_expr: str, column_name: str, source_type: str) -> str:
+    """SQL reading a Number input value on the rules of the pandas loader.
+
+    NaN is no value: kept as a value, it was shown as a null that isnull read as not
+    null. A boolean is refused rather than read as 1.0 or 0.0 (issue #1284).
+    """
+    if source_type == "BOOLEAN":
+        err = (
+            f"'Column {column_name}: value ' || CAST({value_expr} AS VARCHAR) || ' is not a Number'"
+        )
+        return f"CASE WHEN {value_expr} IS NULL THEN NULL ELSE error({err}) END"
+    double = f"CAST({value_expr} AS DOUBLE)"
+    return f"CASE WHEN isnan({double}) THEN NULL ELSE {double} END"
+
+
+def _date_cast(value_expr: str, column_name: str, target_type: str) -> str:
+    """SQL reading a Date input value as text, on the rules of the pandas loader.
+
+    A date, or a date with a complete, in-range time (HH:MM:SS, optional fractional
+    seconds and timezone), the month and the day allowed short, read with the space
+    around it taken off (issue #1065). A compact date, 20200115, is the date it writes
+    (issue #1284). Anything else is refused here with a clear message, where the cast
+    truncated a partial time ("...T12:30") or failed with an out-of-range error.
+    """
+    text = f"TRIM(CAST({value_expr} AS VARCHAR))"
+    # DuckDB casts a date written in full only, and rewriting the value of the length of
+    # a compact date alone keeps the regex off the others
+    date = (
+        f"CASE WHEN length({text}) = 8 "
+        f"THEN regexp_replace({text}, '{_COMPACT_DATE_REGEX}', '{_FULL_DATE_REPLACEMENT}') "
+        f"ELSE {text} END"
+    )
+    format_err = (
+        f"'Column {column_name}: Date ' || {text} || ' is not in the correct format. "
+        f"Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS.'"
+    )
+    year_err = f"'Date ' || {text} || ' is invalid. Year must be between 1800 and 9999.'"
+    return (
+        f"CASE WHEN {value_expr} IS NULL THEN NULL "
+        f"WHEN NOT regexp_matches({text}, '{VALID_DATE_REGEX}') THEN error({format_err}) "
+        f"WHEN NOT regexp_matches({text}, '{VALID_DATE_YEAR_REGEX}') THEN error({year_err}) "
+        f"ELSE CAST({date} AS {target_type}) END"
+    )
+
+
+def build_value_cast(value_expr: str, comp: Component, target_type: str, source_type: str) -> str:
+    """SQL reading one input value as the type its component declares, on the rules of
+    the pandas loader, whether a CSV file, a DataFrame or a Parquet file holds it.
+
+    ``source_type`` is the DuckDB type the value is held as, VARCHAR for text. A plain
+    cast reads more than the pandas loader does: it rounds 1.5 into an Integer, reads
+    hexadecimal text and a boolean as numbers, and keeps NaN as a value (issue #1284).
+    """
+    if comp.data_type == Integer:
+        return _integer_cast(value_expr, comp.name, source_type)
+    if comp.data_type == Number:
+        return _number_cast(value_expr, comp.name, source_type)
+    if comp.data_type == Boolean:
+        return build_boolean_cast(value_expr, comp.name)
+    if comp.data_type == Date and not source_type.startswith(_TEMPORAL_SQL_TYPES):
+        return _date_cast(value_expr, comp.name, target_type)
+    return f"CAST({value_expr} AS {target_type})"
+
+
 def build_select_columns(
     components: Dict[str, Component],
     keep_columns: List[str],
@@ -521,92 +635,24 @@ def build_select_columns(
     overrides = type_overrides or {}
 
     for comp_name, comp in components.items():
-        if comp_name in keep_columns:
-            csv_type = csv_dtypes.get(comp_name, "VARCHAR")
-            table_type = overrides.get(comp_name, get_column_sql_type(comp))
-
-            # Strict Integer validation on VARCHAR input. Integer-form text casts
-            # straight to BIGINT so values beyond 2^53 stay exact (issue #985);
-            # decimal-form text ("1.0", "1e5") goes through DOUBLE and keeps the
-            # non-integer rejection (a direct VARCHAR->BIGINT cast would silently
-            # round "1.5"); anything else is a conversion error.
-            if csv_type == "VARCHAR" and table_type == "BIGINT":
-                val = f"NULLIF(\"{comp_name}\", '')" if comp.nullable else f'"{comp_name}"'
-                decimal_msg = (
-                    f"'Column {comp_name}: value ' || \"{comp_name}\" || "
-                    f"' has non-zero decimal component for Integer type'"
-                )
-                convert_msg = (
-                    f"'Column {comp_name}: could not convert value ' || \"{comp_name}\" || "
-                    f"' to Integer type'"
-                )
-                select_cols.append(
-                    f"""CASE
-                        WHEN {val} IS NULL THEN NULL
-                        WHEN regexp_matches(TRIM({val}), '^[+-]?[0-9]+$')
-                        THEN CAST({val} AS BIGINT)
-                        WHEN TRY_CAST({val} AS DOUBLE) IS NULL
-                        THEN error({convert_msg})
-                        WHEN CAST({val} AS DOUBLE) <> FLOOR(CAST({val} AS DOUBLE))
-                        THEN error({decimal_msg})
-                        ELSE CAST(CAST({val} AS DOUBLE) AS BIGINT)
-                    END AS "{comp_name}\""""
-                )
-            # Date columns: read as VARCHAR, validate format, cast to DATE or TIMESTAMP.
-            # Accepts a bare date or a full datetime with the T or space separator and an
-            # optional timezone (+HH:MM or Z); the same set the pandas loader accepts.
-            elif csv_type == "VARCHAR" and comp.data_type == Date:
-                date_regex = VALID_DATE_REGEX
-                null_check = f'"{comp_name}" IS NOT NULL'
-                if comp.nullable:
-                    null_check += f""" AND "{comp_name}" != ''"""
-                format_err = (
-                    f"'Column {comp_name}: Date ' || \"{comp_name}\" || "
-                    f"' is not in the correct format. "
-                    f"Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS.'"
-                )
-                year_err = (
-                    f"'Date ' || \"{comp_name}\" || "
-                    f"' is invalid. Year must be between 1800 and 9999.'"
-                )
-                # The value is read with the space around it taken off, as the pandas
-                # loader strips it before reading (issue #1065)
-                trimmed = f'TRIM("{comp_name}")'
-                val_expr = f"NULLIF({trimmed}, '')" if comp.nullable else trimmed
-                select_cols.append(
-                    f"""CASE
-                        WHEN {null_check}
-                             AND NOT regexp_matches({trimmed}, '{date_regex}')
-                        THEN error({format_err})
-                        WHEN {null_check}
-                             AND NOT regexp_matches({trimmed}, '{VALID_DATE_YEAR_REGEX}')
-                        THEN error({year_err})
-                        ELSE CAST({val_expr} AS {table_type})
-                    END AS "{comp_name}\""""
-                )
-            elif csv_type == "VARCHAR" and comp.data_type == Boolean:
-                # Strip double quotes and read as BOOLEAN (handles """TRUE""" from CSV)
-                stripped = f"""REPLACE("{comp_name}", '"', '')"""
-                if comp.nullable:
-                    stripped = f"NULLIF({stripped}, '')"
-                select_cols.append(f'{build_boolean_cast(stripped, comp_name)} AS "{comp_name}"')
-            elif csv_type == "VARCHAR" and comp.data_type == String:
-                expr = f'"{comp_name}"'
-                if comp.nullable:
-                    expr = f"NULLIF({expr}, '')"
-                select_cols.append(f'{expr} AS "{comp_name}"')
-            elif csv_type == "VARCHAR" and comp.nullable:
-                # Treat empty strings as NULL for nullable VARCHAR columns
-                select_cols.append(f'NULLIF("{comp_name}", \'\') AS "{comp_name}"')
-            else:
-                select_cols.append(f'"{comp_name}"')
-        else:
+        table_type = overrides.get(comp_name, get_column_sql_type(comp))
+        if comp_name not in keep_columns:
             # Missing column → NULL (only allowed for nullable)
-            if comp.nullable:
-                table_type = overrides.get(comp_name, get_column_sql_type(comp))
-                select_cols.append(f'NULL::{table_type} AS "{comp_name}"')
-            else:
+            if not comp.nullable:
                 raise DataLoadError("0-3-1-5", name=dataset_name, comp_name=comp_name)
+            select_cols.append(f'NULL::{table_type} AS "{comp_name}"')
+            continue
+        csv_type = csv_dtypes.get(comp_name, "VARCHAR")
+        value = f'"{comp_name}"'
+        if comp.data_type == Boolean:
+            # A Boolean is read without its double quotes (handles """TRUE""" from CSV)
+            value = f"REPLACE({value}, '\"', '')"
+        if csv_type == "VARCHAR" and comp.nullable:
+            # An empty field is a null in a nullable column
+            value = f"NULLIF({value}, '')"
+        select_cols.append(
+            f'{build_value_cast(value, comp, table_type, csv_type)} AS "{comp_name}"'
+        )
 
     return select_cols
 

@@ -114,6 +114,7 @@ def _build_date_error(value: str) -> InputValidationException:
 
 
 _unpadded_date_re = re.compile(r"^(\d{4})-(\d{1,2})-(\d{1,2})(.*)$", re.DOTALL)
+_compact_date_re = re.compile(r"^(\d{4})(\d{2})(\d{2})$")
 
 
 def _pad_date_parts(value: str) -> str:
@@ -122,7 +123,13 @@ def _pad_date_parts(value: str) -> str:
     Only the day was padded, and only where the value was nine characters long, so
     2020-01-5 was read and 2020-1-5 was not, while the DuckDb loader read both. What
     follows the date, a time component, is left as it was written.
+
+    A compact date, 20200115, is written with its dashes: Python reads it only from
+    3.11 on, and the DuckDb loader reads it the same way (issue #1284).
     """
+    compact = _compact_date_re.fullmatch(value)
+    if compact is not None:
+        return "-".join(compact.groups())
     match = _unpadded_date_re.fullmatch(value)
     if match is None:
         return value
