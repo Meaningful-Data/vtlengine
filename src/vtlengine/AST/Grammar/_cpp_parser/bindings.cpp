@@ -86,6 +86,7 @@ static void init_type_map() {
     g_type_map[typeid(Vtl::ValueDomainSignatureContext)] = {Vtl::RuleValueDomainSignature, -1};
     g_type_map[typeid(Vtl::CodeItemRelationContext)] = {Vtl::RuleCodeItemRelation, -1};
     g_type_map[typeid(Vtl::CodeItemRelationClauseContext)] = {Vtl::RuleCodeItemRelationClause, -1};
+    g_type_map[typeid(Vtl::HrComparisonOperandContext)] = {Vtl::RuleHrComparisonOperand, -1};
     g_type_map[typeid(Vtl::ValueDomainValueContext)] = {Vtl::RuleValueDomainValue, -1};
     g_type_map[typeid(Vtl::CompConstraintContext)] = {Vtl::RuleCompConstraint, -1};
     g_type_map[typeid(Vtl::MultModifierContext)] = {Vtl::RuleMultModifier, -1};
@@ -895,6 +896,7 @@ PYBIND11_MODULE(vtl_cpp_parser, m) {
     m.attr("BOOLEAN_CONSTANT") = static_cast<int>(Vtl::BOOLEAN_CONSTANT);
     m.attr("STRING_CONSTANT") = static_cast<int>(Vtl::STRING_CONSTANT);
     m.attr("IDENTIFIER") = static_cast<int>(Vtl::IDENTIFIER);
+    m.attr("ITEM_CODE") = static_cast<int>(Vtl::ITEM_CODE);
     m.attr("WS") = static_cast<int>(Vtl::WS);
     m.attr("EOL") = static_cast<int>(Vtl::EOL);
     m.attr("ML_COMMENT") = static_cast<int>(Vtl::ML_COMMENT);
@@ -969,6 +971,7 @@ PYBIND11_MODULE(vtl_cpp_parser, m) {
     m.attr("RULE_HIER_RULE_SIGNATURE") = static_cast<int>(Vtl::RuleHierRuleSignature);
     m.attr("RULE_CODE_ITEM_RELATION") = static_cast<int>(Vtl::RuleCodeItemRelation);
     m.attr("RULE_CODE_ITEM_RELATION_CLAUSE") = static_cast<int>(Vtl::RuleCodeItemRelationClause);
+    m.attr("RULE_HR_COMPARISON_OPERAND") = static_cast<int>(Vtl::RuleHrComparisonOperand);
     m.attr("RULE_VALUE_DOMAIN_VALUE") = static_cast<int>(Vtl::RuleValueDomainValue);
     m.attr("RULE_SCALAR_TYPE_CONSTRAINT") = static_cast<int>(Vtl::RuleScalarTypeConstraint);
     m.attr("RULE_COMP_CONSTRAINT") = static_cast<int>(Vtl::RuleCompConstraint);

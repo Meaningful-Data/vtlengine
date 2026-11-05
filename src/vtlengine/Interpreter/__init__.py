@@ -1297,10 +1297,14 @@ class InterpreterAnalyzer(ASTTemplate):
                 self._strip_join_prefixes(result)
                 self.is_from_join = False
             return result
+        # The conditions of an if or a case around the clause hold Data Points of another
+        # Data Set, so its Components are not split by them (issue #1276)
+        condition_stack, self.condition_stack = self.condition_stack, None
         for child in node.children:
             self.is_from_regular_aggregation = True
             operands.append(self.visit(child))
             self.is_from_regular_aggregation = False
+        self.condition_stack = condition_stack
         if node.op in (CALC, FILTER) and any(isinstance(operand, Dataset) for operand in operands):
             raise SemanticError("1-2-14", op=node.op)
         if node.op == AGGREGATE:
@@ -1564,23 +1568,28 @@ class InterpreterAnalyzer(ASTTemplate):
     @staticmethod
     def _check_join_aliases(node: AST.JoinOp) -> None:
         """Aliases are mandatory for a Data Set that appears more than once in the join and for
-        a Data Set that results from a sub-expression."""
+        a Data Set that results from a sub-expression, and the names of the operands inside the
+        join, their aliases or else their Data Set names, must be all distinct."""
         operands = [c.left if isinstance(c, AST.BinOp) and c.op == AS else c for c in node.clauses]
         names = [operand.value for operand in operands if isinstance(operand, AST.VarID)]
+        join_names = []
         for clause in node.clauses:
             if isinstance(clause, AST.BinOp) and clause.op == AS:
+                join_names.append(cast(AST.Identifier, clause.right).value)
                 continue
             if not isinstance(clause, AST.VarID) or names.count(clause.value) > 1:
                 raise SemanticError("1-1-13-2", op=node.op, operand=ASTString().render(clause))
+            join_names.append(clause.value)
+        duplicates = sorted({name for name in join_names if join_names.count(name) > 1})
+        if duplicates:
+            raise SemanticError("1-1-13-1", op=node.op, duplicates=", ".join(duplicates))
 
     def visit_JoinOp(self, node: AST.JoinOp) -> None:
         self._check_join_aliases(node)
-        clause_elements = []
-        for clause in node.clauses:
-            clause_elements.append(self.visit(clause))
-            if hasattr(clause, "op") and clause.op == AS:
-                # TODO: We need to delete somewhere the join datasets with alias that are added here
-                self.datasets[clause_elements[-1].name] = clause_elements[-1]
+        # An alias only names its operand, whose Components the clauses read as alias#comp:
+        # it is no Data Set of the script, neither for the other operands nor after the join
+        # (issue #1281)
+        clause_elements = [self.visit(clause) for clause in node.clauses]
 
         nvl_defaults: Optional[Dict[str, Any]] = None
         if node.nvl:

@@ -1,0 +1,11 @@
+define operator g_abs (x dataset)
+    returns dataset is
+        abs(x)
+end operator;
+
+define operator g_q (y dataset)
+    returns dataset is
+        g_abs(y)
+end operator;
+
+DS_r <- g_q(DS_1);

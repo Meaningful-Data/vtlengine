@@ -653,6 +653,12 @@ class Terminals:
     def visitComparisonOperand(self, ctx):
         return ctx.children[0].text
 
+    def visitHrComparisonOperand(self, ctx):
+        """
+        hrComparisonOperand: MT | ME | LE | LT | EQ ;
+        """
+        return ctx.children[0].text
+
     def visitErCode(self, ctx):
         """
         erCode: ERRORCODE  constant;

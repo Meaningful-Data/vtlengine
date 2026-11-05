@@ -435,6 +435,8 @@ public:
 
     virtual std::any visitCodeItemRelationClause(Vtl::CodeItemRelationClauseContext *context) = 0;
 
+    virtual std::any visitHrComparisonOperand(Vtl::HrComparisonOperandContext *context) = 0;
+
     virtual std::any visitValueDomainValue(Vtl::ValueDomainValueContext *context) = 0;
 
     virtual std::any visitConditionConstraint(Vtl::ConditionConstraintContext *context) = 0;

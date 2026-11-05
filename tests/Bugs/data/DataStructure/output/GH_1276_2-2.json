@@ -1,0 +1,15 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r2",
+      "DataStructure": [
+        {
+          "name": "Me_1",
+          "role": "Measure",
+          "type": "Time_Period",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
