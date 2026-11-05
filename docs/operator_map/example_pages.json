@@ -4287,13 +4287,13 @@
     "status": "ok",
     "title": "Quarters to years"
   },
-  "join/cross_join/aggr_group_by/plain_attribute_not_found": {
-    "anchor": "ex-aggr-group-by-plain-attribute-not-found",
-    "duckdb": "❌",
+  "join/cross_join/aggr_group_by/attribute_becomes_measure": {
+    "anchor": "ex-aggr-group-by-attribute-becomes-measure",
+    "duckdb": "✅",
     "operator_page": "join/cross_join.html",
-    "pandas": "❌",
-    "status": "partial",
-    "title": "Plain attribute not found"
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Attribute becomes measure"
   },
   "join/cross_join/aggr_group_by/sum_by_id_1": {
     "anchor": "ex-aggr-group-by-sum-by-id-1",
@@ -4391,6 +4391,14 @@
     "status": "ok",
     "title": "Constant attribute"
   },
+  "join/cross_join/calc_default/attribute_becomes_measure": {
+    "anchor": "ex-calc-default-attribute-becomes-measure",
+    "duckdb": "✅",
+    "operator_page": "join/cross_join.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Attribute becomes measure"
+  },
   "join/cross_join/calc_default/default_role_is_measure": {
     "anchor": "ex-calc-default-default-role-is-measure",
     "duckdb": "✅",
@@ -4398,14 +4406,6 @@
     "pandas": "✅",
     "status": "ok",
     "title": "Default role is measure"
-  },
-  "join/cross_join/calc_default/plain_attribute_not_found": {
-    "anchor": "ex-calc-default-plain-attribute-not-found",
-    "duckdb": "❌",
-    "operator_page": "join/cross_join.html",
-    "pandas": "❌",
-    "status": "partial",
-    "title": "Plain attribute not found"
   },
   "join/cross_join/calc_identifier/constant_identifier": {
     "anchor": "ex-calc-identifier-constant-identifier",
@@ -4727,13 +4727,13 @@
     "status": "ok",
     "title": "Quarters to years"
   },
-  "join/inner_join/aggr_group_by/plain_attribute_not_found": {
-    "anchor": "ex-aggr-group-by-plain-attribute-not-found",
-    "duckdb": "❌",
+  "join/inner_join/aggr_group_by/attribute_becomes_measure": {
+    "anchor": "ex-aggr-group-by-attribute-becomes-measure",
+    "duckdb": "✅",
     "operator_page": "join/inner_join.html",
-    "pandas": "❌",
-    "status": "partial",
-    "title": "Plain attribute not found"
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Attribute becomes measure"
   },
   "join/inner_join/aggr_group_by/sum_by_id_1": {
     "anchor": "ex-aggr-group-by-sum-by-id-1",
@@ -4847,6 +4847,14 @@
     "status": "ok",
     "title": "Constant attribute"
   },
+  "join/inner_join/calc_default/attribute_becomes_measure": {
+    "anchor": "ex-calc-default-attribute-becomes-measure",
+    "duckdb": "✅",
+    "operator_page": "join/inner_join.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Attribute becomes measure"
+  },
   "join/inner_join/calc_default/default_role_is_measure": {
     "anchor": "ex-calc-default-default-role-is-measure",
     "duckdb": "✅",
@@ -4862,14 +4870,6 @@
     "pandas": "✅",
     "status": "ok",
     "title": "Manual example 3"
-  },
-  "join/inner_join/calc_default/plain_attribute_not_found": {
-    "anchor": "ex-calc-default-plain-attribute-not-found",
-    "duckdb": "❌",
-    "operator_page": "join/inner_join.html",
-    "pandas": "❌",
-    "status": "partial",
-    "title": "Plain attribute not found"
   },
   "join/inner_join/calc_identifier/constant_identifier": {
     "anchor": "ex-calc-identifier-constant-identifier",

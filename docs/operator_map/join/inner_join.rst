@@ -4,7 +4,7 @@ Inner Join · ``inner_join``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 20 of 22 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 22 of 22 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -32,19 +32,19 @@ Inner Join · ``inner_join``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Inner Join · inner_join<br/>🟢20 🟡2"]:::partial
+       O["Inner Join · inner_join 📌<br/>🟢22"]:::ok
        v_bare["inner_join(DS, DS)"]:::ok
        v_aliases["inner_join(DS as a, DS as b)"]:::ok
        v_using["inner_join(DS, DS using Id)"]:::ok
        v_filter["inner_join(DS, DS filter cond)"]:::ok
        v_apply["inner_join(DS, DS apply expr)"]:::ok
-       v_calc_default["inner_join(DS, DS calc C #58;#61; expr)"]:::partial
+       v_calc_default["inner_join(DS, DS calc C #58;#61; expr) 📌"]:::ok
        v_calc_measure["inner_join(DS, DS calc measure C #58;#61; expr)"]:::ok
        v_calc_identifier["inner_join(DS, DS calc identifier C #58;#61; expr)"]:::ok
        v_calc_attribute["inner_join(DS, DS calc attribute C #58;#61; expr)"]:::ok
        v_calc_viral_attribute["inner_join(DS, DS calc viral attribute C #58;#61; expr)"]:::ok
        v_aggr_no_group["inner_join(DS, DS aggr C #58;#61; agg)"]:::ok
-       v_aggr_group_by["inner_join(DS, DS aggr C #58;#61; agg group by Id)"]:::partial
+       v_aggr_group_by["inner_join(DS, DS aggr C #58;#61; agg group by Id) 📌"]:::ok
        v_aggr_group_except["inner_join(DS, DS aggr C #58;#61; agg group except Id)"]:::ok
        v_aggr_group_all["inner_join(DS, DS aggr C #58;#61; agg group all time_agg(p))"]:::ok
        v_aggr_having["inner_join(DS, DS aggr C #58;#61; agg group by Id having cond)"]:::ok
@@ -385,7 +385,7 @@ inner\_join(DS, DS apply expr) 🟢 · any scalar → any type
 
    <span class="om-anchor" id="form-calc-default"></span>
 
-inner\_join(DS, DS calc C := expr) 🟡 · any scalar → any type
+inner\_join(DS, DS calc C := expr) 🟢 · any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -431,12 +431,11 @@ inner\_join(DS, DS calc C := expr) 🟡 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-calc-default-plain-attribute-not-found"><summary><span class="om-ex-title">Plain attribute not found</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">expected error 1-1-1-10, ran without an error</p>
+   <details class="om-example" id="ex-calc-default-attribute-becomes-measure"><summary><span class="om-ex-title">Attribute becomes measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
-.. include:: ../examples/join/inner_join/calc_default/plain_attribute_not_found/notes.rst
+.. include:: ../examples/join/inner_join/calc_default/attribute_becomes_measure/notes.rst
 
-.. literalinclude:: ../examples/join/inner_join/calc_default/plain_attribute_not_found/script.vtl
+.. literalinclude:: ../examples/join/inner_join/calc_default/attribute_becomes_measure/script.vtl
    :caption: script.vtl
    :language: none
 
@@ -444,12 +443,11 @@ inner\_join(DS, DS calc C := expr) 🟡 · any scalar → any type
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_1</th><th class="head">At_1</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>10</td><td>a</td></tr><tr><td>1</td><td>B</td><td>20</td><td>b</td></tr><tr><td>2</td><td>A</td><td>30</td><td>c</td></tr><tr><td>2</td><td>B</td><td>40</td><td>d</td></tr></tbody></table>
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_2</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>1</td></tr><tr><td>1</td><td>B</td><td>2</td></tr><tr><td>2</td><td>A</td><td>3</td></tr></tbody></table>
-
-Expected error ``1-1-1-10``: Component {comp\_name} not found in Dataset {dataset\_name}.
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_1</th><th class="head">Me_2</th><th class="head">At_1</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>10</td><td>1</td><td>ax</td></tr><tr><td>1</td><td>B</td><td>20</td><td>2</td><td>bx</td></tr><tr><td>2</td><td>A</td><td>30</td><td>3</td><td>cx</td></tr></tbody></table>
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/join/inner_join/calc_default/plain_attribute_not_found/script.vtl">script.vtl</a> · <a href="../examples/join/inner_join/calc_default/plain_attribute_not_found/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/join/inner_join/calc_default/plain_attribute_not_found/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/join/inner_join/calc_default/plain_attribute_not_found/input/DS_2.csv">input/DS_2.csv</a> · <a href="../examples/join/inner_join/calc_default/plain_attribute_not_found/input/DS_2.json">input/DS_2.json</a> · <a href="../examples/join/inner_join/calc_default/plain_attribute_not_found/expected/error.json">expected/error.json</a> · <a href="../examples/join/inner_join/calc_default/plain_attribute_not_found/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/join/inner_join/calc_default/attribute_becomes_measure/script.vtl">script.vtl</a> · <a href="../examples/join/inner_join/calc_default/attribute_becomes_measure/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/join/inner_join/calc_default/attribute_becomes_measure/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/join/inner_join/calc_default/attribute_becomes_measure/input/DS_2.csv">input/DS_2.csv</a> · <a href="../examples/join/inner_join/calc_default/attribute_becomes_measure/input/DS_2.json">input/DS_2.json</a> · <a href="../examples/join/inner_join/calc_default/attribute_becomes_measure/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/join/inner_join/calc_default/attribute_becomes_measure/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/join/inner_join/calc_default/attribute_becomes_measure/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -596,7 +594,7 @@ inner\_join(DS, DS aggr C := agg) 🟢 · any scalar → any type
 
    <span class="om-anchor" id="form-aggr-group-by"></span>
 
-inner\_join(DS, DS aggr C := agg group by Id) 🟡 · any scalar → any type
+inner\_join(DS, DS aggr C := agg group by Id) 🟢 · any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -622,12 +620,11 @@ inner\_join(DS, DS aggr C := agg group by Id) 🟡 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-aggr-group-by-plain-attribute-not-found"><summary><span class="om-ex-title">Plain attribute not found</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">expected error 1-1-1-10, ran without an error</p>
+   <details class="om-example" id="ex-aggr-group-by-attribute-becomes-measure"><summary><span class="om-ex-title">Attribute becomes measure</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
-.. include:: ../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/notes.rst
+.. include:: ../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/notes.rst
 
-.. literalinclude:: ../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/script.vtl
+.. literalinclude:: ../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/script.vtl
    :caption: script.vtl
    :language: none
 
@@ -635,12 +632,11 @@ inner\_join(DS, DS aggr C := agg group by Id) 🟡 · any scalar → any type
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_1</th><th class="head">At_1</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>10</td><td>a</td></tr><tr><td>1</td><td>B</td><td>20</td><td>b</td></tr><tr><td>2</td><td>A</td><td>30</td><td>c</td></tr><tr><td>2</td><td>B</td><td>40</td><td>d</td></tr></tbody></table>
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_2</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>1</td></tr><tr><td>1</td><td>B</td><td>2</td></tr><tr><td>2</td><td>A</td><td>3</td></tr></tbody></table>
-
-Expected error ``1-1-1-10``: Component {comp\_name} not found in Dataset {dataset\_name}.
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">At_1</th></tr></thead><tbody><tr><td>1</td><td>b</td></tr><tr><td>2</td><td>c</td></tr></tbody></table>
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/script.vtl">script.vtl</a> · <a href="../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/input/DS_2.csv">input/DS_2.csv</a> · <a href="../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/input/DS_2.json">input/DS_2.json</a> · <a href="../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/expected/error.json">expected/error.json</a> · <a href="../examples/join/inner_join/aggr_group_by/plain_attribute_not_found/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/script.vtl">script.vtl</a> · <a href="../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/input/DS_2.csv">input/DS_2.csv</a> · <a href="../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/input/DS_2.json">input/DS_2.json</a> · <a href="../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/join/inner_join/aggr_group_by/attribute_becomes_measure/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html

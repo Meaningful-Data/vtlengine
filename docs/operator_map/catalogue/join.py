@@ -28,7 +28,10 @@ needs them:
 
 A second authored example adds a probe whose result depends on the form. Examples are ``using``
 on a subset of the common identifiers, and a ``calc`` or ``aggr`` that leaves out the role of an
-existing attribute: in a join that role is measure. Each operator also has an example that
+existing attribute: in a join that role is measure. When that attribute is not viral, the
+example follows the team decision of #1258 (``decision=1258``): the joins keep their non-viral
+attributes until the VTL Task Force settles sdmx-twg/vtl#730, where the manual of 2026-11-02
+keeps only the viral ones in VDS₁. Each operator also has an example that
 expects the error of the first error condition its page states: a natural ``inner_join`` and a
 ``left_join`` of operands with no identifier in common, a ``full_join`` whose ``calc`` overwrites
 an identifier, and a ``cross_join`` of an expression with no alias. The manual's examples are
@@ -65,6 +68,9 @@ def _form(variant_id: str, label: str, takes: tuple[str, ...], *examples: Exampl
     """A form of a join: it takes ``takes`` and gives a data set whose types follow its operands."""
     return Variant(id=variant_id, label=label, examples=examples, takes=takes, gives=(ANY_TYPE,))
 
+
+# The joins keep their non-viral attributes until sdmx-twg/vtl#730 is settled.
+_ATTRIBUTES_DECISION: Final = 1258
 
 _EX_5_ERRATUM = (
     "Me_3 is in both IBSC and IBSD, so stripping the alias prefixes gives two Me_3, an error by "
@@ -130,7 +136,7 @@ CHAPTER = Chapter(
                     _CALC,
                     manual("ex_3"),
                     authored("default_role_is_measure"),
-                    authored("plain_attribute_not_found"),
+                    authored("attribute_becomes_measure", decision=_ATTRIBUTES_DECISION),
                 ),
                 _form(
                     "calc_measure",
@@ -167,7 +173,7 @@ CHAPTER = Chapter(
                     "inner_join(DS, DS aggr C := agg group by Id)",
                     _AGGR,
                     authored("sum_by_id_1"),
-                    authored("plain_attribute_not_found"),
+                    authored("attribute_becomes_measure", decision=_ATTRIBUTES_DECISION),
                 ),
                 _form(
                     "aggr_group_except",
@@ -584,7 +590,7 @@ CHAPTER = Chapter(
                     "cross_join(DS, DS calc C := expr)",
                     _CALC,
                     authored("default_role_is_measure"),
-                    authored("plain_attribute_not_found"),
+                    authored("attribute_becomes_measure", decision=_ATTRIBUTES_DECISION),
                 ),
                 _form(
                     "calc_measure",
@@ -621,7 +627,7 @@ CHAPTER = Chapter(
                     "cross_join(DS, DS aggr C := agg group by Id)",
                     _AGGR,
                     authored("sum_by_id_1"),
-                    authored("plain_attribute_not_found"),
+                    authored("attribute_becomes_measure", decision=_ATTRIBUTES_DECISION),
                 ),
                 _form(
                     "aggr_group_except",

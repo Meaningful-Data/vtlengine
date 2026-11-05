@@ -8576,21 +8576,21 @@
       },
       "status": "ok"
     },
-    "join/cross_join/aggr_group_by/plain_attribute_not_found": {
+    "join/cross_join/aggr_group_by/attribute_becomes_measure": {
       "duckdb": {
-        "detail": "expected error 1-1-1-10, ran without an error",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "expected error 1-1-1-10, ran without an error",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "join/cross_join/aggr_group_by/sum_by_id_1": {
       "duckdb": {
@@ -8784,7 +8784,7 @@
       },
       "status": "ok"
     },
-    "join/cross_join/calc_default/default_role_is_measure": {
+    "join/cross_join/calc_default/attribute_becomes_measure": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -8800,21 +8800,21 @@
       },
       "status": "ok"
     },
-    "join/cross_join/calc_default/plain_attribute_not_found": {
+    "join/cross_join/calc_default/default_role_is_measure": {
       "duckdb": {
-        "detail": "expected error 1-1-1-10, ran without an error",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "expected error 1-1-1-10, ran without an error",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "join/cross_join/calc_identifier/constant_identifier": {
       "duckdb": {
@@ -9456,21 +9456,21 @@
       },
       "status": "ok"
     },
-    "join/inner_join/aggr_group_by/plain_attribute_not_found": {
+    "join/inner_join/aggr_group_by/attribute_becomes_measure": {
       "duckdb": {
-        "detail": "expected error 1-1-1-10, ran without an error",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "expected error 1-1-1-10, ran without an error",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "join/inner_join/aggr_group_by/sum_by_id_1": {
       "duckdb": {
@@ -9696,6 +9696,22 @@
       },
       "status": "ok"
     },
+    "join/inner_join/calc_default/attribute_becomes_measure": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
     "join/inner_join/calc_default/default_role_is_measure": {
       "duckdb": {
         "detail": "",
@@ -9727,22 +9743,6 @@
         "outcome": "match"
       },
       "status": "ok"
-    },
-    "join/inner_join/calc_default/plain_attribute_not_found": {
-      "duckdb": {
-        "detail": "expected error 1-1-1-10, ran without an error",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "mismatch"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "expected error 1-1-1-10, ran without an error",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "mismatch"
-      },
-      "status": "partial"
     },
     "join/inner_join/calc_identifier/constant_identifier": {
       "duckdb": {
@@ -15190,7 +15190,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "bca942b6",
+    "vtlengine_commit": "7d512d9a",
     "vtlengine_version": "1.9.7rc2"
   }
 }

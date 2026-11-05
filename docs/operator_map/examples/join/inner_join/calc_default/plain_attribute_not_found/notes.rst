@@ -1,4 +1,0 @@
-:Tests: ``calc At_1 := At_1 || "x"``: ``At_1``, a plain (not viral) Attribute of ``DS_1``, recalculated under its own name in the join.
-:Manual: `Inner Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html>`__: VDS₁ has the identifiers and the measures of the operands, and "The viral attributes, coming from any number of Data Sets, which appear once", and no other attribute; then "subsequent clauses [...] are procedurally evaluated on the virtual data set VDS₁".
-:Expected: The error ``1-1-1-10``, "Component {comp_name} not found in Dataset {dataset_name}.": ``At_1`` is not viral, so it is not in VDS₁, and the clause cannot read it.
-:Finding: Both engines keep ``At_1`` in VDS₁, and the clause returns it as a Measure (`#1258 <https://github.com/Meaningful-Data/vtlengine/issues/1258>`__).
