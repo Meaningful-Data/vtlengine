@@ -586,15 +586,24 @@ ruleItemHierarchical:
  ;
 
 codeItemRelation:
-    ( WHEN exprComponent THEN )? codetemRef=valueDomainValue comparisonOperand? codeItemRelationClause (codeItemRelationClause)*
+    ( WHEN exprComponent THEN )? codetemRef=valueDomainValue hrComparisonOperand codeItemRelationClause (codeItemRelationClause)*
 ;
 
 codeItemRelationClause:
     (opAdd=( PLUS | MINUS  ))? rightCodeItem=valueDomainValue ( QLPAREN  rightCondition=exprComponent  QRPAREN )?
 ;
 
+hrComparisonOperand:
+    MT
+    | ME
+    | LE
+    | LT
+    | EQ
+;
+
 valueDomainValue:
     IDENTIFIER
+    | ITEM_CODE
     | signedInteger
     | signedNumber
 ;

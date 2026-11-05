@@ -638,6 +638,9 @@ public:
   virtual void enterCodeItemRelationClause(Vtl::CodeItemRelationClauseContext *ctx) = 0;
   virtual void exitCodeItemRelationClause(Vtl::CodeItemRelationClauseContext *ctx) = 0;
 
+  virtual void enterHrComparisonOperand(Vtl::HrComparisonOperandContext *ctx) = 0;
+  virtual void exitHrComparisonOperand(Vtl::HrComparisonOperandContext *ctx) = 0;
+
   virtual void enterValueDomainValue(Vtl::ValueDomainValueContext *ctx) = 0;
   virtual void exitValueDomainValue(Vtl::ValueDomainValueContext *ctx) = 0;
 
