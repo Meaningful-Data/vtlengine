@@ -1,0 +1,103 @@
+/* Each operator is constrained and passes its parameter plus 1 on to the one below */
+define operator c1 (y1 component<number [value > 0]>)
+    returns component is
+        y1 + 1
+end operator;
+
+define operator d1 (x1 dataset {measure<number [value > 0]> Me_1})
+    returns dataset is
+        x1 + 1
+end operator;
+
+define operator c2 (y2 component<number [value > 0]>)
+    returns component is
+        c1(y2 + 1)
+end operator;
+
+define operator d2 (x2 dataset {measure<number [value > 0]> Me_1})
+    returns dataset is
+        d1(x2 + 1)
+end operator;
+
+define operator c3 (y3 component<number [value > 0]>)
+    returns component is
+        c2(y3 + 1)
+end operator;
+
+define operator d3 (x3 dataset {measure<number [value > 0]> Me_1})
+    returns dataset is
+        d2(x3 + 1)
+end operator;
+
+define operator c4 (y4 component<number [value > 0]>)
+    returns component is
+        c3(y4 + 1)
+end operator;
+
+define operator d4 (x4 dataset {measure<number [value > 0]> Me_1})
+    returns dataset is
+        d3(x4 + 1)
+end operator;
+
+define operator c5 (y5 component<number [value > 0]>)
+    returns component is
+        c4(y5 + 1)
+end operator;
+
+define operator d5 (x5 dataset {measure<number [value > 0]> Me_1})
+    returns dataset is
+        d4(x5 + 1)
+end operator;
+
+define operator c6 (y6 component<number [value > 0]>)
+    returns component is
+        c5(y6 + 1)
+end operator;
+
+define operator d6 (x6 dataset {measure<number [value > 0]> Me_1})
+    returns dataset is
+        d5(x6 + 1)
+end operator;
+
+define operator c7 (y7 component<number [value > 0]>)
+    returns component is
+        c6(y7 + 1)
+end operator;
+
+define operator d7 (x7 dataset {measure<number [value > 0]> Me_1})
+    returns dataset is
+        d6(x7 + 1)
+end operator;
+
+define operator c8 (y8 component<number [value > 0]>)
+    returns component is
+        c7(y8 + 1)
+end operator;
+
+define operator d8 (x8 dataset {measure<number [value > 0]> Me_1})
+    returns dataset is
+        d7(x8 + 1)
+end operator;
+
+define operator c9 (y9 component<number [value > 0]>)
+    returns component is
+        c8(y9 + 1)
+end operator;
+
+define operator d9 (x9 dataset {measure<number [value > 0]> Me_1})
+    returns dataset is
+        d8(x9 + 1)
+end operator;
+
+define operator c10 (y10 component<number [value > 0]>)
+    returns component is
+        c9(y10 + 1)
+end operator;
+
+define operator d10 (x10 dataset {measure<number [value > 0]> Me_1})
+    returns dataset is
+        d9(x10 + 1)
+end operator;
+
+DS_r1 <- DS_1[calc Me_2 := c10(Me_1)];
+DS_r2 <- d10(DS_1);

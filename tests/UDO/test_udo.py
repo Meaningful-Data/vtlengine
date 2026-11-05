@@ -1402,3 +1402,17 @@ class UdoTest(UDOHelper):
                     text=f"{operators}DS_r <- {expression};",
                     exception_message=f"{error}, {not_allowed.format(constraint)}",
                 )
+
+    def test_GH_1296_13(self):
+        """
+        Status: OK
+        Description: Ten constrained operators, of Components (c10 -> ... -> c1) and of Data
+            Sets (d10 -> ... -> d1), where each one passes its parameter plus 1 on to the one
+            below, so the argument of each check reads the parameter checked above it.
+        Goal: Check Result.
+        """
+        code = "GH_1296_13"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
