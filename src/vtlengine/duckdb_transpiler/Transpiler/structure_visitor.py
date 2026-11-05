@@ -1,7 +1,7 @@
 """Resolve VTL dataset structures for the DuckDB transpiler."""
 
 from contextlib import contextmanager
-from typing import Any, Dict, Generator, List, Optional, Set, Tuple
+from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -27,6 +27,7 @@ from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.Utils import ANALYTIC_MAPPING
 
 
 def _try_normalize_time_period(value: str) -> Optional[str]:
@@ -256,18 +257,26 @@ class StructureVisitor(ASTTemplate):
 
     def _resolve_node_type(self, node: AST.AST) -> str:  # noqa: C901
         """Work out the operand type of a node."""
-        if isinstance(node, (AST.Analytic, AST.Identifier)) or (
-            isinstance(node, AST.BinOp) and self._in_clause
-        ):
+        if isinstance(node, AST.Analytic):
+            # An analytic on a Data Set gives a Data Set (issue #1276)
+            return _DATASET if node.operand and self._is_dataset(node.operand) else _COMPONENT
+        elif isinstance(node, AST.Identifier) or (isinstance(node, AST.BinOp) and self._in_clause):
             return _COMPONENT
         elif isinstance(
             node,
-            (AST.RegularAggregation, AST.JoinOp, AST.Validation, AST.HROperation, AST.DPValidation),
+            (
+                AST.RegularAggregation,
+                AST.JoinOp,
+                AST.Validation,
+                AST.HROperation,
+                AST.DPValidation,
+                AST.EvalOp,
+            ),
         ):
             return _DATASET
         elif isinstance(node, AST.VarID):
             return self._get_varid_type(node)
-        elif isinstance(node, (AST.ParFunction, AST.UnaryOp, AST.Aggregation)):
+        elif isinstance(node, (AST.ParFunction, AST.UnaryOp, AST.Aggregation, AST.TimeAggregation)):
             children = [node.operand]
         elif isinstance(node, AST.BinOp):
             children = [node.left, node.right]
@@ -278,7 +287,13 @@ class StructureVisitor(ASTTemplate):
         elif isinstance(node, AST.Case):
             children = [c.thenOp for c in node.cases]
         elif isinstance(node, AST.UDOCall) and node.op in self._udos:
-            children = [self._udos[node.op]["expression"]]
+            # The body is typed with the arguments of the call bound (issue #1276)
+            udo_def = self._udos[node.op]
+            self._push_udo_params(self._build_udo_bindings(udo_def, node.params))
+            try:
+                return self._get_node_type(udo_def["expression"])
+            finally:
+                self._pop_udo_params()
         else:
             return _SCALAR
         return self._get_op_type(children)
@@ -469,30 +484,27 @@ class StructureVisitor(ASTTemplate):
         if isinstance(node, AST.VarID):
             return self._resolve_varid_structure(node)
         if isinstance(node, AST.RegularAggregation) and node.dataset:
-            return self._resolve_regular_aggregation_structure(node)
+            return self._join_result(node, self._resolve_regular_aggregation_structure(node))
         if isinstance(node, AST.BinOp):
             return self._resolve_binop_structure(node)
-        if isinstance(node, AST.UnaryOp):
+        if isinstance(node, (AST.UnaryOp, AST.TimeAggregation)):
             return self._resolve_unaryop_structure(node)
         if isinstance(node, AST.ParFunction):
             return self._get_dataset_structure(node.operand)
+        if isinstance(node, AST.EvalOp):
+            return node.output
         if isinstance(node, AST.ParamOp):
             return self._resolve_paramop_structure(node)
         if isinstance(node, AST.Aggregation) and node.operand:
             return self._build_aggregation_structure(node)
+        if isinstance(node, AST.Analytic) and node.operand:
+            return self._build_analytic_structure(node)
         if isinstance(node, AST.JoinOp):
             return self._build_join_structure(node)
         if isinstance(node, AST.UDOCall):
             return self._resolve_udocall_structure(node)
         if isinstance(node, AST.MulOp) and node.children:
-            if node.op == tokens.EXISTS_IN:
-                return self._build_exists_in_structure(node)
-            if node.op == tokens.BETWEEN:
-                ds = self._get_dataset_structure(node.children[0])
-                if ds is not None and len(ds.get_measures_names()) == 1:
-                    return self._build_boolean_result_structure(ds)
-                return self._without_attributes(ds)
-            return self._get_dataset_structure(node.children[0])
+            return self._resolve_mulop_structure(node)
         if isinstance(node, AST.Validation):
             return self._build_validation_structure(node)
         if isinstance(node, AST.HROperation):
@@ -573,6 +585,19 @@ class StructureVisitor(ASTTemplate):
             return self._build_boolean_result_structure(ds)
         return self._as_boolean_if_mono(self._without_attributes(ds), op)
 
+    def _join_result(
+        self, node: AST.RegularAggregation, ds: Optional[Dataset]
+    ) -> Optional[Dataset]:
+        """The structure ds of a clause. The last clause of a join ends it, and there the
+        Components lose the alias prefix, as the interpreter strips it (issue #1276)."""
+        if not node.isLast or ds is None or all("#" not in name for name in ds.components):
+            return ds
+        comps: Dict[str, Component] = {}
+        for name, comp in ds.components.items():
+            stripped = name.split("#", 1)[-1]
+            comps[stripped] = self._make_comp(stripped, comp.data_type, comp.role, comp.nullable)
+        return Dataset(name=ds.name, components=comps, data=None)
+
     @staticmethod
     def _without_attributes(ds: Optional[Dataset]) -> Optional[Dataset]:
         """Drop the attributes that are not viral, as the query of an operator that applies
@@ -642,8 +667,11 @@ class StructureVisitor(ASTTemplate):
             return Dataset(name=ds.name, components=comps, data=None)
         return self._without_attributes(ds)
 
-    def _resolve_unaryop_structure(self, node: AST.UnaryOp) -> Optional[Dataset]:
-        """Resolve a UnaryOp to its dataset structure."""
+    def _resolve_unaryop_structure(
+        self, node: Union[AST.UnaryOp, AST.TimeAggregation]
+    ) -> Optional[Dataset]:
+        """Resolve a UnaryOp, or a time_agg, which also applies to each Measure, to its dataset
+        structure (issue #1276)."""
         ds = self._get_dataset_structure(node.operand)
         if ds is None:
             return None
@@ -659,6 +687,17 @@ class StructureVisitor(ASTTemplate):
         if node.op in (tokens.FLOW_TO_STOCK, tokens.STOCK_TO_FLOW):
             return ds
         return self._without_attributes(ds)
+
+    def _resolve_mulop_structure(self, node: AST.MulOp) -> Optional[Dataset]:
+        """Resolve a MulOp with operands to its dataset structure."""
+        if node.op == tokens.EXISTS_IN:
+            return self._build_exists_in_structure(node)
+        if node.op == tokens.BETWEEN:
+            ds = self._get_dataset_structure(node.children[0])
+            if ds is not None and len(ds.get_measures_names()) == 1:
+                return self._build_boolean_result_structure(ds)
+            return self._without_attributes(ds)
+        return self._get_dataset_structure(node.children[0])
 
     def _build_aggregation_structure(self, node: AST.Aggregation) -> Optional[Dataset]:
         """Resolve an Aggregation (count/sum/avg/…) to its output structure."""
@@ -679,6 +718,23 @@ class StructureVisitor(ASTTemplate):
         for name, comp in ds.components.items():
             if comp.role == Role.VIRAL_ATTRIBUTE:
                 comps[name] = comp
+        return Dataset(name=ds.name, components=comps, data=None)
+
+    def _build_analytic_structure(self, node: AST.Analytic) -> Optional[Dataset]:
+        """Resolve an analytic on a Data Set to the structure of its query: the identifiers,
+        the Measures (``int_var`` for count) and the viral attributes (issue #1276)."""
+        ds = self._without_attributes(self._get_dataset_structure(node.operand))
+        if ds is not None and node.op == tokens.COUNT:
+            return self._build_integer_result_structure(ds)
+        # avg, median, ratio_to_report, the deviations and the variances give Number Measures
+        if ds is None or ANALYTIC_MAPPING[node.op].return_type is not Number:
+            return ds
+        comps = {
+            name: self._make_comp(name, Number, comp.role, comp.nullable)
+            if comp.role == Role.MEASURE
+            else comp
+            for name, comp in ds.components.items()
+        }
         return Dataset(name=ds.name, components=comps, data=None)
 
     def _build_udo_bindings(

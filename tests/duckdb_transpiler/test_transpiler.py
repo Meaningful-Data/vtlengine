@@ -1850,7 +1850,7 @@ class TestBooleanOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = 'SELECT "Id_1", NOT "Me_1" AS "Me_1", NOT "Me_2" AS "Me_2" FROM "DS_1"'
+        expected_sql = 'SELECT "Id_1", (NOT "Me_1") AS "Me_1", (NOT "Me_2") AS "Me_2" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
     def test_boolean_dataset_multi_measure(self):
