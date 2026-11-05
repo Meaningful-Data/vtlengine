@@ -104,6 +104,29 @@ class SQLliteEval(TestEval):
                 sql_names=sql_names,
             )
 
+    def test_GH_1276_3(self):
+        """
+        Expression: DS_r1 <- eval ( GH_1276_3 ( DS_1 ) ... ) [ calc Me_2 := Me_1 * 2 ];
+                    DS_r2 <- eval ( GH_1276_3 ( DS_1 ) ... ) * 2;
+                    DS_r3 <- isnull ( eval ( GH_1276_3 ( DS_1 ) ... ) );
+        Description: the result of an eval is the operand of a clause or of another operator.
+                     The DuckDB engine had no structure for it and wrote its query inside the
+                     expression of the outer operator: the clause raised an AttributeError, the
+                     product a BinderException and isnull returned no Data Points, while the
+                     pandas engine gave these results.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1276
+        """
+        code = "GH_1276_3"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+        sql_names = ["GH_1276_3"]
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            sql_names=sql_names,
+        )
+
 
 def test_execute_query_valid():
     query = "SELECT A, B FROM DS_1;"

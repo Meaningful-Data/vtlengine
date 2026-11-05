@@ -2642,3 +2642,49 @@ class JoinsGeneralTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1276_4(self):
+        """
+        Expression: DS_r1 <- inner_join ( DS_1 , DS_2 as b rename b#Me_1 to Me_2 )#Me_1;
+                    DS_r2 <- inner_join ( DS_1 , DS_2 as b keep DS_1#Me_1 )#Me_1
+                        + inner_join ( DS_1 , DS_2 as b keep b#Me_1 )#Me_1;
+        Description: A membership reads a Measure that both operands of the join have. After
+                     the last clause of the join, the Measure has lost the alias prefix, as on
+                     the pandas engine. The DuckDB engine kept DS_1#Me_1 until the end of the
+                     statement and raised a BinderException. In DS_r2, each join keeps the
+                     Measure of a different operand.
+        Git Issue: GH_1276.
+        """
+        code = "GH_1276_4"
+        number_inputs = 2
+        references_names = ["1", "2"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1281_1(self):
+        """
+        Expression: DS_r <- inner_join ( DS_1 as DS_2 , DS_2 as B ); DS_r2 <- DS_2;
+        Description: An alias is valid only within its join: the alias DS_2 replaces neither
+                     the operand DS_2 of the same join nor the input DS_2 after the join.
+        Git Issue: GH_1281.
+        """
+        code = "GH_1281_1"
+        number_inputs = 2
+        references_names = ["1", "2"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1281_2(self):
+        """
+        Expression: DS_r <- inner_join ( DS_1 as DS_2 , DS_2 );
+        Description: The names of the operands inside a join, their aliases or else their Data
+                     Set names, must be all distinct: the alias DS_2 repeats the name of the
+                     operand DS_2, which has no alias.
+        Git Issue: GH_1281.
+        """
+        code = "GH_1281_2"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-13-1",
+            exception_message="At op inner_join: Duplicated name DS_2 among the join operands.",
+        )
