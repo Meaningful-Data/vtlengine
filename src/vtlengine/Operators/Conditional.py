@@ -36,7 +36,9 @@ def dataset_assign(
 ) -> pd.DataFrame:
     if isinstance(op, Dataset):
         if op.data is None or cond.empty:
-            return pd.DataFrame(columns=ids + measures + [COND_COL])
+            # All the Components, or the result lacks the Attributes when no data point takes
+            # this operand (issue #1304)
+            return pd.DataFrame(columns=op.get_components_names() + [COND_COL])
         return merge_frames(cond, op.data, on=ids, how="inner")
     return cond.assign(**dict.fromkeys(measures, op.value))
 

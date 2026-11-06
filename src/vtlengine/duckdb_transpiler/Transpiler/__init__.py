@@ -81,6 +81,7 @@ from vtlengine.ViralPropagation import apply_viral_return_types, get_current_reg
 from vtlengine.ViralPropagation.sql import (
     vp_group_sql,
     vp_group_sql_windowed,
+    vp_list_sql,
     vp_no_rule_group_sql,
     vp_pair_sql,
     vp_reduce_refs,
@@ -3753,8 +3754,17 @@ FROM (
         # Build SELECT columns
         cols: List[str] = [f"{alias}.{quote_name(id_)}" for id_ in source_ids]
         for col_name in output_measures + output_attributes:
-            t_ref = f"t.{quote_name(col_name)}" if t_type == _DATASET else self.visit(node.thenOp)
-            e_ref = f"e.{quote_name(col_name)}" if e_type == _DATASET else self.visit(node.elseOp)
+            comp = ref_ds.components[col_name]
+            t_ref = (
+                f"t.{quote_name(col_name)}"
+                if t_type == _DATASET
+                else self._scalar_operand_sql(node.thenOp, comp)
+            )
+            e_ref = (
+                f"e.{quote_name(col_name)}"
+                if e_type == _DATASET
+                else self._scalar_operand_sql(node.elseOp, comp)
+            )
             cols.append(
                 f"CASE WHEN {cond_expr} THEN {t_ref} ELSE {e_ref} END AS {quote_name(col_name)}"
             )
@@ -3769,7 +3779,7 @@ FROM (
                     v_type = get_duckdb_type(v_comp.data_type.__name__) if v_comp else "VARCHAR"
                     cols.append(f"CAST(NULL AS {v_type}) AS {v_qn}")
                 else:
-                    cols.append(f"{vp_pair_sql(v_rule, f't.{v_qn}', f'e.{v_qn}')} AS {v_qn}")
+                    cols.append(f"{vp_list_sql(v_rule, f'[t.{v_qn}, e.{v_qn}]')} AS {v_qn}")
             elif t_type == _DATASET:
                 cols.append(f"CASE WHEN {cond_expr} THEN t.{v_qn} ELSE NULL END AS {v_qn}")
             elif e_type == _DATASET:
@@ -3945,13 +3955,22 @@ FROM (
             self._left_join_dataset(node.elseOp, _DATASET, e_alias, source_ids, alias_src, builder)
 
         cols: List[str] = [f"{alias_src}.{quote_name(id_)}" for id_ in source_ids]
-        for measure in output_ds.get_measures_names():
-            m = quote_name(measure)
+        # The viral attributes of two or more dataset operands are combined, the other
+        # components take the values of the operand of the branch taken (issue #1304)
+        combined = output_ds.get_viral_attributes_names() if sum(is_ds) >= 2 else []
+        for comp in output_ds.components.values():
+            if comp.role == Role.IDENTIFIER or comp.name in combined:
+                continue
+            m = quote_name(comp.name)
             values = [
-                (cond, f"{t}.{m}" if t else self.visit(node.cases[i].thenOp))
+                (cond, f"{t}.{m}" if t else self._scalar_operand_sql(node.cases[i].thenOp, comp))
                 for i, cond, t in whens
             ]
-            else_ref = (f"e.{m}" if e_alias else self.visit(node.elseOp)) if final else None
+            else_ref = (
+                (f"e.{m}" if e_alias else self._scalar_operand_sql(node.elseOp, comp))
+                if final
+                else None
+            )
             column = self._case_stage_sql(f"r.{m}" if staged else None, values, else_ref)
             cols.append(f"{column} AS {m}")
 
@@ -3970,35 +3989,45 @@ FROM (
 
         aliases = [t for _, _, t in whens if t] + ([e_alias] if e_alias else [])
         carried = any(is_ds[: branches.start])
-        cols.extend(self._case_viral_cols(output_ds, aliases, carried, sum(is_ds), final))
+        cols.extend(self._case_viral_cols(output_ds, combined, aliases, carried, final))
         builder.select(*cols)
         if final and any(is_ds):
             e_match = f"e.{id_col} IS NOT NULL" if e_alias else "TRUE"
             builder.where(self._case_stage_sql(kept, matches, e_match))
         return builder.build()
 
+    def _scalar_operand_sql(self, operand: AST.AST, comp: Component) -> str:
+        """The value of ``comp`` where a dataset if or case takes a scalar operand: the scalar
+        feeds the Measures only, an Attribute is null (issue #1304)."""
+        if comp.role == Role.MEASURE:
+            return self.visit(operand)
+        return f"CAST(NULL AS {get_duckdb_type(comp.data_type.__name__)})"
+
     @staticmethod
     def _case_viral_cols(
-        output_ds: Dataset, aliases: List[str], carried: bool, operands: int, final: bool
+        output_ds: Dataset, combined: List[str], aliases: List[str], carried: bool, final: bool
     ) -> List[str]:
-        """Viral attributes of a stage of a dataset case: the ones of its dataset operands
-        (``aliases``), combined in their order after the ones the previous stages combined when
-        they are ``carried``. Without a rule, those of two or more ``operands`` give null."""
+        """The viral attributes ``combined`` by a stage of a dataset case: the list of the values
+        of its dataset operands (``aliases``), null where one lacks the data point, after the
+        ones the previous stages listed when they are ``carried``. The last stage combines the
+        whole list by the rule, as pandas does (issue #1304). Without a rule, they give null."""
         vp_registry = get_current_registry()
         cols: List[str] = []
-        for v_name in output_ds.get_viral_attributes_names():
+        for v_name in combined:
             v_qn = quote_name(v_name)
-            v_comp = output_ds.components.get(v_name)
-            v_rule = vp_registry.rule_for(v_comp) if v_comp is not None else None
-            refs = ([f"r.{v_qn}"] if carried else []) + [f"{a}.{v_qn}" for a in aliases]
-            if operands >= 2 and v_rule is None:
-                if final:
-                    v_type = get_duckdb_type(v_comp.data_type.__name__) if v_comp else "VARCHAR"
-                    cols.append(f"CAST(NULL AS {v_type}) AS {v_qn}")
-            elif len(refs) >= 2 and v_rule is not None:
-                cols.append(f"{vp_reduce_refs(v_rule, refs)} AS {v_qn}")
-            elif refs:
-                cols.append(f"{refs[0]} AS {v_qn}")
+            lst = "[" + ", ".join(f"{a}.{v_qn}" for a in aliases) + "]"
+            if carried:
+                lst = f"list_concat(r.{v_qn}, {lst})" if aliases else f"r.{v_qn}"
+            elif not aliases:
+                continue
+            v_comp = output_ds.components[v_name]
+            v_rule = vp_registry.rule_for(v_comp)
+            if not final:
+                cols.append(f"{lst} AS {v_qn}")
+            elif v_rule is None:
+                cols.append(f"CAST(NULL AS {get_duckdb_type(v_comp.data_type.__name__)}) AS {v_qn}")
+            else:
+                cols.append(f"{vp_list_sql(v_rule, lst)} AS {v_qn}")
         return cols
 
     # =========================================================================

@@ -828,19 +828,10 @@ class TestDatasetCaseStages:
         )
 
         staged_data = _sorted(staged["DS_r"].data)
-        pd.testing.assert_frame_equal(
-            staged_data, _sorted(one_query["DS_r"].data), check_exact=False, rtol=0, atol=0
-        )
-        # The engines combine the viral attribute differently where an operand lacks the data
-        # point, with or without stages
-        columns = ["Id_1", "Id_2", "Me_1"]
-        pd.testing.assert_frame_equal(
-            staged_data[columns],
-            _sorted(on_pandas["DS_r"].data)[columns],
-            check_exact=False,
-            rtol=0,
-            atol=0,
-        )
+        for expected in (one_query, on_pandas):
+            pd.testing.assert_frame_equal(
+                staged_data, _sorted(expected["DS_r"].data), check_exact=False, rtol=0, atol=0
+            )
 
 
 # =============================================================================
