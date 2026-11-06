@@ -610,10 +610,11 @@ class Case(Operator):
             )
             return Dataset(name=dataset_name, components=components, data=None)
 
-        # Each Data Set operand has the Identifiers of the condition, as in an if (issue #1314)
-        for op in ops:
-            if isinstance(op, Dataset) and _identifiers(op) != _identifiers(conditions[0]):
-                raise SemanticError("1-1-9-10", op=cls.op, clause=op.name)
+        # Each later condition and each Data Set operand has the Identifiers of the first
+        # condition, which gives the Data Points, as in an if (issue #1314)
+        for item in [*conditions[1:], *ops]:
+            if isinstance(item, Dataset) and _identifiers(item) != _identifiers(conditions[0]):
+                raise SemanticError("1-1-9-10", op=cls.op, clause=item.name)
 
         # Rebuild the dict: the result must never share it with the branch dataset, as
         # apply_viral_return_types may replace entries in it.

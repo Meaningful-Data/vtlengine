@@ -3876,6 +3876,24 @@ class ConditionalBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
 
+    def test_GH_1314_I1(self):
+        """
+        Expression: DS_r <- case when DS_1 > 3 then DS_1 when DS_3 then DS_2 else DS_1;
+        Description: Every condition of a Data Set case must have the Identifiers of the
+            first one, which gives the Data Points: DS_3 is on Id_1 alone, and the operands
+            on Id_1 and Id_2. The case passed the semantic analysis, then the pandas engine
+            raised a KeyError and the DuckDB engine matched DS_3 on Id_1 alone.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_I1"
+        number_inputs = 3
+        error_code = "1-1-9-10"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
 
 class ClauseBugs(BugHelper):
     """ """
