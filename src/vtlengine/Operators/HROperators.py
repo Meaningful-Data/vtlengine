@@ -369,7 +369,7 @@ class Hierarchy(Operators.Operator):
     @staticmethod
     def _combine_node_viral(
         viral_values: DataFrame,
-        viral_names: List[str],
+        viral_components: Dict[str, Component],
         node_children: Dict[str, Tuple[str, List[str]]],
         rule_component: str,
         other_ids: List[str],
@@ -384,6 +384,7 @@ class Hierarchy(Operators.Operator):
         it computed (issue #1142).
         """
         registry = get_current_registry()
+        viral_names = list(viral_components)
         rules_per_node = Counter(node for node, _ in node_children.values())
         node_viral: Dict[str, DataFrame] = {}
         tagged_frames: List[DataFrame] = []
@@ -410,7 +411,7 @@ class Hierarchy(Operators.Operator):
                 combined = pd.concat(padded, ignore_index=True)
                 grouped = combined.groupby(other_ids, sort=False)
                 agg = {
-                    va: (lambda vals, name=va: registry.resolve_group(name, list(vals)))
+                    va: (lambda vals, c=viral_components[va]: registry.resolve_group(c, list(vals)))
                     for va in viral_names
                 }
                 nv = grouped.agg(agg).reset_index()
@@ -420,7 +421,7 @@ class Hierarchy(Operators.Operator):
                     {
                         va: [
                             registry.resolve_group(
-                                va,
+                                viral_components[va],
                                 [cf[va].iloc[0] if len(cf) else None for cf in child_frames],
                             )
                         ]
@@ -488,7 +489,12 @@ class Hierarchy(Operators.Operator):
         ):
             other_ids = [i for i in dataset.get_identifiers_names() if i != rule_component]
             computed_viral = cls._combine_node_viral(
-                viral_values, viral_names, node_children, rule_component, other_ids, computed_dict
+                viral_values,
+                {vc.name: vc for vc in viral_components or []},
+                node_children,
+                rule_component,
+                other_ids,
+                computed_dict,
             )
             if computed_viral is not None:
                 # Each data point takes the viral values of the rule that computed it

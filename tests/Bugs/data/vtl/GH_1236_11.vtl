@@ -1,0 +1,4 @@
+define datapoint ruleset dpr ( valuedomain Me_1 , Me_2 ) is
+    r1 : when Me_2 = "X" then Me_1 > 0
+end datapoint ruleset;
+DS_r <- check_datapoint ( DS_1 , dpr components Me_2 , Me_1 all );

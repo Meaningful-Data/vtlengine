@@ -809,6 +809,12 @@ centralised_messages = {
         "description": "Raised when several '=' rules define the same code item in a hierarchy "
         "operation and one of them has no when condition, so their results always overlap.",
     },
+    "1-1-10-12": {
+        "message": "At op {op}: Component {comp_name} of type {type} cannot take the values of "
+        "the Value Domain {value_domain} of the ruleset {ruleset}.",
+        "description": "Raised when a ruleset defined on value domains is called with a "
+        "component whose basic type is not the one of the value domain it is bound to.",
+    },
     "1-1-10-11": {
         "message": "At op {op}: The validation and imbalance operands must have the same "
         "identifiers.",
@@ -1471,13 +1477,6 @@ centralised_messages = {
         "the component names the engine reserves for automatically named measures "
         "(str_var, num_var, int_var, time_var, time_period_var, date_var, duration_var, "
         "bool_var, null_var), which would collide with a promoted measure of the same name.",
-    },
-    "1-3-3-8": {
-        "message": "Viral propagation definition {name} is defined on value domain "
-        "{value_domain}, which is not supported yet; define it on a variable instead.",
-        "description": "Raised when a viral propagation definition uses a valuedomain "
-        "signature. Components do not carry a value domain yet, so the rule could not be "
-        "applied to any viral attribute.",
     },
     "1-3-3-9": {
         "message": "Viral propagation rule {rule} for {name} uses the constant {value}, which "
