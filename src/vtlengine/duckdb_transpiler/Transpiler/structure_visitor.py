@@ -989,13 +989,17 @@ class StructureVisitor(ASTTemplate):
                     nullable = old.nullable if calc_role != Role.IDENTIFIER else False
                     comps[col] = self._make_comp(old.name, old.data_type, calc_role, nullable)
                 elif col not in comps and output_ds and col in output_ds.components:
-                    comps[col] = output_ds.components[col]
+                    # The result holds the Component as the last calc computes it, so its
+                    # type only stands in for an expression not typed here (issue #1309)
+                    comp = output_ds.components[col]
+                    value_type = self._calc_value_type(assignment.right, input_ds) or comp.data_type
+                    comps[col] = self._make_comp(col, value_type, comp.role, comp.nullable)
                 elif col not in comps:
                     # calc_role comes from the clause itself, so a new component keeps
                     # its declared role even without an output structure to consult.
                     comps[col] = self._make_comp(
                         col,
-                        self._calc_value_type(assignment.right, input_ds),
+                        self._calc_value_type(assignment.right, input_ds) or Number,
                         calc_role,
                         calc_role != Role.IDENTIFIER,
                     )
@@ -1016,11 +1020,11 @@ class StructureVisitor(ASTTemplate):
         return comp.role
 
     def _calc_value_type(self, node: AST.AST, source: Dataset) -> Any:
-        """Data type of a calc expression, defaulting to ``Number`` when unknown.
+        """Data type of a calc expression, or ``None`` when unknown.
 
-        Only literals and plain component references are resolved; everything
-        else keeps the historical ``Number`` placeholder. Callers must treat the
-        result as a best effort, not as a guarantee that the column is numeric.
+        Only literals, plain component references and a time_agg of a typed operand
+        are resolved. Callers must treat the result as a best effort, not as a
+        guarantee of the column type.
         """
         if isinstance(node, AST.Constant) and node.value is not None:
             return BASIC_TYPES.get(type(node.value), Number)
@@ -1028,7 +1032,10 @@ class StructureVisitor(ASTTemplate):
             comp = source.components.get(self._resolve_udo_name(node.value))
             if comp is not None:
                 return comp.data_type
-        return Number
+        if isinstance(node, AST.TimeAggregation) and node.operand is not None:
+            # time_agg keeps the type of its operand, a Time_Period or a Date (issue #1309)
+            return self._calc_value_type(node.operand, source)
+        return None
 
     def _build_ds_ds_binop_structure(self, node: AST.BinOp) -> Optional[Dataset]:
         """Build structure for dataset-dataset binary ops."""
