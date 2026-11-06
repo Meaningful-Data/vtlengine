@@ -3633,30 +3633,31 @@ FROM (
 
         return registry.sql(op, *child_sqls)
 
-    def _union_by_identifiers(
-        self, sources: List[str], columns: List[str], id_names: List[str]
-    ) -> str:
-        """Union the operands by their Identifiers: each operand gives the Data Points whose
-        Identifiers are in no operand before it, so a repeated Data Point comes from the
-        left-most operand. A row-number filter over the UNION ALL of the operands gives wrong
-        values on DuckDB 1.5 when the operands repeat a MATERIALIZED CTE (issue #1283).
-        An operand that the next ones read again is computed once, unless it is a table."""
-        cte = CTEBuilder()
-        refs: List[str] = []
-        for k, source in enumerate(sources):
-            if source.startswith("(") and k < len(sources) - 1:
-                cte.cte(f"_union_{k}", f"SELECT * FROM {source}", materialized=True)
-                source = f"_union_{k}"
-            refs.append(source)
-        cols = ", ".join(f"u.{quote_name(c)}" for c in columns)
-        branches: List[str] = []
-        for k, ref in enumerate(refs):
-            anti_joins = "".join(
-                f" ANTI JOIN {prev} AS p{j} ON {self._join_on_clause(id_names, 'u', f'p{j}')}"
-                for j, prev in enumerate(refs[:k])
-            )
-            branches.append(f"(SELECT {cols} FROM {ref} AS u{anti_joins})")
-        return cte.select(" UNION ALL ".join(branches))
+    @staticmethod
+    def _union_by_identifiers(sources: List[str], columns: List[str], id_names: List[str]) -> str:
+        """Union the operands by their Identifiers: the UNION ALL of the operands, with the
+        position of its operand on each Data Point, keeps for each combination of Identifiers
+        the Data Point at the smallest position, so a repeated Data Point comes from the
+        left-most operand.
+
+        Each operand is read once, so the SQL and DuckDB's planning grow linearly with the
+        number of operands (issue #1304); an ANTI JOIN of each operand against every operand
+        before it grew with its square. The smallest position is found with a window MIN, not
+        with a row-number filter: DuckDB 1.5 gives wrong values for ROW_NUMBER() ... = 1 over
+        the UNION ALL when the operands repeat a MATERIALIZED CTE (issue #1283), because its
+        top_n_window_elimination optimizer rewrites that filter into a plan that the
+        common_subplan optimizer breaks. It does not rewrite a window MIN."""
+        cols = ", ".join(quote_name(c) for c in columns)
+        position = quote_name("__vtl_union_position__")
+        branches = " UNION ALL ".join(
+            f"SELECT {cols}, {k} AS {position} FROM {source} AS t"
+            for k, source in enumerate(sources)
+        )
+        id_cols = ", ".join(quote_name(i) for i in id_names)
+        return (
+            f"SELECT {cols} FROM ({branches}) AS t "
+            f"QUALIFY {position} = MIN({position}) OVER (PARTITION BY {id_cols})"
+        )
 
     # =========================================================================
     # Conditional visitors (If, Case)

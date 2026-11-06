@@ -412,6 +412,30 @@ class TestDatasetChainResults:
 
 
 # =============================================================================
+# Set operations
+# =============================================================================
+
+
+class TestUnionSQL:
+    """A union reads each of its operands once (#1304)."""
+
+    @staticmethod
+    def _sql(operands: int) -> str:
+        names = [f"DS_{k}" for k in range(1, operands + 1)]
+        data_structures = {"datasets": [_structure(name, ["Me_1"], "Number") for name in names]}
+        return transpile(f"DS_r <- union({', '.join(names)});", data_structures)[0][1]
+
+    def test_sql_grows_linearly_with_the_operands(self) -> None:
+        """An ANTI JOIN of each operand against every operand before it made the SQL, and
+        DuckDB's planning, grow with the square of the number of operands."""
+        small, large = self._sql(10), self._sql(100)
+
+        assert " JOIN " not in large
+        assert all(large.count(f'"DS_{k}"') == 1 for k in range(1, 101))
+        assert len(large) < 11 * len(small)
+
+
+# =============================================================================
 # Chains of components
 # =============================================================================
 

@@ -2651,6 +2651,26 @@ class SetBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1304_1(self):
+        """
+        Expression: DS_r <- union(DS_1 [filter Id_1 <= 1] [calc Me_1 := Me_1 + 1],
+                                  DS_1 [filter Id_1 <= 2] [calc Me_1 := Me_1 + 2],
+                                  ...
+                                  DS_1 [filter Id_1 <= 10] [calc Me_1 := Me_1 + 10]);
+        Description: DuckDB wrote the union with an ANTI JOIN of each operand against every
+            operand before it, so its SQL and planning grew with the square of the number of
+            operands. Each operand repeats the Data Points of the operands before it with other
+            values and adds one Identifier, so each Data Point has to come from the left-most
+            operand that has it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1304
+        Goal: Check Result.
+        """
+        code = "GH_1304_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1276_7(self):
         """
         Status: OK
