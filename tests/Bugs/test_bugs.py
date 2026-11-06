@@ -3712,6 +3712,25 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_2(self):
+        """
+        Expression: DS_r1 <- if DS_1 < 1 then 0 else DS_1;
+                    DS_r2 <- if DS_1 = 0 then 0 else 1 / (DS_1 + 1);
+                    DS_r3 <- if DS_1 > 2 then DS_1[calc Me_1 := floor(Me_1)] else 0.5;
+        Description: A Data Set if whose operands have different types gives their common
+            type, Number here. On the pandas engine, both operands took the dtype of the then
+            operand: under the Integer scalar 0, the Number values of the else operand were
+            cut (DS_r1 Id_1 3 gave 2.0 and DS_r2 0.0 on every Data Point), and the Number
+            scalar 0.5 raised an ArrowInvalid under the Integer then operand (DS_r3).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_2"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """

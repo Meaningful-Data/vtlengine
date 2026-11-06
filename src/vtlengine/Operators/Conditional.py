@@ -151,14 +151,14 @@ class If(Operator):
 
         t_base = dataset_assign(cond[cond[COND_COL]], true_branch, ids, measures)
         f_base = dataset_assign(cond[~cond[COND_COL]], false_branch, ids, measures)
-        # Ensure compatible dtypes for merge
+        # The merge needs the same dtypes on both sides: the one of the result Component, the
+        # common type of both operands. The dtype of the then operand cut the Number values of
+        # the else operand under an Integer then operand, and failed on its nulls (issue #1314).
         for col in t_base.columns.intersection(f_base.columns):
             if col != COND_COL and str(t_base[col].dtype) != str(f_base[col].dtype):
-                common_dtype = (
-                    t_base[col].dtype if str(t_base[col].dtype) != "object" else f_base[col].dtype
-                )
-                t_base[col] = t_base[col].astype(common_dtype)
-                f_base[col] = f_base[col].astype(common_dtype)
+                common_dtype = result.components[col].data_type.dtype()
+                t_base[col] = t_base[col].astype(common_dtype)  # type: ignore[call-overload]
+                f_base[col] = f_base[col].astype(common_dtype)  # type: ignore[call-overload]
         result.data = merge_frames(t_base, f_base, how="outer").drop(columns=COND_COL)
         _combine_viral_attributes(result, [true_branch, false_branch])
 
