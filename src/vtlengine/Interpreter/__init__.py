@@ -263,13 +263,12 @@ class InterpreterAnalyzer(ASTTemplate):
                 _fill_dataset_empty_data(self.datasets[ds_name])
 
     def _save_datapoints_efficient(self, statement_num: int) -> None:
-        if self.output_path is None:
-            # Keeping the data in memory if no output path is provided
-            return
         if self.ds_analysis is None:
             return
         if statement_num not in self.ds_analysis.deletion:
             return
+        # After its last use, a Data Set releases its data, unless it is a result returned in
+        # memory: with an output folder, the results are written first (issue #1304)
         for ds_name in self.ds_analysis.deletion[statement_num]:
             if (
                 ds_name not in self.datasets
@@ -281,8 +280,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 # We do not save global input datasets, only results of transformations
                 self.datasets[ds_name].data = None
                 continue
-            if self.return_only_persistent and ds_name not in self.ds_analysis.persistent:
+            # The flag of the result, as run() filters on it, instead of scanning the list
+            # of persistent names at each statement
+            if self.return_only_persistent and not self.datasets[ds_name].persistent:
                 self.datasets[ds_name].data = None
+                continue
+            if self.output_path is None:
+                # A result returned in memory keeps its data
                 continue
             # Saving only datasets, no scalars
             save_datapoints(
@@ -353,6 +357,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
             # Reset some handlers (joins and if)
             self.is_from_join = False
+            # The apply of a join leaves its Data Set here, which would keep its data alive
+            self.regular_aggregation_dataset = None
             self.condition_stack = None
             self.then_condition_dataset = None
             self.else_condition_dataset = None
@@ -364,8 +370,11 @@ class InterpreterAnalyzer(ASTTemplate):
             if result is None:
                 continue
 
-            # Save results
-            self.datasets[result.name] = copy(result)
+            # Save results: a copy, as the result of a simple assignment (DS_2 := DS_1) may be
+            # the Dataset of its operand, and the same object in both, so releasing its data
+            # after its last use also releases it from the results (issue #1304)
+            result = copy(result)
+            self.datasets[result.name] = result
             results[result.name] = result
             if isinstance(result, Scalar):
                 scalars_to_save.add(result.name)

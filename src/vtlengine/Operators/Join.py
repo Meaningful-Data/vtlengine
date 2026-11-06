@@ -186,7 +186,14 @@ class Join(Operator):
         using: List[str],
         nvl: Optional[Dict[str, Any]] = None,
     ) -> Dataset:
-        result = cls.execute([copy(operand) for operand in operands], using)
+        operand_copies = [copy(operand) for operand in operands]
+        try:
+            result = cls.execute(operand_copies, using)
+        finally:
+            # The class keeps one of them as reference_dataset until the next join: without its
+            # data, so the data of each operand is released after its last use (issue #1304)
+            for operand in operand_copies:
+                operand.data = None
         if result.data is not None:
             extra_cols = [c for c in result.data.columns if c not in result.components]
             if extra_cols:
