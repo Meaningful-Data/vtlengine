@@ -2729,6 +2729,23 @@ class SetBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1304_7(self):
+        """
+        Expression: DS_r1 <- (case when DS_1 > 0 then 1.0 else DS_2)[calc Me_2 := Me_1 * 2];
+                    DS_r2 <- (case when DS_1 > 0 then 1.0 else DS_2) + DS_1;
+        Description: A Data Set case whose first then-operand is a scalar, as the operand of a
+            clause or of another operator. On the DuckDB engine, the structure of a case came
+            from its first then-operand only and its type from its then-operands only, so the
+            calc raised an AttributeError (DS_r1) and the case was taken for a scalar (DS_r2).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1304
+        Goal: Check Result.
+        """
+        code = "GH_1304_7"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1276_7(self):
         """
         Status: OK
