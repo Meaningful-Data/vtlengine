@@ -1,9 +1,9 @@
 from copy import copy
-from typing import Any, Collection, Dict, List, Optional, Type, Union
+from typing import Any, Collection, Dict, List, Optional, Tuple, Type, Union
 
 import pandas as pd
 
-from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
+from vtlengine.AST.Grammar.tokens import CHECK, CHECK_DATAPOINT, CHECK_HIERARCHY
 from vtlengine.DataTypes import (
     Boolean,
     Integer,
@@ -13,13 +13,50 @@ from vtlengine.DataTypes import (
     check_unary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model import Component, Dataset, Role, ValueDomain, component_type_name
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 
 
 # noinspection PyTypeChecker
+def bind_value_domains(
+    ruleset: str,
+    signature: Dict[str, str],
+    called: List[str],
+    components: Dict[str, Component],
+    value_domains: Optional[Dict[str, ValueDomain]],
+) -> Tuple[Dict[str, str], Dict[str, ValueDomain]]:
+    """The components a datapoint ruleset on value domains is called with, bound in order to the
+    value domains of its signature, or their aliases, and the ones whose
+    values must be checked against their value domain.
+
+    A component defined on the value domain is used as it is, one of its basic type takes its
+    values (downcast), and one of another basic type raises. A value domain that is not given
+    is not checked."""
+    if len(called) != len(signature):
+        raise SemanticError("1-1-10-2", op=CHECK_DATAPOINT)
+    checks: Dict[str, ValueDomain] = {}
+    for name, comp_name in zip(signature.values(), called):
+        value_domain = (value_domains or {}).get(name)
+        component = components[comp_name]
+        if value_domain is None or (
+            component.value_domain is not None and component.value_domain.name == name
+        ):
+            continue
+        if component.data_type != value_domain.type:
+            raise SemanticError(
+                "1-1-10-12",
+                op=CHECK_DATAPOINT,
+                comp_name=comp_name,
+                type=component_type_name(component.data_type, component.value_domain),
+                value_domain=name,
+                ruleset=ruleset,
+            )
+        checks[comp_name] = value_domain
+    return dict(zip(signature, called)), checks
+
+
 class Check(Operator):
     op = CHECK
 

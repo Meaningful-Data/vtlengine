@@ -4535,7 +4535,7 @@ class DefinedBugs(BugHelper):
         """
         Status: OK
         Expression: define operator f (x VD_1) returns number is x end operator; DS_r <- DS_1[calc Me_2 := f(Me_1)];
-        Description: A value domain is no parameter type of a user defined operator: a script
+        Description: VD_1 types the parameter, but no value domain has its name: a script
                      error, where a SyntaxError was raised.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
         Goal: Check Exception.
@@ -7027,4 +7027,203 @@ class ValueDomainBugs(BugHelper):
             number_inputs=number_inputs,
             references_names=references_names,
             vd_names=self.vd_all,
+        )
+
+    def test_GH_1236_1(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_FLOW , VD_AMOUNT ) is ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Id_2 , Me_1 all );
+        Description: The components of the call are bound in order to the value domains of the
+                     ruleset, which the rules name. Id_2 and Me_1 are of their basic types, and
+                     their values are values of them.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
+        Goal: Check Result.
+        """
+        code = "GH_1236_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1236-VD_FLOW", "GH_1236-VD_AMOUNT"],
+        )
+
+    def test_GH_1236_2(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_FLOW as F , VD_AMOUNT as A )
+                    is r1 : when F = "CREDIT" then A >= 0 errorcode "credit below zero" ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Id_2 , Me_1 );
+        Description: The rules name the value domains by their aliases, and the components of
+                     the call are defined on them.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
+        Goal: Check Result.
+        """
+        code = "GH_1236_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1236-VD_FLOW", "GH_1236-VD_AMOUNT"],
+        )
+
+    def test_GH_1236_3(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DR_1 ( valuedomain num , str ) is
+                    r1 : when str = "X" then num > 0 end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DR_1 components Me_1 , Me_2 all );
+        Description: The value domains num and str are not given, and are bound to Me_1 and
+                     Me_2, which were looked up as columns of DS_1 (issue #1159).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
+        Goal: Check Result.
+        """
+        code = "GH_1236_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1236_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 , DPR_1 components Id_2 , Me_1 );
+        Description: OTHER, a value of Id_2, is not one of VD_FLOW, the value domain it is
+                     bound to.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
+        Goal: Check Exception.
+        """
+        code = "GH_1236_4"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="2-1-5-4",
+            exception_message="At op check_datapoint: Cannot cast OTHER of String to Value Domain",
+            vd_names=["GH_1236-VD_FLOW", "GH_1236-VD_AMOUNT"],
+        )
+
+    def test_GH_1236_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 , Id_2 );
+        Description: Me_1, an Integer, is bound to VD_FLOW, a value domain of Strings.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
+        Goal: Check Exception.
+        """
+        code = "GH_1236_5"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-10-12",
+            exception_message="Component Me_1 of type Integer cannot take the values of the Value "
+            "Domain VD_FLOW",
+            vd_names=["GH_1236-VD_FLOW", "GH_1236-VD_AMOUNT"],
+        )
+
+    def test_GH_1236_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 , DPR_1 components Id_2 );
+        Description: The call names one component for the two value domains of the ruleset.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
+        Goal: Check Exception.
+        """
+        code = "GH_1236_6"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-10-2",
+            vd_names=["GH_1236-VD_FLOW", "GH_1236-VD_AMOUNT"],
+        )
+
+    def test_GH_1236_7(self):
+        """
+        Status: OK
+        Expression: define operator with_suffix ( x component < VD_FLOW > ) ... end operator;
+                    define operator flag ( x VD_FLOW ) ... end operator;
+                    DS_r <- DS_1 [ calc Me_2 := with_suffix ( Id_2 ) , Me_3 := flag ( "DEBIT" ) ];
+        Description: A value domain types a component and a scalar parameter, which take the
+                     values of its basic type that are values of it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
+        Goal: Check Result.
+        """
+        code = "GH_1236_7"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1236-VD_FLOW"],
+        )
+
+    def test_GH_1236_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := with_suffix ( Id_2 ) ];
+        Description: OTHER, a value of Id_2, is not one of VD_FLOW, which types the parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
+        Goal: Check Exception.
+        """
+        code = "GH_1236_8"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="2-1-5-4",
+            exception_message="At op with_suffix: Cannot cast OTHER of String to Value Domain",
+            vd_names=["GH_1236-VD_FLOW"],
+        )
+
+    def test_GH_1236_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := with_suffix ( Me_1 ) ];
+        Description: Me_1, an Integer, is no argument of a parameter typed by VD_FLOW, a value
+                     domain of Strings.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
+        Goal: Check Exception.
+        """
+        code = "GH_1236_9"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-2-18",
+            exception_message="Expected String, got Integer on UDO with_suffix, parameter x",
+            vd_names=["GH_1236-VD_FLOW"],
+        )
+
+    def test_GH_1236_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := flag ( "OTHER" ) ];
+        Description: The literal OTHER is not one of VD_FLOW, which types the parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
+        Goal: Check Exception.
+        """
+        code = "GH_1236_10"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="2-1-5-4",
+            exception_message="At op flag: Cannot cast OTHER of String to Value Domain VD_FLOW",
+            vd_names=["GH_1236-VD_FLOW"],
         )

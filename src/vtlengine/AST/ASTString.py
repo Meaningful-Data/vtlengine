@@ -128,6 +128,8 @@ def _format_component_type(
     component: Component, constraint: Optional[AST.TypeConstraint] = None
 ) -> str:
     role = "component" if component.role is None else component.role.value.lower()
+    if isinstance(component.data_type, AST.ValueDomainType):
+        return f"{role}<{component.data_type.name}{_format_constraint(constraint)}>"
     # A component declared without a type is parsed with a String instance, not the class
     if isinstance(component.data_type, type):
         return f"{role}<{_format_type(component.data_type)}{_format_constraint(constraint)}>"
@@ -152,6 +154,8 @@ def _format_type(type_: Any, constraints: Optional[AST.SignatureConstraints] = N
         return _format_component_type(type_, constraint)
     if isinstance(type_, Scalar):
         return f"scalar{_format_constraint(constraint)}"
+    if isinstance(type_, AST.ValueDomainType):
+        return f"{type_.name}{_format_constraint(constraint)}"
     return f"{SCALAR_TYPES_CLASS_REVERSE[type_].lower()}{_format_constraint(constraint)}"
 
 

@@ -82,7 +82,9 @@ def _combine_viral_attributes(result: Any, operands: List[Any]) -> None:
             ]
         else:
             cols = [list(d[va]) for d in carriers]
-        res_data[va] = [registry.resolve_group(va, [col[r] for col in cols]) for r in range(n)]
+        # The rule of the attribute is the one of its variable or its value domain
+        comp = next(op.components[va] for op in ds_ops if va in op.components)
+        res_data[va] = [registry.resolve_group(comp, [col[r] for col in cols]) for r in range(n)]
 
 
 class If(Operator):

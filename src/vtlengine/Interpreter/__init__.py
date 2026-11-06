@@ -58,7 +58,11 @@ from vtlengine.AST.Grammar.tokens import (
     TRUNC,
     WHEN,
 )
-from vtlengine.AST.UDOTypes import udo_component_matches, udo_dataset_components
+from vtlengine.AST.UDOTypes import (
+    resolve_value_domain_type,
+    udo_component_matches,
+    udo_dataset_components,
+)
 from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
@@ -112,7 +116,12 @@ from vtlengine.Operators.Time import (
     Period_indicator,
     Time_Aggregation,
 )
-from vtlengine.Operators.Validation import Check, Check_Datapoint, Check_Hierarchy
+from vtlengine.Operators.Validation import (
+    Check,
+    Check_Datapoint,
+    Check_Hierarchy,
+    bind_value_domains,
+)
 from vtlengine.Utils import (
     AGGREGATION_MAPPING,
     ANALYTIC_MAPPING,
@@ -412,23 +421,25 @@ class InterpreterAnalyzer(ASTTemplate):
         for param in node.parameters:
             if param.name in [x["name"] for x in param_info]:
                 raise SemanticError("1-3-1-4", type="User Defined Operator", op=node.op)
+            declared, constraints = resolve_value_domain_type(
+                param.type_, param.constraints, self.value_domains
+            )
             # We use a string for model types, but the data type class for basic types
             # (Integer, Number, String, Boolean, ...)
-            if isinstance(param.type_, (Dataset, Component, Scalar)):
-                type_ = param.type_.__class__.__name__
+            if isinstance(declared, (Dataset, Component, Scalar)):
+                type_ = declared.__class__.__name__
             else:
-                type_ = param.type_
+                type_ = declared
             param_info.append(
                 {
                     "name": param.name,
                     "type": type_,
-                    "declared": param.type_,
-                    "constraints": param.constraints,
+                    "declared": declared,
+                    "constraints": constraints,
                 }
             )
             if param.default is not None:
                 default = self.visit(param.default)
-                declared: Any = param.type_
                 if not isinstance(declared, Scalar) and not (
                     isinstance(declared, type)
                     and check_unary_implicit_promotion(default.data_type, declared)
@@ -557,9 +568,6 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_ViralPropagationDef(self, node: AST.ViralPropagationDef) -> None:
         """Validate and store the viral propagation definition in the registry."""
         registry = get_current_registry()
-
-        if node.signature_type == "valuedomain":
-            raise SemanticError("1-3-3-8", name=node.name, value_domain=node.target)
 
         # Validate: cannot mix enumerated and aggregate clauses
         if node.enumerated_clauses and node.aggregate_clause:
@@ -1281,14 +1289,18 @@ class InterpreterAnalyzer(ASTTemplate):
             set_type = scalar_data_type or BASIC_TYPES[type(elements[0])]
             return ScalarSet(data_type=set_type, values=elements)
         elif node.kind == "ValueDomain":
-            if self.value_domains is None:
-                raise SemanticError("1-2-22", comp_type="Value Domains")
-            if node.name not in self.value_domains:
-                raise SemanticError("1-2-8", name=node.name)
-            vd = self.value_domains[node.name]
+            vd = self._value_domain(node.name)
             return ScalarSet(data_type=vd.type, values=vd.setlist)
         else:
             raise SemanticError("1-2-9", name=node.name)
+
+    def _value_domain(self, name: str) -> ValueDomain:
+        """The value domain of that name, which the script reads."""
+        if self.value_domains is None:
+            raise SemanticError("1-2-22", comp_type="Value Domains")
+        if name not in self.value_domains:
+            raise SemanticError("1-2-8", name=name)
+        return self.value_domains[name]
 
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> None:  # noqa: C901
         operands = []
@@ -1976,11 +1988,26 @@ class InterpreterAnalyzer(ASTTemplate):
         if dpr_info is None:
             dpr_info = {}
 
+        signature = dpr_info.get("signature")
+        if dpr_info.get("signature_type") == "valuedomain" and node.components and signature:
+            signature, checks = bind_value_domains(
+                dpr_name,
+                signature,
+                node.components,
+                dataset_element.components,
+                self.value_domains,
+            )
+            if dataset_element.data is not None:
+                for comp_name, value_domain in checks.items():
+                    Operators.check_values(
+                        dataset_element.data[comp_name], value_domain, CHECK_DATAPOINT
+                    )
+
         rule_output_values = {}
         # Keep viral attributes out of rule handling; they are re-attached from the
         # original dataset in Validation.evaluate (issue #877). A viral attribute the
         # ruleset signature names is kept: the rules read it (issue #898).
-        signature_components = set((dpr_info.get("signature") or {}).values())
+        signature_components = set((signature or {}).values())
         stripped_viral = [
             name
             for name in dataset_element.get_viral_attributes_names()
@@ -2003,7 +2030,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 data=stripped_data,
             )
         self.ruleset_dataset = ruleset_dataset
-        self.ruleset_signature = dpr_info.get("signature")
+        self.ruleset_signature = signature
         if dpr_info.get("signature_type") == "variable" and not self.ruleset_signature:
             self.ruleset_signature = {name: name for name in ruleset_dataset.components}
         self.ruleset_mode = output
@@ -2565,6 +2592,10 @@ class InterpreterAnalyzer(ASTTemplate):
         for i, param in enumerate(operator["params"]):
             declared, constraints = param["declared"], param["constraints"]
             if isinstance(declared, Component):
+                if declared.value_domain is not None:
+                    self._check_udo_component_type(
+                        node.op, param["name"], declared, signature_values[param["name"]]
+                    )
                 argument = node.params[i] if i < len(node.params) else None
                 checks = (
                     list(caller.get(argument.value, [])) if isinstance(argument, AST.VarID) else []
@@ -2584,6 +2615,22 @@ class InterpreterAnalyzer(ASTTemplate):
                 node.op, f"parameter {param['name']}", declared, constraints, value
             )
         return component_constraints
+
+    def _check_udo_component_type(
+        self, op: str, param: str, declared: Component, value: Any
+    ) -> None:
+        """A component argument of a parameter that a value domain types is of its basic type,
+        as a scalar argument of a basic type is."""
+        if isinstance(value, str):
+            if self.udo_params and isinstance(self.udo_params[-1].get(value), str):
+                value = self.udo_params[-1][value]
+            dataset = self.regular_aggregation_dataset
+            value = dataset.components.get(value) if dataset is not None else None
+        found = getattr(value, "data_type", None)
+        if found is not None and not check_unary_implicit_promotion(found, declared.data_type):
+            raise SemanticError(
+                "1-2-18", param_type=declared.data_type, type_name=found, op=op, param_name=param
+            )
 
     def _check_udo_signature(
         self,
@@ -2633,6 +2680,8 @@ class InterpreterAnalyzer(ASTTemplate):
             values = pd.Series([value.value], dtype=object)
         else:
             return
+        if constraint.value_domain is not None:
+            Operators.check_values(values, constraint.value_domain, op)
         broken = pd.Series(False, index=values.index)
         if constraint.not_null:
             broken |= values.isna()

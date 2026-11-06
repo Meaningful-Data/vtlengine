@@ -224,12 +224,17 @@ class Component:
         )
 
     def to_dict(self) -> Dict[str, Any]:
-        data_type = self.data_type
-        if not inspect.isclass(self.data_type):
-            data_type = self.data_type.__class__
+        data_type: Any = self.data_type
+        if isinstance(data_type, ScalarType):
+            data_type = data_type.__class__
+        type_ = (
+            component_type_name(data_type, self.value_domain)
+            if inspect.isclass(data_type)
+            else str(data_type)
+        )
         return {
             "name": self.name,
-            "type": component_type_name(data_type, self.value_domain),
+            "type": type_,
             # Need to check here for NoneType as UDO argument has it
             "role": self.role.value if self.role is not None else None,  # type: ignore[redundant-expr]
             "nullable": self.nullable,

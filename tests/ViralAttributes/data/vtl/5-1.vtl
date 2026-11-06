@@ -3,4 +3,4 @@
         when "M" then "M";
         else "A"
     end viral propagation;
-    DS_r <- DS_1;
+    DS_r <- sum(DS_1 group by Id_1);

@@ -318,9 +318,10 @@ class Aggregation(Operator.Unary):
                 grouped = viral_df.groupby(grouping_keys, sort=False)
 
                 def _group_resolver(va_name: str) -> Callable[[pd.Series], Any]:
-                    # Binds the attribute name per column: a lambda in the
+                    # Binds the attribute per column: a lambda in the
                     # comprehension below would see the last one only.
-                    return lambda vals: registry.resolve_group(va_name, list(vals))
+                    component = operand.components[va_name]
+                    return lambda vals: registry.resolve_group(component, list(vals))
 
                 resolved = pd.DataFrame(
                     {
@@ -336,7 +337,9 @@ class Aggregation(Operator.Unary):
                 )
             else:
                 for va_name in viral_attr_names:
-                    aux_df[va_name] = registry.resolve_group(va_name, list(viral_df[va_name]))
+                    aux_df[va_name] = registry.resolve_group(
+                        operand.components[va_name], list(viral_df[va_name])
+                    )
 
         for comp_name, comp in result.components.items():
             if comp_name in aux_df.columns:

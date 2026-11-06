@@ -7,6 +7,7 @@ from vtlengine.AST import (
     OrderBy,
     ParamConstant,
     ParamOp,
+    ValueDomainType,
     VarID,
     Windowing,
 )
@@ -333,12 +334,13 @@ class Terminals:
         if not c.is_terminal and c.rule_index == RC.CONSTANT[0]:
             return self.visitConstant(c)
 
-    def visitScalarType(self, ctx, allow_constraints=False):
+    def visitScalarType(self, ctx, allow_constraints=False, allow_value_domain=False):
         """
         scalarType: (basicScalarType|valueDomainName)scalarTypeConstraint?((NOT)? NULL_CONSTANT)? ;
 
         A user defined operator signature allows the constraints, which ASTVisitor reads apart
-        anywhere else they are not supported.
+        anywhere else they are not supported. The type of a scalar or component parameter can be
+        a value domain.
         """
         ctx_list = ctx.children
 
@@ -375,6 +377,11 @@ class Terminals:
             if scalartype.children[0].symbol_type == vtl_cpp_parser.SCALAR:
                 return Scalar(name="", data_type=None, value=None)
             type_node = self.visitBasicScalarType(scalartype)
+
+        elif allow_value_domain and scalartype.ctx_id == RC.VALUE_DOMAIN_NAME:
+            type_node = ValueDomainType(
+                name=scalartype.children[0].text, definition=script_location(scalartype)
+            )
 
         else:
             raise InputValidationException(code="0-5-1-10", definition=script_location(scalartype))
@@ -422,7 +429,7 @@ class Terminals:
         """
         raise SemanticError("1-3-13", construct=f"ruleset type {script_location(ctx)}")
 
-    def visitComponentType(self, ctx, allow_constraints=False):
+    def visitComponentType(self, ctx, allow_constraints=False, allow_value_domain=False):
         """
         componentType:  componentRole ( LT   scalarType  MT  )?
         """
@@ -430,7 +437,7 @@ class Terminals:
 
         role_node = self.visitComponentRole(ctx_list[0])
         data_type = [
-            self.visitScalarType(constraint, allow_constraints)
+            self.visitScalarType(constraint, allow_constraints, allow_value_domain)
             for constraint in ctx_list
             if not constraint.is_terminal and constraint.ctx_id == RC.SCALAR_TYPE
         ]
@@ -454,7 +461,7 @@ class Terminals:
         c = ctx_list[0]
 
         if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
-            return self.visitScalarType(c, allow_constraints)
+            return self.visitScalarType(c, allow_constraints, allow_value_domain=True)
 
         elif not c.is_terminal and c.ctx_id == RC.DATASET_TYPE:
             return self.visitDatasetType(c, allow_constraints)
@@ -466,7 +473,7 @@ class Terminals:
             return self.visitRulesetType(c)
 
         # componentType, the last alternative of the grammar
-        return self.visitComponentType(c, allow_constraints)
+        return self.visitComponentType(c, allow_constraints, allow_value_domain=True)
 
     def visitOutputParameterType(self, ctx):
         """
