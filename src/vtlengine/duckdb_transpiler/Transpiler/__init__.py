@@ -1074,7 +1074,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if operand_type == _DATASET:
             ds = self._get_dataset_structure(node.operand)
             name_override: Optional[str] = None
-            if op == tokens.ISNULL and ds and len(ds.get_measures_names()) == 1:
+            if op == tokens.ISNULL and self._isnull_renames_measure(ds):
                 name_override = "bool_var"
             elif self._renames_mono_measure_to_int(op, ds):
                 name_override = "int_var"
@@ -3719,18 +3719,16 @@ FROM (
                 source_sql = self._get_dataset_sql(node.condition) if cond_ds else ""
         if cond_ds is not None:
             source_ds = cond_ds
-            source_ids = list(cond_ds.get_identifiers_names())
-            bool_measures = list(cond_ds.get_measures_names())
-            cond_expr = f"{alias}.{quote_name(bool_measures[0])}" if bool_measures else "TRUE"
         else:
             source_sql = self._get_dataset_sql(source_node)
-            source_ids = list(source_ds.get_identifiers_names())
-            if node.condition is source_node:
-                cond_measures = list(source_ds.get_measures_names())
-                cond_expr = f"{alias}.{quote_name(cond_measures[0])}" if cond_measures else "TRUE"
-            else:
-                with self._clause_scope(source_ds, prefix=alias):
-                    cond_expr = self.visit(node.condition)
+        source_ids = list(source_ds.get_identifiers_names())
+        if cond_ds is not None or node.condition is source_node:
+            # The Boolean Measure of the condition, which the semantic analysis checked: a
+            # structure without it is not taken as an always true condition (issue #1314)
+            cond_expr = f"{alias}.{quote_name(source_ds.get_measures_names()[0])}"
+        else:
+            with self._clause_scope(source_ds, prefix=alias):
+                cond_expr = self.visit(node.condition)
 
         t_type = self._get_node_type(node.thenOp)
         e_type = self._get_node_type(node.elseOp)

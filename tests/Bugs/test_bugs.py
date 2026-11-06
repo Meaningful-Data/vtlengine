@@ -3954,6 +3954,20 @@ class ConditionalBugs(BugHelper):
         Goal: Check Result.
         """
         code = "GH_1314_23"
+
+    def test_GH_1314_11(self):
+        """
+        Expression: DS_r1 <- isnull(DS_1);
+                    DS_r2 <- if isnull(DS_1) xor DS_1 then DS_2 else 0.5;
+                    DS_r3 <- case when isnull(DS_1) xor DS_1 then DS_2 else 0.5;
+        Description: isnull keeps the name of the lone Boolean Measure of DS_1, which it does
+            not retype. The DuckDB engine named it bool_var: DS_r1 had no Me_1 column, the if
+            read its condition as always true (Id_1 1 gave 10.5) and the case raised an
+            IndexError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_11"
         number_inputs = 2
         references_names = ["1", "2", "3"]
 

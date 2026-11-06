@@ -699,7 +699,7 @@ class StructureVisitor(ASTTemplate):
         ds = self._get_dataset_structure(node.operand)
         if ds is None:
             return None
-        if node.op == tokens.ISNULL and len(ds.get_measures_names()) == 1:
+        if node.op == tokens.ISNULL and self._isnull_renames_measure(ds):
             return self._build_boolean_result_structure(ds)
         if node.op in self._INTEGER_RESULT_UNARY_OPS:
             return self._as_integer_if_mono(ds)
@@ -1148,6 +1148,14 @@ class StructureVisitor(ASTTemplate):
             comps[name] = orig
         # A VIRAL_ATTRIBUTE target is already in comps from the loop above (no promotion).
         return Dataset(name=parent_ds.name, components=comps, data=None)
+
+    @staticmethod
+    def _isnull_renames_measure(ds: Optional[Dataset]) -> bool:
+        """Whether isnull names its result ``bool_var``: it renames a lone Measure that it
+        changes the type of, so a Boolean one keeps its name, as in the semantic analysis
+        (issue #1314)."""
+        measures = ds.get_measures() if ds is not None else []
+        return len(measures) == 1 and measures[0].data_type is not Boolean
 
     def _build_boolean_result_structure(self, ds: Dataset) -> Dataset:
         """Replace all measures with a single ``bool_var`` Boolean measure."""
