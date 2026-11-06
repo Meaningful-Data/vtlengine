@@ -1634,3 +1634,78 @@ class UdoTest(UDOHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1237_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- pass_on(DS_1, DPR_V), with a parameter of type
+            datapoint_on_valuedomains {VD_FLOW * VD_AMOUNT};
+        Description: A datapoint ruleset defined on the value domains its type constraint
+            names, in that order.
+        Git Issue: GH_1237.
+        Goal: Check Result.
+        """
+        code = "GH_1237_14"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_FLOW", "VD_AMOUNT"],
+        )
+
+    def test_GH_1237_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- pass_on(DS_1, DPR_V), with a parameter of type datapoint_on_valuedomains {VD_AMOUNT * VD_FLOW};
+        Description: A datapoint ruleset defined on the value domains of its type constraint in another order.
+        Git Issue: GH_1237.
+        Goal: Check Exception.
+        """
+        code = "GH_1237_15"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-3-1-1",
+            vd_names=["VD_FLOW", "VD_AMOUNT"],
+        )
+
+    def test_GH_1237_16(self):
+        """
+        Status: OK
+        Expression: DS_r <- pass_on(DS_1, DPR_1), with a parameter of type datapoint_on_valuedomains;
+        Description: A datapoint ruleset defined on variables for a parameter on value domains.
+        Git Issue: GH_1237.
+        Goal: Check Exception.
+        """
+        code = "GH_1237_16"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-3-1-1",
+            vd_names=["VD_FLOW", "VD_AMOUNT"],
+        )
+
+    def test_GH_1237_17(self):
+        """
+        Status: OK
+        Expression: DS_r <- pass_on(DS_1, DPR_V), with a parameter of type datapoint_on_variables;
+        Description: A datapoint ruleset defined on value domains for a parameter on variables.
+        Git Issue: GH_1237.
+        Goal: Check Exception.
+        """
+        code = "GH_1237_17"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-3-1-1",
+            vd_names=["VD_FLOW", "VD_AMOUNT"],
+        )

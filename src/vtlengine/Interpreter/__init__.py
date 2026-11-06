@@ -134,13 +134,6 @@ from vtlengine.ViralPropagation import (
 )
 
 
-@dataclass(frozen=True)
-class _BoundRuleset:
-    """The ruleset that a ruleset parameter of a user defined operator takes (issue #1237)."""
-
-    ruleset: str
-
-
 def _ruleset_type_matches(declared: AST.RulesetType, found: AST.RulesetType) -> bool:
     """Whether a ruleset of type found is of the type a parameter declares. A part the
     declared type leaves out takes any: ruleset any kind, no sub-type both, and so on."""
@@ -2561,16 +2554,15 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def _udo_ruleset_name(self, name: str) -> str:
         """The ruleset a name stands for: the one a ruleset parameter of the user defined
-        operator being called takes, or the ruleset defined with that name."""
+        operator being called takes, bound by its name as a dataset parameter is, or the
+        ruleset defined with that name."""
         bound = self.udo_params[-1].get(name) if self.udo_params else None
-        return bound.ruleset if isinstance(bound, _BoundRuleset) else name
+        return bound if isinstance(bound, str) else name
 
-    def _udo_ruleset_argument(
-        self, op: str, param: Dict[str, Any], argument: AST.AST
-    ) -> _BoundRuleset:
+    def _udo_ruleset_argument(self, op: str, param: Dict[str, Any], argument: AST.AST) -> str:
         """The ruleset a ruleset parameter takes: the one the argument names, or the one a
         ruleset parameter of the calling operator takes. It must be of the type the parameter
-        declares (issue #1237)."""
+        declares."""
         declared = param["declared"]
         name = self._udo_ruleset_name(argument.value) if isinstance(argument, AST.VarID) else None
         found = self._ruleset_type(name) if name is not None else None
@@ -2592,7 +2584,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 type_1=_format_type(declared),
                 type_2=f"{_format_type(found)} {name}",
             )
-        return _BoundRuleset(ruleset=cast(str, name))
+        return cast(str, name)
 
     def _check_udo_arguments(
         self, node: AST.UDOCall, operator: Dict[str, Any], signature_values: Dict[str, Any]
