@@ -893,6 +893,11 @@ centralised_messages = {
         "description": "Raised when the constant of a nvl rule of a join does not have the type "
         "of the component it gives a value to.",
     },
+    "1-1-13-27": {
+        "message": "At op {op}: The nvl rule of {name} gives null to an Identifier, which "
+        "cannot be null.",
+        "description": "Raised when a nvl rule of a join gives the null constant to an Identifier.",
+    },
     "1-1-13-9": {
         "message": "Ambiguity for this variable {comp_name} inside a Join clause.",
         "description": "Raised when a component name is ambiguous in a Join operation.",
