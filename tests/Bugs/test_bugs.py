@@ -4010,9 +4010,8 @@ class ConditionalBugs(BugHelper):
                     DS_r5 <- inner_join(DS_1 as a, DS_2 as b calc Me_3 := case when b#Me_1
                         then a#Me_1 else "yes" keep Me_3);
         Description: A Boolean operand of an if or a case with a String operand is promoted to
-            String, as cast to string renders it ('True', 'False'). The DuckDB engine cast the
-            String operand to Boolean instead, so "yes" came back as 'true' and the Booleans as
-            'true' and 'false'.
+            String, as cast to string renders it ('true', 'false'). The DuckDB engine cast the
+            String operand to Boolean instead, so "yes" came back as 'true'.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
         Goal: Check Result.
         """
@@ -4029,9 +4028,9 @@ class ConditionalBugs(BugHelper):
                     DS_r3 <- DS_3 = true;
                     DS_r4 <- DS_3 <> DS_2;
         Description: A Boolean compared with a String is promoted to String, as cast to string
-            renders it ('True', 'False'), and they are compared as text. The DuckDB engine cast
-            the String to Boolean: "true" equalled a true value (DS_r2), and a String that is
-            not a Boolean raised a Conversion Error (DS_r1, DS_r3, DS_r4).
+            renders it ('true', 'false'), and they are compared as text, so "True" differs from
+            a true value. The DuckDB engine cast the String to Boolean, so a String that is not
+            a Boolean raised a Conversion Error (DS_r1, DS_r3, DS_r4).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
         Goal: Check Result.
         """
@@ -4079,14 +4078,36 @@ class ConditionalBugs(BugHelper):
         Expression: DS_r <- inner_join(DS_1 as a, DS_2 as b calc Me_3 := a#Me_1 || "x",
                         Me_4 := cast(b#Me_1, string) keep Me_3, Me_4);
         Description: A Boolean Component of a join, referred to by its alias, is rendered as
-            text as any other Boolean ('True', 'False'). The DuckDB engine did not know its type,
-            so it rendered 'true' and 'false'.
+            text as any other Boolean ('true', 'false') on both engines.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
         Goal: Check Result.
         """
         code = "GH_1314_16"
         number_inputs = 2
         references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1314_17(self):
+        """
+        Expression: DS_r1 <- nvl(DS_1, "none");
+                    DS_r2 <- DS_1[calc Me_2 := nvl(Me_1, "none"), Me_3 := Me_1 in {"true", "x"},
+                        Me_4 := match_characters(Me_1, "t.*")];
+                    DS_r3 <- DS_1[calc Me_2 := if Me_1 then true else false]
+                        [calc Me_3 := Me_2 = "false"];
+                    DS_r4 <- DS_1 in {"true", "x"};
+        Description: A Boolean promoted to String is "true" or "false", as the VTL 2.2 manual
+            casts it, also in nvl, in, match_characters and the comparisons. The pandas engine
+            wrote "True" and "False", and did not convert the numpy Booleans of a calc before
+            comparing them with a String (DS_r3). The DuckDB engine cast the String to Boolean
+            in nvl and in, and match_characters had no function for a Boolean. Both engines
+            failed on in with a String that is not a Boolean.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_17"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
@@ -6126,11 +6147,11 @@ class CastBugs(BugHelper):
     def test_GH_923(self):
         """
         Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, string), Me_3 := upper(Me_1), ...];
-        Description: Boolean-to-string results must be Python-style ("True"/"False")
-            in both engines. The DuckDB transpiler emitted ``CAST(x AS VARCHAR)``
-            ('true'/'false') for explicit casts, and component-level string
-            operators (upper, substr, replace, length, instr) on a Boolean raised
-            ``BinderException`` because no implicit coercion was applied.
+        Description: Boolean-to-string results are "true"/"false" in both engines, as
+            the VTL 2.2 manual casts a Boolean to String (issue #1314). Component-level
+            string operators (upper, substr, replace, length, instr) on a Boolean raised
+            ``BinderException`` on the DuckDB engine because no implicit coercion was
+            applied.
         Git Issue: GH_923.
         Goal: Check Result matches the pandas engine output.
         """
@@ -6188,8 +6209,8 @@ class CastBugs(BugHelper):
     def test_GH_923_3(self):
         """
         Expression: sc_r <- true || "_x";
-        Description: scalar boolean || string must give Python-style text in
-            both engines; the DuckDB engine produced 'true_x'.
+        Description: scalar boolean || string gives the same text in both engines,
+            "true_x", as the VTL 2.2 manual casts a Boolean to String (issue #1314).
         Git Issue: GH_923.
         Goal: Check scalar result value.
         """
@@ -6201,14 +6222,13 @@ class CastBugs(BugHelper):
             datapoints={},
             use_duckdb=_use_duckdb_backend(),
         )
-        assert result["sc_r"].value == "True_x"
+        assert result["sc_r"].value == "true_x"
 
     def test_GH_923_4(self):
         """
         Expression: DS_r <- DS_1[calc Me_2 := Me_1 || "_x"];
-        Description: component-level boolean || string must give Python-style
-            text in both engines; the DuckDB engine let DuckDB coerce the
-            boolean ('true_x') and the pandas engine raised TypeError from
+        Description: component-level boolean || string gives the same text in both
+            engines, "true_x" (issue #1314); the pandas engine raised TypeError from
             the series-scalar path (issue GH_940).
         Git Issue: GH_923.
         Goal: Check component result values.
@@ -6222,15 +6242,15 @@ class CastBugs(BugHelper):
             use_duckdb=_use_duckdb_backend(),
         )
         me_2 = result["DS_r"].data["Me_2"]
-        assert me_2.tolist()[:2] == ["True_x", "False_x"]
+        assert me_2.tolist()[:2] == ["true_x", "false_x"]
         assert pd.isna(me_2.iloc[2])
 
     def test_GH_940(self):
         """
         Expression: DS_r <- DS_1[calc Me_2 := "x_" || Me_1];
         Description: component-level string || boolean (component on the
-            right) must implicitly cast the Boolean component to Python-style
-            text; the pandas engine raised TypeError from the series-scalar
+            right) must implicitly cast the Boolean component to text ("true",
+            "false"); the pandas engine raised TypeError from the series-scalar
             path.
         Git Issue: GH_940.
         Goal: Check Result.
@@ -6245,7 +6265,7 @@ class CastBugs(BugHelper):
         """
         Expression: DS_r <- DS_1 || "_x";
         Description: dataset-level boolean || string must implicitly cast the
-            Boolean measure to Python-style text; the pandas engine raised
+            Boolean measure to text ("true", "false"); the pandas engine raised
             TypeError from the series-scalar path.
         Git Issue: GH_940.
         Goal: Check Result.

@@ -1,4 +1,4 @@
 Id_1,Me_1,Me_2,Me_3,Me_4
-1,True,False,False,False
-2,False,False,True,True
+1,True,False,False,false
+2,False,False,True,true
 3,,True,,

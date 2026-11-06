@@ -22,7 +22,14 @@ from vtlengine.AST.Grammar.tokens import (
     TRIM,
     UCASE,
 )
-from vtlengine.DataTypes import Integer, Number, String, check_unary_implicit_promotion
+from vtlengine.DataTypes import (
+    Integer,
+    Number,
+    String,
+    check_unary_implicit_promotion,
+    to_string,
+    to_strings,
+)
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import DataComponent, Dataset, Role, Scalar
 
@@ -35,19 +42,14 @@ class Unary(Operator.Unary):
     def op_func(cls, x: Any) -> Any:
         if pd.isnull(x):
             return None
-        return cls.py_op(str(x))
+        return cls.py_op(to_string(x))
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
         """Applies the operation to a component"""
         if cls.str_accessor is not None:
-            s = (
-                series.astype("string[pyarrow]")
-                if str(series.dtype) != "string[pyarrow]"
-                else series
-            )
-            return getattr(s.str, cls.str_accessor)()
-        return series.map(lambda x: cls.py_op(str(x)), na_action="ignore")
+            return getattr(to_strings(series).str, cls.str_accessor)()
+        return series.map(lambda x: cls.py_op(to_string(x)), na_action="ignore")
 
     @classmethod
     def validate_dataset(cls, dataset: Dataset) -> None:
@@ -69,13 +71,12 @@ class Length(Unary):
     def op_func(cls, x: Any) -> Any:
         if pd.isnull(x):
             return None
-        return len(str(x))
+        return len(to_string(x))
 
     @classmethod
     def apply_operation_component(cls, series: Any) -> Any:
         """Applies the operation to a component"""
-        s = series.astype("string[pyarrow]") if str(series.dtype) != "string[pyarrow]" else series
-        return s.str.len()
+        return to_strings(series).str.len()
 
 
 class Lower(Unary):
@@ -120,7 +121,7 @@ class Binary(Operator.Binary):
     def op_func(cls, x: Any, y: Any) -> Any:
         if pd.isnull(x) or pd.isnull(y):
             return None
-        return cls.py_op(str(x), str(y))
+        return cls.py_op(to_string(x), to_string(y))
 
     @classmethod
     def apply_operation_series_scalar(cls, series: Any, scalar: Any, series_left: bool) -> Any:
@@ -295,7 +296,7 @@ class Substr(Parameterized):
 
     @classmethod
     def py_op(cls, x: str, param1: Any, param2: Any) -> Any:
-        x = str(x)
+        x = to_string(x)
         param1 = None if pd.isnull(param1) else int(param1)
         param2 = None if pd.isnull(param2) else int(param2)
         if param1 is None and param2 is None:
@@ -354,7 +355,7 @@ class Replace(Parameterized):
             return None
         if pd.isnull(param2):
             return None
-        x = str(x)
+        x = to_string(x)
         return x.replace(str(param1), str(param2))
 
     @classmethod
@@ -393,7 +394,7 @@ class StringDistance(Binary):
     def op_func(cls, x: Any, y: Any) -> Any:
         if pd.isnull(x) or pd.isnull(y):
             return None
-        return cls.py_op(str(x), str(y))
+        return cls.py_op(to_string(x), to_string(y))
 
 
 class Levenshtein(StringDistance):
@@ -728,7 +729,7 @@ class Instr(Parameterized):
         start: Optional[int],
         occurrence: Optional[int],
     ) -> Any:
-        str_value = str(str_value)
+        str_value = to_string(str_value)
         if not pd.isnull(start):
             if isinstance(start, (int, float)):
                 start = int(start - 1)

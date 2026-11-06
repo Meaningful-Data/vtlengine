@@ -7,7 +7,9 @@ from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Null,
+    String,
     binary_implicit_promotion,
+    to_strings,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
@@ -58,6 +60,12 @@ def _selected_value(operand: Scalar, data_type: Any) -> Any:
     if operand.value is None or operand.data_type == data_type:
         return operand.value
     return data_type.implicit_cast(operand.value, operand.data_type)
+
+
+def _as_type(data: Any, data_type: Any) -> Any:
+    """The data in the dtype of ``data_type``. As a String, a Boolean is "true" or "false", as
+    VTL casts it, where astype writes a numpy or Python Boolean as "True" (issue #1314)."""
+    return to_strings(data) if data_type is String else data.astype(data_type.dtype())
 
 
 def _identifiers(dataset: Dataset) -> Dict[str, Component]:
@@ -157,6 +165,8 @@ class If(Operator):
         result = cls.validate(condition, true_branch, false_branch, is_from_having)
         if isinstance(result, DataComponent):
             result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
+            if result.data_type is String:
+                result.data = to_strings(result.data)
         elif isinstance(result, Dataset):
             cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
         return result
@@ -204,10 +214,12 @@ class If(Operator):
         # common type of both operands. The dtype of the then operand cut the Number values of
         # the else operand under an Integer then operand, and failed on its nulls (issue #1314).
         for col in t_base.columns.intersection(f_base.columns):
-            if col != COND_COL and str(t_base[col].dtype) != str(f_base[col].dtype):
-                common_dtype = result.components[col].data_type.dtype()
-                t_base[col] = t_base[col].astype(common_dtype)  # type: ignore[call-overload]
-                f_base[col] = f_base[col].astype(common_dtype)  # type: ignore[call-overload]
+            comp = result.components.get(col)
+            if comp is not None and (
+                comp.data_type is String or str(t_base[col].dtype) != str(f_base[col].dtype)
+            ):
+                t_base[col] = _as_type(t_base[col], comp.data_type)
+                f_base[col] = _as_type(f_base[col], comp.data_type)
         # The parts hold different Data Points, so the result is their union, in the order of
         # the Identifiers. An outer merge on all the columns also compared the Measures, and
         # failed when one part held 0.0 and the other -0.0 (issue #1314)
@@ -348,18 +360,20 @@ class Nvl(Binary):
                 result.data_type = left.data_type
                 result.value = left.value
             else:
-                result.value = left.value
+                # The value of the result type, the applicable one where the operand is null
+                selected = right if left.value is None else left
+                result.value = _selected_value(selected, result.data_type)
         else:
             if not isinstance(result, Scalar):
                 if isinstance(result, Dataset):
                     result.data = left.data.copy()
                     for me in result.get_measures_names():
                         if me in result.data.columns:
-                            result.data[me] = result.data[me].astype(  # type: ignore[call-overload]
-                                result.components[me].data_type.dtype()
+                            result.data[me] = _as_type(
+                                result.data[me], result.components[me].data_type
                             )
                 else:
-                    result.data = left.data.astype(result.data_type.dtype())
+                    result.data = _as_type(left.data, result.data_type)
                 if isinstance(right, Scalar):
                     # A null applicable value replaces nothing, so the operand is
                     # returned as it is instead of filling with it (issue #1008).
@@ -367,9 +381,11 @@ class Nvl(Binary):
                     if isinstance(result, Dataset):
                         for me in result.get_measures_names():
                             if me in result.data.columns and not fill_null:
-                                result.data[me] = result.data[me].fillna(right.value)
+                                value = _selected_value(right, result.components[me].data_type)
+                                result.data[me] = result.data[me].fillna(value)
                     elif not fill_null:
-                        result.data = result.data.fillna(right.value)
+                        value = _selected_value(right, result.data_type)
+                        result.data = result.data.fillna(value)
                 elif isinstance(result, Dataset):
                     join_keys = [
                         id_name
@@ -392,15 +408,13 @@ class Nvl(Binary):
                         result.data, right_data, how="inner", on=join_keys, suffixes=("", "_r")
                     )
                     for me in measures:
-                        result.data[me] = (
-                            result.data[me]
-                            .fillna(result.data[f"{me}_r"])
-                            .astype(result.components[me].data_type.dtype())  # type: ignore[call-overload]
-                        )
+                        data_type = result.components[me].data_type
+                        fill = _as_type(result.data[f"{me}_r"], data_type)
+                        result.data[me] = _as_type(result.data[me].fillna(fill), data_type)
                 else:
                     # nvl is single-operand: the primary operand's viral attributes are
                     # copied through unchanged; no rule is executed (issue #906).
-                    result.data = result.data.fillna(right.data)
+                    result.data = result.data.fillna(_as_type(right.data, result.data_type))
                 if isinstance(result, Dataset):
                     result.data = result.data[result.get_components_names()]
         return result
@@ -483,7 +497,7 @@ class Case(Operator):
             if operation_level[0] == DataComponent:
                 component = cast(DataComponent, result)
                 component.data = cls.component_level_evaluation(
-                    conditions, thenOps, elseOp, component.data_type.dtype()
+                    conditions, thenOps, elseOp, component.data_type
                 )
             else:
                 cls.dataset_level_evaluation(result, conditions, thenOps, elseOp)
@@ -500,7 +514,7 @@ class Case(Operator):
 
     @classmethod
     def component_level_evaluation(
-        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any, result_dtype: str
+        cls, conditions: List[Any], thenOps: List[Any], elseOp: Any, data_type: Any
     ) -> Any:
         # Build the result on an object Series: the branches come in different dtypes
         # (numpy float, pyarrow double, string...) and pandas 3 no longer lets a .loc
@@ -519,7 +533,7 @@ class Case(Operator):
             result = result.reindex(result.index.union(case.index))
             result.loc[case.index] = case_result
 
-        return result.astype(result_dtype)  # type: ignore[call-overload]
+        return _as_type(result, data_type)
 
     @classmethod
     def dataset_level_evaluation(
@@ -554,6 +568,9 @@ class Case(Operator):
         parts.append(dataset_assign(else_cond, elseOp, ids, measures))
 
         result.data = pd.concat(parts, ignore_index=True).drop(columns=COND_COL)
+        for comp in result.get_measures():
+            if comp.data_type is String:
+                result.data[comp.name] = to_strings(result.data[comp.name])
         _combine_viral_attributes(result, [*thenOps, elseOp])
 
     @classmethod

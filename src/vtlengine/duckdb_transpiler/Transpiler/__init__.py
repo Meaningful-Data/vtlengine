@@ -142,6 +142,9 @@ _CASE_STAGE_BRANCHES = 8
 _CASE_DONE = quote_name("__vtl_case_done__")
 _CASE_KEPT = quote_name("__vtl_case_kept__")
 
+# Binary operators that promote a Boolean operand to String next to a String one
+_TEXT_PROMOTING_OPS = COMPARISON_OPS | {tokens.NVL, tokens.IN, tokens.NOT_IN}
+
 # Operators that give a String whatever the types of their operands
 _STRING_RESULT_OPS = (_STRING_UNARY_OPS | _STRING_PARAM_OPS | {tokens.CONCAT}) - {
     tokens.LEN,
@@ -252,8 +255,9 @@ def _date_tp_compare_expr(
 
 
 def _bool_to_str(col_ref: str) -> str:
-    """Cast a Boolean expression to Python-style string values."""
-    return f"CASE WHEN {col_ref} IS NULL THEN NULL WHEN {col_ref} THEN 'True' ELSE 'False' END"
+    """Cast a Boolean expression to String: 'true' or 'false', as the VTL 2.2 reference manual
+    casts a Boolean to String (issue #1314)."""
+    return f"CAST({col_ref} AS VARCHAR)"
 
 
 def _hr_literal(code_item: str) -> str:
@@ -1121,7 +1125,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 def _in_expr(col_ref: str) -> str:
                     return f"({col_ref} {'IN' if op == tokens.IN else 'NOT IN'} {collection})"
 
-                return self._apply_measures(node.left, _in_expr, output_name_override="bool_var")
+                # A Boolean Measure is promoted to String in a set of Strings
+                return self._apply_measures(
+                    node.left,
+                    _in_expr,
+                    output_name_override="bool_var",
+                    cast_bool_to_str=self._value_type(node.right) == "String",
+                )
             if left_type == _DATASET and right_type == _DATASET:
                 chain_sql = self._build_ds_ds_chain(node) if op in _FOLDED_CHAIN_TYPES else None
                 if chain_sql is not None:
@@ -1142,9 +1152,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 left_sql = _bool_to_str(left_sql)
             if self._is_boolean_expr(node.right):
                 right_sql = _bool_to_str(right_sql)
-        if op in COMPARISON_OPS:
+        if op in _TEXT_PROMOTING_OPS:
             types = [self._value_type(node.left), self._value_type(node.right)]
-            left_sql, right_sql = self._compared_as_text([left_sql, right_sql], types)
+            left_sql, right_sql = self._promoted_to_text([left_sql, right_sql], types)
         left_dt = self._detect_scalar_type(node.left)
         right_dt = self._detect_scalar_type(node.right)
         return self._make_binary_expr(left_sql, right_sql, op, left_dt, right_dt)
@@ -1322,9 +1332,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             right_comp = right_ds.components.get(right_m)
             left_dt = left_comp.data_type if left_comp else None
             right_dt = right_comp.data_type if right_comp else None
-            if op in COMPARISON_OPS:
+            if op in _TEXT_PROMOTING_OPS:
                 types = [getattr(dt, "__name__", None) for dt in (left_dt, right_dt)]
-                left_ref, right_ref = self._compared_as_text([left_ref, right_ref], types)
+                left_ref, right_ref = self._promoted_to_text([left_ref, right_ref], types)
             expr = self._make_binary_expr(left_ref, right_ref, op, left_dt, right_dt)
 
             out_name = left_m
@@ -1565,13 +1575,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if op == tokens.CONCAT and self._is_boolean_expr(scalar_node):
             scalar_sql = _bool_to_str(scalar_sql)
         scalar_dt = self._detect_scalar_type(scalar_node)
-        scalar_type = self._value_type(scalar_node) if op in COMPARISON_OPS else None
+        scalar_type = self._value_type(scalar_node) if op in _TEXT_PROMOTING_OPS else None
 
         def _bin_expr(col_ref: str) -> str:
             comp = ds.components.get(col_ref.strip('"'))
             dt = comp.data_type if comp else None
             types = [getattr(dt, "__name__", None), scalar_type]
-            col_ref, scalar_ref = self._compared_as_text([col_ref, scalar_sql], types)
+            col_ref, scalar_ref = self._promoted_to_text([col_ref, scalar_sql], types)
             if ds_on_left:
                 return self._make_binary_expr(col_ref, scalar_ref, op, dt, scalar_dt)
             return self._make_binary_expr(scalar_ref, col_ref, op, scalar_dt, dt)
@@ -1661,9 +1671,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return registry.sql(tokens.CHARSET_MATCH, col, pattern_sql)
             return f"{match_function}({col}, {pattern_sql})"
 
+        # A Boolean operand is promoted to String (issue #1314)
         if self._get_node_type(node.left) == _DATASET:
-            return self._apply_measures(node.left, _match_sql, self._result_measure_name(node))
-        return _match_sql(self.visit(node.left))
+            return self._apply_measures(
+                node.left, _match_sql, self._result_measure_name(node), cast_bool_to_str=True
+            )
+        operand_sql = self.visit(node.left)
+        if self._is_boolean_expr(node.left):
+            operand_sql = _bool_to_str(operand_sql)
+        return _match_sql(operand_sql)
 
     def _match_characters_function(self, pattern_node: AST.AST) -> str:
         """Pick the SQL function for a ``match_characters`` pattern.
@@ -1758,8 +1774,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     def _is_boolean_expr(self, node: AST.AST) -> bool:
         """Return True when *node* is statically known to produce a Boolean value.
 
-        Used to apply the Python-style boolean→string coercion ('True'/'False')
-        at component/scalar level, matching the pandas engine (issue #923).
+        Used to apply the boolean→string coercion ('true'/'false') at component/scalar
+        level, as the pandas engine does (issues #923 and #1314).
         """
         if isinstance(node, AST.Constant):
             return isinstance(node.value, bool)
@@ -3722,9 +3738,7 @@ FROM (
             hit = self._value_types.get(id(node))
             if hit is not None and hit[0] is node and hit[1] is self._current_dataset:
                 return hit[2]
-            condition = node.condition if isinstance(node, AST.If) else node.cases[0].condition
-            operands = self._branch_operands(node)
-            types = set(self._component_value_types(condition, operands)) - {"Null"}
+            types = {self._value_type(op) for op in self._branch_operands(node)} - {"Null"}
             value_type = "String" if "String" in types else None
             if types == {"Boolean"}:
                 value_type = "Boolean"
@@ -3734,6 +3748,12 @@ FROM (
             return value_type
         if isinstance(node, AST.Constant) and node.value is None:
             return "Null"
+        if isinstance(node, AST.Collection):
+            # The type of the values of a set or of a value domain
+            if node.kind == "ValueDomain":
+                return str(self.value_domains[node.name].type.__name__)
+            types = {self._value_type(child) for child in node.children} - {"Null"}
+            return types.pop() if len(types) == 1 else None
         if self._is_boolean_expr(node):
             return "Boolean"
         if getattr(node, "op", None) in _STRING_RESULT_OPS:
@@ -3793,37 +3813,22 @@ FROM (
         cast the strings to BOOLEAN instead (issue #1314)."""
         return [_bool_to_str(v) if t == "Boolean" else v for v, t in zip(values, types)]
 
-    def _compared_as_text(self, refs: List[str], types: List[Optional[str]]) -> List[str]:
-        """The operands of a comparison: a Boolean compared with a String is promoted to String,
-        as cast to string renders it, and they are compared as text. DuckDB cast the String to
-        BOOLEAN instead (issue #1314)."""
+    def _promoted_to_text(self, refs: List[str], types: List[Optional[str]]) -> List[str]:
+        """The operands of a comparison or an nvl: a Boolean with a String is promoted to String,
+        as cast to string renders it. DuckDB cast the String to BOOLEAN instead (issue #1314)."""
         return self._as_text(refs, types) if set(types) == {"Boolean", "String"} else refs
 
-    def _component_value_types(
-        self, condition: AST.AST, operands: List[AST.AST]
-    ) -> List[Optional[str]]:
-        """The types of the operands of a Component level if or case, whose result has their
-        common type. At scalar level, it has the type of the operand taken, so no type is given
-        (issue #1314)."""
-        if self._get_node_type(condition) == _SCALAR:
-            return [None] * len(operands)
-        return [self._value_type(op) for op in operands]
-
-    def _component_values(
-        self, condition: AST.AST, operands: List[AST.AST], values: List[str]
-    ) -> List[str]:
-        """The values of the operands of a Component level if or case, as text next to a String
-        operand."""
-        types = self._component_value_types(condition, operands)
+    def _component_values(self, operands: List[AST.AST], values: List[str]) -> List[str]:
+        """The values of the operands of a Component or scalar if or case, which has their
+        common type: as text next to a String operand."""
+        types = [self._value_type(op) for op in operands]
         return self._as_text(values, types) if "String" in types else values
 
     def _scalar_if_sql(self, node: AST.If) -> str:
         """Build a simple CASE WHEN for scalar IF-THEN-ELSE."""
         cond_sql = self.visit(node.condition)
         then_sql, else_sql = self._component_values(
-            node.condition,
-            [node.thenOp, node.elseOp],
-            [self.visit(node.thenOp), self.visit(node.elseOp)],
+            [node.thenOp, node.elseOp], [self.visit(node.thenOp), self.visit(node.elseOp)]
         )
         return f"CASE WHEN {cond_sql} THEN {then_sql} ELSE {else_sql} END"
 
@@ -3969,7 +3974,7 @@ FROM (
             values.append(self.visit(case_obj.thenOp))
         values.append(self.visit(else_op))
         operands = [case_obj.thenOp for case_obj in cases] + [else_op]
-        values = self._component_values(cases[0].condition, operands, values)
+        values = self._component_values(operands, values)
         parts = ["CASE"] + [f"WHEN {c} THEN {v}" for c, v in zip(conds, values)]
         return " ".join(parts + [f"ELSE {values[-1]} END"])
 
