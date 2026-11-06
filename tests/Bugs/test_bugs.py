@@ -7227,3 +7227,53 @@ class ValueDomainBugs(BugHelper):
             exception_message="At op flag: Cannot cast OTHER of String to Value Domain VD_FLOW",
             vd_names=["GH_1236-VD_FLOW"],
         )
+
+    def test_GH_1236_11(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset dpr ( valuedomain Me_1 , Me_2 ) is
+                    r1 : when Me_2 = "X" then Me_1 > 0 end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , dpr components Me_2 , Me_1 all );
+        Description: Backwards compatibility: the value domains are named as components of DS_1,
+                     so the rules read those components, as they did before the components of
+                     the call were bound to the value domains.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
+        Goal: Check Result.
+        """
+        code = "GH_1236_11"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1236_12(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 , dpr components Me_1 all );
+        Description: Backwards compatibility: the call lists fewer components than the value
+                     domains of the ruleset, which are read as the components named as them.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
+        Goal: Check Result.
+        """
+        code = "GH_1236_12"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1236_13(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset hr ( valuedomain condition At_1 rule Id_2 ) is
+                    when At_1 = "x" then A = B + C end hierarchical ruleset;
+                    DS_r <- check_hierarchy ( DS_1 , hr condition At_1 rule Id_2 all );
+        Description: Backwards compatibility: a hierarchical ruleset on value domains named as
+                     the components of the call.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
+        Goal: Check Result.
+        """
+        code = "GH_1236_13"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

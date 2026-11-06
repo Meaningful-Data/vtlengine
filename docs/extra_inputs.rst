@@ -283,7 +283,10 @@ Value domains also appear in the VTL-DL definitions:
   has its values checked against it (``2-1-5-4``), and one of
   another basic type raises ``1-1-10-12``. A value domain that is
   not given is not checked. Without ``components``, the names of the
-  signature are read as components of the Data Set.
+  signature are read as components of the Data Set. For backwards
+  compatibility, a ruleset whose value domains are all named as
+  components of the Data Set reads those components, whatever
+  components the call lists.
 - A viral propagation rule on a value domain applies to the viral
   attributes defined on it, unless a rule on the variable overrides
   it.

@@ -34,6 +34,10 @@ def bind_value_domains(
     A component defined on the value domain is used as it is, one of its basic type takes its
     values (downcast), and one of another basic type raises. A value domain that is not given
     is not checked."""
+    if all(name in components for name in signature.values()):
+        # Backwards compatibility, to be removed: value domains named as components of the
+        # Data Set are read as those components, whatever components the call lists
+        return signature, {}
     if len(called) != len(signature):
         raise SemanticError("1-1-10-2", op=CHECK_DATAPOINT)
     checks: Dict[str, ValueDomain] = {}
