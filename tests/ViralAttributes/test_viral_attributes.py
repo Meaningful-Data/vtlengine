@@ -243,6 +243,21 @@ def test_GH_1314_5() -> None:
     )
 
 
+def test_GH_1314_20() -> None:
+    """
+    Expression: DS_r1 <- inner_join((if DS_1 < 10 then DS_1 else DS_1 * 2) as a, DS_2 as b
+                    keep a#Me_1);
+                DS_r2 <- (case when DS_1 < 10 then DS_1 else DS_1 * 2) + DS_2;
+    Description: An if or a case whose combined viral attribute At_1 is null on every data
+        point can be the operand of a join or of a binary operator, which combine it with the
+        At_1 of their other operand. On the pandas engine, the combined At_1 was a column of
+        Python None, so the sum rule of the join and of the binary operator raised a TypeError.
+    Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+    Goal: Check Result.
+    """
+    ViralHelper.BaseTest(code="GH_1314_20", number_inputs=2, references_names=["DS_r1", "DS_r2"])
+
+
 # -- Model-level checks (Role enum and Dataset helpers) --
 class TestViralAttributeRole:
     def test_viral_attribute_in_role_enum(self) -> None:

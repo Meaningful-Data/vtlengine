@@ -118,7 +118,14 @@ def _combine_viral_attributes(result: Any, operands: List[Any]) -> None:
             ]
         else:
             cols = [list(d[va]) for d in carriers]
-        res_data[va] = [registry.resolve_group(va, [col[r] for col in cols]) for r in range(n)]
+        # A column of the type of the Attribute: a list of nulls made a column of Python None,
+        # which the viral rule of an operator that takes this result directly cannot add to a
+        # number (issue #1314)
+        res_data[va] = pd.Series(
+            [registry.resolve_group(va, [col[r] for col in cols]) for r in range(n)],
+            index=res_data.index,
+            dtype=result.components[va].data_type.dtype(),
+        )
 
 
 class If(Operator):
