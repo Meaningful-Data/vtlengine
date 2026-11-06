@@ -3905,6 +3905,17 @@ class ConditionalBugs(BugHelper):
         Goal: Check Result.
         """
         code = "GH_1314_21"
+
+    def test_GH_1314_10(self):
+        """
+        Expression: DS_r <- if DS_1 then DS_2 else 0.5;
+        Description: A null condition takes the else operand. On the DuckDB engine, a Data
+            Set if with a Data Set then operand and a scalar else operand dropped the Data
+            Points whose condition is null when the then operand lacked them (Id_1 2).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_10"
         number_inputs = 2
         references_names = ["1"]
 

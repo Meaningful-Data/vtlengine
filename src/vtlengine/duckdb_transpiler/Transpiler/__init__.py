@@ -3796,18 +3796,12 @@ FROM (
         e_join_id = self._left_join_dataset(node.elseOp, e_type, "e", source_ids, alias, builder)
 
         # Filter: only keep rows where the selected side has a match.
-        # Scalar sides always match; dataset sides need a LEFT JOIN hit.
-        if then_join_id and e_join_id:
-            builder.where(
-                f"CASE WHEN {cond_expr} THEN {then_join_id} IS NOT NULL "
-                f"ELSE {e_join_id} IS NOT NULL END"
-            )
-        elif then_join_id:
-            # then=dataset, else=scalar: filter when condition is true
-            builder.where(f"NOT ({cond_expr}) OR {then_join_id} IS NOT NULL")
-        elif e_join_id:
-            # then=scalar, else=dataset: filter when condition is false
-            builder.where(f"({cond_expr}) OR {e_join_id} IS NOT NULL")
+        # Scalar sides always match; dataset sides need a LEFT JOIN hit. A null condition
+        # selects the else side, as in the values (issue #1314).
+        if then_join_id or e_join_id:
+            t_match = f"{then_join_id} IS NOT NULL" if then_join_id else "TRUE"
+            e_match = f"{e_join_id} IS NOT NULL" if e_join_id else "TRUE"
+            builder.where(f"CASE WHEN {cond_expr} THEN {t_match} ELSE {e_match} END")
 
         return builder.build()
 
