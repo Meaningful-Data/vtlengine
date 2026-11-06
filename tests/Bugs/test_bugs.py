@@ -4030,6 +4030,21 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_14(self):
+        """
+        Expression: DS_r <- (if DS_1#Me_1 > 1 then floor(DS_1) else 0)[filter Me_1 > 0];
+        Description: floor drops the Attribute At_1 of DS_1, which is not viral. On the DuckDB
+            engine, the structure of floor(DS_1) kept it, so the if used as the operand of the
+            filter selected At_1 from it and raised a Binder Error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_14"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """

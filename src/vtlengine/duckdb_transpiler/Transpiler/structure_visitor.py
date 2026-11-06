@@ -709,7 +709,8 @@ class StructureVisitor(ASTTemplate):
         if node.op == tokens.ISNULL and self._isnull_renames_measure(ds):
             return self._build_boolean_result_structure(ds)
         if node.op in self._INTEGER_RESULT_UNARY_OPS:
-            return self._as_integer_if_mono(ds)
+            # Without the Attributes that are not viral, as for the other operators
+            return self._as_integer_if_mono(self._without_attributes(ds))
         if node.op == tokens.PERIOD_INDICATOR:
             comps = self._identifiers_dict(ds)
             comps.update((n, c) for n, c in ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE)
