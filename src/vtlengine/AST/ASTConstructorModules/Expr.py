@@ -545,14 +545,11 @@ class Expr:
         ]
         basic_scalar_type = [
             Terminals().visitBasicScalarType(type_)
+            if type_.rule_index == RC.BASIC_SCALAR_TYPE[0]
+            else Terminals().visitValueDomainName(type_)
             for type_ in ctx_list
-            if not type_.is_terminal and type_.rule_index == RC.BASIC_SCALAR_TYPE[0]
-        ]
-
-        [
-            Terminals().visitValueDomainName(valueD)
-            for valueD in ctx_list
-            if not valueD.is_terminal and valueD.rule_index == RC.VALUE_DOMAIN_NAME[0]
+            if not type_.is_terminal
+            and type_.rule_index in (RC.BASIC_SCALAR_TYPE[0], RC.VALUE_DOMAIN_NAME[0])
         ]
 
         if len(ctx_list) > 6:

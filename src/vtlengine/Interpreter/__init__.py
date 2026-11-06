@@ -1281,14 +1281,18 @@ class InterpreterAnalyzer(ASTTemplate):
             set_type = scalar_data_type or BASIC_TYPES[type(elements[0])]
             return ScalarSet(data_type=set_type, values=elements)
         elif node.kind == "ValueDomain":
-            if self.value_domains is None:
-                raise SemanticError("1-2-22", comp_type="Value Domains")
-            if node.name not in self.value_domains:
-                raise SemanticError("1-2-8", name=node.name)
-            vd = self.value_domains[node.name]
+            vd = self._value_domain(node.name)
             return ScalarSet(data_type=vd.type, values=vd.setlist)
         else:
             raise SemanticError("1-2-9", name=node.name)
+
+    def _value_domain(self, name: str) -> ValueDomain:
+        """The value domain of that name, which the script reads."""
+        if self.value_domains is None:
+            raise SemanticError("1-2-22", comp_type="Value Domains")
+        if name not in self.value_domains:
+            raise SemanticError("1-2-8", name=name)
+        return self.value_domains[name]
 
     def visit_RegularAggregation(self, node: AST.RegularAggregation) -> None:  # noqa: C901
         operands = []
@@ -1694,7 +1698,10 @@ class InterpreterAnalyzer(ASTTemplate):
             return Date_Add.analyze(self.visit(node.children[0]), params)
         elif node.op == CAST:
             operand = self.visit(node.children[0])
-            scalar_type = node.children[1]
+            target = node.children[1]
+            scalar_type = (
+                self._value_domain(target.name) if isinstance(target, AST.Collection) else target
+            )
             mask = None
             if len(node.params) > 0:
                 mask = self.visit(node.params[0])
