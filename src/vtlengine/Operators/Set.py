@@ -6,7 +6,7 @@ from vtlengine.AST.Grammar.tokens import INTERSECT, SETDIFF, SYMDIFF, UNION
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset
-from vtlengine.Operators import Operator
+from vtlengine.Operators import Operator, check_downcasts, share_value_domains
 from vtlengine.Utils._dataframe import merge_frames
 
 
@@ -64,16 +64,27 @@ class Set(Operator):
                     current_comp.data_type, comp.data_type
                 )
                 current_comp.nullable = current_comp.nullable or comp.nullable
+        share_value_domains(result_components, operands)
 
         result = Dataset(name="result", components=result_components, data=None)
         return result
+
+    @classmethod
+    def evaluate(cls, operands: List[Dataset]) -> Dataset:
+        result = cls.execute(operands)
+        check_downcasts(result, operands, cls.op)
+        return result
+
+    @classmethod
+    def execute(cls, operands: List[Dataset]) -> Dataset:
+        raise NotImplementedError
 
 
 class Union(Set):
     op = UNION
 
     @classmethod
-    def evaluate(cls, operands: List[Dataset]) -> Dataset:
+    def execute(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
         all_datapoints = [ds.data for ds in operands]
         result.data = pd.concat(all_datapoints, sort=True, ignore_index=True)
@@ -87,7 +98,7 @@ class Intersection(Set):
     op = INTERSECT
 
     @classmethod
-    def evaluate(cls, operands: List[Dataset]) -> Dataset:
+    def execute(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
         all_datapoints = [ds.data for ds in operands]
         for data in all_datapoints:
@@ -119,7 +130,7 @@ class Symdiff(Set):
     op = SYMDIFF
 
     @classmethod
-    def evaluate(cls, operands: List[Dataset]) -> Dataset:
+    def execute(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
         id_names = result.get_identifiers_names()
         not_identifiers = (
@@ -156,7 +167,7 @@ class Setdiff(Set):
     op = SETDIFF
 
     @classmethod
-    def evaluate(cls, operands: List[Dataset]) -> Dataset:
+    def execute(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
         all_datapoints = [ds.data for ds in operands]
         for data in all_datapoints:

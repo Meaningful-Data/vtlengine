@@ -354,6 +354,9 @@ class Hierarchy(Operators.Operator):
         result_components = {
             comp_name: copy(comp) for comp_name, comp in dataset.components.items()
         }
+        for comp in result_components.values():
+            if comp.role == Role.MEASURE:
+                comp.value_domain = None
         # Viral attributes propagate to the hierarchy result (issue #877).
         for viral_comp in viral_components or []:
             result_components[viral_comp.name] = copy(viral_comp)

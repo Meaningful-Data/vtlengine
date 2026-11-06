@@ -171,6 +171,11 @@ centralised_messages = {
         "message": "Impossible to cast {value} from type {type_1} to {type_2}.",
         "description": "Raised when a value given as Duration is not a duration code.",
     },
+    "0-1-1-36": {
+        "message": "Value {value} is not one of the values of Value Domain {value_domain}.",
+        "description": "Raised when a component defined on a Value Domain is given a value "
+        "outside it.",
+    },
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",
         "description": "Occurs when an element (e.g., Identifier or component) "
@@ -581,6 +586,12 @@ centralised_messages = {
     "2-1-5-3": {
         "message": "Impossible to cast {value} from type {type_1} to {type_2} using mask {mask}.",
         "description": "Occurs when a value cannot be converted between the specified types.",
+    },
+    "2-1-5-4": {
+        "message": "At op {op}: Cannot cast {value} of {type} to Value Domain {value_domain}.",
+        "description": "Raised when an operator puts the values of a basic type into a "
+        "component defined on a Value Domain of that type (downcast), and one of them is not "
+        "a value of the Value Domain.",
     },
     # Clause errors
     "1-1-6-2": {

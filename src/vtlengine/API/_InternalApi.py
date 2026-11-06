@@ -1,6 +1,8 @@
+import copy
 import gc
 import json
 import os
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 
@@ -80,9 +82,15 @@ def _extract_data_type(component: Dict[str, Any]) -> Tuple[str, Any]:
     return key, SCALAR_TYPES[component[key]]
 
 
-def _build_component(component: Dict[str, Any]) -> VTL_Component:
+def _build_component(
+    component: Dict[str, Any], value_domains: Optional[Dict[str, ValueDomain]] = None
+) -> VTL_Component:
     role = Role("Viral Attribute" if component["role"] == "ViralAttribute" else component["role"])
     nullable = component.get("nullable", role != Role.IDENTIFIER)
+    type_name = component["type" if "type" in component else "data_type"]
+    value_domain = None if type_name in SCALAR_TYPES else (value_domains or {}).get(type_name)
+    if value_domain is not None:
+        return VTL_Component(component["name"], value_domain.type, role, nullable, value_domain)
     _, scalar_type = _extract_data_type(component)
     return VTL_Component(
         name=component["name"],
@@ -110,19 +118,40 @@ def _resolve_components(
     )
 
 
+@lru_cache(maxsize=None)
+def _structure_schema(value_domain_names: Tuple[str, ...]) -> Dict[str, Any]:
+    """The data structure schema, with the value domains given as further Component types.
+
+    It is cached so that the validator compiled for it, kept by the id of the schema, is
+    compiled once per set of value domains."""
+    if not value_domain_names:
+        return schema
+    extended = copy.deepcopy(schema)
+    component_type = {
+        "type": "string",
+        "enum": schema["$defs"]["data-type"]["enum"] + list(value_domain_names),
+    }
+    extended["$defs"]["component"]["properties"].update(
+        type=component_type, data_type=component_type
+    )
+    return extended
+
+
 def _load_dataset_from_structure(
     structures: Dict[str, Any],
+    value_domains: Optional[Dict[str, ValueDomain]] = None,
 ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """
     Loads datasets and scalars from a VTL JSON structure definition.
     """
-    _validate_json(structures, schema, kind="DataStructures")
+    structure_schema = _structure_schema(tuple(sorted(value_domains or {})))
+    _validate_json(structures, structure_schema, kind="DataStructures")
 
     datasets = {
         dataset_json["name"]: Dataset(
             name=dataset_json["name"],
             components={
-                c["name"]: _build_component(c)
+                c["name"]: _build_component(c, value_domains)
                 for c in _resolve_components(dataset_json, structures)
             },
             data=None,
@@ -329,6 +358,7 @@ def _load_datapoints_path(
 def _load_datastructure_single(
     data_structure: Union[str, Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow],
     sdmx_mappings: Optional[Dict[str, str]] = None,
+    value_domains: Optional[Dict[str, ValueDomain]] = None,
 ) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
     """
     Loads a single data structure.
@@ -337,6 +367,7 @@ def _load_datastructure_single(
         data_structure: str (URL or file path), Dict, Path, or pysdmx object
             (Schema, DSD, Dataflow).
         sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
+        value_domains: The value domains a Component type can name.
     """
     # Handle pysdmx objects
     if isinstance(data_structure, (Schema, DataStructureDefinition, Dataflow)):
@@ -351,7 +382,7 @@ def _load_datastructure_single(
         vtl_json = to_vtl_json(data_structure, dataset_name=dataset_name)
         return _load_dataset_from_structure(vtl_json)
     if isinstance(data_structure, dict):
-        return _load_dataset_from_structure(data_structure)
+        return _load_dataset_from_structure(data_structure, value_domains)
     # Handle string: URL or file path
     if isinstance(data_structure, str):
         if _is_url(data_structure):
@@ -371,7 +402,7 @@ def _load_datastructure_single(
         for f in data_structure.iterdir():
             if f.suffix not in (".json", ".xml"):
                 continue
-            ds, sc = _load_datastructure_single(f, sdmx_mappings=sdmx_mappings)
+            ds, sc = _load_datastructure_single(f, sdmx_mappings, value_domains)
             datasets = {**datasets, **ds}
             scalars = {**scalars, **sc}
         return datasets, scalars
@@ -391,7 +422,7 @@ def _load_datastructure_single(
                 pass
             with open(data_structure, "r", encoding="utf-8-sig") as file:
                 structures = json.load(file)
-            return _load_dataset_from_structure(structures)
+            return _load_dataset_from_structure(structures, value_domains)
         # Unsupported extension
         raise InputValidationException(code="0-1-1-3", expected_ext=".json or .xml", ext=suffix)
 
@@ -407,6 +438,7 @@ def load_datasets(
         List[Union[str, Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
     ],
     sdmx_mappings: Optional[Dict[str, str]] = None,
+    value_domains: Optional[Dict[str, ValueDomain]] = None,
 ) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
     """
     Loads multiple datasets.
@@ -414,6 +446,7 @@ def load_datasets(
     Args:
         data_structure: Dict, Path or a List of dicts or Paths.
         sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
+        value_domains: The value domains a Component type can name.
 
     Returns:
         The datastructure as a dict or a list of datastructures as dicts. \
@@ -424,16 +457,16 @@ def load_datasets(
         Exception: If the Path is invalid or datastructure has a wrong format.
     """
     if isinstance(data_structure, dict):
-        return _load_datastructure_single(data_structure, sdmx_mappings=sdmx_mappings)
+        return _load_datastructure_single(data_structure, sdmx_mappings, value_domains)
     if isinstance(data_structure, list):
         ds_structures: Dict[str, Dataset] = {}
         scalar_structures: Dict[str, Scalar] = {}
         for x in data_structure:
-            ds, sc = _load_datastructure_single(x, sdmx_mappings=sdmx_mappings)
+            ds, sc = _load_datastructure_single(x, sdmx_mappings, value_domains)
             ds_structures = {**ds_structures, **ds}  # Overwrite ds_structures dict.
             scalar_structures = {**scalar_structures, **sc}  # Overwrite scalar_structures dict.
         return ds_structures, scalar_structures
-    return _load_datastructure_single(data_structure, sdmx_mappings=sdmx_mappings)
+    return _load_datastructure_single(data_structure, sdmx_mappings, value_domains)
 
 
 def _handle_scalars_values(
@@ -472,6 +505,7 @@ def load_datasets_with_data(
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
     sdmx_mappings: Optional[Dict[str, str]] = None,
     validate: bool = False,
+    value_domains: Optional[Dict[str, ValueDomain]] = None,
 ) -> Any:
     """
     Loads the dataset structures and fills them with the data contained in the datapoints.
@@ -483,6 +517,7 @@ def load_datasets_with_data(
         sdmx_mappings: Optional mapping from SDMX URNs to VTL dataset names.
         validate: If True, load and validate datapoints immediately (for validate_dataset API).
                   If False, defer validation to interpretation time (for run API).
+        value_domains: The value domains a Component type can name.
 
     Returns:
         A dict with the structure and a pandas dataframe with the data.
@@ -491,7 +526,7 @@ def load_datasets_with_data(
         Exception: If the Path is wrong or the file is invalid.
     """
     # Load the datasets without data
-    datasets, scalars = load_datasets(data_structures, sdmx_mappings=sdmx_mappings)
+    datasets, scalars = load_datasets(data_structures, sdmx_mappings, value_domains)
     # Handle empty datasets and scalar values if no datapoints are given
     if datapoints is None:
         _handle_empty_datasets(datasets)

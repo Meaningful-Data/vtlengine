@@ -15,7 +15,6 @@ from typing import Callable, Dict, List, Optional
 import duckdb
 
 from vtlengine.DataTypes import (
-    SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Date,
     Duration,
@@ -25,7 +24,7 @@ from vtlengine.DataTypes import (
     TimePeriod,
 )
 from vtlengine.Exceptions import DataLoadError, InputValidationException
-from vtlengine.Model import Component, Role
+from vtlengine.Model import Component, Role, component_type_name
 
 # =============================================================================
 # Regex patterns for VTL temporal types (only these need explicit validation)
@@ -132,12 +131,12 @@ def _value_error(
         return DataLoadError(
             "0-3-1-6", name=dataset_name, column="unknown", type="unknown", error=message
         )
-    data_type = components[comp_name].data_type
+    comp = components[comp_name]
     return DataLoadError(
         "0-3-1-6",
         name=dataset_name,
         column=comp_name,
-        type=SCALAR_TYPES_CLASS_REVERSE.get(data_type, "unknown"),
+        type=component_type_name(comp.data_type, comp.value_domain),
         error=message,
     )
 
@@ -330,6 +329,34 @@ def validate_no_duplicates(
     result = conn.execute(check_sql).fetchone()
     if result and result[0] != result[1]:
         raise DataLoadError("0-3-1-7", name=table_name, row_index="(duplicate keys detected)")
+
+
+def validate_value_domains(
+    conn: duckdb.DuckDBPyConnection,
+    table_name: str,
+    components: Dict[str, Component],
+) -> None:
+    """A component defined on a value domain takes only its values."""
+    for comp_name, comp in components.items():
+        value_domain = comp.value_domain
+        if value_domain is None:
+            continue
+        row = conn.execute(
+            f'SELECT "{comp_name}" FROM "{table_name}" WHERE "{comp_name}" IS NOT NULL AND NOT '
+            f'list_contains(CAST(? AS {get_column_sql_type(comp)}[]), "{comp_name}") LIMIT 1',
+            [value_domain.values()],
+        ).fetchone()
+        if row is not None:
+            error = InputValidationException(
+                code="0-1-1-36", value=row[0], value_domain=value_domain.name
+            )
+            raise DataLoadError(
+                "0-3-1-6",
+                name=table_name,
+                column=comp_name,
+                type=value_domain.name,
+                error=error.args[0],
+            )
 
 
 # =============================================================================

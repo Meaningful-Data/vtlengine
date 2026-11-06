@@ -284,7 +284,11 @@ class Unary(Time):
         if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         operand.data = cls.sort_by_time(operand)
-        return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
+        components = {name: copy(comp) for name, comp in operand.components.items()}
+        for comp in components.values():
+            if comp.role == Role.MEASURE:
+                comp.value_domain = None
+        return Dataset(name=dataset_name, components=components, data=None)
 
     @classmethod
     def evaluate(cls, operand: Any) -> Any:

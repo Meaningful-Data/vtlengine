@@ -3,6 +3,7 @@ from typing import Any, List, Union, cast
 
 import pandas as pd
 
+from vtlengine.AST.Grammar.tokens import CASE, IF, NVL
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
@@ -11,7 +12,14 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
-from vtlengine.Operators import Binary, Operator, _id_type_promotion_join_keys
+from vtlengine.Operators import (
+    Binary,
+    Operator,
+    _id_type_promotion_join_keys,
+    check_downcasts,
+    share_value_domains,
+    shared_value_domain,
+)
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
@@ -108,6 +116,8 @@ class If(Operator):
             result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
         elif isinstance(result, Dataset):
             cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
+        if not isinstance(result, Scalar):
+            check_downcasts(result, [true_branch, false_branch], IF)
         return result
 
     @classmethod
@@ -203,6 +213,7 @@ class If(Operator):
                 data_type=binary_implicit_promotion(left.data_type, right.data_type),
                 role=Role.MEASURE,
                 nullable=nullable,
+                value_domain=shared_value_domain([left, right]),
             )
 
         # Dataset
@@ -254,6 +265,7 @@ class If(Operator):
             if left.get_identifiers() != condition.get_identifiers():
                 raise SemanticError("1-1-9-6", op=cls.op)
         result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
+        share_value_domains(result_components, [left, right])
         # if-then-else over two datasets combines their data points per row, so viral
         # attributes carried by both branches require a propagation rule (issue #906).
         combined = combined_viral_components([b for b in (left, right) if isinstance(b, Dataset)])
@@ -341,6 +353,7 @@ class Nvl(Binary):
                     result.data = result.data.fillna(right.data)
                 if isinstance(result, Dataset):
                     result.data = result.data[result.get_components_names()]
+                check_downcasts(result, [left, right], NVL)
         return result
 
     @classmethod
@@ -373,6 +386,7 @@ class Nvl(Binary):
                 data_type=data_type,
                 role=Role.MEASURE,
                 nullable=keeps_nulls and left.nullable,
+                value_domain=shared_value_domain([left, right]),
             )
         if isinstance(left, Dataset):
             if isinstance(right, DataComponent):
@@ -402,6 +416,7 @@ class Nvl(Binary):
                 comp.nullable = replacement_keeps_nulls and comp.nullable
                 if comp.name in promoted:
                     comp.data_type = promoted[comp.name]
+            share_value_domains(result_components, [left, right])
         return Dataset(name=dataset_name, components=result_components, data=None)
 
 
@@ -424,6 +439,7 @@ class Case(Operator):
                 )
             else:
                 cls.dataset_level_evaluation(result, conditions, thenOps, elseOp)
+            check_downcasts(result, [*thenOps, elseOp], CASE)
         return result
 
     @staticmethod
@@ -537,6 +553,7 @@ class Case(Operator):
                 data_type=data_type,
                 role=Role.MEASURE,
                 nullable=nullable,
+                value_domain=shared_value_domain(ops),
             )
 
         # Dataset
@@ -563,9 +580,11 @@ class Case(Operator):
             )
             return Dataset(name=dataset_name, components=components, data=None)
 
-        # Rebuild the dict: the result must never share it with the branch dataset, as
-        # apply_viral_return_types may replace entries in it.
-        components = dict(next(op for op in ops if isinstance(op, Dataset)).components)
+        # Copy the components: the result must never share them, or the dict, with the
+        # branch dataset, as their value domains are set and apply_viral_return_types may
+        # replace entries in it.
+        branch = next(op for op in ops if isinstance(op, Dataset))
+        components = {name: copy(comp) for name, comp in branch.components.items()}
         comp_names = {comp.name for comp in components.values()}
         for op in ops:
             # The operands must hold the same Components, in whatever order each one
@@ -575,6 +594,7 @@ class Case(Operator):
 
         # case over two or more datasets combines their data points, so viral attributes
         # carried by two or more branches require a propagation rule (issue #906).
+        share_value_domains(components, ops)
         combined = combined_viral_components([op for op in ops if isinstance(op, Dataset)])
         require_rules(combined)
         apply_viral_return_types(combined, components)
