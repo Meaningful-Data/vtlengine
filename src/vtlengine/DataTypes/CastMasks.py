@@ -12,7 +12,8 @@ Time masks are made of the time units, a digit for each letter: C century, Y yea
 S semester, Q quarter, M month, W week, D day, h hour, m minute, s second, d decimal of
 second, P period indicator and p number of periods. Braces enclose the digits that may be
 left out, as in {M}M, a reverse slash writes the next character as it is, as in \\Q, and
-any other character appears as it is. A time is two date masks separated by a /.
+any other character appears as it is. A time is two date masks separated by a /, and a
+time period mask with a day within the month or the week writes a daily period.
 
 Not supported (SemanticError 1-3-13): the exponent E of number masks, the textual words
 MONTH, DAY and AM/PM, the ISO composite durations, which a duration of vtlengine, one
@@ -47,6 +48,7 @@ _TEXTUAL_WORDS = ("MONTH", "DAY", "AM/PM")
 _PERIOD_UNITS = ("S", "Q", "M", "W", "D")
 _TIME_OF_DAY = ("h", "m", "s", "d")
 _DURATIONS = "ASQMWD"
+_DAY_WITHIN = ({"M", "D"}, {"W", "D"})
 
 
 @dataclass(frozen=True)
@@ -233,7 +235,8 @@ def _is_period_mask(units: Dict[str, _Unit]) -> bool:
     periods = [letter for letter in _PERIOD_UNITS if letter in units]
     if "P" in units:
         return not periods and units["P"].max_digits == 1
-    return "p" not in units and len(periods) <= 1
+    # A day within the month or the week writes a daily period, as 2000M01D01
+    return "p" not in units and (len(periods) <= 1 or set(periods) in _DAY_WITHIN)
 
 
 @dataclass(frozen=True)
@@ -366,6 +369,9 @@ def _format_date(value: str, tokens: Tuple[_Token, ...]) -> str:
 
 def _parse_period(text: str, tokens: Tuple[_Token, ...]) -> str:
     fields = _fields(text, tokens)
+    if {"M", "D"} <= set(fields) or {"W", "D"} <= set(fields):
+        day = date.fromisoformat(_parse_date(text, tokens))
+        return str(TimePeriodHandler(f"{day.year}D{day.timetuple().tm_yday}"))
     if "P" in fields:
         indicator, number = fields["P"], int(fields.get("p", 1))
     else:
@@ -381,6 +387,12 @@ def _parse_period(text: str, tokens: Tuple[_Token, ...]) -> str:
 def _format_period(value: str, tokens: Tuple[_Token, ...]) -> str:
     period = TimePeriodHandler(value)
     units = _units(list(tokens))
+    if set(units) & {"M", "W"} and "D" in units:
+        # A daily period written by its month, or week, and day
+        if period.period_indicator != "D":
+            raise _MaskMismatch(value)
+        day = date(period.year, 1, 1) + timedelta(days=period.period_number - 1)
+        return _format_date(day.isoformat(), tokens)
     values: Dict[str, Union[int, str]] = {"Y": period.year}
     if "P" in units:
         values["P"], values["p"] = period.period_indicator, period.period_number

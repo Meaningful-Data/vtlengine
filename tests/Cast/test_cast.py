@@ -145,6 +145,26 @@ class CastExplicitWithoutMask(CastHelper):
 
         self.NewSemanticExceptionTest(code, number_inputs, exception_code="2-1-5-3")
 
+    def test_GH_1240_3(self):
+        """
+        Solves github issue #1240: a number with more integer digits than its mask, 12.375 for
+        D.D, raises RunTimeError 2-1-5-3 on both engines.
+        """
+        code = "GH_1240_3"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(code, number_inputs, exception_code="2-1-5-3")
+
+    def test_GH_1240_4(self):
+        """
+        Solves github issue #1240: a day that does not exist, 2000.02.30 for the time period
+        mask YYYY\\.MM\\.DD, raises RunTimeError 2-1-5-3 on both engines.
+        """
+        code = "GH_1240_4"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(code, number_inputs, exception_code="2-1-5-3")
+
 
 # ===========================================================================
 # Comprehensive explicit cast tests (VTL 2.2) - Without mask
@@ -693,6 +713,16 @@ class TestCastWithMask:
             ('cast("2015M03", time_period, "YYYY\\MMM")', "2015M3", TimePeriod),
             ('cast("2015D365", time_period, "YYYYP{ppp}")', "2015D365", TimePeriod),
             ('cast("2015", time_period, "YYYY")', "2015", TimePeriod),
+            # The masks of the manual's cast Example 9
+            ('cast("2000Q1", time_period, "YYYY\\QQ")', "2000Q1", TimePeriod),
+            ('cast("2000-Q1", time_period, "YYYY-\\QQ")', "2000Q1", TimePeriod),
+            ('cast("2000-1", time_period, "YYYY-Q")', "2000Q1", TimePeriod),
+            ('cast("Q1-2000", time_period, "\\QQ-YYYY")', "2000Q1", TimePeriod),
+            ('cast("2000Q01", time_period, "YYYY\\QQQ")', "2000Q1", TimePeriod),
+            ('cast("2000M01D01", time_period, "YYYY\\MMM\\DDD")', "2000D1", TimePeriod),
+            ('cast("2000.03.01", time_period, "YYYY\\.MM\\.DD")', "2000D61", TimePeriod),
+            # A day within the ISO week, which may fall in another year
+            ('cast("2020-W01-1", time_period, "YYYY-\\WWW-D")', "2019D364", TimePeriod),
             ('cast("M", duration, "P")', "M", Duration),
             ('cast("P1Q", duration, "\\PpP")', "Q", Duration),
             # string -> number, integer
@@ -716,6 +746,11 @@ class TestCastWithMask:
                 String,
             ),
             ('cast(cast("M", duration, "P"), string, "\\PppP")', "P01M", String),
+            (
+                'cast(cast("2000.03.01", time_period, "YYYY\\.MM\\.DD"), string, "DD/MM/YYYY")',
+                "01/03/2000",
+                String,
+            ),
         ],
     )
     def test_cast(self, expr: str, expected_value: object, expected_type: type) -> None:
@@ -729,22 +764,61 @@ class TestCastWithMask:
             # A mask only between a string and the other scalar types
             ('cast("D", boolean, "D")', "1-1-5-5"),
             ('cast(5, number, "D")', "1-1-5-5"),
+            ('cast(true, string, "D")', "1-1-5-5"),
+            ('cast(cast("2020Q1", time_period, "YYYY\\QQ"), date, "YYYY")', "1-1-5-5"),
             # A mask that is not one of the type
             ('cast("2020-01", date, "YYYY-MM")', "1-1-5-4"),
             ('cast("12.5", integer, "DD.D")', "1-1-5-4"),
+            ('cast("12", number, "DX")', "1-1-5-4"),
+            ('cast("1.2.3", number, "D.D.D")', "1-1-5-4"),
+            ('cast("1", number, ".D")', "1-1-5-4"),
+            ('cast("1.", number, "D.")', "1-1-5-4"),
+            ('cast("01-15", date, "MM-DD")', "1-1-5-4"),
+            ('cast("2020Q1", date, "YYYY\\QQ")', "1-1-5-4"),
+            ('cast("2020-01-15", date, "YYYY-MM-DD-DD")', "1-1-5-4"),
+            ('cast("2020-01-15", date, "{X}YYYY-MM-DD")', "1-1-5-4"),
+            ('cast("2020", time, "YYYY")', "1-1-5-4"),
+            ('cast("2020Q1M1", time_period, "YYYY\\QQ\\MM")', "1-1-5-4"),
+            ('cast("2020Q1 10", time_period, "YYYY\\QQ hh")', "1-1-5-4"),
+            ('cast("MM", duration, "PP")', "1-1-5-4"),
+            ('cast("1", duration, "p")', "1-1-5-4"),
             # The parts of the masks that are not supported
             ('cast("1", number, "DD.DDEE")', "1-3-13"),
             ('cast("MON", date, "DAY3")', "1-3-13"),
+            ('cast("JANUARY 2020", date, "MONTH YYYY")', "1-3-13"),
+            ('cast("2020-01-15 10 AM", date, "YYYY-MM-DD hh AM/PM")', "1-3-13"),
             ('cast("P1Y2M", duration, "\\PY\\YM\\M")', "1-3-13"),
             ('cast("2020-01-01/P1Y", time, "YYYY-MM-DD/PY\\Y")', "1-3-13"),
             # A literal that its mask does not describe
             ('cast("2020-13-01", date, "YYYY-MM-DD")', "1-1-5-6"),
+            ('cast("1.25", number, "D.D")', "1-1-5-6"),
+            ('cast("123", integer, "DD")', "1-1-5-6"),
+            ('cast("2020Q1", time_period, "YYYY\\MMM")', "1-1-5-6"),
+            ('cast("2020.02.30", time_period, "YYYY\\.MM\\.DD")', "1-1-5-6"),
+            ('cast("P2M", duration, "\\PpP")', "1-1-5-6"),
+            ('cast("20201231/20200101", time, "YYYYMMDD/YYYYMMDD")', "1-1-5-6"),
         ],
     )
     def test_error(self, expr: str, code: str) -> None:
         with pytest.raises(SemanticError) as context:
             TestCastInterpreter._execute_expression(expr)
         assert context.value.args[1] == code
+
+    @pytest.mark.parametrize(
+        "expr",
+        [
+            # A value that is not a literal, which its mask does not describe
+            'cast(cast("123.5", number, "DDD.D"), string, "DD.D")',
+            'cast(cast("123", integer, "DDD"), string, "DD")',
+            'cast(DATE, string, "YY-MM-DD")',
+            'cast(cast("2000M03", time_period, "YYYY\\MMM"), string, "YYYY\\QQ")',
+            'cast(cast("2000M03", time_period, "YYYY\\MMM"), string, "YYYY\\.MM\\.DD")',
+        ],
+    )
+    def test_runtime_error(self, expr: str) -> None:
+        with pytest.raises(RunTimeError) as context:
+            TestCastInterpreter._execute_expression(expr.replace("DATE", DATE_LITERAL))
+        assert context.value.args[1] == "2-1-5-3"
 
 
 # ===========================================================================

@@ -621,8 +621,10 @@ supported, on both engines:
       - ``YYYY-MM-DD/YYYY-MM-DD``
       - ``2020-01-01/2020-12-31``
     * - Time_Period
-      - ``YYYY\QQ``, ``YYYY\MMM``, ``YYYYP{ppp}``, ``YYYY``
-      - ``2020Q3``, ``2015M03``, ``2015D365``, ``2015``
+      - ``YYYY\QQ``, ``YYYY\MMM``, ``YYYYP{ppp}``, ``YYYY``,
+        ``YYYY\.MM\.DD``
+      - ``2020Q3``, ``2015M03``, ``2015D365``, ``2015``,
+        ``2000.03.01`` (the daily period ``2000D61``)
     * - Duration
       - ``P``, ``\PpP``
       - ``M``, ``P1M``
@@ -639,8 +641,9 @@ of second, ``P`` period indicator and ``p`` number of periods. Braces enclose
 the digits that may be left out (``{M}M`` writes April as ``4``), a reverse
 slash writes the next character as it is (``\Q``), and any other character
 appears as it is. A day is within the month when the mask has one, within the
-week when it has a week, and within the year otherwise. A Time is two Date
-masks separated by ``/``.
+week when it has a week, and within the year otherwise; a Time_Period mask with
+a day and a month, or a week, writes a daily period. A Time is two Date masks
+separated by ``/``.
 
 A value that its mask does not describe raises RunTimeError ``2-1-5-3``, and
 a mask that does not describe the type raises SemanticError ``1-1-5-4``.
