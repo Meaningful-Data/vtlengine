@@ -3949,17 +3949,20 @@ class ConditionalBugs(BugHelper):
         Expression: DS_r1 <- max(DS_1);
                     DS_r2 <- DS_1[aggr Me_2 := sum(Me_1)];
                     DS_r3 <- max(DS_2);
+                    DS_r4 <- DS_2[aggr Me_2 := sum(Me_1)];
+                    DS_r5 <- DS_2[aggr Me_2 := count()];
         Description: Without a grouping clause, all the Data Points of the operand make a
             single group, and the result is a single Data Point. Over the null Measures of
             DS_1 it holds a null (DS_r1, DS_r2): the pandas engine dropped it, so the result
-            had no Data Point, while the DuckDB engine kept it. DS_2 has no Data Points, and
-            both engines give none (DS_r3).
+            had no Data Point, while the DuckDB engine kept it. DS_2 has no Data Points, so
+            the result has none, at dataset level (DS_r3) and in an aggr clause (DS_r4),
+            where the DuckDB engine gave a null Data Point. A count still reports 0 (DS_r5).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
         Goal: Check Result.
         """
         code = "GH_1314_23"
         number_inputs = 2
-        references_names = ["1", "2", "3"]
+        references_names = ["1", "2", "3", "4", "5"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 

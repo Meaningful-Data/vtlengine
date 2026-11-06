@@ -2973,6 +2973,7 @@ FROM (
         calc_exprs: Dict[str, str] = {}
         having_sql: Optional[str] = None
         tp_minmax_cols: List[tuple[str, str]] = []
+        counts = False
 
         with self._clause_scope(ds):
             for child in node.children:
@@ -2980,6 +2981,8 @@ FROM (
                 if isinstance(assignment, AST.Assignment):
                     col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
                     agg_node = assignment.right
+                    if isinstance(agg_node, AST.Aggregation):
+                        counts |= str(agg_node.op).lower() == tokens.COUNT
                     if isinstance(agg_node, AST.Aggregation) and agg_node.having_clause is not None:
                         hc = agg_node.having_clause
                         if isinstance(hc, AST.ParamOp) and hc.params is not None:
@@ -3069,6 +3072,10 @@ FROM (
         builder = SQLBuilder().select(*cols).from_table(group_src)
         if group_ids:
             builder.group_by(*[_id_group_sql(id_) for id_ in group_ids])
+        elif all_input_ids and not counts:
+            # Without grouping, an operand without Data Points gives no Data Point, as an
+            # aggregation at dataset level does; a count reports 0 (issues #1049, #1314)
+            builder.having("COUNT(*) > 0")
 
         if having_sql:
             builder.having(having_sql)
