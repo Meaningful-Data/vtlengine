@@ -208,7 +208,11 @@ class If(Operator):
                 common_dtype = result.components[col].data_type.dtype()
                 t_base[col] = t_base[col].astype(common_dtype)  # type: ignore[call-overload]
                 f_base[col] = f_base[col].astype(common_dtype)  # type: ignore[call-overload]
-        result.data = merge_frames(t_base, f_base, how="outer").drop(columns=COND_COL)
+        # The parts hold different Data Points, so the result is their union, in the order of
+        # the Identifiers. An outer merge on all the columns also compared the Measures, and
+        # failed when one part held 0.0 and the other -0.0 (issue #1314)
+        data = pd.concat([t_base, f_base], ignore_index=True).drop(columns=COND_COL)
+        result.data = data.sort_values(ids, ignore_index=True)
         _combine_viral_attributes(result, [true_branch, false_branch])
 
     @classmethod

@@ -3894,6 +3894,22 @@ class ConditionalBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
 
+    def test_GH_1314_21(self):
+        """
+        Expression: DS_r1 <- if DS_2 < 0.5 then DS_1 - DS_1 else -DS_1;
+        Description: The then operand gives 0.0 on Id_1 3 and the else operand -0.0 on Id_1 1.
+            On the pandas engine, the Data Points of both operands were outer merged on all
+            their columns, the Measure too, and the merge raised "values should be unique if
+            codes is not None" on 0.0 and -0.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_21"
+        number_inputs = 2
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """
