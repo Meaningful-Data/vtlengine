@@ -3748,6 +3748,23 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_4(self):
+        """
+        Expression: DS_r1 <- if DS_1 > 1 then 0.5 else DS_1;
+                    DS_r2 <- if DS_3 > 1 then DS_3 else DS_2;
+                    DS_r3 <- DS_1 + DS_3;
+        Description: A Data Set if types its result without retyping its operands. The
+            semantic analysis wrote the common type, Number, into the Integer Measures of
+            DS_1 (DS_r1) and DS_3 (DS_r2), so DS_r3 was Number on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_4"
+        number_inputs = 3
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """

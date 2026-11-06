@@ -233,18 +233,11 @@ class If(Operator):
                 "1-1-9-12", op=cls.op, then_symbol=left.name, else_symbol=right.name
             )
         if isinstance(left, Scalar):
-            left.data_type = right.data_type = binary_implicit_promotion(
-                left.data_type, right.data_type
-            )
+            # Two Scalars (having) only need a common type: an operand is never retyped
+            binary_implicit_promotion(left.data_type, right.data_type)
             return Dataset(name=dataset_name, components=copy(condition.components), data=None)
         if left.get_identifiers() != condition.get_identifiers():
             raise SemanticError("1-1-9-10", op=cls.op, clause=left.name)
-        if isinstance(right, Scalar):
-            for component in left.get_measures():
-                if component.data_type != right.data_type:
-                    component.data_type = binary_implicit_promotion(
-                        component.data_type, right.data_type
-                    )
         if isinstance(right, Dataset):
             if left.get_identifiers() != condition.get_identifiers():
                 raise SemanticError("1-1-9-10", op=cls.op, clause=right.name)
@@ -252,14 +245,11 @@ class If(Operator):
             # happens to declare them (issue #1008).
             if set(left.get_components_names()) != set(right.get_components_names()):
                 raise SemanticError("1-1-9-13", op=cls.op, then=left.name, else_clause=right.name)
-            for component in left.get_measures():
-                if component.data_type != right.components[component.name].data_type:
-                    component.data_type = right.components[component.name].data_type = (
-                        binary_implicit_promotion(
-                            component.data_type,
-                            right.components[component.name].data_type,
-                        )
-                    )
+        # The Measures take the common type of both operands on the Components of the result:
+        # the ones of the operands keep their types for the statements after this one
+        # (issue #1314)
+        result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
+        _promote_measures(result_components, [right])
         if isinstance(condition, Dataset):
             if len(condition.get_measures()) != 1:
                 raise SemanticError("1-1-9-4", op=cls.op, name=condition.name)
@@ -271,7 +261,6 @@ class If(Operator):
                 )
             if left.get_identifiers() != condition.get_identifiers():
                 raise SemanticError("1-1-9-6", op=cls.op)
-        result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
         # if-then-else over two datasets combines their data points per row, so viral
         # attributes carried by both branches require a propagation rule (issue #906).
         combined = combined_viral_components([b for b in (left, right) if isinstance(b, Dataset)])
