@@ -1440,12 +1440,10 @@ class InterpreterAnalyzer(ASTTemplate):
             thenOps.append(self.visit(case.thenOp))
             self.condition_stack.pop()
 
-            if isinstance(conditions[-1], DataComponent) or len(self.condition_stack) == depth:
+            if isinstance(conditions[-1], DataComponent):
                 # case returns the then operand of the first true condition (issue #1251). At
                 # Component level, as in a chain of if-then-else, the later conditions, their
                 # then operands and the else operand only see the data points this one leaves.
-                # At Data Set level they see those the first condition leaves: it gives the
-                # data points, and a later condition may lack some of them (issue #1304).
                 self.condition_stack.append(else_ds)
 
         elseOp = self.visit(node.elseOp)
@@ -1504,18 +1502,11 @@ class InterpreterAnalyzer(ASTTemplate):
             if merge_dataset.data is None:
                 return operand
 
-            merge_data = merge_dataset.data
+            # Only a Component is cut to the data points of its branch. A Data Set operand keeps
+            # all of them, as on the DuckDB engine: the viral attributes of an if or a case read
+            # every Data Set operand on every data point of the result (issue #1304).
             if isinstance(operand, DataComponent) and operand.data is not None:
-                operand.data = operand.data.loc[merge_data.index]
-            elif isinstance(operand, Dataset) and operand.data is not None:
-                ids = merge_dataset.get_identifiers_names()
-                if set(ids).issubset(operand.data.columns):
-                    operand.data = merge_frames(
-                        operand.data.assign(__idx__=operand.data.index),
-                        merge_data[ids],
-                        on=ids,
-                        how="inner",
-                    ).set_index("__idx__")
+                operand.data = operand.data.loc[merge_dataset.data.index]
 
         return operand
 

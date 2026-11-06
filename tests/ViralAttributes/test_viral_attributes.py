@@ -203,6 +203,22 @@ def test_GH_1304_3() -> None:
     ViralHelper.BaseTest(code="GH_1304_3", number_inputs=3, references_names=["DS_r1", "DS_r2"])
 
 
+def test_GH_1314_1() -> None:
+    """
+    Expression: DS_r1 <- if DS_1 = 1.0 then DS_2 else (if DS_1 = 2.0 then DS_3 else DS_4);
+                DS_r2 <- case when DS_1 = 1.0 then (case when DS_1 = 2.0 then DS_3 else DS_4)
+                    else DS_2;
+    Description: The aggregate rule of At_1 collapses every dataset operand of the if and the
+        case on every data point, the inner if or case too, as when the inner one is computed
+        in its own statement. On the pandas engine, the inner one only had the data points of
+        its branch, so the outer one read a null At_1 for it on the others (Id_1 = 1 in DS_r1,
+        Id_1 = 2 and 3 in DS_r2).
+    Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+    Goal: Check Result.
+    """
+    ViralHelper.BaseTest(code="GH_1314_1", number_inputs=4, references_names=["DS_r1", "DS_r2"])
+
+
 # -- Model-level checks (Role enum and Dataset helpers) --
 class TestViralAttributeRole:
     def test_viral_attribute_in_role_enum(self) -> None:
