@@ -3905,6 +3905,10 @@ class ConditionalBugs(BugHelper):
         Goal: Check Result.
         """
         code = "GH_1314_21"
+        number_inputs = 2
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GH_1314_10(self):
         """
@@ -3954,6 +3958,10 @@ class ConditionalBugs(BugHelper):
         Goal: Check Result.
         """
         code = "GH_1314_23"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_GH_1314_11(self):
         """
