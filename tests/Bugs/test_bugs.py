@@ -2334,6 +2334,26 @@ class TimeBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1309(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- DS_1 [calc Me_2 := time_agg("A", Id_1)]
+                                  [calc Me_3 := cast(Me_2, string)] [filter Me_1 > 0];
+                    DS_r2 <- DS_1 [calc Me_2 := time_agg("A", Id_1)]
+                                  [calc Me_2 := cast(Me_2, string)];
+        Description: On the DuckDB engine, a calc read the time_agg result of an earlier calc
+                     as a Number when it typed the operand without the statement's result
+                     (DS_r1 raised 2-1-5-1), and as the String the statement's result has after
+                     the last calc (DS_r2 gave 2004A instead of 2004).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1309
+        Goal: Check Result.
+        """
+        code = "GH_1309"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class SetBugs(BugHelper):
     """ """
