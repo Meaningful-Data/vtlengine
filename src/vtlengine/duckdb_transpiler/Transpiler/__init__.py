@@ -1142,6 +1142,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 left_sql = _bool_to_str(left_sql)
             if self._is_boolean_expr(node.right):
                 right_sql = _bool_to_str(right_sql)
+        if op in COMPARISON_OPS:
+            types = [self._value_type(node.left), self._value_type(node.right)]
+            left_sql, right_sql = self._compared_as_text([left_sql, right_sql], types)
         left_dt = self._detect_scalar_type(node.left)
         right_dt = self._detect_scalar_type(node.right)
         return self._make_binary_expr(left_sql, right_sql, op, left_dt, right_dt)
@@ -1319,6 +1322,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             right_comp = right_ds.components.get(right_m)
             left_dt = left_comp.data_type if left_comp else None
             right_dt = right_comp.data_type if right_comp else None
+            if op in COMPARISON_OPS:
+                types = [getattr(dt, "__name__", None) for dt in (left_dt, right_dt)]
+                left_ref, right_ref = self._compared_as_text([left_ref, right_ref], types)
             expr = self._make_binary_expr(left_ref, right_ref, op, left_dt, right_dt)
 
             out_name = left_m
@@ -1559,13 +1565,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if op == tokens.CONCAT and self._is_boolean_expr(scalar_node):
             scalar_sql = _bool_to_str(scalar_sql)
         scalar_dt = self._detect_scalar_type(scalar_node)
+        scalar_type = self._value_type(scalar_node) if op in COMPARISON_OPS else None
 
         def _bin_expr(col_ref: str) -> str:
             comp = ds.components.get(col_ref.strip('"'))
             dt = comp.data_type if comp else None
+            types = [getattr(dt, "__name__", None), scalar_type]
+            col_ref, scalar_ref = self._compared_as_text([col_ref, scalar_sql], types)
             if ds_on_left:
-                return self._make_binary_expr(col_ref, scalar_sql, op, dt, scalar_dt)
-            return self._make_binary_expr(scalar_sql, col_ref, op, scalar_dt, dt)
+                return self._make_binary_expr(col_ref, scalar_ref, op, dt, scalar_dt)
+            return self._make_binary_expr(scalar_ref, col_ref, op, scalar_dt, dt)
 
         # A mono-measure comparison yields bool_var, matching the structure the
         # visitor reports for this node (issue #920).
@@ -3769,6 +3778,12 @@ FROM (
         ones take the text that cast to string gives, as Boolean is promoted to String. DuckDB
         cast the strings to BOOLEAN instead (issue #1314)."""
         return [_bool_to_str(v) if t == "Boolean" else v for v, t in zip(values, types)]
+
+    def _compared_as_text(self, refs: List[str], types: List[Optional[str]]) -> List[str]:
+        """The operands of a comparison: a Boolean compared with a String is promoted to String,
+        as cast to string renders it, and they are compared as text. DuckDB cast the String to
+        BOOLEAN instead (issue #1314)."""
+        return self._as_text(refs, types) if set(types) == {"Boolean", "String"} else refs
 
     def _component_value_types(
         self, condition: AST.AST, operands: List[AST.AST]

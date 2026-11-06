@@ -4011,6 +4011,25 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_13(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_3 := Me_2 = Me_1];
+                    DS_r2 <- DS_2 = "true";
+                    DS_r3 <- DS_3 = true;
+                    DS_r4 <- DS_3 <> DS_2;
+        Description: A Boolean compared with a String is promoted to String, as cast to string
+            renders it ('True', 'False'), and they are compared as text. The DuckDB engine cast
+            the String to Boolean: "true" equalled a true value (DS_r2), and a String that is
+            not a Boolean raised a Conversion Error (DS_r1, DS_r3, DS_r4).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_13"
+        number_inputs = 3
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """
