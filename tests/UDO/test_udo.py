@@ -1316,6 +1316,44 @@ class UdoTest(UDOHelper):
             text=rendered,
         )
 
+    def test_GH_1235_11(self):
+        """
+        Status: OK
+        Expression: keep_in(DS_1, VD_AB) and then keep_in(s, VD_AB);
+        Description: A later call whose argument is named like the set parameter s of an earlier call takes the Data Set s, which crashed with an unhashable ScalarSet.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_11"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
+    def test_GH_1235_12(self):
+        """
+        Status: OK
+        Expression: keep_both(DS_1, VD_AB), whose body calls keep_in, and then keep_in(DS_1, VD_AB);
+        Description: An operator with a set parameter calls another one with a set parameter, and the second is then called on its own.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_12"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
     def test_GH_1279_1(self):
         """
         Status: OK

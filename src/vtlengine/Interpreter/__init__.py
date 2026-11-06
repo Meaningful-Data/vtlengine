@@ -234,7 +234,6 @@ class InterpreterAnalyzer(ASTTemplate):
     udos: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     hrs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     is_from_case_then: bool = False
-    signature_values: Optional[Dict[str, Any]] = None
 
     def __post_init__(self) -> None:
         self.datasets_inputs = set(self.datasets.keys())
@@ -2367,8 +2366,6 @@ class InterpreterAnalyzer(ASTTemplate):
             raise SemanticError("1-2-22", comp_type="User Defined Operators")
         elif node.op not in self.udos:
             raise SemanticError("1-2-3", node_op=node.op, op_type="User Defined Operator")
-        if self.signature_values is None:
-            self.signature_values = {}
 
         operator = self.udos[node.op]
         signature_values: Dict[str, Any] = {}
@@ -2481,14 +2478,13 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.udo_params is None:
             self.udo_params = []
 
-        # Adding parameters to the stack
+        caller = self.udo_params[-1] if self.udo_params else {}
         for k, v in signature_values.items():
             if hasattr(v, "name"):
                 v = v.name
             # A set parameter is bound to its values, which name nothing
-            if isinstance(v, str) and v in self.signature_values:
-                signature_values[k] = self.signature_values[v]
-        self.signature_values.update(signature_values)
+            if isinstance(v, str) and v in caller:
+                signature_values[k] = caller[v]
         self.udo_params.append(signature_values)
 
         if node.op in self.udo_calls:
