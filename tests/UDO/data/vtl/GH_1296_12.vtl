@@ -1,0 +1,51 @@
+/* Data Set chain: d_top [> 0] -> d_shift (no constraint, adds 10) -> d_mid [< 100] -> d_inner [<= 60] */
+define operator d_inner (x dataset {measure<number [value <= 60]> Me_1})
+    returns dataset is
+        x
+end operator;
+
+define operator d_mid (x dataset {measure<number [value < 100]> Me_1})
+    returns dataset is
+        d_inner(x)
+end operator;
+
+define operator d_shift (x dataset)
+    returns dataset is
+        d_mid(x + 10)
+end operator;
+
+define operator d_top (x dataset {measure<number [value > 0]> Me_1})
+    returns dataset is
+        d_shift(x)
+end operator;
+
+/* Component chain: c_top [> 0] -> c_shift (no constraint, adds 10) -> c_mid [< 100] -> c_inner [<= 60] */
+define operator c_inner (c component<number [value <= 60]>)
+    returns component is
+        c * 2
+end operator;
+
+define operator c_mid (c component<number [value < 100]>)
+    returns component is
+        c_inner(c)
+end operator;
+
+define operator c_shift (c component)
+    returns component is
+        c_mid(c + 10)
+end operator;
+
+define operator c_top (c component<number [value > 0]>)
+    returns component is
+        c_shift(c)
+end operator;
+
+/* Both chains, under a constrained Data Set operator */
+define operator mix (x dataset {measure<number [value > 0]> Me_1})
+    returns dataset is
+        d_top(x)[calc Me_2 := c_top(Me_1)]
+end operator;
+
+DS_r1 <- d_top(DS_1);
+DS_r2 <- DS_1[calc Me_2 := c_top(Me_1)];
+DS_r3 <- mix(DS_1);

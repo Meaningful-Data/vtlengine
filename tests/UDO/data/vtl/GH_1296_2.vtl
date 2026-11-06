@@ -1,0 +1,22 @@
+define operator c1 (c component)
+    returns component is
+        c * 2
+end operator;
+
+define operator c2 (c component)
+    returns component is
+        c1(c + 1)
+end operator;
+
+define operator s1 (n integer)
+    returns integer is
+        n + 1
+end operator;
+
+define operator s2 (n integer)
+    returns integer is
+        s1(n * 10)
+end operator;
+
+DS_r1 <- DS_1[calc Me_2 := c2(Me_1)];
+DS_r2 <- DS_1 * s2(3);

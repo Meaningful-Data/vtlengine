@@ -1,0 +1,54 @@
+define operator h_abs (y dataset)
+    returns dataset is
+        abs(y)
+end operator;
+
+define operator h (y dataset)
+    returns dataset is
+        h_abs(y * 2)
+end operator;
+
+define operator m (a dataset)
+    returns dataset is
+        abs(a)
+end operator;
+
+define operator k (b dataset)
+    returns dataset is
+        m(b)
+end operator;
+
+define operator j (a dataset)
+    returns dataset is
+        k(a * 2)
+end operator;
+
+define operator k4 (a dataset)
+    returns dataset is
+        m(a + 1)
+end operator;
+
+define operator j4 (a dataset)
+    returns dataset is
+        k4(a * 2)
+end operator;
+
+define operator i4 (a dataset)
+    returns dataset is
+        j4(a - 1)
+end operator;
+
+define operator kx (b dataset, x dataset)
+    returns dataset is
+        m(b)
+end operator;
+
+define operator jx (x dataset)
+    returns dataset is
+        kx(x * 2, DS_2)
+end operator;
+
+DS_r1 <- h(DS_1);
+DS_r2 <- j(DS_1);
+DS_r3 <- i4(DS_1);
+DS_r4 <- jx(DS_1);
