@@ -60,6 +60,12 @@ def _selected_value(operand: Scalar, data_type: Any) -> Any:
     return data_type.implicit_cast(operand.value, operand.data_type)
 
 
+def _identifiers(dataset: Dataset) -> Dict[str, Component]:
+    """The Identifiers of a Data Set by name: an operand of an if or a case matches the
+    condition in whatever order each one declares them, as their Components (issue #1008)."""
+    return {comp.name: comp for comp in dataset.get_identifiers()}
+
+
 def _promote_measures(components: Dict[str, Component], operands: List[Any]) -> None:
     """Give each Measure of ``components`` the common type of its own type and the type of
     every operand, a Scalar or a Data Set with the same Components, and make it nullable
@@ -276,10 +282,10 @@ class If(Operator):
             # Two Scalars (having) only need a common type: an operand is never retyped
             binary_implicit_promotion(left.data_type, right.data_type)
             return Dataset(name=dataset_name, components=copy(condition.components), data=None)
-        if left.get_identifiers() != condition.get_identifiers():
+        if _identifiers(left) != _identifiers(condition):
             raise SemanticError("1-1-9-10", op=cls.op, clause=left.name)
         if isinstance(right, Dataset):
-            if left.get_identifiers() != condition.get_identifiers():
+            if _identifiers(right) != _identifiers(condition):
                 raise SemanticError("1-1-9-10", op=cls.op, clause=right.name)
             # The branches must hold the same Components, in whatever order each one
             # happens to declare them (issue #1008).
@@ -299,8 +305,6 @@ class If(Operator):
                     op=cls.op,
                     type=SCALAR_TYPES_CLASS_REVERSE[condition.get_measures()[0].data_type],
                 )
-            if left.get_identifiers() != condition.get_identifiers():
-                raise SemanticError("1-1-9-6", op=cls.op)
         # if-then-else over two datasets combines their data points per row, so viral
         # attributes carried by both branches require a propagation rule (issue #906).
         combined = combined_viral_components([b for b in (left, right) if isinstance(b, Dataset)])
@@ -605,6 +609,11 @@ class Case(Operator):
                 nullable=any(branch.nullable or branch.data_type == Null for branch in ops),
             )
             return Dataset(name=dataset_name, components=components, data=None)
+
+        # Each Data Set operand has the Identifiers of the condition, as in an if (issue #1314)
+        for op in ops:
+            if isinstance(op, Dataset) and _identifiers(op) != _identifiers(conditions[0]):
+                raise SemanticError("1-1-9-10", op=cls.op, clause=op.name)
 
         # Rebuild the dict: the result must never share it with the branch dataset, as
         # apply_viral_return_types may replace entries in it.

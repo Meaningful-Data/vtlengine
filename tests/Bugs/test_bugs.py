@@ -3842,6 +3842,40 @@ class ConditionalBugs(BugHelper):
             scalars={"sc_1": None},
         )
 
+    def test_GH_1314_I2_1(self):
+        """
+        Expression: DS_r <- if DS_1 > 1 then DS_1 else DS_2;
+        Description: The else operand of a Data Set if must have the Identifiers of the
+            condition, as the then operand: Id_1 is a String in DS_2. The check compared the
+            then operand twice, so the pandas engine failed in the merge and the DuckDB
+            engine ran with an implicit cast.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_I2_1"
+        number_inputs = 2
+        error_code = "1-1-9-10"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1314_I2_2(self):
+        """
+        Expression: DS_r <- case when DS_1 > 1 then DS_1 else DS_2;
+        Description: The Data Set operands of a case must have the Identifiers of the
+            condition, as in an if: Id_1 is a String in DS_2. The case compared none.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_I2_2"
+        number_inputs = 2
+        error_code = "1-1-9-10"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
 
 class ClauseBugs(BugHelper):
     """ """
