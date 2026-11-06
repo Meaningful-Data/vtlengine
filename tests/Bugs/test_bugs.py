@@ -2671,6 +2671,26 @@ class SetBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1304_4(self):
+        """
+        Expression: DS_r1 <- case when DS_1 > 4 then (case when DS_2 > 3 then DS_2 else DS_1)
+                        else DS_1;
+                    DS_r2 <- if DS_1 > 4 then (if DS_3 then DS_2 * 10 else DS_1 * 10) else DS_1;
+        Description: A Data Set case or if inside a branch of another one. On the pandas
+            engine, the inner condition was cut by the row labels of the Data Points of the
+            outer branch, which belong to the frame of another Data Set: the condition on DS_2
+            raised a KeyError (DS_r1), and DS_3, which lists its Data Points in another order,
+            cut the inner branches to other Data Points and lost Id_1 1 (DS_r2). In both, Id_1
+            3 is left out, as the inner case or if has no Data Point 3.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1304
+        Goal: Check Result.
+        """
+        code = "GH_1304_4"
+        number_inputs = 3
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1276_7(self):
         """
         Status: OK

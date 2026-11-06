@@ -1474,8 +1474,16 @@ class InterpreterAnalyzer(ASTTemplate):
         then_df = pd.DataFrame(columns=list(components.keys()))
         else_df = pd.DataFrame(columns=list(components.keys()))
         if cond is not None:
+            # Only a Component condition is cut by the row labels of the enclosing branch, as
+            # both come from the frame of the Data Set of the clause. The labels of a Data Set
+            # condition belong to its own frame and name other Data Points: the enclosing if or
+            # case takes the Data Points of this one by their Identifiers (issue #1304).
             merge_ds = self.condition_stack[-1] if self.condition_stack else None
-            if isinstance(merge_ds, Dataset) and merge_ds.data is not None:
+            if (
+                isinstance(condition, DataComponent)
+                and isinstance(merge_ds, Dataset)
+                and merge_ds.data is not None
+            ):
                 cond = cond.loc[merge_ds.data.index]
 
             valid = cond.fillna(False).astype("bool[pyarrow]")
