@@ -4317,16 +4317,137 @@ class ClauseBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- DS_1[pivot Id_1, Me_1];
-        Description: pivot is not supported: a SemanticError instead of a NotImplementedError.
+        Description: pivot raises a SemanticError instead of a NotImplementedError. It raised
+                     1-3-13 until pivot takes an Identifier defined on a value domain, which
+                     Id_1 is not (issue #1234).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
         Goal: Check Exception.
         """
         code = "GH_1192_38"
         number_inputs = 1
-        message = "1-3-13"
+        message = "1-1-6-18"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1234_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+        Description: Id_2 is defined on VD_AB, so the result has a Measure for A and one for
+                     B, B null where Id_1 2 has no data point for it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1234
+        Goal: Check Result.
+        """
+        code = "GH_1234_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1234-VD_AB"],
+        )
+
+    def test_GH_1234_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+        Description: The example of the reference manual: the Measures created are on VD_INT,
+                     the value domain of Me_1, and Me_2 and the Attribute At_1 are dropped.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1234
+        Goal: Check Result.
+        """
+        code = "GH_1234_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1234-VD_ABC", "GH_1234-VD_INT"],
+        )
+
+    def test_GH_1234_3(self):
+        """
+        Status: OK
+        Expression: define viral propagation CONF ( variable VAt_1 ) is ... end viral propagation;
+                    DS_r <- DS_1 [ pivot Id_2 , Me_1 ] [ calc Me_2 := A + B ];
+        Description: The viral attribute of the data points of a group is combined by its
+                     rule, and the Measures created are read by a later clause.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1234
+        Goal: Check Result.
+        """
+        code = "GH_1234_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1234-VD_AB"],
+        )
+
+    def test_GH_1234_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+        Description: Id_2 is a String on no value domain, whose values would give the
+                     Measures of the result.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1234
+        Goal: Check Exception.
+        """
+        code = "GH_1234_4"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-6-18",
+            exception_message="The Identifier Id_2 is not defined on a value domain",
+        )
+
+    def test_GH_1234_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+        Description: Id_1, a value of VD_NAMES, would name a Measure as the Identifier the
+                     result keeps.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1234
+        Goal: Check Exception.
+        """
+        code = "GH_1234_5"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-6-9",
+            vd_names=["GH_1234-VD_NAMES"],
+        )
+
+    def test_GH_1234_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+        Description: Pivoting the only Identifier leaves a single data point, with no
+                     Identifiers.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1234
+        Goal: Check Result.
+        """
+        code = "GH_1234_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1234-VD_ABC"],
         )
 
     def test_GH_1265(self):

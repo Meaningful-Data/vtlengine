@@ -663,8 +663,15 @@ centralised_messages = {
     },
     "1-1-6-17": {
         "message": "At op {op}: {op} clause requires two operands.",
-        "description": "Raised when an unpivot clause does not name its identifier and its "
-        "measure.",
+        "description": "Raised when a pivot or unpivot clause does not name its identifier and "
+        "its measure.",
+    },
+    "1-1-6-18": {
+        "message": "At op {op}: The Identifier {name} is not defined on a value domain, whose "
+        "values give the Measures of the result.",
+        "description": "Raised when a pivot clause pivots an Identifier that is not defined on "
+        "a value domain: the Measures it creates are named after the values of the value "
+        "domain.",
     },
     # Comparison errors
     "1-1-7-1": {
