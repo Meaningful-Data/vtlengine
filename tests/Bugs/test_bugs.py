@@ -4045,6 +4045,24 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_15(self):
+        """
+        Expression: DS_r <- DS_1 = DS_2;
+        Description: Id_1 is a String in DS_1 and an Integer in DS_2, types without a common
+            type, so the Data Points cannot be matched on it, as in a join. The pandas engine
+            matched the String "1" with the Integer 1, and the DuckDB engine raised 2-1-5-1 when
+            it cast "a" to Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_15"
+        number_inputs = 2
+        message = "1-1-13-18"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
+
 
 class ClauseBugs(BugHelper):
     """ """

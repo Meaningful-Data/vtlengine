@@ -61,53 +61,59 @@ class IdentifiersTypeCheckingAdd(TestIdentifiersTypeChecking):
     def test_3(self):
         """
         ADD OPERATOR
-        Status: BUG
+        Status: OK
         Expression: DS_r := DS_1 + DS_2 ;
         string-integer
-        Description: operations between identifiers, string and integers.
+        Description: operations between identifiers, string and integers. A String and a numeric
+            Identifier have no common type, so the Data Points cannot match (issue #1314).
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
-        Goal: Check Doubt.
+        Goal: Check Exception.
         """
         code = "4-6-3-3"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-18"
+        )
 
     def test_4(self):
         """
         ADD OPERATOR
-        Status: BUG
+        Status: OK
         Expression: DS_r := DS_1 + DS_2 ;
         string-number
-        Description: operations between identifiers, numbers and strings.
+        Description: operations between identifiers, numbers and strings. A String and a numeric
+            Identifier have no common type, so the Data Points cannot match (issue #1314).
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
-        Goal: Check Doubt.
+        Goal: Check Exception.
         """
         code = "4-6-3-4"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-18"
+        )
 
     def test_5(self):
         """
         ADD OPERATOR
-        Status: BUG
+        Status: OK
         Expression: DS_r := DS_2 + DS_1 ;
         number-string
-        Description: operations between identifiers, numbers and strings.
+        Description: operations between identifiers, numbers and strings. A String and a numeric
+            Identifier have no common type, so the Data Points cannot match (issue #1314).
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
-        Goal: Check Doubt.
+        Goal: Check Exception.
         """
         code = "4-6-3-5"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-18"
+        )
 
 
 class IdentifiersTypeCheckingSubstraction(TestIdentifiersTypeChecking):
@@ -146,16 +152,18 @@ class IdentifiersTypeCheckingSubstraction(TestIdentifiersTypeChecking):
         Status: OK
         Expression: DS_r := DS_1 - DS_2;
         number - string
-        Description: operations between identifiers, numbers and strings.
+        Description: operations between identifiers, numbers and strings. A String and a numeric
+            Identifier have no common type, so the Data Points cannot match (issue #1314).
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
-        Goal: Check Doubt.
+        Goal: Check Exception.
         """
         code = "4-6-4-2"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-18"
+        )
 
 
 class IdentifiersTypeCheckingMultiplication(TestIdentifiersTypeChecking):
@@ -191,19 +199,21 @@ class IdentifiersTypeCheckingMultiplication(TestIdentifiersTypeChecking):
     def test_2(self):
         """
         MULTIPLICATION OPERATOR
-        Status: BUG
+        Status: OK
         Expression: DS_r := DS_1 * DS_2;
         number - string
-        Description: operations between identifiers, numbers and strings.
+        Description: operations between identifiers, numbers and strings. A String and a numeric
+            Identifier have no common type, so the Data Points cannot match (issue #1314).
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
-        Goal: Check Doubt.
+        Goal: Check Exception.
         """
         code = "4-6-5-2"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-18"
+        )
 
 
 class IdentifiersTypeCheckingDivision(TestIdentifiersTypeChecking):
@@ -239,19 +249,21 @@ class IdentifiersTypeCheckingDivision(TestIdentifiersTypeChecking):
     def test_2(self):
         """
         DIVISION OPERATOR
-        Status: BUG
+        Status: OK
         Expression: DS_r := DS_1 / DS_2;
         number - string
-        Description: operations between identifiers, numbers and strings.
+        Description: operations between identifiers, numbers and strings. A String and a numeric
+            Identifier have no common type, so the Data Points cannot match (issue #1314).
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
-        Goal: Check Doubt.
+        Goal: Check Exception.
         """
         code = "4-6-6-2"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-18"
+        )
 
 
 class IdentifiersTypeCheckingModule(TestIdentifiersTypeChecking):
@@ -283,16 +295,18 @@ class IdentifiersTypeCheckingModule(TestIdentifiersTypeChecking):
     def test_2(self):
         """
         MOD OPERATOR
-        Status: BUG
+        Status: OK
         Expression: DS_r := mod ( DS_1, DS_2 );
         number - string
-        Description: operations between identifiers, numbers and strings.
+        Description: operations between identifiers, numbers and strings. A String and a numeric
+            Identifier have no common type, so the Data Points cannot match (issue #1314).
         Jira issue: VTLEN 566.
         Git Branch: feat-VTLEN-566-Type-checking-for-identifiers-Numeric.
-        Goal: Check Doubt.
+        Goal: Check Exception.
         """
         code = "4-6-7-2"
         number_inputs = 2
-        references_names = ["DS_r"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-18"
+        )
