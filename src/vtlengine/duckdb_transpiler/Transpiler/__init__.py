@@ -77,6 +77,7 @@ from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_out
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.Operators.Time import Period_indicator
+from vtlengine.Operators.Validation import error_domains, error_value
 from vtlengine.Utils._recursion import recursion_headroom
 from vtlengine.ViralPropagation import apply_viral_return_types, get_current_registry
 from vtlengine.ViralPropagation.sql import (
@@ -4143,7 +4144,7 @@ FROM (
 
         rule_name = rule.name or ""
         ec_sql = self._error_code_sql(rule.erCode)
-        el_sql = self._error_code_sql(rule.erLevel)
+        el_sql = self._error_code_sql(rule.erLevel, "errorlevel")
         # An operand component the rule writes again (an operand coming out of a
         # validation) is replaced by the rule's value, as in the pandas engine.
         written = {"ruleid", "errorcode", "errorlevel"}
@@ -4794,9 +4795,15 @@ FROM (
         inner_sql = f"SELECT {', '.join(inner_cols)} FROM ({val_sql}) _v"
 
         ec_sql = self._error_code_sql(rule.erCode)
-        el_sql = self._error_code_sql(rule.erLevel)
+        el_sql = self._error_code_sql(rule.erLevel, "errorlevel")
+        domains = error_domains(self.value_domains)
+        ec_null = self._error_code_sql(None)
         el_null = (
-            "CAST(NULL AS DOUBLE)" if self._is_numeric(rule.erLevel) else "CAST(NULL AS VARCHAR)"
+            self._error_code_sql(None, "errorlevel")
+            if domains["errorlevel"] is not None
+            else "CAST(NULL AS DOUBLE)"
+            if self._is_numeric(rule.erLevel)
+            else "CAST(NULL AS VARCHAR)"
         )
 
         q_rc = quote_name(rule_comp)
@@ -4811,7 +4818,7 @@ FROM (
         outer_cols.append(f"{_hr_literal(rule_name)} AS {quote_name('ruleid')}")
 
         for val, null_expr, col in (
-            (ec_sql, "CAST(NULL AS VARCHAR)", "errorcode"),
+            (ec_sql, ec_null, "errorcode"),
             (el_sql, el_null, "errorlevel"),
         ):
             if output == "invalid":
@@ -5198,9 +5205,16 @@ FROM (
         """
         return self.visit(_rename_var_ids(node, cond_mapping))
 
-    def _error_code_sql(self, value: Any) -> str:
-        """Convert an errorcode value to a SQL literal."""
-        return "CAST(NULL AS VARCHAR)" if value is None else self._to_sql_literal(value=value)
+    def _error_code_sql(self, value: Any, element: str = "errorcode") -> str:
+        """Convert an errorcode or errorlevel value (element) to a SQL literal, of the basic type
+        of errorcode_vd or errorlevel_vd when it is given."""
+        value_domain = error_domains(self.value_domains)[element]
+        if value_domain is None:
+            return "CAST(NULL AS VARCHAR)" if value is None else self._to_sql_literal(value=value)
+        type_name = value_domain.type.__name__
+        if value is None:
+            return f"CAST(NULL AS {get_duckdb_type(type_name)})"
+        return self._to_sql_literal(error_value(element, value, value_domain, ""), type_name)
 
     def _check_shared_join(self, node: AST.Validation) -> Optional[str]:
         """One join computing both the comparison and the imbalance of a ``check``.
@@ -5251,7 +5265,7 @@ FROM (
                 validation_sql = self.visit(node.validation)
 
         error_code = self._error_code_sql(node.error_code)
-        error_level = self._error_code_sql(node.error_level)
+        error_level = self._error_code_sql(node.error_level, "errorlevel")
 
         ds = self._get_dataset_structure(node.validation)
         if ds is None:

@@ -1,0 +1,6 @@
+define datapoint ruleset DPR_1 ( variable Me_1 ) is
+    R1 : Me_1 > 0 errorcode 100 ;
+    R2 : Me_1 < 100 errorcode 200
+end datapoint ruleset;
+
+DS_r <- check_datapoint ( DS_1 , DPR_1 );

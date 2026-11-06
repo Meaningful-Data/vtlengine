@@ -1,0 +1,8 @@
+{
+  "name": "errorcode_vd",
+  "type": "Integer",
+  "setlist": [
+    100,
+    200
+  ]
+}
