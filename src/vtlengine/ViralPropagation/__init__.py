@@ -266,6 +266,26 @@ def apply_viral_return_types(components: Iterable[Any], result_components: Dict[
         result_components[comp.name] = promoted
 
 
+def combine_viral_groups(data: pd.DataFrame, keys: List[str], names: List[str]) -> pd.DataFrame:
+    """The viral attributes ``names`` of each group of data points by ``keys``, combined by
+    their propagation rules: one row per group, or a single row when there are no keys."""
+    registry = get_current_registry()
+    if not keys:
+        return pd.DataFrame(
+            {name: [registry.resolve_group(name, list(data[name]))] for name in names}
+        )
+    grouped = data.groupby(keys, sort=False)
+
+    def _group_resolver(name: str) -> Any:
+        # Binds the attribute name per column: a lambda in the comprehension below would
+        # see the last one only.
+        return lambda values: registry.resolve_group(name, list(values))
+
+    return pd.DataFrame(
+        {name: grouped[name].agg(_group_resolver(name)) for name in names}
+    ).reset_index()
+
+
 def combined_viral_components(operands: Iterable[Any]) -> List[Any]:
     """Return the viral components combined across ``operands``.
 

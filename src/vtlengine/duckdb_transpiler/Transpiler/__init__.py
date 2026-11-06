@@ -75,6 +75,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+from vtlengine.Operators.Clause import Pivot
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.Operators.Time import Period_indicator
 from vtlengine.Utils._recursion import recursion_headroom
@@ -3156,6 +3157,37 @@ FROM (
             parts.append(part)
 
         return " UNION ALL ".join(parts)
+
+    def visit_RegularAggregation_pivot(self, node: AST.RegularAggregation) -> str:
+        """Visit pivot clause: a group per value of the other Identifiers, with a Measure per
+        value of the value domain of the pivoted Identifier, holding the value of the
+        measure of the data point of that value, or null."""
+        ds, table_src = self._resolve_clause_dataset(node)
+        identifier = self._resolve_udo_name(self._get_node_value(node.children[0]))
+        measure = quote_name(self._resolve_udo_name(self._get_node_value(node.children[1])))
+        value_domain = ds.components[identifier].value_domain
+        keys = [quote_name(name) for name in ds.get_identifiers_names() if name != identifier]
+        type_name = value_domain.type.__name__
+        cols = [
+            *keys,
+            *(
+                f"ANY_VALUE({measure}) FILTER (WHERE {quote_name(identifier)} = "
+                f"{self._to_sql_literal(value, type_name)}) AS {quote_name(name)}"
+                for value, name in zip(value_domain.values(), Pivot.measure_names(value_domain))
+            ),
+        ]
+        # The data points of a group are combined, so are their viral attributes
+        vp_registry = get_current_registry()
+        for v_name in ds.get_viral_attributes_names():
+            v_rule, v_qn = vp_registry.rule_for(ds.components[v_name]), quote_name(v_name)
+            v_sql = vp_no_rule_group_sql(v_qn) if v_rule is None else vp_group_sql(v_rule, v_qn)
+            cols.append(f"{v_sql} AS {v_qn}")
+        builder = SQLBuilder().select(*cols).from_table(table_src)
+        if keys:
+            builder.group_by(*keys)
+        else:
+            builder.having("COUNT(*) > 0")
+        return builder.build()
 
     # Aggregation visitor
 
