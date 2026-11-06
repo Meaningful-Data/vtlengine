@@ -489,6 +489,16 @@ CREATE OR REPLACE MACRO vtl_text_to_integer(x) AS (
     END
 );
 
+-- A value put into a component defined on a value domain, from an operand of its basic type
+-- (downcast), must be one of the values vals of the value domain: mirrors VTL error
+-- 2-1-5-4, with info holding the operator, the basic type and the value domain, each
+-- followed by a broken bar (issue #1301).
+CREATE OR REPLACE MACRO vtl_downcast(v, vals, info) AS (
+    CASE WHEN v IS NULL OR list_contains(vals, v) THEN v
+         ELSE error('VTL 2-1-5-4 ' || info || CAST(v AS VARCHAR))
+    END
+);
+
 -- Text cast to Duration: an ISO duration or a code in any case gives the code, as on the
 -- pandas engine, and other text mirrors VTL error 2-1-5-1.
 CREATE OR REPLACE MACRO vtl_text_to_duration(x) AS (

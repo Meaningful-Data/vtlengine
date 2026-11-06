@@ -62,12 +62,14 @@ class Calc(Operator):
                     )
                 )
             else:
+                # A component written alone keeps the value domain it is defined on
                 result_dataset.add_component(
                     Component(
                         name=operand.name,
                         data_type=operand.data_type,
                         role=operand.role,
                         nullable=operand.nullable,
+                        value_domain=operand.value_domain,
                     )
                 )
         return result_dataset
@@ -265,6 +267,7 @@ class Rename(Operator):
                     data_type=comp.data_type,
                     role=comp.role,
                     nullable=comp.nullable,
+                    value_domain=comp.value_domain,
                 )
             else:
                 result_components[comp.name] = comp

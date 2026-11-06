@@ -13,8 +13,17 @@ from pandas._testing import assert_frame_equal
 
 import vtlengine.DataTypes as DataTypes
 from vtlengine.DataTypes import RESERVED_COMPONENT_NAMES, SCALAR_TYPES, ScalarType
+from vtlengine.DataTypes._time_checking import check_date, check_time, check_time_period
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException, SemanticError
+
+# The loaders write the values of the time types in one form, which the values of a value
+# domain on one of them are compared in
+_TIME_VALUE_CHECKS: Dict[Any, Any] = {
+    DataTypes.Date: check_date,
+    DataTypes.TimePeriod: check_time_period,
+    DataTypes.TimeInterval: check_time,
+}
 
 
 @dataclass
@@ -117,6 +126,13 @@ class Role(Enum):
     VIRAL_ATTRIBUTE = "Viral Attribute"
 
 
+def component_type_name(data_type: Any, value_domain: Optional["ValueDomain"]) -> str:
+    """The type a component is written with: its value domain, if it is defined on one."""
+    if value_domain is not None:
+        return value_domain.name
+    return DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type]
+
+
 @dataclass
 class DataComponent:
     """A component of a dataset with data"""
@@ -126,6 +142,7 @@ class DataComponent:
     data_type: Type[ScalarType]
     role: Role = Role.MEASURE
     nullable: bool = True
+    value_domain: Optional["ValueDomain"] = None
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, DataComponent):
@@ -151,7 +168,7 @@ class DataComponent:
         return {
             "name": self.name,
             "data": self.data,
-            "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
+            "type": component_type_name(data_type, self.value_domain),
             "role": self.role.value if self.role is not None else None,  # type: ignore[redundant-expr]
             "nullable": self.nullable,
         }
@@ -170,6 +187,7 @@ class Component:
     data_type: Type[ScalarType]
     role: Role
     nullable: bool
+    value_domain: Optional["ValueDomain"] = None
 
     def __post_init__(self) -> None:
         if self.role == Role.IDENTIFIER and self.nullable:
@@ -192,7 +210,7 @@ class Component:
         return clone
 
     def copy(self) -> "Component":
-        return Component(self.name, self.data_type, self.role, self.nullable)
+        return Component(self.name, self.data_type, self.role, self.nullable, self.value_domain)
 
     @classmethod
     def from_json(cls, json_str: Any) -> "Component":
@@ -211,7 +229,7 @@ class Component:
             data_type = self.data_type.__class__
         return {
             "name": self.name,
-            "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
+            "type": component_type_name(data_type, self.value_domain),
             # Need to check here for NoneType as UDO argument has it
             "role": self.role.value if self.role is not None else None,  # type: ignore[redundant-expr]
             "nullable": self.nullable,
@@ -538,6 +556,15 @@ class ValueDomain:
 
     def to_dict(self) -> Dict[str, Any]:
         return {"name": self.name, "type": self.type.__name__, "setlist": self.setlist}
+
+    def values(self) -> List[Any]:
+        """The values of the domain, written as the loaders write the values of its type."""
+        check = _TIME_VALUE_CHECKS.get(self.type)
+        return self.setlist if check is None else [check(value) for value in self.setlist]
+
+    def outside(self, values: Any) -> Any:
+        """The values of the series, other than the nulls, that are not values of the domain."""
+        return values[values.notna() & ~values.isin(self.values())]
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)

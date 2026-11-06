@@ -6792,3 +6792,239 @@ class AnalyticBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
+
+
+class ValueDomainBugs(BugHelper):
+    """Components defined on value domains (issue #1301)."""
+
+    vd_flow = ["GH_1301-VD_FLOW"]
+    vd_all = ["GH_1301-VD_FLOW", "GH_1301-VD_FLOW_2", "GH_1301-VD_INT"]
+
+    def test_GH_1301_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ filter Me_1 > 0 ] [ calc Me_2 := Id_2 || "_X", Me_3 := Id_2 ];
+        Description: Id_2 is defined on the value domain VD_FLOW, which the type of the
+                     Component names. It keeps it through the clauses, as Me_3 does, which
+                     is written alone, while Me_2 is a String.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
+        Goal: Check Result.
+        """
+        code = "GH_1301_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=self.vd_flow,
+        )
+
+    def test_GH_1301_2(self):
+        """
+        Status: OK
+        Description: OTHER is not a value of VD_FLOW, the value domain of Id_2, so DS_1
+                     does not load.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
+        Goal: Check Exception.
+        """
+        code = "GH_1301_2"
+        number_inputs = 1
+
+        self.DataLoadExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="0-3-1-6",
+            exception_message="Value OTHER is not one of the values of Value Domain VD_FLOW",
+            vd_names=self.vd_flow,
+        )
+
+    def test_GH_1301_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1;
+        Description: The type VD_UNKNOWN of Id_2 is neither a basic type nor a value domain
+                     given.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
+        Goal: Check Exception.
+        """
+        code = "GH_1301_3"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="0-2-1-1",
+            exception_message="'VD_UNKNOWN' is not one of",
+            vd_names=self.vd_flow,
+        )
+
+    def test_GH_1301_4(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- DS_1 + 1;
+                    DS_r2 <- sum ( DS_1 group by Id_2 );
+                    DS_r3 <- DS_1 [ keep Me_1 ] [ rename Me_1 to Me_3 ];
+                    DS_r4 <- DS_1 # Me_1;
+        Description: The values an operator computes are of the basic type of the value
+                     domain, the Components it keeps as they are keep it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
+        Goal: Check Result.
+        """
+        code = "GH_1301_4"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=self.vd_all,
+        )
+
+    def test_GH_1301_5(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- union ( DS_1 , DS_2 );
+                    DS_r2 <- full_join ( DS_1 as A , DS_2 as B rename B#Me_1 to Me_2 );
+        Description: Id_2 is on VD_FLOW in DS_1 and a String in DS_2: the result keeps the
+                     value domain, into which the values of DS_2 are downcast.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
+        Goal: Check Result.
+        """
+        code = "GH_1301_5"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=self.vd_flow,
+        )
+
+    def test_GH_1301_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- union ( DS_1 , DS_2 );
+        Description: OTHER, a String of DS_2, is not a value of VD_FLOW, into which the union
+                     downcasts it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
+        Goal: Check Exception.
+        """
+        code = "GH_1301_6"
+        number_inputs = 2
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="2-1-5-4",
+            exception_message="At op union: Cannot cast OTHER of String to Value Domain VD_FLOW",
+            vd_names=self.vd_flow,
+        )
+
+    def test_GH_1301_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- union ( DS_1 , DS_2 );
+        Description: Id_2 is on two value domains of Strings, so the result is a String, and
+                     Me_1, on a value domain of Integers and a Number, a Number.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
+        Goal: Check Result.
+        """
+        code = "GH_1301_7"
+        number_inputs = 2
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=self.vd_all,
+        )
+
+    def test_GH_1301_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := nvl ( Me_1 , 2 ) ,
+                                        Me_3 := if Me_1 > 1 then Me_1 else 3 ,
+                                        Me_4 := case when Me_1 = 1 then 10 else Me_1 ,
+                                        Me_5 := nvl ( Me_1 , 2.5 ) ];
+        Description: nvl, if-then-else and case keep the value domain VD_INT of Me_1, into
+                     which their Integer literals are downcast. A Number gives a Number.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
+        Goal: Check Result.
+        """
+        code = "GH_1301_8"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=self.vd_all,
+        )
+
+    def test_GH_1301_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := nvl ( Me_1 , 5 ) ];
+        Description: 5 is not a value of VD_INT, into which nvl downcasts it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
+        Goal: Check Exception.
+        """
+        code = "GH_1301_9"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="2-1-5-4",
+            exception_message="At op nvl: Cannot cast 5 of Integer to Value Domain VD_INT",
+            vd_names=self.vd_all,
+        )
+
+    def test_GH_1301_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- left_join ( DS_2 as A , DS_1 as B rename B#Me_1 to Me_2 );
+        Description: The join matches Id_2, a String in DS_2 and on VD_FLOW in DS_1, and
+                     OTHER, of DS_2, is not a value of VD_FLOW.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
+        Goal: Check Exception.
+        """
+        code = "GH_1301_10"
+        number_inputs = 2
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="2-1-5-4",
+            exception_message="At op left_join: Cannot cast OTHER of String to Value Domain",
+            vd_names=self.vd_flow,
+        )
+
+    def test_GH_1301_11(self):
+        """
+        Status: OK
+        Expression: define operator u ( a dataset , b dataset )
+                      returns dataset is union ( a , b ) end operator;
+                    DS_r1 <- u ( DS_1 , DS_2 );
+                    DS_r2 <- u ( DS_1 , DS_3 );
+        Description: The union of the operator gives a String for the two value domains of
+                     the first call, and keeps VD_FLOW for the String of the second one.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
+        Goal: Check Result.
+        """
+        code = "GH_1301_11"
+        number_inputs = 3
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=self.vd_all,
+        )

@@ -128,6 +128,7 @@ def validate_dataset(
     ] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
     use_duckdb: bool = False,
+    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
 ) -> None:
     """
     Validate that datasets can be loaded from the given data_structures and optional datapoints.
@@ -138,14 +139,19 @@ def validate_dataset(
         scalar_values: Optional Dict with scalar values to be used in the datasets.
         use_duckdb: If True, load the datapoints with the DuckDB engine, as \
         run(use_duckdb=True) loads them, instead of pandas. (default: False)
+        value_domains: Dict or Path, or List of Dicts or Paths of the value domains \
+        the type of a Component can name. (default: None)
 
     Raises:
         Exception: If the data structures or datapoints are invalid or cannot be loaded.
     """
+    vd = load_value_domains(value_domains) if value_domains is not None else None
     if not use_duckdb:
-        load_datasets_with_data(data_structures, datapoints, scalar_values, validate=True)
+        load_datasets_with_data(
+            data_structures, datapoints, scalar_values, validate=True, value_domains=vd
+        )
         return
-    datasets, scalars = load_datasets(cast(Any, data_structures))
+    datasets, scalars = load_datasets(cast(Any, data_structures), value_domains=vd)
     _handle_scalars_values(scalars, scalar_values)
     _load_url_datapoints(datapoints, data_structures, None, datasets)
     path_dict, dataframe_dict = extract_datapoint_paths(datapoints, datasets)
@@ -258,13 +264,14 @@ def semantic_analysis(
     vtl = load_vtl(checking)
     ast = create_ast(vtl)
 
-    # Loading datasets from file/dict/pysdmx objects/URLs
-    datasets, scalars = load_datasets(data_structures, sdmx_mappings=mapping_dict)
-
-    # Handling of library items
+    # Handling of library items, the value domains first as a Component type can name one
     vd = None
     if value_domains is not None:
         vd = load_value_domains(value_domains)
+
+    # Loading datasets from file/dict/pysdmx objects/URLs
+    datasets, scalars = load_datasets(data_structures, mapping_dict, vd)
+
     ext_routines = None
     if external_routines is not None:
         ext_routines = load_external_routines(external_routines)
@@ -360,14 +367,15 @@ def _run_with_duckdb(
     ast = create_ast(vtl)
     dag = DAGAnalyzer.create_dag(ast)
 
-    # Load datasets structure (without data)
-    input_datasets, input_scalars = load_datasets(data_structures, sdmx_mappings=mapping_dict)
+    # Load datasets structure (without data), after the value domains a Component type
+    # can name
+    loaded_vds = load_value_domains(value_domains) if value_domains else None
+    input_datasets, input_scalars = load_datasets(data_structures, mapping_dict, loaded_vds)
 
     # Apply scalar values if provided, casting them to the declared data type
     _handle_scalars_values(input_scalars, scalar_values)
 
     # Run semantic analysis to get output structures
-    loaded_vds = load_value_domains(value_domains) if value_domains else None
     loaded_routines = load_external_routines(external_routines) if external_routines else None
 
     interpreter = InterpreterAnalyzer(
@@ -407,6 +415,7 @@ def _run_with_duckdb(
         output_scalars=output_scalars,
         value_domains=loaded_vds or {},
         external_routines=loaded_routines or {},
+        downcasts=interpreter.downcasts,
         dag=dag,
         time_period_output_format=time_period_output_format,
     )
@@ -608,18 +617,20 @@ def run(
     vtl = load_vtl(script)
     ast = create_ast(vtl)
 
+    # Handling of library items, the value domains first as a Component type can name one
+    vd = None
+    if value_domains is not None:
+        vd = load_value_domains(value_domains)
+
     # Loading datasets and datapoints (handles URLs, file paths, DataFrames)
     datasets, scalars, path_dict = load_datasets_with_data(
         data_structures,
         datapoints,
         scalar_values,
         sdmx_mappings=mapping_dict,
+        value_domains=vd,
     )
 
-    # Handling of library items
-    vd = None
-    if value_domains is not None:
-        vd = load_value_domains(value_domains)
     ext_routines = None
     if external_routines is not None:
         ext_routines = load_external_routines(external_routines)

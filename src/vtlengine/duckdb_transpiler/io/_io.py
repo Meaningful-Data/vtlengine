@@ -28,6 +28,7 @@ from vtlengine.duckdb_transpiler.io._validation import (
     validate_input_path,
     validate_no_duplicates,
     validate_temporal_columns,
+    validate_value_domains,
 )
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.files.parser import string_value
@@ -62,9 +63,10 @@ def _validate_loaded_table(
     2. DWI check (no identifiers → max 1 row)
     3. Duplicate identifier check via GROUP BY HAVING
     4. Temporal type regex validation (TimePeriod, TimeInterval, Duration)
+    5. Value domain check (the values of a component defined on one are its values)
 
     On validation failure, drops the table and re-raises DataLoadError.
-    Respects VTL_SKIP_LOAD_VALIDATION (skips checks 2-4 when set).
+    Respects VTL_SKIP_LOAD_VALIDATION (skips checks 2-5 when set).
     """
     skip_validation = _skip_load_validation()
 
@@ -82,6 +84,8 @@ def _validate_loaded_table(
         return
 
     try:
+        validate_value_domains(conn, table_name, components)
+
         id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
 
         # DWI: no identifiers → max 1 row
