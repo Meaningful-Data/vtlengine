@@ -219,6 +219,30 @@ def test_GH_1314_1() -> None:
     ViralHelper.BaseTest(code="GH_1314_1", number_inputs=4, references_names=["DS_r1", "DS_r2"])
 
 
+def test_GH_1314_5() -> None:
+    """
+    Expression: DS_r1 <- if DS_1 > 2 then DS_1 else DS_2;
+                DS_r2 <- case when DS_1 > 2 then DS_1 else DS_2;
+                DS_r3 <- DS_1 + DS_2;
+                DS_r4 <- inner_join(DS_1 as A, DS_2 as B calc Me_2 := A#Me_1 + B#Me_1
+                    drop A#Me_1, B#Me_1);
+                DS_r5 <- case when DS_1 > 3 then DS_1 when DS_1 > 2 then DS_2 else DS_3;
+    Description: Under an aggregate sum rule, the viral attribute At_1, Integer in DS_1 and
+        DS_3 and Number in DS_2, takes the common type of the operands, Number, as an avg
+        rule gives Number, also when the last operand has the Integer one (DS_r5). It kept
+        the type of the first operand, so the DuckDB engine rounded the sums (11.5 to 12,
+        44.5 to 44), and the pandas engine raised an ArrowInvalid (DS_r1, DS_r2, DS_r5) or
+        cut them (11.5 to 11 in DS_r3, DS_r4).
+    Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+    Goal: Check Result.
+    """
+    ViralHelper.BaseTest(
+        code="GH_1314_5",
+        number_inputs=3,
+        references_names=["DS_r1", "DS_r2", "DS_r3", "DS_r4", "DS_r5"],
+    )
+
+
 # -- Model-level checks (Role enum and Dataset helpers) --
 class TestViralAttributeRole:
     def test_viral_attribute_in_role_enum(self) -> None:
