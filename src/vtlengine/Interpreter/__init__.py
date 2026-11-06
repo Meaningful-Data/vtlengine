@@ -217,7 +217,9 @@ class InterpreterAnalyzer(ASTTemplate):
     # Names of the user defined operators being called, outermost first
     udo_calls: List[str] = field(default_factory=list)
     # The constraints on the values of the component parameters of each of those calls
-    udo_constraints: List[Dict[str, AST.TypeConstraint]] = field(default_factory=list)
+    udo_constraints: List[Dict[str, List[Tuple[str, str, AST.TypeConstraint]]]] = field(
+        default_factory=list
+    )
     # Whether the input scalars hold their values, as on the DuckDB engine, even when only_semantic
     scalar_values_known: bool = False
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
@@ -1113,9 +1115,9 @@ class InterpreterAnalyzer(ASTTemplate):
             return node.value
         # Having takes precedence as it is lower in the AST
         if self.udo_params is not None and node.value in self.udo_params[-1]:
-            constraint = self.udo_constraints[-1].get(node.value) if self.udo_constraints else None
+            checks = self.udo_constraints[-1].get(node.value) if self.udo_constraints else None
             udo_element = copy(self.udo_params[-1][node.value])
-            if constraint is not None and isinstance(udo_element, (str, DataComponent)):
+            if checks and isinstance(udo_element, (str, DataComponent)):
                 if isinstance(udo_element, str):
                     renamed = copy(node)
                     renamed.value = udo_element
@@ -1125,9 +1127,9 @@ class InterpreterAnalyzer(ASTTemplate):
                         udo_element = self.visit(renamed)
                     finally:
                         self.udo_params.pop()
-                self._check_udo_constraint(
-                    self.udo_calls[-1], f"parameter {node.value}", constraint, udo_element
-                )
+                # The checks of the operators that passed the value on come first
+                for op, param, constraint in checks:
+                    self._check_udo_constraint(op, f"parameter {param}", constraint, udo_element)
                 return udo_element
             if isinstance(udo_element, (Scalar, Dataset, DataComponent)):
                 return udo_element
@@ -2564,16 +2566,25 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def _check_udo_arguments(
         self, node: AST.UDOCall, operator: Dict[str, Any], signature_values: Dict[str, Any]
-    ) -> Dict[str, AST.TypeConstraint]:
+    ) -> Dict[str, List[Tuple[str, str, AST.TypeConstraint]]]:
         """Check the scalar and dataset arguments of a call against what the types of their
         parameters declare, and give the constraints of the component parameters, whose values
-        are checked where the body reads them."""
-        component_constraints: Dict[str, AST.TypeConstraint] = {}
+        are checked where the body reads them: (operator, parameter, constraint). A component
+        parameter passed on as it is keeps the constraints of the caller, so they are checked
+        where the called operator reads it (issue #1279)."""
+        component_constraints: Dict[str, List[Tuple[str, str, AST.TypeConstraint]]] = {}
+        caller = self.udo_constraints[-1] if self.udo_constraints else {}
         for i, param in enumerate(operator["params"]):
             declared, constraints = param["declared"], param["constraints"]
             if isinstance(declared, Component):
+                argument = node.params[i] if i < len(node.params) else None
+                checks = (
+                    list(caller.get(argument.value, [])) if isinstance(argument, AST.VarID) else []
+                )
                 if constraints is not None and constraints.value is not None:
-                    component_constraints[param["name"]] = constraints.value
+                    checks.append((node.op, param["name"], constraints.value))
+                if checks:
+                    component_constraints[param["name"]] = checks
                 continue
             if constraints is None and not (isinstance(declared, Dataset) and declared.components):
                 continue
