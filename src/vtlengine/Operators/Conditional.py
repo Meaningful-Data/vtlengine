@@ -465,18 +465,22 @@ class Case(Operator):
         ids = result.get_identifiers_names()
         measures = result.get_measures_names()
 
-        # Each data point takes the operand of the first condition that is true on it, or
-        # the else operand when none is (issue #1251): the true data points of a condition
-        # that no earlier condition took are inner joined with its then operand, the data
-        # points no condition took with the else operand, and the result is the union.
+        # The first condition gives the data points, and each one takes the operand of the
+        # first condition that is true on it, or the else operand when none is (issue #1251):
+        # the true data points of a condition that the first condition has and no earlier
+        # condition took are inner joined with its then operand, the data points no condition
+        # took with the else operand, and the result is the union (issue #1304).
         parts = []
-        taken = pd.MultiIndex.from_frame(conditions[0].data[ids])[:0]
+        first = pd.MultiIndex.from_frame(conditions[0].data[ids])
+        taken = first[:0]
         for condition, thenOp in zip(conditions, thenOps):
             case = condition.data.rename(columns={condition.get_measures_names()[0]: COND_COL})
             case = case[ids + [COND_COL]]
             case = case[case[COND_COL].fillna(False)]
             keys = pd.MultiIndex.from_frame(case[ids])
-            parts.append(dataset_assign(case[~keys.isin(taken)], thenOp, ids, measures))
+            parts.append(
+                dataset_assign(case[keys.isin(first) & ~keys.isin(taken)], thenOp, ids, measures)
+            )
             taken = taken.append(keys)
 
         else_cond = conditions[0].data[ids].copy()

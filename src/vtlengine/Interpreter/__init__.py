@@ -1423,7 +1423,6 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Case(self, node: AST.Case) -> Any:
         conditions: List[Any] = []
         thenOps: List[Any] = []
-        else_ds = Dataset(name="else", components={}, data=pd.DataFrame())
 
         if self.condition_stack is None:
             self.condition_stack = []
@@ -1441,14 +1440,14 @@ class InterpreterAnalyzer(ASTTemplate):
             thenOps.append(self.visit(case.thenOp))
             self.condition_stack.pop()
 
-            if isinstance(conditions[-1], DataComponent):
+            if isinstance(conditions[-1], DataComponent) or len(self.condition_stack) == depth:
                 # case returns the then operand of the first true condition (issue #1251). At
                 # Component level, as in a chain of if-then-else, the later conditions, their
                 # then operands and the else operand only see the data points this one leaves.
+                # At Data Set level they see those the first condition leaves: it gives the
+                # data points, and a later condition may lack some of them (issue #1304).
                 self.condition_stack.append(else_ds)
 
-        if len(self.condition_stack) == depth:
-            self.condition_stack.append(else_ds)
         elseOp = self.visit(node.elseOp)
         del self.condition_stack[depth:]
 

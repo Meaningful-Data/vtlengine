@@ -2691,6 +2691,24 @@ class SetBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1304_5(self):
+        """
+        Expression: DS_r1 <- case when DS_2 > 3 then DS_2 when DS_3 then DS_1 else DS_1;
+                    DS_r2 <- case when DS_1 > 6 then DS_1 when DS_2 > 3 then DS_2
+                        else DS_1 * 10;
+        Description: The first condition of a Data Set case gives the Data Points. On the
+            pandas engine, a later condition added its own true Data Points (DS_r1 Id_1 3),
+            and the else operand only had the Data Points of the last condition, so the Data
+            Points that the last condition lacks were lost (DS_r2 Id_1 4).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1304
+        Goal: Check Result.
+        """
+        code = "GH_1304_5"
+        number_inputs = 3
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1276_7(self):
         """
         Status: OK
