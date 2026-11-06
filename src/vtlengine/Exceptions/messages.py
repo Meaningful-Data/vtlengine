@@ -881,6 +881,23 @@ centralised_messages = {
         "description": "Raised when the apply expression of a join is not a binary operation, "
         "such as a function call or an if-then-else.",
     },
+    "1-1-13-24": {
+        "message": "At op {op}: Identifier {name} of {dataset} is not in the using clause and "
+        "has no nvl rule.",
+        "description": "Raised when an identifier of a left_join or full_join operand is neither "
+        "a join key of the using clause nor given a value by a nvl rule.",
+    },
+    "1-1-13-25": {
+        "message": "At op {op}: The nvl rule of {name} gives a constant of type {type_1} to a "
+        "component of type {type_2}.",
+        "description": "Raised when the constant of a nvl rule of a join does not have the type "
+        "of the component it gives a value to.",
+    },
+    "1-1-13-27": {
+        "message": "At op {op}: The nvl rule of {name} gives null to an Identifier, which "
+        "cannot be null.",
+        "description": "Raised when a nvl rule of a join gives the null constant to an Identifier.",
+    },
     "1-1-13-9": {
         "message": "Ambiguity for this variable {comp_name} inside a Join clause.",
         "description": "Raised when a component name is ambiguous in a Join operation.",
