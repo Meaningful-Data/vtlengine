@@ -10,6 +10,7 @@ from vtlengine.AST.Grammar.tokens import CROSS_JOIN, FULL_JOIN, INNER_JOIN, LEFT
 from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
+    Integer,
     binary_implicit_promotion,
     check_unary_implicit_promotion,
 )
@@ -238,7 +239,8 @@ class Join(Operator):
     @classmethod
     def _validate_nvl(cls, operands: List[Dataset], nvl: Dict[str, Any]) -> None:
         """Each nvl component, written alias#name for the one of an operand, must exist in an
-        operand, and its constant must have its type."""
+        operand, and its constant must have its type: an Integer takes no decimals, and an
+        Identifier no null, as it cannot be null."""
         for component, default in nvl.items():
             alias, _, name = component.rpartition("#")
             found = [
@@ -252,7 +254,12 @@ class Join(Operator):
                 )
             default_type = BASIC_TYPES[type(default)]
             for comp in found:
-                if not check_unary_implicit_promotion(default_type, comp.data_type):
+                if default is None and comp.role == Role.IDENTIFIER:
+                    raise SemanticError("1-1-13-27", op=cls.op, name=component)
+                decimals = isinstance(default, float) and not default.is_integer()
+                if not check_unary_implicit_promotion(default_type, comp.data_type) or (
+                    decimals and comp.data_type is Integer
+                ):
                     raise SemanticError(
                         "1-1-13-25",
                         op=cls.op,
@@ -278,7 +285,8 @@ class Join(Operator):
             else:
                 targets = [c for c in columns if c == name or c.split("#", 1)[-1] == name]
             for target in targets:
-                if target in columns:
+                # A null rule leaves the nulls of a Measure as they are
+                if target in columns and default is not None:
                     result.data[target] = result.data[target].fillna(default)
 
     @classmethod

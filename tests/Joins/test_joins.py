@@ -2996,3 +2996,94 @@ class JoinsGeneralTests(JoinHelper):
             exception_code="1-1-1-10",
             exception_message="Component Me_9 not found",
         )
+
+    def test_GH_1238_14(self):
+        """
+        Expression: DS_r <- full_join(DS_1[filter Id_1 > 1] as d1, DS_2 as d2 using Id_1, nvl(Id_2, "Z"), nvl(d2#Id_2, "X") rename ...);
+        Description: nvl rules on a join of a filtered operand, the same on both engines.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_14"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1238_15(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2[calc Me_2 := Me_2 * 10] as d2 using Id_1, nvl(d2#Id_2, "X") rename ...);
+        Description: A nvl rule on a join of an operand with a calc.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_15"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1238_16(self):
+        """
+        Expression: DS_r <- full_join(DS_1[calc Me_1 := Me_1 + 1] as d1, DS_2[filter Me_2 > 0] as d2 using Id_1, nvl(Id_2, "Z") rename ...);
+        Description: A nvl rule on a join of two operands that are sub-expressions.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_16"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1238_17(self):
+        """
+        Expression: DS_r <- left_join(DS_1[filter Id_1 > 1] as d1, DS_2 as d2 using Id_1, nvl(d2#Id_2, "X") rename ...)[calc Me_3 := Me_1 + 1];
+        Description: A calc on the result of a join with a nvl rule.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_17"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1238_18(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(d2#Id_2, null) rename ...);
+        Description: A null rule for an Identifier, which cannot be null.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_18"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-27"
+        )
+
+    def test_GH_1238_19(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(d2#Id_2, 1.5) rename ...);
+        Description: A constant with decimals for an Integer Identifier, which the engines rounded differently.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_19"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-25"
+        )
+
+    def test_GH_1238_20(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(d2#Id_2, "X"), nvl(Me_2, 1.5) rename ...);
+        Description: A constant with decimals for an Integer Measure.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_20"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-25"
+        )
+
+    def test_GH_1238_21(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(d2#Id_2, 9), nvl(Me_2, null) rename ...);
+        Description: A null rule for a Measure leaves its nulls as they are.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_21"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
