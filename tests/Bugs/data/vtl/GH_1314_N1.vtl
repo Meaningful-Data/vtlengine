@@ -1,0 +1,4 @@
+DS_r1 <- DS_1[calc Me_2 := if Me_1 > 1 then sc_1 else 0.0];
+DS_r2 <- DS_1[calc Me_2 := case when Me_1 > 1 then sc_1 else 0.0];
+DS_r3 <- (if DS_1 > 1 then DS_1 else null)[calc Me_2 := Me_1];
+DS_r4 <- (case when DS_1 > 1 then DS_1 else DS_2)[calc Me_2 := Me_1];

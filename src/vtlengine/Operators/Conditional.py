@@ -62,18 +62,21 @@ def _selected_value(operand: Scalar, data_type: Any) -> Any:
 
 def _promote_measures(components: Dict[str, Component], operands: List[Any]) -> None:
     """Give each Measure of ``components`` the common type of its own type and the type of
-    every operand, a Scalar or a Data Set with the same Components. A retyped Measure is
-    replaced with a copy: the Components may be the ones of an operand."""
+    every operand, a Scalar or a Data Set with the same Components, and make it nullable
+    when an operand can be null in it (issue #1314). A changed Measure is replaced with a
+    copy: the Components may be the ones of an operand."""
     for name, comp in list(components.items()):
         if comp.role != Role.MEASURE:
             continue
-        data_type = comp.data_type
+        data_type, nullable = comp.data_type, comp.nullable
         for op in operands:
-            op_type = op.components[name].data_type if isinstance(op, Dataset) else op.data_type
-            data_type = binary_implicit_promotion(data_type, op_type)
-        if data_type != comp.data_type:
+            op_comp = op.components[name] if isinstance(op, Dataset) else op
+            data_type = binary_implicit_promotion(data_type, op_comp.data_type)
+            nullable = nullable or op_comp.nullable or op_comp.data_type == Null
+        if data_type != comp.data_type or nullable != comp.nullable:
             components[name] = copy(comp)
             components[name].data_type = data_type
+            components[name].nullable = nullable
 
 
 def _combine_viral_attributes(result: Any, operands: List[Any]) -> None:
@@ -221,7 +224,6 @@ class If(Operator):
     def validate(  # noqa: C901
         cls, condition: Any, true_branch: Any, false_branch: Any, is_from_having: bool = False
     ) -> Union[Scalar, DataComponent, Dataset]:
-        nullable = False
         left = true_branch
         right = false_branch
         dataset_name = VirtualCounter._new_ds_name()
@@ -251,12 +253,8 @@ class If(Operator):
                     op=cls.op,
                     type=SCALAR_TYPES_CLASS_REVERSE[condition.data_type],
                 )
-            if left.data_type == Null or right.data_type == Null:
-                nullable = True
-            if isinstance(left, DataComponent):
-                nullable |= left.nullable
-            if isinstance(right, DataComponent):
-                nullable |= right.nullable
+            # A scalar operand can be null too, as a nullable input scalar (issue #1314)
+            nullable = any(op.nullable or op.data_type == Null for op in (left, right))
             return DataComponent(
                 name=comp_name,
                 data=None,
@@ -576,10 +574,8 @@ class Case(Operator):
                 if not condition.data_type == Boolean:
                     raise SemanticError("1-1-9-17", op=cls.op, name=condition.name)
 
-            nullable = any(
-                (thenOp.nullable if isinstance(thenOp, DataComponent) else thenOp.data_type == Null)
-                for thenOp in ops
-            )
+            # A scalar operand can be null too, as a nullable input scalar (issue #1314)
+            nullable = any(op.nullable or op.data_type == Null for op in ops)
 
             return DataComponent(
                 name=comp_name,

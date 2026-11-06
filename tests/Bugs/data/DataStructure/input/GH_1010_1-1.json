@@ -17,5 +17,12 @@
         }
       ]
     }
+  ],
+  "scalars": [
+    {
+      "name": "sc_1",
+      "type": "Number",
+      "nullable": false
+    }
   ]
 }

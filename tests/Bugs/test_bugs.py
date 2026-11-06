@@ -3817,6 +3817,31 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_N1(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_2 := if Me_1 > 1 then sc_1 else 0.0];
+                    DS_r2 <- DS_1[calc Me_2 := case when Me_1 > 1 then sc_1 else 0.0];
+                    DS_r3 <- (if DS_1 > 1 then DS_1 else null)[calc Me_2 := Me_1];
+                    DS_r4 <- (case when DS_1 > 1 then DS_1 else DS_2)[calc Me_2 := Me_1];
+        Description: An if or a case can be null where any operand can be: the nullable input
+            scalar sc_1, here null, the null literal, or the nullable Measure of DS_2, while
+            the Measure of DS_1 is not nullable. Their results were declared not nullable, so
+            the pandas engine raised 2-1-1-16 in the calc and the DuckDB engine returned
+            nulls in a Component it declared not nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_N1"
+        number_inputs = 2
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": None},
+        )
+
 
 class ClauseBugs(BugHelper):
     """ """
@@ -6217,11 +6242,12 @@ class CastBugs(BugHelper):
     def test_GH_1010_1(self):
         """
         Status: OK
-        Expression: DS_r <- DS_1 [ calc identifier i := if Me_1 > 1 then Me_1
-                                                        else cast(null, number) ];
+        Expression: DS_r <- DS_1 [ calc identifier i := if Me_1 > 1 then Me_1 else sc_1 ];
         Description: an expression declared not nullable can still hold a null, which
-                     only the data shows. A calculated Identifier is checked on its
-                     data as well, and reports it at run time.
+                     only the data shows: the input scalar sc_1 is declared not nullable
+                     and holds a null. A calculated Identifier is checked on its data as
+                     well, and reports it at run time. A null literal operand would make
+                     the if nullable, which the semantic analysis rejects (issue #1314).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1010
         Goal: Check Exception.
         """
@@ -6230,7 +6256,7 @@ class CastBugs(BugHelper):
         message = "2-1-1-16"
 
         self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": None}
         )
 
     def test_GH_1027_1(self):
