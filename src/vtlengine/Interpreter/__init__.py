@@ -745,9 +745,12 @@ class InterpreterAnalyzer(ASTTemplate):
         return Dataset(name=operand.name, components=components, data=data)
 
     @staticmethod
-    def _component_aggregation_operand(operand: Dataset, op_comp: DataComponent) -> Dataset:
+    def _component_aggregation_operand(op: str, operand: Dataset, op_comp: Any) -> Dataset:
         """Builds the Data Set an aggregation of one Component reads: the Identifiers and
         viral Attributes of the operand, with that Component as its only Measure."""
+        if not isinstance(op_comp, DataComponent):
+            # The aggregate operators cannot be applied to scalar values (issue #1314)
+            raise SemanticError("1-2-17", op=op, comp="component")
         comps_to_keep = {
             comp_name: copy(comp)
             for comp_name, comp in operand.components.items()
@@ -775,14 +778,18 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.is_from_having:
             operand = self.aggregation_dataset
             if node.operand is not None and operand is not None:
-                return self._component_aggregation_operand(operand, self.visit(node.operand))
+                return self._component_aggregation_operand(
+                    node.op, operand, self.visit(node.operand)
+                )
             return self._data_point_count_operand(node, operand)
         if self.is_from_regular_aggregation and self.regular_aggregation_dataset is not None:
             if self.regular_aggregation_op in (CALC, FILTER):
                 raise SemanticError("1-2-14", op=self.regular_aggregation_op)
             operand = self.regular_aggregation_dataset
             if node.operand is not None and operand is not None:
-                return self._component_aggregation_operand(operand, self.visit(node.operand))
+                return self._component_aggregation_operand(
+                    node.op, operand, self.visit(node.operand)
+                )
             return self._data_point_count_operand(node, operand)
         return self.visit(node.operand)
 

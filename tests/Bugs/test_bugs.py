@@ -3948,6 +3948,23 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_24(self):
+        """
+        Expression: DS_r1 <- DS_1[aggr Me_2 := avg(1) group by Id_1];
+        Description: In an aggr clause, an aggregate operator takes a Component of the operand:
+            it cannot be applied to a scalar value (VTL 2.2, Aggregate invocation). Both
+            engines raised AttributeError: 'Scalar' object has no attribute 'role'.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_24"
+        number_inputs = 1
+        error_code = "1-2-17"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
 
 class ClauseBugs(BugHelper):
     """ """
