@@ -3731,6 +3731,23 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_3(self):
+        """
+        Expression: DS_r1 <- case when DS_1 > 1 then DS_1 else 0.5;
+                    DS_r2 <- case when DS_1 > 2 then DS_1 else DS_2;
+        Description: A Data Set case whose operands have different types gives their common
+            type, Number here, as a Data Set if does. Its structure was the one of its first
+            Data Set operand, DS_1, so Me_1 was Integer: the DuckDB engine rounded the Number
+            values (0.5 to 0, 1.5 to 2) and the pandas engine raised an ArrowInvalid.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_3"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """

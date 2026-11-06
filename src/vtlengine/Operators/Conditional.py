@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, List, Union, cast
+from typing import Any, Dict, List, Union, cast
 
 import pandas as pd
 
@@ -41,6 +41,22 @@ def dataset_assign(
             return pd.DataFrame(columns=op.get_components_names() + [COND_COL])
         return merge_frames(cond, op.data, on=ids, how="inner")
     return cond.assign(**dict.fromkeys(measures, op.value))
+
+
+def _promote_measures(components: Dict[str, Component], operands: List[Any]) -> None:
+    """Give each Measure of ``components`` the common type of its own type and the type of
+    every operand, a Scalar or a Data Set with the same Components. A retyped Measure is
+    replaced with a copy: the Components may be the ones of an operand."""
+    for name, comp in list(components.items()):
+        if comp.role != Role.MEASURE:
+            continue
+        data_type = comp.data_type
+        for op in operands:
+            op_type = op.components[name].data_type if isinstance(op, Dataset) else op.data_type
+            data_type = binary_implicit_promotion(data_type, op_type)
+        if data_type != comp.data_type:
+            components[name] = copy(comp)
+            components[name].data_type = data_type
 
 
 def _combine_viral_attributes(result: Any, operands: List[Any]) -> None:
@@ -578,6 +594,10 @@ class Case(Operator):
             # happens to declare them (issue #1008).
             if isinstance(op, Dataset) and set(op.get_components_names()) != comp_names:
                 raise SemanticError("1-1-9-20", op=cls.op)
+
+        # The Measures take the common type of the operands, as in a Data Set if, and not the
+        # type of the first Data Set operand (issue #1314)
+        _promote_measures(components, ops)
 
         # case over two or more datasets combines their data points, so viral attributes
         # carried by two or more branches require a propagation rule (issue #906).
