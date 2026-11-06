@@ -1,0 +1,2 @@
+DS_r1 <- DS_1 [calc Me_2 := time_agg("A", Id_1)] [calc Me_3 := cast(Me_2, string)] [filter Me_1 > 0];
+DS_r2 <- DS_1 [calc Me_2 := time_agg("A", Id_1)] [calc Me_2 := cast(Me_2, string)];
