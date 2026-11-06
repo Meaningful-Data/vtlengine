@@ -43,6 +43,23 @@ def dataset_assign(
     return cond.assign(**dict.fromkeys(measures, op.value))
 
 
+def _supertype(operands: List[Any]) -> Any:
+    """The common type of the scalar or Component operands of an if or a case: the
+    SemanticError 1-1-1-1 when they have none, and the other type for a null operand."""
+    data_type = operands[0].data_type
+    for op in operands[1:]:
+        data_type = binary_implicit_promotion(data_type, op.data_type)
+    return data_type
+
+
+def _selected_value(operand: Scalar, data_type: Any) -> Any:
+    """The value of the scalar operand that a scalar if or case selects, in the type of the
+    result."""
+    if operand.value is None or operand.data_type == data_type:
+        return operand.value
+    return data_type.implicit_cast(operand.value, operand.data_type)
+
+
 def _promote_measures(components: Dict[str, Component], operands: List[Any]) -> None:
     """Give each Measure of ``components`` the common type of its own type and the type of
     every operand, a Scalar or a Data Set with the same Components. A retyped Measure is
@@ -179,6 +196,27 @@ class If(Operator):
         _combine_viral_attributes(result, [true_branch, false_branch])
 
     @classmethod
+    def scalar_validation(
+        cls, condition: Scalar, true_branch: Scalar, false_branch: Scalar
+    ) -> Scalar:
+        """A scalar if needs a Boolean condition, and takes the common type of its operands,
+        as at Component and Data Set level, and the value of the operand that its condition
+        selects (issue #1314). A null literal condition selects the else operand."""
+        if condition.data_type not in (Boolean, Null):
+            raise SemanticError(
+                "1-1-9-1", op=cls.op, type=SCALAR_TYPES_CLASS_REVERSE[condition.data_type]
+            )
+        data_type = _supertype([true_branch, false_branch])
+        selected = true_branch if condition.value else false_branch
+        return Scalar(
+            name="result",
+            value=_selected_value(selected, data_type),
+            data_type=data_type,
+            nullable=selected.nullable,
+            literal=selected.literal,
+        )
+
+    @classmethod
     def validate(  # noqa: C901
         cls, condition: Any, true_branch: Any, false_branch: Any, is_from_having: bool = False
     ) -> Union[Scalar, DataComponent, Dataset]:
@@ -199,6 +237,9 @@ class If(Operator):
             if isinstance(true_branch, Scalar):
                 left = false_branch
                 right = true_branch
+
+        if isinstance(condition, Scalar):
+            return cls.scalar_validation(condition, true_branch, false_branch)
 
         # Datacomponent
         comp_name = VirtualCounter._new_dc_name()
@@ -419,9 +460,10 @@ class Case(Operator):
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(conditions, thenOps, elseOp, is_from_having)
         if isinstance(result, Scalar):
-            # Take the value of the same operand validate takes the data type from
-            # (issue #1008).
-            result.value = cls._selected_scalar(conditions, thenOps, elseOp).value
+            # The value of the then operand of the first true condition (issues #1008 and
+            # #1251), in the common type of the operands (issue #1314)
+            selected = cls._selected_scalar(conditions, thenOps, elseOp)
+            result.value = _selected_value(selected, result.data_type)
         else:
             operation_level = list({type(c) for c in conditions if not isinstance(c, Scalar)})
             if operation_level[0] == DataComponent:
@@ -518,13 +560,13 @@ class Case(Operator):
             if list(then_else_types) != [Scalar]:
                 raise SemanticError("1-1-9-16", op=cls.op)
 
-            output_data_type = cls._selected_scalar(conditions, thenOps, elseOp).data_type
-
+            # The common type of the operands, as at Component and Data Set level, and not
+            # the type of the operand selected by the values of the conditions (issue #1314)
             nullable = any(op.nullable or op.data_type == Null for op in ops)
             return Scalar(
                 name="result",
                 value=None,
-                data_type=output_data_type,
+                data_type=_supertype(ops),
                 nullable=nullable,
             )
 
@@ -538,14 +580,10 @@ class Case(Operator):
                 for thenOp in ops
             )
 
-            data_type = ops[0].data_type
-            for op in ops[1:]:
-                data_type = binary_implicit_promotion(data_type, op.data_type)
-
             return DataComponent(
                 name=comp_name,
                 data=None,
-                data_type=data_type,
+                data_type=_supertype(ops),
                 role=Role.MEASURE,
                 nullable=nullable,
             )
@@ -561,14 +599,11 @@ class Case(Operator):
             if not is_from_having:
                 raise SemanticError("1-1-9-19", op=cls.op)
 
-            data_type = ops[0].data_type
-            for branch in ops[1:]:
-                data_type = binary_implicit_promotion(data_type, branch.data_type)
             measure_name = condition.get_measures_names()[0]
             components = {comp.name: comp for comp in conditions[0].get_identifiers()}
             components[measure_name] = Component(
                 name=measure_name,
-                data_type=data_type,
+                data_type=_supertype(ops),
                 role=Role.MEASURE,
                 nullable=any(branch.nullable or branch.data_type == Null for branch in ops),
             )

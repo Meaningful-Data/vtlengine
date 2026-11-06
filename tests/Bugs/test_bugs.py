@@ -3765,6 +3765,41 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_S1_1(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_2 := if 1 > 0 then 1 else 2.5];
+                    DS_r2 <- DS_1[calc Me_2 := case when 1 > 0 then 1 else 2.5];
+                    DS_r3 <- DS_1 * (if 1 >= 0.5 then 0.5 else 2);
+        Description: A scalar if or case gives the common type of its operands, Number here,
+            as at Component and Data Set level. It gave the type of the operand that its
+            condition selects: the pandas engine typed Me_2 Integer (DS_r1, DS_r2), and the
+            DuckDB engine, whose semantic analysis takes the else operand when the value of
+            the condition is unknown, typed DS_r3 Integer and rounded 0.5 and 2.5.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_S1_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1314_S1_2(self):
+        """
+        Expression: DS_r <- DS_1[calc Me_2 := if 1 then 2 else 3];
+        Description: The condition of a scalar if must be Boolean, as at Component and Data
+            Set level. Both engines took the Integer condition, pandas as a true one.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_S1_2"
+        number_inputs = 1
+        error_code = "1-1-9-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
 
 class ClauseBugs(BugHelper):
     """ """

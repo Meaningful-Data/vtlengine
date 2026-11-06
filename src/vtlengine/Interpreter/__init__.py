@@ -1405,7 +1405,8 @@ class InterpreterAnalyzer(ASTTemplate):
                     then_name=thenValue.name,
                     else_name=elseValue.name,
                 )
-            return self.visit(node.thenOp if condition.value else node.elseOp)
+            # Typed and checked as at Component and Data Set level (issue #1314)
+            return If.analyze(condition, thenValue, elseValue, self.is_from_having)
 
         # Analysis for data component and dataset
         then_ds, else_ds = self.generate_then_else_datasets(condition)
