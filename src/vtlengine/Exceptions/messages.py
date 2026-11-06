@@ -378,11 +378,6 @@ centralised_messages = {
         "message": "Cannot have 2 following clauses with unbounded in analytic clause {window}.",
         "description": "Raised when both bounds of an analytic window are unbounded following.",
     },
-    "0-5-1-8": {
-        "message": "Value Domain '{name}' not available for cast operator or scalar type "
-        "representation or rulesets.",
-        "description": "Raised when a value domain is used where only a scalar type is allowed.",
-    },
     "0-5-1-9": {
         "message": "Dataset Priority input mode on HR is not implemented",
         "description": "Raised when a hierarchy operator uses the dataset_priority input mode, "

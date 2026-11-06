@@ -10,15 +10,25 @@ from vtlengine.DataTypes import (
     EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
     IMPLICIT_TYPE_PROMOTION_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
+    Null,
     ScalarType,
 )
 from vtlengine.Exceptions import InputValidationException, RunTimeError, SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
+from vtlengine.Model import (
+    Component,
+    DataComponent,
+    Dataset,
+    Role,
+    Scalar,
+    ValueDomain,
+    component_type_name,
+)
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 duration_mapping = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 
 ALL_MODEL_DATA_TYPES = Union[Dataset, Scalar, DataComponent]
+CAST_TARGET = Union[Type[ScalarType], ValueDomain]
 
 
 class Cast(Operator.Unary):
@@ -27,14 +37,29 @@ class Cast(Operator.Unary):
     @classmethod
     def check_cast(
         cls,
-        from_type: Type[ScalarType],
-        to_type: Type[ScalarType],
+        source: Any,
+        target: CAST_TARGET,
         mask_value: Optional[str],
     ) -> None:
+        """A cast of the source, a component or a scalar, to the target. A value domain takes
+        the values of its basic type, also the ones on another value domain."""
+        from_type, to_type = source.data_type, cls.target_type(target)
         if mask_value is not None:
             cls.check_with_mask(from_type, to_type, mask_value)
-        else:
+        elif not isinstance(target, ValueDomain):
             cls.check_without_mask(from_type, to_type)
+        elif from_type not in (to_type, Null):
+            source_type = component_type_name(from_type, getattr(source, "value_domain", None))
+            raise SemanticError("1-1-5-1", type_1=source_type, type_2=target.name)
+
+    @staticmethod
+    def target_type(target: CAST_TARGET) -> Type[ScalarType]:
+        """The basic scalar type of the values a cast gives."""
+        return target.type if isinstance(target, ValueDomain) else target
+
+    @staticmethod
+    def target_domain(target: CAST_TARGET) -> Optional[ValueDomain]:
+        return target if isinstance(target, ValueDomain) else None
 
     @classmethod
     def check_with_mask(
@@ -55,21 +80,24 @@ class Cast(Operator.Unary):
             )
 
     @classmethod
-    def cast_component(
-        cls, data: Any, from_type: Type[ScalarType], to_type: Type[ScalarType]
-    ) -> Any:
-        """Cast the component to the type to_type without mask."""
+    def cast_component(cls, data: Any, from_type: Type[ScalarType], target: CAST_TARGET) -> Any:
+        """Cast the component to the target without mask. The values cast to a value domain
+        must be values of it."""
+        to_type = cls.target_type(target)
         if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
             result = data.map(lambda x: to_type.implicit_cast(x, from_type), na_action="ignore")
         else:
             result = data.map(lambda x: to_type.explicit_cast(x, from_type), na_action="ignore")
-        return result.astype(to_type.dtype())
+        result = result.astype(to_type.dtype())
+        if isinstance(target, ValueDomain):
+            Operator.check_values(result, target, cls.op)
+        return result
 
     @classmethod
     def validate(  # type: ignore[override]
         cls,
         operand: ALL_MODEL_DATA_TYPES,
-        scalarType: Type[ScalarType],
+        scalarType: CAST_TARGET,
         mask: Optional[str] = None,
     ) -> Any:
         if mask is not None and not isinstance(mask, str):
@@ -94,7 +122,7 @@ class Cast(Operator.Unary):
     def dataset_validation(  # type: ignore[override]
         cls,
         operand: Dataset,
-        to_type: Type[ScalarType],
+        target: CAST_TARGET,
         mask: Optional[str] = None,
     ) -> Dataset:
         """This method validates the operation when the operand is a Dataset."""
@@ -103,9 +131,9 @@ class Cast(Operator.Unary):
         if len(operand.get_measures()) > 1:
             raise SemanticError("1-1-1-4", op=cls.op)
         measure = operand.get_measures()[0]
-        from_type = measure.data_type
+        to_type = cls.target_type(target)
 
-        cls.check_cast(from_type, to_type, mask)
+        cls.check_cast(measure, target, mask)
         result_components = {
             comp_name: copy(comp)
             for comp_name, comp in operand.components.items()
@@ -118,6 +146,7 @@ class Cast(Operator.Unary):
             data_type=to_type,
             role=Role.MEASURE,
             nullable=measure.nullable,
+            value_domain=cls.target_domain(target),
         )
         dataset_name = VirtualCounter._new_ds_name()
         return Dataset(name=dataset_name, components=result_components, data=None)
@@ -126,38 +155,42 @@ class Cast(Operator.Unary):
     def component_validation(  # type: ignore[override]
         cls,
         operand: DataComponent,
-        to_type: Type[ScalarType],
+        target: CAST_TARGET,
         mask: Optional[str] = None,
     ) -> DataComponent:
         """This method validates the operation when the operand is a DataComponent."""
-        from_type = operand.data_type
-        cls.check_cast(from_type, to_type, mask)
+        cls.check_cast(operand, target, mask)
         comp_name = VirtualCounter._new_dc_name()
         return DataComponent(
             name=comp_name,
             data=None,
-            data_type=to_type,
+            data_type=cls.target_type(target),
             role=operand.role,
             nullable=operand.nullable,
+            value_domain=cls.target_domain(target),
         )
 
     @classmethod
     def scalar_validation(  # type: ignore[override]
         cls,
         operand: Scalar,
-        to_type: Type[ScalarType],
+        target: CAST_TARGET,
         mask: Optional[str] = None,
     ) -> Scalar:
-        """This method validates the operation when the operand is a Scalar."""
-        from_type = operand.data_type
-        cls.check_cast(from_type, to_type, mask)
+        """This method validates the operation when the operand is a Scalar. A scalar cast to
+        a value domain keeps its basic type, as no scalar is defined on a value domain."""
+        from_type, to_type = operand.data_type, cls.target_type(target)
+        cls.check_cast(operand, target, mask)
         if operand.value is not None and not pd.isna(operand.value):
             try:
-                cls.cast_value(operand.value, from_type, to_type)
+                value = cls.cast_value(operand.value, from_type, to_type)
+                value_domain = cls.target_domain(target)
+                if value_domain is not None:
+                    Operator.check_values(pd.Series([value]), value_domain, cls.op)
             except (RunTimeError, InputValidationException) as error:
                 types = {
                     "type_1": SCALAR_TYPES_CLASS_REVERSE[from_type],
-                    "type_2": SCALAR_TYPES_CLASS_REVERSE[to_type],
+                    "type_2": component_type_name(to_type, cls.target_domain(target)),
                 }
                 # A literal is part of the script, a scalar value is data (issue #1192)
                 if operand.literal:
@@ -178,7 +211,7 @@ class Cast(Operator.Unary):
     def evaluate(  # type: ignore[override]
         cls,
         operand: ALL_MODEL_DATA_TYPES,
-        scalarType: Type[ScalarType],
+        scalarType: CAST_TARGET,
         mask: Optional[str] = None,
     ) -> Any:
         if isinstance(operand, Dataset):
@@ -192,12 +225,12 @@ class Cast(Operator.Unary):
     def dataset_evaluation(  # type: ignore[override]
         cls,
         operand: Dataset,
-        to_type: Type[ScalarType],
+        target: CAST_TARGET,
         mask: Optional[str] = None,
     ) -> Dataset:
         from_type = operand.get_measures()[0].data_type
         original_measure = operand.get_measures()[0]
-        result_dataset = cls.dataset_validation(operand, to_type, mask)
+        result_dataset = cls.dataset_validation(operand, target, mask)
         new_measure = result_dataset.get_measures()[0]
         attributes = [name for name, c in operand.components.items() if c.role == Role.ATTRIBUTE]
         result_dataset.data = (
@@ -209,18 +242,18 @@ class Cast(Operator.Unary):
                 columns={original_measure.name: new_measure.name}, inplace=True
             )
         measure_data = result_dataset.data[new_measure.name]
-        result_dataset.data[new_measure.name] = cls.cast_component(measure_data, from_type, to_type)
+        result_dataset.data[new_measure.name] = cls.cast_component(measure_data, from_type, target)
         return result_dataset
 
     @classmethod
     def scalar_evaluation(  # type: ignore[override]
         cls,
         operand: Scalar,
-        to_type: Type[ScalarType],
+        target: CAST_TARGET,
         mask: Optional[str] = None,
     ) -> Scalar:
-        from_type = operand.data_type
-        result_scalar = cls.scalar_validation(operand, to_type, mask)
+        from_type, to_type = operand.data_type, cls.target_type(target)
+        result_scalar = cls.scalar_validation(operand, target, mask)
         if pd.isna(operand.value):
             return Scalar(
                 name=result_scalar.name, data_type=to_type, value=None, nullable=operand.nullable
@@ -234,11 +267,11 @@ class Cast(Operator.Unary):
     def component_evaluation(  # type: ignore[override]
         cls,
         operand: DataComponent,
-        to_type: Type[ScalarType],
+        target: CAST_TARGET,
         mask: Optional[str] = None,
     ) -> DataComponent:
         from_type = operand.data_type
-        result_component = cls.component_validation(operand, to_type, mask)
-        casted_data = cls.cast_component(operand.data, from_type, to_type)
+        result_component = cls.component_validation(operand, target, mask)
+        casted_data = cls.cast_component(operand.data, from_type, target)
         result_component.data = casted_data
         return result_component
