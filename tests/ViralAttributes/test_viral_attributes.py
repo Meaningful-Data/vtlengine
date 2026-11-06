@@ -185,6 +185,24 @@ def test_join_ambiguity(code: str, exception_code: str) -> None:
     ViralHelper.NewSemanticExceptionTest(code=code, number_inputs=2, exception_code=exception_code)
 
 
+def test_GH_1304_3() -> None:
+    """
+    Expression: DS_r1 <- case when DS_1 > 0 then DS_2 when DS_1 = 0 then 0.0 else DS_3;
+                DS_r2 <- case when DS_1 > 1 then DS_2 else 0.0;
+    Description: In a dataset case, the aggregate rule of a viral attribute (At_1) collapses
+        the values of the dataset operands that are not null: DS_2 lacks Id_1 = 4 and has a
+        null At_1 on Id_1 = 2, DS_3 a null At_1 on Id_1 = 5 and 6. The other attributes, and
+        a viral attribute of a single dataset operand, come from the operand of the branch
+        taken, null for a scalar one. DuckDB gave a null sum where an operand had no value,
+        copied DS_2 into the data points of the scalar branch of DS_r2 and left the non-viral
+        attribute At_2 out of the data; pandas left both attributes out of DS_r2, where no
+        data point takes DS_2.
+    Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1304
+    Goal: Check Result.
+    """
+    ViralHelper.BaseTest(code="GH_1304_3", number_inputs=3, references_names=["DS_r1", "DS_r2"])
+
+
 # -- Model-level checks (Role enum and Dataset helpers) --
 class TestViralAttributeRole:
     def test_viral_attribute_in_role_enum(self) -> None:

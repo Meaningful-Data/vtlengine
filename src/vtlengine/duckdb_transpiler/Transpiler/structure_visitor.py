@@ -290,7 +290,7 @@ class StructureVisitor(ASTTemplate):
         elif isinstance(node, AST.If):
             children = [node.condition, node.thenOp, node.elseOp]
         elif isinstance(node, AST.Case):
-            children = [c.thenOp for c in node.cases]
+            children = [*(c.thenOp for c in node.cases), node.elseOp]
         elif isinstance(node, AST.UDOCall) and node.op in self._udos:
             # The body is typed with the arguments of the call bound (issue #1276)
             udo_def = self._udos[node.op]
@@ -543,8 +543,10 @@ class StructureVisitor(ASTTemplate):
             return self._get_dataset_structure(node.thenOp) or self._get_dataset_structure(
                 node.elseOp
             )
-        if isinstance(node, AST.Case) and node.cases:
-            return self._get_dataset_structure(node.cases[0].thenOp)
+        if isinstance(node, AST.Case):
+            # The first Data Set operand, as in the semantic analysis (issue #1304)
+            operands = [c.thenOp for c in node.cases] + [node.elseOp]
+            return next(filter(None, map(self._get_dataset_structure, operands)), None)
         return None
 
     def _resolve_varid_structure(self, node: AST.VarID) -> Optional[Dataset]:

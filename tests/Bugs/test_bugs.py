@@ -2671,6 +2671,81 @@ class SetBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1304_1(self):
+        """
+        Expression: DS_r <- union(DS_1 [filter Id_1 <= 1] [calc Me_1 := Me_1 + 1],
+                                  DS_1 [filter Id_1 <= 2] [calc Me_1 := Me_1 + 2],
+                                  ...
+                                  DS_1 [filter Id_1 <= 10] [calc Me_1 := Me_1 + 10]);
+        Description: DuckDB wrote the union with an ANTI JOIN of each operand against every
+            operand before it, so its SQL and planning grew with the square of the number of
+            operands. Each operand repeats the Data Points of the operands before it with other
+            values and adds one Identifier, so each Data Point has to come from the left-most
+            operand that has it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1304
+        Goal: Check Result.
+        """
+        code = "GH_1304_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1304_4(self):
+        """
+        Expression: DS_r1 <- case when DS_1 > 4 then (case when DS_2 > 3 then DS_2 else DS_1)
+                        else DS_1;
+                    DS_r2 <- if DS_1 > 4 then (if DS_3 then DS_2 * 10 else DS_1 * 10) else DS_1;
+        Description: A Data Set case or if inside a branch of another one. On the pandas
+            engine, the inner condition was cut by the row labels of the Data Points of the
+            outer branch, which belong to the frame of another Data Set: the condition on DS_2
+            raised a KeyError (DS_r1), and DS_3, which lists its Data Points in another order,
+            cut the inner branches to other Data Points and lost Id_1 1 (DS_r2). In both, Id_1
+            3 is left out, as the inner case or if has no Data Point 3.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1304
+        Goal: Check Result.
+        """
+        code = "GH_1304_4"
+        number_inputs = 3
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1304_5(self):
+        """
+        Expression: DS_r1 <- case when DS_2 > 3 then DS_2 when DS_3 then DS_1 else DS_1;
+                    DS_r2 <- case when DS_1 > 6 then DS_1 when DS_2 > 3 then DS_2
+                        else DS_1 * 10;
+        Description: The first condition of a Data Set case gives the Data Points. On the
+            pandas engine, a later condition added its own true Data Points (DS_r1 Id_1 3),
+            and the else operand only had the Data Points of the last condition, so the Data
+            Points that the last condition lacks were lost (DS_r2 Id_1 4).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1304
+        Goal: Check Result.
+        """
+        code = "GH_1304_5"
+        number_inputs = 3
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1304_7(self):
+        """
+        Expression: DS_r1 <- (case when DS_1 > 0 then 1.0 else DS_2)[calc Me_2 := Me_1 * 2];
+                    DS_r2 <- (case when DS_1 > 0 then 1.0 else DS_2) + DS_1;
+        Description: A Data Set case whose first then-operand is a scalar, as the operand of a
+            clause or of another operator. On the DuckDB engine, the structure of a case came
+            from its first then-operand only and its type from its then-operands only, so the
+            calc raised an AttributeError (DS_r1) and the case was taken for a scalar (DS_r2).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1304
+        Goal: Check Result.
+        """
+        code = "GH_1304_7"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_GH_1276_7(self):
         """
         Status: OK

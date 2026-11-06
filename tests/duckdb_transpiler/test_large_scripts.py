@@ -12,6 +12,7 @@ Naming conventions:
 """
 
 import pickle
+import re
 from pathlib import Path
 from typing import Dict, List, Sequence
 
@@ -412,6 +413,30 @@ class TestDatasetChainResults:
 
 
 # =============================================================================
+# Set operations
+# =============================================================================
+
+
+class TestUnionSQL:
+    """A union reads each of its operands once (#1304)."""
+
+    @staticmethod
+    def _sql(operands: int) -> str:
+        names = [f"DS_{k}" for k in range(1, operands + 1)]
+        data_structures = {"datasets": [_structure(name, ["Me_1"], "Number") for name in names]}
+        return transpile(f"DS_r <- union({', '.join(names)});", data_structures)[0][1]
+
+    def test_sql_grows_linearly_with_the_operands(self) -> None:
+        """An ANTI JOIN of each operand against every operand before it made the SQL, and
+        DuckDB's planning, grow with the square of the number of operands."""
+        small, large = self._sql(10), self._sql(100)
+
+        assert " JOIN " not in large
+        assert all(large.count(f'"DS_{k}"') == 1 for k in range(1, 101))
+        assert len(large) < 11 * len(small)
+
+
+# =============================================================================
 # Chains of components
 # =============================================================================
 
@@ -737,6 +762,76 @@ class TestCheckSharedJoin:
             _sorted(shared["DS_r"].data), _sorted(separate["DS_r"].data), check_exact=True
         )
         assert shared["DS_r"] == on_pandas["DS_r"]
+
+
+# =============================================================================
+# Dataset case
+# =============================================================================
+
+
+class TestDatasetCaseStages:
+    """A dataset case of many branches is joined by stages (issue #1304)."""
+
+    BRANCHES = 20
+    OPERANDS = 6
+
+    def _script(self) -> str:
+        """Conditions true at more data points branch after branch, over operands that
+        lack some data points; every fifth branch has a scalar then-operand."""
+        whens = " ".join(
+            f"when DS_{b % self.OPERANDS + 1} > {48 - 2 * b} "
+            f"then {'0.5' if b % 5 == 3 else f'DS_{(b + 2) % self.OPERANDS + 1}'}"
+            for b in range(self.BRANCHES)
+        )
+        rule = "define viral propagation SM (variable At_1) is aggregate sum end viral propagation;"
+        return f"{rule}\nDS_r <- case {whens} else DS_2;"
+
+    def _structures(self) -> Dict[str, object]:
+        viral = {"name": "At_1", "type": "Integer", "role": "Viral Attribute", "nullable": True}
+        datasets = [_structure(f"DS_{k}", ["Me_1"], "Number") for k in range(1, self.OPERANDS + 1)]
+        for ds in datasets:
+            ds["DataStructure"].append(viral)
+        return {"datasets": datasets}
+
+    def _datapoints(self) -> Dict[str, pd.DataFrame]:
+        rng = np.random.default_rng(3)
+        frames = {}
+        for k in range(1, self.OPERANDS + 1):
+            df = pd.DataFrame(
+                {"Id_1": np.arange(40) % 5, "Id_2": [f"K{i // 5}" for i in range(40)]}
+            )
+            df["Me_1"] = rng.integers(-50, 50, 40).astype(float)
+            df.loc[rng.choice(40, 4, replace=False), "Me_1"] = None
+            df["At_1"] = rng.integers(1, 5, 40)
+            dropped = rng.choice(40, 5, replace=False) if k > 1 else []
+            frames[f"DS_{k}"] = df.drop(index=dropped).reset_index(drop=True)
+        return frames
+
+    def test_branches_are_joined_by_stages(self) -> None:
+        """DuckDB sets up a chain of joins in a time that grows much faster than its length.
+        A stage joins the conditions and dataset then-operands of 8 branches (the first
+        condition is its source) and the last one, of the 4 left, adds the else operand."""
+        sql = transpile(self._script(), self._structures())[0][1]
+
+        stages = re.findall(r"AS MATERIALIZED \(\n    (.*?)\n\)", sql, flags=re.DOTALL)
+        last_stage = sql.rsplit(") AS r ", 1)[1]
+        assert [s.count(" JOIN ") for s in [*stages, last_stage]] == [7 + 7, 8 + 6, 4 + 3 + 1]
+
+    def test_same_result_as_one_query_and_pandas(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        on_pandas, staged = _run_both(self._script(), self._structures(), self._datapoints())
+        monkeypatch.setattr(_TRANSPILER + "._CASE_STAGE_BRANCHES", 10**9)
+        one_query = run(
+            script=self._script(),
+            data_structures=self._structures(),
+            datapoints=self._datapoints(),
+            use_duckdb=True,
+        )
+
+        staged_data = _sorted(staged["DS_r"].data)
+        for expected in (one_query, on_pandas):
+            pd.testing.assert_frame_equal(
+                staged_data, _sorted(expected["DS_r"].data), check_exact=False, rtol=0, atol=0
+            )
 
 
 # =============================================================================

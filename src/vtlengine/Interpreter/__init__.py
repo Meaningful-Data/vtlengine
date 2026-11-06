@@ -263,13 +263,12 @@ class InterpreterAnalyzer(ASTTemplate):
                 _fill_dataset_empty_data(self.datasets[ds_name])
 
     def _save_datapoints_efficient(self, statement_num: int) -> None:
-        if self.output_path is None:
-            # Keeping the data in memory if no output path is provided
-            return
         if self.ds_analysis is None:
             return
         if statement_num not in self.ds_analysis.deletion:
             return
+        # After its last use, a Data Set releases its data, unless it is a result returned in
+        # memory: with an output folder, the results are written first (issue #1304)
         for ds_name in self.ds_analysis.deletion[statement_num]:
             if (
                 ds_name not in self.datasets
@@ -281,8 +280,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 # We do not save global input datasets, only results of transformations
                 self.datasets[ds_name].data = None
                 continue
-            if self.return_only_persistent and ds_name not in self.ds_analysis.persistent:
+            # The flag of the result, as run() filters on it, instead of scanning the list
+            # of persistent names at each statement
+            if self.return_only_persistent and not self.datasets[ds_name].persistent:
                 self.datasets[ds_name].data = None
+                continue
+            if self.output_path is None:
+                # A result returned in memory keeps its data
                 continue
             # Saving only datasets, no scalars
             save_datapoints(
@@ -353,6 +357,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
             # Reset some handlers (joins and if)
             self.is_from_join = False
+            # The apply of a join leaves its Data Set here, which would keep its data alive
+            self.regular_aggregation_dataset = None
             self.condition_stack = None
             self.then_condition_dataset = None
             self.else_condition_dataset = None
@@ -364,8 +370,11 @@ class InterpreterAnalyzer(ASTTemplate):
             if result is None:
                 continue
 
-            # Save results
-            self.datasets[result.name] = copy(result)
+            # Save results: a copy, as the result of a simple assignment (DS_2 := DS_1) may be
+            # the Dataset of its operand, and the same object in both, so releasing its data
+            # after its last use also releases it from the results (issue #1304)
+            result = copy(result)
+            self.datasets[result.name] = result
             results[result.name] = result
             if isinstance(result, Scalar):
                 scalars_to_save.add(result.name)
@@ -1414,7 +1423,6 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Case(self, node: AST.Case) -> Any:
         conditions: List[Any] = []
         thenOps: List[Any] = []
-        else_ds = Dataset(name="else", components={}, data=pd.DataFrame())
 
         if self.condition_stack is None:
             self.condition_stack = []
@@ -1432,14 +1440,14 @@ class InterpreterAnalyzer(ASTTemplate):
             thenOps.append(self.visit(case.thenOp))
             self.condition_stack.pop()
 
-            if isinstance(conditions[-1], DataComponent):
+            if isinstance(conditions[-1], DataComponent) or len(self.condition_stack) == depth:
                 # case returns the then operand of the first true condition (issue #1251). At
                 # Component level, as in a chain of if-then-else, the later conditions, their
                 # then operands and the else operand only see the data points this one leaves.
+                # At Data Set level they see those the first condition leaves: it gives the
+                # data points, and a later condition may lack some of them (issue #1304).
                 self.condition_stack.append(else_ds)
 
-        if len(self.condition_stack) == depth:
-            self.condition_stack.append(else_ds)
         elseOp = self.visit(node.elseOp)
         del self.condition_stack[depth:]
 
@@ -1465,8 +1473,16 @@ class InterpreterAnalyzer(ASTTemplate):
         then_df = pd.DataFrame(columns=list(components.keys()))
         else_df = pd.DataFrame(columns=list(components.keys()))
         if cond is not None:
+            # Only a Component condition is cut by the row labels of the enclosing branch, as
+            # both come from the frame of the Data Set of the clause. The labels of a Data Set
+            # condition belong to its own frame and name other Data Points: the enclosing if or
+            # case takes the Data Points of this one by their Identifiers (issue #1304).
             merge_ds = self.condition_stack[-1] if self.condition_stack else None
-            if isinstance(merge_ds, Dataset) and merge_ds.data is not None:
+            if (
+                isinstance(condition, DataComponent)
+                and isinstance(merge_ds, Dataset)
+                and merge_ds.data is not None
+            ):
                 cond = cond.loc[merge_ds.data.index]
 
             valid = cond.fillna(False).astype("bool[pyarrow]")
@@ -2477,7 +2493,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 v = v.name  # type: ignore[assignment]
             if v in self.signature_values:
                 signature_values[k] = self.signature_values[v]  # type: ignore[index]
-        self.signature_values.update(signature_values)
+        # The arguments are bound for this call only: an argument of a later call whose name is
+        # a parameter of this one must not resolve to this call's argument
+        enclosing_values = self.signature_values
+        self.signature_values = {**enclosing_values, **signature_values}
         self.udo_params.append(signature_values)
 
         if node.op in self.udo_calls:
@@ -2514,6 +2533,7 @@ class InterpreterAnalyzer(ASTTemplate):
         # We pop the last element of the stack (current UDO params)
         # to avoid using them in the next UDO call
         self.udo_params.pop()
+        self.signature_values = enclosing_values
 
         # We set to None if empty to ensure we do not use these params anymore
         if len(self.udo_params) == 0:

@@ -389,8 +389,8 @@ class TestSetOperations:
         assert_sql_equal(sql, expected_sql)
 
     def test_union_with_dedup(self):
-        """Test union with complete SQL output: each operand adds the data points whose
-        identifiers are in no operand before it."""
+        """Test union with complete SQL output: each identifier keeps the data point of the
+        left-most operand that has it, the one at the smallest position."""
         ds1 = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
         ds2 = create_simple_dataset("DS_2", ["Id_1"], ["Me_1"])
         transpiler = create_transpiler(
@@ -413,9 +413,11 @@ class TestSetOperations:
         assert name == "DS_r"
 
         expected_sql = (
-            '(SELECT u."Id_1", u."Me_1" FROM "DS_1" AS u) UNION ALL '
-            '(SELECT u."Id_1", u."Me_1" FROM "DS_2" AS u '
-            'ANTI JOIN "DS_1" AS p0 ON u."Id_1" = p0."Id_1")'
+            'SELECT "Id_1", "Me_1" FROM ('
+            'SELECT "Id_1", "Me_1", 0 AS "__vtl_union_position__" FROM "DS_1" AS t UNION ALL '
+            'SELECT "Id_1", "Me_1", 1 AS "__vtl_union_position__" FROM "DS_2" AS t) AS t '
+            'QUALIFY "__vtl_union_position__" = MIN("__vtl_union_position__") '
+            'OVER (PARTITION BY "Id_1")'
         )
         assert_sql_equal(sql, expected_sql)
 
