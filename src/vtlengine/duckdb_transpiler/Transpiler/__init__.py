@@ -5322,6 +5322,21 @@ FROM (
                 cols.append(f"{vp_reduce_refs(v_rule, refs)} AS {v_qn}")
         return cols
 
+    @staticmethod
+    def _join_left_key(
+        op: str, joined: List[Dict[str, Any]], key: str, comp_to_alias: Dict[str, str]
+    ) -> str:
+        """Left side of the ON clause that matches the next join operand on ``key``.
+
+        It is the column of the first operand that has the key. A full_join matches on the key
+        merged across all the operands joined so far instead: in a Data Point that only a later
+        operand brings, the key of the earlier ones is null (issue #1306).
+        """
+        refs = [f"{i['sql_alias']}.{quote_name(key)}" for i in joined if key in i["ds"].components]
+        if op == tokens.FULL_JOIN and len(refs) > 1:
+            return f"COALESCE({', '.join(refs)})"
+        return f"{comp_to_alias.get(key, joined[0]['sql_alias'])}.{quote_name(key)}"
+
     def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]
         """Visit a join operation."""
         clause_info: List[Dict[str, Any]] = []
@@ -5446,7 +5461,7 @@ FROM (
                 continue
             right_alias = info["sql_alias"]
             on_parts = [
-                f"{comp_to_alias.get(k, first_sql_alias)}.{quote_name(k)} = "
+                f"{self._join_left_key(node.op, clause_info[: idx + 1], k, comp_to_alias)} = "
                 f"{right_alias}.{quote_name(k)}"
                 for k in pairwise_keys[idx]
                 if k in info["ds"].components
