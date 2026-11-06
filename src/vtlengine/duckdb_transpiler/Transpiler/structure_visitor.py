@@ -42,6 +42,11 @@ def _try_normalize_time_period(value: str) -> Optional[str]:
 _DATASET = "Dataset"
 _COMPONENT = "Component"
 _SCALAR = "Scalar"
+# Key of a UDO scope that records where the argument of a parameter was written
+_UDO_DEPTH_PREFIX = "__depth__"
+# Key of a UDO scope with the type constraints that the value of a parameter must meet:
+# (operator, parameter, declared type, constraints), outermost first
+_UDO_CHECKS_PREFIX = "__checks__"
 
 # Role encoded in UnaryOp.op for calc clauses.
 _CALC_ROLE_BY_TOKEN: Dict[str, Role] = {
@@ -302,14 +307,9 @@ class StructureVisitor(ASTTemplate):
         """Determine operand type for a VarID."""
         name = node.value
         kind, val = self._resolve_udo_var(name)
-        if kind == "varid":
-            if val.value in self.available_tables:
-                return _DATASET
-            if val.value != name:
+        if kind in ("varid", "ast"):
+            with self._udo_arg_scope(name):
                 return self._get_node_type(val)
-            return _SCALAR
-        if kind == "ast":
-            return self._get_node_type(val)
         if kind == "str":
             return _DATASET if val in self.available_tables else _SCALAR
         if self._in_clause and self._current_dataset and name in self._current_dataset.components:
@@ -370,7 +370,9 @@ class StructureVisitor(ASTTemplate):
             if kind == "varid":
                 return quote_name(val.value)
             if kind == "ast":
-                return self._materialize_raising_operand(f"({self.visit(val)})")
+                with self._udo_arg_scope(node.value):
+                    sql = self.visit(val)
+                return self._materialize_raising_operand(f"({sql})")
             return quote_name(node.value)
         return self._materialize_raising_operand(f"({self.visit(node)})")
 
@@ -402,7 +404,8 @@ class StructureVisitor(ASTTemplate):
             if kind == "varid":
                 return val.value
             if kind == "ast":
-                return self._resolve_dataset_name(val)
+                with self._udo_arg_scope(node.value):
+                    return self._resolve_dataset_name(val)
             if kind == "str":
                 return val
             return node.value
@@ -414,11 +417,36 @@ class StructureVisitor(ASTTemplate):
 
     def _get_udo_param(self, name: str) -> Any:
         """Look up a UDO parameter by name from the current scope."""
+        scope = self._find_udo_scope(name)
+        return scope[name] if scope is not None else None
+
+    def _find_udo_scope(self, name: str) -> Optional[Dict[str, Any]]:
+        """The innermost UDO scope that binds the parameter name."""
         if self._udo_params:
             for scope in reversed(self._udo_params):
                 if name in scope:
-                    return scope[name]
+                    return scope
         return None
+
+    def _get_udo_depth(self, name: str) -> Optional[int]:
+        """The size of the UDO scope stack where the argument of the parameter name was
+        written (None when not recorded)."""
+        scope = self._find_udo_scope(name)
+        return scope.get(f"{_UDO_DEPTH_PREFIX}{name}") if scope is not None else None
+
+    @contextmanager
+    def _udo_arg_scope(self, name: str) -> Generator[None, None, None]:
+        """Resolve the argument bound to the parameter name in the scope of its caller: the
+        UDO scope stack cut down to where it was written, so that no parameter of a called
+        operator with the same name captures its names."""
+        depth = self._get_udo_depth(name)
+        saved = self._udo_params
+        if depth is not None:
+            self._udo_params = (saved[:depth] or None) if saved else None
+        try:
+            yield
+        finally:
+            self._udo_params = saved
 
     def _resolve_udo_var(self, name: str) -> Tuple[str, Any]:
         """Resolve a UDO parameter binding by name."""
@@ -522,15 +550,9 @@ class StructureVisitor(ASTTemplate):
     def _resolve_varid_structure(self, node: AST.VarID) -> Optional[Dataset]:
         """Resolve a VarID (including UDO bindings) to its dataset structure."""
         kind, val = self._resolve_udo_var(node.value)
-        if kind == "varid":
-            if val.value in self.available_tables:
-                return self.available_tables[val.value]
-            # Guard against recursion when param name matches argument name.
-            if val.value != node.value:
+        if kind in ("varid", "ast"):
+            with self._udo_arg_scope(node.value):
                 return self._get_dataset_structure(val)
-            return None
-        if kind == "ast":
-            return self._get_dataset_structure(val)
         if kind == "str" and val in self.available_tables:
             return self.available_tables[val]
         return self.available_tables.get(node.value)
@@ -738,10 +760,19 @@ class StructureVisitor(ASTTemplate):
         return Dataset(name=ds.name, components=comps, data=None)
 
     def _build_udo_bindings(
-        self, udo_def: Dict[str, Any], call_params: List[Any], include_types: bool = False
+        self,
+        udo_def: Dict[str, Any],
+        call_params: List[Any],
+        include_types: bool = False,
+        op: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Bind a UDO call's arguments (positional + defaults) to parameter names."""
+        """Bind a UDO call's arguments (positional + defaults) to parameter names.
+
+        With include_types, the constraints of the type of each parameter of the operator op
+        are kept under __checks__, with the ones of the parameter passed on to it, if any:
+        the values are checked where they are read, even inside another operator."""
         bindings: Dict[str, Any] = {}
+        depth = len(self._udo_params or [])  # The arguments are written in the caller's scope
         for i, param_info in enumerate(udo_def["params"]):
             param_name = param_info["name"]
             omitted = (
@@ -749,19 +780,34 @@ class StructureVisitor(ASTTemplate):
                 or isinstance(call_params[i], AST.ID)
                 and call_params[i].type_ == "OPTIONAL"
             )
+            inherited: List[Any] = []
             if not omitted:
                 argument = call_params[i]
-                # A parameter of the enclosing call, passed on as it is, stands for what that
-                # call binds to it, as the interpreter binds it (issue #1279)
-                bound = (
-                    self._get_udo_param(argument.value) if isinstance(argument, AST.VarID) else None
+                scope = (
+                    self._find_udo_scope(argument.value)
+                    if isinstance(argument, AST.VarID)
+                    else None
                 )
-                bindings[param_name] = argument if bound is None else bound
+                if scope is None:
+                    bindings[param_name] = argument
+                    bindings[f"{_UDO_DEPTH_PREFIX}{param_name}"] = depth
+                else:
+                    bindings[param_name] = scope[argument.value]
+                    bindings[f"{_UDO_DEPTH_PREFIX}{param_name}"] = scope.get(
+                        f"{_UDO_DEPTH_PREFIX}{argument.value}"
+                    )
+                    inherited = scope.get(f"{_UDO_CHECKS_PREFIX}{argument.value}", [])
             elif param_info.get("default") is not None:
                 bindings[param_name] = param_info["default"]
             if include_types:
                 bindings[f"__type__{param_name}"] = param_info.get("type")
-                bindings[f"__constraints__{param_name}"] = param_info.get("constraints")
+                constraints = param_info.get("constraints")
+                own = (
+                    [(op, param_name, param_info.get("type"), constraints)]
+                    if constraints is not None
+                    else []
+                )
+                bindings[f"{_UDO_CHECKS_PREFIX}{param_name}"] = [*inherited, *own]
         return bindings
 
     def _resolve_udocall_structure(self, node: AST.UDOCall) -> Optional[Dataset]:
