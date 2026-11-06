@@ -275,6 +275,13 @@ type conversion rules:
     /* Me_2 is on the value domain of Me_1, and 0 must be one of its values */
     DS_r <- DS_1 [calc Me_2 := nvl(Me_1, 0)];
 
+The value domains ``errorcode_vd`` and ``errorlevel_vd``, when given,
+type the error codes and the error levels of ``check``,
+``check_datapoint`` and ``check_hierarchy``: the ``errorcode`` and
+``errorlevel`` Measures take their basic types, and every error code
+and level of a rule or of ``check`` must be one of their values
+(``1-1-10-13``). Without them, the Measures keep their usual types.
+
 Scalars typed by a value domain are not supported.
 
 

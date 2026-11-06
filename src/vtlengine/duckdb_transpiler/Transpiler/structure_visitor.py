@@ -24,9 +24,10 @@ from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.duckdb_transpiler.sql import references_raising_macro
 from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS, get_duckdb_type
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
-from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model import Component, Dataset, Role, ValueDomain
 from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.Operators.Validation import error_domains
 from vtlengine.Utils import ANALYTIC_MAPPING
 
 
@@ -66,6 +67,7 @@ class StructureVisitor(ASTTemplate):
         scalars: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.output_datasets: Dict[str, Dataset] = output_datasets or {}
+        self.value_domains: Dict[str, ValueDomain] = {}
         self.available_tables: Dict[str, Dataset] = {
             **(available_tables or {}),
             **self.output_datasets,
@@ -872,8 +874,12 @@ class StructureVisitor(ASTTemplate):
             comps["imbalance"] = self._make_comp("imbalance", Number)
         if with_ruleid:
             comps["ruleid"] = self._make_comp("ruleid", StringType, Role.IDENTIFIER, False)
-        comps["errorcode"] = self._make_comp("errorcode", StringType)
-        comps["errorlevel"] = self._make_comp("errorlevel", errorlevel_type)
+        domains = error_domains(self.value_domains)
+        for element, data_type in (("errorcode", StringType), ("errorlevel", errorlevel_type)):
+            value_domain = domains[element]
+            comps[element] = self._make_comp(
+                element, data_type if value_domain is None else value_domain.type
+            )
 
     # =========================================================================
     # Structure builders for validation/hierarchy operations

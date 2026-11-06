@@ -7028,3 +7028,134 @@ class ValueDomainBugs(BugHelper):
             references_names=references_names,
             vd_names=self.vd_all,
         )
+
+    error_vds = ["GH_1316-errorcode_vd", "GH_1316-errorlevel_vd"]
+
+    def test_GH_1316_1(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 ) is
+                    R1 : Me_1 > 0 errorcode 100 errorlevel "ERROR" ;
+                    R2 : Me_1 < 100 errorcode 200 errorlevel "WARNING" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 );
+        Description: errorcode_vd and errorlevel_vd are given, so errorcode is an Integer and
+                     errorlevel a String, their basic types, and the codes and levels are
+                     values of them.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1316
+        Goal: Check Result.
+        """
+        code = "GH_1316_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=self.error_vds,
+        )
+
+    def test_GH_1316_2(self):
+        """
+        Status: OK
+        Expression: R2 : Me_1 < 100 errorcode 300 errorlevel "FATAL"
+        Description: The error code 300 of R2 is not a value of errorcode_vd.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1316
+        Goal: Check Exception.
+        """
+        code = "GH_1316_2"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-10-13",
+            exception_message="The errorcode 300 of rule R2 of DPR_1 is not one of the values of "
+            "the Value Domain errorcode_vd",
+            vd_names=self.error_vds,
+        )
+
+    def test_GH_1316_3(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( valuedomain rule Id_2 ) is
+                    R1 : A = B + C errorcode 200 errorlevel 2 end hierarchical ruleset;
+                    DS_r <- check_hierarchy ( DS_1 , HR_1 rule Id_2 );
+        Description: check_hierarchy gives errorcode and errorlevel the Integer types of
+                     errorcode_vd and errorlevel_vd.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1316
+        Goal: Check Result.
+        """
+        code = "GH_1316_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1316-errorcode_vd", "GH_1316-errorlevel_vd_int"],
+        )
+
+    def test_GH_1316_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 0 errorcode 200 errorlevel "ERROR" invalid );
+        Description: check gives errorcode and errorlevel the types of errorcode_vd and
+                     errorlevel_vd.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1316
+        Goal: Check Result.
+        """
+        code = "GH_1316_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=self.error_vds,
+        )
+
+    def test_GH_1316_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 0 errorcode "E1" errorlevel "ERROR" invalid );
+        Description: The error code E1 of check is not a value of errorcode_vd.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1316
+        Goal: Check Exception.
+        """
+        code = "GH_1316_5"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-10-13",
+            exception_message="The errorcode E1 of check is not one of the values of the Value "
+            "Domain errorcode_vd",
+            vd_names=self.error_vds,
+        )
+
+    def test_GH_1316_6(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 ) is
+                    R1 : Me_1 > 0 errorcode 100 ; R2 : Me_1 < 100 errorcode 200
+                    end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 );
+        Description: Only errorcode_vd is given: errorcode is an Integer, and errorlevel keeps
+                     the type it has without errorlevel_vd.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1316
+        Goal: Check Result.
+        """
+        code = "GH_1316_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1316-errorcode_vd"],
+        )

@@ -809,6 +809,12 @@ centralised_messages = {
         "description": "Raised when several '=' rules define the same code item in a hierarchy "
         "operation and one of them has no when condition, so their results always overlap.",
     },
+    "1-1-10-13": {
+        "message": "The {element} {value} of {where} is not one of the values of the Value "
+        "Domain {value_domain}.",
+        "description": "Raised when an error code or an error level is not a value of "
+        "errorcode_vd or errorlevel_vd, given as value domains.",
+    },
     "1-1-10-11": {
         "message": "At op {op}: The validation and imbalance operands must have the same "
         "identifiers.",
