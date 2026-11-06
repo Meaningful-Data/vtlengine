@@ -1,0 +1,28 @@
+define operator f (x dataset)
+    returns dataset is
+        abs(x) + 1
+end operator;
+
+define operator g (x dataset)
+    returns dataset is
+        f(f(x))
+end operator;
+
+define operator d (x dataset)
+    returns dataset is
+        x * 2
+end operator;
+
+define operator e (x dataset)
+    returns dataset is
+        d(x) + 1
+end operator;
+
+define operator w (x dataset)
+    returns dataset is
+        e(d(x))
+end operator;
+
+DS_r1 <- g(DS_1);
+DS_r2 <- w(DS_1);
+DS_r3 <- f(f(DS_1));

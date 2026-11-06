@@ -1,0 +1,11 @@
+define operator g (c component)
+    returns component is
+        c * 2
+end operator;
+
+define operator f (y component<number [value > 0]>)
+    returns component is
+        g(y)
+end operator;
+
+DS_r <- DS_1[calc Me_2 := f(Me_1)];

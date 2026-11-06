@@ -1,0 +1,11 @@
+define operator inn (x dataset {measure<number [value < 0]> Me_1})
+    returns dataset is
+        x
+end operator;
+
+define operator out (y dataset {measure<number [value > 0]> Me_1})
+    returns dataset is
+        inn(y)
+end operator;
+
+DS_r <- out(DS_1);
