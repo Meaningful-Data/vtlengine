@@ -415,27 +415,24 @@ class Join(Operator):
 
     @classmethod
     def _validate_join_key_types(cls, operands: List[Dataset], join_keys: List[str]) -> None:
-        ref = cls.reference_dataset
-        for op in operands:
-            if op is ref:
-                continue
-            for key in join_keys:
-                if key not in ref.components or key not in op.components:
-                    continue
-                left_type = ref.get_component(key).data_type
-                right_type = op.get_component(key).data_type
-                if left_type == right_type:
-                    continue
-                try:
-                    binary_implicit_promotion(left_type, right_type)
-                except SemanticError:
-                    raise SemanticError(
-                        "1-1-13-18",
-                        op=cls.op,
-                        id_name=key,
-                        type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
-                        type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
-                    )
+        """Every two operands that have a join key have compatible types for it, whatever
+        their order."""
+        for key in join_keys:
+            types = [op.get_component(key).data_type for op in operands if key in op.components]
+            for i, left_type in enumerate(types):
+                for right_type in types[i + 1 :]:
+                    if left_type == right_type:
+                        continue
+                    try:
+                        binary_implicit_promotion(left_type, right_type)
+                    except SemanticError:
+                        raise SemanticError(
+                            "1-1-13-18",
+                            op=cls.op,
+                            id_name=key,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
+                        )
 
     @classmethod
     def identifiers_validation(
@@ -472,14 +469,8 @@ class Join(Operator):
         # (Case B1)
         if cls.reference_dataset is not None:
             for op_name, identifiers in info.items():
-                if op_name != cls.reference_dataset.name and not set(identifiers).issubset(using):
-                    if not cls._keys_only(using):
-                        raise SemanticError(
-                            "1-1-13-4", op=cls.op, using_names=using, dataset=op_name
-                        )
-                    # An inner_join keeps only the data points that match
-                    if cls.how != "inner":
-                        cls._check_nvl_rules(op_name, set(identifiers) - set(using), nvl)
+                if op_name != cls.reference_dataset.name and cls.how != "inner":
+                    cls._check_nvl_rules(op_name, set(identifiers) - set(using), nvl)
             reference_components = cls.reference_dataset.get_components_names()
             if not set(using).issubset(reference_components):
                 raise SemanticError(

@@ -3087,3 +3087,39 @@ class JoinsGeneralTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1239_8(self):
+        """
+        Expression: DS_r <- inner_join(DS_1, DS_2, DS_3);
+        Description: DS_2 and DS_3 share Id_3 as Integer and String; the types of a join key
+            are checked between every two operands that have it, not only against the first.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_8"
+        number_inputs = 3
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-18"
+        )
+
+    def test_GH_1239_9(self):
+        """
+        Expression: DS_r <- inner_join(DS_1, DS_3, DS_2);
+        Description: The same operands in another order raise the same error.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_9"
+        number_inputs = 3
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-18"
+        )
+
+    def test_GH_1239_10(self):
+        """
+        Expression: DS_r <- inner_join(DS_1, DS_2, DS_3);
+        Description: DS_2 and DS_3 share Id_3 as Integer and Number, which are compatible.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_10"
+        number_inputs = 3
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

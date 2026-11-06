@@ -839,12 +839,6 @@ centralised_messages = {
         "description": "Raised when a Join operation encounters column "
         "name conflicts across input Datasets.",
     },
-    "1-1-13-4": {
-        "message": "At op {op}: Using clause, using={using_names}, does not define all the "
-        "Identifiers, of non reference Dataset {dataset}.",
-        "description": "Occurs when a 'using' clause in a join does not cover all Identifiers of a "
-        "non-reference Dataset.",
-    },
     "1-1-13-5": {
         "message": "At op {op}: Invalid subcase B1, All the Datasets must share as "
         "Identifiers the using ones.",
