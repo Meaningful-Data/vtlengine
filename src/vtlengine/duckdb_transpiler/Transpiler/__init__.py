@@ -134,6 +134,13 @@ _MIN_FOLDED_CHAIN_OPERANDS = 3
 _FOLDED_BOOLEAN_OPS = frozenset({tokens.AND, tokens.OR, tokens.XOR})
 _MIN_FOLDED_EXPRESSION_OPERANDS = 5
 
+# WHEN branches of a dataset case joined by one query (see SQLTranspiler._build_dataset_case),
+# and the columns a stage of a longer case keeps for the next one: whether a condition was
+# already true, and whether the operand of its branch has the data point
+_CASE_STAGE_BRANCHES = 8
+_CASE_DONE = quote_name("__vtl_case_done__")
+_CASE_KEPT = quote_name("__vtl_case_kept__")
+
 # Imbalance operations a ``check`` computes over the join of its comparison when both
 # read the same datasets (see SQLTranspiler._check_shared_join)
 _SHARED_JOIN_IMBALANCE_OPS = (tokens.PLUS, tokens.MINUS, tokens.MULT, tokens.DIV)
@@ -3854,106 +3861,145 @@ FROM (
             return self.visit(case_obj.condition)
 
     def _build_dataset_case(self, node: AST.Case) -> str:
-        """Build SQL for dataset-level CASE with JOINs."""
+        """Build SQL for dataset-level CASE with JOINs.
+
+        DuckDB sets up a chain of joins in a time that grows much faster than its length, as
+        each hash join adds a pipeline with the operators above it. The branches are joined by
+        stages of ``_CASE_STAGE_BRANCHES`` (issue #1304): each stage but the last is a
+        MATERIALIZED CTE, which ends the pipelines, and keeps for each data point the values of
+        the first true condition so far.
+        """
         # The first condition, whatever its expression, gives the data points of the result
         with self._stash_assignment():
             first_cond = node.cases[0].condition
             source_ds = self._get_dataset_structure(first_cond)
             source_sql = self._get_dataset_sql(first_cond)
-        source_ids = list(source_ds.get_identifiers_names())
-        alias_src = "src"
 
         # As an operand, the case has its own structure and not the result's (issue #1276)
         output_ds = self._get_output_dataset() or self._get_dataset_structure(node) or source_ds
-        output_measures = output_ds.get_measures_names()
-        output_viral = output_ds.get_viral_attributes_names()
+        stages = CTEBuilder()
+        source, stage = (source_sql, "src"), ""
+        last = (len(node.cases) - 1) // _CASE_STAGE_BRANCHES * _CASE_STAGE_BRANCHES
+        for start in range(0, last, _CASE_STAGE_BRANCHES):
+            branches = range(start, start + _CASE_STAGE_BRANCHES)
+            stage_sql = self._case_stage(node, branches, source, source_ds, output_ds)
+            stage = quote_name(f"__vtl_case_{start}__")
+            stages.cte(stage, stage_sql, materialized=True)
+            source = (stage, "r")
+        if stage:
+            source = (f"({stages.select(f'SELECT * FROM {stage}')})", "r")
+        return self._case_stage(node, range(last, len(node.cases)), source, source_ds, output_ds)
+
+    @staticmethod
+    def _case_stage_sql(
+        carried: Optional[str], whens: List[Tuple[str, str]], else_sql: Optional[str]
+    ) -> str:
+        """The CASE of a column of a stage, with the value ``carried`` from the previous stage
+        for the data points where a condition was already true."""
+        parts = ["CASE"]
+        if carried is not None:
+            parts.append(f"WHEN r.{_CASE_DONE} THEN {carried}")
+        parts += [f"WHEN {cond} THEN {value}" for cond, value in whens]
+        if else_sql is not None:
+            parts.append(f"ELSE {else_sql}")
+        return " ".join(parts + ["END"])
+
+    def _case_stage(
+        self,
+        node: AST.Case,
+        branches: range,
+        source: Tuple[str, str],
+        source_ds: Dataset,
+        output_ds: Dataset,
+    ) -> str:
+        """Join the ``branches`` of a dataset case to ``source``: the first condition (``src``)
+        or the previous stage (``r``). The last stage adds the else operand."""
+        source_sql, alias_src = source
+        source_ids = list(source_ds.get_identifiers_names())
+        staged = alias_src == "r"
+        final = branches.stop == len(node.cases)
+        operands = [case.thenOp for case in node.cases] + [node.elseOp]
+        is_ds = [self._get_node_type(op) == _DATASET for op in operands]
         builder = SQLBuilder().from_table(source_sql, alias_src)
 
-        # Process each WHEN branch
-        cond_exprs: List[str] = []
-        then_aliases: List[Optional[str]] = []
-        then_types: List[str] = []
-        for i, case in enumerate(node.cases):
+        # Process each WHEN branch: its condition and the alias of a dataset then-operand
+        whens: List[Tuple[int, str, Optional[str]]] = []
+        for i in branches:
+            case = node.cases[i]
             if i == 0:
                 cond_expr = f"{alias_src}.{quote_name(source_ds.get_measures_names()[0])}"
             else:
                 cond_expr = self._build_case_condition(
                     case, f"c{i}", source_ids, alias_src, builder
                 )
-            cond_exprs.append(cond_expr)
-
-            t_type = self._get_node_type(case.thenOp)
-            then_types.append(t_type)
-            if t_type == _DATASET:
-                alias = f"t{i}"
-                self._left_join_dataset(case.thenOp, t_type, alias, source_ids, alias_src, builder)
-                then_aliases.append(alias)
-            else:
-                then_aliases.append(None)
+            t_alias = f"t{i}" if is_ds[i] else None
+            if t_alias:
+                self._left_join_dataset(
+                    case.thenOp, _DATASET, t_alias, source_ids, alias_src, builder
+                )
+            whens.append((i, cond_expr, t_alias))
 
         # Handle else-operand
-        e_type = self._get_node_type(node.elseOp)
-        e_alias = "e"
-        if e_type == _DATASET:
-            self._left_join_dataset(node.elseOp, e_type, e_alias, source_ids, alias_src, builder)
+        e_alias = "e" if final and is_ds[-1] else None
+        if e_alias:
+            self._left_join_dataset(node.elseOp, _DATASET, e_alias, source_ids, alias_src, builder)
 
         cols: List[str] = [f"{alias_src}.{quote_name(id_)}" for id_ in source_ids]
-        for measure in output_measures:
-            case_parts = ["CASE"]
-            for i in range(len(node.cases)):
-                then_ref = (
-                    f"{then_aliases[i]}.{quote_name(measure)}"
-                    if then_types[i] == _DATASET
-                    else self.visit(node.cases[i].thenOp)
-                )
-                case_parts.append(f"WHEN {cond_exprs[i]} THEN {then_ref}")
-            else_ref = (
-                f"{e_alias}.{quote_name(measure)}"
-                if e_type == _DATASET
-                else self.visit(node.elseOp)
-            )
-            case_parts.append(f"ELSE {else_ref} END")
-            cols.append(f"{' '.join(case_parts)} AS {quote_name(measure)}")
-
-        vp_registry = get_current_registry()
-        for v_name in output_viral:
-            v_qn = quote_name(v_name)
-            v_comp = output_ds.components.get(v_name)
-            refs = [f"{then_aliases[i]}.{v_qn}" for i in range(len(node.cases)) if then_aliases[i]]
-            if e_type == _DATASET:
-                refs.append(f"{e_alias}.{v_qn}")
-            if len(refs) >= 2:
-                v_rule = vp_registry.rule_for(v_comp) if v_comp is not None else None
-                if v_rule is None:
-                    v_type = get_duckdb_type(v_comp.data_type.__name__) if v_comp else "VARCHAR"
-                    cols.append(f"CAST(NULL AS {v_type}) AS {v_qn}")
-                else:
-                    cols.append(f"{vp_reduce_refs(v_rule, refs)} AS {v_qn}")
-            elif refs:
-                cols.append(f"{refs[0]} AS {v_qn}")
-
-        builder.select(*cols)
+        for measure in output_ds.get_measures_names():
+            m = quote_name(measure)
+            values = [
+                (cond, f"{t}.{m}" if t else self.visit(node.cases[i].thenOp))
+                for i, cond, t in whens
+            ]
+            else_ref = (f"e.{m}" if e_alias else self.visit(node.elseOp)) if final else None
+            column = self._case_stage_sql(f"r.{m}" if staged else None, values, else_ref)
+            cols.append(f"{column} AS {m}")
 
         # Filter: only keep rows where the selected branch (the one of the first true
         # condition, or the else one when none is true) has a matching row (issue #1251).
         # Scalar/null branches always match; dataset branches need a LEFT JOIN hit.
-        has_ds_branch = any(t == _DATASET for t in then_types) or e_type == _DATASET
-        if has_ds_branch:
-            id_col = quote_name(source_ids[0])
-            filter_parts = ["CASE"]
-            for i in range(len(node.cases)):
-                if then_types[i] == _DATASET:
-                    match_check = f"{then_aliases[i]}.{id_col} IS NOT NULL"
-                else:
-                    match_check = "TRUE"
-                filter_parts.append(f"WHEN {cond_exprs[i]} THEN {match_check}")
-            if e_type == _DATASET:
-                filter_parts.append(f"ELSE {e_alias}.{id_col} IS NOT NULL END")
-            else:
-                filter_parts.append("ELSE TRUE END")
-            builder.where(" ".join(filter_parts))
+        id_col = quote_name(source_ids[0])
+        matches = [(cond, f"{t}.{id_col} IS NOT NULL" if t else "TRUE") for _, cond, t in whens]
+        kept = f"r.{_CASE_KEPT}" if staged else None
+        if not final:
+            done = [(cond, "TRUE") for _, cond, _ in whens]
+            column = self._case_stage_sql("TRUE" if staged else None, done, "FALSE")
+            cols.append(f"{column} AS {_CASE_DONE}")
+            if any(is_ds):
+                cols.append(f"{self._case_stage_sql(kept, matches, None)} AS {_CASE_KEPT}")
 
+        aliases = [t for _, _, t in whens if t] + ([e_alias] if e_alias else [])
+        carried = any(is_ds[: branches.start])
+        cols.extend(self._case_viral_cols(output_ds, aliases, carried, sum(is_ds), final))
+        builder.select(*cols)
+        if final and any(is_ds):
+            e_match = f"e.{id_col} IS NOT NULL" if e_alias else "TRUE"
+            builder.where(self._case_stage_sql(kept, matches, e_match))
         return builder.build()
+
+    @staticmethod
+    def _case_viral_cols(
+        output_ds: Dataset, aliases: List[str], carried: bool, operands: int, final: bool
+    ) -> List[str]:
+        """Viral attributes of a stage of a dataset case: the ones of its dataset operands
+        (``aliases``), combined in their order after the ones the previous stages combined when
+        they are ``carried``. Without a rule, those of two or more ``operands`` give null."""
+        vp_registry = get_current_registry()
+        cols: List[str] = []
+        for v_name in output_ds.get_viral_attributes_names():
+            v_qn = quote_name(v_name)
+            v_comp = output_ds.components.get(v_name)
+            v_rule = vp_registry.rule_for(v_comp) if v_comp is not None else None
+            refs = ([f"r.{v_qn}"] if carried else []) + [f"{a}.{v_qn}" for a in aliases]
+            if operands >= 2 and v_rule is None:
+                if final:
+                    v_type = get_duckdb_type(v_comp.data_type.__name__) if v_comp else "VARCHAR"
+                    cols.append(f"CAST(NULL AS {v_type}) AS {v_qn}")
+            elif len(refs) >= 2 and v_rule is not None:
+                cols.append(f"{vp_reduce_refs(v_rule, refs)} AS {v_qn}")
+            elif refs:
+                cols.append(f"{refs[0]} AS {v_qn}")
+        return cols
 
     # =========================================================================
     # Rulesets
