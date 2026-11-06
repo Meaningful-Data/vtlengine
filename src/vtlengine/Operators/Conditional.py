@@ -539,7 +539,9 @@ class Case(Operator):
         for condition, thenOp in zip(conditions, thenOps):
             case = condition.data.rename(columns={condition.get_measures_names()[0]: COND_COL})
             case = case[ids + [COND_COL]]
-            case = case[case[COND_COL].fillna(False)]
+            # A Boolean mask, as in a Data Set if: indexing with the empty object column of an
+            # if or a case without Data Points selected no column instead (issue #1314)
+            case = case[case[COND_COL].fillna(False).astype("bool[pyarrow]")]
             keys = pd.MultiIndex.from_frame(case[ids])
             parts.append(
                 dataset_assign(case[keys.isin(first) & ~keys.isin(taken)], thenOp, ids, measures)

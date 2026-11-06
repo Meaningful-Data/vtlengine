@@ -3910,6 +3910,25 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_22(self):
+        """
+        Expression: DS_r1 <- case when (case when DS_1 > 0 and DS_2 > 0 then true
+                        else DS_1 = DS_3) then DS_3 else DS_3;
+                    DS_r2 <- case when DS_1 > 1 then DS_3 when (case when DS_1 > 0 and DS_2 > 0
+                        then true else DS_1 = DS_3) then 0 else DS_3 * 10;
+        Description: DS_1 and DS_2 share no Data Point, so the inner case has none. As a
+            condition of the outer case, first (DS_r1) or later (DS_r2), it gives no Data
+            Point. On the pandas engine, its Measure was an empty column of object dtype,
+            which selected no column instead of no row, and the outer case raised a KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_22"
+        number_inputs = 3
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """
