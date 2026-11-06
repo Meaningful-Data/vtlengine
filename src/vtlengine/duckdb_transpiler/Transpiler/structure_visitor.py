@@ -539,15 +539,22 @@ class StructureVisitor(ASTTemplate):
             return self._build_hr_operation_structure(node)
         if isinstance(node, AST.DPValidation):
             return self._build_dp_validation_structure(node)
-        if isinstance(node, AST.If):
-            return self._get_dataset_structure(node.thenOp) or self._get_dataset_structure(
-                node.elseOp
-            )
-        if isinstance(node, AST.Case):
-            # The first Data Set operand, as in the semantic analysis (issue #1304)
-            operands = [c.thenOp for c in node.cases] + [node.elseOp]
-            return next(filter(None, map(self._get_dataset_structure, operands)), None)
+        if isinstance(node, (AST.If, AST.Case)):
+            return self._resolve_conditional_structure(node)
         return None
+
+    @staticmethod
+    def _branch_operands(node: Union[AST.If, AST.Case]) -> List[AST.AST]:
+        """The operands an if or a case can return, the else one last."""
+        if isinstance(node, AST.If):
+            return [node.thenOp, node.elseOp]
+        return [case.thenOp for case in node.cases] + [node.elseOp]
+
+    def _resolve_conditional_structure(self, node: Union[AST.If, AST.Case]) -> Optional[Dataset]:
+        """The structure of the first Data Set operand of an if or a case, as in the semantic
+        analysis (issue #1304)."""
+        operands = self._branch_operands(node)
+        return next(filter(None, map(self._get_dataset_structure, operands)), None)
 
     def _resolve_varid_structure(self, node: AST.VarID) -> Optional[Dataset]:
         """Resolve a VarID (including UDO bindings) to its dataset structure."""

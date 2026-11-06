@@ -1,0 +1,5 @@
+DS_r1 <- DS_1[calc Me_2 := if Me_1 then "yes" else Me_1];
+DS_r2 <- if DS_2 then DS_1 else "yes";
+DS_r3 <- case when DS_2 then DS_1 else "yes";
+DS_r4 <- (if DS_2 then DS_1 else "yes") || "!";
+DS_r5 <- inner_join(DS_1 as a, DS_2 as b calc Me_3 := case when b#Me_1 then a#Me_1 else "yes" keep Me_3);

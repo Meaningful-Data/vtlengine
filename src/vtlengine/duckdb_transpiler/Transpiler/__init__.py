@@ -142,6 +142,12 @@ _CASE_STAGE_BRANCHES = 8
 _CASE_DONE = quote_name("__vtl_case_done__")
 _CASE_KEPT = quote_name("__vtl_case_kept__")
 
+# Operators that give a String whatever the types of their operands
+_STRING_RESULT_OPS = (_STRING_UNARY_OPS | _STRING_PARAM_OPS | {tokens.CONCAT}) - {
+    tokens.LEN,
+    tokens.INSTR,
+}
+
 # Imbalance operations a ``check`` computes over the join of its comparison when both
 # read the same datasets (see SQLTranspiler._check_shared_join)
 _SHARED_JOIN_IMBALANCE_OPS = (tokens.PLUS, tokens.MINUS, tokens.MULT, tokens.DIV)
@@ -455,6 +461,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     _materialized_operands: List[str] = field(default_factory=list, init=False)
 
+    # The type of each Component level if and case of the statement, with its clause Data Set
+    # (see _value_type), so that a nested chain of them is typed once
+    _value_types: Dict[int, Tuple[AST.AST, Optional[Dataset], Optional[str]]] = field(
+        default_factory=dict, init=False
+    )
+
     def __post_init__(self) -> None:
         """Initialize available tables."""
         self.datasets = {**self.input_datasets, **self.output_datasets}
@@ -607,6 +619,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 self._join_alias_map = {}
                 self._consumed_join_aliases = set()
                 self._materialized_operands = []
+                self._value_types = {}
 
         return queries
 
@@ -3671,11 +3684,118 @@ FROM (
     # Conditional visitors (If, Case)
     # =========================================================================
 
+    def _value_type(self, node: AST.AST) -> Optional[str]:
+        """The type of a Component or scalar operand of an if or a case, where it is known. An
+        if or a case is a String when one of its operands is, a Boolean when all are."""
+        if isinstance(node, AST.ParFunction):
+            return self._value_type(node.operand)
+        if isinstance(node, (AST.If, AST.Case)):
+            hit = self._value_types.get(id(node))
+            if hit is not None and hit[0] is node and hit[1] is self._current_dataset:
+                return hit[2]
+            condition = node.condition if isinstance(node, AST.If) else node.cases[0].condition
+            operands = self._branch_operands(node)
+            types = set(self._component_value_types(condition, operands)) - {"Null"}
+            value_type = "String" if "String" in types else None
+            if types == {"Boolean"}:
+                value_type = "Boolean"
+            # A UDO body is typed for each call, with its arguments
+            if self._udo_params is None:
+                self._value_types[id(node)] = (node, self._current_dataset, value_type)
+            return value_type
+        if isinstance(node, AST.Constant) and node.value is None:
+            return "Null"
+        if isinstance(node, AST.BinOp) and node.op == tokens.MEMBERSHIP and self._current_dataset:
+            # A Component of a join, by its qualified name when the joined Data Sets share it
+            comps = self._current_dataset.components
+            name = self._resolve_udo_name(self._get_node_value(node.right))
+            comp = comps.get(f"{self._get_node_value(node.left)}#{name}") or comps.get(name)
+            return comp.data_type.__name__ if comp is not None else None
+        if self._is_boolean_expr(node):
+            return "Boolean"
+        if getattr(node, "op", None) in _STRING_RESULT_OPS:
+            return "String"
+        return self._get_source_vtl_type(node)
+
+    def _dataset_value_types(self, operands: List[AST.AST], name: str) -> List[Optional[str]]:
+        """The type of the Measure ``name`` in each operand of a dataset if or case, or the
+        type of a scalar operand."""
+        types: List[Optional[str]] = []
+        for operand in operands:
+            if self._get_node_type(operand) != _DATASET:
+                types.append(self._value_type(operand))
+                continue
+            with self._stash_assignment():
+                ds = self._get_dataset_structure(operand)
+            comp = ds.components.get(name) if ds is not None else None
+            types.append(comp.data_type.__name__ if comp is not None else None)
+        return types
+
+    def _text_measures(
+        self, result: Dataset, operands: List[AST.AST]
+    ) -> Dict[str, List[Optional[str]]]:
+        """The types of the operands of each String Measure of the ``result`` of a dataset if
+        or case, whose Boolean operands are rendered as text."""
+        return {
+            comp.name: self._dataset_value_types(operands, comp.name)
+            for comp in result.get_measures()
+            if comp.data_type is String
+        }
+
+    def _resolve_conditional_structure(self, node: Union[AST.If, AST.Case]) -> Optional[Dataset]:
+        """The structure of a dataset if or case, where a Boolean Measure is a String when an
+        operand is a String, as in the semantic analysis (issue #1314)."""
+        ds = super()._resolve_conditional_structure(node)
+        if ds is None:
+            return None
+        operands = self._branch_operands(node)
+        texts = [
+            name
+            for name, comp in ds.components.items()
+            if comp.role == Role.MEASURE
+            and comp.data_type is Boolean
+            and "String" in self._dataset_value_types(operands, name)
+        ]
+        if not texts:
+            return ds
+        comps = dict(ds.components)
+        for name in texts:
+            comps[name] = Component(name, String, Role.MEASURE, ds.components[name].nullable)
+        return Dataset(name=ds.name, components=comps, data=None)
+
+    @staticmethod
+    def _as_text(values: List[str], types: List[Optional[str]]) -> List[str]:
+        """The values of the operands of an if or a case whose result is a String: the Boolean
+        ones take the text that cast to string gives, as Boolean is promoted to String. DuckDB
+        cast the strings to BOOLEAN instead (issue #1314)."""
+        return [_bool_to_str(v) if t == "Boolean" else v for v, t in zip(values, types)]
+
+    def _component_value_types(
+        self, condition: AST.AST, operands: List[AST.AST]
+    ) -> List[Optional[str]]:
+        """The types of the operands of a Component level if or case, whose result has their
+        common type. At scalar level, it has the type of the operand taken, so no type is given
+        (issue #1314)."""
+        if self._get_node_type(condition) == _SCALAR:
+            return [None] * len(operands)
+        return [self._value_type(op) for op in operands]
+
+    def _component_values(
+        self, condition: AST.AST, operands: List[AST.AST], values: List[str]
+    ) -> List[str]:
+        """The values of the operands of a Component level if or case, as text next to a String
+        operand."""
+        types = self._component_value_types(condition, operands)
+        return self._as_text(values, types) if "String" in types else values
+
     def _scalar_if_sql(self, node: AST.If) -> str:
         """Build a simple CASE WHEN for scalar IF-THEN-ELSE."""
         cond_sql = self.visit(node.condition)
-        then_sql = self.visit(node.thenOp)
-        else_sql = self.visit(node.elseOp)
+        then_sql, else_sql = self._component_values(
+            node.condition,
+            [node.thenOp, node.elseOp],
+            [self.visit(node.thenOp), self.visit(node.elseOp)],
+        )
         return f"CASE WHEN {cond_sql} THEN {then_sql} ELSE {else_sql} END"
 
     def visit_If(self, node: AST.If) -> str:
@@ -3748,6 +3868,8 @@ FROM (
         output_measures = list(ref_ds.get_measures_names())
         output_attributes = list(ref_ds.get_attributes_names())
         output_viral = list(ref_ds.get_viral_attributes_names())
+        result_ds = self._get_output_dataset() or self._get_dataset_structure(node) or ref_ds
+        texts = self._text_measures(result_ds, [node.thenOp, node.elseOp])
 
         # Build SELECT columns
         cols: List[str] = [f"{alias}.{quote_name(id_)}" for id_ in source_ids]
@@ -3763,6 +3885,8 @@ FROM (
                 if e_type == _DATASET
                 else self._scalar_operand_sql(node.elseOp, comp)
             )
+            if col_name in texts:
+                t_ref, e_ref = self._as_text([t_ref, e_ref], texts[col_name])
             cols.append(
                 f"CASE WHEN {cond_expr} THEN {t_ref} ELSE {e_ref} END AS {quote_name(col_name)}"
             )
@@ -3809,13 +3933,16 @@ FROM (
         else_op: AST.AST,
     ) -> str:
         """Build a scalar CASE WHEN SQL, keeping the order of the VTL WHEN branches."""
-        parts = ["CASE"]
+        conds: List[str] = []
+        values: List[str] = []
         for case_obj in cases:
-            cond_sql = self.visit(case_obj.condition)
-            then_sql = self.visit(case_obj.thenOp)
-            parts.append(f"WHEN {cond_sql} THEN {then_sql}")
-        parts.append(f"ELSE {self.visit(else_op)} END")
-        return " ".join(parts)
+            conds.append(self.visit(case_obj.condition))
+            values.append(self.visit(case_obj.thenOp))
+        values.append(self.visit(else_op))
+        operands = [case_obj.thenOp for case_obj in cases] + [else_op]
+        values = self._component_values(cases[0].condition, operands, values)
+        parts = ["CASE"] + [f"WHEN {c} THEN {v}" for c, v in zip(conds, values)]
+        return " ".join(parts + [f"ELSE {values[-1]} END"])
 
     def visit_Case(self, node: AST.Case) -> str:
         """Visit CASE expression.
@@ -3879,18 +4006,20 @@ FROM (
 
         # As an operand, the case has its own structure and not the result's (issue #1276)
         output_ds = self._get_output_dataset() or self._get_dataset_structure(node) or source_ds
+        texts = self._text_measures(output_ds, self._branch_operands(node))
         stages = CTEBuilder()
         source, stage = (source_sql, "src"), ""
         last = (len(node.cases) - 1) // _CASE_STAGE_BRANCHES * _CASE_STAGE_BRANCHES
         for start in range(0, last, _CASE_STAGE_BRANCHES):
             branches = range(start, start + _CASE_STAGE_BRANCHES)
-            stage_sql = self._case_stage(node, branches, source, source_ds, output_ds)
+            stage_sql = self._case_stage(node, branches, source, source_ds, output_ds, texts)
             stage = quote_name(f"__vtl_case_{start}__")
             stages.cte(stage, stage_sql, materialized=True)
             source = (stage, "r")
         if stage:
             source = (f"({stages.select(f'SELECT * FROM {stage}')})", "r")
-        return self._case_stage(node, range(last, len(node.cases)), source, source_ds, output_ds)
+        branches = range(last, len(node.cases))
+        return self._case_stage(node, branches, source, source_ds, output_ds, texts)
 
     @staticmethod
     def _case_stage_sql(
@@ -3913,9 +4042,11 @@ FROM (
         source: Tuple[str, str],
         source_ds: Dataset,
         output_ds: Dataset,
+        texts: Dict[str, List[Optional[str]]],
     ) -> str:
         """Join the ``branches`` of a dataset case to ``source``: the first condition (``src``)
-        or the previous stage (``r``). The last stage adds the else operand."""
+        or the previous stage (``r``). The last stage adds the else operand. The String Measures
+        in ``texts`` render their Boolean operands as text."""
         source_sql, alias_src = source
         source_ids = list(source_ds.get_identifiers_names())
         staged = alias_src == "r"
@@ -3954,15 +4085,17 @@ FROM (
             if comp.role == Role.IDENTIFIER or comp.name in combined:
                 continue
             m = quote_name(comp.name)
-            values = [
-                (cond, f"{t}.{m}" if t else self._scalar_operand_sql(node.cases[i].thenOp, comp))
-                for i, cond, t in whens
+            refs = [
+                f"{t}.{m}" if t else self._scalar_operand_sql(node.cases[i].thenOp, comp)
+                for i, _, t in whens
             ]
-            else_ref = (
-                (f"e.{m}" if e_alias else self._scalar_operand_sql(node.elseOp, comp))
-                if final
-                else None
-            )
+            if final:
+                refs.append(f"e.{m}" if e_alias else self._scalar_operand_sql(node.elseOp, comp))
+            if comp.name in texts:
+                types = texts[comp.name]
+                refs = self._as_text(refs, [types[i] for i in branches] + types[-1:] * final)
+            values = [(cond, ref) for (_, cond, _), ref in zip(whens, refs)]
+            else_ref = refs[-1] if final else None
             column = self._case_stage_sql(f"r.{m}" if staged else None, values, else_ref)
             cols.append(f"{column} AS {m}")
 

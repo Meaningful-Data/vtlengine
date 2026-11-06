@@ -3990,6 +3990,27 @@ class ConditionalBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
 
+    def test_GH_1314_12(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_2 := if Me_1 then "yes" else Me_1];
+                    DS_r2 <- if DS_2 then DS_1 else "yes";
+                    DS_r3 <- case when DS_2 then DS_1 else "yes";
+                    DS_r4 <- (if DS_2 then DS_1 else "yes") || "!";
+                    DS_r5 <- inner_join(DS_1 as a, DS_2 as b calc Me_3 := case when b#Me_1
+                        then a#Me_1 else "yes" keep Me_3);
+        Description: A Boolean operand of an if or a case with a String operand is promoted to
+            String, as cast to string renders it ('True', 'False'). The DuckDB engine cast the
+            String operand to Boolean instead, so "yes" came back as 'true' and the Booleans as
+            'true' and 'false'.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_12"
+        number_inputs = 2
+        references_names = ["1", "2", "3", "4", "5"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """
