@@ -212,7 +212,8 @@ class If(Operator):
             name="result",
             value=_selected_value(selected, data_type),
             data_type=data_type,
-            nullable=selected.nullable,
+            # Null when either operand can be, as a case, whatever the operand selected
+            nullable=any(op.nullable or op.data_type == Null for op in (true_branch, false_branch)),
             literal=selected.literal,
         )
 

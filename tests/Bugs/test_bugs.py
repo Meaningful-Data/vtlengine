@@ -3800,6 +3800,23 @@ class ConditionalBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
 
+    def test_GH_1314_S2(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_2 := if 1 < 3 then 1.5 else null];
+                    DS_r2 <- DS_1[calc Me_2 := if 1 > 3 then null else 2];
+        Description: A scalar if can be null when either operand can be, as a scalar case.
+            It took the nullability of the operand selected: on the pandas engine Me_2 was not
+            nullable in both, and on the DuckDB engine, whose semantic analysis takes the else
+            operand when the value of the condition is unknown, in DS_r2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_S2"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """
