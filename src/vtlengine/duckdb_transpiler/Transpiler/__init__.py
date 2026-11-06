@@ -1765,6 +1765,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return isinstance(node.value, bool)
         if isinstance(node, (AST.VarID, AST.ParamOp)):
             return self._is_operand_type(node, Boolean)
+        if isinstance(node, AST.BinOp) and node.op == tokens.MEMBERSHIP:
+            return self._get_source_vtl_type(node) == "Boolean"
         if isinstance(node, AST.BinOp):
             return node.op in _BOOLEAN_RESULT_BINOPS
         if isinstance(node, AST.UnaryOp):
@@ -2463,6 +2465,19 @@ FROM (
                 return f"vtl_tp_dateadd(vtl_period_parse({operand_sql}), {shift_sql}, {period_sql})"
             return f"vtl_dateadd({operand_sql}, {shift_sql}, {period_sql})"
 
+    def _clause_component(self, node: AST.AST) -> Optional[Component]:
+        """The Component of the clause Data Set that a name refers to; a Component of a join
+        by its qualified name when the joined Data Sets share it (issue #1314)."""
+        if self._current_dataset is None:
+            return None
+        comps = self._current_dataset.components
+        if isinstance(node, AST.VarID):
+            return comps.get(node.value)
+        if isinstance(node, AST.BinOp) and node.op == tokens.MEMBERSHIP:
+            name = self._resolve_udo_name(self._get_node_value(node.right))
+            return comps.get(f"{self._get_node_value(node.left)}#{name}") or comps.get(name)
+        return None
+
     def _get_source_vtl_type(self, node: "AST.AST") -> Any:
         """Return the VTL type name produced by an AST node when known."""
         if isinstance(node, AST.Constant):
@@ -2492,11 +2507,9 @@ FROM (
                     return self._get_source_vtl_type(argument)
             if node.value in self.scalars:
                 return self.scalars[node.value].data_type.__name__
-        if isinstance(node, AST.VarID) and self._current_dataset:
-            comp = self._current_dataset.components.get(node.value)
-            if comp and comp.data_type:
-                type_name = getattr(comp.data_type, "__name__", str(comp.data_type))
-                return type_name
+        comp = self._clause_component(node)
+        if comp is not None and comp.data_type:
+            return getattr(comp.data_type, "__name__", str(comp.data_type))
         if isinstance(node, AST.UnaryOp) and node.op in (tokens.PLUS, tokens.MINUS, tokens.ABS):
             # Type-preserving numeric unary operators: Integer stays Integer.
             return self._get_source_vtl_type(node.operand)
@@ -3714,12 +3727,6 @@ FROM (
             return value_type
         if isinstance(node, AST.Constant) and node.value is None:
             return "Null"
-        if isinstance(node, AST.BinOp) and node.op == tokens.MEMBERSHIP and self._current_dataset:
-            # A Component of a join, by its qualified name when the joined Data Sets share it
-            comps = self._current_dataset.components
-            name = self._resolve_udo_name(self._get_node_value(node.right))
-            comp = comps.get(f"{self._get_node_value(node.left)}#{name}") or comps.get(name)
-            return comp.data_type.__name__ if comp is not None else None
         if self._is_boolean_expr(node):
             return "Boolean"
         if getattr(node, "op", None) in _STRING_RESULT_OPS:

@@ -4063,6 +4063,22 @@ class ConditionalBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1314_16(self):
+        """
+        Expression: DS_r <- inner_join(DS_1 as a, DS_2 as b calc Me_3 := a#Me_1 || "x",
+                        Me_4 := cast(b#Me_1, string) keep Me_3, Me_4);
+        Description: A Boolean Component of a join, referred to by its alias, is rendered as
+            text as any other Boolean ('True', 'False'). The DuckDB engine did not know its type,
+            so it rendered 'true' and 'false'.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_16"
+        number_inputs = 2
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """
