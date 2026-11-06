@@ -1,0 +1,3 @@
+:Tests: ``sum`` grouped by two identifiers, ``Id_1`` and ``Id_3``.
+:Manual: `Aggregate invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Aggregate%20invocation/index.html>`__, Example 2, with the manual's data points: "the Data Points are grouped by the values of the specified Identifiers. The Identifiers not specified are dropped in the result."
+:Expected: one data point per pair, without ``Id_2``: 2010, ``XX`` gives 20 + 1 + 1 = 22. ``Me_1`` may be Integer, as the manual prints it, or Number: the Sum page says "implementations may preserve the integer type for the resulting measure or component when all operand values are integer and the sum is computed in integer arithmetic".

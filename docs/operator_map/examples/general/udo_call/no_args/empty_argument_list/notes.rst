@@ -1,0 +1,3 @@
+:Tests: A call with no arguments, ``answer()``, of an operator defined with no parameters.
+:Manual: `User-defined operator call <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/User-defined%20operator%20call/index.html>`__: the syntax ``operatorName ( { argument { , argument }* } )`` makes the whole list of arguments optional, and the `define operator <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html>`__ syntax does the same for the parameters, ``( { parameter { , parameter }* } )``.
+:Expected: ``SC_r = 42``, the body of the operator, an Integer.

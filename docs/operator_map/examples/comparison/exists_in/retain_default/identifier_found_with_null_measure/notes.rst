@@ -1,0 +1,3 @@
+:Tests: ``exists_in(DS_1, DS_2)`` with ``retain`` omitted: id 1 is in ``DS_2`` with a null measure, id 2 is not in it.
+:Manual: `Exists in <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Comparison%20operators/Exists%20in/index.html>`__: "If the *retain* parameter is omitted, the default is **all**." The operator "checks if the combinations of values of these Identifiers which are in *op1* also exist in *op2*".
+:Expected: ``bool_var`` is true, false and true for ids 1 to 3, all of them returned: id 1 is found although its measure in ``DS_2`` is null, because only the identifiers are looked at.

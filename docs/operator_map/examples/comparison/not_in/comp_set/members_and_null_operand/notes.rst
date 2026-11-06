@@ -1,0 +1,3 @@
+:Tests: ``Me_1 not_in { 0, 3, 6, 12 }`` inside ``calc``: two elements of the set, a non-element and a null.
+:Manual: `Element of <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Comparison%20operators/Element%20of/index.html>`__: "The **not_in** operator returns **false** if *op* belongs to the collection, **true** otherwise." A null operand gives a null result: "Whenever a **null** value is involved in a comparison (>, <, >=, <=, in, not in, between) the result of the comparison is **null**" (`User Manual <https://sdmx-twg.github.io/vtl/v2.2/user_manual/operators.html>`__).
+:Expected: ``Me_2`` is a new boolean measure: false for 0, true for 4, false for 6 and null for the null; ``Me_1`` is kept.

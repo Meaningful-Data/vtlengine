@@ -1,0 +1,4 @@
+:Tests: ``cast(Me_1, date, "YYYY-MM-DD")`` on a String measure: the mask of the page's Example 2, ``cast(m1, date, "YYYY-MM-DD")``.
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "The number of letters matches the number of digits, for example YYYY means that the year is represented with four digits and MM that the month is of 2 digits", and "Any other character can be used in the mask, meaning simply that it appears in the same position".
+:Expected: The dates ``2020-01-15`` and ``2021-12-31``.
+:Finding: Both engines raise SemanticError ``1-3-13``: "Unsupported VTL construct: cast with the mask ``"YYYY-MM-DD"``".

@@ -1,0 +1,3 @@
+:Tests: ``calc Me_2 := Me_1 * 2`` with no role: ``Me_2`` is not in ``DS_1``.
+:Manual: `Calculation of a Component <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Calculation%20of%20a%20Component/index.html>`__: "When the role is omitted, the following rule is applied: ... if the component does not exist in the operand Data Set then its role is Measure", and "If the calculated Component is a new Component, it is added to the output Data Set".
+:Expected: ``Id_1`` and ``Me_1``, plus the Measure ``Me_2`` = 20, 40 and 60, an Integer as ``Me_1 * 2`` is in Manual example 1. Manual example 1 covers the other half of the rule, an existing measure, and *Existing attribute keeps role* an existing attribute.

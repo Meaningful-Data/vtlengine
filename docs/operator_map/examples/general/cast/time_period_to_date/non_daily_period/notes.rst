@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, date)`` on a Time_Period measure whose period, ``2020Q1``, is not a single day: the first error that the page states for a conversion between basic scalar types.
+:Manual: `Type conversion <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html>`__: "From **time_period** to **date**: A ``date`` value is returned if the input ``time_period`` has a duration of a single day, representing that day; otherwise an error is raised."
+:Expected: The error ``2-1-5-1``, "Impossible to cast ``{value}`` from type {type_1} to {type_2}.", as ``2020Q1`` lasts a quarter, not a single day: "otherwise an error is raised".

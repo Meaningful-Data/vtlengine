@@ -1,0 +1,3 @@
+:Tests: ``aggr`` with the deprecated ``group all time_agg("A")``, which groups the quarters of a time_period identifier by year.
+:Manual: `Left Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Left%20Join/index.html>`__, and Aggregate invocation: group all "converts the values of an Identifier Component using conversionExpr and keeps all the resulting Identifiers" ("This option is deprecated"). Time aggregation maps a time_period "into the comprising larger time period", as its Example 1 turns ``2010Q1`` into ``2010``.
+:Expected: the left join keeps the four quarters of ``DS_1``: ``Me_3`` is 10 + 20 = 30 for 2010 and 30 + 40 = 70 for 2011.

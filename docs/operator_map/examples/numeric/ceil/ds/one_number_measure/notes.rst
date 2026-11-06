@@ -1,0 +1,3 @@
+:Tests: ``ceil`` on a dataset with one Number measure, which becomes an Integer measure.
+:Manual: `Ceiling <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Ceiling/index.html>`__ gives an Integer, and in the `Typical behaviours <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html>`__, "Operators changing the data type", the measure whose type changes is replaced: "A default generic Measure is assigned by default to the result Data Set, depending on the data type of the result", ``int_var`` for an Integer.
+:Expected: ``int_var``, an Integer: 7.2, -3.7 and 5.0 give 8, -3 and 5. The page's Example 1, on two Number measures, keeps their names.

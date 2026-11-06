@@ -1,0 +1,3 @@
+:Tests: ``length(DS_1)`` on a dataset with one String measure, which becomes the Integer measure ``int_var``; one value is null.
+:Manual: `String length <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/String%20length/index.html>`__, Example 1, output verbatim: "Returns the length of a string." For a data set, "``length`` returns a dataset with a single measure int_var of type ``integer``."
+:Expected: ``int_var`` is 5 for ``hello`` and null for the null value. A null operand gives a null result: "most of the scalar operations (arithmetic, logical, and others) return null when any of their arguments is null" (User Manual).

@@ -1,0 +1,4 @@
+:Tests: ``monthtoday(Me_1)`` inside ``calc``, on durations written as the manual writes them, ``P2M5D``, ``P12M0D`` and ``P0M15D``, in a String ``Me_1``.
+:Manual: `Duration to number days <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Duration%20to%20number%20days/index.html>`__: ``monthDuration`` is "a duration having the following mask", ``\PM\MDD\D``, and the days are counted "according to ISO 8601 M = 30D", as in Example 3, where ``monthtoday (P3M10D);`` "returns 100".
+:Expected: ``Me_2`` is 65 (2 × 30 + 5), 360 (12 × 30) and 15, Integers.
+:Team decision: `#394 <https://github.com/Meaningful-Data/vtlengine/issues/394>`__: a Duration holds only a period indicator (``A``, ``S``, ``Q``, ``M``, ``W``, ``D``), so the ISO 8601 durations that ``daytoyear`` and ``daytomonth`` return and ``yeartoday`` and ``monthtoday`` take are Strings.

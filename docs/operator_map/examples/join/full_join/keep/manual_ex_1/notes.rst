@@ -1,0 +1,3 @@
+:Tests: ``keep Me_1, d2#Me_2, Me_1A`` on two operands that both have ``Me_2``: the aliases let ``d2#Me_2`` name one of them.
+:Manual: `Full Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Full%20Join/index.html>`__, Example 1, output verbatim: "an additional data point is added to this set for each data point in the current join operand that wasn't matched before", with null measures.
+:Expected: ``(1,A)`` and ``(1,B)``, in both; ``(2,A)``, in ``DS_1`` only, with ``Me_2`` and ``Me_1A`` null; ``(3,A)``, in ``DS_2`` only, with ``Me_1`` null. ``d1#Me_2`` goes and ``d2#Me_2`` becomes ``Me_2``.

@@ -1,0 +1,10 @@
+define datapoint ruleset DPR_1 (valuedomain VD_AMOUNT) is
+    VD_AMOUNT >= 0
+end datapoint ruleset;
+
+define operator check_positive (ds dataset, dpr datapoint_on_valuedomains)
+    returns dataset is
+        check_datapoint(ds, dpr components Me_1 all)
+end operator;
+
+DS_r := check_positive(DS_1, DPR_1);

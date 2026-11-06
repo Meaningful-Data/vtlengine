@@ -1,0 +1,5 @@
+define hierarchical ruleset HR_3 ( valuedomain condition VD_C rule VD_1 ) is
+    R1 : when VD_C = 2 then A = B
+end hierarchical ruleset;
+
+DS_r := check_hierarchy ( DS_1, HR_3 condition Id_1 rule Id_2 );

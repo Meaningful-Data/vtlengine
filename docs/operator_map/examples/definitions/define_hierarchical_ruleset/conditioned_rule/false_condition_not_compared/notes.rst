@@ -1,0 +1,3 @@
+:Tests: ``when Id_1 = "X" then A = B``, where both groups break ``A = B`` but only ``X`` meets the condition.
+:Manual: `define hierarchical ruleset <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/hierarchical_rulesets.html>`__: "The Antecedent Condition is evaluated and, if true, the operations specified in the right member of the Relation are performed and the result is compared to the first member".
+:Expected: one data point, for ``X``: 5 = 4 fails, with ``imbalance`` 1. ``Y`` is not compared, so the output ``all``, "all the Data Points produced by the comparison", has no data point for it: the reading of the closed issue #1141.

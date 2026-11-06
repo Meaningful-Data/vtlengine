@@ -1,0 +1,3 @@
+:Tests: ``aggr viral attribute At_1 := max ( Me_1 ) group by Id_1``: the aggregation of *Attribute without measure*, with the role ``viral attribute``.
+:Manual: `Aggregation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Aggregation/index.html>`__: "The aggr computed Measures and Attributes are the only Measures and Attributes returned in the output Data Set (plus the possible viral Attributes)"; the `User Manual <https://sdmx-twg.github.io/vtl/v2.2/user_manual/model.html>`__: "A Data Set without Measures is allowed".
+:Expected: ``Id_1`` and the Viral Attribute ``At_1`` = 5 and 4, the maxima, with no Measure. ``DS_1`` has no attribute of its own, so no propagation rule is involved.

@@ -1,0 +1,6 @@
+define operator add_one (c component<integer>)
+    returns component<integer> is
+        c + 1
+end operator;
+
+DS_r := DS_1[calc Me_2 := add_one(Me_1)];

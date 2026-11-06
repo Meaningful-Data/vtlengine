@@ -3,12 +3,15 @@ VTL Engine Documentation
 
 The VTL Engine is a Python library that allows you to validate, format and run VTL scripts.
 
-It is a Python-based library around the `VTL Language 2.1 <https://sdmx-twg.github.io/vtl/2.1/html/index.html>`_
+It is a Python-based library around the `VTL Language 2.1 <https://sdmx-twg.github.io/vtl/v2.1/index.html>`_.
+The :doc:`VTL standard compliance <operator_map/index>` section shows which operators of the
+`VTL 2.2 Reference Manual <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/index.html>`_
+it implements, on both of its engines, pandas and DuckDB.
 
 .. note::
 
     The data types and type casting is based on the
-    `VTL 2.2 specification <https://sdmx-twg.github.io/vtl/2.2/>`_
+    `VTL 2.2 specification <https://sdmx-twg.github.io/vtl/v2.2/index.html>`_
     (preview).
 
 The vtlengine library provides full SDMX compatibility:
@@ -85,5 +88,10 @@ S3 URI support is provided by the DuckDB execution engine; see :doc:`duckdb_engi
     :caption: Error Messages
 
     error_messages
+
+.. toctree::
+    :caption: VTL standard compliance
+
+    operator_map/index
 
 

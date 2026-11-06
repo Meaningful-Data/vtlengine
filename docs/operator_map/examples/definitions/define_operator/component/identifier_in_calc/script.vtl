@@ -1,0 +1,6 @@
+define operator times_ten (c identifier<integer>)
+    returns component<integer> is
+        c * 10
+end operator;
+
+DS_r := DS_1[calc Me_2 := times_ten(Id_1)];

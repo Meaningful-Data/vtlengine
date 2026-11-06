@@ -1,0 +1,3 @@
+:Tests: the variables with the aliases ``F`` and ``A``, which the rule uses; ``check_datapoint`` needs no ``components``.
+:Manual: `define datapoint ruleset <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/datapoint_rulesets.html>`__: the alias is "an (optional) alias assigned to a Variable and valid only within the Ruleset".
+:Expected: ``ruleid`` 1, the unnamed rule's order number, and ``bool_var`` true for (CREDIT, 10), false for (CREDIT, -5) and true for (DEBIT, -2), whose antecedent is false. ``errorcode`` and ``errorlevel`` are null, ``ruleid`` and ``errorcode`` Strings as in the manual's examples, and ``errorlevel`` Integer or Number, as the manual does not fix its type.

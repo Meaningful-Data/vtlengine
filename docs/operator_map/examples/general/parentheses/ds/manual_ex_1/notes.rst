@@ -1,0 +1,3 @@
+:Tests: ``(DS_1 + DS_2) * DS_2``: the sum in the parentheses comes first, then the product with ``DS_2``, on the data points that the operands share.
+:Manual: `Parentheses <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Parentheses/index.html>`__, Example 1, output verbatim: "The part of the expression inside the parentheses is evaluated before the part outside of the parentheses."
+:Expected: Only (10, A) and (11, B) are in both datasets: ``Me_1`` is ``(5 + 10) * 10 = 150`` and ``(4 + 6) * 6 = 60``, an Integer, and ``Me_2`` is ``(5.0 + 3.0) * 3.0 = 24.0`` and ``(20.3 + 7.0) * 7.0 = 191.1``, a Number. Without the parentheses, (10, A) would give 105 and 14.0.

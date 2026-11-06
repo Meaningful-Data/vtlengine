@@ -1,0 +1,3 @@
+:Tests: ``dayofyear(SC_1)`` on a scalar date, ``SC_1`` = 2020-04-07, from the example that the manual misplaced on the `Days between two dates <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Days%20between%20two%20dates/index.html>`__ page, its Example 2.
+:Manual: `Extract time period <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Extract%20time%20period/index.html>`__: "The operator **dayofyear** returns the ordinal day within the year (between 1 and 366)"; and ``dayofyear (2020-04-07);`` "returns 98".
+:Expected: ``DS_r = 98``, an Integer: 31 + 29 (2020 is a leap year) + 31 + 7.

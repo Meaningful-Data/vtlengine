@@ -1,0 +1,3 @@
+:Tests: ``nvl ( 5, Me_1 )`` inside ``calc``: a scalar as op1 and a component as op2.
+:Manual: `Nvl <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Nvl/index.html>`__: "The operator **nvl** returns the value from *op2* when the value from *op1* is null, otherwise it returns the value from *op1*." Its operands are typed ``op1 :: dataset | component | scalar``, and the Typical behaviours apply an operator "on a Component and a Scalar value".
+:Expected: the error ``1-1-9-2``, "At op {op}: The applicable operand cannot be a {right_type} when the operand is a {left_type}": by a team decision, a Scalar first operand of ``nvl`` takes only a Scalar second one.

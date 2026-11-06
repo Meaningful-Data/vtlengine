@@ -1,0 +1,3 @@
+:Tests: ``calc Me_1 := Me_1 + 1, Me_2 := Me_1 * 10``: the second item reads ``Me_1``, which the first one recalculates.
+:Manual: `Calculation of a Component <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Calculation%20of%20a%20Component/index.html>`__: "The calcExpr sub-expressions are independent one another, they can only reference Components of the input Data Set and cannot use Components generated, for example, by other calcExpr."
+:Expected: ``Me_1`` = 11 and 21, and ``Me_2`` = 100 and 200, from the ``Me_1`` of the input (10 and 20), not from the first item; a sequential evaluation would give 110 and 210.

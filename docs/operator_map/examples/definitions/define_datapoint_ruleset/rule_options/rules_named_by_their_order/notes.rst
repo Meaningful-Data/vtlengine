@@ -1,0 +1,3 @@
+:Tests: two unnamed rules on two data points.
+:Manual: `define datapoint ruleset <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/datapoint_rulesets.html>`__: "The ruleName is optional and, if not specified, is assumed to be the progressive order number of the Rule in the Ruleset".
+:Expected: ``ruleid`` 1 and 2: rule 1 is true for both data points, and rule 2 true for (CREDIT, 10), whose antecedent is false, and false for (DEBIT, 5). ``errorcode`` and ``errorlevel`` are null, ``ruleid`` and ``errorcode`` Strings as in the manual's examples, and ``errorlevel`` Integer or Number, as the manual does not fix its type.

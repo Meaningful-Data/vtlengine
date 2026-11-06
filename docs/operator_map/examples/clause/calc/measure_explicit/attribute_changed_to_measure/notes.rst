@@ -1,0 +1,3 @@
+:Tests: ``calc measure At_1 := At_1``: the Attribute ``At_1`` recalculated with its own values and the role ``measure``.
+:Manual: `Calculation of a Component <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Calculation%20of%20a%20Component/index.html>`__: "It is possible to specify the role of the calculated Component among measure, identifier, attribute, or viral attribute, therefore the calc clause can be used also to change the role of a Component when possible."
+:Expected: ``At_1`` keeps its name and its values, 5 and 6, as a Measure: the result has two Measures, ``Me_1`` and ``At_1``.

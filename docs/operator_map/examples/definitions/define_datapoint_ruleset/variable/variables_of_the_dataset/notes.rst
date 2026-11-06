@@ -1,0 +1,3 @@
+:Tests: a datapoint ruleset on the variables ``Id_2`` and ``Me_1``, components of ``DS_1``, so ``check_datapoint`` needs no ``components``.
+:Manual: `define datapoint ruleset <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/datapoint_rulesets.html>`__: "If variable is specified then the Ruleset is applicable to Data Sets having the specified Variables as Components".
+:Expected: ``ruleid`` 1, the unnamed rule's order number, and ``bool_var`` true for (CREDIT, 10), false for (CREDIT, -5) and true for (DEBIT, -2), whose antecedent is false. ``errorcode`` and ``errorlevel`` are null, ``ruleid`` and ``errorcode`` Strings as in the manual's examples, and ``errorlevel`` Integer or Number, as the manual does not fix its type.

@@ -1,0 +1,3 @@
+:Tests: ``max`` over a String measure, grouped by ``Id_1``.
+:Manual: `Maximum value <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Maximum%20value/index.html>`__: "For other comparable scalar types (for example time, string, boolean), the result has the same type as the operand".
+:Expected: the greatest Strings, ``pear`` for ``A`` and ``plum`` for ``B``; in ``A`` it is neither the first nor the last value in the order of ``Id_2``. Strings compare character by character (the Greater than page gives false for ``"hello" > "hi"``), and these words start with different letters: apple < fig < kiwi < pear and date < plum.

@@ -1,0 +1,6 @@
+define datapoint ruleset DPR_2 ( valuedomain VD_2, VD_M ) is
+    R1 : when VD_2 = "A" then VD_M > 0
+    ; R2 : VD_M < 100
+end datapoint ruleset;
+
+DS_r := check_datapoint ( DS_1, DPR_2 components Id_2, Me_1 );

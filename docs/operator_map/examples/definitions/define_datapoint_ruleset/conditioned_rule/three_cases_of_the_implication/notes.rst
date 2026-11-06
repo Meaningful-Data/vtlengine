@@ -1,0 +1,3 @@
+:Tests: ``when Id_2 = "CREDIT" then Me_1 >= 0`` on three data points, one for each case of the implication.
+:Manual: `define datapoint ruleset <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/datapoint_rulesets.html>`__: "if the antecedentCondition evaluates to false, the consequentCondition does not applies and is not evaluated at all, and the result is considered as valid (true)".
+:Expected: ``ruleid`` 1, the unnamed rule's order number, and ``bool_var`` true for (CREDIT, 10), false for (CREDIT, -5) and true for (DEBIT, -2), whose antecedent is false. ``errorcode`` and ``errorlevel`` are null, ``ruleid`` and ``errorcode`` Strings as in the manual's examples, and ``errorlevel`` Integer or Number, as the manual does not fix its type.
