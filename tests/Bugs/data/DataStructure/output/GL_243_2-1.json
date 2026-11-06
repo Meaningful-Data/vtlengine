@@ -43,7 +43,7 @@
           "name": "NMBR_DBTR",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         }
       ]
     }

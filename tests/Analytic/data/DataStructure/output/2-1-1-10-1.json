@@ -25,7 +25,7 @@
           "name": "Me_1",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         }
       ]
     }

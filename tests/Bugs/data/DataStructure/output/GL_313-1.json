@@ -31,7 +31,7 @@
           "name": "NMBR_DBTRS",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "SUM_JNT_LBLTY_AMNT",

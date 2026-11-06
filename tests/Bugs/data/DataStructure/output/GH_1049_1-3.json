@@ -13,13 +13,13 @@
           "name": "A",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "B",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         }
       ]
     }
