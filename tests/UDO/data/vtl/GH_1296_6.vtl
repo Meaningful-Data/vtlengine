@@ -1,0 +1,11 @@
+define operator idf (x dataset)
+    returns dataset is
+        x
+end operator;
+
+define operator out (y dataset {measure<number [value > 0]> Me_1})
+    returns dataset is
+        idf(y)
+end operator;
+
+DS_r <- out(DS_1);

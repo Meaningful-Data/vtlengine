@@ -1143,3 +1143,276 @@ class UdoTest(UDOHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1296_1(self):
+        """
+        Status: OK
+        Description: An argument that uses a parameter of the caller is read in the caller, not
+            in an operator called with a parameter of the same name: one level (h), a parameter
+            passed on as it is (j -> k -> m), four levels that all name it a (i4), and an
+            argument read in the caller while the called operator has a parameter x (jx)
+        Goal: Check Result.
+        """
+        code = "GH_1296_1"
+        number_inputs = 2
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1296_2(self):
+        """
+        Status: OK
+        Description: A Component (c2 -> c1) and a Scalar (s2 -> s1) argument that uses a
+            parameter of the caller with the same name as the parameter of the called operator
+        Goal: Check Result.
+        """
+        code = "GH_1296_2"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1296_3(self):
+        """
+        Status: OK
+        Description: The value constraint of a parameter checks its argument -c as the caller
+            reads it: the values 1, 2 and 3, that the constraint allows
+        Goal: Check Result.
+        """
+        code = "GH_1296_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1296_4(self):
+        """
+        Status: OK
+        Description: An operator called inside the argument of a call to itself, f(f(x)), and
+            the same operator called twice along one chain of calls are not recursive
+        Goal: Check Result.
+        """
+        code = "GH_1296_4"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1296_5(self):
+        """
+        Status: OK
+        Description: Operators that call each other through arguments that use parameters with
+            the same name (f -> g -> h -> f) are recursive
+        Goal: Check Exception.
+        """
+        code = "GH_1296_5"
+        number_inputs = 1
+        message = "1-3-2-7"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            exception_message="At op f: recursive user defined operators are not supported, "
+            "found the calls f -> g -> h -> f.",
+        )
+
+    def test_GH_1296_6(self):
+        """
+        Status: OK
+        Description: The constraint of a Data Set parameter is checked when the body only
+            passes the parameter on to another operator (out -> idf)
+        Goal: Check Exception.
+        """
+        code = "GH_1296_6"
+        number_inputs = 1
+        message = "2-3-9"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            exception_message="At op out: component Me_1 of parameter y has the value -1.0, "
+            "which its type constraint [value > 0] does not allow.",
+        )
+
+    def test_GH_1296_7(self):
+        """
+        Status: OK
+        Description: The constraint of a Data Set parameter is checked when the body gives the
+            parameter to an operator (abs)
+        Goal: Check Exception.
+        """
+        code = "GH_1296_7"
+        number_inputs = 1
+        message = "2-3-9"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            exception_message="At op out: component Me_1 of parameter y has the value -1.0, "
+            "which its type constraint [value > 0] does not allow.",
+        )
+
+    def test_GH_1296_8(self):
+        """
+        Status: OK
+        Description: The constraint of a Component parameter is checked when the body only
+            passes the parameter on to another operator (f -> g), inside a clause
+        Goal: Check Exception.
+        """
+        code = "GH_1296_8"
+        number_inputs = 1
+        message = "2-3-9"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            exception_message="At op f: parameter y has the value -1.0, which its type "
+            "constraint [value > 0] does not allow.",
+        )
+
+    def test_GH_1296_9(self):
+        """
+        Status: OK
+        Description: The constraint of a Component parameter given outside a clause is checked
+            when the body only passes the parameter on to another operator (q -> q2), which
+            reads it in a clause
+        Goal: Check Exception.
+        """
+        code = "GH_1296_9"
+        number_inputs = 1
+        message = "2-3-9"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            exception_message="At op q: parameter m has the value -1.0, which its type "
+            "constraint [value > 0] does not allow.",
+        )
+
+    def test_GH_1296_10(self):
+        """
+        Status: OK
+        Description: When a Data Set passed on breaks the constraints of both operators, the
+            error is the one of the outer operator, called first (out -> inn)
+        Goal: Check Exception.
+        """
+        code = "GH_1296_10"
+        number_inputs = 1
+        message = "2-3-9"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            exception_message="At op out: component Me_1 of parameter y has the value -1.0, "
+            "which its type constraint [value > 0] does not allow.",
+        )
+
+    def test_GH_1296_11(self):
+        """
+        Status: OK
+        Description: Values that meet the constraint of a parameter passed on through three
+            operators run, for a Data Set (a -> b -> c) and a Component (f -> g2 -> g3)
+        Goal: Check Result.
+        """
+        code = "GH_1296_11"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1296_12(self):
+        """
+        Status: OK
+        Description: Two chains of four operators, one of Data Sets (d_top -> d_shift -> d_mid
+            -> d_inner) and one of Components (c_top -> c_shift -> c_mid -> c_inner), where
+            three of the four are constrained ([> 0], [< 100], [<= 60]) and the unconstrained
+            one adds 10 before passing the value on, plus a constrained Data Set operator (mix)
+            that calls both chains. Values that meet every constraint run.
+        Goal: Check Result.
+        """
+        code = "GH_1296_12"
+        number_inputs = 4
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1296_12_errors(self):
+        """
+        Status: OK
+        Description: The operators of GH_1296_12 on Data Sets that break one constraint of the
+            chain (DS_2: -1 breaks [> 0]; DS_3: 60, 70 after the shift, breaks [<= 60]) or two
+            (DS_4: 95, 105 after the shift, breaks [< 100] and [<= 60]). Each constraint is
+            checked on the value its operator receives, and when two are broken the error is
+            the one of the outer operator.
+        Goal: Check Exception.
+        """
+        code = "GH_1296_12"
+        number_inputs = 4
+        operators = self.LoadVTL(code).split("DS_r1 <-")[0]
+        not_allowed = "which its type constraint [{}] does not allow."
+        cases = [
+            (
+                "d_top(DS_2)",
+                "At op d_top: component Me_1 of parameter x has the value -1.0",
+                "value > 0",
+            ),
+            (
+                "d_top(DS_3)",
+                "At op d_inner: component Me_1 of parameter x has the value 70.0",
+                "value <= 60",
+            ),
+            (
+                "d_top(DS_4)",
+                "At op d_mid: component Me_1 of parameter x has the value 105.0",
+                "value < 100",
+            ),
+            (
+                "DS_2[calc Me_2 := c_top(Me_1)]",
+                "At op c_top: parameter c has the value -1.0",
+                "value > 0",
+            ),
+            (
+                "DS_3[calc Me_2 := c_top(Me_1)]",
+                "At op c_inner: parameter c has the value 70.0",
+                "value <= 60",
+            ),
+            (
+                "DS_4[calc Me_2 := c_top(Me_1)]",
+                "At op c_mid: parameter c has the value 105.0",
+                "value < 100",
+            ),
+            (
+                "mix(DS_2)",
+                "At op mix: component Me_1 of parameter x has the value -1.0",
+                "value > 0",
+            ),
+        ]
+        for expression, error, constraint in cases:
+            with self.subTest(expression=expression):
+                self.NewSemanticExceptionTest(
+                    code=code,
+                    number_inputs=number_inputs,
+                    exception_code="2-3-9",
+                    text=f"{operators}DS_r <- {expression};",
+                    exception_message=f"{error}, {not_allowed.format(constraint)}",
+                )
+
+    def test_GH_1296_13(self):
+        """
+        Status: OK
+        Description: Ten constrained operators, of Components (c10 -> ... -> c1) and of Data
+            Sets (d10 -> ... -> d1), where each one passes its parameter plus 1 on to the one
+            below, so the argument of each check reads the parameter checked above it.
+        Goal: Check Result.
+        """
+        code = "GH_1296_13"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
