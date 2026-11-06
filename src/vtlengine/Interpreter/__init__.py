@@ -745,9 +745,12 @@ class InterpreterAnalyzer(ASTTemplate):
         return Dataset(name=operand.name, components=components, data=data)
 
     @staticmethod
-    def _component_aggregation_operand(operand: Dataset, op_comp: DataComponent) -> Dataset:
+    def _component_aggregation_operand(op: str, operand: Dataset, op_comp: Any) -> Dataset:
         """Builds the Data Set an aggregation of one Component reads: the Identifiers and
         viral Attributes of the operand, with that Component as its only Measure."""
+        if not isinstance(op_comp, DataComponent):
+            # The aggregate operators cannot be applied to scalar values (issue #1314)
+            raise SemanticError("1-2-17", op=op, comp="component")
         comps_to_keep = {
             comp_name: copy(comp)
             for comp_name, comp in operand.components.items()
@@ -775,14 +778,18 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.is_from_having:
             operand = self.aggregation_dataset
             if node.operand is not None and operand is not None:
-                return self._component_aggregation_operand(operand, self.visit(node.operand))
+                return self._component_aggregation_operand(
+                    node.op, operand, self.visit(node.operand)
+                )
             return self._data_point_count_operand(node, operand)
         if self.is_from_regular_aggregation and self.regular_aggregation_dataset is not None:
             if self.regular_aggregation_op in (CALC, FILTER):
                 raise SemanticError("1-2-14", op=self.regular_aggregation_op)
             operand = self.regular_aggregation_dataset
             if node.operand is not None and operand is not None:
-                return self._component_aggregation_operand(operand, self.visit(node.operand))
+                return self._component_aggregation_operand(
+                    node.op, operand, self.visit(node.operand)
+                )
             return self._data_point_count_operand(node, operand)
         return self.visit(node.operand)
 
@@ -1405,7 +1412,8 @@ class InterpreterAnalyzer(ASTTemplate):
                     then_name=thenValue.name,
                     else_name=elseValue.name,
                 )
-            return self.visit(node.thenOp if condition.value else node.elseOp)
+            # Typed and checked as at Component and Data Set level (issue #1314)
+            return If.analyze(condition, thenValue, elseValue, self.is_from_having)
 
         # Analysis for data component and dataset
         then_ds, else_ds = self.generate_then_else_datasets(condition)
@@ -1440,12 +1448,10 @@ class InterpreterAnalyzer(ASTTemplate):
             thenOps.append(self.visit(case.thenOp))
             self.condition_stack.pop()
 
-            if isinstance(conditions[-1], DataComponent) or len(self.condition_stack) == depth:
+            if isinstance(conditions[-1], DataComponent):
                 # case returns the then operand of the first true condition (issue #1251). At
                 # Component level, as in a chain of if-then-else, the later conditions, their
                 # then operands and the else operand only see the data points this one leaves.
-                # At Data Set level they see those the first condition leaves: it gives the
-                # data points, and a later condition may lack some of them (issue #1304).
                 self.condition_stack.append(else_ds)
 
         elseOp = self.visit(node.elseOp)
@@ -1504,18 +1510,11 @@ class InterpreterAnalyzer(ASTTemplate):
             if merge_dataset.data is None:
                 return operand
 
-            merge_data = merge_dataset.data
+            # Only a Component is cut to the data points of its branch. A Data Set operand keeps
+            # all of them, as on the DuckDB engine: the viral attributes of an if or a case read
+            # every Data Set operand on every data point of the result (issue #1304).
             if isinstance(operand, DataComponent) and operand.data is not None:
-                operand.data = operand.data.loc[merge_data.index]
-            elif isinstance(operand, Dataset) and operand.data is not None:
-                ids = merge_dataset.get_identifiers_names()
-                if set(ids).issubset(operand.data.columns):
-                    operand.data = merge_frames(
-                        operand.data.assign(__idx__=operand.data.index),
-                        merge_data[ids],
-                        on=ids,
-                        how="inner",
-                    ).set_index("__idx__")
+                operand.data = operand.data.loc[merge_dataset.data.index]
 
         return operand
 

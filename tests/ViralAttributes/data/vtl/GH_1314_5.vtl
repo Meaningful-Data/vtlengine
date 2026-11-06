@@ -1,0 +1,8 @@
+define viral propagation VP_1 (variable At_1) is
+    aggregate sum
+end viral propagation;
+DS_r1 <- if DS_1 > 2 then DS_1 else DS_2;
+DS_r2 <- case when DS_1 > 2 then DS_1 else DS_2;
+DS_r3 <- DS_1 + DS_2;
+DS_r4 <- inner_join(DS_1 as A, DS_2 as B calc Me_2 := A#Me_1 + B#Me_1 drop A#Me_1, B#Me_1);
+DS_r5 <- case when DS_1 > 3 then DS_1 when DS_1 > 2 then DS_2 else DS_3;

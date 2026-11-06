@@ -539,15 +539,22 @@ class StructureVisitor(ASTTemplate):
             return self._build_hr_operation_structure(node)
         if isinstance(node, AST.DPValidation):
             return self._build_dp_validation_structure(node)
-        if isinstance(node, AST.If):
-            return self._get_dataset_structure(node.thenOp) or self._get_dataset_structure(
-                node.elseOp
-            )
-        if isinstance(node, AST.Case):
-            # The first Data Set operand, as in the semantic analysis (issue #1304)
-            operands = [c.thenOp for c in node.cases] + [node.elseOp]
-            return next(filter(None, map(self._get_dataset_structure, operands)), None)
+        if isinstance(node, (AST.If, AST.Case)):
+            return self._resolve_conditional_structure(node)
         return None
+
+    @staticmethod
+    def _branch_operands(node: Union[AST.If, AST.Case]) -> List[AST.AST]:
+        """The operands an if or a case can return, the else one last."""
+        if isinstance(node, AST.If):
+            return [node.thenOp, node.elseOp]
+        return [case.thenOp for case in node.cases] + [node.elseOp]
+
+    def _resolve_conditional_structure(self, node: Union[AST.If, AST.Case]) -> Optional[Dataset]:
+        """The structure of the first Data Set operand of an if or a case, as in the semantic
+        analysis (issue #1304)."""
+        operands = self._branch_operands(node)
+        return next(filter(None, map(self._get_dataset_structure, operands)), None)
 
     def _resolve_varid_structure(self, node: AST.VarID) -> Optional[Dataset]:
         """Resolve a VarID (including UDO bindings) to its dataset structure."""
@@ -699,10 +706,11 @@ class StructureVisitor(ASTTemplate):
         ds = self._get_dataset_structure(node.operand)
         if ds is None:
             return None
-        if node.op == tokens.ISNULL and len(ds.get_measures_names()) == 1:
+        if node.op == tokens.ISNULL and self._isnull_renames_measure(ds):
             return self._build_boolean_result_structure(ds)
         if node.op in self._INTEGER_RESULT_UNARY_OPS:
-            return self._as_integer_if_mono(ds)
+            # Without the Attributes that are not viral, as for the other operators
+            return self._as_integer_if_mono(self._without_attributes(ds))
         if node.op == tokens.PERIOD_INDICATOR:
             comps = self._identifiers_dict(ds)
             comps.update((n, c) for n, c in ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE)
@@ -1148,6 +1156,14 @@ class StructureVisitor(ASTTemplate):
             comps[name] = orig
         # A VIRAL_ATTRIBUTE target is already in comps from the loop above (no promotion).
         return Dataset(name=parent_ds.name, components=comps, data=None)
+
+    @staticmethod
+    def _isnull_renames_measure(ds: Optional[Dataset]) -> bool:
+        """Whether isnull names its result ``bool_var``: it renames a lone Measure that it
+        changes the type of, so a Boolean one keeps its name, as in the semantic analysis
+        (issue #1314)."""
+        measures = ds.get_measures() if ds is not None else []
+        return len(measures) == 1 and measures[0].data_type is not Boolean
 
     def _build_boolean_result_structure(self, ds: Dataset) -> Dataset:
         """Replace all measures with a single ``bool_var`` Boolean measure."""
