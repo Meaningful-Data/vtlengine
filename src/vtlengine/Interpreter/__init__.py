@@ -2486,7 +2486,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 v = v.name  # type: ignore[assignment]
             if v in self.signature_values:
                 signature_values[k] = self.signature_values[v]  # type: ignore[index]
-        self.signature_values.update(signature_values)
+        # The arguments are bound for this call only: an argument of a later call whose name is
+        # a parameter of this one must not resolve to this call's argument
+        enclosing_values = self.signature_values
+        self.signature_values = {**enclosing_values, **signature_values}
         self.udo_params.append(signature_values)
 
         if node.op in self.udo_calls:
@@ -2523,6 +2526,7 @@ class InterpreterAnalyzer(ASTTemplate):
         # We pop the last element of the stack (current UDO params)
         # to avoid using them in the next UDO call
         self.udo_params.pop()
+        self.signature_values = enclosing_values
 
         # We set to None if empty to ensure we do not use these params anymore
         if len(self.udo_params) == 0:

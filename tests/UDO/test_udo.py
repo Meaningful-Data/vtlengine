@@ -1416,3 +1416,21 @@ class UdoTest(UDOHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1304_2(self):
+        """
+        Status: OK
+        Expression: define operator f (DS_2 dataset) returns dataset is DS_2 + 1 end operator;
+                    DS_r1 <- f(DS_1);
+                    DS_r2 <- f(DS_2);
+        Description: The arguments of a call are bound for that call only. On the pandas engine
+            the binding of the first call stayed for the rest of the run, so the argument DS_2
+            of the second call, the name of the parameter, read DS_1 and DS_r2 was DS_1 + 1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1304
+        Goal: Check Result.
+        """
+        code = "GH_1304_2"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
