@@ -100,8 +100,13 @@ class Join(Operator):
         }
         require_rules(merged_viral_comps.values())
 
-        for op in operands:
-            for comp in op.components.values():
+        # The roles are set on copies: the Components of an operand are those of the Data Set
+        # it refers to, which the later statements read (issue #1318)
+        operands_components = [
+            {comp.name: copy(comp) for comp in op.components.values()} for op in operands
+        ]
+        for components in operands_components:
+            for comp in components.values():
                 if comp.name in using:
                     is_identifier = all(
                         operand.components[comp.name].role == Role.IDENTIFIER
@@ -129,9 +134,8 @@ class Join(Operator):
                 else:
                     nullability[comp.name] = copy(comp.nullable)
 
-        for operand in operands:
+        for operand, components in zip(operands, operands_components):
             operand_name = operand.name
-            components = {comp.name: copy(comp) for comp in operand.components.values()}
 
             for component_name, component in components.items():
                 component.nullable = nullability[component_name]
