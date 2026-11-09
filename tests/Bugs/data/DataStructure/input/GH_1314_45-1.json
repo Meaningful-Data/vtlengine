@@ -20,6 +20,12 @@
           "role": "Measure",
           "type": "Number",
           "nullable": true
+        },
+        {
+          "name": "Me_2",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
         }
       ]
     }
@@ -27,6 +33,10 @@
   "scalars": [
     {
       "name": "sc_0",
+      "type": "Integer"
+    },
+    {
+      "name": "sc_1",
       "type": "Integer"
     },
     {

@@ -6,3 +6,5 @@ DS_r5 <- nvl(DS_2, "none");
 DS_r6 <- DS_2[calc Me_2 := nvl(Me_1, "none"), Me_3 := Me_1 in {"true", "x"}, Me_4 := match_characters(Me_1, "t.*")];
 DS_r7 <- DS_2[calc Me_2 := if Me_1 then true else false][calc Me_3 := Me_2 = "false"];
 DS_r8 <- DS_2 in {"true", "x"};
+DS_r9 <- DS_1[calc Me_3 := if Me_1 then nvl(Me_2, "none") else nvl(Me_1, true)];
+DS_r10 <- DS_1[calc Me_3 := upper(nvl(Me_1, false)), Me_4 := cast(if Me_1 then Me_2 else "true", boolean)];

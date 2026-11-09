@@ -3,19 +3,12 @@
     {
       "name": "DS_1",
       "DataStructure": [
-        {
-          "name": "Id_1",
-          "role": "Identifier",
-          "type": "Integer",
-          "nullable": false
-        },
-        {
-          "name": "Me_1",
-          "role": "Measure",
-          "type": "Integer",
-          "nullable": true
-        }
+        {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": false},
+        {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": false}
       ]
     }
+  ],
+  "scalars": [
+    {"name": "sc_1", "type": "Number"}
   ]
 }

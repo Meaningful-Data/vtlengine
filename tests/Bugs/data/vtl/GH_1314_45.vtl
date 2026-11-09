@@ -1,5 +1,8 @@
-DS_r1 <- DS_1[calc Me_2 := true or (1 / Me_1 > 0)];
-DS_r2 <- DS_1[calc Me_2 := sc_f and (1 / Me_1 > 0)];
+DS_r1 <- DS_1[calc Me_3 := true or (1 / Me_1 > 0)];
+DS_r2 <- DS_1[calc Me_3 := sc_f and (1 / Me_1 > 0)];
 DS_r3 <- DS_1 * (if true or (1 / sc_0 > 1) then 2 else 3);
 DS_r4 <- sum(DS_1 group by Id_1 having count() > 0 or sum(Me_1) / 0 > 1);
 DS_r5 <- sum(DS_1 group by Id_1 having count() < 2 and 100 / max(Me_1) > 1);
+DS_r6 <- DS_1[calc Me_3 := nvl(Me_1, 1 / Me_2)];
+DS_r7 <- DS_1[calc Me_3 := nvl(Me_2, 1 / sc_0)];
+DS_r8 <- DS_1[keep Me_1] + nvl(sc_1, 1 / sc_0);

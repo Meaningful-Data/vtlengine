@@ -26,6 +26,10 @@
     {
       "name": "sc_2",
       "type": "Integer"
+    },
+    {
+      "name": "sc_3",
+      "type": "String"
     }
   ]
 }

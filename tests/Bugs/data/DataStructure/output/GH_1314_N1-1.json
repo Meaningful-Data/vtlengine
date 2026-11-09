@@ -12,8 +12,8 @@
         {
           "name": "Me_1",
           "role": "Measure",
-          "type": "Integer",
-          "nullable": true
+          "type": "Number",
+          "nullable": false
         },
         {
           "name": "Me_2",

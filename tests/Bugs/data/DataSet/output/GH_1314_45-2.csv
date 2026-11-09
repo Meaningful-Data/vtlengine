@@ -1,4 +1,4 @@
-Id_1,Id_2,Me_1,Me_2
-1,a,0,False
-1,b,,False
-2,a,4,False
+Id_1,Id_2,Me_1,Me_2,Me_3
+1,a,0,0,False
+1,b,,2,False
+2,a,4,0,False

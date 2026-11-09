@@ -3,3 +3,5 @@ DS_r2 <- DS_1 + (if sc_2 > 0 then sc_1 / 0 else 3);
 DS_r3 <- DS_1 + (case when sc_1 < 0 then sc_1 / 0 when sc_1 > 5 then 7 when sc_1 / 0 > 1 then 8 else ln(0));
 DS_r4 <- DS_1[calc Me_2 := if sc_1 > 0 then 1 else sc_1 / 0];
 DS_r5 <- if DS_1 > 0 then (case when sc_1 > 0 then 1 else -1 / 0) else DS_1;
+DS_r6 <- DS_1 + cast(if isnull(sc_2) then "1" else "yes", integer);
+DS_r7 <- DS_1 + cast(if sc_3 >= "b" then "1" else sc_3, number);

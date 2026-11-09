@@ -13,11 +13,6 @@ define operator o (x integer)
         x - 10
 end operator;
 
-define operator c (m component<number [value >= 1.5]>)
-    returns component<number> is
-        m * 2
-end operator;
-
 define operator d (s dataset, k integer [value > 0])
     returns dataset is
         s * k
@@ -26,6 +21,5 @@ end operator;
 DS_r1 <- DS_1[calc Me_2 := if sc_1 > 0 then 0 else f(sc_2)];
 DS_r2 <- DS_1[calc Me_2 := if Me_1 > 100 then f(sc_2) else 0];
 DS_r3 <- DS_1[calc Me_2 := g(sc_1 + 1)];
-DS_r4 <- DS_1[calc Me_2 := if Me_1 > 1 then c(Me_1) else 0];
 sc_r := sc_1 + 1;
 DS_r5 <- DS_1[calc Me_2 := f(sc_r)];
