@@ -766,10 +766,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         value: AST.AST,
         checks: List[Tuple[str, str, AST.TypeConstraint]],
         value_depth: Optional[int] = None,
+        otherwise: Optional[str] = None,
     ) -> str:
         """sql, the values of a component, raising VTL 2-3-9 at the first of the checks
         (operator, element, constraint) whose constraint a value breaks: not null, a condition
         on value (the value AST, written with value_depth UDO scopes) or the values allowed.
+        With otherwise, the SQL gives otherwise instead of the value where none is broken.
 
         All the checks are written in one CASE, where value stands for sql, not for the SQL of
         its AST written again. When sql holds the check of another operator, as when the
@@ -810,11 +812,52 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             message = "'" + text.replace("'", "''") + "'"
             branches.append(f"WHEN {' OR '.join(broken)} THEN error({message} || {shown})")
         if not branches:
-            return sql
-        checked = f"CASE {' '.join(branches)} ELSE {target} END"
+            return sql if otherwise is None else otherwise
+        checked = f"CASE {' '.join(branches)} ELSE {target if otherwise is None else otherwise} END"
         if not nested:
             return checked
         return f"list_transform([{sql}], lambda {target}: {checked})[1]"
+
+    def _udo_checked_arguments(
+        self, sql: str, op: str, params: List[Dict[str, Any]], is_dataset: bool
+    ) -> str:
+        """sql, the result of a call of the operator op with the parameters params, raising
+        VTL 2-3-9 first where a scalar argument breaks the constraint of its parameter. The
+        semantic analysis knows no computed value, so the arguments are checked where the call
+        is computed, as on the pandas engine, also the ones that its body does not read: on each
+        data point that computes a Component or scalar call, and once for a Data Set call,
+        which is always computed, even without Data Points (issue #1314)."""
+        holds = "TRUE"
+        for param in reversed(params):
+            name, constraints = param["name"], param["constraints"]
+            argument = self._get_udo_param(name)
+            if (
+                isinstance(param["type"], (Component, Dataset))
+                or constraints is None
+                or constraints.value is None
+                or argument is None
+            ):
+                continue
+            scope = self._find_udo_scope(name)
+            # TRUE, or the error of the argument
+            check = self._udo_checked_sql(
+                self._resolve_udo_param(name, argument),
+                argument,
+                [(op, f"parameter {name}", constraints.value)],
+                scope.get(f"{_UDO_DEPTH_PREFIX}{name}") if scope else None,
+                otherwise="TRUE",
+            )
+            # The arguments are checked in the order of the parameters
+            holds = check if holds == "TRUE" else f"CASE WHEN {check} THEN {holds} END"
+        if holds == "TRUE":
+            return sql
+        if is_dataset:
+            # A one-row check that a join builds before it reads the result of the call
+            return (
+                f"SELECT _vtl_call.* FROM {self._as_subquery(sql)} AS _vtl_call, "
+                f"(SELECT {holds} AS _vtl_holds) AS _vtl_check WHERE _vtl_check._vtl_holds"
+            )
+        return f"CASE WHEN {holds} THEN {sql} END"
 
     def _udo_checked_dataset_sql(
         self,
@@ -866,7 +909,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         is_component = isinstance(self._get_udo_param(f"__type__{name}"), Component)
         if resolved in self.available_tables and not is_component:
             return f"SELECT * FROM {quote_name(resolved)}"
-        if resolved in self.scalars:
+        # A scalar that a statement computes is read from its table, as visit_VarID reads it:
+        # the semantic analysis gives it no value, so its literal was null (issue #1314)
+        if resolved in self.input_scalars:
             return self._scalar_literal(resolved)
         with self._udo_arg_scope(name):
             return self.visit(udo_val)
@@ -4224,6 +4269,7 @@ FROM (
     def visit_UDOCall(self, node: AST.UDOCall) -> str:  # type: ignore[override]
         """Visit a UDO call by expanding its definition with parameter bindings."""
         udo_def = self._udos[node.op]
+        is_dataset = self._get_node_type(node) == _DATASET
         bindings = self._build_udo_bindings(udo_def, node.params, include_types=True, op=node.op)
         expression = deepcopy(udo_def["expression"])
 
@@ -4231,20 +4277,19 @@ FROM (
         try:
             sql = self.visit(expression)
             declared, constraints = udo_def["return_type"], udo_def["return_constraints"]
-            if constraints is None:
-                return sql
-            if isinstance(declared, Component) and constraints.value is not None:
-                value = deepcopy(udo_def["expression"])
-                return self._udo_checked_sql(
-                    sql, value, [(node.op, "the output", constraints.value)]
-                )
-            if isinstance(declared, Dataset):
-                return self._udo_checked_dataset_sql(
+            if constraints is not None and isinstance(declared, Dataset):
+                sql = self._udo_checked_dataset_sql(
                     sql,
                     self._get_dataset_structure(node),
                     [(node.op, "the output", declared, constraints)],
                 )
-            return sql
+            elif constraints is not None and constraints.value is not None:
+                # A Component or a scalar output
+                value = deepcopy(udo_def["expression"])
+                sql = self._udo_checked_sql(
+                    sql, value, [(node.op, "the output", constraints.value)]
+                )
+            return self._udo_checked_arguments(sql, node.op, udo_def["params"], is_dataset)
         finally:
             self._pop_udo_params()
 

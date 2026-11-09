@@ -1434,3 +1434,86 @@ class UdoTest(UDOHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1314_43(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- DS_1[calc Me_2 := if sc_1 > 0 then 0 else f(sc_2)];
+                    DS_r2 <- DS_1[calc Me_2 := if Me_1 > 100 then f(sc_2) else 0];
+                    DS_r3 <- DS_1[calc Me_2 := g(sc_1 + 1)];
+                    DS_r4 <- DS_1[calc Me_2 := if Me_1 > 1 then c(Me_1) else 0];
+                    sc_r := sc_1 + 1;
+                    DS_r5 <- DS_1[calc Me_2 := f(sc_r)];
+        Description: The constraints of the parameters and of the output of a user defined
+            operator are checked on the values of a call where the call is computed: in the
+            operand that a scalar if selects (DS_r1), on the Data Points that take the branch
+            of a Component level if (DS_r2, DS_r4), and on computed values (DS_r3: sc_1 + 1 is
+            not null). The DuckDB engine checked the scalar values in its semantic analysis,
+            with the values of the input scalars: sc_2, 9, raised 2-3-9 in a branch that is not
+            taken, a computed value was null there, so sc_1 + 1 broke not null, and a computed
+            value that breaks a condition was not checked. A scalar computed by a statement
+            (sc_r) was given to the operator as a null, so DS_r5 was null instead of 3.
+            The errors, on both engines: a branch that is taken, at scalar and at Component
+            level, a computed argument (sc_1 + 4 is 5, and sc_s := sc_2 - 1 is 8), a null
+            computed argument, a computed output (-9) and a Data Set call, which checks its
+            arguments also without Data Points (DS_2 has none).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result and Exception.
+        """
+        code = "GH_1314_43"
+        number_inputs = 2
+        references_names = ["1", "2", "3", "4", "5", "6"]
+        scalars = {"sc_1": 1, "sc_2": 9, "sc_3": None}
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars=scalars,
+        )
+
+        operators = self.LoadVTL(code).split("DS_r1 <-")[0]
+        not_allowed = "which its type constraint {} does not allow."
+        cases = [
+            (
+                "DS_1[calc Me_2 := if sc_1 > 0 then f(sc_2) else 0]",
+                "At op f: parameter x has the value 9",
+                "[value < 5]",
+            ),
+            (
+                "DS_1[calc Me_2 := if Me_1 > 1 then f(sc_2) else 0]",
+                "At op f: parameter x has the value 9",
+                "[value < 5]",
+            ),
+            (
+                "DS_1[calc Me_2 := f(sc_1 + 4)]",
+                "At op f: parameter x has the value 5",
+                "[value < 5]",
+            ),
+            (
+                "DS_1[calc Me_2 := g(sc_3 + 1)]",
+                "At op g: parameter x has the value null",
+                "not null",
+            ),
+            (
+                "DS_1[calc Me_2 := o(sc_1)]",
+                "At op o: the output has the value -9",
+                "[value > 0]",
+            ),
+            ("d(DS_2, sc_1 - 1)", "At op d: parameter k has the value 0", "[value > 0]"),
+            (
+                "DS_1[calc Me_2 := f(sc_s)]",
+                "At op f: parameter x has the value 8",
+                "[value < 5]",
+            ),
+        ]
+        for expression, error, constraint in cases:
+            with self.subTest(expression=expression):
+                self.NewSemanticExceptionTest(
+                    code=code,
+                    number_inputs=number_inputs,
+                    exception_code="2-3-9",
+                    text=f"{operators}sc_s := sc_2 - 1;\nDS_r <- {expression};",
+                    scalars=scalars,
+                    exception_message=f"{error}, {not_allowed.format(constraint)}",
+                )

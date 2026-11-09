@@ -222,8 +222,6 @@ class InterpreterAnalyzer(ASTTemplate):
     udo_constraints: List[Dict[str, List[Tuple[str, str, AST.TypeConstraint]]]] = field(
         default_factory=list
     )
-    # Whether the input scalars hold their values, as on the DuckDB engine, even when only_semantic
-    scalar_values_known: bool = False
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
     # Names of the rules that computed each code item, in evaluation order
     hr_agg_item_rules: Optional[Dict[str, List[str]]] = None
@@ -2689,8 +2687,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 return
             values = value.data.astype(object).reset_index(drop=True)
         elif isinstance(value, Scalar):
-            if self.only_semantic and not self.scalar_values_known:
-                # The values are checked when the script runs
+            if self.only_semantic:
+                # The values are checked when the call is computed: by the pandas engine, and by
+                # the SQL of the DuckDB engine, as a call in a branch that is not taken must not
+                # raise, and the semantic analysis knows no computed value (issue #1314)
                 return
             values = pd.Series([value.value], dtype=object)
         else:
@@ -2705,13 +2705,9 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.udo_params is None:
                 self.udo_params = []
             self.udo_params.append({"value": value})
-            # A scalar has its value in a semantic analysis too, which computes no operation
-            semantic = Operators.only_semantic
-            Operators.only_semantic = semantic and isinstance(value, DataComponent)
             try:
                 holds = self.visit(deepcopy(constraint.condition))
             finally:
-                Operators.only_semantic = semantic
                 self.udo_params.pop()
             result = pd.Series(
                 holds.data if isinstance(holds, DataComponent) else [holds.value], dtype=object
