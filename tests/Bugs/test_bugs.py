@@ -4166,6 +4166,41 @@ class ConditionalBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=error_code
         )
 
+    def test_GH_1314_42(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_4 := Me_2 or (Me_1 / Me_1 > 0.5),
+                        Me_5 := not Me_2 and (Me_1 / Me_1 > 0.5)];
+                    DS_r2 <- DS_2[calc Me_3 := Me_1 or Me_2, Me_4 := Me_1 and Me_2];
+                    DS_r3 <- DS_1[calc Me_4 := Me_2 or (Me_1 / Me_1 > 11) or ...
+                        or (Me_1 / Me_1 > 2) or (Me_1 / Me_1 > 0.5)];
+                    DS_r4 <- DS_1[calc Me_4 := (Me_2 or (Me_1 / Me_1 > 0.5))
+                        and (Me_2 or (Me_1 / Me_1 < 2)),
+                        Me_5 := (Me_2 and Me_3) or (not Me_2 and (Me_1 / Me_1 > 0.5))];
+                    DS_r5 <- DS_1[calc Me_4 := Me_2 xor Me_3 xor Me_3 xor Me_3 xor Me_3
+                        or (Me_1 / Me_1 > 0.5), Me_5 := Me_2 xor Me_3 xor Me_3
+                        or (Me_1 / Me_1 > 0.5) xor Me_3 xor Me_2 xor Me_3];
+                    DS_r6 <- DS_1[filter (Me_2 or (Me_1 / Me_1 > 0.5))
+                        and (not Me_2 and (Me_1 / Me_1 > 0.5))];
+                    DS_r7 <- DS_1[aggr Me_4 := count(Me_2 or (Me_1 / Me_1 > 0.5)),
+                        Me_5 := max(not Me_2 and (Me_1 / Me_1 > 0.5)) group by Id_1];
+        Description: At Component level, the right operand of an or is computed only where
+            the left one is false or null, and the right operand of an and only where it is
+            true or null, as on the pandas engine (GH_1314_35). Me_1 / Me_1 divides by zero at
+            Id_1 1, where no statement needs it. The DuckDB engine computed both operands of
+            an and or an or that gives a value, in a calc (DS_r1, DS_r3, DS_r4) or an aggregate
+            operand (DS_r7), and raised 2-1-15-6; in a chain with xor (DS_r5) it folded the or
+            link into a list, which computes all its elements. DS_r2 gives the three-valued
+            results on the nine pairs of true, false and null, DS_r3 is a chain of twelve or
+            operands, written as one CASE, DS_r4 nests and and or, and DS_r6 is a filter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_42"
+        number_inputs = 2
+        references_names = ["1", "2", "3", "4", "5", "6", "7"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """

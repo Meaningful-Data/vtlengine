@@ -5,6 +5,7 @@ from collections import Counter, defaultdict
 from contextlib import contextmanager, nullcontext
 from copy import deepcopy
 from dataclasses import dataclass, field
+from itertools import groupby
 from typing import (
     Any,
     Callable,
@@ -1191,6 +1192,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         chain_sql = self._build_expression_chain(node, self.visit, self._detect_scalar_type)
         if chain_sql is not None:
             return chain_sql
+        if op in (tokens.AND, tokens.OR) and self._get_node_type(node) == _COMPONENT:
+            return self._short_circuit_sql(node, self.visit)
         left_sql = self.visit(node.left)
         right_sql = self.visit(node.right)
         if op == tokens.CONCAT:
@@ -1562,7 +1565,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         operation is built as usual, so the list opens with its Number or Boolean result
         and the later operands convert as the operations convert them. ``visit`` and
         ``node_type`` give an operand's SQL and data type, as the pairwise operation
-        gets them.
+        gets them. A list computes all its elements, so a Boolean chain only folds its runs
+        of ``xor``, and a run of ``and`` or ``or`` computes its operands only where needed
+        (see ``_short_circuit_case``).
 
         Returns ``None`` when the chain is too short, or when its nested SQL does not grow
         (``and`` and ``or`` without ``xor``).
@@ -1586,7 +1591,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return None
 
         first, *rest = reversed(chain)
-        elements = [visit(first)] + [visit(link.right) for link in rest]
         steps = [
             self._make_binary_expr(
                 "__vtl_acc",
@@ -1597,7 +1601,43 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             )
             for link in rest
         ]
-        return f"list_reduce([{', '.join(elements)}], {self._fold_lambda(steps)})"
+        if numeric:
+            elements = [visit(first)] + [visit(link.right) for link in rest]
+            return f"list_reduce([{', '.join(elements)}], {self._fold_lambda(steps)})"
+        value, done = visit(first), 0
+        for op, run in groupby(rest, key=lambda link: link.op):
+            operands = [visit(link.right) for link in run]
+            if op == tokens.XOR:
+                fold = self._fold_lambda(steps[done : done + len(operands)])
+                value = f"list_reduce([{value}, {', '.join(operands)}], {fold})"
+            else:
+                value = self._short_circuit_case(op, [value, *operands])
+            done += len(operands)
+        return value
+
+    @staticmethod
+    def _short_circuit_case(op: str, values: List[str]) -> str:
+        """The ``op`` (``and`` or ``or``) of ``values``, computing each one only where the ones
+        before it leave the result open: false or null for ``or``, true or null for ``and``, as
+        the pandas engine computes the right operand of a Component level one (issue #1314). An
+        SQL AND or OR computes both operands of a value, and a filter skips the right operand of
+        an AND also where the left one is null."""
+        decides, result = ("{}", "TRUE") if op == tokens.OR else ("NOT ({})", "FALSE")
+        whens = " ".join(f"WHEN {decides.format(value)} THEN {result}" for value in values[:-1])
+        return f"CASE {whens} ELSE ({f' {op.upper()} '.join(values)}) END"
+
+    def _short_circuit_sql(self, node: AST.BinOp, visit: Callable[[AST.AST], str]) -> str:
+        """A Component level ``and`` or ``or`` (see ``_short_circuit_case``). A left-nested chain
+        of the operator is one CASE, which writes each operand at most twice."""
+        operands: List[AST.AST] = []
+        current: AST.AST = node
+        while isinstance(current, AST.BinOp) and current.op == node.op:
+            operands.append(current.right)
+            current = current.left
+            while isinstance(current, AST.ParFunction):
+                current = current.operand
+        operands.append(current)
+        return self._short_circuit_case(node.op, [visit(operand) for operand in operands[::-1]])
 
     def _build_ds_scalar_binary(
         self,
@@ -4471,6 +4511,10 @@ FROM (
             )
             if chain_sql is not None:
                 return chain_sql
+            if isinstance(node, AST.BinOp) and node.op in (tokens.AND, tokens.OR):
+                return self._short_circuit_sql(
+                    node, lambda operand: self._visit_dp_expr(operand, signature, components)
+                )
             left_sql = self._visit_dp_expr(node.left, signature, components)
             right_sql = self._visit_dp_expr(node.right, signature, components)
             if isinstance(node, AST.HRBinOp) and node.op == tokens.WHEN:

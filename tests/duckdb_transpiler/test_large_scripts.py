@@ -520,7 +520,8 @@ class TestExpressionChainSQL:
         assert "list_reduce" not in sql
 
     def test_xor_expression_is_one_list_reduce(self) -> None:
-        sql = self._sql("DS_r := DS_1[calc Me_r := Me_b1 xor Me_b2 xor Me_b3 or Me_b4 xor Me_b5];")
+        # An or link would compute its operand in the list: it splits the chain (GH_1314_42)
+        sql = self._sql("DS_r := DS_1[calc Me_r := Me_b1 xor Me_b2 xor Me_b3 xor Me_b4 xor Me_b5];")
 
         assert sql.count("list_reduce(") == 1
         assert sql.count("AND NOT") == 2

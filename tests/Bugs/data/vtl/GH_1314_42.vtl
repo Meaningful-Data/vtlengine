@@ -1,0 +1,7 @@
+DS_r1 <- DS_1[calc Me_4 := Me_2 or (Me_1 / Me_1 > 0.5), Me_5 := not Me_2 and (Me_1 / Me_1 > 0.5)];
+DS_r2 <- DS_2[calc Me_3 := Me_1 or Me_2, Me_4 := Me_1 and Me_2];
+DS_r3 <- DS_1[calc Me_4 := Me_2 or (Me_1 / Me_1 > 11) or (Me_1 / Me_1 > 10) or (Me_1 / Me_1 > 9) or (Me_1 / Me_1 > 8) or (Me_1 / Me_1 > 7) or (Me_1 / Me_1 > 6) or (Me_1 / Me_1 > 5) or (Me_1 / Me_1 > 4) or (Me_1 / Me_1 > 3) or (Me_1 / Me_1 > 2) or (Me_1 / Me_1 > 0.5)];
+DS_r4 <- DS_1[calc Me_4 := (Me_2 or (Me_1 / Me_1 > 0.5)) and (Me_2 or (Me_1 / Me_1 < 2)), Me_5 := (Me_2 and Me_3) or (not Me_2 and (Me_1 / Me_1 > 0.5))];
+DS_r5 <- DS_1[calc Me_4 := Me_2 xor Me_3 xor Me_3 xor Me_3 xor Me_3 or (Me_1 / Me_1 > 0.5), Me_5 := Me_2 xor Me_3 xor Me_3 or (Me_1 / Me_1 > 0.5) xor Me_3 xor Me_2 xor Me_3];
+DS_r6 <- DS_1[filter (Me_2 or (Me_1 / Me_1 > 0.5)) and (not Me_2 and (Me_1 / Me_1 > 0.5))];
+DS_r7 <- DS_1[aggr Me_4 := count(Me_2 or (Me_1 / Me_1 > 0.5)), Me_5 := max(not Me_2 and (Me_1 / Me_1 > 0.5)) group by Id_1];
