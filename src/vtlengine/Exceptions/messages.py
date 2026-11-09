@@ -932,8 +932,8 @@ centralised_messages = {
     "1-1-13-18": {
         "message": "At op {op}: Incompatible types for common identifier {id_name}: "
         "{type_1} and {type_2}.",
-        "description": "Raised when datasets in a join operation have a common identifier "
-        "with incompatible types.",
+        "description": "Raised when datasets in a join or a binary operation have a common "
+        "identifier with incompatible types.",
     },
     "1-1-13-19": {
         "message": "At op {op}: Join operator requires at least 1 dataset.",

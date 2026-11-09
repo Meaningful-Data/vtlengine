@@ -471,7 +471,7 @@ class TestCastOperator:
         assert_sql_equal(sql, expected_sql)
 
     def test_dataset_cast_boolean_to_string(self):
-        """Boolean → String cast emits Python-style 'True'/'False' values (issue #923)."""
+        """Boolean → String cast emits 'true'/'false', as the VTL 2.2 manual says (issue #1314)."""
         components = {
             "Id_1": Component(name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False),
             "Me_1": Component(name="Me_1", data_type=Boolean, role=Role.MEASURE, nullable=True),
@@ -494,10 +494,7 @@ class TestCastOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = (
-            'SELECT "Id_1", CASE WHEN "Me_1" IS NULL THEN NULL'
-            ' WHEN "Me_1" THEN \'True\' ELSE \'False\' END AS "Me_1" FROM "DS_1"'
-        )
+        expected_sql = 'SELECT "Id_1", CAST("Me_1" AS VARCHAR) AS "Me_1" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
     def test_cast_with_date_mask(self):

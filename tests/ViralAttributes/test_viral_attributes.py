@@ -203,6 +203,43 @@ def test_GH_1304_3() -> None:
     ViralHelper.BaseTest(code="GH_1304_3", number_inputs=3, references_names=["DS_r1", "DS_r2"])
 
 
+def test_GH_1314_1() -> None:
+    """
+    Expression: DS_r1 <- if DS_1 = 1.0 then DS_2 else (if DS_1 = 2.0 then DS_3 else DS_4);
+                DS_r2 <- case when DS_1 = 1.0 then (case when DS_1 = 2.0 then DS_3 else DS_4)
+                    else DS_2;
+                DS_r3 <- if DS_5 > 2 then DS_5 else DS_6;
+                DS_r4 <- case when DS_5 > 2 then DS_5 else DS_6;
+                DS_r5 <- DS_5 + DS_6;
+                DS_r6 <- inner_join(DS_5 as A, DS_6 as B calc Me_2 := A#Me_1 + B#Me_1
+                    drop A#Me_1, B#Me_1);
+                DS_r7 <- case when DS_5 > 3 then DS_5 when DS_5 > 2 then DS_6 else DS_7;
+                DS_r8 <- inner_join((if DS_8 < 10 then DS_8 else DS_8 * 2) as a, DS_9 as b
+                    keep a#Me_1);
+                DS_r9 <- (case when DS_8 < 10 then DS_8 else DS_8 * 2) + DS_9;
+    Description: The viral attribute At_1 under an aggregate sum rule.
+        DS_r1, DS_r2: the rule collapses every dataset operand of the if and the case on every
+        data point, the inner if or case too, as when the inner one is computed in its own
+        statement. On the pandas engine, the inner one only had the data points of its branch,
+        so the outer one read a null At_1 for it on the others (Id_1 = 1 in DS_r1, Id_1 = 2
+        and 3 in DS_r2).
+        DS_r3 to DS_r7: At_1, Integer in DS_5 and DS_7 and Number in DS_6, takes the common
+        type of the operands, Number, as an avg rule gives Number, also when the last operand
+        has the Integer one (DS_r7). It kept the type of the first operand, so the DuckDB
+        engine rounded the sums (11.5 to 12, 44.5 to 44), and the pandas engine raised an
+        ArrowInvalid (DS_r3, DS_r4, DS_r7) or cut them (11.5 to 11 in DS_r5, DS_r6).
+        DS_r8, DS_r9: an if or a case whose combined At_1 is null on every data point can be
+        the operand of a join or of a binary operator, which combine it with the At_1 of their
+        other operand. On the pandas engine, the combined At_1 was a column of Python None, so
+        the sum rule of the join and of the binary operator raised a TypeError.
+    Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+    Goal: Check Result.
+    """
+    ViralHelper.BaseTest(
+        code="GH_1314_1", number_inputs=9, references_names=[f"DS_r{i}" for i in range(1, 10)]
+    )
+
+
 # -- Model-level checks (Role enum and Dataset helpers) --
 class TestViralAttributeRole:
     def test_viral_attribute_in_role_enum(self) -> None:

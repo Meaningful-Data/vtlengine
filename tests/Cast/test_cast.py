@@ -404,7 +404,7 @@ class TestCastBooleanToString:
 
     @pytest.mark.parametrize(
         "input_val, expected",
-        [(True, "True"), (False, "False"), (None, None)],
+        [(True, "true"), (False, "false"), (None, None)],
     )
     def test_cast(self, input_val: object, expected: object) -> None:
         result = Cast.evaluate(operand=Scalar("x", Boolean, input_val), scalarType=String)
@@ -700,10 +700,11 @@ class TestCastInterpreter:
             ("cast(42.0, integer)", 42, Integer),
             ("cast(42.5, string)", "42.5", String),
             ("cast(42, string)", "42", String),
-            # Boolean → String must be Python-style in both engines (issue #923)
-            ("cast(true, string)", "True", String),
-            ("cast(false, string)", "False", String),
-            ("cast(1 = 1, string)", "True", String),
+            # Boolean → String gives "true" or "false" in both engines, as the VTL 2.2
+            # manual says (issues #923 and #1314)
+            ("cast(true, string)", "true", String),
+            ("cast(false, string)", "false", String),
+            ("cast(1 = 1, string)", "true", String),
             ('cast("42", integer)', 42, Integer),
             ('cast("3.14", number)', 3.14, Number),
             # date → time_period

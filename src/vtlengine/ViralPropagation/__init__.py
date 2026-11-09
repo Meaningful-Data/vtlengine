@@ -23,6 +23,8 @@ from vtlengine.DataTypes import (
     ScalarType,
     String,
     TimeInterval,
+    binary_implicit_promotion,
+    check_binary_implicit_promotion,
     check_unary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
@@ -239,13 +241,24 @@ def require_rules(components: Iterable[Any]) -> None:
                 )
 
 
+def _common_type(type_a: Any, type_b: Any) -> Any:
+    """The common type of two types of one viral attribute, or None when they have none."""
+    if type_a == type_b:
+        return type_a
+    if check_binary_implicit_promotion(type_a, type_b):
+        return binary_implicit_promotion(type_a, type_b)
+    return None
+
+
 def apply_viral_return_types(components: Iterable[Any], result_components: Dict[str, Any]) -> None:
-    """Set the result data type of viral attributes combined under an ``avg`` rule to
-    Number: avg yields fractional values, mirroring the Avg operator's return type.
-    min/max/sum and enumerated rules keep the input type (sum mirrors Sum, which has no
-    return type). Promoted entries are always replaced with a copy, because some
-    operators share the result component objects (or the dict itself) with their input
-    datasets and the input structure must never be mutated.
+    """Set the result data type of viral attributes combined under an aggregate rule:
+    ``avg`` gives Number, as it yields fractional values, mirroring the Avg operator's
+    return type, and min/max/sum give the type of the combined component, the common
+    type of the operands that :func:`combined_viral_components` gives (sum mirrors Sum,
+    which has no return type) (issue #1314). Enumerated rules keep the input type.
+    Promoted entries are always replaced with a copy, because some operators share the
+    result component objects (or the dict itself) with their input datasets and the input
+    structure must never be mutated.
 
     Call this right after :func:`require_rules` at every combination point, with the
     same combined components and the result-components mapping under construction.
@@ -253,13 +266,17 @@ def apply_viral_return_types(components: Iterable[Any], result_components: Dict[
     registry = get_current_registry()
     for comp in components:
         rule = registry.rule_for(comp)
-        if rule is None or rule.aggregate_function != "avg":
+        if rule is None or rule.aggregate_function is None:
             continue
         result_comp = result_components.get(comp.name)
         if result_comp is None:
             continue
         promoted = copy(result_comp)
-        promoted.data_type = Number
+        if rule.aggregate_function == "avg":
+            promoted.data_type = Number
+        else:
+            common = _common_type(result_comp.data_type, comp.data_type)
+            promoted.data_type = result_comp.data_type if common is None else common
         result_components[comp.name] = promoted
 
 
@@ -268,12 +285,19 @@ def combined_viral_components(operands: Iterable[Any]) -> List[Any]:
 
     A viral attribute whose data points are combined appears (by name) as a viral
     attribute in two or more operands; those require a propagation rule. A viral
-    attribute present in a single operand is copied through and needs no rule.
+    attribute present in a single operand is copied through and needs no rule. The
+    component returned has the common type of the operands, when their types have one
+    (issue #1314).
     """
     counts: Dict[str, int] = {}
     comp_by_name: Dict[str, Any] = {}
     for op in operands:
         for comp in op.get_viral_attributes():
             counts[comp.name] = counts.get(comp.name, 0) + 1
+            seen = comp_by_name.get(comp.name)
+            common = None if seen is None else _common_type(seen.data_type, comp.data_type)
+            if common is not None and common != comp.data_type:
+                comp = copy(comp)
+                comp.data_type = common
             comp_by_name[comp.name] = comp
     return [comp_by_name[name] for name, n in counts.items() if n >= 2]
