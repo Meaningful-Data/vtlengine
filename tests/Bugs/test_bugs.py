@@ -4477,6 +4477,30 @@ class ClauseBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1318_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[filter not isnull(Me_1)][calc identifier Id_2 := Me_1];
+        Description: Me_1 is declared nullable, which a filter does not change, so an
+                     Identifier cannot be calculated from it. The message described null
+                     values in the data, which the check never reads, and did not name
+                     the Identifier.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1318
+        Goal: Check Exception.
+        """
+        code = "GH_1318_2"
+        number_inputs = 1
+        message = "1-1-1-16"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            exception_message=(
+                "Identifier Id_2 cannot be calculated from an expression that is declared nullable."
+            ),
+        )
+
 
 class DefinedBugs(BugHelper):
     """ """
