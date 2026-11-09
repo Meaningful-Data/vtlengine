@@ -4021,6 +4021,35 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_32(self):
+        """
+        Expression: DS_r1 <- DS_1 + (if sc_1 > 0 then 1 else sc_1 / 0);
+                    DS_r2 <- DS_1 + (if sc_2 > 0 then sc_1 / 0 else 3);
+                    DS_r3 <- DS_1 + (case when sc_1 < 0 then sc_1 / 0 when sc_1 > 5 then 7
+                        when sc_1 / 0 > 1 then 8 else ln(0));
+                    DS_r4 <- DS_1[calc Me_2 := if sc_1 > 0 then 1 else sc_1 / 0];
+                    DS_r5 <- if DS_1 > 0 then (case when sc_1 > 0 then 1 else -1 / 0)
+                        else DS_1;
+        Description: A scalar if or case computes only the operand it selects, as on the
+            DuckDB engine: the then operand of the first true condition, or else the else
+            operand, which a null condition selects (sc_2 is null). The pandas engine computed
+            every condition and operand, so the division by zero of an operand that is not
+            selected raised 2-1-15-6, also in a calc (DS_r4) and in a Data Set if (DS_r5).
+            The result still has the common type of all the operands, Number.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_32"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": 10, "sc_2": None},
+        )
+
 
 class ClauseBugs(BugHelper):
     """ """

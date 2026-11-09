@@ -1414,8 +1414,16 @@ class InterpreterAnalyzer(ASTTemplate):
         condition = self.visit(node.condition)
 
         if isinstance(condition, Scalar):
-            thenValue = self.visit(node.thenOp)
-            elseValue = self.visit(node.elseOp)
+            # Only the operand that the condition selects is computed, as on the DuckDB engine:
+            # the other one only gives its structure, for the type of the result, and raises no
+            # runtime error (issue #1314). A null condition selects the else operand.
+            visit_then, visit_else = (
+                (self.visit, self._visit_structure)
+                if condition.value
+                else (self._visit_structure, self.visit)
+            )
+            thenValue = visit_then(node.thenOp)
+            elseValue = visit_else(node.elseOp)
             if not isinstance(thenValue, Scalar) or not isinstance(elseValue, Scalar):
                 raise SemanticError(
                     "1-1-9-3",
@@ -1447,10 +1455,16 @@ class InterpreterAnalyzer(ASTTemplate):
             self.condition_stack = []
         depth = len(self.condition_stack)
 
+        # Once a scalar condition is true, its then operand is the result: the conditions and
+        # operands after it only give their structure, as in a scalar if (issue #1314)
+        selected = False
         for case in node.cases:
-            conditions.append(self._visit_in_branch(case.condition))
+            visit = self._visit_structure if selected else self._visit_in_branch
+            conditions.append(visit(case.condition))
             if isinstance(conditions[-1], Scalar):
-                thenOps.append(self.visit(case.thenOp))
+                takes_then = not selected and bool(conditions[-1].value)
+                thenOps.append((self.visit if takes_then else self._visit_structure)(case.thenOp))
+                selected = selected or takes_then
                 continue
 
             then_ds, else_ds = self.generate_then_else_datasets(conditions[-1])
@@ -1465,7 +1479,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 # then operands and the else operand only see the data points this one leaves.
                 self.condition_stack.append(else_ds)
 
-        elseOp = self._visit_in_branch(node.elseOp)
+        elseOp = (self._visit_structure if selected else self._visit_in_branch)(node.elseOp)
         del self.condition_stack[depth:]
 
         return Case.analyze(conditions, thenOps, elseOp, self.is_from_having)
