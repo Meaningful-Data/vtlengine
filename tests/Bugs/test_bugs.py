@@ -3970,6 +3970,24 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_30(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_2 := (if Id_1 >= 2 then Me_1 else Id_1) + Me_1];
+                    DS_r2 <- DS_1[filter (if Id_1 >= 2 then Me_1 else Id_1) < Me_1];
+        Description: On the pandas engine, a Component level if gave the values of its then
+            operand first and those of its else operand after them, and the operator that
+            takes the result pairs its values with the other operand by position. The value
+            of Id_1 6 was added to the Me_1 of Id_1 1 (DS_r1 gave 3 and 5 instead of 4 and 4),
+            and the filter kept Id_1 6 (DS_r2).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_30"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """

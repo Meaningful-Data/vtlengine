@@ -184,7 +184,9 @@ class If(Operator):
         cond = condition.data.fillna(False).astype("bool[pyarrow]")
         t_base = component_assign(cond, true_branch)
         f_base = component_assign(~cond, false_branch)
-        return pd.concat([t_base, f_base])
+        # In the order of the Data Points, not the then part first: the operator that takes
+        # the result pairs its values with another operand by position (issue #1314)
+        return pd.concat([t_base, f_base]).reindex(cond.index)
 
     @classmethod
     def dataset_level_evaluation(
