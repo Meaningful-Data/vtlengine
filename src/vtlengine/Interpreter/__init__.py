@@ -638,10 +638,7 @@ class InterpreterAnalyzer(ASTTemplate):
             return self.visit(ast_var_id)
 
         left_operand = self.visit(node.left)
-        if node.op in (AND, OR) and isinstance(left_operand, DataComponent):
-            right_operand = self._visit_right_where_needed(node.op, left_operand, node.right)
-        else:
-            right_operand = self.visit(node.right)
+        right_operand = self._visit_right_operand(node.op, left_operand, node.right)
 
         if self.condition_stack:
             left_operand = self.merge_then_else_datasets(left_operand)
@@ -658,26 +655,102 @@ class InterpreterAnalyzer(ASTTemplate):
                 raise SemanticError("1-1-6-6", dataset_name=left_operand, comp_name=right_operand)
         return BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
 
-    def _visit_right_where_needed(self, op: str, left: DataComponent, node: AST.AST) -> Any:
-        """The right operand of a Component level and or or, computed only on the Data Points
-        where the left one does not give the result: false or null for or, true or null for and
-        (issue #1314). It is null on the others, which three-valued logic leaves out: true or
-        null is true, false and null is false."""
-        if left.data is None or left.data_type != Boolean:
+    def _visit_right_operand(self, op: str, left: Any, node: AST.AST) -> Any:
+        """The right operand of a binary operator. The right operand of an and or an or is
+        needed only where the left one does not give the result: where it is false or null for
+        or, true or null for and. At Component and scalar level it is computed only there, as on
+        the DuckDB engine, and is null elsewhere, which three-valued logic leaves out. In a
+        having clause the groups take the place of the Data Points. At Data Set level every
+        operand is computed on all its Data Points (issue #1314)."""
+        if op not in (AND, OR):
             return self.visit(node)
+        if isinstance(left, Dataset):
+            if not self.is_from_having:
+                return self.visit(node)
+            return self._visit_having_right(op, left, node)
+        if not isinstance(left, (DataComponent, Scalar)) or left.data_type != Boolean:
+            return self.visit(node)
+        if isinstance(left, DataComponent):
+            if left.data is None:
+                return self.visit(node)
+            needed = self._needed(op, left.data).to_numpy()
+            return self._visit_where_needed(node, left.data.index[needed], left.data.index)
+        if self._needed(op, pd.Series([left.value], dtype=object)).iloc[0]:
+            return self.visit(node)
+        # The value that gives the result, which three-valued logic reads as a bool
+        left.value = bool(left.value)
+        index = self._frame_index()
+        if index is not None:
+            # At Component level: needed on none of the Data Points
+            return self._visit_where_needed(node, index[:0], index)
+        structure = self._visit_structure(deepcopy(node))
+        # A Data Set operand is computed on all its Data Points
+        return structure if isinstance(structure, Scalar) else self.visit(node)
+
+    @staticmethod
+    def _needed(op: str, left: pd.Series) -> pd.Series:
+        """Where the right operand of op is needed, from the values of its left operand."""
         # The value of the left operand that gives the result by itself
         decisive = op == OR
-        needed = left.data.fillna(not decisive).astype(bool) != decisive
+        return left.fillna(not decisive).astype(bool) != decisive
+
+    def _visit_where_needed(self, node: AST.AST, needed: pd.Index, index: pd.Index) -> Any:
+        """The operand node, computed only on the Data Points of needed, as a branch of an if,
+        and null on the other Data Points of index."""
         if self.condition_stack is None:
             self.condition_stack = []
-        index = left.data.index[needed.to_numpy()]
         self.condition_stack.append(
-            Dataset(name="right", components={}, data=pd.DataFrame(index=index))
+            Dataset(name="needed", components={}, data=pd.DataFrame(index=needed))
         )
-        right = self._visit_in_branch(node)
+        operand = self._visit_in_branch(node)
         self.condition_stack.pop()
-        if isinstance(right, DataComponent) and right.data is not None:
-            right.data = right.data.reindex(left.data.index)
+        if isinstance(operand, DataComponent):
+            data = (
+                pd.Series(dtype=operand.data_type.dtype()) if operand.data is None else operand.data
+            )
+            operand.data = data.reindex(index)
+        return operand
+
+    def _frame_index(self) -> Optional[pd.Index]:
+        """The row labels of the Data Points that a Component is computed on: the ones of the
+        Component level branch being computed, or else the ones of the Data Set of the clause or
+        of the rule. None out of them."""
+        branch_index = self._branch_index()
+        if branch_index is not None:
+            return branch_index
+        if self.is_from_rule:
+            return None if self.rule_data is None else self.rule_data.index
+        frame = self.regular_aggregation_dataset
+        if not self.is_from_regular_aggregation or frame is None or frame.data is None:
+            return None
+        return frame.data.index
+
+    def _visit_having_right(self, op: str, left: Dataset, node: AST.AST) -> Any:
+        """The right operand of an and or an or in a having clause, computed from the Data Points
+        of the groups where the left one does not give the result, and null on the others."""
+        measures = left.get_measures()
+        aggregation_dataset = self.aggregation_dataset
+        if (
+            left.data is None
+            or len(measures) != 1
+            or measures[0].data_type != Boolean
+            or aggregation_dataset is None
+            or aggregation_dataset.data is None
+        ):
+            return self.visit(node)
+        ids = left.get_identifiers_names()
+        needed = self._needed(op, left.data[measures[0].name]).to_numpy()
+        groups = pd.MultiIndex.from_frame(left.data.loc[needed, ids])
+        data = aggregation_dataset.data
+        self.aggregation_dataset = Dataset(
+            name=aggregation_dataset.name,
+            components=aggregation_dataset.components,
+            data=data[pd.MultiIndex.from_frame(data[ids]).isin(groups)],
+        )
+        right = self.visit(node)
+        self.aggregation_dataset = aggregation_dataset
+        if isinstance(right, Dataset) and right.data is not None:
+            right.data = merge_frames(left.data[ids], right.data, on=ids, how="left")
         return right
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> None:

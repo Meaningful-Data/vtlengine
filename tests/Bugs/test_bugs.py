@@ -4122,6 +4122,32 @@ class ConditionalBugs(BugHelper):
                     text=statement,
                 )
 
+    def test_GH_1314_45(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_2 := true or (1 / Me_1 > 0)];
+                    DS_r2 <- DS_1[calc Me_2 := sc_f and (1 / Me_1 > 0)];
+                    DS_r3 <- DS_1 * (if true or (1 / sc_0 > 1) then 2 else 3);
+                    DS_r4 <- sum(DS_1 group by Id_1 having count() > 0 or sum(Me_1) / 0 > 1);
+                    DS_r5 <- sum(DS_1 group by Id_1 having count() < 2 and 100 / max(Me_1) > 1);
+        Description: The right operand of an or is not computed where the left one is true,
+            nor the right operand of an and where the left one is false, as on the DuckDB
+            engine: with a scalar left operand, at Component (DS_r1, DS_r2) and at scalar level
+            (DS_r3), and in a having clause, on the groups (DS_r4, DS_r5). The pandas engine
+            computed it and raised 2-1-15-6.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_45"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_0": 0, "sc_f": False},
+        )
+
     def test_GH_1314_35(self):
         """
         Expression: DS_r1 <- DS_1[calc Me_2 := (Id_1 <= 10) or (Me_1 / Me_1 < 1.5)];
