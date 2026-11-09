@@ -13,7 +13,7 @@
           "name": "Me_1",
           "role": "Measure",
           "type": "Number",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "Me_2",

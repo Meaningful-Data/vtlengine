@@ -1,1 +1,7 @@
-DS_r <- if DS_1 then DS_2 else 0.5;
+DS_r1 <- if DS_1 then DS_2 else 0.5;
+DS_r2 <- isnull(DS_3);
+DS_r3 <- if isnull(DS_3) xor DS_3 then DS_4 else 0.5;
+DS_r4 <- case when isnull(DS_3) xor DS_3 then DS_4 else 0.5;
+DS_r5 <- if DS_6 < 0.5 then DS_5 - DS_5 else -DS_5;
+DS_r6 <- case when (case when DS_7 > 0 and DS_8 > 0 then true else DS_7 = DS_9) then DS_9 else DS_9;
+DS_r7 <- case when DS_7 > 1 then DS_9 when (case when DS_7 > 0 and DS_8 > 0 then true else DS_7 = DS_9) then 0 else DS_9 * 10;
