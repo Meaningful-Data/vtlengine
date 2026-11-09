@@ -62,6 +62,23 @@ def _selected_value(operand: Scalar, data_type: Any) -> Any:
     return data_type.implicit_cast(operand.value, operand.data_type)
 
 
+def _scalar_result(operands: List[Scalar]) -> Scalar:
+    """The result of a scalar if or case before its condition selects an operand: the common
+    type of the operands, null when any of them can be. Its value depends on the data, so it is
+    no literal and the semantic analysis does not know it, unless every operand is a literal
+    with the same value (issue #1314)."""
+    data_type = _supertype(operands)
+    first = operands[0]
+    literal = all(op.literal and op.value == first.value for op in operands)
+    return Scalar(
+        name="result",
+        value=_selected_value(first, data_type) if literal else None,
+        data_type=data_type,
+        nullable=any(op.nullable or op.data_type == Null for op in operands),
+        literal=literal,
+    )
+
+
 def _as_type(data: Any, data_type: Any) -> Any:
     """The data in the dtype of ``data_type``. As a String, a Boolean is "true" or "false", as
     VTL casts it, where astype writes a numpy or Python Boolean as "True" (issue #1314)."""
@@ -163,7 +180,11 @@ class If(Operator):
         cls, condition: Any, true_branch: Any, false_branch: Any, is_from_having: bool = False
     ) -> Any:
         result = cls.validate(condition, true_branch, false_branch, is_from_having)
-        if isinstance(result, DataComponent):
+        if isinstance(result, Scalar):
+            # The value of the operand that the condition selects, in the type of the result
+            selected = true_branch if condition.value else false_branch
+            result.value = _selected_value(selected, result.data_type)
+        elif isinstance(result, DataComponent):
             result.data = cls.component_level_evaluation(condition, true_branch, false_branch)
             if result.data_type is String:
                 result.data = to_strings(result.data)
@@ -234,22 +255,13 @@ class If(Operator):
         cls, condition: Scalar, true_branch: Scalar, false_branch: Scalar
     ) -> Scalar:
         """A scalar if needs a Boolean condition, and takes the common type of its operands,
-        as at Component and Data Set level, and the value of the operand that its condition
-        selects (issue #1314). A null literal condition selects the else operand."""
+        as at Component and Data Set level (issue #1314). A null literal condition selects the
+        else operand when the if is evaluated."""
         if condition.data_type not in (Boolean, Null):
             raise SemanticError(
                 "1-1-9-1", op=cls.op, type=SCALAR_TYPES_CLASS_REVERSE[condition.data_type]
             )
-        data_type = _supertype([true_branch, false_branch])
-        selected = true_branch if condition.value else false_branch
-        return Scalar(
-            name="result",
-            value=_selected_value(selected, data_type),
-            data_type=data_type,
-            # Null when either operand can be, as a case, whatever the operand selected
-            nullable=any(op.nullable or op.data_type == Null for op in (true_branch, false_branch)),
-            literal=selected.literal,
-        )
+        return _scalar_result([true_branch, false_branch])
 
     @classmethod
     def validate(  # noqa: C901
@@ -600,13 +612,7 @@ class Case(Operator):
 
             # The common type of the operands, as at Component and Data Set level, and not
             # the type of the operand selected by the values of the conditions (issue #1314)
-            nullable = any(op.nullable or op.data_type == Null for op in ops)
-            return Scalar(
-                name="result",
-                value=None,
-                data_type=_supertype(ops),
-                nullable=nullable,
-            )
+            return _scalar_result(ops)
 
         elif condition_type is DataComponent:
             for condition in conditions:

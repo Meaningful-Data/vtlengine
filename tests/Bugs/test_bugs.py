@@ -4050,6 +4050,51 @@ class ConditionalBugs(BugHelper):
             scalars={"sc_1": 10, "sc_2": None},
         )
 
+    def test_GH_1314_33(self):
+        """
+        Expression: DS_r1 <- DS_1 + cast(if isnull(sc_1) then "1" else "yes", integer);
+                    DS_r2 <- DS_1 + cast(if sc_3 >= "b" then "1" else sc_3, number);
+        Description: The value of a scalar if depends on the data, so the semantic analysis
+            does not know it. It took the value of the else operand when it did not know the
+            value of the condition, so the DuckDB engine checked the cast of the operand that
+            is not selected: "yes" raised 1-1-5-6 (DS_r1) and the value "b" of sc_3 raised
+            2-1-5-1 (DS_r2), where the selected operand "1" casts.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_33"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": None, "sc_2": 3, "sc_3": "b"},
+        )
+
+    def test_GH_1314_34(self):
+        """
+        Expression: DS_r <- DS_1 + cast(if sc_2 >= 0.0 then "a" else null, integer);
+        Description: A scalar if is a literal, which the semantic analysis checks, only when
+            all its operands are literals with the same value: which operand it gives depends
+            on the data. The pandas engine took the literal flag of the operand selected, so
+            "a" raised the semantic error 1-1-5-6, while it is the runtime error 2-1-5-1 that
+            the DuckDB engine raises.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_34"
+        number_inputs = 1
+        error_code = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=error_code,
+            scalars={"sc_1": None, "sc_2": 3, "sc_3": "b"},
+        )
+
 
 class ClauseBugs(BugHelper):
     """ """
