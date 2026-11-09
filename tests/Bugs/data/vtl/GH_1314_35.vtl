@@ -1,0 +1,5 @@
+DS_r1 <- DS_1[calc Me_2 := (Id_1 <= 10) or (Me_1 / Me_1 < 1.5)];
+DS_r2 <- DS_1[calc Me_2 := if Me_b or (Me_1 / Me_1 > 0.5) then 1 else 0];
+DS_r3 <- DS_1[filter Me_b or (Me_1 / Me_1 > 0.5)];
+DS_r4 <- DS_1[calc Me_2 := if isnull(Id_1) and (Me_1 / Me_1 <= -1) then 1 else 0];
+DS_r5 <- DS_1[calc Me_2 := if not Me_b and (Me_1 / Me_1 > 0.5) then 1 else 0];

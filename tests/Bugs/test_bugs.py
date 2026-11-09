@@ -4095,6 +4095,31 @@ class ConditionalBugs(BugHelper):
             scalars={"sc_1": None, "sc_2": 3, "sc_3": "b"},
         )
 
+    def test_GH_1314_35(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_2 := (Id_1 <= 10) or (Me_1 / Me_1 < 1.5)];
+                    DS_r2 <- DS_1[calc Me_2 := if Me_b or (Me_1 / Me_1 > 0.5) then 1 else 0];
+                    DS_r3 <- DS_1[filter Me_b or (Me_1 / Me_1 > 0.5)];
+                    DS_r4 <- DS_1[calc Me_2 := if isnull(Id_1) and (Me_1 / Me_1 <= -1)
+                        then 1 else 0];
+                    DS_r5 <- DS_1[calc Me_2 := if not Me_b and (Me_1 / Me_1 > 0.5)
+                        then 1 else 0];
+        Description: At Component level, the right operand of an or is computed only on the
+            Data Points where the left one is false or null, and the right operand of an and
+            where the left one is true or null: on the others the left operand gives the
+            result. The pandas engine computed it on every Data Point, so the division of
+            Me_1 0.0 by itself raised 2-1-15-6 on Id_1 1, where the DuckDB engine does not
+            compute it. A null left operand still takes the right one, in three-valued logic
+            (Id_1 3).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_35"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """

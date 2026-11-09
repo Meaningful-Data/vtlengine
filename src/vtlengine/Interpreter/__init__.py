@@ -20,6 +20,7 @@ from vtlengine.AST.DAG._models import DatasetSchedule
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
     ALL,
+    AND,
     APPLY,
     AS,
     BETWEEN,
@@ -44,6 +45,7 @@ from vtlengine.AST.Grammar.tokens import (
     KEEP,
     MEMBERSHIP,
     MINUS,
+    OR,
     PARTIAL_NULL,
     PARTIAL_ZERO,
     PLUS,
@@ -638,7 +640,10 @@ class InterpreterAnalyzer(ASTTemplate):
             return self.visit(ast_var_id)
 
         left_operand = self.visit(node.left)
-        right_operand = self.visit(node.right)
+        if node.op in (AND, OR) and isinstance(left_operand, DataComponent):
+            right_operand = self._visit_right_where_needed(node.op, left_operand, node.right)
+        else:
+            right_operand = self.visit(node.right)
 
         if self.condition_stack:
             left_operand = self.merge_then_else_datasets(left_operand)
@@ -654,6 +659,28 @@ class InterpreterAnalyzer(ASTTemplate):
             elif self.is_from_regular_aggregation:
                 raise SemanticError("1-1-6-6", dataset_name=left_operand, comp_name=right_operand)
         return BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
+
+    def _visit_right_where_needed(self, op: str, left: DataComponent, node: AST.AST) -> Any:
+        """The right operand of a Component level and or or, computed only on the Data Points
+        where the left one does not give the result: false or null for or, true or null for and
+        (issue #1314). It is null on the others, which three-valued logic leaves out: true or
+        null is true, false and null is false."""
+        if left.data is None or left.data_type != Boolean:
+            return self.visit(node)
+        # The value of the left operand that gives the result by itself
+        decisive = op == OR
+        needed = left.data.fillna(not decisive).astype(bool) != decisive
+        if self.condition_stack is None:
+            self.condition_stack = []
+        index = left.data.index[needed.to_numpy()]
+        self.condition_stack.append(
+            Dataset(name="right", components={}, data=pd.DataFrame(index=index))
+        )
+        right = self._visit_in_branch(node)
+        self.condition_stack.pop()
+        if isinstance(right, DataComponent) and right.data is not None:
+            right.data = right.data.reindex(left.data.index)
+        return right
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> None:
         operand_node = node.operand
