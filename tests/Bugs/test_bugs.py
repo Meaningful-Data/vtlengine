@@ -4144,6 +4144,28 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_41(self):
+        """
+        Expression: DS_r <- symdiff(if DS_1 > 1 then (if DS_2 > 1 then 1 / DS_2 else -0.5)
+                        else null, DS_3);
+        Description: Each Data Set operand of an if is computed on all its Data Points, so
+            the inner if divides by zero at Id_1 3 of DS_2, although the outer if takes no
+            Data Point from it: DS_1 and DS_2 share none. The DuckDB engine computed 1 / DS_2
+            in a MATERIALIZED CTE nested in the inner if, and dropped it with the inner if,
+            whose Data Points its statistics showed the outer if does not need, so symdiff
+            returned DS_3. The CTE is now at the top of the statement, here before the WITH
+            clause of symdiff.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_41"
+        number_inputs = 3
+        error_code = "2-1-15-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
 
 class ClauseBugs(BugHelper):
     """ """

@@ -463,7 +463,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Assignment name -> the inputs the DAG found for it, built on first use
     _assignment_inputs: Optional[Dict[str, List[str]]] = field(default=None, init=False)
 
-    _materialized_operands: List[str] = field(default_factory=list, init=False)
+    _materialized_operands: List[Tuple[str, str]] = field(default_factory=list, init=False)
 
     # The type of each Component level if and case of the statement, with its clause Data Set
     # (see _value_type), so that a nested chain of them is typed once
@@ -619,7 +619,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             elif isinstance(child, AST.Assignment):
                 name = child.left.value  # type: ignore[attr-defined]
                 with transformation_output(name), self._statement_memo():
-                    queries.append(self._transpile_assignment(child))
+                    _, sql, is_persistent = self._transpile_assignment(child)
+                    queries.append((name, self._with_checked_operands(sql), is_persistent))
                 self._join_alias_map = {}
                 self._consumed_join_aliases = set()
                 self._materialized_operands = []

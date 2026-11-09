@@ -79,7 +79,7 @@ class StructureVisitor(ASTTemplate):
         self._udos: Dict[str, Dict[str, Any]] = {}
         self._structure_memo: Optional[Dict[Tuple[int, str], Tuple[AST.AST, Any]]] = None
         self._node_type_memo: Optional[Dict[int, Tuple[AST.AST, str]]] = None
-        self._materialized_operands: List[str] = []
+        self._materialized_operands: List[Tuple[str, str]] = []
 
     # Dispatcher: two-level visit — first ``visit_{Class}_{op}``, then ``visit_{Class}``
 
@@ -384,18 +384,37 @@ class StructureVisitor(ASTTemplate):
         raises, while the pandas engine computes each operation in full.
         A MATERIALIZED CTE computes the operand before the enclosing operation: it stops
         the join filters, and the connection disables the CTE filter pusher that would
-        move the filters into it (see ``configure_duckdb_connection``). The operands
-        already materialized inside it are not checked again.
+        move the filters into it (see ``configure_duckdb_connection``). The CTE goes at the
+        top of the statement (see ``_with_checked_operands``), as DuckDB drops a nested one
+        with the operation that holds it when its statistics show that a join needs no row
+        of that operation, as an if or a case operand of another one (issue #1314). The
+        operands already materialized inside it are read from their own CTE, so they are
+        not checked again.
         """
-        unchecked = sql
-        for fragment in sorted(self._materialized_operands, key=len, reverse=True):
-            unchecked = unchecked.replace(fragment, "")
-        if not references_raising_macro(unchecked):
+        if not references_raising_macro(sql):
             return sql
         cte = quote_name(f"_vtl_checked_{len(self._materialized_operands)}")
-        wrapped = f"(WITH {cte} AS MATERIALIZED {sql} SELECT * FROM {cte})"
-        self._materialized_operands.append(wrapped)
-        return wrapped
+        self._materialized_operands.append((cte, sql))
+        return f"(SELECT * FROM {cte})"
+
+    def _with_checked_operands(self, sql: str) -> str:
+        """The query ``sql`` of a statement after the MATERIALIZED CTEs of the operands that
+        it reads (see ``_materialize_raising_operand``). An operand materialized for SQL
+        that the statement left out is not computed."""
+        used: List[str] = []
+        read = sql
+        # A CTE only reads the ones materialized before it
+        for cte, operand_sql in reversed(self._materialized_operands):
+            if cte in read:
+                used.insert(0, f"{cte} AS MATERIALIZED {operand_sql}")
+                read += operand_sql
+        if not used:
+            return sql
+        ctes = f"WITH {', '.join(used)}"
+        if sql.lstrip().upper().startswith("SELECT"):
+            return f"{ctes} {sql}"
+        # A query with its own WITH clause
+        return f"{ctes} SELECT * FROM ({sql})"
 
     def _resolve_dataset_name(self, node: AST.AST) -> str:
         """Resolve a VarID to its actual dataset name (handles UDO params)."""
