@@ -3988,6 +3988,39 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_31(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_2 := if Me_1 > 0 then ln(Me_1) else 0];
+                    DS_r2 <- DS_1[calc Me_2 := if Me_3 <> "abc" then cast(Me_3, integer)
+                        else 0];
+                    DS_r3 <- DS_1[calc Me_2 := case when Me_1 > 0 then sqrt(Me_1)
+                        when Me_1 = 0 then 0 else ln(abs(Me_1))];
+                    DS_r4 <- DS_1[aggr Me_2 := sum(if Me_1 > 0 then ln(Me_1) else Me_1)];
+                    DS_r5 <- DS_1[filter if Me_1 > 0 then ln(Me_1) > 1 else true];
+                    DS_r6 <- inner_join(DS_1 as a, DS_2 as b calc Me_4 := if a#Me_1 > 0
+                        then sqrt(a#Me_1) else Me_2 keep Me_4);
+                    DS_r7 <- DS_1[calc Me_2 := case when Me_1 > -10 then Me_1
+                        when ln(Me_1) > 0 then ln(0) else 3];
+                    DS_r8 <- DS_1[calc Me_2 := if Me_1 > 0 then sum(Me_1 + 1 over ())
+                        else 0];
+        Description: At Component level, an operand of an if or a case is computed only on
+            the Data Points that take its branch, as on the DuckDB engine. On the pandas
+            engine, only a binary operator cut its Components to the Data Points of the
+            branch: a unary or parameterised operator on a Component (ln, sqrt, abs, cast)
+            ran on every Data Point and raised for the ones of another branch, in a calc, a
+            case, an aggr, a filter and a join (DS_r1 to DS_r6). A condition or an operand
+            that no Data Point reaches is not computed (DS_r7), and an analytic operator in a
+            branch reads every Data Point of the clause (DS_r8, where the pandas engine summed
+            only the Data Points of the branch and gave 5.0).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_31"
+        number_inputs = 2
+        references_names = [str(i) for i in range(1, 9)]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """

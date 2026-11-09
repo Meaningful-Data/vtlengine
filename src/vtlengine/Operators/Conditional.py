@@ -530,6 +530,9 @@ class Case(Operator):
         # The branches are written from the last to the first: where several conditions
         # are true, the then operand of the first one is the one that stays (issue #1251).
         for i in reversed(range(len(conditions))):
+            if conditions[i].data is None:
+                # No Data Point is left for this condition, so it was not computed (#1314)
+                continue
             case = conditions[i].data[conditions[i].data.fillna(False).astype("bool[pyarrow]")]
             case_result = component_assign(case, thenOps[i])
             result = result.reindex(result.index.union(case.index))
