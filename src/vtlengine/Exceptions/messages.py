@@ -453,9 +453,11 @@ centralised_messages = {
         "specific type of components do not match.",
     },
     "1-1-1-16": {
-        "message": "Found structure not nullable and null values.",
-        "description": "Raised when null values are found in a structure that "
-        "is defined as non-nullable.",
+        "message": "Identifier {comp_name} cannot be calculated from an expression that is "
+        "declared nullable.",
+        "description": "Raised when an Identifier is calculated from an expression whose "
+        "structure allows null values, such as a nullable Component or the null literal. "
+        "Use nvl, or a Component declared not nullable.",
     },
     "1-1-1-20": {
         "message": "At op {op}: Only applies to Datasets, instead of this a Scalar was provided.",

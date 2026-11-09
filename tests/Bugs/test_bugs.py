@@ -791,6 +791,24 @@ class JoinBugs(BugHelper):
             code=code, number_inputs=number_inputs, exception_code=message
         )
 
+    def test_GH_1318_1(self):
+        """
+        Status: OK
+        Expression: F <- DS_2[rename Id_2 to K];
+                    B <- left_join(DS_1[calc measure K := Me_1] as d, F as f using K);
+                    C <- left_join(DS_1[calc measure K := Me_1] as d, F as f using K);
+        Description: K is a Measure of the left-most operand and the Identifier of F. The
+                     join turned K into a Measure in F itself, so the same join failed the
+                     second time with 1-2-10 and F was returned without an Identifier.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1318
+        Goal: Check Result.
+        """
+        code = "GH_1318_1"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class NumericBugs(BugHelper):
     """ """
@@ -4970,6 +4988,30 @@ class ClauseBugs(BugHelper):
         references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1318_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[filter not isnull(Me_1)][calc identifier Id_2 := Me_1];
+        Description: Me_1 is declared nullable, which a filter does not change, so an
+                     Identifier cannot be calculated from it. The message described null
+                     values in the data, which the check never reads, and did not name
+                     the Identifier.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1318
+        Goal: Check Exception.
+        """
+        code = "GH_1318_2"
+        number_inputs = 1
+        message = "1-1-1-16"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            exception_message=(
+                "Identifier Id_2 cannot be calculated from an expression that is declared nullable."
+            ),
+        )
 
 
 class DefinedBugs(BugHelper):
