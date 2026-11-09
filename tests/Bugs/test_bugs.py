@@ -4095,6 +4095,33 @@ class ConditionalBugs(BugHelper):
             scalars={"sc_1": None, "sc_2": 3, "sc_3": "b"},
         )
 
+    def test_GH_1314_44(self):
+        """
+        Expression: DS_r <- DS_1[calc Me_2 := cast(if true then "a" else "1", integer)];
+                    DS_r <- DS_1[calc Me_2 := cast(case when false then "1" when true then "a"
+                        else "2", integer)];
+        Description: While the conditions of a scalar if or case are literals, the script
+            selects the operand, so the result is that operand, with its value and its literal
+            flag, and the cast of the literal "a" is the semantic error 1-1-5-6. A false
+            literal condition is skipped, as a case does. The rule of GH_1314_34 treated a
+            literal condition as one that the data decide, so both casts raised the runtime
+            error 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_44"
+        number_inputs = 1
+        error_code = "1-1-5-6"
+
+        for statement in self.LoadVTL(code).splitlines():
+            with self.subTest(statement=statement):
+                self.NewSemanticExceptionTest(
+                    code=code,
+                    number_inputs=number_inputs,
+                    exception_code=error_code,
+                    text=statement,
+                )
+
     def test_GH_1314_35(self):
         """
         Expression: DS_r1 <- DS_1[calc Me_2 := (Id_1 <= 10) or (Me_1 / Me_1 < 1.5)];

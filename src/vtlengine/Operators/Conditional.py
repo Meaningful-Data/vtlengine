@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, Dict, List, Union, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
 import pandas as pd
 
@@ -62,20 +62,31 @@ def _selected_value(operand: Scalar, data_type: Any) -> Any:
     return data_type.implicit_cast(operand.value, operand.data_type)
 
 
-def _scalar_result(operands: List[Scalar]) -> Scalar:
-    """The result of a scalar if or case before its condition selects an operand: the common
-    type of the operands, null when any of them can be. Its value depends on the data, so it is
-    no literal and the semantic analysis does not know it, unless every operand is a literal
-    with the same value (issue #1314)."""
+def _scalar_result(conditions: List[Scalar], then_ops: List[Scalar], else_op: Scalar) -> Scalar:
+    """The result of a scalar if or case before its conditions select an operand: the common
+    type of the operands, null when any of them can be (issue #1314). While its conditions are
+    literals, the script selects the operand: the then operand of the first true one, or else
+    the else operand, which the result is, with its value and its literal flag. Otherwise the
+    data select it, so the result is no literal and the semantic analysis does not know its
+    value, unless every operand is a literal with the same value."""
+    operands = [*then_ops, else_op]
     data_type = _supertype(operands)
-    first = operands[0]
-    literal = all(op.literal and op.value == first.value for op in operands)
+    selected: Optional[Scalar] = else_op
+    for condition, then_op in zip(conditions, then_ops):
+        if not condition.literal:
+            selected = None
+            break
+        if condition.value:
+            selected = then_op
+            break
+    if selected is None and all(op.literal and op.value == else_op.value for op in operands):
+        selected = else_op
     return Scalar(
         name="result",
-        value=_selected_value(first, data_type) if literal else None,
+        value=None if selected is None else _selected_value(selected, data_type),
         data_type=data_type,
         nullable=any(op.nullable or op.data_type == Null for op in operands),
-        literal=literal,
+        literal=selected is not None and selected.literal,
     )
 
 
@@ -255,13 +266,13 @@ class If(Operator):
         cls, condition: Scalar, true_branch: Scalar, false_branch: Scalar
     ) -> Scalar:
         """A scalar if needs a Boolean condition, and takes the common type of its operands,
-        as at Component and Data Set level (issue #1314). A null literal condition selects the
-        else operand when the if is evaluated."""
+        as at Component and Data Set level (issue #1314). A literal condition selects the
+        operand already in the semantic analysis, and a null one the else operand."""
         if condition.data_type not in (Boolean, Null):
             raise SemanticError(
                 "1-1-9-1", op=cls.op, type=SCALAR_TYPES_CLASS_REVERSE[condition.data_type]
             )
-        return _scalar_result([true_branch, false_branch])
+        return _scalar_result([condition], [true_branch], false_branch)
 
     @classmethod
     def validate(  # noqa: C901
@@ -612,7 +623,7 @@ class Case(Operator):
 
             # The common type of the operands, as at Component and Data Set level, and not
             # the type of the operand selected by the values of the conditions (issue #1314)
-            return _scalar_result(ops)
+            return _scalar_result(conditions, thenOps, elseOp)
 
         elif condition_type is DataComponent:
             for condition in conditions:
