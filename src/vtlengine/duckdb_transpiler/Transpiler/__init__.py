@@ -1783,6 +1783,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return self._is_operand_type(node, Boolean)
         if isinstance(node, AST.BinOp) and node.op == tokens.MEMBERSHIP:
             return self._get_source_vtl_type(node) == "Boolean"
+        if isinstance(node, (AST.If, AST.Case)) or getattr(node, "op", None) == tokens.NVL:
+            return self._value_type(node) == "Boolean"
         if isinstance(node, AST.BinOp):
             return node.op in _BOOLEAN_RESULT_BINOPS
         if isinstance(node, AST.UnaryOp):
@@ -2598,9 +2600,8 @@ FROM (
             return self._apply_measures(operand, _cast_measure, self._result_measure_name(node))
         else:
             operand_sql = self.visit(operand)
-            source_type = self._get_source_vtl_type(operand)
-            if source_type is None and self._is_boolean_expr(operand):
-                source_type = "Boolean"
+            # A String if, case or nvl casts as a String does (issue #1314)
+            source_type = self._get_source_vtl_type(operand) or self._value_type(operand)
             return self._cast_expr(operand_sql, duckdb_type, target_type_str, mask, source_type)
 
     def _cast_expr(
@@ -3729,19 +3730,25 @@ FROM (
     # Conditional visitors (If, Case)
     # =========================================================================
 
+    def _common_value_type(self, operands: List[AST.AST]) -> Optional[str]:
+        """The type of an if, a case or an nvl: a String when one of its ``operands`` is, a
+        Boolean when all are."""
+        types = {self._value_type(op) for op in operands} - {"Null"}
+        if types == {"Boolean"}:
+            return "Boolean"
+        return "String" if "String" in types else None
+
     def _value_type(self, node: AST.AST) -> Optional[str]:
-        """The type of a Component or scalar operand of an if or a case, where it is known. An
-        if or a case is a String when one of its operands is, a Boolean when all are."""
+        """The type of a Component or scalar operand of an if or a case, where it is known."""
         if isinstance(node, AST.ParFunction):
             return self._value_type(node.operand)
+        if isinstance(node, AST.BinOp) and node.op == tokens.NVL:
+            return self._common_value_type([node.left, node.right])
         if isinstance(node, (AST.If, AST.Case)):
             hit = self._value_types.get(id(node))
             if hit is not None and hit[0] is node and hit[1] is self._current_dataset:
                 return hit[2]
-            types = {self._value_type(op) for op in self._branch_operands(node)} - {"Null"}
-            value_type = "String" if "String" in types else None
-            if types == {"Boolean"}:
-                value_type = "Boolean"
+            value_type = self._common_value_type(self._branch_operands(node))
             # A UDO body is typed for each call, with its arguments
             if self._udo_params is None:
                 self._value_types[id(node)] = (node, self._current_dataset, value_type)

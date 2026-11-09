@@ -1,0 +1,2 @@
+DS_r1 <- DS_1[calc Me_3 := if Me_1 then nvl(Me_2, "none") else nvl(Me_1, true)];
+DS_r2 <- DS_1[calc Me_3 := upper(nvl(Me_1, false)), Me_4 := cast(if Me_1 then Me_2 else "true", boolean)];

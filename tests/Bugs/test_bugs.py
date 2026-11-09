@@ -4120,6 +4120,30 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_40(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_3 := if Me_1 then nvl(Me_2, "none")
+                        else nvl(Me_1, true)];
+                    DS_r2 <- DS_1[calc Me_3 := upper(nvl(Me_1, false)),
+                        Me_4 := cast(if Me_1 then Me_2 else "true", boolean)];
+        Description: nvl has the common type of its operands, as an if or a case: a String
+            with a String operand, a Boolean with Boolean operands.
+            DS_r1: the if is a String, so its Boolean operand nvl(Me_1, true) is promoted to
+            String. The DuckDB engine did not type nvl, so it mixed a BOOLEAN and a VARCHAR in
+            its CASE and raised a Binder Error.
+            DS_r2: upper promotes the Boolean nvl to String, and the String if casts to Boolean
+            as a String does ("x" is false). The DuckDB engine had no upper for a BOOLEAN, and
+            cast the String if as a value of unknown type: it could not convert "x" to a
+            BOOLEAN, and it cast "3.25" to the Integer 3 where the pandas engine raises 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_40"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class ClauseBugs(BugHelper):
     """ """

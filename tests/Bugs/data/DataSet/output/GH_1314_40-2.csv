@@ -1,0 +1,5 @@
+Id_1,Me_1,Me_2,Me_3,Me_4
+1,True,x,TRUE,False
+2,,,FALSE,True
+3,False,true,FALSE,True
+4,True,,TRUE,
