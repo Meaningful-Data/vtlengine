@@ -45,6 +45,7 @@ from vtlengine.AST.Grammar.tokens import (
     KEEP,
     MEMBERSHIP,
     MINUS,
+    NVL,
     OR,
     PARTIAL_NULL,
     PARTIAL_ZERO,
@@ -656,19 +657,22 @@ class InterpreterAnalyzer(ASTTemplate):
         return BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
 
     def _visit_right_operand(self, op: str, left: Any, node: AST.AST) -> Any:
-        """The right operand of a binary operator. The right operand of an and or an or is
-        needed only where the left one does not give the result: where it is false or null for
-        or, true or null for and. At Component and scalar level it is computed only there, as on
-        the DuckDB engine, and is null elsewhere, which three-valued logic leaves out. In a
-        having clause the groups take the place of the Data Points. At Data Set level every
-        operand is computed on all its Data Points (issue #1314)."""
-        if op not in (AND, OR):
+        """The right operand of a binary operator. The right operand of an and or an or, and
+        the second operand of an nvl, are needed only where the left one does not give the
+        result: where it is false or null for or, true or null for and, null for nvl. At
+        Component and scalar level they are computed only there, as on the DuckDB engine, and
+        are null elsewhere, which three-valued logic and nvl leave out. In a having clause the
+        groups take the place of the Data Points. At Data Set level every operand is computed
+        on all its Data Points (issue #1314)."""
+        if op not in (AND, OR, NVL):
             return self.visit(node)
         if isinstance(left, Dataset):
-            if not self.is_from_having:
+            if op == NVL or not self.is_from_having:
                 return self.visit(node)
             return self._visit_having_right(op, left, node)
-        if not isinstance(left, (DataComponent, Scalar)) or left.data_type != Boolean:
+        if not isinstance(left, (DataComponent, Scalar)) or (
+            op != NVL and left.data_type != Boolean
+        ):
             return self.visit(node)
         if isinstance(left, DataComponent):
             if left.data is None:
@@ -677,8 +681,9 @@ class InterpreterAnalyzer(ASTTemplate):
             return self._visit_where_needed(node, left.data.index[needed], left.data.index)
         if self._needed(op, pd.Series([left.value], dtype=object)).iloc[0]:
             return self.visit(node)
-        # The value that gives the result, which three-valued logic reads as a bool
-        left.value = bool(left.value)
+        if op != NVL:
+            # The value that gives the result, which three-valued logic reads as a bool
+            left.value = bool(left.value)
         index = self._frame_index()
         if index is not None:
             # At Component level: needed on none of the Data Points
@@ -690,6 +695,8 @@ class InterpreterAnalyzer(ASTTemplate):
     @staticmethod
     def _needed(op: str, left: pd.Series) -> pd.Series:
         """Where the right operand of op is needed, from the values of its left operand."""
+        if op == NVL:
+            return left.isna()
         # The value of the left operand that gives the result by itself
         decisive = op == OR
         return left.fillna(not decisive).astype(bool) != decisive

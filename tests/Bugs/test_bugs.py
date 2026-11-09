@@ -4148,6 +4148,28 @@ class ConditionalBugs(BugHelper):
             scalars={"sc_0": 0, "sc_f": False},
         )
 
+    def test_GH_1314_46(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_3 := nvl(Me_1, 1 / Me_2)];
+                    DS_r2 <- DS_1[calc Me_3 := nvl(Me_2, 1 / sc_0)];
+                    DS_r3 <- DS_1[keep Me_1] + nvl(sc_1, 1 / sc_0);
+        Description: At Component and scalar level, the second operand of an nvl is computed
+            only where the first one is null, as the COALESCE of the DuckDB engine. The pandas
+            engine computed it on every Data Point and raised 2-1-15-6.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_46"
+        number_inputs = 1
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_0": 0, "sc_1": 1},
+        )
+
     def test_GH_1314_35(self):
         """
         Expression: DS_r1 <- DS_1[calc Me_2 := (Id_1 <= 10) or (Me_1 / Me_1 < 1.5)];
