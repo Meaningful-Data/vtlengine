@@ -7,7 +7,13 @@ import pandas as pd
 from vtlengine.AST import BinOp
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.AST.Grammar.tokens import CROSS_JOIN, FULL_JOIN, INNER_JOIN, LEFT_JOIN
-from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE, binary_implicit_promotion
+from vtlengine.DataTypes import (
+    BASIC_TYPES,
+    SCALAR_TYPES_CLASS_REVERSE,
+    Integer,
+    binary_implicit_promotion,
+    check_unary_implicit_promotion,
+)
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Operators import (
@@ -20,6 +26,7 @@ from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
     apply_viral_return_types,
+    combined_viral_components,
     get_current_registry,
     require_rules,
 )
@@ -52,6 +59,31 @@ class Join(Operator):
     reference_dataset: Dataset
 
     @classmethod
+    def _keys_only(cls, using: Optional[List[str]]) -> bool:
+        """Whether only the using identifiers are join keys, so that the other identifiers
+        that the operands share are kept for each of them, as in left_join, full_join and
+        inner_join."""
+        return using is not None and cls.how in ("left", "outer", "inner")
+
+    @classmethod
+    def _join_order(cls, operands: List[Dataset]) -> List[Dataset]:
+        """The operands from the reference one, in an order where each one has an identifier
+        in common with one before it, as inner_join requires."""
+        ordered = [cls.reference_dataset]
+        identifiers = set(cls.reference_dataset.get_identifiers_names())
+        remaining = [op for op in operands if op is not cls.reference_dataset]
+        while remaining:
+            following = next(
+                (op for op in remaining if identifiers & set(op.get_identifiers_names())), None
+            )
+            if following is None:
+                raise SemanticError("1-1-13-26", op=cls.op, dataset=remaining[0].name)
+            ordered.append(following)
+            identifiers |= set(following.get_identifiers_names())
+            remaining = [op for op in remaining if op is not following]
+        return ordered
+
+    @classmethod
     def get_components_union(cls, datasets: List[Dataset]) -> List[Component]:
         common: List[Any] = []
         common.extend(
@@ -81,6 +113,7 @@ class Join(Operator):
     ) -> Dict[str, Component]:
         nullability = {}
         merged_components = {}
+        keys_only = cls._keys_only(using)
         using = using or []
         common = cls.get_components_intersection([op.get_components_names() for op in operands])
         totally_common = list(
@@ -96,17 +129,22 @@ class Join(Operator):
         # instead of being #-qualified like other shared components.
         viral_common = merged_viral_attribute_names([op.components for op in operands], set(using))
         # A merged viral attribute has its data points combined across operands, so it
-        # requires a propagation rule (issue #906).
+        # requires a propagation rule (issue #906), and it takes the common type of the
+        # operands under a min, max or sum rule (issue #1314).
         merged_viral_comps = {
-            name: op.components[name]
-            for op in operands
-            for name in viral_common
-            if name in op.components
+            comp.name: comp
+            for comp in combined_viral_components(operands)
+            if comp.name in viral_common
         }
         require_rules(merged_viral_comps.values())
 
-        for op in operands:
-            for comp in op.components.values():
+        # The roles are set on copies: the Components of an operand are those of the Data Set
+        # it refers to, which the later statements read (issue #1318)
+        operands_components = [
+            {comp.name: copy(comp) for comp in op.components.values()} for op in operands
+        ]
+        for components in operands_components:
+            for comp in components.values():
                 if comp.name in using:
                     is_identifier = all(
                         operand.components[comp.name].role == Role.IDENTIFIER
@@ -134,9 +172,8 @@ class Join(Operator):
                 else:
                     nullability[comp.name] = copy(comp.nullable)
 
-        for operand in operands:
+        for operand, components in zip(operands, operands_components):
             operand_name = operand.name
-            components = {comp.name: copy(comp) for comp in operand.components.values()}
 
             for component_name, component in components.items():
                 component.nullable = nullability[component_name]
@@ -147,7 +184,7 @@ class Join(Operator):
                     continue
 
                 if component_name in common and component_name not in using:
-                    if component.role != Role.IDENTIFIER or cls.how == "cross":
+                    if component.role != Role.IDENTIFIER or cls.how == "cross" or keys_only:
                         new_name = f"{operand_name}#{component_name}"
                         if new_name in merged_components:
                             raise SemanticError("1-1-13-9", comp_name=new_name)
@@ -191,7 +228,14 @@ class Join(Operator):
         using: List[str],
         nvl: Optional[Dict[str, Any]] = None,
     ) -> Dataset:
-        result = cls.execute([copy(operand) for operand in operands], using)
+        operand_copies = [copy(operand) for operand in operands]
+        try:
+            result = cls.execute(operand_copies, using, nvl)
+        finally:
+            # The class keeps one of them as reference_dataset until the next join: without its
+            # data, so the data of each operand is released after its last use (issue #1304)
+            for operand in operand_copies:
+                operand.data = None
         if result.data is not None:
             extra_cols = [c for c in result.data.columns if c not in result.components]
             if extra_cols:
@@ -212,27 +256,76 @@ class Join(Operator):
 
     @classmethod
     def _validate_nvl(cls, operands: List[Dataset], nvl: Dict[str, Any]) -> None:
-        """Each nvl component must exist in at least one operand."""
-        all_components: set[str] = set()
-        for op in operands:
-            all_components.update(op.components)
-        for component in nvl:
-            if component not in all_components:
-                raise SemanticError("1-1-1-10", comp_name=component, dataset_name=operands[0].name)
+        """Each nvl component, written alias#name for the one of an operand, must exist in an
+        operand, and its constant must have its type: an Integer takes no decimals, and an
+        Identifier no null, as it cannot be null."""
+        for component, default in nvl.items():
+            alias, _, name = component.rpartition("#")
+            found = [
+                op.components[name]
+                for op in operands
+                if name in op.components and alias in ("", op.name)
+            ]
+            if not found:
+                raise SemanticError(
+                    "1-1-1-10", comp_name=component, dataset_name=alias or operands[0].name
+                )
+            default_type = BASIC_TYPES[type(default)]
+            for comp in found:
+                if default is None and comp.role == Role.IDENTIFIER:
+                    raise SemanticError("1-1-13-27", op=cls.op, name=component)
+                decimals = isinstance(default, float) and not default.is_integer()
+                if not check_unary_implicit_promotion(default_type, comp.data_type) or (
+                    decimals and comp.data_type is Integer
+                ):
+                    raise SemanticError(
+                        "1-1-13-25",
+                        op=cls.op,
+                        name=component,
+                        type_1=SCALAR_TYPES_CLASS_REVERSE[default_type],
+                        type_2=SCALAR_TYPES_CLASS_REVERSE[comp.data_type],
+                    )
 
     @classmethod
     def _apply_nvl(cls, result: Dataset, nvl: Dict[str, Any]) -> None:
-        """Replace NULLs in `result.data` for each (component, default) pair from nvl."""
+        """Replace NULLs in `result.data` for each (component, default) pair from nvl.
+
+        A rule written alias#name gives the value to the component of that operand, kept as
+        alias#name when other operands have it too. A rule written name gives it to the
+        component of every operand, and comes after the rules of one operand."""
         if result.data is None:
             return
-        for component, default in nvl.items():
-            if component not in result.data.columns:
-                continue
-            result.data[component] = result.data[component].fillna(default)
+        for component, default in sorted(nvl.items(), key=lambda item: "#" not in item[0]):
+            alias, _, name = component.rpartition("#")
+            columns = result.data.columns
+            if alias:
+                targets = [component] if component in columns else [name]
+            else:
+                targets = [c for c in columns if c == name or c.split("#", 1)[-1] == name]
+            for target in targets:
+                # A null rule leaves the nulls of a Measure as they are
+                if target in columns and default is not None:
+                    result.data[target] = result.data[target].fillna(default)
 
     @classmethod
-    def execute(cls, operands: List[Dataset], using: List[str]) -> Dataset:
-        result = cls.validate(operands, using)
+    def _check_nvl_rules(
+        cls, dataset: str, identifiers: Set[str], nvl: Optional[Dict[str, Any]]
+    ) -> None:
+        """Every identifier of an operand that is not a join key has a nvl rule, written for
+        that operand (alias#name) or for every one (name)."""
+        for name in sorted(identifiers):
+            if f"{dataset}#{name}" not in (nvl or {}) and name not in (nvl or {}):
+                raise SemanticError("1-1-13-24", op=cls.op, name=name, dataset=dataset)
+
+    @classmethod
+    def execute(
+        cls,
+        operands: List[Dataset],
+        using: Optional[List[str]],
+        nvl: Optional[Dict[str, Any]] = None,
+    ) -> Dataset:
+        result = cls.validate(operands, using, nvl)
+        keys_only = cls._keys_only(using)
         using = using if using else []
         if len(operands) == 1:
             result.data = operands[0].data
@@ -248,16 +341,24 @@ class Join(Operator):
                 if column in using or column in viral_common or column not in common:
                     continue
                 comp = op.components.get(column)
-                if comp is not None and (comp.role != Role.IDENTIFIER or cls.how == "cross"):
+                if comp is not None and (
+                    comp.role != Role.IDENTIFIER or cls.how == "cross" or keys_only
+                ):
                     op.data = op.data.rename(columns={column: op.name + "#" + column})
         result.data = copy(cls.reference_dataset.data)
 
         join_keys = using if using else result.get_identifiers_names()
+        ordered = cls._join_order(operands) if not using and cls.how == "inner" else operands
 
-        for op in operands:
+        for op in ordered:
             if op is not cls.reference_dataset:
                 merge_join_keys = (
-                    [key for key in join_keys if key in op.data.columns.tolist()]
+                    [
+                        key
+                        for key in join_keys
+                        if key in op.data.columns.tolist()
+                        and (result.data is None or key in result.data.columns)
+                    ]
                     if (op.data is not None)
                     else []
                 )
@@ -278,7 +379,7 @@ class Join(Operator):
                         how=cls.how,
                         on=merge_join_keys,
                     )
-                    cls._combine_viral_attributes(result, viral_common, registry)
+                    cls._combine_viral_attributes(result, viral_common, registry, operands)
                 else:
                     result.data = pd.DataFrame()
         if result.data is not None:
@@ -287,14 +388,16 @@ class Join(Operator):
 
     @classmethod
     def _combine_viral_attributes(
-        cls, result: Dataset, viral_common: Set[str], registry: Any
+        cls, result: Dataset, viral_common: Set[str], registry: Any, operands: List[Dataset]
     ) -> None:
         if result.data is None:
             return
         for name in viral_common:
             if name + "_x" in result.data.columns and name + "_y" in result.data.columns:
+                # The rule of the attribute is the one of its variable or its value domain
+                comp = next(op.components[name] for op in operands if name in op.components)
                 result.data[name] = result.data[[name + "_x", name + "_y"]].apply(
-                    lambda row, n=name: registry.resolve_pair(n, row.iloc[0], row.iloc[1]),
+                    lambda row, c=comp: registry.resolve_pair(c, row.iloc[0], row.iloc[1]),
                     axis=1,
                 )
                 result.data = result.data.drop([name + "_x", name + "_y"], axis=1)
@@ -323,7 +426,7 @@ class Join(Operator):
             if cls.how not in ["cross", "left"]
             else operands[0]
         )
-        cls.identifiers_validation(operands, using)
+        cls.identifiers_validation(operands, using, nvl)
         components = cls.merge_components(operands, using)
         if len(set(components.keys())) != len(components):
             raise SemanticError("1-1-13-9", comp_name="")
@@ -338,30 +441,32 @@ class Join(Operator):
 
     @classmethod
     def _validate_join_key_types(cls, operands: List[Dataset], join_keys: List[str]) -> None:
-        ref = cls.reference_dataset
-        for op in operands:
-            if op is ref:
-                continue
-            for key in join_keys:
-                if key not in ref.components or key not in op.components:
-                    continue
-                left_type = ref.get_component(key).data_type
-                right_type = op.get_component(key).data_type
-                if left_type == right_type:
-                    continue
-                try:
-                    binary_implicit_promotion(left_type, right_type)
-                except SemanticError:
-                    raise SemanticError(
-                        "1-1-13-18",
-                        op=cls.op,
-                        id_name=key,
-                        type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
-                        type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
-                    )
+        """Every two operands that have a join key have compatible types for it, whatever
+        their order."""
+        for key in join_keys:
+            types = [op.get_component(key).data_type for op in operands if key in op.components]
+            for i, left_type in enumerate(types):
+                for right_type in types[i + 1 :]:
+                    if left_type == right_type:
+                        continue
+                    try:
+                        binary_implicit_promotion(left_type, right_type)
+                    except SemanticError:
+                        raise SemanticError(
+                            "1-1-13-18",
+                            op=cls.op,
+                            id_name=key,
+                            type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
+                            type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
+                        )
 
     @classmethod
-    def identifiers_validation(cls, operands: List[Dataset], using: Optional[List[str]]) -> None:
+    def identifiers_validation(
+        cls,
+        operands: List[Dataset],
+        using: Optional[List[str]],
+        nvl: Optional[Dict[str, Any]] = None,
+    ) -> None:
         # (Case A)
         info = {op.name: op.get_identifiers_names() for op in operands}
         for op_name, identifiers in info.items():
@@ -390,8 +495,8 @@ class Join(Operator):
         # (Case B1)
         if cls.reference_dataset is not None:
             for op_name, identifiers in info.items():
-                if op_name != cls.reference_dataset.name and not set(identifiers).issubset(using):
-                    raise SemanticError("1-1-13-4", op=cls.op, using_names=using, dataset=op_name)
+                if op_name != cls.reference_dataset.name and cls.how != "inner":
+                    cls._check_nvl_rules(op_name, set(identifiers) - set(using), nvl)
             reference_components = cls.reference_dataset.get_components_names()
             if not set(using).issubset(reference_components):
                 raise SemanticError(
@@ -425,6 +530,28 @@ class InnerJoin(Join):
     how = "inner"
 
     @classmethod
+    def identifiers_validation(
+        cls,
+        operands: List[Dataset],
+        using: Optional[List[str]],
+        nvl: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Without using, the operands need no superset of the identifiers of the others: an
+        order where each one has an identifier in common with one before it, and the join keys
+        are the identifiers in more than one operand."""
+        if using is not None:
+            super().identifiers_validation(operands, using, nvl)
+            return
+        for op in operands:
+            if len(op.get_identifiers_names()) == 0:
+                raise SemanticError("1-1-13-14", op=cls.op, name=op.name)
+        cls._join_order(operands)
+        cls._validate_join_key_types(
+            operands,
+            cls.get_components_intersection([op.get_identifiers_names() for op in operands]),
+        )
+
+    @classmethod
     def generate_result_components(
         cls, operands: List[Dataset], using: Optional[List[str]] = None
     ) -> Dict[str, Component]:
@@ -452,10 +579,19 @@ class FullJoin(Join):
 
     @classmethod
     def identifiers_validation(
-        cls, operands: List[Dataset], using: Optional[List[str]] = None
+        cls,
+        operands: List[Dataset],
+        using: Optional[List[str]] = None,
+        nvl: Optional[Dict[str, Any]] = None,
     ) -> None:
         if using is not None:
-            raise SemanticError("1-1-13-8", op=cls.op)
+            common = set.intersection(*(set(op.get_identifiers_names()) for op in operands))
+            if not set(using).issubset(common):
+                raise SemanticError("1-1-13-5", op=cls.op, using_names=using)
+            for op in operands:
+                cls._check_nvl_rules(op.name, set(op.get_identifiers_names()) - set(using), nvl)
+            cls._validate_join_key_types(operands, using)
+            return
         for op in operands:
             if op is cls.reference_dataset:
                 continue
@@ -472,8 +608,13 @@ class CrossJoin(Join):
     how = "cross"
 
     @classmethod
-    def execute(cls, operands: List[Dataset], using: Optional[List[str]] = None) -> Dataset:
-        result = cls.validate(operands, using)
+    def execute(
+        cls,
+        operands: List[Dataset],
+        using: Optional[List[str]] = None,
+        nvl: Optional[Dict[str, Any]] = None,
+    ) -> Dataset:
+        result = cls.validate(operands, using, nvl)
         if len(operands) == 1:
             result.data = operands[0].data
             return result
@@ -493,7 +634,7 @@ class CrossJoin(Join):
                         op.data,
                         how=cls.how,
                     )
-                    cls._combine_viral_attributes(result, viral_common, registry)
+                    cls._combine_viral_attributes(result, viral_common, registry, operands)
             if result.data is not None:
                 result.data = result.data.rename(
                     columns={
@@ -508,7 +649,10 @@ class CrossJoin(Join):
 
     @classmethod
     def identifiers_validation(
-        cls, operands: List[Dataset], using: Optional[List[str]] = None
+        cls,
+        operands: List[Dataset],
+        using: Optional[List[str]] = None,
+        nvl: Optional[Dict[str, Any]] = None,
     ) -> None:
         if using is not None:
             raise SemanticError("1-1-13-8", op=cls.op)

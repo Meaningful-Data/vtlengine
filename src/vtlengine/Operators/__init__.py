@@ -128,15 +128,20 @@ def check_downcasts(result: Any, operands: List[Any], op: str) -> None:
     if result.data is None:
         return
     for name, value_domain in downcasts(result, operands).items():
-        outside = value_domain.outside(result.data if name is None else result.data[name])
-        if len(outside):
-            raise RunTimeError(
-                "2-1-5-4",
-                op=op,
-                value=outside.iloc[0],
-                type=SCALAR_TYPES_CLASS_REVERSE[value_domain.type],
-                value_domain=value_domain.name,
-            )
+        check_values(result.data if name is None else result.data[name], value_domain, op)
+
+
+def check_values(values: Any, value_domain: ValueDomain, op: str) -> None:
+    """The values an operator converts into a value domain must be values of it."""
+    outside = value_domain.outside(values)
+    if len(outside):
+        raise RunTimeError(
+            "2-1-5-4",
+            op=op,
+            value=outside.iloc[0],
+            type=SCALAR_TYPES_CLASS_REVERSE[value_domain.type],
+            value_domain=value_domain.name,
+        )
 
 
 class Operator:
@@ -390,6 +395,19 @@ class Binary(Operator):
                 right_name=right_operand.name,
                 right=sorted(right_ids_set),
             )
+        # The Data Points match on the values of the common Identifiers, which need a common
+        # type, as in a join (issue #1314)
+        for id_name in sorted(left_ids_set & right_ids_set):
+            left_type = left_operand.components[id_name].data_type
+            right_type = right_operand.components[id_name].data_type
+            if not check_binary_implicit_promotion(left_type, right_type):
+                raise SemanticError(
+                    "1-1-13-18",
+                    op=cls.op,
+                    id_name=id_name,
+                    type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
+                    type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
+                )
 
         # Deleting extra identifiers that we do not need anymore
 
@@ -634,8 +652,9 @@ class Binary(Operator):
             has_y = va + "_y" in result_data.columns
             if has_x and has_y:
                 # Both operands have this viral attr — apply propagation rule
+                component = left_operand.components[va]
                 result_data[va] = result_data[[va + "_x", va + "_y"]].apply(
-                    lambda row: registry.resolve_pair(va, row.iloc[0], row.iloc[1]),
+                    lambda row, c=component: registry.resolve_pair(c, row.iloc[0], row.iloc[1]),
                     axis=1,
                 )
                 result_data = result_data.drop([va + "_x", va + "_y"], axis=1)

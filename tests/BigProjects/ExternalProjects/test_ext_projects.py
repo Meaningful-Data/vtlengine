@@ -98,9 +98,10 @@ class AnaMart(ExternalProjectsHelper):
         #     sql_names=sql_names
         # )
         # Attributes are maintained through a join, so the join in the mart that
-        # references an input attribute finds it and fails on the using clause with
-        # 1-1-13-4 (using does not define all Identifiers of the non-reference Dataset).
-        exception_code = "1-1-13-4"
+        # references an input attribute finds it and fails with 1-1-13-9: its using clause
+        # leaves out an identifier both operands have, which is kept for each of them and
+        # gives two ENTTY_RIAD_CD when the prefixes are taken out (issue #1239).
+        exception_code = "1-1-13-9"
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,

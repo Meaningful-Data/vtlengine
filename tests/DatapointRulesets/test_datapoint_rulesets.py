@@ -393,11 +393,13 @@ class DatapointRulesetTests(TestDataPointRuleset):
                      rulesetName that can be used for validation purposes.
 
         Git Branch: #144
-        Goal: Has to be an exception because types of variable and vd are differents.
+        Goal: Has to be an exception because types of variable and vd are differents. The
+              components are bound to the value domains (issue #1236), and the rule compares
+              Id_3, a Time, with a String.
         """
         code = "1-1-1-13"
         number_inputs = 1
-        message = "1-1-1-10"
+        message = "1-1-1-1"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message

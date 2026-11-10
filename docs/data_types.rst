@@ -453,8 +453,9 @@ Key rules:
 - **Time_Period to Time**: A Time_Period is implicitly
   converted to a Time interval
   (``"2020-Q1"`` becomes ``"2020-01-01/2020-03-31"``).
-- **Boolean to String**: ``true`` becomes ``"True"``,
-  ``false`` becomes ``"False"``.
+- **Boolean to String**: ``true`` becomes ``"true"``,
+  ``false`` becomes ``"false"``, as the VTL 2.2 reference
+  manual defines it, in both execution engines.
 - **Null to any type**: Null is compatible with every type.
 
 
@@ -569,14 +570,19 @@ Supported conversions without mask
       - —
       - |y|
 
+Legend: |y| = implemented.
+
+.. |y| unicode:: U+2705
+
 Conversion details:
 
 - **Number/Integer to Boolean**: ``0`` becomes ``false``,
   any other value becomes ``true``.
 - **Boolean to Number/Integer**: ``true`` becomes ``1``
   (or ``1.0``), ``false`` becomes ``0`` (or ``0.0``).
-- **Boolean to String**: ``true`` becomes ``"True"``,
-  ``false`` becomes ``"False"``.
+- **Boolean to String**: ``true`` becomes ``"true"``,
+  ``false`` becomes ``"false"``, as the VTL 2.2 reference
+  manual defines it, in both execution engines.
 - **String to Integer**: Must be a valid integer string
   (rejects ``"3.5"``).
 - **Date to Time_Period**: Converts to daily period
@@ -586,62 +592,71 @@ Conversion details:
 Supported conversions with mask
 -------------------------------
 
+A mask gives the format of a String that is cast to, or from, a Number, an
+Integer, a Time, a Date, a Time_Period or a Duration. Both directions are
+supported, on both engines:
+
+.. code-block::
+
+    DS_r <- DS_1 [ calc Me_2 := cast(Me_1, date, "YYYY-MM-DD"),
+                        Me_3 := cast(Me_4, string, "DD.DDD") ];
+
 .. list-table::
-    :widths: 18 14 14 14 14 14 14
+    :widths: 18 41 41
     :header-rows: 1
 
-    * - From / To
-      - String
-      - Number
-      - Time
-      - Date
-      - Time_Period
-      - Duration
-    * - **String**
-      - —
-      - |p|
-      - |p|
-      - |p|
-      - |p|
-      - |p|
-    * - **Time**
-      - |p|
-      - —
-      - —
-      - —
-      - —
-      - —
-    * - **Date**
-      - |p|
-      - —
-      - —
-      - —
-      - —
-      - —
-    * - **Time_Period**
-      - —
-      - —
-      - —
-      - |p|
-      - —
-      - —
-    * - **Duration**
-      - |p|
-      - —
-      - —
-      - —
-      - —
-      - —
+    * - Type
+      - Example masks
+      - Example values
+    * - Number
+      - ``DD.DDD``, ``D*,D+``
+      - ``12.375``, ``0,50``
+    * - Integer
+      - ``DD``, ``D+``
+      - ``07``, ``123``
+    * - Date
+      - ``YYYY-MM-DD``, ``YYYYMMDD``, ``{D}D/{M}M/YYYY``,
+        ``YYYY-DDD``, ``YYYY-\WWW-D``, ``YYYY-MM-DD hh:mm:ss``
+      - ``2020-01-15``, ``20200115``, ``15/1/2020``, ``2020-015``,
+        ``2020-W03-3``, ``2020-01-15 10:30:45``
+    * - Time
+      - ``YYYY-MM-DD/YYYY-MM-DD``
+      - ``2020-01-01/2020-12-31``
+    * - Time_Period
+      - ``YYYY\QQ``, ``YYYY\MMM``, ``YYYYP{ppp}``, ``YYYY``,
+        ``YYYY\.MM\.DD``
+      - ``2020Q3``, ``2015M03``, ``2015D365``, ``2015``,
+        ``2000.03.01`` (the daily period ``2000D61``)
+    * - Duration
+      - ``P``, ``\PpP``
+      - ``M``, ``P1M``
 
-Legend: |y| = implemented, |p| = defined in VTL 2.2 but not
-yet implemented (raises ``NotImplementedError``).
+Number and Integer masks are made of ``D`` (one digit), ``*`` (any number of
+digits), ``+`` (at least one digit) and, for a Number, a ``.`` or ``,``
+separator between the integer and the decimal parts. A Number written with a
+fixed number of decimals is rounded to them.
 
-.. |y| unicode:: U+2705
-.. |p| unicode:: U+23F3
+The masks of the time types are made of a digit for each letter of a time
+unit: ``C`` century, ``Y`` year, ``S`` semester, ``Q`` quarter, ``M`` month,
+``W`` week, ``D`` day, ``h`` hour, ``m`` minute, ``s`` second, ``d`` decimal
+of second, ``P`` period indicator and ``p`` number of periods. Braces enclose
+the digits that may be left out (``{M}M`` writes April as ``4``), a reverse
+slash writes the next character as it is (``\Q``), and any other character
+appears as it is. A day is within the month when the mask has one, within the
+week when it has a week, and within the year otherwise; a Time_Period mask with
+a day and a month, or a week, writes a daily period. A Time is two Date masks
+separated by ``/``.
 
-.. note::
+A value that its mask does not describe raises RunTimeError ``2-1-5-3``, and
+a mask that does not describe the type raises SemanticError ``1-1-5-4``.
+vtlengine does not support these parts of the VTL 2.2 masks, which raise
+SemanticError ``1-3-13``:
 
-    Formal definition of masks is still to be decided.
+- the exponent ``E`` of a Number mask;
+- the textual words ``MONTH``, ``DAY`` and ``AM/PM``;
+- the ISO 8601 composite durations, such as ``P10Y2M12D``: a Duration of
+  vtlengine is one period indicator;
+- a Time written with a duration, such as ``YYYY-MM-DD/PY\YM\MDD\D``.
 
 
 Cast on datasets
@@ -679,3 +694,22 @@ generic name based on the target type:
     When the source type can be implicitly promoted to the
     target type (e.g. Boolean to String, Integer to Number,
     or Number to Integer), the measure is **not** renamed.
+
+
+Cast to a value domain
+----------------------
+
+The target of ``cast`` can be the name of a value domain given in
+``value_domains`` (see :ref:`components_on_value_domains`):
+
+.. code-block::
+
+    DS_r <- DS_1 [calc Me_2 := cast(Me_1, VD_1)];
+
+The operand must be of the basic type of the value domain, or on
+another value domain of that type. Any other type raises
+``1-1-5-1``; cast it to the basic type first. A value that is not a
+value of the value domain raises ``2-1-5-4`` (``1-1-5-6`` for a
+literal). The result is defined on the value domain, and the
+Measure of a Data Set keeps its name. A scalar keeps the basic type,
+as no scalar is defined on a value domain.

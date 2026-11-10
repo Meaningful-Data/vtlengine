@@ -435,15 +435,16 @@ class Analytic(Operator.Unary):
             result.data = cls.normalize_dates(result.data, result.components)
             viral_src = df[identifier_names + viral_attr_names].copy()
             for va_name in viral_attr_names:
-                if registry.get_rule_for_variable(va_name) is None:
+                component = operand.components[va_name]
+                if registry.rule_for(component) is None:
                     # No rule -> per-row passthrough (keep the original value).
                     continue
                 if partitioning:
                     viral_src[va_name] = viral_src.groupby(partitioning, sort=False)[
                         va_name
-                    ].transform(lambda vals, n=va_name: registry.resolve_group(n, list(vals)))
+                    ].transform(lambda vals, c=component: registry.resolve_group(c, list(vals)))
                 else:
-                    viral_src[va_name] = registry.resolve_group(va_name, list(viral_src[va_name]))
+                    viral_src[va_name] = registry.resolve_group(component, list(viral_src[va_name]))
             result.data = merge_frames(result.data, viral_src, on=identifier_names, how="left")
 
         if result.data is not None:
