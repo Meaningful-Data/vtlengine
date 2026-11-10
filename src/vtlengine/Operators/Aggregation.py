@@ -26,6 +26,7 @@ from vtlengine.DataTypes import (
     TimePeriod,
     unary_implicit_promotion,
 )
+from vtlengine.DataTypes._time_checking import DATE_COMPARISON_DTYPE, _from_date_value
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
     PERIOD_IND_MAPPING_REVERSE,
@@ -95,10 +96,17 @@ class Aggregation(Operator.Unary):
                 else:
                     data[measure.name] = data[measure.name].map(PERIOD_IND_MAPPING_REVERSE)
             elif measure.data_type == Date:
+                # A Date is compared as a timestamp, which keeps the time a value carries
+                # and reads a column of dates and date-times alike, where a date dropped
+                # the time and failed on such a column (issue #1284)
                 if mode == "input":
-                    data[measure.name] = data[measure.name].astype("date64[pyarrow]")
+                    data[measure.name] = data[measure.name].astype(DATE_COMPARISON_DTYPE)
                 else:
-                    data[measure.name] = data[measure.name].astype(Date.dtype())  # type: ignore[call-overload]
+                    data[measure.name] = (
+                        data[measure.name]
+                        .map(_from_date_value, na_action="ignore")
+                        .astype(Date.dtype())  # type: ignore[call-overload]
+                    )
             elif measure.data_type == Boolean and mode == "result":
                 data[measure.name] = (
                     data[measure.name]  # type: ignore[call-overload, unused-ignore]
@@ -288,7 +296,15 @@ class Aggregation(Operator.Unary):
         )
         if len(grouping_keys) == 0:
             aux_df = result_df
-            aux_df.dropna(subset=result.get_measures_names(), how="all", inplace=True)
+            # All the Data Points make one group, so the result is one Data Point, also when
+            # the aggregated values are all null. As on DuckDB, an operand with Identifiers and
+            # no Data Points gives none (issue #1314)
+            if (
+                cls.op != COUNT
+                and operand.get_identifiers_names()
+                and (operand.data is None or len(operand.data) == 0)
+            ):
+                aux_df = aux_df.iloc[:0].copy()
             if cls.op == COUNT and len(result_df) == 0:
                 aux_df["int_var"] = 0
         elif len(aux_df) == 0:

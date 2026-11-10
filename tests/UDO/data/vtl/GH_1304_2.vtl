@@ -1,0 +1,8 @@
+/* The parameter of f has the name of the input DS_2: the second call must read DS_2 */
+define operator f (DS_2 dataset)
+    returns dataset is
+        DS_2 + 1
+end operator;
+
+DS_r1 <- f(DS_1);
+DS_r2 <- f(DS_2);

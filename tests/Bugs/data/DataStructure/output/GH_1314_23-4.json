@@ -1,0 +1,15 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r4",
+      "DataStructure": [
+        {
+          "name": "Me_2",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+DS_r1 <- if DS_1 < 1 then 0 else DS_1;
+DS_r3 <- if DS_1 > 2 then DS_1[calc Me_1 := floor(Me_1)] else 0.5;
+DS_r4 <- case when DS_2 > 1 then DS_2 else 0.5;
+DS_r5 <- case when DS_2 > 2 then DS_2 else DS_3;
+DS_r6 <- if DS_4 > 1 then 0.5 else DS_4;
+DS_r7 <- if DS_5 > 1 then DS_5 else DS_3;
+DS_r8 <- DS_4 + DS_5;
+DS_r9 <- DS_6[calc Me_2 := if 1 > 0 then 1 else 2.5];
+DS_r10 <- DS_6[calc Me_2 := case when 1 > 0 then 1 else 2.5];
+DS_r11 <- DS_6 * (if 1 >= 0.5 then 0.5 else 2);
+DS_r12 <- DS_7[calc Me_2 := if Me_1 then "yes" else Me_1];
+DS_r13 <- if DS_8 then DS_7 else "yes";
+DS_r14 <- case when DS_8 then DS_7 else "yes";
+DS_r15 <- (if DS_8 then DS_7 else "yes") || "!";
+DS_r16 <- inner_join(DS_7 as a, DS_8 as b calc Me_3 := case when b#Me_1 then a#Me_1 else "yes" keep Me_3);

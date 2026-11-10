@@ -847,6 +847,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitHrComparisonOperand(Vtl::HrComparisonOperandContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitValueDomainValue(Vtl::ValueDomainValueContext *ctx) override {
     return visitChildren(ctx);
   }

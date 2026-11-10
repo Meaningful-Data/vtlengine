@@ -55,8 +55,8 @@ public:
     XOR = 212, YEAR_OP = 213, YEARTODAY = 214, LEVENSHTEIN_METHOD = 215, 
     DAMERAU_LEVENSHTEIN_METHOD = 216, HAMMING_METHOD = 217, JARO_WINKLER_METHOD = 218, 
     NULL_CONSTANT = 219, INTEGER_CONSTANT = 220, NUMBER_CONSTANT = 221, 
-    BOOLEAN_CONSTANT = 222, STRING_CONSTANT = 223, IDENTIFIER = 224, WS = 225, 
-    ML_COMMENT = 226, SL_COMMENT = 227
+    BOOLEAN_CONSTANT = 222, STRING_CONSTANT = 223, IDENTIFIER = 224, ITEM_CODE = 225, 
+    WS = 226, ML_COMMENT = 227, SL_COMMENT = 228
   };
 
   enum {
@@ -89,16 +89,16 @@ public:
     RuleRulesetID = 79, RuleRulesetSignature = 80, RuleSignature = 81, RuleRuleClauseDatapoint = 82, 
     RuleRuleItemDatapoint = 83, RuleRuleClauseHierarchical = 84, RuleRuleItemHierarchical = 85, 
     RuleHierRuleSignature = 86, RuleValueDomainSignature = 87, RuleCodeItemRelation = 88, 
-    RuleCodeItemRelationClause = 89, RuleValueDomainValue = 90, RuleScalarTypeConstraint = 91, 
-    RuleCompConstraint = 92, RuleMultModifier = 93, RuleValidationOutput = 94, 
-    RuleValidationMode = 95, RuleConditionClause = 96, RuleInputMode = 97, 
-    RuleImbalanceExpr = 98, RuleInputModeHierarchy = 99, RuleOutputModeHierarchy = 100, 
-    RuleAlias = 101, RuleVarID = 102, RuleSimpleComponentId = 103, RuleComponentID = 104, 
-    RuleLists = 105, RuleErCode = 106, RuleErLevel = 107, RuleComparisonOperand = 108, 
-    RuleOptionalExpr = 109, RuleOptionalExprComponent = 110, RuleComponentRole = 111, 
-    RuleViralAttribute = 112, RuleValueDomainID = 113, RuleOperatorID = 114, 
-    RuleRoutineName = 115, RuleConstant = 116, RuleBasicScalarType = 117, 
-    RuleRetainType = 118
+    RuleCodeItemRelationClause = 89, RuleHrComparisonOperand = 90, RuleValueDomainValue = 91, 
+    RuleScalarTypeConstraint = 92, RuleCompConstraint = 93, RuleMultModifier = 94, 
+    RuleValidationOutput = 95, RuleValidationMode = 96, RuleConditionClause = 97, 
+    RuleInputMode = 98, RuleImbalanceExpr = 99, RuleInputModeHierarchy = 100, 
+    RuleOutputModeHierarchy = 101, RuleAlias = 102, RuleVarID = 103, RuleSimpleComponentId = 104, 
+    RuleComponentID = 105, RuleLists = 106, RuleErCode = 107, RuleErLevel = 108, 
+    RuleComparisonOperand = 109, RuleOptionalExpr = 110, RuleOptionalExprComponent = 111, 
+    RuleComponentRole = 112, RuleViralAttribute = 113, RuleValueDomainID = 114, 
+    RuleOperatorID = 115, RuleRoutineName = 116, RuleConstant = 117, RuleBasicScalarType = 118, 
+    RuleRetainType = 119
   };
 
   explicit Vtl(antlr4::TokenStream *input);
@@ -208,6 +208,7 @@ public:
   class ValueDomainSignatureContext;
   class CodeItemRelationContext;
   class CodeItemRelationClauseContext;
+  class HrComparisonOperandContext;
   class ValueDomainValueContext;
   class ScalarTypeConstraintContext;
   class CompConstraintContext;
@@ -4314,13 +4315,13 @@ public:
     Vtl::ValueDomainValueContext *codetemRef = nullptr;
     CodeItemRelationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
+    HrComparisonOperandContext *hrComparisonOperand();
     std::vector<CodeItemRelationClauseContext *> codeItemRelationClause();
     CodeItemRelationClauseContext* codeItemRelationClause(size_t i);
     ValueDomainValueContext *valueDomainValue();
     antlr4::tree::TerminalNode *WHEN();
     ExprComponentContext *exprComponent();
     antlr4::tree::TerminalNode *THEN();
-    ComparisonOperandContext *comparisonOperand();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -4354,11 +4355,31 @@ public:
 
   CodeItemRelationClauseContext* codeItemRelationClause();
 
+  class  HrComparisonOperandContext : public antlr4::ParserRuleContext {
+  public:
+    HrComparisonOperandContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *MT();
+    antlr4::tree::TerminalNode *ME();
+    antlr4::tree::TerminalNode *LE();
+    antlr4::tree::TerminalNode *LT();
+    antlr4::tree::TerminalNode *EQ();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  HrComparisonOperandContext* hrComparisonOperand();
+
   class  ValueDomainValueContext : public antlr4::ParserRuleContext {
   public:
     ValueDomainValueContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *IDENTIFIER();
+    antlr4::tree::TerminalNode *ITEM_CODE();
     SignedIntegerContext *signedInteger();
     SignedNumberContext *signedNumber();
 

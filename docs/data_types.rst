@@ -73,7 +73,8 @@ String
       - Any text value. Surrounding double quotes are
         stripped automatically.
     * - **Input (DataFrame)**
-      - Any value (all values pass validation).
+      - Any value (all values pass validation). A native
+        Python ``bool`` is written ``true`` or ``false``.
     * - **Internal representation**
       - Python ``str``, stored as ``string[pyarrow]``.
     * - **Output dtype**
@@ -88,11 +89,13 @@ Integer
 
     * - **Input (CSV)**
       - Whole numbers: ``"42"``, ``"0"``, ``"-7"``.
+        ``NaN`` is read as null.
     * - **Input (DataFrame)**
       - Values are cast via ``str → float → int``.
-        Non-integer floats (e.g. ``3.5``) are rejected.
-        A native Python ``bool`` is read as ``1`` or
-        ``0``.
+        Non-integer floats (e.g. ``3.5``) and text that
+        is no number (e.g. ``"0x10"``) are rejected.
+        ``NaN`` is read as null. A native Python
+        ``bool`` is read as ``1`` or ``0``.
     * - **Internal representation**
       - Python ``int``, stored as ``int64[pyarrow]``.
     * - **Output dtype**
@@ -110,9 +113,11 @@ Number
 
     * - **Input (CSV)**
       - Decimal or integer numbers: ``"3.14"``, ``"1e5"``,
-        ``"42"``.
+        ``"42"``. ``NaN`` is read as null.
     * - **Input (DataFrame)**
-      - Values are cast via ``str → float``.
+      - Values are cast via ``str → float``; ``NaN`` is
+        read as null. A native Python ``bool`` is read
+        as ``1.0`` or ``0.0``.
     * - **Internal representation**
       - IEEE 754 float64 in both execution engines: Python ``float`` stored as
         ``double[pyarrow]`` (pandas engine) and ``DOUBLE`` (DuckDB engine).
@@ -157,7 +162,7 @@ Date
 
     * - **Input (CSV)**
       - ISO 8601 date: ``"2020-01-15"``,
-        ``"2020-01-15 10:30:00"``,
+        ``"20200115"``, ``"2020-01-15 10:30:00"``,
         ``"2020-01-15T10:30:00"``.
         A time component, when present, must be a
         complete ``HH:MM:SS`` (``T`` or space
@@ -165,18 +170,26 @@ Date
         (``Z`` or ``±HH:MM``) is accepted; the offset
         is discarded and the wall-clock time is kept.
         Nanosecond precision is truncated to
-        microseconds. Year range: 1800–9999.
+        microseconds. A time at midnight is no time:
+        ``"2020-01-15T00:00:00"`` loads as
+        ``"2020-01-15"``; any other time is kept.
+        Year range: 1800–9999.
     * - **Input (DataFrame)**
       - String values validated against the same
-        ISO 8601 formats.
+        ISO 8601 formats, or values pandas has already
+        parsed into dates or datetimes, read on the
+        same rule.
     * - **Internal representation**
-      - Python ``str`` in ``"YYYY-MM-DD"`` or
-        ``"YYYY-MM-DD HH:MM:SS"`` format,
-        stored as ``string[pyarrow]``.
+      - Python ``str`` in ``"YYYY-MM-DD"`` format, or
+        ``"YYYY-MM-DD HH:MM:SS"`` for a value whose
+        time is not midnight, stored as
+        ``string[pyarrow]``.
     * - **Output format**
-      - ISO 8601 with ``T`` separator:
-        ``"YYYY-MM-DD"`` or ``"YYYY-MM-DDThh:mm:ss"``.
-        Timezone offsets are not included in the output.
+      - ISO 8601 with ``T`` separator, each value on its
+        own in both execution engines: ``"YYYY-MM-DD"``,
+        or ``"YYYY-MM-DDThh:mm:ss"`` for a value whose
+        time is not midnight. Timezone offsets are not
+        included in the output.
     * - **Output dtype**
       - ``string[pyarrow]``
 
@@ -440,8 +453,9 @@ Key rules:
 - **Time_Period to Time**: A Time_Period is implicitly
   converted to a Time interval
   (``"2020-Q1"`` becomes ``"2020-01-01/2020-03-31"``).
-- **Boolean to String**: ``true`` becomes ``"True"``,
-  ``false`` becomes ``"False"``.
+- **Boolean to String**: ``true`` becomes ``"true"``,
+  ``false`` becomes ``"false"``, as the VTL 2.2 reference
+  manual defines it, in both execution engines.
 - **Null to any type**: Null is compatible with every type.
 
 
@@ -556,14 +570,19 @@ Supported conversions without mask
       - —
       - |y|
 
+Legend: |y| = implemented.
+
+.. |y| unicode:: U+2705
+
 Conversion details:
 
 - **Number/Integer to Boolean**: ``0`` becomes ``false``,
   any other value becomes ``true``.
 - **Boolean to Number/Integer**: ``true`` becomes ``1``
   (or ``1.0``), ``false`` becomes ``0`` (or ``0.0``).
-- **Boolean to String**: ``true`` becomes ``"True"``,
-  ``false`` becomes ``"False"``.
+- **Boolean to String**: ``true`` becomes ``"true"``,
+  ``false`` becomes ``"false"``, as the VTL 2.2 reference
+  manual defines it, in both execution engines.
 - **String to Integer**: Must be a valid integer string
   (rejects ``"3.5"``).
 - **Date to Time_Period**: Converts to daily period
@@ -573,62 +592,71 @@ Conversion details:
 Supported conversions with mask
 -------------------------------
 
+A mask gives the format of a String that is cast to, or from, a Number, an
+Integer, a Time, a Date, a Time_Period or a Duration. Both directions are
+supported, on both engines:
+
+.. code-block::
+
+    DS_r <- DS_1 [ calc Me_2 := cast(Me_1, date, "YYYY-MM-DD"),
+                        Me_3 := cast(Me_4, string, "DD.DDD") ];
+
 .. list-table::
-    :widths: 18 14 14 14 14 14 14
+    :widths: 18 41 41
     :header-rows: 1
 
-    * - From / To
-      - String
-      - Number
-      - Time
-      - Date
-      - Time_Period
-      - Duration
-    * - **String**
-      - —
-      - |p|
-      - |p|
-      - |p|
-      - |p|
-      - |p|
-    * - **Time**
-      - |p|
-      - —
-      - —
-      - —
-      - —
-      - —
-    * - **Date**
-      - |p|
-      - —
-      - —
-      - —
-      - —
-      - —
-    * - **Time_Period**
-      - —
-      - —
-      - —
-      - |p|
-      - —
-      - —
-    * - **Duration**
-      - |p|
-      - —
-      - —
-      - —
-      - —
-      - —
+    * - Type
+      - Example masks
+      - Example values
+    * - Number
+      - ``DD.DDD``, ``D*,D+``
+      - ``12.375``, ``0,50``
+    * - Integer
+      - ``DD``, ``D+``
+      - ``07``, ``123``
+    * - Date
+      - ``YYYY-MM-DD``, ``YYYYMMDD``, ``{D}D/{M}M/YYYY``,
+        ``YYYY-DDD``, ``YYYY-\WWW-D``, ``YYYY-MM-DD hh:mm:ss``
+      - ``2020-01-15``, ``20200115``, ``15/1/2020``, ``2020-015``,
+        ``2020-W03-3``, ``2020-01-15 10:30:45``
+    * - Time
+      - ``YYYY-MM-DD/YYYY-MM-DD``
+      - ``2020-01-01/2020-12-31``
+    * - Time_Period
+      - ``YYYY\QQ``, ``YYYY\MMM``, ``YYYYP{ppp}``, ``YYYY``,
+        ``YYYY\.MM\.DD``
+      - ``2020Q3``, ``2015M03``, ``2015D365``, ``2015``,
+        ``2000.03.01`` (the daily period ``2000D61``)
+    * - Duration
+      - ``P``, ``\PpP``
+      - ``M``, ``P1M``
 
-Legend: |y| = implemented, |p| = defined in VTL 2.2 but not
-yet implemented (raises ``NotImplementedError``).
+Number and Integer masks are made of ``D`` (one digit), ``*`` (any number of
+digits), ``+`` (at least one digit) and, for a Number, a ``.`` or ``,``
+separator between the integer and the decimal parts. A Number written with a
+fixed number of decimals is rounded to them.
 
-.. |y| unicode:: U+2705
-.. |p| unicode:: U+23F3
+The masks of the time types are made of a digit for each letter of a time
+unit: ``C`` century, ``Y`` year, ``S`` semester, ``Q`` quarter, ``M`` month,
+``W`` week, ``D`` day, ``h`` hour, ``m`` minute, ``s`` second, ``d`` decimal
+of second, ``P`` period indicator and ``p`` number of periods. Braces enclose
+the digits that may be left out (``{M}M`` writes April as ``4``), a reverse
+slash writes the next character as it is (``\Q``), and any other character
+appears as it is. A day is within the month when the mask has one, within the
+week when it has a week, and within the year otherwise; a Time_Period mask with
+a day and a month, or a week, writes a daily period. A Time is two Date masks
+separated by ``/``.
 
-.. note::
+A value that its mask does not describe raises RunTimeError ``2-1-5-3``, and
+a mask that does not describe the type raises SemanticError ``1-1-5-4``.
+vtlengine does not support these parts of the VTL 2.2 masks, which raise
+SemanticError ``1-3-13``:
 
-    Formal definition of masks is still to be decided.
+- the exponent ``E`` of a Number mask;
+- the textual words ``MONTH``, ``DAY`` and ``AM/PM``;
+- the ISO 8601 composite durations, such as ``P10Y2M12D``: a Duration of
+  vtlengine is one period indicator;
+- a Time written with a duration, such as ``YYYY-MM-DD/PY\YM\MDD\D``.
 
 
 Cast on datasets

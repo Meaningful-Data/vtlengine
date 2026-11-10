@@ -10,7 +10,7 @@ Basic AST nodes.
 import inspect
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from vtlengine.DataTypes import ScalarType
 from vtlengine.Model import Dataset, Role
@@ -564,6 +564,30 @@ class Types(AST):
     name: Optional[str] = None
 
     __eq__ = AST.ast_equality
+
+
+@dataclass(frozen=True)
+class RulesetType:
+    """The type of a ruleset parameter of a user defined operator, whose argument is a ruleset.
+
+    kind is ruleset (any ruleset), datapoint or hierarchical; signature_type, valuedomain or
+    variable, is the sub-type, None taking either. names are the value domains or variables of
+    a datapoint ruleset, in order, or the one of a hierarchical ruleset, and conditions the
+    conditioning ones of a hierarchical ruleset; None takes any.
+    """
+
+    kind: str
+    signature_type: Optional[str] = None
+    names: Optional[Tuple[str, ...]] = None
+    conditions: Optional[Tuple[str, ...]] = None
+
+
+@dataclass(frozen=True)
+class SetType:
+    """The type set<data_type> of a parameter of a user defined operator, whose argument is a
+    value domain or a set of values of that type. A set of any scalar type has no data_type."""
+
+    data_type: Optional[Type[ScalarType]] = None
 
 
 @dataclass

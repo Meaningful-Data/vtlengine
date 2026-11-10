@@ -389,7 +389,8 @@ class TestSetOperations:
         assert_sql_equal(sql, expected_sql)
 
     def test_union_with_dedup(self):
-        """Test union with complete SQL output including DISTINCT ON."""
+        """Test union with complete SQL output: each identifier keeps the data point of the
+        left-most operand that has it, the one at the smallest position."""
         ds1 = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
         ds2 = create_simple_dataset("DS_2", ["Id_1"], ["Me_1"])
         transpiler = create_transpiler(
@@ -411,18 +412,14 @@ class TestSetOperations:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        # Verify union structure with dedup
-        assert_sql_contains(
-            sql,
-            [
-                "QUALIFY",
-                "ROW_NUMBER() OVER",
-                '"Id_1"',
-                "UNION ALL",
-                '"DS_1"',
-                '"DS_2"',
-            ],
+        expected_sql = (
+            'SELECT "Id_1", "Me_1" FROM ('
+            'SELECT "Id_1", "Me_1", 0 AS "__vtl_union_position__" FROM "DS_1" AS t UNION ALL '
+            'SELECT "Id_1", "Me_1", 1 AS "__vtl_union_position__" FROM "DS_2" AS t) AS t '
+            'QUALIFY "__vtl_union_position__" = MIN("__vtl_union_position__") '
+            'OVER (PARTITION BY "Id_1")'
         )
+        assert_sql_equal(sql, expected_sql)
 
 
 # =============================================================================
@@ -474,7 +471,7 @@ class TestCastOperator:
         assert_sql_equal(sql, expected_sql)
 
     def test_dataset_cast_boolean_to_string(self):
-        """Boolean → String cast emits Python-style 'True'/'False' values (issue #923)."""
+        """Boolean → String cast emits 'true'/'false', as the VTL 2.2 manual says (issue #1314)."""
         components = {
             "Id_1": Component(name="Id_1", data_type=String, role=Role.IDENTIFIER, nullable=False),
             "Me_1": Component(name="Me_1", data_type=Boolean, role=Role.MEASURE, nullable=True),
@@ -497,24 +494,21 @@ class TestCastOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        expected_sql = (
-            'SELECT "Id_1", CASE WHEN "Me_1" IS NULL THEN NULL'
-            ' WHEN "Me_1" THEN \'True\' ELSE \'False\' END AS "Me_1" FROM "DS_1"'
-        )
+        expected_sql = 'SELECT "Id_1", CAST("Me_1" AS VARCHAR) AS "Me_1" FROM "DS_1"'
         assert_sql_equal(sql, expected_sql)
 
     def test_cast_with_date_mask(self):
-        """Test CAST to Date with mask producing STRPTIME SQL."""
+        """Test CAST to Date with a mask, which the vtl_cast_mask UDF applies."""
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
         transpiler = create_transpiler(
             input_datasets={"DS_1": ds},
             output_datasets={"DS_r": ds},
         )
 
-        # Create AST: DS_r := cast(DS_1, Date, "%Y-%m-%d")
+        # Create AST: DS_r := cast(DS_1, Date, "YYYY-MM-DD")
         operand = VarID(**make_ast_node(value="DS_1"))
         type_node = VarID(**make_ast_node(value="Date"))
-        mask = Constant(**make_ast_node(type_="STRING_CONSTANT", value="%Y-%m-%d"))
+        mask = Constant(**make_ast_node(type_="STRING_CONSTANT", value="YYYY-MM-DD"))
         expr = ParamOp(**make_ast_node(op="cast", children=[operand, type_node], params=[mask]))
         ast = create_start_with_assignment("DS_r", expr)
 
@@ -525,7 +519,8 @@ class TestCastOperator:
         assert name == "DS_r"
 
         expected_sql = """
-            SELECT "Id_1", STRFTIME(STRPTIME("Me_1", '%Y-%m-%d'), '%Y-%m-%d %H:%M:%S') AS "Me_1" FROM "DS_1"
+            SELECT "Id_1", CAST(vtl_cast_mask(CAST("Me_1" AS VARCHAR), 'String', 'Date',
+            'YYYY-MM-DD') AS TIMESTAMP) AS "Me_1" FROM "DS_1"
         """
         assert_sql_equal(sql, expected_sql)
 
