@@ -498,17 +498,17 @@ class TestCastOperator:
         assert_sql_equal(sql, expected_sql)
 
     def test_cast_with_date_mask(self):
-        """Test CAST to Date with mask producing STRPTIME SQL."""
+        """Test CAST to Date with a mask, which the vtl_cast_mask UDF applies."""
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
         transpiler = create_transpiler(
             input_datasets={"DS_1": ds},
             output_datasets={"DS_r": ds},
         )
 
-        # Create AST: DS_r := cast(DS_1, Date, "%Y-%m-%d")
+        # Create AST: DS_r := cast(DS_1, Date, "YYYY-MM-DD")
         operand = VarID(**make_ast_node(value="DS_1"))
         type_node = VarID(**make_ast_node(value="Date"))
-        mask = Constant(**make_ast_node(type_="STRING_CONSTANT", value="%Y-%m-%d"))
+        mask = Constant(**make_ast_node(type_="STRING_CONSTANT", value="YYYY-MM-DD"))
         expr = ParamOp(**make_ast_node(op="cast", children=[operand, type_node], params=[mask]))
         ast = create_start_with_assignment("DS_r", expr)
 
@@ -519,7 +519,8 @@ class TestCastOperator:
         assert name == "DS_r"
 
         expected_sql = """
-            SELECT "Id_1", STRFTIME(STRPTIME("Me_1", '%Y-%m-%d'), '%Y-%m-%d %H:%M:%S') AS "Me_1" FROM "DS_1"
+            SELECT "Id_1", CAST(vtl_cast_mask(CAST("Me_1" AS VARCHAR), 'String', 'Date',
+            'YYYY-MM-DD') AS TIMESTAMP) AS "Me_1" FROM "DS_1"
         """
         assert_sql_equal(sql, expected_sql)
 
