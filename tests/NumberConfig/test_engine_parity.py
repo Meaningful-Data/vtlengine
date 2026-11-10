@@ -262,6 +262,9 @@ DOMAIN_ERROR_CASES = {
     "ln_negative": ("DS_r <- DS_1[calc Me_1 := ln(Me_1)];", [-1.0], "2-1-15-8"),
     "log_negative_value": ("DS_r <- DS_1[calc Me_1 := log(Me_1, 10)];", [-1.0], "2-1-15-8"),
     "log_negative_base": ("DS_r <- DS_1[calc Me_1 := log(Me_1, -2)];", [10.0], "2-1-15-3"),
+    # A branch of a Data Set if is computed on every Data Point, so an if does not guard it
+    # (issue #1314)
+    "if_guarded_division": ("DS_r <- if DS_1 = 0 then 0 else DS_1 / DS_1;", [0.0, 2.0], "2-1-15-6"),
 }
 
 

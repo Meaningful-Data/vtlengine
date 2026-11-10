@@ -417,6 +417,21 @@ class GeneralBugs(BugHelper):
             "Me_5": "string",
         }
 
+    def test_GH_1322(self):
+        """
+        Status: OK
+        Expression: DS_r <- 1DS_1[calc Me_2 := 1Me_1 * 10];
+        Description: A bare name that starts with a digit and contains a letter is a regular
+                     VTL name. Since #1231 it raised a VTLSyntaxError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1322
+        Goal: Check Result.
+        """
+        code = "GH_1322"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class JoinBugs(BugHelper):
     """ """
@@ -514,7 +529,7 @@ class JoinBugs(BugHelper):
         number_inputs = 1
         vd_names = ["GL_133_1-1"]
 
-        message = "1-1-13-4"
+        message = "1-1-13-9"
 
         # HUH!!!!!!!!!
         self.NewSemanticExceptionTest(
@@ -534,7 +549,7 @@ class JoinBugs(BugHelper):
         code = "GL_133_2"
         number_inputs = 2
 
-        message = "1-1-13-4"
+        message = "1-1-13-9"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -548,7 +563,7 @@ class JoinBugs(BugHelper):
         """
         code = "GL_133_3"
         number_inputs = 2
-        message = "1-1-13-4"
+        message = "1-1-13-9"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -790,6 +805,24 @@ class JoinBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
+
+    def test_GH_1318_1(self):
+        """
+        Status: OK
+        Expression: F <- DS_2[rename Id_2 to K];
+                    B <- left_join(DS_1[calc measure K := Me_1] as d, F as f using K);
+                    C <- left_join(DS_1[calc measure K := Me_1] as d, F as f using K);
+        Description: K is a Measure of the left-most operand and the Identifier of F. The
+                     join turned K into a Measure in F itself, so the same join failed the
+                     second time with 1-2-10 and F was returned without an Identifier.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1318
+        Goal: Check Result.
+        """
+        code = "GH_1318_1"
+        number_inputs = 2
+        references_names = ["1", "2", "3"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
 
 class NumericBugs(BugHelper):
@@ -2334,6 +2367,26 @@ class TimeBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1309(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- DS_1 [calc Me_2 := time_agg("A", Id_1)]
+                                  [calc Me_3 := cast(Me_2, string)] [filter Me_1 > 0];
+                    DS_r2 <- DS_1 [calc Me_2 := time_agg("A", Id_1)]
+                                  [calc Me_2 := cast(Me_2, string)];
+        Description: On the DuckDB engine, a calc read the time_agg result of an earlier calc
+                     as a Number when it typed the operand without the statement's result
+                     (DS_r1 raised 2-1-5-1), and as the String the statement's result has after
+                     the last calc (DS_r2 gave 2004A instead of 2004).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1309
+        Goal: Check Result.
+        """
+        code = "GH_1309"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class SetBugs(BugHelper):
     """ """
@@ -2647,6 +2700,81 @@ class SetBugs(BugHelper):
         """
         code = "GH_1283_1"
         number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1304_1(self):
+        """
+        Expression: DS_r <- union(DS_1 [filter Id_1 <= 1] [calc Me_1 := Me_1 + 1],
+                                  DS_1 [filter Id_1 <= 2] [calc Me_1 := Me_1 + 2],
+                                  ...
+                                  DS_1 [filter Id_1 <= 10] [calc Me_1 := Me_1 + 10]);
+        Description: DuckDB wrote the union with an ANTI JOIN of each operand against every
+            operand before it, so its SQL and planning grew with the square of the number of
+            operands. Each operand repeats the Data Points of the operands before it with other
+            values and adds one Identifier, so each Data Point has to come from the left-most
+            operand that has it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1304
+        Goal: Check Result.
+        """
+        code = "GH_1304_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1304_4(self):
+        """
+        Expression: DS_r1 <- case when DS_1 > 4 then (case when DS_2 > 3 then DS_2 else DS_1)
+                        else DS_1;
+                    DS_r2 <- if DS_1 > 4 then (if DS_3 then DS_2 * 10 else DS_1 * 10) else DS_1;
+        Description: A Data Set case or if inside a branch of another one. On the pandas
+            engine, the inner condition was cut by the row labels of the Data Points of the
+            outer branch, which belong to the frame of another Data Set: the condition on DS_2
+            raised a KeyError (DS_r1), and DS_3, which lists its Data Points in another order,
+            cut the inner branches to other Data Points and lost Id_1 1 (DS_r2). In both, Id_1
+            3 is left out, as the inner case or if has no Data Point 3.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1304
+        Goal: Check Result.
+        """
+        code = "GH_1304_4"
+        number_inputs = 3
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1304_5(self):
+        """
+        Expression: DS_r1 <- case when DS_2 > 3 then DS_2 when DS_3 then DS_1 else DS_1;
+                    DS_r2 <- case when DS_1 > 6 then DS_1 when DS_2 > 3 then DS_2
+                        else DS_1 * 10;
+        Description: The first condition of a Data Set case gives the Data Points. On the
+            pandas engine, a later condition added its own true Data Points (DS_r1 Id_1 3),
+            and the else operand only had the Data Points of the last condition, so the Data
+            Points that the last condition lacks were lost (DS_r2 Id_1 4).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1304
+        Goal: Check Result.
+        """
+        code = "GH_1304_5"
+        number_inputs = 3
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1304_7(self):
+        """
+        Expression: DS_r1 <- (case when DS_1 > 0 then 1.0 else DS_2)[calc Me_2 := Me_1 * 2];
+                    DS_r2 <- (case when DS_1 > 0 then 1.0 else DS_2) + DS_1;
+        Description: A Data Set case whose first then-operand is a scalar, as the operand of a
+            clause or of another operator. On the DuckDB engine, the structure of a case came
+            from its first then-operand only and its type from its then-operands only, so the
+            calc raised an AttributeError (DS_r1) and the case was taken for a scalar (DS_r2).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1304
+        Goal: Check Result.
+        """
+        code = "GH_1304_7"
+        number_inputs = 2
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
@@ -3617,6 +3745,518 @@ class ConditionalBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1314_2(self):
+        """
+        Expression: DS_r1 <- if DS_1 < 1 then 0 else DS_1;
+                    DS_r3 <- if DS_1 > 2 then DS_1[calc Me_1 := floor(Me_1)] else 0.5;
+                    DS_r4 <- case when DS_2 > 1 then DS_2 else 0.5;
+                    DS_r5 <- case when DS_2 > 2 then DS_2 else DS_3;
+                    DS_r6 <- if DS_4 > 1 then 0.5 else DS_4;
+                    DS_r7 <- if DS_5 > 1 then DS_5 else DS_3;
+                    DS_r8 <- DS_4 + DS_5;
+                    DS_r9 <- DS_6[calc Me_2 := if 1 > 0 then 1 else 2.5];
+                    DS_r10 <- DS_6[calc Me_2 := case when 1 > 0 then 1 else 2.5];
+                    DS_r11 <- DS_6 * (if 1 >= 0.5 then 0.5 else 2);
+                    DS_r12 <- DS_7[calc Me_2 := if Me_1 then "yes" else Me_1];
+                    DS_r13 <- if DS_8 then DS_7 else "yes";
+                    DS_r14 <- case when DS_8 then DS_7 else "yes";
+                    DS_r15 <- (if DS_8 then DS_7 else "yes") || "!";
+                    DS_r16 <- inner_join(DS_7 as a, DS_8 as b calc Me_3 := case when b#Me_1
+                        then a#Me_1 else "yes" keep Me_3);
+        Description: An if or a case whose operands have different types gives their common
+            type, at Data Set, Component and scalar level: Number for Integer and Number,
+            String for Boolean and String.
+            DS_r1, DS_r3: on the pandas engine, both operands of a Data Set if took the dtype of
+            the then operand: under the Integer scalar 0, the Number values of the else operand
+            were cut (DS_r1 Id_1 3 gave 2.0), and the Number scalar 0.5 raised an ArrowInvalid
+            under the Integer then operand (DS_r3).
+            DS_r4, DS_r5: the structure of a Data Set case was the one of its first Data Set
+            operand, DS_2, so Me_1 was Integer: the DuckDB engine rounded the Number values
+            (0.5 to 0, 1.5 to 2) and the pandas engine raised an ArrowInvalid.
+            DS_r6 to DS_r8: a Data Set if types its result without retyping its operands. The
+            semantic analysis wrote the common type, Number, into the Integer Measures of DS_4
+            (DS_r6) and DS_5 (DS_r7), so DS_r8, which comes after them, was Number on both
+            engines.
+            DS_r9 to DS_r11: a scalar if or case gave the type of the operand that its
+            condition selects: the pandas engine typed Me_2 Integer (DS_r9, DS_r10), and the
+            DuckDB engine, whose semantic analysis takes the else operand when the value of
+            the condition is unknown, typed DS_r11 Integer and rounded 0.5 and 2.5.
+            DS_r12 to DS_r16: a Boolean operand with a String operand is promoted to String,
+            as cast to string renders it ('true', 'false'). The DuckDB engine cast the String
+            operand to Boolean instead, so "yes" came back as 'true'. The pandas engine wrote
+            'True' and 'False' (DS_r12, DS_r16) and could not read "yes" as a Boolean (DS_r13
+            to DS_r15).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_2"
+        number_inputs = 8
+        references_names = [str(i) for i in range(1, 17) if i != 2]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1314_S1_2(self):
+        """
+        Expression: DS_r <- DS_1[calc Me_2 := if 1 then 2 else 3];
+        Description: The condition of a scalar if must be Boolean, as at Component and Data
+            Set level. Both engines took the Integer condition, pandas as a true one.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_S1_2"
+        number_inputs = 1
+        error_code = "1-1-9-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1314_N1(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_2 := if 1 < 3 then 1.5 else null];
+                    DS_r2 <- DS_1[calc Me_2 := if 1 > 3 then null else 2];
+                    DS_r3 <- DS_1[calc Me_2 := if Me_1 > 1 then sc_1 else 0.0];
+                    DS_r4 <- DS_1[calc Me_2 := case when Me_1 > 1 then sc_1 else 0.0];
+                    DS_r5 <- (if DS_1 > 1 then DS_1 else null)[calc Me_2 := Me_1];
+                    DS_r6 <- (case when DS_1 > 1 then DS_1 else DS_2)[calc Me_2 := Me_1];
+        Description: An if or a case can be null where any operand can be.
+            DS_r1, DS_r2: a scalar if can be null when either operand can be, as a scalar case.
+            It took the nullability of the operand selected: on the pandas engine Me_2 was not
+            nullable in both, and on the DuckDB engine, whose semantic analysis takes the else
+            operand when the value of the condition is unknown, in DS_r2; in DS_r1 it typed
+            Me_2 Null.
+            DS_r3 to DS_r6: the operand that can be null is the nullable input scalar sc_1,
+            here null, the null literal, or the nullable Measure of DS_2, while the Measure of
+            DS_1 is not nullable. Their results were declared not nullable, so the pandas
+            engine raised 2-1-1-16 in the calc and the DuckDB engine returned nulls in a
+            Component it declared not nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_N1"
+        number_inputs = 2
+        references_names = ["1", "2", "3", "4", "5", "6"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": None},
+        )
+
+    def test_GH_1314_I2_1(self):
+        """
+        Expression: DS_r <- if DS_1 > 1 then DS_1 else DS_2;
+        Description: The else operand of a Data Set if must have the Identifiers of the
+            condition, as the then operand: Id_1 is a String in DS_2. The check compared the
+            then operand twice, so the pandas engine failed in the merge and the DuckDB
+            engine ran with an implicit cast.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_I2_1"
+        number_inputs = 2
+        error_code = "1-1-9-10"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1314_I1(self):
+        """
+        Expression: DS_r <- case when DS_1 > 3 then DS_1 when DS_3 then DS_2 else DS_1;
+        Description: Every condition of a Data Set case must have the Identifiers of the
+            first one, which gives the Data Points: DS_3 is on Id_1 alone, and the operands
+            on Id_1 and Id_2. The case passed the semantic analysis, then the pandas engine
+            raised a KeyError and the DuckDB engine matched DS_3 on Id_1 alone.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_I1"
+        number_inputs = 3
+        error_code = "1-1-9-10"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1314_10(self):
+        """
+        Expression: DS_r1 <- if DS_1 then DS_2 else 0.5;
+                    DS_r2 <- isnull(DS_3);
+                    DS_r3 <- if isnull(DS_3) xor DS_3 then DS_4 else 0.5;
+                    DS_r4 <- case when isnull(DS_3) xor DS_3 then DS_4 else 0.5;
+                    DS_r5 <- if DS_6 < 0.5 then DS_5 - DS_5 else -DS_5;
+                    DS_r6 <- case when (case when DS_7 > 0 and DS_8 > 0 then true
+                        else DS_7 = DS_9) then DS_9 else DS_9;
+                    DS_r7 <- case when DS_7 > 1 then DS_9 when (case when DS_7 > 0 and DS_8 > 0
+                        then true else DS_7 = DS_9) then 0 else DS_9 * 10;
+        Description: The Data Points of an if or a case.
+            DS_r1: a null condition takes the else operand. On the DuckDB engine, a Data Set if
+            with a Data Set then operand and a scalar else operand dropped the Data Points
+            whose condition is null when the then operand lacked them (Id_1 2).
+            DS_r2 to DS_r4: isnull keeps the name of the lone Boolean Measure of DS_3, which it
+            does not retype. The DuckDB engine named it bool_var: DS_r2 had no Me_1 column, the
+            if read its condition as always true (Id_1 1 gave 10.5) and the case raised an
+            IndexError.
+            DS_r5: the then operand gives 0.0 on Id_1 3 and the else operand -0.0 on Id_1 1.
+            On the pandas engine, the Data Points of both operands were outer merged on all
+            their columns, the Measure too, and the merge raised "values should be unique if
+            codes is not None" on 0.0 and -0.0.
+            DS_r6, DS_r7: DS_7 and DS_8 share no Data Point, so the inner case has none. As a
+            condition of the outer case, first (DS_r6) or later (DS_r7), it gives no Data
+            Point. On the pandas engine, its Measure was an empty column of object dtype,
+            which selected no column instead of no row, and the outer case raised a KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_10"
+        number_inputs = 9
+        references_names = ["1", "2", "3", "4", "5", "6", "7"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1314_23(self):
+        """
+        Expression: DS_r1 <- max(DS_1);
+                    DS_r2 <- DS_1[aggr Me_2 := sum(Me_1)];
+                    DS_r4 <- DS_2[aggr Me_2 := sum(Me_1)];
+                    DS_r5 <- DS_2[aggr Me_2 := count()];
+        Description: Without a grouping clause, all the Data Points of the operand make a
+            single group, and the result is a single Data Point. Over the null Measures of
+            DS_1 it holds a null (DS_r1, DS_r2): the pandas engine dropped it, so the result
+            had no Data Point, while the DuckDB engine kept it. DS_2 has no Data Points, so
+            the result of an aggr clause has none (DS_r4), where the DuckDB engine gave a null
+            Data Point. A count still reports 0 (DS_r5).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_23"
+        number_inputs = 2
+        references_names = ["1", "2", "4", "5"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1314_24(self):
+        """
+        Expression: DS_r1 <- DS_1[aggr Me_2 := avg(1) group by Id_1];
+        Description: In an aggr clause, an aggregate operator takes a Component of the operand:
+            it cannot be applied to a scalar value (VTL 2.2, Aggregate invocation). Both
+            engines raised AttributeError: 'Scalar' object has no attribute 'role'.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_24"
+        number_inputs = 1
+        error_code = "1-2-17"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1314_13(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_3 := Me_2 = Me_1];
+                    DS_r2 <- DS_2 = "true";
+                    DS_r3 <- DS_3 = true;
+                    DS_r4 <- DS_3 <> DS_2;
+                    DS_r5 <- nvl(DS_2, "none");
+                    DS_r6 <- DS_2[calc Me_2 := nvl(Me_1, "none"), Me_3 := Me_1 in {"true", "x"},
+                        Me_4 := match_characters(Me_1, "t.*")];
+                    DS_r7 <- DS_2[calc Me_2 := if Me_1 then true else false]
+                        [calc Me_3 := Me_2 = "false"];
+                    DS_r8 <- DS_2 in {"true", "x"};
+                    DS_r9 <- DS_1[calc Me_3 := if Me_1 then nvl(Me_2, "none")
+                        else nvl(Me_1, true)];
+                    DS_r10 <- DS_1[calc Me_3 := upper(nvl(Me_1, false)),
+                        Me_4 := cast(if Me_1 then Me_2 else "true", boolean)];
+        Description: A Boolean promoted to String is "true" or "false", as the VTL 2.2 manual
+            casts it.
+            DS_r1 to DS_r4: a Boolean compared with a String is compared as text, so "True"
+            differs from a true value. The DuckDB engine cast the String to Boolean, so a String
+            that is not a Boolean raised a Conversion Error (DS_r1, DS_r3, DS_r4), and the
+            pandas engine compared the Boolean as "True" or "False".
+            DS_r5 to DS_r8: the same holds in nvl, in, match_characters and the comparisons.
+            The pandas engine wrote "True" and "False", and did not convert the numpy Booleans
+            of a calc before comparing them with a String (DS_r7). The DuckDB engine cast the
+            String to Boolean in nvl and in, and match_characters had no function for a
+            Boolean. Both engines failed on in with a String that is not a Boolean.
+            DS_r9, DS_r10: nvl has the common type of its operands, as an if or a case: a
+            String with a String operand, a Boolean with Boolean operands. In DS_r9 the if is a
+            String, so its Boolean operand nvl(Me_1, true) is promoted to String: the pandas
+            engine wrote "False" and "True", and the DuckDB engine, which did not type nvl,
+            mixed a BOOLEAN and a VARCHAR in its CASE and raised a Binder Error. In DS_r10,
+            upper promotes the Boolean nvl to String, and the String if casts to Boolean as a
+            String does ("yes" is false). The DuckDB engine had no upper for a BOOLEAN, and cast
+            the String if as a value of unknown type, which made "yes" true.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_13"
+        number_inputs = 3
+        references_names = [str(i) for i in range(1, 11)]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1314_14(self):
+        """
+        Expression: DS_r <- (if DS_1#Me_1 > 1 then floor(DS_1) else 0)[filter Me_1 > 0];
+        Description: floor drops the Attribute At_1 of DS_1, which is not viral. On the DuckDB
+            engine, the structure of floor(DS_1) kept it, so the if used as the operand of the
+            filter selected At_1 from it and raised a Binder Error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_14"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1314_31(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_2 := if Me_1 > 0 then ln(Me_1) else 0];
+                    DS_r2 <- DS_1[calc Me_2 := if Me_3 <> "abc" then cast(Me_3, integer)
+                        else 0];
+                    DS_r3 <- DS_1[calc Me_2 := case when Me_1 > 0 then sqrt(Me_1)
+                        when Me_1 = 0 then 0 else ln(abs(Me_1))];
+                    DS_r7 <- DS_1[calc Me_2 := case when Me_1 > -10 then Me_1
+                        when ln(Me_1) > 0 then ln(0) else 3];
+                    DS_r8 <- DS_1[calc Me_2 := if Me_1 > 0 then sum(Me_1 + 1 over ())
+                        else 0];
+                    DS_r9 <- DS_1[calc Me_2 := (if Id_1 >= 2 then Me_1 else Id_1) + Me_1];
+                    DS_r10 <- DS_1[filter (if Id_1 >= 2 then Me_1 else Id_1) <= Me_1];
+        Description: At Component level, an operand of an if or a case is computed only on
+            the Data Points that take its branch, as on the DuckDB engine. On the pandas
+            engine, only a binary operator cut its Components to the Data Points of the
+            branch: a unary or parameterised operator on a Component (ln, sqrt, abs, cast)
+            ran on every Data Point and raised for the ones of another branch, in an if
+            (DS_r1, DS_r2) and a case (DS_r3). A condition or an operand that no Data Point
+            reaches is not computed (DS_r7), and an analytic operator in a branch reads every
+            Data Point of the clause (DS_r8, where the pandas engine summed only the Data
+            Points of the branch and gave 5.0).
+            DS_r9, DS_r10: on the pandas engine, a Component level if gave the values of its
+            then operand first and those of its else operand after them, and the operator
+            that takes the result pairs its values with the other operand by position. The
+            value of Id_1 2 was added to the Me_1 of Id_1 1 (DS_r9 gave 0, 4 and 3 instead of
+            1, 8 and -2), and the filter dropped Id_1 2 (DS_r10).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_31"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "7", "8", "9", "10"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1314_32(self):
+        """
+        Expression: DS_r1 <- DS_1 + (if sc_1 > 0 then 1 else sc_1 / 0);
+                    DS_r2 <- DS_1 + (if sc_2 > 0 then sc_1 / 0 else 3);
+                    DS_r3 <- DS_1 + (case when sc_1 < 0 then sc_1 / 0 when sc_1 > 5 then 7
+                        when sc_1 / 0 > 1 then 8 else ln(0));
+                    DS_r4 <- DS_1[calc Me_2 := if sc_1 > 0 then 1 else sc_1 / 0];
+                    DS_r5 <- if DS_1 > 0 then (case when sc_1 > 0 then 1 else -1 / 0)
+                        else DS_1;
+                    DS_r6 <- DS_1 + cast(if isnull(sc_2) then "1" else "yes", integer);
+                    DS_r7 <- DS_1 + cast(if sc_3 >= "b" then "1" else sc_3, number);
+        Description: A scalar if or case computes only the operand it selects, as on the
+            DuckDB engine: the then operand of the first true condition, or else the else
+            operand, which a null condition selects (sc_2 is null). The pandas engine computed
+            every condition and operand, so the division by zero of an operand that is not
+            selected raised 2-1-15-6, also in a calc (DS_r4) and in a Data Set if (DS_r5).
+            The result still has the common type of all the operands, Number.
+            DS_r6, DS_r7: the value of a scalar if depends on the data, so the semantic
+            analysis does not know it. It took the value of the else operand when it did not
+            know the value of the condition, so the DuckDB engine checked the cast of the
+            operand that is not selected: "yes" raised 1-1-5-6 (DS_r6) and the value "b" of
+            sc_3 raised 2-1-5-1 (DS_r7), where the selected operand "1" casts.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_32"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6", "7"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_1": 10, "sc_2": None, "sc_3": "b"},
+        )
+
+    def test_GH_1314_34(self):
+        """
+        Expression: DS_r <- DS_1 + cast(if sc_2 >= 0.0 then "a" else null, integer);
+        Description: A scalar if is a literal, which the semantic analysis checks, only when
+            all its operands are literals with the same value, unless its conditions are
+            literals (GH_1314_44): which operand it gives depends on the data. The pandas
+            engine took the literal flag of the operand selected, so "a" raised the semantic
+            error 1-1-5-6, while it is the runtime error 2-1-5-1 that the DuckDB engine raises.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_34"
+        number_inputs = 1
+        error_code = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=error_code,
+            scalars={"sc_1": None, "sc_2": 3, "sc_3": "b"},
+        )
+
+    def test_GH_1314_44(self):
+        """
+        Expression: DS_r <- DS_1[calc Me_2 := cast(if true then "a" else "1", integer)];
+                    DS_r <- DS_1[calc Me_2 := cast(case when false then "1" when true then "a"
+                        else "2", integer)];
+        Description: While the conditions of a scalar if or case are literals, the script
+            selects the operand, so the result is that operand, with its value and its literal
+            flag, and the cast of the literal "a" is the semantic error 1-1-5-6. The case
+            skips a false literal condition. The rule of GH_1314_34 treated a literal
+            condition as one that the data decide, so both casts raised the runtime error
+            2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_44"
+        number_inputs = 1
+        error_code = "1-1-5-6"
+
+        for statement in self.LoadVTL(code).splitlines():
+            with self.subTest(statement=statement):
+                self.NewSemanticExceptionTest(
+                    code=code,
+                    number_inputs=number_inputs,
+                    exception_code=error_code,
+                    text=statement,
+                )
+
+    def test_GH_1314_45(self):
+        """
+        Expression: DS_r1 <- DS_1[calc Me_3 := true or (1 / Me_1 > 0)];
+                    DS_r2 <- DS_1[calc Me_3 := sc_f and (1 / Me_1 > 0)];
+                    DS_r3 <- DS_1 * (if true or (1 / sc_0 > 1) then 2 else 3);
+                    DS_r4 <- sum(DS_1 group by Id_1 having count() > 0 or sum(Me_1) / 0 > 1);
+                    DS_r5 <- sum(DS_1 group by Id_1 having count() < 2 and 100 / max(Me_1) > 1);
+                    DS_r6 <- DS_1[calc Me_3 := nvl(Me_1, 1 / Me_2)];
+                    DS_r7 <- DS_1[calc Me_3 := nvl(Me_2, 1 / sc_0)];
+                    DS_r8 <- DS_1[keep Me_1] + nvl(sc_1, 1 / sc_0);
+        Description: The right operand of an or is not computed where the left one is true,
+            nor the right operand of an and where the left one is false, as on the DuckDB
+            engine: with a scalar left operand, at Component (DS_r1, DS_r2) and at scalar level
+            (DS_r3), and in a having clause, on the groups (DS_r4, DS_r5). Likewise, at
+            Component and scalar level, the second operand of an nvl is computed only where
+            the first one is null, as the COALESCE of the DuckDB engine (DS_r6 to DS_r8). The
+            pandas engine computed them and raised 2-1-15-6.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_45"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4", "5", "6", "7", "8"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars={"sc_0": 0, "sc_1": 1, "sc_f": False},
+        )
+
+    def test_GH_1314_41(self):
+        """
+        Expression: DS_r <- symdiff(if DS_1 > 1 then (if DS_2 > 1 then 1 / DS_2 else -0.5)
+                        else null, DS_3);
+        Description: Each Data Set operand of an if is computed on all its Data Points, so
+            the inner if divides by zero at Id_1 3 of DS_2, although the outer if takes no
+            Data Point from it: DS_1 and DS_2 share none. The DuckDB engine computed 1 / DS_2
+            in a MATERIALIZED CTE nested in the inner if, and dropped it with the inner if,
+            whose Data Points its statistics showed the outer if does not need, so symdiff
+            returned DS_3. The CTE is now at the top of the statement, here before the WITH
+            clause of symdiff.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_41"
+        number_inputs = 3
+        error_code = "2-1-15-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1314_42(self):
+        """
+        Expression: DS_r2 <- DS_2[calc Me_3 := Me_1 or Me_2, Me_4 := Me_1 and Me_2];
+                    DS_r3 <- DS_1[calc Me_4 := Me_2 or (Me_1 / Me_1 > 11) or ...
+                        or (Me_1 / Me_1 > 2) or (Me_1 / Me_1 > 0.5)];
+                    DS_r4 <- DS_1[calc Me_4 := (Me_2 or (Me_1 / Me_1 > 0.5))
+                        and (Me_2 or (Me_1 / Me_1 < 2)),
+                        Me_5 := (Me_2 and Me_3) or (not Me_2 and (Me_1 / Me_1 > 0.5))];
+                    DS_r5 <- DS_1[calc Me_4 := Me_2 xor Me_3 xor Me_3 xor Me_3 xor Me_3
+                        or (Me_1 / Me_1 > 0.5), Me_5 := Me_2 xor Me_3 xor Me_3
+                        or (Me_1 / Me_1 > 0.5) xor Me_3 xor Me_2 xor Me_3];
+                    DS_r6 <- DS_1[filter (Me_2 or (Me_1 / Me_1 > 0.5))
+                        and (not Me_2 and (Me_1 / Me_1 > 0.5))];
+                    DS_r7 <- DS_1[aggr Me_4 := count(Me_2 or (Me_1 / Me_1 > 0.5)),
+                        Me_5 := max(not Me_2 and (Me_1 / Me_1 > 0.5)) group by Id_1];
+        Description: At Component level, the right operand of an or is computed only where
+            the left one is false or null, and the right operand of an and only where it is
+            true or null. Me_1 / Me_1 divides by zero at Id_1 1, where no statement needs it.
+            The pandas engine computed it on every Data Point and raised 2-1-15-6. The DuckDB
+            engine computed both operands of an and or an or that gives a value, in a calc
+            (DS_r3, DS_r4) or an aggregate operand (DS_r7), and raised 2-1-15-6; in a chain
+            with xor (DS_r5) it folded the or link into a list, which computes all its
+            elements. DS_r2 gives the three-valued results on the nine pairs of true, false
+            and null, DS_r3 is a chain of twelve or operands, written as one CASE, DS_r4 nests
+            and and or, and DS_r6 is a filter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result.
+        """
+        code = "GH_1314_42"
+        number_inputs = 2
+        references_names = ["2", "3", "4", "5", "6", "7"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1314_47(self):
+        """
+        Expression: DS_r <- DS_1[calc Me_2 := cast(if Me_1 > 0 then "3.25" else "1", integer)];
+        Description: The if is a String, so it casts to Integer as a String does: "3.25",
+            which Id_1 1 takes, is not an Integer and raises 2-1-5-1, as on the pandas engine.
+            The DuckDB engine converted the String if to a Number and truncated it to 3.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_47"
+        number_inputs = 1
+        error_code = "2-1-5-1"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
+    def test_GH_1314_48(self):
+        """
+        Expression: DS_r <- DS_1[filter Me_b and (1 / Me_1 > 0)];
+        Description: In a filter, the right operand of an and is computed where the left one
+            is null, as in a calc: null and false is false. At Id_1 1, Me_b is null and Me_1
+            is 0, so 1 / Me_1 raises 2-1-15-6, as on the pandas engine. The DuckDB engine
+            filtered on the left operand first and did not compute the right one there, so
+            the result had no Data Point.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Exception.
+        """
+        code = "GH_1314_48"
+        number_inputs = 1
+        error_code = "2-1-15-6"
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
+        )
+
 
 class ClauseBugs(BugHelper):
     """ """
@@ -4317,16 +4957,137 @@ class ClauseBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- DS_1[pivot Id_1, Me_1];
-        Description: pivot is not supported: a SemanticError instead of a NotImplementedError.
+        Description: pivot raises a SemanticError instead of a NotImplementedError. It raised
+                     1-3-13 until pivot takes an Identifier defined on a value domain, which
+                     Id_1 is not (issue #1234).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
         Goal: Check Exception.
         """
         code = "GH_1192_38"
         number_inputs = 1
-        message = "1-3-13"
+        message = "1-1-6-18"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1234_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+        Description: Id_2 is defined on VD_AB, so the result has a Measure for A and one for
+                     B, B null where Id_1 2 has no data point for it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1234
+        Goal: Check Result.
+        """
+        code = "GH_1234_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1234-VD_AB"],
+        )
+
+    def test_GH_1234_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+        Description: The example of the reference manual: the Measures created are on VD_INT,
+                     the value domain of Me_1, and Me_2 and the Attribute At_1 are dropped.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1234
+        Goal: Check Result.
+        """
+        code = "GH_1234_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1234-VD_ABC", "GH_1234-VD_INT"],
+        )
+
+    def test_GH_1234_3(self):
+        """
+        Status: OK
+        Expression: define viral propagation CONF ( variable VAt_1 ) is ... end viral propagation;
+                    DS_r <- DS_1 [ pivot Id_2 , Me_1 ] [ calc Me_2 := A + B ];
+        Description: The viral attribute of the data points of a group is combined by its
+                     rule, and the Measures created are read by a later clause.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1234
+        Goal: Check Result.
+        """
+        code = "GH_1234_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1234-VD_AB"],
+        )
+
+    def test_GH_1234_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+        Description: Id_2 is a String on no value domain, whose values would give the
+                     Measures of the result.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1234
+        Goal: Check Exception.
+        """
+        code = "GH_1234_4"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-6-18",
+            exception_message="The Identifier Id_2 is not defined on a value domain",
+        )
+
+    def test_GH_1234_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+        Description: Id_1, a value of VD_NAMES, would name a Measure as the Identifier the
+                     result keeps.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1234
+        Goal: Check Exception.
+        """
+        code = "GH_1234_5"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-6-9",
+            vd_names=["GH_1234-VD_NAMES"],
+        )
+
+    def test_GH_1234_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+        Description: Pivoting the only Identifier leaves a single data point, with no
+                     Identifiers.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1234
+        Goal: Check Result.
+        """
+        code = "GH_1234_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1234-VD_ABC"],
         )
 
     def test_GH_1265(self):
@@ -4363,6 +5124,30 @@ class ClauseBugs(BugHelper):
         references_names = ["1", "2", "3"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1318_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1[filter not isnull(Me_1)][calc identifier Id_2 := Me_1];
+        Description: Me_1 is declared nullable, which a filter does not change, so an
+                     Identifier cannot be calculated from it. The message described null
+                     values in the data, which the check never reads, and did not name
+                     the Identifier.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1318
+        Goal: Check Exception.
+        """
+        code = "GH_1318_2"
+        number_inputs = 1
+        message = "1-1-1-16"
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code=message,
+            exception_message=(
+                "Identifier Id_2 cannot be calculated from an expression that is declared nullable."
+            ),
+        )
 
 
 class DefinedBugs(BugHelper):
@@ -5653,11 +6438,11 @@ class CastBugs(BugHelper):
     def test_GH_923(self):
         """
         Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, string), Me_3 := upper(Me_1), ...];
-        Description: Boolean-to-string results must be Python-style ("True"/"False")
-            in both engines. The DuckDB transpiler emitted ``CAST(x AS VARCHAR)``
-            ('true'/'false') for explicit casts, and component-level string
-            operators (upper, substr, replace, length, instr) on a Boolean raised
-            ``BinderException`` because no implicit coercion was applied.
+        Description: Boolean-to-string results are "true"/"false" in both engines, as
+            the VTL 2.2 manual casts a Boolean to String (issue #1314). Component-level
+            string operators (upper, substr, replace, length, instr) on a Boolean raised
+            ``BinderException`` on the DuckDB engine because no implicit coercion was
+            applied.
         Git Issue: GH_923.
         Goal: Check Result matches the pandas engine output.
         """
@@ -5715,8 +6500,8 @@ class CastBugs(BugHelper):
     def test_GH_923_3(self):
         """
         Expression: sc_r <- true || "_x";
-        Description: scalar boolean || string must give Python-style text in
-            both engines; the DuckDB engine produced 'true_x'.
+        Description: scalar boolean || string gives the same text in both engines,
+            "true_x", as the VTL 2.2 manual casts a Boolean to String (issue #1314).
         Git Issue: GH_923.
         Goal: Check scalar result value.
         """
@@ -5728,14 +6513,13 @@ class CastBugs(BugHelper):
             datapoints={},
             use_duckdb=_use_duckdb_backend(),
         )
-        assert result["sc_r"].value == "True_x"
+        assert result["sc_r"].value == "true_x"
 
     def test_GH_923_4(self):
         """
         Expression: DS_r <- DS_1[calc Me_2 := Me_1 || "_x"];
-        Description: component-level boolean || string must give Python-style
-            text in both engines; the DuckDB engine let DuckDB coerce the
-            boolean ('true_x') and the pandas engine raised TypeError from
+        Description: component-level boolean || string gives the same text in both
+            engines, "true_x" (issue #1314); the pandas engine raised TypeError from
             the series-scalar path (issue GH_940).
         Git Issue: GH_923.
         Goal: Check component result values.
@@ -5749,15 +6533,15 @@ class CastBugs(BugHelper):
             use_duckdb=_use_duckdb_backend(),
         )
         me_2 = result["DS_r"].data["Me_2"]
-        assert me_2.tolist()[:2] == ["True_x", "False_x"]
+        assert me_2.tolist()[:2] == ["true_x", "false_x"]
         assert pd.isna(me_2.iloc[2])
 
     def test_GH_940(self):
         """
         Expression: DS_r <- DS_1[calc Me_2 := "x_" || Me_1];
         Description: component-level string || boolean (component on the
-            right) must implicitly cast the Boolean component to Python-style
-            text; the pandas engine raised TypeError from the series-scalar
+            right) must implicitly cast the Boolean component to text ("true",
+            "false"); the pandas engine raised TypeError from the series-scalar
             path.
         Git Issue: GH_940.
         Goal: Check Result.
@@ -5772,7 +6556,7 @@ class CastBugs(BugHelper):
         """
         Expression: DS_r <- DS_1 || "_x";
         Description: dataset-level boolean || string must implicitly cast the
-            Boolean measure to Python-style text; the pandas engine raised
+            Boolean measure to text ("true", "false"); the pandas engine raised
             TypeError from the series-scalar path.
         Git Issue: GH_940.
         Goal: Check Result.
@@ -6017,11 +6801,12 @@ class CastBugs(BugHelper):
     def test_GH_1010_1(self):
         """
         Status: OK
-        Expression: DS_r <- DS_1 [ calc identifier i := if Me_1 > 1 then Me_1
-                                                        else cast(null, number) ];
+        Expression: DS_r <- DS_1 [ calc identifier i := if Me_1 > 1 then Me_1 else sc_1 ];
         Description: an expression declared not nullable can still hold a null, which
-                     only the data shows. A calculated Identifier is checked on its
-                     data as well, and reports it at run time.
+                     only the data shows: the input scalar sc_1 is declared not nullable
+                     and holds a null. A calculated Identifier is checked on its data as
+                     well, and reports it at run time. A null literal operand would make
+                     the if nullable, which the semantic analysis rejects (issue #1314).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1010
         Goal: Check Exception.
         """
@@ -6030,7 +6815,7 @@ class CastBugs(BugHelper):
         message = "2-1-1-16"
 
         self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
+            code=code, number_inputs=number_inputs, exception_code=message, scalars={"sc_1": None}
         )
 
     def test_GH_1027_1(self):
@@ -6414,17 +7199,135 @@ class CastBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, VD_1)];
-        Description: A value domain is no scalar type for cast: a script error, where a
-                     NotImplementedError was raised.
+        Description: A cast to a value domain when no value domains are given is a script
+                     error, where a NotImplementedError was raised. It raised 0-5-1-8 until
+                     a cast takes a value domain (issue #1241).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
         Goal: Check Exception.
         """
         code = "GH_1192_29"
         number_inputs = 1
-        message = "0-5-1-8"
+        message = "1-2-22"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1241_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , VD_1 ) ];
+        Description: A cast to the value domain VD_1 gives Me_2 on it, as A and B are values
+                     of it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1241
+        Goal: Check Result.
+        """
+        code = "GH_1241_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1241-VD_1"],
+        )
+
+    def test_GH_1241_2(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- cast ( DS_1 , VD_1 );
+                    DS_r2 <- cast ( DS_2 , VD_2 );
+        Description: The Measure of a Data Set cast to a value domain is defined on it, from
+                     its basic type (a null stays null) and from another value domain on it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1241
+        Goal: Check Result.
+        """
+        code = "GH_1241_2"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1241-VD_1", "GH_1241-VD_2"],
+        )
+
+    def test_GH_1241_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , VD_2 ) ];
+        Description: C, a value of VD_1, is not a value of VD_2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1241
+        Goal: Check Exception.
+        """
+        code = "GH_1241_3"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="2-1-5-4",
+            exception_message="At op cast: Cannot cast C of String to Value Domain VD_2",
+            vd_names=["GH_1241-VD_1", "GH_1241-VD_2"],
+        )
+
+    def test_GH_1241_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , VD_1 ) ];
+        Description: VD_1, a value domain of Strings, takes no Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1241
+        Goal: Check Exception.
+        """
+        code = "GH_1241_4"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-5-1",
+            exception_message="Type Integer, cannot be cast to VD_1",
+            vd_names=["GH_1241-VD_1"],
+        )
+
+    def test_GH_1241_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "D" , VD_1 ) ];
+        Description: The literal D is not a value of VD_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1241
+        Goal: Check Exception.
+        """
+        code = "GH_1241_5"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-5-6",
+            exception_message="Impossible to cast D from type String to VD_1",
+            vd_names=["GH_1241-VD_1"],
+        )
+
+    def test_GH_1241_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , VD_3 ) ];
+        Description: VD_3 is not one of the value domains given.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1241
+        Goal: Check Exception.
+        """
+        code = "GH_1241_6"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-2-8",
+            exception_message="Missing value domain 'VD_3' definition",
+            vd_names=["GH_1241-VD_1"],
         )
 
 

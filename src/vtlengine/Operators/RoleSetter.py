@@ -54,7 +54,7 @@ class Identifier(RoleSetter):
         # An Identifier cannot be nullable, so the expression it is calculated from
         # has to be declared not nullable itself, and cannot be the null literal.
         if result.nullable or (isinstance(operand, Scalar) and operand.data_type is Null):
-            raise SemanticError("1-1-1-16")
+            raise SemanticError("1-1-1-16", comp_name=operand.name)
         return result
 
     @classmethod

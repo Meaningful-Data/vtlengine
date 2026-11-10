@@ -4,13 +4,24 @@ import contextlib
 import re
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any, Callable, Dict, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Optional, Set, Tuple, Type
 
 import duckdb
 from duckdb.sqltypes import BOOLEAN, VARCHAR
 
 import vtlengine.AST.Grammar.tokens as tokens
-from vtlengine.DataTypes import Duration, Integer, Number, TimeInterval, TimePeriod
+from vtlengine.DataTypes import (
+    SCALAR_TYPES,
+    SCALAR_TYPES_CLASS_REVERSE,
+    Duration,
+    Integer,
+    Number,
+    ScalarType,
+    TimeInterval,
+    TimePeriod,
+)
+from vtlengine.DataTypes.CastMasks import cast_with_mask
+from vtlengine.Exceptions import RunTimeError
 from vtlengine.Utils._number_config import (
     get_effective_comparison_digits,
     get_effective_numeric_digits,
@@ -36,7 +47,7 @@ _STRING_UNARY_OPS: Set[str] = {
 _STRING_PARAM_OPS: Set[str] = {tokens.SUBSTR, tokens.REPLACE, tokens.INSTR}
 
 # Operators whose scalar/component result is always Boolean (used to apply the
-# Python-style boolean→string coercion, issue #923).
+# boolean→string coercion, issues #923 and #1314).
 _BOOLEAN_RESULT_BINOPS: Set[str] = {
     tokens.EQ,
     tokens.NEQ,
@@ -598,6 +609,48 @@ def register_time_functions(conn: duckdb.DuckDBPyConnection) -> None:
     ):
         with contextlib.suppress(duckdb.Error):
             conn.create_function(name, check, [VARCHAR], BOOLEAN)
+
+
+CAST_MASK_FUNCTION = "vtl_cast_mask"
+
+# The scalar types by the names that the transpiler and the pandas engine give them
+_MASK_TYPE_NAMES: Dict[str, Any] = {
+    **SCALAR_TYPES,
+    **{data_type.__name__: data_type for data_type in SCALAR_TYPES.values()},
+}
+
+
+class CastMaskError(Exception):
+    """Carries VTL error 2-1-5-3 out of the vtl_cast_mask UDF, in the message of the error that
+    DuckDB raises, to _map_vtl_macro_error."""
+
+
+def _cast_mask_text(value: str, from_name: str, to_name: str, mask: str) -> str:
+    """The text of a value cast with a mask, in the form the DuckDB engine keeps the target
+    type. A value that the mask does not describe raises VTL error 2-1-5-3, which
+    _map_vtl_macro_error turns into the RunTimeError of the pandas engine."""
+    from_type: Type[ScalarType] = _MASK_TYPE_NAMES[from_name]
+    to_type: Type[ScalarType] = _MASK_TYPE_NAMES[to_name]
+    source: Any = value
+    if from_type is Number:
+        source = float(value)
+    elif from_type is Integer:
+        source = int(value)
+    try:
+        result = cast_with_mask(source, from_type, to_type, mask)
+    except RunTimeError:
+        types = f"{SCALAR_TYPES_CLASS_REVERSE[from_type]}|~|{SCALAR_TYPES_CLASS_REVERSE[to_type]}"
+        raise CastMaskError(f"VTL 2-1-5-3 {types}|~|{mask}|~|{value}|~|") from None
+    return repr(result) if isinstance(result, float) else str(result)
+
+
+def register_cast_mask_function(conn: duckdb.DuckDBPyConnection) -> None:
+    """Register the mask cast UDF on a DuckDB connection. Idempotent, as
+    register_regex_functions."""
+    with contextlib.suppress(duckdb.Error):
+        conn.create_function(
+            CAST_MASK_FUNCTION, _cast_mask_text, [VARCHAR, VARCHAR, VARCHAR, VARCHAR], VARCHAR
+        )
 
 
 def register_regex_functions(conn: duckdb.DuckDBPyConnection) -> None:

@@ -20,6 +20,7 @@ from vtlengine.AST.DAG._models import DatasetSchedule
 from vtlengine.AST.Grammar.tokens import (
     AGGREGATE,
     ALL,
+    AND,
     APPLY,
     AS,
     BETWEEN,
@@ -47,6 +48,7 @@ from vtlengine.AST.Grammar.tokens import (
     MEMBERSHIP,
     MINUS,
     NVL,
+    OR,
     PARTIAL_NULL,
     PARTIAL_ZERO,
     PLUS,
@@ -146,6 +148,17 @@ from vtlengine.ViralPropagation import (
 )
 
 
+def _ruleset_type_matches(declared: AST.RulesetType, found: AST.RulesetType) -> bool:
+    """Whether a ruleset of type found is of the type a parameter declares. A part the
+    declared type leaves out takes any: ruleset any kind, no sub-type both, and so on."""
+    return (
+        declared.kind in ("ruleset", found.kind)
+        and declared.signature_type in (None, found.signature_type)
+        and declared.names in (None, found.names)
+        and declared.conditions in (None, found.conditions)
+    )
+
+
 def _is_omitted(node: AST.AST) -> bool:
     """Whether an argument of a user defined operator call is written as _."""
     return isinstance(node, AST.ID) and node.type_ == "OPTIONAL"
@@ -237,8 +250,6 @@ class InterpreterAnalyzer(ASTTemplate):
     udo_constraints: List[Dict[str, List[Tuple[str, str, AST.TypeConstraint]]]] = field(
         default_factory=list
     )
-    # Whether the input scalars hold their values, as on the DuckDB engine, even when only_semantic
-    scalar_values_known: bool = False
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
     # Names of the rules that computed each code item, in evaluation order
     hr_agg_item_rules: Optional[Dict[str, List[str]]] = None
@@ -251,7 +262,6 @@ class InterpreterAnalyzer(ASTTemplate):
     udos: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     hrs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     is_from_case_then: bool = False
-    signature_values: Optional[Dict[str, Any]] = None
 
     def __post_init__(self) -> None:
         self.datasets_inputs = set(self.datasets.keys())
@@ -280,13 +290,12 @@ class InterpreterAnalyzer(ASTTemplate):
                 _fill_dataset_empty_data(self.datasets[ds_name])
 
     def _save_datapoints_efficient(self, statement_num: int) -> None:
-        if self.output_path is None:
-            # Keeping the data in memory if no output path is provided
-            return
         if self.ds_analysis is None:
             return
         if statement_num not in self.ds_analysis.deletion:
             return
+        # After its last use, a Data Set releases its data, unless it is a result returned in
+        # memory: with an output folder, the results are written first (issue #1304)
         for ds_name in self.ds_analysis.deletion[statement_num]:
             if (
                 ds_name not in self.datasets
@@ -298,8 +307,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 # We do not save global input datasets, only results of transformations
                 self.datasets[ds_name].data = None
                 continue
-            if self.return_only_persistent and ds_name not in self.ds_analysis.persistent:
+            # The flag of the result, as run() filters on it, instead of scanning the list
+            # of persistent names at each statement
+            if self.return_only_persistent and not self.datasets[ds_name].persistent:
                 self.datasets[ds_name].data = None
+                continue
+            if self.output_path is None:
+                # A result returned in memory keeps its data
                 continue
             # Saving only datasets, no scalars
             save_datapoints(
@@ -370,6 +384,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
             # Reset some handlers (joins and if)
             self.is_from_join = False
+            # The apply of a join leaves its Data Set here, which would keep its data alive
+            self.regular_aggregation_dataset = None
             self.condition_stack = None
             self.then_condition_dataset = None
             self.else_condition_dataset = None
@@ -381,8 +397,11 @@ class InterpreterAnalyzer(ASTTemplate):
             if result is None:
                 continue
 
-            # Save results
-            self.datasets[result.name] = copy(result)
+            # Save results: a copy, as the result of a simple assignment (DS_2 := DS_1) may be
+            # the Dataset of its operand, and the same object in both, so releasing its data
+            # after its last use also releases it from the results (issue #1304)
+            result = copy(result)
+            self.datasets[result.name] = result
             results[result.name] = result
             if isinstance(result, Scalar):
                 scalars_to_save.add(result.name)
@@ -428,6 +447,10 @@ class InterpreterAnalyzer(ASTTemplate):
             # (Integer, Number, String, Boolean, ...)
             if isinstance(declared, (Dataset, Component, Scalar)):
                 type_ = declared.__class__.__name__
+            elif isinstance(declared, AST.RulesetType):
+                type_ = "Ruleset"
+            elif isinstance(declared, AST.SetType):
+                type_ = "Set"
             else:
                 type_ = declared
             param_info.append(
@@ -645,7 +668,7 @@ class InterpreterAnalyzer(ASTTemplate):
             return self.visit(ast_var_id)
 
         left_operand = self.visit(node.left)
-        right_operand = self.visit(node.right)
+        right_operand = self._visit_right_operand(node.op, left_operand, node.right)
 
         if self.condition_stack:
             left_operand = self.merge_then_else_datasets(left_operand)
@@ -673,6 +696,110 @@ class InterpreterAnalyzer(ASTTemplate):
             if found:
                 key = (AST.node_position(node), tuple(self.udo_call_positions))
                 self.downcasts[key] = (op, found)
+
+    def _visit_right_operand(self, op: str, left: Any, node: AST.AST) -> Any:
+        """The right operand of a binary operator. The right operand of an and or an or, and
+        the second operand of an nvl, are needed only where the left one does not give the
+        result: where it is false or null for or, true or null for and, null for nvl. At
+        Component and scalar level they are computed only there, as on the DuckDB engine, and
+        are null elsewhere, which three-valued logic and nvl leave out. In a having clause the
+        groups take the place of the Data Points. At Data Set level every operand is computed
+        on all its Data Points (issue #1314)."""
+        if op not in (AND, OR, NVL):
+            return self.visit(node)
+        if isinstance(left, Dataset):
+            if op == NVL or not self.is_from_having:
+                return self.visit(node)
+            return self._visit_having_right(op, left, node)
+        if not isinstance(left, (DataComponent, Scalar)) or (
+            op != NVL and left.data_type != Boolean
+        ):
+            return self.visit(node)
+        if isinstance(left, DataComponent):
+            if left.data is None:
+                return self.visit(node)
+            needed = self._needed(op, left.data).to_numpy()
+            return self._visit_where_needed(node, left.data.index[needed], left.data.index)
+        if self._needed(op, pd.Series([left.value], dtype=object)).iloc[0]:
+            return self.visit(node)
+        if op != NVL:
+            # The value that gives the result, which three-valued logic reads as a bool
+            left.value = bool(left.value)
+        index = self._frame_index()
+        if index is not None:
+            # At Component level: needed on none of the Data Points
+            return self._visit_where_needed(node, index[:0], index)
+        structure = self._visit_structure(deepcopy(node))
+        # A Data Set operand is computed on all its Data Points
+        return structure if isinstance(structure, Scalar) else self.visit(node)
+
+    @staticmethod
+    def _needed(op: str, left: pd.Series) -> pd.Series:
+        """Where the right operand of op is needed, from the values of its left operand."""
+        if op == NVL:
+            return left.isna()
+        # The value of the left operand that gives the result by itself
+        decisive = op == OR
+        return left.fillna(not decisive).astype(bool) != decisive
+
+    def _visit_where_needed(self, node: AST.AST, needed: pd.Index, index: pd.Index) -> Any:
+        """The operand node, computed only on the Data Points of needed, as a branch of an if,
+        and null on the other Data Points of index."""
+        if self.condition_stack is None:
+            self.condition_stack = []
+        self.condition_stack.append(
+            Dataset(name="needed", components={}, data=pd.DataFrame(index=needed))
+        )
+        operand = self._visit_in_branch(node)
+        self.condition_stack.pop()
+        if isinstance(operand, DataComponent):
+            data = (
+                pd.Series(dtype=operand.data_type.dtype()) if operand.data is None else operand.data
+            )
+            operand.data = data.reindex(index)
+        return operand
+
+    def _frame_index(self) -> Optional[pd.Index]:
+        """The row labels of the Data Points that a Component is computed on: the ones of the
+        Component level branch being computed, or else the ones of the Data Set of the clause or
+        of the rule. None out of them."""
+        branch_index = self._branch_index()
+        if branch_index is not None:
+            return branch_index
+        if self.is_from_rule:
+            return None if self.rule_data is None else self.rule_data.index
+        frame = self.regular_aggregation_dataset
+        if not self.is_from_regular_aggregation or frame is None or frame.data is None:
+            return None
+        return frame.data.index
+
+    def _visit_having_right(self, op: str, left: Dataset, node: AST.AST) -> Any:
+        """The right operand of an and or an or in a having clause, computed from the Data Points
+        of the groups where the left one does not give the result, and null on the others."""
+        measures = left.get_measures()
+        aggregation_dataset = self.aggregation_dataset
+        if (
+            left.data is None
+            or len(measures) != 1
+            or measures[0].data_type != Boolean
+            or aggregation_dataset is None
+            or aggregation_dataset.data is None
+        ):
+            return self.visit(node)
+        ids = left.get_identifiers_names()
+        needed = self._needed(op, left.data[measures[0].name]).to_numpy()
+        groups = pd.MultiIndex.from_frame(left.data.loc[needed, ids])
+        data = aggregation_dataset.data
+        self.aggregation_dataset = Dataset(
+            name=aggregation_dataset.name,
+            components=aggregation_dataset.components,
+            data=data[pd.MultiIndex.from_frame(data[ids]).isin(groups)],
+        )
+        right = self.visit(node)
+        self.aggregation_dataset = aggregation_dataset
+        if isinstance(right, Dataset) and right.data is not None:
+            right.data = merge_frames(left.data[ids], right.data, on=ids, how="left")
+        return right
 
     def visit_UnaryOp(self, node: AST.UnaryOp) -> None:
         operand_node = node.operand
@@ -764,9 +891,12 @@ class InterpreterAnalyzer(ASTTemplate):
         return Dataset(name=operand.name, components=components, data=data)
 
     @staticmethod
-    def _component_aggregation_operand(operand: Dataset, op_comp: DataComponent) -> Dataset:
+    def _component_aggregation_operand(op: str, operand: Dataset, op_comp: Any) -> Dataset:
         """Builds the Data Set an aggregation of one Component reads: the Identifiers and
         viral Attributes of the operand, with that Component as its only Measure."""
+        if not isinstance(op_comp, DataComponent):
+            # The aggregate operators cannot be applied to scalar values (issue #1314)
+            raise SemanticError("1-2-17", op=op, comp="component")
         comps_to_keep = {
             comp_name: copy(comp)
             for comp_name, comp in operand.components.items()
@@ -794,14 +924,18 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.is_from_having:
             operand = self.aggregation_dataset
             if node.operand is not None and operand is not None:
-                return self._component_aggregation_operand(operand, self.visit(node.operand))
+                return self._component_aggregation_operand(
+                    node.op, operand, self.visit(node.operand)
+                )
             return self._data_point_count_operand(node, operand)
         if self.is_from_regular_aggregation and self.regular_aggregation_dataset is not None:
             if self.regular_aggregation_op in (CALC, FILTER):
                 raise SemanticError("1-2-14", op=self.regular_aggregation_op)
             operand = self.regular_aggregation_dataset
             if node.operand is not None and operand is not None:
-                return self._component_aggregation_operand(operand, self.visit(node.operand))
+                return self._component_aggregation_operand(
+                    node.op, operand, self.visit(node.operand)
+                )
             return self._data_point_count_operand(node, operand)
         return self.visit(node.operand)
 
@@ -879,7 +1013,11 @@ class InterpreterAnalyzer(ASTTemplate):
             if node.operand is None:
                 operand = self.regular_aggregation_dataset
             else:
+                # The window reads every Data Point of the clause, also in a branch of an if
+                # or a case, as on the DuckDB engine (issue #1314)
+                condition_stack, self.condition_stack = self.condition_stack, None
                 operand_comp = self.visit(node.operand)
+                self.condition_stack = condition_stack
                 component_name = operand_comp.name
                 id_names = self.regular_aggregation_dataset.get_identifiers_names()
                 measure_names = self.regular_aggregation_dataset.get_measures_names()
@@ -1072,13 +1210,14 @@ class InterpreterAnalyzer(ASTTemplate):
             else:
                 data = None
 
-        return DataComponent(
+        result_comp = DataComponent(
             name=output_name,
             data=data,
             data_type=result.components[measure_name].data_type,
             role=result.components[measure_name].role,
             nullable=result.components[measure_name].nullable,
         )
+        return self.merge_then_else_datasets(result_comp)
 
     def visit_MulOp(self, node: AST.MulOp) -> None:
         """
@@ -1138,7 +1277,13 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             raise SemanticError("1-3-5", op_type="MulOp", node_op=node.op)
 
-    def visit_VarID(self, node: AST.VarID) -> Any:  # noqa: C901
+    def visit_VarID(self, node: AST.VarID) -> Any:
+        # A Component in a branch of an if or a case is computed only on the Data Points of
+        # that branch, as on the DuckDB engine, so that no operator on it raises for the Data
+        # Points of another branch (issue #1314)
+        return self.merge_then_else_datasets(self._visit_var_id(node))
+
+    def _visit_var_id(self, node: AST.VarID) -> Any:  # noqa: C901
         if self.is_from_assignment:
             return node.value
         # Having takes precedence as it is lower in the AST
@@ -1289,6 +1434,10 @@ class InterpreterAnalyzer(ASTTemplate):
             set_type = scalar_data_type or BASIC_TYPES[type(elements[0])]
             return ScalarSet(data_type=set_type, values=elements)
         elif node.kind == "ValueDomain":
+            if self.udo_params is not None and isinstance(
+                self.udo_params[-1].get(node.name), ScalarSet
+            ):
+                return self.udo_params[-1][node.name]
             vd = self._value_domain(node.name)
             return ScalarSet(data_type=vd.type, values=vd.setlist)
         else:
@@ -1424,8 +1573,16 @@ class InterpreterAnalyzer(ASTTemplate):
         condition = self.visit(node.condition)
 
         if isinstance(condition, Scalar):
-            thenValue = self.visit(node.thenOp)
-            elseValue = self.visit(node.elseOp)
+            # Only the operand that the condition selects is computed, as on the DuckDB engine:
+            # the other one only gives its structure, for the type of the result, and raises no
+            # runtime error (issue #1314). A null condition selects the else operand.
+            visit_then, visit_else = (
+                (self.visit, self._visit_structure)
+                if condition.value
+                else (self._visit_structure, self.visit)
+            )
+            thenValue = visit_then(node.thenOp)
+            elseValue = visit_else(node.elseOp)
             if not isinstance(thenValue, Scalar) or not isinstance(elseValue, Scalar):
                 raise SemanticError(
                     "1-1-9-3",
@@ -1433,17 +1590,18 @@ class InterpreterAnalyzer(ASTTemplate):
                     then_name=thenValue.name,
                     else_name=elseValue.name,
                 )
-            return self.visit(node.thenOp if condition.value else node.elseOp)
+            # Typed and checked as at Component and Data Set level (issue #1314)
+            return If.analyze(condition, thenValue, elseValue, self.is_from_having)
 
         # Analysis for data component and dataset
         then_ds, else_ds = self.generate_then_else_datasets(condition)
 
         self.condition_stack.append(then_ds)
-        thenOp = self.visit(node.thenOp)
+        thenOp = self._visit_in_branch(node.thenOp)
         self.condition_stack.pop()
 
         self.condition_stack.append(else_ds)
-        elseOp = self.visit(node.elseOp)
+        elseOp = self._visit_in_branch(node.elseOp)
         self.condition_stack.pop()
 
         result = If.analyze(condition, thenOp, elseOp, self.is_from_having)
@@ -1453,22 +1611,27 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Case(self, node: AST.Case) -> Any:
         conditions: List[Any] = []
         thenOps: List[Any] = []
-        else_ds = Dataset(name="else", components={}, data=pd.DataFrame())
 
         if self.condition_stack is None:
             self.condition_stack = []
         depth = len(self.condition_stack)
 
+        # Once a scalar condition is true, its then operand is the result: the conditions and
+        # operands after it only give their structure, as in a scalar if (issue #1314)
+        selected = False
         for case in node.cases:
-            conditions.append(self.visit(case.condition))
+            visit = self._visit_structure if selected else self._visit_in_branch
+            conditions.append(visit(case.condition))
             if isinstance(conditions[-1], Scalar):
-                thenOps.append(self.visit(case.thenOp))
+                takes_then = not selected and bool(conditions[-1].value)
+                thenOps.append((self.visit if takes_then else self._visit_structure)(case.thenOp))
+                selected = selected or takes_then
                 continue
 
             then_ds, else_ds = self.generate_then_else_datasets(conditions[-1])
 
             self.condition_stack.append(then_ds)
-            thenOps.append(self.visit(case.thenOp))
+            thenOps.append(self._visit_in_branch(case.thenOp))
             self.condition_stack.pop()
 
             if isinstance(conditions[-1], DataComponent):
@@ -1477,9 +1640,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 # then operands and the else operand only see the data points this one leaves.
                 self.condition_stack.append(else_ds)
 
-        if len(self.condition_stack) == depth:
-            self.condition_stack.append(else_ds)
-        elseOp = self.visit(node.elseOp)
+        elseOp = (self._visit_structure if selected else self._visit_in_branch)(node.elseOp)
         del self.condition_stack[depth:]
 
         result = Case.analyze(conditions, thenOps, elseOp, self.is_from_having)
@@ -1506,9 +1667,13 @@ class InterpreterAnalyzer(ASTTemplate):
         then_df = pd.DataFrame(columns=list(components.keys()))
         else_df = pd.DataFrame(columns=list(components.keys()))
         if cond is not None:
-            merge_ds = self.condition_stack[-1] if self.condition_stack else None
-            if isinstance(merge_ds, Dataset) and merge_ds.data is not None:
-                cond = cond.loc[merge_ds.data.index]
+            # Only a Component condition is cut by the row labels of the enclosing branch, as
+            # both come from the frame of the Data Set of the clause. The labels of a Data Set
+            # condition belong to its own frame and name other Data Points: the enclosing if or
+            # case takes the Data Points of this one by their Identifiers (issue #1304).
+            branch_index = self._branch_index()
+            if isinstance(condition, DataComponent) and branch_index is not None:
+                cond = cond.loc[branch_index]
 
             valid = cond.fillna(False).astype("bool[pyarrow]")
             if isinstance(condition, Dataset) and condition.data is not None:
@@ -1524,25 +1689,45 @@ class InterpreterAnalyzer(ASTTemplate):
         )
 
     def merge_then_else_datasets(self, operand: Any) -> Any:
-        if self.condition_stack:
-            merge_dataset = self.condition_stack[-1]
-            if merge_dataset.data is None:
-                return operand
-
-            merge_data = merge_dataset.data
-            if isinstance(operand, DataComponent) and operand.data is not None:
-                operand.data = operand.data.loc[merge_data.index]
-            elif isinstance(operand, Dataset) and operand.data is not None:
-                ids = merge_dataset.get_identifiers_names()
-                if set(ids).issubset(operand.data.columns):
-                    operand.data = merge_frames(
-                        operand.data.assign(__idx__=operand.data.index),
-                        merge_data[ids],
-                        on=ids,
-                        how="inner",
-                    ).set_index("__idx__")
-
+        # Only a Component is cut to the data points of its branch. A Data Set operand keeps
+        # all of them, as on the DuckDB engine: the viral attributes of an if or a case read
+        # every Data Set operand on every data point of the result (issue #1304).
+        branch_index = self._branch_index()
+        if (
+            branch_index is not None
+            and isinstance(operand, DataComponent)
+            and operand.data is not None
+        ):
+            operand.data = operand.data.loc[branch_index]
         return operand
+
+    def _branch_index(self) -> Optional[pd.Index]:
+        """The row labels of the Data Points of the Component level branch being computed, or
+        None out of one. A Data Set level branch holds Data Points of its condition, whose row
+        labels are not the ones of the Components (issue #1314)."""
+        branch = self.condition_stack[-1] if self.condition_stack else None
+        if branch is None or branch.components or branch.data is None:
+            return None
+        return branch.data.index
+
+    def _visit_in_branch(self, node: AST.AST) -> Any:
+        """Visit a node of the Component level branch on top of the stack. A branch that no Data
+        Point takes is not computed, as on the DuckDB engine, so only its structure is analysed
+        (issue #1314)."""
+        branch_index = self._branch_index()
+        if branch_index is not None and branch_index.empty:
+            return self._visit_structure(node)
+        return self.visit(node)
+
+    def _visit_structure(self, node: AST.AST) -> Any:
+        """The structure of a node, as the semantic analysis gives it: no operation is computed,
+        so none raises a runtime error (issue #1314)."""
+        only_semantic = Operators.only_semantic, self.only_semantic
+        Operators.only_semantic = self.only_semantic = True
+        try:
+            return self.visit(node)
+        finally:
+            Operators.only_semantic, self.only_semantic = only_semantic
 
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
         if self.udo_params is not None:
@@ -1706,7 +1891,10 @@ class InterpreterAnalyzer(ASTTemplate):
             return Date_Add.analyze(self.visit(node.children[0]), params)
         elif node.op == CAST:
             operand = self.visit(node.children[0])
-            scalar_type = node.children[1]
+            target = node.children[1]
+            scalar_type = (
+                self._value_domain(target.name) if isinstance(target, AST.Collection) else target
+            )
             mask = None
             if len(node.params) > 0:
                 mask = self.visit(node.params[0])
@@ -1773,7 +1961,7 @@ class InterpreterAnalyzer(ASTTemplate):
         has_conditions = len(conditions) > 0
         dataset = deepcopy(self.visit(node.dataset))
         component: Optional[str] = self.visit(node.rule_component) if node.rule_component else None
-        hr_name = node.ruleset_name
+        hr_name = self._udo_ruleset_name(node.ruleset_name)
         cond_components = [self.visit(c) for c in conditions] if has_conditions else []
 
         # Get mode values with defaults
@@ -1949,7 +2137,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.dprs is None:
             raise SemanticError("1-2-6", node_type="Datapoint Rulesets", node_value="")
 
-        dpr_name = node.ruleset_name
+        dpr_name = self._udo_ruleset_name(node.ruleset_name)
         if dpr_name not in self.dprs:
             raise SemanticError("1-2-6", node_type="Datapoint Ruleset", node_value=dpr_name)
         dpr_info = self.dprs[dpr_name]
@@ -2418,11 +2606,9 @@ class InterpreterAnalyzer(ASTTemplate):
             raise SemanticError("1-2-22", comp_type="User Defined Operators")
         elif node.op not in self.udos:
             raise SemanticError("1-2-3", node_op=node.op, op_type="User Defined Operator")
-        if self.signature_values is None:
-            self.signature_values = {}
 
         operator = self.udos[node.op]
-        signature_values = {}
+        signature_values: Dict[str, Any] = {}
 
         if operator is None:
             raise SemanticError("1-2-3", node_op=node.op, op_type="User Defined Operator")
@@ -2456,9 +2642,17 @@ class InterpreterAnalyzer(ASTTemplate):
                         expected=len(operator["params"]),
                     )
             else:
-                if isinstance(param["type"], str):  # Scalar, Dataset, Component
+                if isinstance(param["type"], str):  # Scalar, Dataset, Component, Ruleset, Set
                     if param["type"] == "Scalar":
                         signature_values[param["name"]] = self.visit(node.params[i])
+                    elif param["type"] == "Ruleset":
+                        signature_values[param["name"]] = self._udo_ruleset_argument(
+                            node.op, param, node.params[i]
+                        )
+                    elif param["type"] == "Set":
+                        signature_values[param["name"]] = self._udo_set_argument(
+                            node.op, param, node.params[i]
+                        )
                     elif param["type"] in ["Dataset", "Component"]:
                         if isinstance(node.params[i], AST.VarID):
                             signature_values[param["name"]] = node.params[i].value  # type: ignore[attr-defined]
@@ -2528,13 +2722,13 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.udo_params is None:
             self.udo_params = []
 
-        # Adding parameters to the stack
+        caller = self.udo_params[-1] if self.udo_params else {}
         for k, v in signature_values.items():
             if hasattr(v, "name"):
-                v = v.name  # type: ignore[assignment]
-            if v in self.signature_values:
-                signature_values[k] = self.signature_values[v]  # type: ignore[index]
-        self.signature_values.update(signature_values)
+                v = v.name
+            # A set parameter is bound to its values, which name nothing
+            if isinstance(v, str) and v in caller:
+                signature_values[k] = caller[v]
         self.udo_params.append(signature_values)
 
         if node.op in self.udo_calls:
@@ -2578,6 +2772,88 @@ class InterpreterAnalyzer(ASTTemplate):
         if len(self.udo_params) == 0:
             self.udo_params = None
         return result
+
+    def _ruleset_type(self, name: str) -> Optional[AST.RulesetType]:
+        """The type of the ruleset defined with a name, or None when none is."""
+        info = self.dprs.get(name) if self.dprs is not None else None
+        if info is not None:
+            return AST.RulesetType("datapoint", info["signature_type"], tuple(info["params"]))
+        info = self.hrs.get(name) if self.hrs is not None else None
+        if info is not None:
+            return AST.RulesetType(
+                "hierarchical",
+                info["node"].signature_type,
+                (info["signature"],),
+                tuple(info["condition_variables"]),
+            )
+        return None
+
+    def _udo_ruleset_name(self, name: str) -> str:
+        """The ruleset a name stands for: the one a ruleset parameter of the user defined
+        operator being called takes, bound by its name as a dataset parameter is, or the
+        ruleset defined with that name."""
+        bound = self.udo_params[-1].get(name) if self.udo_params else None
+        return bound if isinstance(bound, str) else name
+
+    def _udo_ruleset_argument(self, op: str, param: Dict[str, Any], argument: AST.AST) -> str:
+        """The ruleset a ruleset parameter takes: the one the argument names, or the one a
+        ruleset parameter of the calling operator takes. It must be of the type the parameter
+        declares."""
+        declared = param["declared"]
+        name = self._udo_ruleset_name(argument.value) if isinstance(argument, AST.VarID) else None
+        found = self._ruleset_type(name) if name is not None else None
+        if found is None:
+            if name is not None and name not in self.datasets and name not in (self.scalars or {}):
+                raise SemanticError("1-2-6", node_type="Ruleset", node_value=name)
+            raise SemanticError(
+                "1-3-1-1",
+                op=op,
+                option=f"parameter {param['name']}",
+                type_1=_format_type(declared),
+                type_2=type(self.visit(argument)).__name__,
+            )
+        if not _ruleset_type_matches(declared, found):
+            raise SemanticError(
+                "1-3-1-1",
+                op=op,
+                option=f"parameter {param['name']}",
+                type_1=_format_type(declared),
+                type_2=f"{_format_type(found)} {name}",
+            )
+        return cast(str, name)
+
+    def _udo_set_argument(self, op: str, param: Dict[str, Any], argument: AST.AST) -> ScalarSet:
+        """The set a set parameter takes: the values of the value domain the argument names, or
+        the set of a set parameter of the calling operator."""
+        value: Optional[ScalarSet] = None
+        if isinstance(argument, AST.VarID):
+            bound = self.udo_params[-1].get(argument.value) if self.udo_params else None
+            if isinstance(bound, ScalarSet):
+                value = bound
+            elif self.value_domains is not None and argument.value in self.value_domains:
+                domain = self.value_domains[argument.value]
+                value = ScalarSet(data_type=domain.type, values=domain.setlist)
+        declared = param["declared"]
+        if value is None:
+            found = self.visit(argument)
+            raise SemanticError(
+                "1-3-1-1",
+                op=op,
+                option=f"parameter {param['name']}",
+                type_1=_format_type(declared),
+                type_2=type(found).__name__,
+            )
+        if declared.data_type is not None and not check_unary_implicit_promotion(
+            value.data_type, declared.data_type
+        ):
+            raise SemanticError(
+                "1-2-18",
+                param_type=_format_type(declared),
+                type_name=_format_type(AST.SetType(value.data_type)),
+                op=op,
+                param_name=param["name"],
+            )
+        return value
 
     def _check_udo_arguments(
         self, node: AST.UDOCall, operator: Dict[str, Any], signature_values: Dict[str, Any]
@@ -2674,8 +2950,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 return
             values = value.data.astype(object).reset_index(drop=True)
         elif isinstance(value, Scalar):
-            if self.only_semantic and not self.scalar_values_known:
-                # The values are checked when the script runs
+            if self.only_semantic:
+                # The values are checked when the call is computed: by the pandas engine, and by
+                # the SQL of the DuckDB engine, as a call in a branch that is not taken must not
+                # raise, and the semantic analysis knows no computed value (issue #1314)
                 return
             values = pd.Series([value.value], dtype=object)
         else:
@@ -2692,13 +2970,9 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.udo_params is None:
                 self.udo_params = []
             self.udo_params.append({"value": value})
-            # A scalar has its value in a semantic analysis too, which computes no operation
-            semantic = Operators.only_semantic
-            Operators.only_semantic = semantic and isinstance(value, DataComponent)
             try:
                 holds = self.visit(deepcopy(constraint.condition))
             finally:
-                Operators.only_semantic = semantic
                 self.udo_params.pop()
             result = pd.Series(
                 holds.data if isinstance(holds, DataComponent) else [holds.value], dtype=object

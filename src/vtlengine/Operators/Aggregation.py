@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, Callable, List, Optional
+from typing import Any, List, Optional
 
 import pandas as pd
 
@@ -39,7 +39,7 @@ from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.Utils._duckdb import query_connection
 from vtlengine.ViralPropagation import (
     apply_viral_return_types,
-    get_current_registry,
+    combine_viral_groups,
     require_rules,
 )
 
@@ -296,7 +296,15 @@ class Aggregation(Operator.Unary):
         )
         if len(grouping_keys) == 0:
             aux_df = result_df
-            aux_df.dropna(subset=result.get_measures_names(), how="all", inplace=True)
+            # All the Data Points make one group, so the result is one Data Point, also when
+            # the aggregated values are all null. As on DuckDB, an operand with Identifiers and
+            # no Data Points gives none (issue #1314)
+            if (
+                cls.op != COUNT
+                and operand.get_identifiers_names()
+                and (operand.data is None or len(operand.data) == 0)
+            ):
+                aux_df = aux_df.iloc[:0].copy()
             if cls.op == COUNT and len(result_df) == 0:
                 aux_df["int_var"] = 0
         elif len(aux_df) == 0:
@@ -313,22 +321,10 @@ class Aggregation(Operator.Unary):
                     aux_df[measure_name] = aux_df[measure_name].fillna(0)
         # Propagate viral attributes using the registry
         if viral_df is not None and viral_attr_names:
-            registry = get_current_registry()
+            resolved = combine_viral_groups(
+                viral_df, grouping_keys, [operand.components[name] for name in viral_attr_names]
+            )
             if grouping_keys:
-                grouped = viral_df.groupby(grouping_keys, sort=False)
-
-                def _group_resolver(va_name: str) -> Callable[[pd.Series], Any]:
-                    # Binds the attribute per column: a lambda in the
-                    # comprehension below would see the last one only.
-                    component = operand.components[va_name]
-                    return lambda vals: registry.resolve_group(component, list(vals))
-
-                resolved = pd.DataFrame(
-                    {
-                        va_name: grouped[va_name].agg(_group_resolver(va_name))
-                        for va_name in viral_attr_names
-                    }
-                ).reset_index()
                 aux_df = merge_frames(
                     aux_df.drop(columns=viral_attr_names, errors="ignore"),
                     resolved,
@@ -337,9 +333,7 @@ class Aggregation(Operator.Unary):
                 )
             else:
                 for va_name in viral_attr_names:
-                    aux_df[va_name] = registry.resolve_group(
-                        operand.components[va_name], list(viral_df[va_name])
-                    )
+                    aux_df[va_name] = resolved[va_name].iloc[0]
 
         for comp_name, comp in result.components.items():
             if comp_name in aux_df.columns:
