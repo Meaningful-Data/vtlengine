@@ -1,0 +1,21 @@
+{
+  "datasets": [
+    {
+      "name": "F",
+      "DataStructure": [
+        {
+          "name": "K",
+          "role": "Identifier",
+          "type": "String",
+          "nullable": false
+        },
+        {
+          "name": "Me_2",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}
