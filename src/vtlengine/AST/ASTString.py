@@ -147,6 +147,10 @@ def _format_type(type_: Any, constraints: Optional[AST.SignatureConstraints] = N
             for entry in unnamed
         ]
         return f"dataset {{{', '.join(components)}}}" if components else "dataset"
+    if isinstance(type_, AST.SetType):
+        if type_.data_type is None:
+            return "set"
+        return f"set<{SCALAR_TYPES_CLASS_REVERSE[type_.data_type].lower()}>"
     constraint = constraints.value if constraints is not None else None
     if isinstance(type_, Component):
         return _format_component_type(type_, constraint)
@@ -738,7 +742,9 @@ class ASTString(ASTTemplate):
         nvl_str = ""
         if node.nvl:
             nvl_parts = [
-                f"nvl({_format_name(p.component)}, {self.visit(p.default)})" for p in node.nvl
+                f"nvl({'#'.join(_format_name(n) for n in p.component.split('#'))}, "
+                f"{self.visit(p.default)})"
+                for p in node.nvl
             ]
             nvl_str = ", " + ", ".join(nvl_parts)
         if self.pretty:

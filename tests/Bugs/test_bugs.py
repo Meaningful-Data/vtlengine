@@ -529,7 +529,7 @@ class JoinBugs(BugHelper):
         number_inputs = 1
         vd_names = ["GL_133_1-1"]
 
-        message = "1-1-13-4"
+        message = "1-1-13-9"
 
         # HUH!!!!!!!!!
         self.NewSemanticExceptionTest(
@@ -549,7 +549,7 @@ class JoinBugs(BugHelper):
         code = "GL_133_2"
         number_inputs = 2
 
-        message = "1-1-13-4"
+        message = "1-1-13-9"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -563,7 +563,7 @@ class JoinBugs(BugHelper):
         """
         code = "GL_133_3"
         number_inputs = 2
-        message = "1-1-13-4"
+        message = "1-1-13-9"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )

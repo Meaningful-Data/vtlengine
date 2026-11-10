@@ -988,9 +988,21 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     return f"CAST({operand_sql} AS VARCHAR)"
         return self.visit(child)
 
+    def _resolve_value_domain_name(self, name: str) -> str:
+        """The value domain a set parameter of a user defined operator is bound to, through the
+        calls that pass it on, each resolved in the scope of its caller."""
+        for scope in reversed(self._udo_params or []):
+            bound = scope.get(name)
+            if not isinstance(bound, (AST.VarID, AST.Identifier)):
+                break
+            name = bound.value
+            if name in self.value_domains:
+                break
+        return name
+
     def _visit_value_domain(self, node: AST.Collection) -> str:
         """Resolve a ValueDomain reference to SQL literal list."""
-        vd = self.value_domains[node.name]
+        vd = self.value_domains[self._resolve_value_domain_name(node.name)]
         type_name = vd.type.__name__ if hasattr(vd.type, "__name__") else str(vd.type)
         literals = [self._to_sql_literal(v, type_name) for v in vd.setlist]
         return f"({', '.join(literals)})"
@@ -3858,7 +3870,8 @@ FROM (
         if isinstance(node, AST.Collection):
             # The type of the values of a set or of a value domain
             if node.kind == "ValueDomain":
-                return str(self.value_domains[node.name].type.__name__)
+                vd = self.value_domains[self._resolve_value_domain_name(node.name)]
+                return str(vd.type.__name__)
             types = {self._value_type(child) for child in node.children} - {"Null"}
             return types.pop() if len(types) == 1 else None
         if self._is_boolean_expr(node):
@@ -5622,7 +5635,16 @@ FROM (
             all_components.update(info["ds"].components)
         defaults: Dict[str, str] = {}
         for pair in node.nvl:
-            if pair.component not in all_components:
+            # alias#name names the component of one operand (issue #1238)
+            alias, _, name = pair.component.rpartition("#")
+            found = (
+                any(
+                    info["alias"] == alias and name in info["ds"].components for info in clause_info
+                )
+                if alias
+                else name in all_components
+            )
+            if not found:
                 raise SemanticError(
                     "1-1-1-10",
                     op=node.op,
@@ -5631,6 +5653,29 @@ FROM (
                 )
             defaults[pair.component] = self._constant_to_sql(pair.default)
         return defaults
+
+    @staticmethod
+    def _join_order(clause_info: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """The operands of a natural inner_join in an order where each one has an identifier in
+        common with one before it, so that each join has keys. The semantic
+        analysis has checked that the order exists."""
+        ordered, remaining = [clause_info[0]], clause_info[1:]
+        identifiers = set(clause_info[0]["id_names"])
+        while remaining:
+            following = next((i for i in remaining if identifiers & i["id_names"]), remaining[0])
+            ordered.append(following)
+            identifiers |= following["id_names"]
+            remaining = [op for op in remaining if op is not following]
+        return ordered
+
+    @staticmethod
+    def _join_nvl_expr(
+        column: str, nvl_defaults: Dict[str, str], info: Dict[str, Any], name: str
+    ) -> str:
+        """A join column with the default of its nvl rule, the one written for its operand
+        (alias#name) before the one written for every operand (name)."""
+        default = nvl_defaults.get(f"{info['alias']}#{name}", nvl_defaults.get(name))
+        return column if default is None else f"COALESCE({column}, {default})"
 
     @staticmethod
     def _build_join_viral_cols(
@@ -5708,6 +5753,13 @@ FROM (
 
         is_cross_join = node.op == tokens.CROSS_JOIN
         explicit_using = list(node.using) if node.using else None
+        keys_only = explicit_using is not None and node.op in (
+            tokens.LEFT_JOIN,
+            tokens.FULL_JOIN,
+            tokens.INNER_JOIN,
+        )
+        if node.op == tokens.INNER_JOIN and explicit_using is None:
+            clause_info = self._join_order(clause_info)
 
         # Pairwise keys: for each secondary dataset, the identifiers it shares with any
         # preceding dataset (or the explicit USING list).
@@ -5726,7 +5778,8 @@ FROM (
         if not is_cross_join:
             all_join_ids.update(*pairwise_keys)
             for info in clause_info:
-                all_join_ids |= info["id_names"]
+                if not keys_only:
+                    all_join_ids |= info["id_names"]
 
         comp_count: Counter[str] = Counter(
             name
@@ -5766,7 +5819,7 @@ FROM (
                     # Merged viral attrs are emitted once by _build_join_viral_cols.
                     continue
                 is_join_col = (
-                    comp.role == Role.IDENTIFIER and not is_cross_join
+                    comp.role == Role.IDENTIFIER and not is_cross_join and not keys_only
                 ) or name in all_join_ids
                 if is_join_col:
                     if name in seen_identifiers:
@@ -5784,16 +5837,13 @@ FROM (
                         cols.append(f"{sa}.{quote_name(name)}")
                 elif name in duplicate_comps:
                     qualified_name = f"{info['alias']}#{name}"
-                    expr = f"{sa}.{quote_name(name)}"
-                    if name in nvl_defaults:
-                        expr = f"COALESCE({expr}, {nvl_defaults[name]})"
+                    expr = self._join_nvl_expr(f"{sa}.{quote_name(name)}", nvl_defaults, info, name)
                     cols.append(f"{expr} AS {quote_name(qualified_name)}")
                     self._join_alias_map[qualified_name] = qualified_name
                 else:
-                    expr = f"{sa}.{quote_name(name)}"
-                    if name in nvl_defaults:
-                        expr = f"COALESCE({expr}, {nvl_defaults[name]}) AS {quote_name(name)}"
-                    cols.append(expr)
+                    column = f"{sa}.{quote_name(name)}"
+                    expr = self._join_nvl_expr(column, nvl_defaults, info, name)
+                    cols.append(column if expr == column else f"{expr} AS {quote_name(name)}")
 
         cols.extend(self._build_join_viral_cols(clause_info, vp_registry, merged_viral))
 
