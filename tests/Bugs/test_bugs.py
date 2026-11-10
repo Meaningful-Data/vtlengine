@@ -7931,3 +7931,23 @@ class ValueDomainBugs(BugHelper):
             references_names=references_names,
             vd_names=self.vd_all,
         )
+
+    def test_GH_1301_12(self):
+        """
+        Status: OK
+        Expression: DS_r <- if DS_1 then DS_2 else DS_3;
+        Description: 2022-03-31 of DS_3 is not a value of VD_DATE. DS_3 also holds a date with
+                     a time, so the DuckDB engine wrote it 2022-03-31 00:00:00 in the message.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
+        Goal: Check Exception.
+        """
+        code = "GH_1301_12"
+        number_inputs = 3
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="2-1-5-4",
+            exception_message="At op if: Cannot cast 2022-03-31 of Date to Value Domain VD_DATE",
+            vd_names=["GH_1301-VD_DATE"],
+        )
