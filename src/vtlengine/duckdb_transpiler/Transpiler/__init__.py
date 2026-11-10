@@ -3856,7 +3856,8 @@ FROM (
         if isinstance(node, AST.Collection):
             # The type of the values of a set or of a value domain
             if node.kind == "ValueDomain":
-                return str(self.value_domains[node.name].type.__name__)
+                vd = self.value_domains[self._resolve_value_domain_name(node.name)]
+                return str(vd.type.__name__)
             types = {self._value_type(child) for child in node.children} - {"Null"}
             return types.pop() if len(types) == 1 else None
         if self._is_boolean_expr(node):
