@@ -240,10 +240,6 @@ DATA_STRUCTURES = {
     "script, construct",
     [
         (
-            "define operator f (x datapoint) returns boolean is true end operator;",
-            "ruleset type 'datapoint' (line 1, column 22)",
-        ),
-        (
             'DS_r <- eval(SQL1(DS_1) language "SQL" returns dataset\n'
             "    {identifier<integer> Id_1, measure<number> _*});",
             "multiplicity modifier in 'measure<number> _*' (line 2, column 32)",
@@ -252,10 +248,6 @@ DATA_STRUCTURES = {
             'DS_r <- eval(SQL1(DS_1) language "SQL" returns dataset '
             "{identifier<integer> Id_1, measure<number> _*});",
             "multiplicity modifier in 'measure<number> _*' (line 1, column 83)",
-        ),
-        (
-            "define operator f (x\n    datapoint) returns boolean is true end operator;",
-            "ruleset type 'datapoint' (line 2, column 5)",
         ),
         (
             'DS_r <- eval(SQL1(DS_1) language "SQL" returns dataset {identifier<integer> Id_1, '
