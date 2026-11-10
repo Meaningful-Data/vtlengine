@@ -47,7 +47,7 @@ _STRING_UNARY_OPS: Set[str] = {
 _STRING_PARAM_OPS: Set[str] = {tokens.SUBSTR, tokens.REPLACE, tokens.INSTR}
 
 # Operators whose scalar/component result is always Boolean (used to apply the
-# Python-style boolean→string coercion, issue #923).
+# boolean→string coercion, issues #923 and #1314).
 _BOOLEAN_RESULT_BINOPS: Set[str] = {
     tokens.EQ,
     tokens.NEQ,
