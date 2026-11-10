@@ -853,7 +853,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             message = "'" + text.replace("'", "''") + "'"
             branches.append(f"WHEN {' OR '.join(broken)} THEN error({message} || {shown})")
         if not branches:
-            return sql if otherwise is None else otherwise
+            if otherwise is None:
+                return sql
+            if any(constraint.value_domain is not None for _, _, constraint in checks):
+                # sql raises on a value outside the value domain only where it is read
+                return f"CASE WHEN {sql} IS NULL THEN {otherwise} ELSE {otherwise} END"
+            return otherwise
         checked = f"CASE {' '.join(branches)} ELSE {target if otherwise is None else otherwise} END"
         if not nested:
             return checked
