@@ -134,8 +134,25 @@ def _format_component_type(
     return role
 
 
+def _format_ruleset_type(type_: AST.RulesetType) -> str:
+    """A ruleset type, with its sub-type and constraint, written as the grammar takes it."""
+    if type_.kind == "ruleset":
+        return "ruleset"
+    suffix = {"valuedomain": "_on_valuedomains", "variable": "_on_variables"}
+    written = f"{type_.kind}{suffix.get(type_.signature_type or '', '')}"
+    if type_.names is None:
+        return written
+    names = " * ".join(_format_name(name) for name in type_.names)
+    if type_.conditions:
+        conditions = " * ".join(_format_name(name) for name in type_.conditions)
+        names = f"{names} ({conditions})"
+    return f"{written} {{{names}}}"
+
+
 def _format_type(type_: Any, constraints: Optional[AST.SignatureConstraints] = None) -> str:
     """The type of an operator parameter or result, written as declared."""
+    if isinstance(type_, AST.RulesetType):
+        return _format_ruleset_type(type_)
     if isinstance(type_, Dataset):
         named = constraints.components if constraints is not None else {}
         unnamed = constraints.unnamed if constraints is not None else []

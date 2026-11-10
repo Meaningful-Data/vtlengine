@@ -137,6 +137,17 @@ from vtlengine.ViralPropagation import (
 )
 
 
+def _ruleset_type_matches(declared: AST.RulesetType, found: AST.RulesetType) -> bool:
+    """Whether a ruleset of type found is of the type a parameter declares. A part the
+    declared type leaves out takes any: ruleset any kind, no sub-type both, and so on."""
+    return (
+        declared.kind in ("ruleset", found.kind)
+        and declared.signature_type in (None, found.signature_type)
+        and declared.names in (None, found.names)
+        and declared.conditions in (None, found.conditions)
+    )
+
+
 def _is_omitted(node: AST.AST) -> bool:
     """Whether an argument of a user defined operator call is written as _."""
     return isinstance(node, AST.ID) and node.type_ == "OPTIONAL"
@@ -417,6 +428,8 @@ class InterpreterAnalyzer(ASTTemplate):
             # (Integer, Number, String, Boolean, ...)
             if isinstance(param.type_, (Dataset, Component, Scalar)):
                 type_ = param.type_.__class__.__name__
+            elif isinstance(param.type_, AST.RulesetType):
+                type_ = "Ruleset"
             elif isinstance(param.type_, AST.SetType):
                 type_ = "Set"
             else:
@@ -1904,7 +1917,7 @@ class InterpreterAnalyzer(ASTTemplate):
         has_conditions = len(conditions) > 0
         dataset = deepcopy(self.visit(node.dataset))
         component: Optional[str] = self.visit(node.rule_component) if node.rule_component else None
-        hr_name = node.ruleset_name
+        hr_name = self._udo_ruleset_name(node.ruleset_name)
         cond_components = [self.visit(c) for c in conditions] if has_conditions else []
 
         # Get mode values with defaults
@@ -2080,7 +2093,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.dprs is None:
             raise SemanticError("1-2-6", node_type="Datapoint Rulesets", node_value="")
 
-        dpr_name = node.ruleset_name
+        dpr_name = self._udo_ruleset_name(node.ruleset_name)
         if dpr_name not in self.dprs:
             raise SemanticError("1-2-6", node_type="Datapoint Ruleset", node_value=dpr_name)
         dpr_info = self.dprs[dpr_name]
@@ -2570,9 +2583,13 @@ class InterpreterAnalyzer(ASTTemplate):
                         expected=len(operator["params"]),
                     )
             else:
-                if isinstance(param["type"], str):  # Scalar, Dataset, Component, Set
+                if isinstance(param["type"], str):  # Scalar, Dataset, Component, Ruleset, Set
                     if param["type"] == "Scalar":
                         signature_values[param["name"]] = self.visit(node.params[i])
+                    elif param["type"] == "Ruleset":
+                        signature_values[param["name"]] = self._udo_ruleset_argument(
+                            node.op, param, node.params[i]
+                        )
                     elif param["type"] == "Set":
                         signature_values[param["name"]] = self._udo_set_argument(
                             node.op, param, node.params[i]
@@ -2694,6 +2711,55 @@ class InterpreterAnalyzer(ASTTemplate):
         if len(self.udo_params) == 0:
             self.udo_params = None
         return result
+
+    def _ruleset_type(self, name: str) -> Optional[AST.RulesetType]:
+        """The type of the ruleset defined with a name, or None when none is."""
+        info = self.dprs.get(name) if self.dprs is not None else None
+        if info is not None:
+            return AST.RulesetType("datapoint", info["signature_type"], tuple(info["params"]))
+        info = self.hrs.get(name) if self.hrs is not None else None
+        if info is not None:
+            return AST.RulesetType(
+                "hierarchical",
+                info["node"].signature_type,
+                (info["signature"],),
+                tuple(info["condition_variables"]),
+            )
+        return None
+
+    def _udo_ruleset_name(self, name: str) -> str:
+        """The ruleset a name stands for: the one a ruleset parameter of the user defined
+        operator being called takes, bound by its name as a dataset parameter is, or the
+        ruleset defined with that name."""
+        bound = self.udo_params[-1].get(name) if self.udo_params else None
+        return bound if isinstance(bound, str) else name
+
+    def _udo_ruleset_argument(self, op: str, param: Dict[str, Any], argument: AST.AST) -> str:
+        """The ruleset a ruleset parameter takes: the one the argument names, or the one a
+        ruleset parameter of the calling operator takes. It must be of the type the parameter
+        declares."""
+        declared = param["declared"]
+        name = self._udo_ruleset_name(argument.value) if isinstance(argument, AST.VarID) else None
+        found = self._ruleset_type(name) if name is not None else None
+        if found is None:
+            if name is not None and name not in self.datasets and name not in (self.scalars or {}):
+                raise SemanticError("1-2-6", node_type="Ruleset", node_value=name)
+            raise SemanticError(
+                "1-3-1-1",
+                op=op,
+                option=f"parameter {param['name']}",
+                type_1=_format_type(declared),
+                type_2=type(self.visit(argument)).__name__,
+            )
+        if not _ruleset_type_matches(declared, found):
+            raise SemanticError(
+                "1-3-1-1",
+                op=op,
+                option=f"parameter {param['name']}",
+                type_1=_format_type(declared),
+                type_2=f"{_format_type(found)} {name}",
+            )
+        return cast(str, name)
 
     def _udo_set_argument(self, op: str, param: Dict[str, Any], argument: AST.AST) -> ScalarSet:
         """The set a set parameter takes: the values of the value domain the argument names, or
