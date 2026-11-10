@@ -316,14 +316,11 @@ class ExprComp:
         ]
         basic_scalar_type = [
             Terminals().visitBasicScalarType(type_)
+            if type_.ctx_id == RC.BASIC_SCALAR_TYPE
+            else Terminals().visitValueDomainName(type_)
             for type_ in ctx_list
-            if not type_.is_terminal and type_.ctx_id == RC.BASIC_SCALAR_TYPE
-        ]
-
-        [
-            Terminals().visitValueDomainName(valueD)
-            for valueD in ctx_list
-            if not valueD.is_terminal and valueD.ctx_id == RC.VALUE_DOMAIN_NAME
+            if not type_.is_terminal
+            and type_.ctx_id in (RC.BASIC_SCALAR_TYPE, RC.VALUE_DOMAIN_NAME)
         ]
 
         if len(ctx_list) > 6:

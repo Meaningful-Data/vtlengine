@@ -141,6 +141,8 @@ class TestHelper(TestCase):
                     name=scalar_name,
                     data_type=SCALAR_TYPES[scalar_json["type"]],
                     value=None,
+                    # As the API loads it
+                    nullable=scalar_json.get("nullable", True),
                 )
                 datasets[scalar_name] = scalar
         return datasets

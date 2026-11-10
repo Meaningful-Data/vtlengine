@@ -240,21 +240,14 @@ DATA_STRUCTURES = {
     "script, construct",
     [
         (
-            "define operator f (x set<integer>) returns boolean is true end operator;",
-            "set type 'set<integer>' (line 1, column 22)",
-        ),
-        (
-            "define operator f (x hierarchical) returns boolean is true end operator;",
-            "ruleset type 'hierarchical' (line 1, column 22)",
+            'DS_r <- eval(SQL1(DS_1) language "SQL" returns dataset\n'
+            "    {identifier<integer> Id_1, measure<number> _*});",
+            "multiplicity modifier in 'measure<number> _*' (line 2, column 32)",
         ),
         (
             'DS_r <- eval(SQL1(DS_1) language "SQL" returns dataset '
             "{identifier<integer> Id_1, measure<number> _*});",
             "multiplicity modifier in 'measure<number> _*' (line 1, column 83)",
-        ),
-        (
-            "define operator f (x\n    set<integer>) returns boolean is true end operator;",
-            "set type 'set<integer>' (line 2, column 5)",
         ),
         (
             'DS_r <- eval(SQL1(DS_1) language "SQL" returns dataset {identifier<integer> Id_1, '
@@ -274,8 +267,8 @@ def test_unsupported_constructs_quote_the_script(script: str, construct: str) ->
     "script, construct",
     [
         (
-            'DS_r <- DS_1[calc Me_2 := cast(Me_1, string, "YYYY")];',
-            'cast with the mask "YYYY"',
+            'DS_r <- DS_1[calc Me_2 := cast(Me_1, string, "DD.DDEE")];',
+            'the exponent E in the mask "DD.DDEE"',
         ),
     ],
 )

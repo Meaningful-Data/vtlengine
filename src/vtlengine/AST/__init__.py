@@ -578,6 +578,30 @@ class Types(AST):
     __eq__ = AST.ast_equality
 
 
+@dataclass(frozen=True)
+class RulesetType:
+    """The type of a ruleset parameter of a user defined operator, whose argument is a ruleset.
+
+    kind is ruleset (any ruleset), datapoint or hierarchical; signature_type, valuedomain or
+    variable, is the sub-type, None taking either. names are the value domains or variables of
+    a datapoint ruleset, in order, or the one of a hierarchical ruleset, and conditions the
+    conditioning ones of a hierarchical ruleset; None takes any.
+    """
+
+    kind: str
+    signature_type: Optional[str] = None
+    names: Optional[Tuple[str, ...]] = None
+    conditions: Optional[Tuple[str, ...]] = None
+
+
+@dataclass(frozen=True)
+class SetType:
+    """The type set<data_type> of a parameter of a user defined operator, whose argument is a
+    value domain or a set of values of that type. A set of any scalar type has no data_type."""
+
+    data_type: Optional[Type[ScalarType]] = None
+
+
 @dataclass
 class TypeConstraint:
     """What a type in the signature of a user defined operator requires of its values: not

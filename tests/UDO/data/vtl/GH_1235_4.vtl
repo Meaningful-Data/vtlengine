@@ -1,0 +1,6 @@
+define operator keep_in (d dataset, s set)
+    returns dataset is
+        d[filter Me_1 in s]
+end operator;
+
+DS_r <- keep_in(DS_1, VD_AB);

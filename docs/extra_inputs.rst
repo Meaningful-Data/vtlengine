@@ -275,6 +275,14 @@ type conversion rules:
     /* Me_2 is on the value domain of Me_1, and 0 must be one of its values */
     DS_r <- DS_1 [calc Me_2 := nvl(Me_1, 0)];
 
+``cast`` converts a value of the basic type, or of another value
+domain on it, into a value domain, with the same check:
+
+.. code-block:: text
+
+    /* Me_2 is on VD_1, and every value of Me_1 must be one of its values */
+    DS_r <- DS_1 [calc Me_2 := cast(Me_1, VD_1)];
+
 ``pivot`` needs the Identifier it pivots defined on a value domain:
 the result has one Measure per value of the value domain, named after
 the value, of the type (and on the value domain) of the pivoted
