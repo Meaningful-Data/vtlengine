@@ -1,6 +1,7 @@
 import re
 from typing import Any, Dict, FrozenSet, Optional, Set, Type, Union
 
+import numpy as np
 import pandas as pd
 
 from vtlengine.DataTypes._time_checking import (
@@ -118,15 +119,36 @@ class ScalarType(metaclass=DataTypeSimpleRepr):
             return False
 
 
+def to_string(value: Any) -> str:
+    """The String of a value that is not null. A Boolean is "true" or "false", as the VTL 2.2
+    reference manual casts a Boolean to String, where str gives "True" or "False" (issue
+    #1314)."""
+    if isinstance(value, (bool, np.bool_)):
+        return "true" if value else "false"
+    return str(value)
+
+
+def to_strings(series: Any) -> Any:
+    """A Series as Strings, each value as to_string gives it: casting the dtype instead writes
+    a numpy or Python Boolean as "True" or "False". A Series of Strings is returned as it is."""
+    if isinstance(series.dtype, pd.StringDtype):
+        return series
+    return series.map(to_string, na_action="ignore").astype("string[pyarrow]")
+
+
 class String(ScalarType):
     """ """
 
     default = ""
 
     @classmethod
+    def cast(cls, value: Any) -> Optional[str]:
+        return None if pd.isnull(value) else to_string(value)
+
+    @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> str:
         if from_type in {Boolean, String}:
-            return str(value)
+            return to_string(value)
 
         raise RunTimeError(
             "2-1-5-1",
@@ -145,7 +167,7 @@ class String(ScalarType):
             Date,
             TimeInterval,
         }:
-            return str(value)
+            return to_string(value)
         if from_type == Duration:
             return _SHORTCODE_TO_ISO.get(str(value), str(value))
         elif from_type == TimePeriod:

@@ -11,7 +11,7 @@ from pysdmx.model import (
 )
 
 import vtlengine.DataTypes as DataTypes
-from tests.Helper import _use_duckdb_backend
+from tests.Helper import _use_duckdb_backend, engine_params
 from vtlengine.API import (
     create_ast,
     prettify,
@@ -991,13 +991,7 @@ def test_run_only_persistent_results(
                     nullable=True,
                 ),
             },
-            data=None
-            if _use_duckdb_backend()
-            else pd.DataFrame(
-                columns=["Id_1", "Id_2", "Me_1"],
-                index=[0, 1],
-                data=[(1, "A", 3), (1, "B", 6)],
-            ),
+            data=None,
         ),
     }
 
@@ -1674,6 +1668,45 @@ def test_output_folder_does_not_mutate_shared_time_period_data(tmp_path):
     ]
 
 
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1304_output_folder_releases_data(use_duckdb, tmp_path):
+    """With an output folder, the results are written and returned without data (GH #1304).
+
+    https://github.com/Meaningful-Data/vtlengine/issues/1304
+
+    The pandas engine wrote DS_r.csv, but returned DS_r with its data and kept the data of
+    every temporary result until the run ended, so writing to a folder saved no memory.
+    """
+    script = "\n".join(f"DS_{k + 1} := DS_{k} + 1;" for k in range(1, 11)) + "\nDS_r <- DS_11 + 1;"
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    data_df = pd.DataFrame({"Id_1": [1, 2, 3], "Me_1": [1.0, 2.0, 3.0]})
+
+    run_result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints={"DS_1": data_df},
+        output_folder=tmp_path,
+        use_duckdb=use_duckdb,
+    )
+
+    assert list(run_result) == ["DS_r"]
+    assert run_result["DS_r"].data is None
+    assert [path.name for path in tmp_path.iterdir()] == ["DS_r.csv"]
+    lines = (tmp_path / "DS_r.csv").read_text().strip().splitlines()
+    assert lines[0] == "Id_1,Me_1"
+    assert sorted(lines[1:]) == ["1,12", "2,13", "3,14"]
+
+
 @pytest.mark.parametrize("data_structures, datapoints", params_run_with_scalars)
 def test_run_with_scalars(data_structures, datapoints, tmp_path):
     script = """
@@ -1711,7 +1744,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=None if _use_duckdb_backend() else pd.DataFrame({"Id_1": [2], "Me_1": [20]}),
+            data=None,
         ),
         "DS_r2": Dataset(
             name="DS_r2",
@@ -1723,7 +1756,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=None if _use_duckdb_backend() else pd.DataFrame({"Me_1": []}),
+            data=None,
         ),
         "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=31),
         "Sc_r2": Scalar(name="Sc_r2", data_type=Integer, value=15),
@@ -1784,7 +1817,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=None if _use_duckdb_backend() else pd.DataFrame({"Id_1": [2], "Me_1": [20]}),
+            data=None,
         ),
         "DS_r2": Dataset(
             name="DS_r2",
@@ -1796,7 +1829,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
                     nullable=True,
                 ),
             },
-            data=None if _use_duckdb_backend() else pd.DataFrame({"Me_1": []}),
+            data=None,
         ),
         "Sc_r": Scalar(name="Sc_r", data_type=Integer, value=None),
     }

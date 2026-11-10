@@ -5,6 +5,7 @@ from collections import Counter, defaultdict
 from contextlib import contextmanager, nullcontext
 from copy import deepcopy
 from dataclasses import dataclass, field
+from itertools import groupby
 from typing import (
     Any,
     Callable,
@@ -81,6 +82,7 @@ from vtlengine.ViralPropagation import apply_viral_return_types, get_current_reg
 from vtlengine.ViralPropagation.sql import (
     vp_group_sql,
     vp_group_sql_windowed,
+    vp_list_sql,
     vp_no_rule_group_sql,
     vp_pair_sql,
     vp_reduce_refs,
@@ -133,6 +135,22 @@ _MIN_FOLDED_CHAIN_OPERANDS = 3
 # SQLTranspiler._build_expression_chain). Below it, the nested SQL is cheaper to run.
 _FOLDED_BOOLEAN_OPS = frozenset({tokens.AND, tokens.OR, tokens.XOR})
 _MIN_FOLDED_EXPRESSION_OPERANDS = 5
+
+# WHEN branches of a dataset case joined by one query (see SQLTranspiler._build_dataset_case),
+# and the columns a stage of a longer case keeps for the next one: whether a condition was
+# already true, and whether the operand of its branch has the data point
+_CASE_STAGE_BRANCHES = 8
+_CASE_DONE = quote_name("__vtl_case_done__")
+_CASE_KEPT = quote_name("__vtl_case_kept__")
+
+# Binary operators that promote a Boolean operand to String next to a String one
+_TEXT_PROMOTING_OPS = COMPARISON_OPS | {tokens.NVL, tokens.IN, tokens.NOT_IN}
+
+# Operators that give a String whatever the types of their operands
+_STRING_RESULT_OPS = (_STRING_UNARY_OPS | _STRING_PARAM_OPS | {tokens.CONCAT}) - {
+    tokens.LEN,
+    tokens.INSTR,
+}
 
 # Imbalance operations a ``check`` computes over the join of its comparison when both
 # read the same datasets (see SQLTranspiler._check_shared_join)
@@ -238,8 +256,9 @@ def _date_tp_compare_expr(
 
 
 def _bool_to_str(col_ref: str) -> str:
-    """Cast a Boolean expression to Python-style string values."""
-    return f"CASE WHEN {col_ref} IS NULL THEN NULL WHEN {col_ref} THEN 'True' ELSE 'False' END"
+    """Cast a Boolean expression to String: 'true' or 'false', as the VTL 2.2 reference manual
+    casts a Boolean to String (issue #1314)."""
+    return f"CAST({col_ref} AS VARCHAR)"
 
 
 def _hr_literal(code_item: str) -> str:
@@ -445,7 +464,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Assignment name -> the inputs the DAG found for it, built on first use
     _assignment_inputs: Optional[Dict[str, List[str]]] = field(default=None, init=False)
 
-    _materialized_operands: List[str] = field(default_factory=list, init=False)
+    _materialized_operands: List[Tuple[str, str]] = field(default_factory=list, init=False)
+
+    # The type of each Component level if and case of the statement, with its clause Data Set
+    # (see _value_type), so that a nested chain of them is typed once
+    _value_types: Dict[int, Tuple[AST.AST, Optional[Dataset], Optional[str]]] = field(
+        default_factory=dict, init=False
+    )
 
     def __post_init__(self) -> None:
         """Initialize available tables."""
@@ -595,10 +620,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             elif isinstance(child, AST.Assignment):
                 name = child.left.value  # type: ignore[attr-defined]
                 with transformation_output(name), self._statement_memo():
-                    queries.append(self._transpile_assignment(child))
+                    _, sql, is_persistent = self._transpile_assignment(child)
+                    queries.append((name, self._with_checked_operands(sql), is_persistent))
                 self._join_alias_map = {}
                 self._consumed_join_aliases = set()
                 self._materialized_operands = []
+                self._value_types = {}
 
         return queries
 
@@ -740,10 +767,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         value: AST.AST,
         checks: List[Tuple[str, str, AST.TypeConstraint]],
         value_depth: Optional[int] = None,
+        otherwise: Optional[str] = None,
     ) -> str:
         """sql, the values of a component, raising VTL 2-3-9 at the first of the checks
         (operator, element, constraint) whose constraint a value breaks: not null, a condition
         on value (the value AST, written with value_depth UDO scopes) or the values allowed.
+        With otherwise, the SQL gives otherwise instead of the value where none is broken.
 
         All the checks are written in one CASE, where value stands for sql, not for the SQL of
         its AST written again. When sql holds the check of another operator, as when the
@@ -784,11 +813,52 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             message = "'" + text.replace("'", "''") + "'"
             branches.append(f"WHEN {' OR '.join(broken)} THEN error({message} || {shown})")
         if not branches:
-            return sql
-        checked = f"CASE {' '.join(branches)} ELSE {target} END"
+            return sql if otherwise is None else otherwise
+        checked = f"CASE {' '.join(branches)} ELSE {target if otherwise is None else otherwise} END"
         if not nested:
             return checked
         return f"list_transform([{sql}], lambda {target}: {checked})[1]"
+
+    def _udo_checked_arguments(
+        self, sql: str, op: str, params: List[Dict[str, Any]], is_dataset: bool
+    ) -> str:
+        """sql, the result of a call of the operator op with the parameters params, raising
+        VTL 2-3-9 first where a scalar argument breaks the constraint of its parameter. The
+        semantic analysis knows no computed value, so the arguments are checked where the call
+        is computed, as on the pandas engine, also the ones that its body does not read: on each
+        data point that computes a Component or scalar call, and once for a Data Set call,
+        which is always computed, even without Data Points (issue #1314)."""
+        holds = "TRUE"
+        for param in reversed(params):
+            name, constraints = param["name"], param["constraints"]
+            argument = self._get_udo_param(name)
+            if (
+                isinstance(param["type"], (Component, Dataset))
+                or constraints is None
+                or constraints.value is None
+                or argument is None
+            ):
+                continue
+            scope = self._find_udo_scope(name)
+            # TRUE, or the error of the argument
+            check = self._udo_checked_sql(
+                self._resolve_udo_param(name, argument),
+                argument,
+                [(op, f"parameter {name}", constraints.value)],
+                scope.get(f"{_UDO_DEPTH_PREFIX}{name}") if scope else None,
+                otherwise="TRUE",
+            )
+            # The arguments are checked in the order of the parameters
+            holds = check if holds == "TRUE" else f"CASE WHEN {check} THEN {holds} END"
+        if holds == "TRUE":
+            return sql
+        if is_dataset:
+            # A one-row check that a join builds before it reads the result of the call
+            return (
+                f"SELECT _vtl_call.* FROM {self._as_subquery(sql)} AS _vtl_call, "
+                f"(SELECT {holds} AS _vtl_holds) AS _vtl_check WHERE _vtl_check._vtl_holds"
+            )
+        return f"CASE WHEN {holds} THEN {sql} END"
 
     def _udo_checked_dataset_sql(
         self,
@@ -840,7 +910,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         is_component = isinstance(self._get_udo_param(f"__type__{name}"), Component)
         if resolved in self.available_tables and not is_component:
             return f"SELECT * FROM {quote_name(resolved)}"
-        if resolved in self.scalars:
+        # A scalar that a statement computes is read from its table, as visit_VarID reads it:
+        # the semantic analysis gives it no value, so its literal was null (issue #1314)
+        if resolved in self.input_scalars:
             return self._scalar_literal(resolved)
         with self._udo_arg_scope(name):
             return self.visit(udo_val)
@@ -1066,7 +1138,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if operand_type == _DATASET:
             ds = self._get_dataset_structure(node.operand)
             name_override: Optional[str] = None
-            if op == tokens.ISNULL and ds and len(ds.get_measures_names()) == 1:
+            if op == tokens.ISNULL and self._isnull_renames_measure(ds):
                 name_override = "bool_var"
             elif self._renames_mono_measure_to_int(op, ds):
                 name_override = "int_var"
@@ -1100,7 +1172,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 def _in_expr(col_ref: str) -> str:
                     return f"({col_ref} {'IN' if op == tokens.IN else 'NOT IN'} {collection})"
 
-                return self._apply_measures(node.left, _in_expr, output_name_override="bool_var")
+                # A Boolean Measure is promoted to String in a set of Strings
+                return self._apply_measures(
+                    node.left,
+                    _in_expr,
+                    output_name_override="bool_var",
+                    cast_bool_to_str=self._value_type(node.right) == "String",
+                )
             if left_type == _DATASET and right_type == _DATASET:
                 chain_sql = self._build_ds_ds_chain(node) if op in _FOLDED_CHAIN_TYPES else None
                 if chain_sql is not None:
@@ -1114,6 +1192,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         chain_sql = self._build_expression_chain(node, self.visit, self._detect_scalar_type)
         if chain_sql is not None:
             return chain_sql
+        if op in (tokens.AND, tokens.OR) and self._get_node_type(node) == _COMPONENT:
+            return self._short_circuit_sql(node, self.visit)
         left_sql = self.visit(node.left)
         right_sql = self.visit(node.right)
         if op == tokens.CONCAT:
@@ -1121,6 +1201,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 left_sql = _bool_to_str(left_sql)
             if self._is_boolean_expr(node.right):
                 right_sql = _bool_to_str(right_sql)
+        if op in _TEXT_PROMOTING_OPS:
+            types = [self._value_type(node.left), self._value_type(node.right)]
+            left_sql, right_sql = self._promoted_to_text([left_sql, right_sql], types)
         left_dt = self._detect_scalar_type(node.left)
         right_dt = self._detect_scalar_type(node.right)
         return self._make_binary_expr(left_sql, right_sql, op, left_dt, right_dt)
@@ -1298,6 +1381,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             right_comp = right_ds.components.get(right_m)
             left_dt = left_comp.data_type if left_comp else None
             right_dt = right_comp.data_type if right_comp else None
+            if op in _TEXT_PROMOTING_OPS:
+                types = [getattr(dt, "__name__", None) for dt in (left_dt, right_dt)]
+                left_ref, right_ref = self._promoted_to_text([left_ref, right_ref], types)
             expr = self._make_binary_expr(left_ref, right_ref, op, left_dt, right_dt)
 
             out_name = left_m
@@ -1479,7 +1565,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         operation is built as usual, so the list opens with its Number or Boolean result
         and the later operands convert as the operations convert them. ``visit`` and
         ``node_type`` give an operand's SQL and data type, as the pairwise operation
-        gets them.
+        gets them. A list computes all its elements, so a Boolean chain only folds its runs
+        of ``xor``, and a run of ``and`` or ``or`` computes its operands only where needed
+        (see ``_short_circuit_case``).
 
         Returns ``None`` when the chain is too short, or when its nested SQL does not grow
         (``and`` and ``or`` without ``xor``).
@@ -1503,7 +1591,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return None
 
         first, *rest = reversed(chain)
-        elements = [visit(first)] + [visit(link.right) for link in rest]
         steps = [
             self._make_binary_expr(
                 "__vtl_acc",
@@ -1514,7 +1601,43 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             )
             for link in rest
         ]
-        return f"list_reduce([{', '.join(elements)}], {self._fold_lambda(steps)})"
+        if numeric:
+            elements = [visit(first)] + [visit(link.right) for link in rest]
+            return f"list_reduce([{', '.join(elements)}], {self._fold_lambda(steps)})"
+        value, done = visit(first), 0
+        for op, run in groupby(rest, key=lambda link: link.op):
+            operands = [visit(link.right) for link in run]
+            if op == tokens.XOR:
+                fold = self._fold_lambda(steps[done : done + len(operands)])
+                value = f"list_reduce([{value}, {', '.join(operands)}], {fold})"
+            else:
+                value = self._short_circuit_case(op, [value, *operands])
+            done += len(operands)
+        return value
+
+    @staticmethod
+    def _short_circuit_case(op: str, values: List[str]) -> str:
+        """The ``op`` (``and`` or ``or``) of ``values``, computing each one only where the ones
+        before it leave the result open: false or null for ``or``, true or null for ``and``, as
+        the pandas engine computes the right operand of a Component level one (issue #1314). An
+        SQL AND or OR computes both operands of a value, and a filter skips the right operand of
+        an AND also where the left one is null."""
+        decides, result = ("{}", "TRUE") if op == tokens.OR else ("NOT ({})", "FALSE")
+        whens = " ".join(f"WHEN {decides.format(value)} THEN {result}" for value in values[:-1])
+        return f"CASE {whens} ELSE ({f' {op.upper()} '.join(values)}) END"
+
+    def _short_circuit_sql(self, node: AST.BinOp, visit: Callable[[AST.AST], str]) -> str:
+        """A Component level ``and`` or ``or`` (see ``_short_circuit_case``). A left-nested chain
+        of the operator is one CASE, which writes each operand at most twice."""
+        operands: List[AST.AST] = []
+        current: AST.AST = node
+        while isinstance(current, AST.BinOp) and current.op == node.op:
+            operands.append(current.right)
+            current = current.left
+            while isinstance(current, AST.ParFunction):
+                current = current.operand
+        operands.append(current)
+        return self._short_circuit_case(node.op, [visit(operand) for operand in operands[::-1]])
 
     def _build_ds_scalar_binary(
         self,
@@ -1538,13 +1661,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if op == tokens.CONCAT and self._is_boolean_expr(scalar_node):
             scalar_sql = _bool_to_str(scalar_sql)
         scalar_dt = self._detect_scalar_type(scalar_node)
+        scalar_type = self._value_type(scalar_node) if op in _TEXT_PROMOTING_OPS else None
 
         def _bin_expr(col_ref: str) -> str:
             comp = ds.components.get(col_ref.strip('"'))
             dt = comp.data_type if comp else None
+            types = [getattr(dt, "__name__", None), scalar_type]
+            col_ref, scalar_ref = self._promoted_to_text([col_ref, scalar_sql], types)
             if ds_on_left:
-                return self._make_binary_expr(col_ref, scalar_sql, op, dt, scalar_dt)
-            return self._make_binary_expr(scalar_sql, col_ref, op, scalar_dt, dt)
+                return self._make_binary_expr(col_ref, scalar_ref, op, dt, scalar_dt)
+            return self._make_binary_expr(scalar_ref, col_ref, op, scalar_dt, dt)
 
         # A mono-measure comparison yields bool_var, matching the structure the
         # visitor reports for this node (issue #920).
@@ -1631,9 +1757,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return registry.sql(tokens.CHARSET_MATCH, col, pattern_sql)
             return f"{match_function}({col}, {pattern_sql})"
 
+        # A Boolean operand is promoted to String (issue #1314)
         if self._get_node_type(node.left) == _DATASET:
-            return self._apply_measures(node.left, _match_sql, self._result_measure_name(node))
-        return _match_sql(self.visit(node.left))
+            return self._apply_measures(
+                node.left, _match_sql, self._result_measure_name(node), cast_bool_to_str=True
+            )
+        operand_sql = self.visit(node.left)
+        if self._is_boolean_expr(node.left):
+            operand_sql = _bool_to_str(operand_sql)
+        return _match_sql(operand_sql)
 
     def _match_characters_function(self, pattern_node: AST.AST) -> str:
         """Pick the SQL function for a ``match_characters`` pattern.
@@ -1728,13 +1860,17 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     def _is_boolean_expr(self, node: AST.AST) -> bool:
         """Return True when *node* is statically known to produce a Boolean value.
 
-        Used to apply the Python-style boolean→string coercion ('True'/'False')
-        at component/scalar level, matching the pandas engine (issue #923).
+        Used to apply the boolean→string coercion ('true'/'false') at component/scalar
+        level, as the pandas engine does (issues #923 and #1314).
         """
         if isinstance(node, AST.Constant):
             return isinstance(node.value, bool)
         if isinstance(node, (AST.VarID, AST.ParamOp)):
             return self._is_operand_type(node, Boolean)
+        if isinstance(node, AST.BinOp) and node.op == tokens.MEMBERSHIP:
+            return self._get_source_vtl_type(node) == "Boolean"
+        if isinstance(node, (AST.If, AST.Case)) or getattr(node, "op", None) == tokens.NVL:
+            return self._value_type(node) == "Boolean"
         if isinstance(node, AST.BinOp):
             return node.op in _BOOLEAN_RESULT_BINOPS
         if isinstance(node, AST.UnaryOp):
@@ -2433,6 +2569,19 @@ FROM (
                 return f"vtl_tp_dateadd(vtl_period_parse({operand_sql}), {shift_sql}, {period_sql})"
             return f"vtl_dateadd({operand_sql}, {shift_sql}, {period_sql})"
 
+    def _clause_component(self, node: AST.AST) -> Optional[Component]:
+        """The Component of the clause Data Set that a name refers to; a Component of a join
+        by its qualified name when the joined Data Sets share it (issue #1314)."""
+        if self._current_dataset is None:
+            return None
+        comps = self._current_dataset.components
+        if isinstance(node, AST.VarID):
+            return comps.get(node.value)
+        if isinstance(node, AST.BinOp) and node.op == tokens.MEMBERSHIP:
+            name = self._resolve_udo_name(self._get_node_value(node.right))
+            return comps.get(f"{self._get_node_value(node.left)}#{name}") or comps.get(name)
+        return None
+
     def _get_source_vtl_type(self, node: "AST.AST") -> Any:
         """Return the VTL type name produced by an AST node when known."""
         if isinstance(node, AST.Constant):
@@ -2462,11 +2611,9 @@ FROM (
                     return self._get_source_vtl_type(argument)
             if node.value in self.scalars:
                 return self.scalars[node.value].data_type.__name__
-        if isinstance(node, AST.VarID) and self._current_dataset:
-            comp = self._current_dataset.components.get(node.value)
-            if comp and comp.data_type:
-                type_name = getattr(comp.data_type, "__name__", str(comp.data_type))
-                return type_name
+        comp = self._clause_component(node)
+        if comp is not None and comp.data_type:
+            return getattr(comp.data_type, "__name__", str(comp.data_type))
         if isinstance(node, AST.UnaryOp) and node.op in (tokens.PLUS, tokens.MINUS, tokens.ABS):
             # Type-preserving numeric unary operators: Integer stays Integer.
             return self._get_source_vtl_type(node.operand)
@@ -2539,9 +2686,8 @@ FROM (
             return self._apply_measures(operand, _cast_measure, self._result_measure_name(node))
         else:
             operand_sql = self.visit(operand)
-            source_type = self._get_source_vtl_type(operand)
-            if source_type is None and self._is_boolean_expr(operand):
-                source_type = "Boolean"
+            # A String if, case or nvl casts as a String does (issue #1314)
+            source_type = self._get_source_vtl_type(operand) or self._value_type(operand)
             return self._cast_expr(operand_sql, duckdb_type, target_type_str, mask, source_type)
 
     def _cast_expr(
@@ -2930,6 +3076,7 @@ FROM (
         calc_exprs: Dict[str, str] = {}
         having_sql: Optional[str] = None
         tp_minmax_cols: List[tuple[str, str]] = []
+        counts = False
 
         with self._clause_scope(ds):
             for child in node.children:
@@ -2937,6 +3084,8 @@ FROM (
                 if isinstance(assignment, AST.Assignment):
                     col_name = self._resolve_udo_name(self._get_node_value(assignment.left))
                     agg_node = assignment.right
+                    if isinstance(agg_node, AST.Aggregation):
+                        counts |= str(agg_node.op).lower() == tokens.COUNT
                     if isinstance(agg_node, AST.Aggregation) and agg_node.having_clause is not None:
                         hc = agg_node.having_clause
                         if isinstance(hc, AST.ParamOp) and hc.params is not None:
@@ -3026,6 +3175,10 @@ FROM (
         builder = SQLBuilder().select(*cols).from_table(group_src)
         if group_ids:
             builder.group_by(*[_id_group_sql(id_) for id_ in group_ids])
+        elif all_input_ids and not counts:
+            # Without grouping, an operand without Data Points gives no Data Point, as an
+            # aggregation at dataset level does; a count reports 0 (issues #1049, #1314)
+            builder.having("COUNT(*) > 0")
 
         if having_sql:
             builder.having(having_sql)
@@ -3633,40 +3786,143 @@ FROM (
 
         return registry.sql(op, *child_sqls)
 
-    def _union_by_identifiers(
-        self, sources: List[str], columns: List[str], id_names: List[str]
-    ) -> str:
-        """Union the operands by their Identifiers: each operand gives the Data Points whose
-        Identifiers are in no operand before it, so a repeated Data Point comes from the
-        left-most operand. A row-number filter over the UNION ALL of the operands gives wrong
-        values on DuckDB 1.5 when the operands repeat a MATERIALIZED CTE (issue #1283).
-        An operand that the next ones read again is computed once, unless it is a table."""
-        cte = CTEBuilder()
-        refs: List[str] = []
-        for k, source in enumerate(sources):
-            if source.startswith("(") and k < len(sources) - 1:
-                cte.cte(f"_union_{k}", f"SELECT * FROM {source}", materialized=True)
-                source = f"_union_{k}"
-            refs.append(source)
-        cols = ", ".join(f"u.{quote_name(c)}" for c in columns)
-        branches: List[str] = []
-        for k, ref in enumerate(refs):
-            anti_joins = "".join(
-                f" ANTI JOIN {prev} AS p{j} ON {self._join_on_clause(id_names, 'u', f'p{j}')}"
-                for j, prev in enumerate(refs[:k])
-            )
-            branches.append(f"(SELECT {cols} FROM {ref} AS u{anti_joins})")
-        return cte.select(" UNION ALL ".join(branches))
+    @staticmethod
+    def _union_by_identifiers(sources: List[str], columns: List[str], id_names: List[str]) -> str:
+        """Union the operands by their Identifiers: the UNION ALL of the operands, with the
+        position of its operand on each Data Point, keeps for each combination of Identifiers
+        the Data Point at the smallest position, so a repeated Data Point comes from the
+        left-most operand.
+
+        Each operand is read once, so the SQL and DuckDB's planning grow linearly with the
+        number of operands (issue #1304); an ANTI JOIN of each operand against every operand
+        before it grew with its square. The smallest position is found with a window MIN, not
+        with a row-number filter: DuckDB 1.5 gives wrong values for ROW_NUMBER() ... = 1 over
+        the UNION ALL when the operands repeat a MATERIALIZED CTE (issue #1283), because its
+        top_n_window_elimination optimizer rewrites that filter into a plan that the
+        common_subplan optimizer breaks. It does not rewrite a window MIN."""
+        cols = ", ".join(quote_name(c) for c in columns)
+        position = quote_name("__vtl_union_position__")
+        branches = " UNION ALL ".join(
+            f"SELECT {cols}, {k} AS {position} FROM {source} AS t"
+            for k, source in enumerate(sources)
+        )
+        id_cols = ", ".join(quote_name(i) for i in id_names)
+        return (
+            f"SELECT {cols} FROM ({branches}) AS t "
+            f"QUALIFY {position} = MIN({position}) OVER (PARTITION BY {id_cols})"
+        )
 
     # =========================================================================
     # Conditional visitors (If, Case)
     # =========================================================================
 
+    def _common_value_type(self, operands: List[AST.AST]) -> Optional[str]:
+        """The type of an if, a case or an nvl: a String when one of its ``operands`` is, a
+        Boolean when all are."""
+        types = {self._value_type(op) for op in operands} - {"Null"}
+        if types == {"Boolean"}:
+            return "Boolean"
+        return "String" if "String" in types else None
+
+    def _value_type(self, node: AST.AST) -> Optional[str]:
+        """The type of a Component or scalar operand of an if or a case, where it is known."""
+        if isinstance(node, AST.ParFunction):
+            return self._value_type(node.operand)
+        if isinstance(node, AST.BinOp) and node.op == tokens.NVL:
+            return self._common_value_type([node.left, node.right])
+        if isinstance(node, (AST.If, AST.Case)):
+            hit = self._value_types.get(id(node))
+            if hit is not None and hit[0] is node and hit[1] is self._current_dataset:
+                return hit[2]
+            value_type = self._common_value_type(self._branch_operands(node))
+            # A UDO body is typed for each call, with its arguments
+            if self._udo_params is None:
+                self._value_types[id(node)] = (node, self._current_dataset, value_type)
+            return value_type
+        if isinstance(node, AST.Constant) and node.value is None:
+            return "Null"
+        if isinstance(node, AST.Collection):
+            # The type of the values of a set or of a value domain
+            if node.kind == "ValueDomain":
+                return str(self.value_domains[node.name].type.__name__)
+            types = {self._value_type(child) for child in node.children} - {"Null"}
+            return types.pop() if len(types) == 1 else None
+        if self._is_boolean_expr(node):
+            return "Boolean"
+        if getattr(node, "op", None) in _STRING_RESULT_OPS:
+            return "String"
+        return self._get_source_vtl_type(node)
+
+    def _dataset_value_types(self, operands: List[AST.AST], name: str) -> List[Optional[str]]:
+        """The type of the Measure ``name`` in each operand of a dataset if or case, or the
+        type of a scalar operand."""
+        types: List[Optional[str]] = []
+        for operand in operands:
+            if self._get_node_type(operand) != _DATASET:
+                types.append(self._value_type(operand))
+                continue
+            with self._stash_assignment():
+                ds = self._get_dataset_structure(operand)
+            comp = ds.components.get(name) if ds is not None else None
+            types.append(comp.data_type.__name__ if comp is not None else None)
+        return types
+
+    def _text_measures(
+        self, result: Dataset, operands: List[AST.AST]
+    ) -> Dict[str, List[Optional[str]]]:
+        """The types of the operands of each String Measure of the ``result`` of a dataset if
+        or case, whose Boolean operands are rendered as text."""
+        return {
+            comp.name: self._dataset_value_types(operands, comp.name)
+            for comp in result.get_measures()
+            if comp.data_type is String
+        }
+
+    def _resolve_conditional_structure(self, node: Union[AST.If, AST.Case]) -> Optional[Dataset]:
+        """The structure of a dataset if or case, where a Boolean Measure is a String when an
+        operand is a String, as in the semantic analysis (issue #1314)."""
+        ds = super()._resolve_conditional_structure(node)
+        if ds is None:
+            return None
+        operands = self._branch_operands(node)
+        texts = [
+            name
+            for name, comp in ds.components.items()
+            if comp.role == Role.MEASURE
+            and comp.data_type is Boolean
+            and "String" in self._dataset_value_types(operands, name)
+        ]
+        if not texts:
+            return ds
+        comps = dict(ds.components)
+        for name in texts:
+            comps[name] = Component(name, String, Role.MEASURE, ds.components[name].nullable)
+        return Dataset(name=ds.name, components=comps, data=None)
+
+    @staticmethod
+    def _as_text(values: List[str], types: List[Optional[str]]) -> List[str]:
+        """The values of the operands of an if or a case whose result is a String: the Boolean
+        ones take the text that cast to string gives, as Boolean is promoted to String. DuckDB
+        cast the strings to BOOLEAN instead (issue #1314)."""
+        return [_bool_to_str(v) if t == "Boolean" else v for v, t in zip(values, types)]
+
+    def _promoted_to_text(self, refs: List[str], types: List[Optional[str]]) -> List[str]:
+        """The operands of a comparison or an nvl: a Boolean with a String is promoted to String,
+        as cast to string renders it. DuckDB cast the String to BOOLEAN instead (issue #1314)."""
+        return self._as_text(refs, types) if set(types) == {"Boolean", "String"} else refs
+
+    def _component_values(self, operands: List[AST.AST], values: List[str]) -> List[str]:
+        """The values of the operands of a Component or scalar if or case, which has their
+        common type: as text next to a String operand."""
+        types = [self._value_type(op) for op in operands]
+        return self._as_text(values, types) if "String" in types else values
+
     def _scalar_if_sql(self, node: AST.If) -> str:
         """Build a simple CASE WHEN for scalar IF-THEN-ELSE."""
         cond_sql = self.visit(node.condition)
-        then_sql = self.visit(node.thenOp)
-        else_sql = self.visit(node.elseOp)
+        then_sql, else_sql = self._component_values(
+            [node.thenOp, node.elseOp], [self.visit(node.thenOp), self.visit(node.elseOp)]
+        )
         return f"CASE WHEN {cond_sql} THEN {then_sql} ELSE {else_sql} END"
 
     def visit_If(self, node: AST.If) -> str:
@@ -3710,18 +3966,16 @@ FROM (
                 source_sql = self._get_dataset_sql(node.condition) if cond_ds else ""
         if cond_ds is not None:
             source_ds = cond_ds
-            source_ids = list(cond_ds.get_identifiers_names())
-            bool_measures = list(cond_ds.get_measures_names())
-            cond_expr = f"{alias}.{quote_name(bool_measures[0])}" if bool_measures else "TRUE"
         else:
             source_sql = self._get_dataset_sql(source_node)
-            source_ids = list(source_ds.get_identifiers_names())
-            if node.condition is source_node:
-                cond_measures = list(source_ds.get_measures_names())
-                cond_expr = f"{alias}.{quote_name(cond_measures[0])}" if cond_measures else "TRUE"
-            else:
-                with self._clause_scope(source_ds, prefix=alias):
-                    cond_expr = self.visit(node.condition)
+        source_ids = list(source_ds.get_identifiers_names())
+        if cond_ds is not None or node.condition is source_node:
+            # The Boolean Measure of the condition, which the semantic analysis checked: a
+            # structure without it is not taken as an always true condition (issue #1314)
+            cond_expr = f"{alias}.{quote_name(source_ds.get_measures_names()[0])}"
+        else:
+            with self._clause_scope(source_ds, prefix=alias):
+                cond_expr = self.visit(node.condition)
 
         t_type = self._get_node_type(node.thenOp)
         e_type = self._get_node_type(node.elseOp)
@@ -3741,12 +3995,25 @@ FROM (
         output_measures = list(ref_ds.get_measures_names())
         output_attributes = list(ref_ds.get_attributes_names())
         output_viral = list(ref_ds.get_viral_attributes_names())
+        result_ds = self._get_output_dataset() or self._get_dataset_structure(node) or ref_ds
+        texts = self._text_measures(result_ds, [node.thenOp, node.elseOp])
 
         # Build SELECT columns
         cols: List[str] = [f"{alias}.{quote_name(id_)}" for id_ in source_ids]
         for col_name in output_measures + output_attributes:
-            t_ref = f"t.{quote_name(col_name)}" if t_type == _DATASET else self.visit(node.thenOp)
-            e_ref = f"e.{quote_name(col_name)}" if e_type == _DATASET else self.visit(node.elseOp)
+            comp = ref_ds.components[col_name]
+            t_ref = (
+                f"t.{quote_name(col_name)}"
+                if t_type == _DATASET
+                else self._scalar_operand_sql(node.thenOp, comp)
+            )
+            e_ref = (
+                f"e.{quote_name(col_name)}"
+                if e_type == _DATASET
+                else self._scalar_operand_sql(node.elseOp, comp)
+            )
+            if col_name in texts:
+                t_ref, e_ref = self._as_text([t_ref, e_ref], texts[col_name])
             cols.append(
                 f"CASE WHEN {cond_expr} THEN {t_ref} ELSE {e_ref} END AS {quote_name(col_name)}"
             )
@@ -3761,7 +4028,7 @@ FROM (
                     v_type = get_duckdb_type(v_comp.data_type.__name__) if v_comp else "VARCHAR"
                     cols.append(f"CAST(NULL AS {v_type}) AS {v_qn}")
                 else:
-                    cols.append(f"{vp_pair_sql(v_rule, f't.{v_qn}', f'e.{v_qn}')} AS {v_qn}")
+                    cols.append(f"{vp_list_sql(v_rule, f'[t.{v_qn}, e.{v_qn}]')} AS {v_qn}")
             elif t_type == _DATASET:
                 cols.append(f"CASE WHEN {cond_expr} THEN t.{v_qn} ELSE NULL END AS {v_qn}")
             elif e_type == _DATASET:
@@ -3778,18 +4045,12 @@ FROM (
         e_join_id = self._left_join_dataset(node.elseOp, e_type, "e", source_ids, alias, builder)
 
         # Filter: only keep rows where the selected side has a match.
-        # Scalar sides always match; dataset sides need a LEFT JOIN hit.
-        if then_join_id and e_join_id:
-            builder.where(
-                f"CASE WHEN {cond_expr} THEN {then_join_id} IS NOT NULL "
-                f"ELSE {e_join_id} IS NOT NULL END"
-            )
-        elif then_join_id:
-            # then=dataset, else=scalar: filter when condition is true
-            builder.where(f"NOT ({cond_expr}) OR {then_join_id} IS NOT NULL")
-        elif e_join_id:
-            # then=scalar, else=dataset: filter when condition is false
-            builder.where(f"({cond_expr}) OR {e_join_id} IS NOT NULL")
+        # Scalar sides always match; dataset sides need a LEFT JOIN hit. A null condition
+        # selects the else side, as in the values (issue #1314).
+        if then_join_id or e_join_id:
+            t_match = f"{then_join_id} IS NOT NULL" if then_join_id else "TRUE"
+            e_match = f"{e_join_id} IS NOT NULL" if e_join_id else "TRUE"
+            builder.where(f"CASE WHEN {cond_expr} THEN {t_match} ELSE {e_match} END")
 
         return builder.build()
 
@@ -3799,13 +4060,16 @@ FROM (
         else_op: AST.AST,
     ) -> str:
         """Build a scalar CASE WHEN SQL, keeping the order of the VTL WHEN branches."""
-        parts = ["CASE"]
+        conds: List[str] = []
+        values: List[str] = []
         for case_obj in cases:
-            cond_sql = self.visit(case_obj.condition)
-            then_sql = self.visit(case_obj.thenOp)
-            parts.append(f"WHEN {cond_sql} THEN {then_sql}")
-        parts.append(f"ELSE {self.visit(else_op)} END")
-        return " ".join(parts)
+            conds.append(self.visit(case_obj.condition))
+            values.append(self.visit(case_obj.thenOp))
+        values.append(self.visit(else_op))
+        operands = [case_obj.thenOp for case_obj in cases] + [else_op]
+        values = self._component_values(operands, values)
+        parts = ["CASE"] + [f"WHEN {c} THEN {v}" for c, v in zip(conds, values)]
+        return " ".join(parts + [f"ELSE {values[-1]} END"])
 
     def visit_Case(self, node: AST.Case) -> str:
         """Visit CASE expression.
@@ -3853,106 +4117,170 @@ FROM (
             return self.visit(case_obj.condition)
 
     def _build_dataset_case(self, node: AST.Case) -> str:
-        """Build SQL for dataset-level CASE with JOINs."""
+        """Build SQL for dataset-level CASE with JOINs.
+
+        DuckDB sets up a chain of joins in a time that grows much faster than its length, as
+        each hash join adds a pipeline with the operators above it. The branches are joined by
+        stages of ``_CASE_STAGE_BRANCHES`` (issue #1304): each stage but the last is a
+        MATERIALIZED CTE, which ends the pipelines, and keeps for each data point the values of
+        the first true condition so far.
+        """
         # The first condition, whatever its expression, gives the data points of the result
         with self._stash_assignment():
             first_cond = node.cases[0].condition
             source_ds = self._get_dataset_structure(first_cond)
             source_sql = self._get_dataset_sql(first_cond)
-        source_ids = list(source_ds.get_identifiers_names())
-        alias_src = "src"
 
         # As an operand, the case has its own structure and not the result's (issue #1276)
         output_ds = self._get_output_dataset() or self._get_dataset_structure(node) or source_ds
-        output_measures = output_ds.get_measures_names()
-        output_viral = output_ds.get_viral_attributes_names()
+        texts = self._text_measures(output_ds, self._branch_operands(node))
+        stages = CTEBuilder()
+        source, stage = (source_sql, "src"), ""
+        last = (len(node.cases) - 1) // _CASE_STAGE_BRANCHES * _CASE_STAGE_BRANCHES
+        for start in range(0, last, _CASE_STAGE_BRANCHES):
+            branches = range(start, start + _CASE_STAGE_BRANCHES)
+            stage_sql = self._case_stage(node, branches, source, source_ds, output_ds, texts)
+            stage = quote_name(f"__vtl_case_{start}__")
+            stages.cte(stage, stage_sql, materialized=True)
+            source = (stage, "r")
+        if stage:
+            source = (f"({stages.select(f'SELECT * FROM {stage}')})", "r")
+        branches = range(last, len(node.cases))
+        return self._case_stage(node, branches, source, source_ds, output_ds, texts)
+
+    @staticmethod
+    def _case_stage_sql(
+        carried: Optional[str], whens: List[Tuple[str, str]], else_sql: Optional[str]
+    ) -> str:
+        """The CASE of a column of a stage, with the value ``carried`` from the previous stage
+        for the data points where a condition was already true."""
+        parts = ["CASE"]
+        if carried is not None:
+            parts.append(f"WHEN r.{_CASE_DONE} THEN {carried}")
+        parts += [f"WHEN {cond} THEN {value}" for cond, value in whens]
+        if else_sql is not None:
+            parts.append(f"ELSE {else_sql}")
+        return " ".join(parts + ["END"])
+
+    def _case_stage(
+        self,
+        node: AST.Case,
+        branches: range,
+        source: Tuple[str, str],
+        source_ds: Dataset,
+        output_ds: Dataset,
+        texts: Dict[str, List[Optional[str]]],
+    ) -> str:
+        """Join the ``branches`` of a dataset case to ``source``: the first condition (``src``)
+        or the previous stage (``r``). The last stage adds the else operand. The String Measures
+        in ``texts`` render their Boolean operands as text."""
+        source_sql, alias_src = source
+        source_ids = list(source_ds.get_identifiers_names())
+        staged = alias_src == "r"
+        final = branches.stop == len(node.cases)
+        operands = [case.thenOp for case in node.cases] + [node.elseOp]
+        is_ds = [self._get_node_type(op) == _DATASET for op in operands]
         builder = SQLBuilder().from_table(source_sql, alias_src)
 
-        # Process each WHEN branch
-        cond_exprs: List[str] = []
-        then_aliases: List[Optional[str]] = []
-        then_types: List[str] = []
-        for i, case in enumerate(node.cases):
+        # Process each WHEN branch: its condition and the alias of a dataset then-operand
+        whens: List[Tuple[int, str, Optional[str]]] = []
+        for i in branches:
+            case = node.cases[i]
             if i == 0:
                 cond_expr = f"{alias_src}.{quote_name(source_ds.get_measures_names()[0])}"
             else:
                 cond_expr = self._build_case_condition(
                     case, f"c{i}", source_ids, alias_src, builder
                 )
-            cond_exprs.append(cond_expr)
-
-            t_type = self._get_node_type(case.thenOp)
-            then_types.append(t_type)
-            if t_type == _DATASET:
-                alias = f"t{i}"
-                self._left_join_dataset(case.thenOp, t_type, alias, source_ids, alias_src, builder)
-                then_aliases.append(alias)
-            else:
-                then_aliases.append(None)
+            t_alias = f"t{i}" if is_ds[i] else None
+            if t_alias:
+                self._left_join_dataset(
+                    case.thenOp, _DATASET, t_alias, source_ids, alias_src, builder
+                )
+            whens.append((i, cond_expr, t_alias))
 
         # Handle else-operand
-        e_type = self._get_node_type(node.elseOp)
-        e_alias = "e"
-        if e_type == _DATASET:
-            self._left_join_dataset(node.elseOp, e_type, e_alias, source_ids, alias_src, builder)
+        e_alias = "e" if final and is_ds[-1] else None
+        if e_alias:
+            self._left_join_dataset(node.elseOp, _DATASET, e_alias, source_ids, alias_src, builder)
 
         cols: List[str] = [f"{alias_src}.{quote_name(id_)}" for id_ in source_ids]
-        for measure in output_measures:
-            case_parts = ["CASE"]
-            for i in range(len(node.cases)):
-                then_ref = (
-                    f"{then_aliases[i]}.{quote_name(measure)}"
-                    if then_types[i] == _DATASET
-                    else self.visit(node.cases[i].thenOp)
-                )
-                case_parts.append(f"WHEN {cond_exprs[i]} THEN {then_ref}")
-            else_ref = (
-                f"{e_alias}.{quote_name(measure)}"
-                if e_type == _DATASET
-                else self.visit(node.elseOp)
-            )
-            case_parts.append(f"ELSE {else_ref} END")
-            cols.append(f"{' '.join(case_parts)} AS {quote_name(measure)}")
-
-        vp_registry = get_current_registry()
-        for v_name in output_viral:
-            v_qn = quote_name(v_name)
-            v_comp = output_ds.components.get(v_name)
-            refs = [f"{then_aliases[i]}.{v_qn}" for i in range(len(node.cases)) if then_aliases[i]]
-            if e_type == _DATASET:
-                refs.append(f"{e_alias}.{v_qn}")
-            if len(refs) >= 2:
-                v_rule = vp_registry.rule_for(v_comp) if v_comp is not None else None
-                if v_rule is None:
-                    v_type = get_duckdb_type(v_comp.data_type.__name__) if v_comp else "VARCHAR"
-                    cols.append(f"CAST(NULL AS {v_type}) AS {v_qn}")
-                else:
-                    cols.append(f"{vp_reduce_refs(v_rule, refs)} AS {v_qn}")
-            elif refs:
-                cols.append(f"{refs[0]} AS {v_qn}")
-
-        builder.select(*cols)
+        # The viral attributes of two or more dataset operands are combined, the other
+        # components take the values of the operand of the branch taken (issue #1304)
+        combined = output_ds.get_viral_attributes_names() if sum(is_ds) >= 2 else []
+        for comp in output_ds.components.values():
+            if comp.role == Role.IDENTIFIER or comp.name in combined:
+                continue
+            m = quote_name(comp.name)
+            refs = [
+                f"{t}.{m}" if t else self._scalar_operand_sql(node.cases[i].thenOp, comp)
+                for i, _, t in whens
+            ]
+            if final:
+                refs.append(f"e.{m}" if e_alias else self._scalar_operand_sql(node.elseOp, comp))
+            if comp.name in texts:
+                types = texts[comp.name]
+                refs = self._as_text(refs, [types[i] for i in branches] + types[-1:] * final)
+            values = [(cond, ref) for (_, cond, _), ref in zip(whens, refs)]
+            else_ref = refs[-1] if final else None
+            column = self._case_stage_sql(f"r.{m}" if staged else None, values, else_ref)
+            cols.append(f"{column} AS {m}")
 
         # Filter: only keep rows where the selected branch (the one of the first true
         # condition, or the else one when none is true) has a matching row (issue #1251).
         # Scalar/null branches always match; dataset branches need a LEFT JOIN hit.
-        has_ds_branch = any(t == _DATASET for t in then_types) or e_type == _DATASET
-        if has_ds_branch:
-            id_col = quote_name(source_ids[0])
-            filter_parts = ["CASE"]
-            for i in range(len(node.cases)):
-                if then_types[i] == _DATASET:
-                    match_check = f"{then_aliases[i]}.{id_col} IS NOT NULL"
-                else:
-                    match_check = "TRUE"
-                filter_parts.append(f"WHEN {cond_exprs[i]} THEN {match_check}")
-            if e_type == _DATASET:
-                filter_parts.append(f"ELSE {e_alias}.{id_col} IS NOT NULL END")
-            else:
-                filter_parts.append("ELSE TRUE END")
-            builder.where(" ".join(filter_parts))
+        id_col = quote_name(source_ids[0])
+        matches = [(cond, f"{t}.{id_col} IS NOT NULL" if t else "TRUE") for _, cond, t in whens]
+        kept = f"r.{_CASE_KEPT}" if staged else None
+        if not final:
+            done = [(cond, "TRUE") for _, cond, _ in whens]
+            column = self._case_stage_sql("TRUE" if staged else None, done, "FALSE")
+            cols.append(f"{column} AS {_CASE_DONE}")
+            if any(is_ds):
+                cols.append(f"{self._case_stage_sql(kept, matches, None)} AS {_CASE_KEPT}")
 
+        aliases = [t for _, _, t in whens if t] + ([e_alias] if e_alias else [])
+        carried = any(is_ds[: branches.start])
+        cols.extend(self._case_viral_cols(output_ds, combined, aliases, carried, final))
+        builder.select(*cols)
+        if final and any(is_ds):
+            e_match = f"e.{id_col} IS NOT NULL" if e_alias else "TRUE"
+            builder.where(self._case_stage_sql(kept, matches, e_match))
         return builder.build()
+
+    def _scalar_operand_sql(self, operand: AST.AST, comp: Component) -> str:
+        """The value of ``comp`` where a dataset if or case takes a scalar operand: the scalar
+        feeds the Measures only, an Attribute is null (issue #1304)."""
+        if comp.role == Role.MEASURE:
+            return self.visit(operand)
+        return f"CAST(NULL AS {get_duckdb_type(comp.data_type.__name__)})"
+
+    @staticmethod
+    def _case_viral_cols(
+        output_ds: Dataset, combined: List[str], aliases: List[str], carried: bool, final: bool
+    ) -> List[str]:
+        """The viral attributes ``combined`` by a stage of a dataset case: the list of the values
+        of its dataset operands (``aliases``), null where one lacks the data point, after the
+        ones the previous stages listed when they are ``carried``. The last stage combines the
+        whole list by the rule, as pandas does (issue #1304). Without a rule, they give null."""
+        vp_registry = get_current_registry()
+        cols: List[str] = []
+        for v_name in combined:
+            v_qn = quote_name(v_name)
+            lst = "[" + ", ".join(f"{a}.{v_qn}" for a in aliases) + "]"
+            if carried:
+                lst = f"list_concat(r.{v_qn}, {lst})" if aliases else f"r.{v_qn}"
+            elif not aliases:
+                continue
+            v_comp = output_ds.components[v_name]
+            v_rule = vp_registry.rule_for(v_comp)
+            if not final:
+                cols.append(f"{lst} AS {v_qn}")
+            elif v_rule is None:
+                cols.append(f"CAST(NULL AS {get_duckdb_type(v_comp.data_type.__name__)}) AS {v_qn}")
+            else:
+                cols.append(f"{vp_list_sql(v_rule, lst)} AS {v_qn}")
+        return cols
 
     # =========================================================================
     # Rulesets
@@ -3981,6 +4309,7 @@ FROM (
     def visit_UDOCall(self, node: AST.UDOCall) -> str:  # type: ignore[override]
         """Visit a UDO call by expanding its definition with parameter bindings."""
         udo_def = self._udos[node.op]
+        is_dataset = self._get_node_type(node) == _DATASET
         bindings = self._build_udo_bindings(udo_def, node.params, include_types=True, op=node.op)
         expression = deepcopy(udo_def["expression"])
 
@@ -3988,20 +4317,19 @@ FROM (
         try:
             sql = self.visit(expression)
             declared, constraints = udo_def["return_type"], udo_def["return_constraints"]
-            if constraints is None:
-                return sql
-            if isinstance(declared, Component) and constraints.value is not None:
-                value = deepcopy(udo_def["expression"])
-                return self._udo_checked_sql(
-                    sql, value, [(node.op, "the output", constraints.value)]
-                )
-            if isinstance(declared, Dataset):
-                return self._udo_checked_dataset_sql(
+            if constraints is not None and isinstance(declared, Dataset):
+                sql = self._udo_checked_dataset_sql(
                     sql,
                     self._get_dataset_structure(node),
                     [(node.op, "the output", declared, constraints)],
                 )
-            return sql
+            elif constraints is not None and constraints.value is not None:
+                # A Component or a scalar output
+                value = deepcopy(udo_def["expression"])
+                sql = self._udo_checked_sql(
+                    sql, value, [(node.op, "the output", constraints.value)]
+                )
+            return self._udo_checked_arguments(sql, node.op, udo_def["params"], is_dataset)
         finally:
             self._pop_udo_params()
 
@@ -4183,6 +4511,10 @@ FROM (
             )
             if chain_sql is not None:
                 return chain_sql
+            if isinstance(node, AST.BinOp) and node.op in (tokens.AND, tokens.OR):
+                return self._short_circuit_sql(
+                    node, lambda operand: self._visit_dp_expr(operand, signature, components)
+                )
             left_sql = self._visit_dp_expr(node.left, signature, components)
             right_sql = self._visit_dp_expr(node.right, signature, components)
             if isinstance(node, AST.HRBinOp) and node.op == tokens.WHEN:
@@ -5340,6 +5672,21 @@ FROM (
                 cols.append(f"{vp_reduce_refs(v_rule, refs)} AS {v_qn}")
         return cols
 
+    @staticmethod
+    def _join_left_key(
+        op: str, joined: List[Dict[str, Any]], key: str, comp_to_alias: Dict[str, str]
+    ) -> str:
+        """Left side of the ON clause that matches the next join operand on ``key``.
+
+        It is the column of the first operand that has the key. A full_join matches on the key
+        merged across all the operands joined so far instead: in a Data Point that only a later
+        operand brings, the key of the earlier ones is null (issue #1306).
+        """
+        refs = [f"{i['sql_alias']}.{quote_name(key)}" for i in joined if key in i["ds"].components]
+        if op == tokens.FULL_JOIN and len(refs) > 1:
+            return f"COALESCE({', '.join(refs)})"
+        return f"{comp_to_alias.get(key, joined[0]['sql_alias'])}.{quote_name(key)}"
+
     def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]
         """Visit a join operation."""
         clause_info: List[Dict[str, Any]] = []
@@ -5463,7 +5810,7 @@ FROM (
                 continue
             right_alias = info["sql_alias"]
             on_parts = [
-                f"{comp_to_alias.get(k, first_sql_alias)}.{quote_name(k)} = "
+                f"{self._join_left_key(node.op, clause_info[: idx + 1], k, comp_to_alias)} = "
                 f"{right_alias}.{quote_name(k)}"
                 for k in pairwise_keys[idx]
                 if k in info["ds"].components

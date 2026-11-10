@@ -3008,3 +3008,17 @@ class JoinsGeneralTests(JoinHelper):
         number_inputs = 2
         references_names = ["1"]
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1306_1(self):
+        """
+        Expression: DS_r <- full_join(DS_1, DS_2, DS_3);
+        Description: A full_join of three Data Sets gives one Data Point for Id_1 = 2, which
+            DS_1 lacks and both DS_2 and DS_3 have, as on the pandas engine. The DuckDB engine
+            matched DS_3 on the Id_1 of DS_1 and gave a Data Point from DS_2 and another one
+            from DS_3.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1306
+        """
+        code = "GH_1306_1"
+        number_inputs = 3
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

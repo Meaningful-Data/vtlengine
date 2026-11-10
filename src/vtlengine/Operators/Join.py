@@ -21,6 +21,7 @@ from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
     apply_viral_return_types,
+    combined_viral_components,
     get_current_registry,
     require_rules,
 )
@@ -104,17 +105,22 @@ class Join(Operator):
         # instead of being #-qualified like other shared components.
         viral_common = merged_viral_attribute_names([op.components for op in operands], set(using))
         # A merged viral attribute has its data points combined across operands, so it
-        # requires a propagation rule (issue #906).
+        # requires a propagation rule (issue #906), and it takes the common type of the
+        # operands under a min, max or sum rule (issue #1314).
         merged_viral_comps = {
-            name: op.components[name]
-            for op in operands
-            for name in viral_common
-            if name in op.components
+            comp.name: comp
+            for comp in combined_viral_components(operands)
+            if comp.name in viral_common
         }
         require_rules(merged_viral_comps.values())
 
-        for op in operands:
-            for comp in op.components.values():
+        # The roles are set on copies: the Components of an operand are those of the Data Set
+        # it refers to, which the later statements read (issue #1318)
+        operands_components = [
+            {comp.name: copy(comp) for comp in op.components.values()} for op in operands
+        ]
+        for components in operands_components:
+            for comp in components.values():
                 if comp.name in using:
                     is_identifier = all(
                         operand.components[comp.name].role == Role.IDENTIFIER
@@ -142,9 +148,8 @@ class Join(Operator):
                 else:
                     nullability[comp.name] = copy(comp.nullable)
 
-        for operand in operands:
+        for operand, components in zip(operands, operands_components):
             operand_name = operand.name
-            components = {comp.name: copy(comp) for comp in operand.components.values()}
 
             for component_name, component in components.items():
                 component.nullable = nullability[component_name]
@@ -199,7 +204,14 @@ class Join(Operator):
         using: List[str],
         nvl: Optional[Dict[str, Any]] = None,
     ) -> Dataset:
-        result = cls.execute([copy(operand) for operand in operands], using, nvl)
+        operand_copies = [copy(operand) for operand in operands]
+        try:
+            result = cls.execute(operand_copies, using, nvl)
+        finally:
+            # The class keeps one of them as reference_dataset until the next join: without its
+            # data, so the data of each operand is released after its last use (issue #1304)
+            for operand in operand_copies:
+                operand.data = None
         if result.data is not None:
             extra_cols = [c for c in result.data.columns if c not in result.components]
             if extra_cols:
