@@ -453,8 +453,9 @@ Key rules:
 - **Time_Period to Time**: A Time_Period is implicitly
   converted to a Time interval
   (``"2020-Q1"`` becomes ``"2020-01-01/2020-03-31"``).
-- **Boolean to String**: ``true`` becomes ``"True"``,
-  ``false`` becomes ``"False"``.
+- **Boolean to String**: ``true`` becomes ``"true"``,
+  ``false`` becomes ``"false"``, as the VTL 2.2 reference
+  manual defines it, in both execution engines.
 - **Null to any type**: Null is compatible with every type.
 
 
@@ -575,8 +576,9 @@ Conversion details:
   any other value becomes ``true``.
 - **Boolean to Number/Integer**: ``true`` becomes ``1``
   (or ``1.0``), ``false`` becomes ``0`` (or ``0.0``).
-- **Boolean to String**: ``true`` becomes ``"True"``,
-  ``false`` becomes ``"False"``.
+- **Boolean to String**: ``true`` becomes ``"true"``,
+  ``false`` becomes ``"false"``, as the VTL 2.2 reference
+  manual defines it, in both execution engines.
 - **String to Integer**: Must be a valid integer string
   (rejects ``"3.5"``).
 - **Date to Time_Period**: Converts to daily period

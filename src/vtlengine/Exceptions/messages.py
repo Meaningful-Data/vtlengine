@@ -453,9 +453,11 @@ centralised_messages = {
         "specific type of components do not match.",
     },
     "1-1-1-16": {
-        "message": "Found structure not nullable and null values.",
-        "description": "Raised when null values are found in a structure that "
-        "is defined as non-nullable.",
+        "message": "Identifier {comp_name} cannot be calculated from an expression that is "
+        "declared nullable.",
+        "description": "Raised when an Identifier is calculated from an expression whose "
+        "structure allows null values, such as a nullable Component or the null literal. "
+        "Use nvl, or a Component declared not nullable.",
     },
     "1-1-1-20": {
         "message": "At op {op}: Only applies to Datasets, instead of this a Scalar was provided.",
@@ -948,8 +950,8 @@ centralised_messages = {
     "1-1-13-18": {
         "message": "At op {op}: Incompatible types for common identifier {id_name}: "
         "{type_1} and {type_2}.",
-        "description": "Raised when datasets in a join operation have a common identifier "
-        "with incompatible types.",
+        "description": "Raised when datasets in a join or a binary operation have a common "
+        "identifier with incompatible types.",
     },
     "1-1-13-19": {
         "message": "At op {op}: Join operator requires at least 1 dataset.",
