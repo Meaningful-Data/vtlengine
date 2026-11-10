@@ -395,6 +395,19 @@ class Binary(Operator):
                 right_name=right_operand.name,
                 right=sorted(right_ids_set),
             )
+        # The Data Points match on the values of the common Identifiers, which need a common
+        # type, as in a join (issue #1314)
+        for id_name in sorted(left_ids_set & right_ids_set):
+            left_type = left_operand.components[id_name].data_type
+            right_type = right_operand.components[id_name].data_type
+            if not check_binary_implicit_promotion(left_type, right_type):
+                raise SemanticError(
+                    "1-1-13-18",
+                    op=cls.op,
+                    id_name=id_name,
+                    type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
+                    type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
+                )
 
         # Deleting extra identifiers that we do not need anymore
 

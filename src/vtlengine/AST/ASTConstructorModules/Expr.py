@@ -375,7 +375,12 @@ class Expr:
         const_ctx = next(
             c for c in ctx_list if not c.is_terminal and c.rule_index == RC.CONSTANT[0]
         )
-        component = Terminals().visitComponentID(comp_ctx).value
+        component_node = Terminals().visitComponentID(comp_ctx)
+        component = (
+            f"{component_node.left.value}#{component_node.right.value}"
+            if isinstance(component_node, BinOp)
+            else component_node.value
+        )
         default = Terminals().visitConstant(const_ctx)
         return NvlJoinPair(component=component, default=default, **extract_token_info(ctx))
 

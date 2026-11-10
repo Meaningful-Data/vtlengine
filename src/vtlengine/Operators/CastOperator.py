@@ -13,6 +13,7 @@ from vtlengine.DataTypes import (
     Null,
     ScalarType,
 )
+from vtlengine.DataTypes.CastMasks import cast_with_mask, check_mask
 from vtlengine.Exceptions import InputValidationException, RunTimeError, SemanticError
 from vtlengine.Model import (
     Component,
@@ -65,7 +66,7 @@ class Cast(Operator.Unary):
     def check_with_mask(
         cls, from_type: Type[ScalarType], to_type: Type[ScalarType], mask_value: str
     ) -> None:
-        raise SemanticError("1-3-13", construct=f'cast with the mask "{mask_value}"')
+        check_mask(from_type, to_type, mask_value)
 
     @classmethod
     def check_without_mask(cls, from_type: Type[ScalarType], to_type: Type[ScalarType]) -> None:
@@ -80,11 +81,21 @@ class Cast(Operator.Unary):
             )
 
     @classmethod
-    def cast_component(cls, data: Any, from_type: Type[ScalarType], target: CAST_TARGET) -> Any:
-        """Cast the component to the target without mask. The values cast to a value domain
-        must be values of it."""
+    def cast_component(
+        cls,
+        data: Any,
+        from_type: Type[ScalarType],
+        target: CAST_TARGET,
+        mask: Optional[str] = None,
+    ) -> Any:
+        """Cast the component to the target, with the mask if there is one. The values
+        cast to a value domain must be values of it."""
         to_type = cls.target_type(target)
-        if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
+        if mask is not None:
+            result = data.map(
+                lambda x: cast_with_mask(x, from_type, to_type, mask), na_action="ignore"
+            )
+        elif to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
             result = data.map(lambda x: to_type.implicit_cast(x, from_type), na_action="ignore")
         else:
             result = data.map(lambda x: to_type.explicit_cast(x, from_type), na_action="ignore")
@@ -183,7 +194,7 @@ class Cast(Operator.Unary):
         cls.check_cast(operand, target, mask)
         if operand.value is not None and not pd.isna(operand.value):
             try:
-                value = cls.cast_value(operand.value, from_type, to_type)
+                value = cls.cast_value(operand.value, from_type, to_type, mask)
                 value_domain = cls.target_domain(target)
                 if value_domain is not None:
                     Operator.check_values(pd.Series([value]), value_domain, cls.op)
@@ -201,8 +212,16 @@ class Cast(Operator.Unary):
         return Scalar(name=operand.name, data_type=to_type, value=None, nullable=operand.nullable)
 
     @classmethod
-    def cast_value(cls, value: Any, from_type: Type[ScalarType], to_type: Type[ScalarType]) -> Any:
-        """Cast a single value to the type to_type without mask."""
+    def cast_value(
+        cls,
+        value: Any,
+        from_type: Type[ScalarType],
+        to_type: Type[ScalarType],
+        mask: Optional[str] = None,
+    ) -> Any:
+        """Cast a single value to the type to_type, with the mask if there is one."""
+        if mask is not None:
+            return cast_with_mask(value, from_type, to_type, mask)
         if to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]):
             return to_type.implicit_cast(value, from_type)
         return to_type.explicit_cast(value, from_type)
@@ -242,7 +261,9 @@ class Cast(Operator.Unary):
                 columns={original_measure.name: new_measure.name}, inplace=True
             )
         measure_data = result_dataset.data[new_measure.name]
-        result_dataset.data[new_measure.name] = cls.cast_component(measure_data, from_type, target)
+        result_dataset.data[new_measure.name] = cls.cast_component(
+            measure_data, from_type, target, mask
+        )
         return result_dataset
 
     @classmethod
@@ -258,7 +279,7 @@ class Cast(Operator.Unary):
             return Scalar(
                 name=result_scalar.name, data_type=to_type, value=None, nullable=operand.nullable
             )
-        casted_data = cls.cast_value(operand.value, from_type, to_type)
+        casted_data = cls.cast_value(operand.value, from_type, to_type, mask)
         return Scalar(
             name=result_scalar.name, data_type=to_type, value=casted_data, nullable=operand.nullable
         )
@@ -272,6 +293,6 @@ class Cast(Operator.Unary):
     ) -> DataComponent:
         from_type = operand.data_type
         result_component = cls.component_validation(operand, target, mask)
-        casted_data = cls.cast_component(operand.data, from_type, target)
+        casted_data = cls.cast_component(operand.data, from_type, target, mask)
         result_component.data = casted_data
         return result_component

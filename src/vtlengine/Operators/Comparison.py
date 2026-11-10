@@ -3,6 +3,7 @@ import re
 from copy import copy
 from typing import Any, Optional, Union
 
+import numpy as np
 import pandas as pd
 
 import vtlengine.Operators as Operator
@@ -18,7 +19,15 @@ from vtlengine.AST.Grammar.tokens import (
     NEQ,
     NOT_IN,
 )
-from vtlengine.DataTypes import COMP_NAME_MAPPING, Boolean, Null, String, TimeInterval
+from vtlengine.DataTypes import (
+    COMP_NAME_MAPPING,
+    Boolean,
+    Null,
+    String,
+    TimeInterval,
+    to_string,
+    to_strings,
+)
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -99,10 +108,11 @@ class Binary(Operator.Binary):
         x: Optional[Union[int, float, str, bool]],
         y: Optional[Union[int, float, str, bool]],
     ) -> Any:
-        # Cast values to compatible types for comparison
-        if isinstance(x, str) and isinstance(y, bool):
+        # A Boolean compared with a String is promoted to String, also a numpy Boolean, which
+        # is no bool (issue #1314)
+        if isinstance(x, str) and isinstance(y, (bool, np.bool_)):
             y = String.cast(y)
-        elif isinstance(x, bool) and isinstance(y, str):
+        elif isinstance(x, (bool, np.bool_)) and isinstance(y, str):
             x = String.cast(x)
 
         return x, y
@@ -129,7 +139,7 @@ class Binary(Operator.Binary):
 
             if series_type != first_non_null_type:
                 if isinstance(first_non_null, str):
-                    series = series.astype("string[pyarrow]")
+                    series = to_strings(series)
                 elif isinstance(first_non_null, (int, float)):
                     series = series.astype("double[pyarrow]")
 
@@ -273,6 +283,9 @@ class In(Binary):
     def apply_operation_two_series(cls, left_series: Any, right_series: ScalarSet) -> Any:
         if right_series.data_type == Null:
             return pd.Series(None, index=left_series.index, dtype="bool[pyarrow]")
+        if right_series.data_type == String:
+            # A Boolean operand is promoted to String (issue #1314)
+            left_series = to_strings(left_series)
 
         result = left_series.isin(right_series.values)
         return result.where(left_series.notna(), other=pd.NA).astype("bool[pyarrow]")
@@ -307,7 +320,7 @@ class Match(Binary):
             return None
         if isinstance(x, pd.Series):
             return x.str.fullmatch(y)
-        return bool(re.fullmatch(str(y), str(x)))
+        return bool(re.fullmatch(str(y), to_string(x)))
 
 
 class Between(Operator.Operator):
