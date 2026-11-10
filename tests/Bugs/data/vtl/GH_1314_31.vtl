@@ -1,0 +1,7 @@
+DS_r1 <- DS_1[calc Me_2 := if Me_1 > 0 then ln(Me_1) else 0];
+DS_r2 <- DS_1[calc Me_2 := if Me_3 <> "abc" then cast(Me_3, integer) else 0];
+DS_r3 <- DS_1[calc Me_2 := case when Me_1 > 0 then sqrt(Me_1) when Me_1 = 0 then 0 else ln(abs(Me_1))];
+DS_r7 <- DS_1[calc Me_2 := case when Me_1 > -10 then Me_1 when ln(Me_1) > 0 then ln(0) else 3];
+DS_r8 <- DS_1[calc Me_2 := if Me_1 > 0 then sum(Me_1 + 1 over ()) else 0];
+DS_r9 <- DS_1[calc Me_2 := (if Id_1 >= 2 then Me_1 else Id_1) + Me_1];
+DS_r10 <- DS_1[filter (if Id_1 >= 2 then Me_1 else Id_1) <= Me_1];

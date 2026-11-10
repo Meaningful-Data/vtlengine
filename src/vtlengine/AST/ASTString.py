@@ -62,7 +62,7 @@ tab = "\t"
 RESERVED_WORDS = {x.replace("'", ""): x for x in LITERAL_NAMES}
 # A name the lexer reads as an IDENTIFIER without quotes (VtlTokens.g4)
 UNQUOTED_NAME = re.compile(
-    r"[A-Za-z_][A-Za-z0-9_.]*"
+    r"(?:[0-9][A-Za-z0-9_.]*)?[A-Za-z][A-Za-z0-9_.]*"
     r"|[A-Za-z_][A-Za-z0-9_.]*:[A-Za-z_][A-Za-z0-9_.]*"
     r"(?:\((?:[0-9]+(?:\.[0-9]+)*(?:\.[_+*~])?|[_+*~])\))?(?::[.A-Za-z0-9_]+)?"
 )

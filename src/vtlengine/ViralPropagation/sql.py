@@ -122,6 +122,15 @@ def vp_group_sql(rule: ViralPropagationRule, col_ref: str) -> str:
     return _enumerated_group_sql(rule, f"list({col_ref})")
 
 
+def vp_list_sql(rule: ViralPropagationRule, lst: str) -> str:
+    """SQL expression combining the viral values of the operands of one operator, given as a
+    DuckDB list expression ``lst``, as ``resolve_group`` does in the pandas path: an aggregate
+    rule collapses the whole list at once ignoring the nulls, an enumerated rule folds it."""
+    if rule.aggregate_function is not None:
+        return f"list_{rule.aggregate_function}({lst})"
+    return _enumerated_group_sql(rule, lst)
+
+
 def vp_group_sql_windowed(rule: ViralPropagationRule, col_ref: str, over_clause: str) -> str:
     """Windowed form of vp_group_sql for analytic invocation (... OVER (window))."""
     if rule.aggregate_function is not None:
