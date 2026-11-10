@@ -1,0 +1,10 @@
+define datapoint ruleset DPR_V (valuedomain VD_FLOW, VD_AMOUNT) is
+    when VD_FLOW = "CREDIT" then VD_AMOUNT >= 0
+end datapoint ruleset;
+
+define operator pass_on (ds dataset, dpr datapoint_on_valuedomains {VD_AMOUNT * VD_FLOW})
+    returns dataset is
+        ds
+end operator;
+
+DS_r <- pass_on(DS_1, DPR_V);

@@ -1339,6 +1339,7 @@ class StructureVisitor(ASTTemplate):
                 keys_only = using_ids is not None and node.op in (
                     tokens.LEFT_JOIN,
                     tokens.FULL_JOIN,
+                    tokens.INNER_JOIN,
                 )
                 is_join_id = (comp.role == Role.IDENTIFIER and not keys_only) or (
                     comp_name in all_join_ids

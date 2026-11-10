@@ -4363,8 +4363,22 @@ FROM (
             "signature_type": node.signature_type,
         }
 
+    def _resolve_ruleset_name(self, name: str) -> str:
+        """The ruleset a ruleset parameter of a user defined operator is bound to, through the
+        calls that pass it on, each resolved in the scope of its caller. The
+        body of the operator is a copy, so the name is replaced in it."""
+        for scope in reversed(self._udo_params or []):
+            bound = scope.get(name)
+            if not isinstance(bound, (AST.VarID, AST.Identifier)):
+                break
+            name = bound.value
+            if name in self._dprs or name in self._hrs:
+                break
+        return name
+
     def visit_DPValidation(self, node: AST.DPValidation) -> str:  # type: ignore[override]
         """Generate SQL for check_datapoint operator."""
+        node.ruleset_name = self._resolve_ruleset_name(node.ruleset_name)
         dpr_info = self._dprs[node.ruleset_name]
         ds = self._get_dataset_structure(node.dataset)
         table_src = self._get_dataset_sql(node.dataset)
@@ -4584,6 +4598,7 @@ FROM (
 
     def visit_HROperation(self, node: AST.HROperation) -> str:  # type: ignore[override]
         """Generate SQL for hierarchy or check_hierarchy operator."""
+        node.ruleset_name = self._resolve_ruleset_name(node.ruleset_name)
         hr_info = self._hrs[node.ruleset_name]
         ds = self._get_dataset_structure(node.dataset)
         table_src = self._get_dataset_sql(node.dataset)
@@ -5641,6 +5656,20 @@ FROM (
         return defaults
 
     @staticmethod
+    def _join_order(clause_info: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """The operands of a natural inner_join in an order where each one has an identifier in
+        common with one before it, so that each join has keys. The semantic
+        analysis has checked that the order exists."""
+        ordered, remaining = [clause_info[0]], clause_info[1:]
+        identifiers = set(clause_info[0]["id_names"])
+        while remaining:
+            following = next((i for i in remaining if identifiers & i["id_names"]), remaining[0])
+            ordered.append(following)
+            identifiers |= following["id_names"]
+            remaining = [op for op in remaining if op is not following]
+        return ordered
+
+    @staticmethod
     def _join_nvl_expr(
         column: str, nvl_defaults: Dict[str, str], info: Dict[str, Any], name: str
     ) -> str:
@@ -5725,7 +5754,13 @@ FROM (
 
         is_cross_join = node.op == tokens.CROSS_JOIN
         explicit_using = list(node.using) if node.using else None
-        keys_only = explicit_using is not None and node.op in (tokens.LEFT_JOIN, tokens.FULL_JOIN)
+        keys_only = explicit_using is not None and node.op in (
+            tokens.LEFT_JOIN,
+            tokens.FULL_JOIN,
+            tokens.INNER_JOIN,
+        )
+        if node.op == tokens.INNER_JOIN and explicit_using is None:
+            clause_info = self._join_order(clause_info)
 
         # Pairwise keys: for each secondary dataset, the identifiers it shares with any
         # preceding dataset (or the explicit USING list).

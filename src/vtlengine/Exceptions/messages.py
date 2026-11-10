@@ -841,12 +841,6 @@ centralised_messages = {
         "description": "Raised when a Join operation encounters column "
         "name conflicts across input Datasets.",
     },
-    "1-1-13-4": {
-        "message": "At op {op}: Using clause, using={using_names}, does not define all the "
-        "Identifiers, of non reference Dataset {dataset}.",
-        "description": "Occurs when a 'using' clause in a join does not cover all Identifiers of a "
-        "non-reference Dataset.",
-    },
     "1-1-13-5": {
         "message": "At op {op}: Invalid subcase B1, All the Datasets must share as "
         "Identifiers the using ones.",
@@ -894,6 +888,13 @@ centralised_messages = {
         "component of type {type_2}.",
         "description": "Raised when the constant of a nvl rule of a join does not have the type "
         "of the component it gives a value to.",
+    },
+    "1-1-13-26": {
+        "message": "At op {op}: The operands cannot be ordered so that each one has an "
+        "identifier in common with one before it, as {dataset} has none in common with the "
+        "others.",
+        "description": "Raised when the operands of an inner_join without using cannot be "
+        "ordered so that each one shares an identifier with an operand before it.",
     },
     "1-1-13-27": {
         "message": "At op {op}: The nvl rule of {name} gives null to an Identifier, which "
