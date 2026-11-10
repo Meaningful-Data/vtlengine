@@ -8,6 +8,7 @@ from vtlengine.AST import (
     ParamConstant,
     ParamOp,
     RulesetType,
+    SetType,
     VarID,
     Windowing,
 )
@@ -602,8 +603,14 @@ class Terminals:
         """
         scalarSetType: SET ('<' scalarType '>')? ;
         """
-        # AST_ASTCONSTRUCTOR.60
-        raise SemanticError("1-3-13", construct=f"set type {script_location(ctx)}")
+        types = [
+            self.visitScalarType(c)
+            for c in ctx.children
+            if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE
+        ]
+        # set and set<scalar> take the values of any scalar type
+        data_type = types[0] if types and not isinstance(types[0], Scalar) else None
+        return SetType(data_type=data_type)
 
     def visitRetainType(self, ctx):
         """

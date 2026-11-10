@@ -164,6 +164,10 @@ def _format_type(type_: Any, constraints: Optional[AST.SignatureConstraints] = N
             for entry in unnamed
         ]
         return f"dataset {{{', '.join(components)}}}" if components else "dataset"
+    if isinstance(type_, AST.SetType):
+        if type_.data_type is None:
+            return "set"
+        return f"set<{SCALAR_TYPES_CLASS_REVERSE[type_.data_type].lower()}>"
     constraint = constraints.value if constraints is not None else None
     if isinstance(type_, Component):
         return _format_component_type(type_, constraint)

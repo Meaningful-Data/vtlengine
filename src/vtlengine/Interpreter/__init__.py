@@ -246,7 +246,6 @@ class InterpreterAnalyzer(ASTTemplate):
     udos: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     hrs: Optional[Dict[str, Optional[Dict[str, Any]]]] = None
     is_from_case_then: bool = False
-    signature_values: Optional[Dict[str, Any]] = None
 
     def __post_init__(self) -> None:
         self.datasets_inputs = set(self.datasets.keys())
@@ -431,6 +430,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 type_ = param.type_.__class__.__name__
             elif isinstance(param.type_, AST.RulesetType):
                 type_ = "Ruleset"
+            elif isinstance(param.type_, AST.SetType):
+                type_ = "Set"
             else:
                 type_ = param.type_
             param_info.append(
@@ -1401,6 +1402,10 @@ class InterpreterAnalyzer(ASTTemplate):
             set_type = scalar_data_type or BASIC_TYPES[type(elements[0])]
             return ScalarSet(data_type=set_type, values=elements)
         elif node.kind == "ValueDomain":
+            if self.udo_params is not None and isinstance(
+                self.udo_params[-1].get(node.name), ScalarSet
+            ):
+                return self.udo_params[-1][node.name]
             if self.value_domains is None:
                 raise SemanticError("1-2-22", comp_type="Value Domains")
             if node.name not in self.value_domains:
@@ -2542,8 +2547,6 @@ class InterpreterAnalyzer(ASTTemplate):
             raise SemanticError("1-2-22", comp_type="User Defined Operators")
         elif node.op not in self.udos:
             raise SemanticError("1-2-3", node_op=node.op, op_type="User Defined Operator")
-        if self.signature_values is None:
-            self.signature_values = {}
 
         operator = self.udos[node.op]
         signature_values: Dict[str, Any] = {}
@@ -2580,11 +2583,15 @@ class InterpreterAnalyzer(ASTTemplate):
                         expected=len(operator["params"]),
                     )
             else:
-                if isinstance(param["type"], str):  # Scalar, Dataset, Component, Ruleset
+                if isinstance(param["type"], str):  # Scalar, Dataset, Component, Ruleset, Set
                     if param["type"] == "Scalar":
                         signature_values[param["name"]] = self.visit(node.params[i])
                     elif param["type"] == "Ruleset":
                         signature_values[param["name"]] = self._udo_ruleset_argument(
+                            node.op, param, node.params[i]
+                        )
+                    elif param["type"] == "Set":
+                        signature_values[param["name"]] = self._udo_set_argument(
                             node.op, param, node.params[i]
                         )
                     elif param["type"] in ["Dataset", "Component"]:
@@ -2656,16 +2663,13 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.udo_params is None:
             self.udo_params = []
 
-        # Adding parameters to the stack
+        caller = self.udo_params[-1] if self.udo_params else {}
         for k, v in signature_values.items():
             if hasattr(v, "name"):
                 v = v.name
-            if v in self.signature_values:
-                signature_values[k] = self.signature_values[v]
-        # The arguments are bound for this call only: an argument of a later call whose name is
-        # a parameter of this one must not resolve to this call's argument
-        enclosing_values = self.signature_values
-        self.signature_values = {**enclosing_values, **signature_values}
+            # A set parameter is bound to its values, which name nothing
+            if isinstance(v, str) and v in caller:
+                signature_values[k] = caller[v]
         self.udo_params.append(signature_values)
 
         if node.op in self.udo_calls:
@@ -2702,7 +2706,6 @@ class InterpreterAnalyzer(ASTTemplate):
         # We pop the last element of the stack (current UDO params)
         # to avoid using them in the next UDO call
         self.udo_params.pop()
-        self.signature_values = enclosing_values
 
         # We set to None if empty to ensure we do not use these params anymore
         if len(self.udo_params) == 0:
@@ -2757,6 +2760,39 @@ class InterpreterAnalyzer(ASTTemplate):
                 type_2=f"{_format_type(found)} {name}",
             )
         return cast(str, name)
+
+    def _udo_set_argument(self, op: str, param: Dict[str, Any], argument: AST.AST) -> ScalarSet:
+        """The set a set parameter takes: the values of the value domain the argument names, or
+        the set of a set parameter of the calling operator."""
+        value: Optional[ScalarSet] = None
+        if isinstance(argument, AST.VarID):
+            bound = self.udo_params[-1].get(argument.value) if self.udo_params else None
+            if isinstance(bound, ScalarSet):
+                value = bound
+            elif self.value_domains is not None and argument.value in self.value_domains:
+                domain = self.value_domains[argument.value]
+                value = ScalarSet(data_type=domain.type, values=domain.setlist)
+        declared = param["declared"]
+        if value is None:
+            found = self.visit(argument)
+            raise SemanticError(
+                "1-3-1-1",
+                op=op,
+                option=f"parameter {param['name']}",
+                type_1=_format_type(declared),
+                type_2=type(found).__name__,
+            )
+        if declared.data_type is not None and not check_unary_implicit_promotion(
+            value.data_type, declared.data_type
+        ):
+            raise SemanticError(
+                "1-2-18",
+                param_type=_format_type(declared),
+                type_name=_format_type(AST.SetType(value.data_type)),
+                op=op,
+                param_name=param["name"],
+            )
+        return value
 
     def _check_udo_arguments(
         self, node: AST.UDOCall, operator: Dict[str, Any], signature_values: Dict[str, Any]

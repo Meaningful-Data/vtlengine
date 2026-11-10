@@ -987,9 +987,21 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     return f"CAST({operand_sql} AS VARCHAR)"
         return self.visit(child)
 
+    def _resolve_value_domain_name(self, name: str) -> str:
+        """The value domain a set parameter of a user defined operator is bound to, through the
+        calls that pass it on, each resolved in the scope of its caller."""
+        for scope in reversed(self._udo_params or []):
+            bound = scope.get(name)
+            if not isinstance(bound, (AST.VarID, AST.Identifier)):
+                break
+            name = bound.value
+            if name in self.value_domains:
+                break
+        return name
+
     def _visit_value_domain(self, node: AST.Collection) -> str:
         """Resolve a ValueDomain reference to SQL literal list."""
-        vd = self.value_domains[node.name]
+        vd = self.value_domains[self._resolve_value_domain_name(node.name)]
         type_name = vd.type.__name__ if hasattr(vd.type, "__name__") else str(vd.type)
         literals = [self._to_sql_literal(v, type_name) for v in vd.setlist]
         return f"({', '.join(literals)})"
@@ -3844,7 +3856,8 @@ FROM (
         if isinstance(node, AST.Collection):
             # The type of the values of a set or of a value domain
             if node.kind == "ValueDomain":
-                return str(self.value_domains[node.name].type.__name__)
+                vd = self.value_domains[self._resolve_value_domain_name(node.name)]
+                return str(vd.type.__name__)
             types = {self._value_type(child) for child in node.children} - {"Null"}
             return types.pop() if len(types) == 1 else None
         if self._is_boolean_expr(node):

@@ -1134,6 +1134,226 @@ class UdoTest(UDOHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1235_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- keep_in(DS_1, VD_AB), whose body is d[filter Me_1 in s];
+        Description: A set parameter takes the values of a value domain, read by in in a filter.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
+    def test_GH_1235_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- flag(DS_1, VD_AB), whose body is d in s;
+        Description: A set parameter in a Data Set level in.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
+    def test_GH_1235_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- outside(DS_1, VD_AB), whose body is d[calc Me_2 := Me_1 not_in s];
+        Description: A set parameter read by not_in in a calc.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
+    def test_GH_1235_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- keep_in(DS_1, VD_AB), with a parameter of type set;
+        Description: A set of any scalar type takes a String value domain.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
+    def test_GH_1235_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- keep_in(DS_1, VD_12), with a parameter of type set<number>;
+        Description: A set<number> takes an Integer value domain.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_12"],
+        )
+
+    def test_GH_1235_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- flag(DS_1, VD_AB), whose body is d[calc Me_2 := inside(Me_1, s)];
+        Description: A set parameter passed on to another user defined operator.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
+    def test_GH_1235_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- keep_in(DS_1, VD_12), with a parameter of type set<string>;
+        Description: An Integer value domain for a set<string> parameter.
+        Git Issue: GH_1235.
+        Goal: Check Exception.
+        """
+        code = "GH_1235_7"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-2-18",
+            vd_names=["VD_AB", "VD_12"],
+        )
+
+    def test_GH_1235_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- keep_in(DS_1, DS_1);
+        Description: A Data Set for a set parameter.
+        Git Issue: GH_1235.
+        Goal: Check Exception.
+        """
+        code = "GH_1235_8"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-3-1-1", vd_names=["VD_AB"]
+        )
+
+    def test_GH_1235_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- keep_in(DS_1, "A");
+        Description: A string for a set parameter.
+        Git Issue: GH_1235.
+        Goal: Check Exception.
+        """
+        code = "GH_1235_9"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-3-1-1", vd_names=["VD_AB"]
+        )
+
+    def test_GH_1235_10(self):
+        """
+        Status: OK
+        Description: The set<string> parameter of GH_1235_1 is written back as declared, and
+            the rendered script gives the same result.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_1"
+        rendered = ASTString().render(create_ast(self.LoadVTL(code)))
+        assert "s set<string>" in rendered
+
+        self.BaseTest(
+            code=code,
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=["VD_AB"],
+            text=rendered,
+        )
+
+    def test_GH_1235_11(self):
+        """
+        Status: OK
+        Expression: keep_in(DS_1, VD_AB) and then keep_in(s, VD_AB);
+        Description: A later call whose argument is named like the set parameter s of an earlier call takes the Data Set s, which crashed with an unhashable ScalarSet.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_11"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
+    def test_GH_1235_12(self):
+        """
+        Status: OK
+        Expression: keep_both(DS_1, VD_AB), whose body calls keep_in, and then keep_in(DS_1, VD_AB);
+        Description: An operator with a set parameter calls another one with a set parameter, and the second is then called on its own.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_12"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
     def test_GH_1237_1(self):
         """
         Status: OK
