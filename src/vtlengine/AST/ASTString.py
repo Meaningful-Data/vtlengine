@@ -742,7 +742,9 @@ class ASTString(ASTTemplate):
         nvl_str = ""
         if node.nvl:
             nvl_parts = [
-                f"nvl({_format_name(p.component)}, {self.visit(p.default)})" for p in node.nvl
+                f"nvl({'#'.join(_format_name(n) for n in p.component.split('#'))}, "
+                f"{self.visit(p.default)})"
+                for p in node.nvl
             ]
             nvl_str = ", " + ", ".join(nvl_parts)
         if self.pretty:
