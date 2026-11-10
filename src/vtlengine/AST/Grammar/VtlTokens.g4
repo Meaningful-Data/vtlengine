@@ -238,8 +238,10 @@ fragment SDMX_VERSION
   : INTEGER_CONSTANT (DOT INTEGER_CONSTANT)* (DOT [_+*~])?
   | [_+*~]
 ;
+// Not ID_PART as in the sdmx-twg/vtl develop grammar: a bare name may start with a digit
+// if it has a letter, but not with _ (VTL 2.2 User Manual, "The names")
 IDENTIFIER
-  : ID_PART 
+  : ([0-9] [a-zA-Z0-9_.]*)? [a-zA-Z] [a-zA-Z0-9_.]*
   | ID_PART COLON ID_PART ( LPAREN SDMX_VERSION RPAREN )? ( COLON (DOT | CODE_PART)+ )?
   | '\'' ( '\\\'' | ~'\'' )* '\''
 ;

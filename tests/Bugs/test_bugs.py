@@ -417,6 +417,21 @@ class GeneralBugs(BugHelper):
             "Me_5": "string",
         }
 
+    def test_GH_1322(self):
+        """
+        Status: OK
+        Expression: DS_r <- 1DS_1[calc Me_2 := 1Me_1 * 10];
+        Description: A bare name that starts with a digit and contains a letter is a regular
+                     VTL name. Since #1231 it raised a VTLSyntaxError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1322
+        Goal: Check Result.
+        """
+        code = "GH_1322"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
 
 class JoinBugs(BugHelper):
     """ """
