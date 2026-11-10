@@ -7,6 +7,8 @@ from vtlengine.AST import (
     OrderBy,
     ParamConstant,
     ParamOp,
+    RulesetType,
+    SetType,
     VarID,
     Windowing,
 )
@@ -419,8 +421,46 @@ class Terminals:
                    | dpRuleset
                    | hrRuleset
                    ;
+        dpRuleset: DATAPOINT
+                 | DATAPOINT_ON_VD (GLPAREN valueDomainName (MUL valueDomainName)* GRPAREN)?
+                 | DATAPOINT_ON_VAR (GLPAREN varID (MUL varID)* GRPAREN)? ;
+        hrRuleset: HIERARCHICAL
+                 | HIERARCHICAL_ON_VD (GLPAREN vdName=IDENTIFIER
+                       (LPAREN valueDomainName (MUL valueDomainName)* RPAREN)? GRPAREN)?
+                 | HIERARCHICAL_ON_VAR (GLPAREN varName=varID
+                       (LPAREN varID (MUL varID)* RPAREN)? GRPAREN)? ;
         """
-        raise SemanticError("1-3-13", construct=f"ruleset type {script_location(ctx)}")
+        c = ctx.children[0]
+        if c.is_terminal:
+            return RulesetType(kind="ruleset")
+        kind = "datapoint" if c.rule_index == RC.DATA_POINT[0] else "hierarchical"
+        signature_type = None
+        if c.ctx_id in (RC.DATA_POINT_VD, RC.HR_RULESET_VD_TYPE):
+            signature_type = "valuedomain"
+        elif c.ctx_id in (RC.DATA_POINT_VAR, RC.HR_RULESET_VAR_TYPE):
+            signature_type = "variable"
+        # The names of the constraint, in order, and where the conditions of a hierarchical
+        # ruleset start, after the parenthesis
+        names, conditions, in_conditions = [], [], False
+        for child in c.children[1:]:
+            if child.is_terminal:
+                if child.symbol_type == vtl_cpp_parser.LPAREN:
+                    in_conditions = True
+                elif child.symbol_type == vtl_cpp_parser.IDENTIFIER:
+                    names.append(child.text)
+                continue
+            name = child.children[0].text
+            (conditions if in_conditions else names).append(name)
+        if not names:
+            return RulesetType(kind=kind, signature_type=signature_type)
+        if kind == "hierarchical":
+            return RulesetType(
+                kind=kind,
+                signature_type=signature_type,
+                names=tuple(names),
+                conditions=tuple(conditions) if in_conditions else None,
+            )
+        return RulesetType(kind=kind, signature_type=signature_type, names=tuple(names))
 
     def visitComponentType(self, ctx, allow_constraints=False):
         """
@@ -563,8 +603,14 @@ class Terminals:
         """
         scalarSetType: SET ('<' scalarType '>')? ;
         """
-        # AST_ASTCONSTRUCTOR.60
-        raise SemanticError("1-3-13", construct=f"set type {script_location(ctx)}")
+        types = [
+            self.visitScalarType(c)
+            for c in ctx.children
+            if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE
+        ]
+        # set and set<scalar> take the values of any scalar type
+        data_type = types[0] if types and not isinstance(types[0], Scalar) else None
+        return SetType(data_type=data_type)
 
     def visitRetainType(self, ctx):
         """

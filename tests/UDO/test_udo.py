@@ -4,6 +4,8 @@ from pathlib import Path
 import pytest
 
 from tests.Helper import TestHelper
+from vtlengine.API import create_ast
+from vtlengine.AST.ASTString import ASTString
 
 
 class UDOHelper(TestHelper):
@@ -1132,6 +1134,442 @@ class UdoTest(UDOHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1235_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- keep_in(DS_1, VD_AB), whose body is d[filter Me_1 in s];
+        Description: A set parameter takes the values of a value domain, read by in in a filter.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
+    def test_GH_1235_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- flag(DS_1, VD_AB), whose body is d in s;
+        Description: A set parameter in a Data Set level in.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
+    def test_GH_1235_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- outside(DS_1, VD_AB), whose body is d[calc Me_2 := Me_1 not_in s];
+        Description: A set parameter read by not_in in a calc.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
+    def test_GH_1235_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- keep_in(DS_1, VD_AB), with a parameter of type set;
+        Description: A set of any scalar type takes a String value domain.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
+    def test_GH_1235_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- keep_in(DS_1, VD_12), with a parameter of type set<number>;
+        Description: A set<number> takes an Integer value domain.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_12"],
+        )
+
+    def test_GH_1235_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- flag(DS_1, VD_AB), whose body is d[calc Me_2 := inside(Me_1, s)];
+        Description: A set parameter passed on to another user defined operator.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
+    def test_GH_1235_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- keep_in(DS_1, VD_12), with a parameter of type set<string>;
+        Description: An Integer value domain for a set<string> parameter.
+        Git Issue: GH_1235.
+        Goal: Check Exception.
+        """
+        code = "GH_1235_7"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-2-18",
+            vd_names=["VD_AB", "VD_12"],
+        )
+
+    def test_GH_1235_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- keep_in(DS_1, DS_1);
+        Description: A Data Set for a set parameter.
+        Git Issue: GH_1235.
+        Goal: Check Exception.
+        """
+        code = "GH_1235_8"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-3-1-1", vd_names=["VD_AB"]
+        )
+
+    def test_GH_1235_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- keep_in(DS_1, "A");
+        Description: A string for a set parameter.
+        Git Issue: GH_1235.
+        Goal: Check Exception.
+        """
+        code = "GH_1235_9"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-3-1-1", vd_names=["VD_AB"]
+        )
+
+    def test_GH_1235_10(self):
+        """
+        Status: OK
+        Description: The set<string> parameter of GH_1235_1 is written back as declared, and
+            the rendered script gives the same result.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_1"
+        rendered = ASTString().render(create_ast(self.LoadVTL(code)))
+        assert "s set<string>" in rendered
+
+        self.BaseTest(
+            code=code,
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=["VD_AB"],
+            text=rendered,
+        )
+
+    def test_GH_1235_11(self):
+        """
+        Status: OK
+        Expression: keep_in(DS_1, VD_AB) and then keep_in(s, VD_AB);
+        Description: A later call whose argument is named like the set parameter s of an earlier call takes the Data Set s, which crashed with an unhashable ScalarSet.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_11"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
+    def test_GH_1235_12(self):
+        """
+        Status: OK
+        Expression: keep_both(DS_1, VD_AB), whose body calls keep_in, and then keep_in(DS_1, VD_AB);
+        Description: An operator with a set parameter calls another one with a set parameter, and the second is then called on its own.
+        Git Issue: GH_1235.
+        Goal: Check Result.
+        """
+        code = "GH_1235_12"
+        number_inputs = 1
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_AB"],
+        )
+
+    def test_GH_1237_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_positive(DS_1, DPR_1), with a parameter of type datapoint;
+        Description: A datapoint parameter takes a datapoint ruleset, which check_datapoint reads.
+        Git Issue: GH_1237.
+        Goal: Check Result.
+        """
+        code = "GH_1237_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_GH_1237_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_positive(DS_1, DPR_1), with a parameter of type ruleset;
+        Description: A ruleset parameter takes any ruleset.
+        Git Issue: GH_1237.
+        Goal: Check Result.
+        """
+        code = "GH_1237_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_GH_1237_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_positive(DS_1, DPR_1), with a parameter of type datapoint_on_variables {Me_1};
+        Description: A datapoint ruleset defined on the variables its type constraint names.
+        Git Issue: GH_1237.
+        Goal: Check Result.
+        """
+        code = "GH_1237_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_GH_1237_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_total(DS_1, HR_1), with a parameter of type hierarchical;
+        Description: A hierarchical parameter takes a hierarchical ruleset, which check_hierarchy reads.
+        Git Issue: GH_1237.
+        Goal: Check Result.
+        """
+        code = "GH_1237_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_GH_1237_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- roll(DS_1, HR_1), with a parameter of type hierarchical_on_variables {Id_2};
+        Description: A hierarchical ruleset defined on the variable its type constraint names, read by hierarchy.
+        Git Issue: GH_1237.
+        Goal: Check Result.
+        """
+        code = "GH_1237_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_GH_1237_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_total(DS_1, HR_V), with a parameter of type hierarchical_on_valuedomains {VD_ID_2};
+        Description: A hierarchical ruleset defined on the value domain its type constraint names.
+        Git Issue: GH_1237.
+        Goal: Check Result.
+        """
+        code = "GH_1237_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_ID_2"],
+        )
+
+    def test_GH_1237_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_kept(DS_1, DPR_1), which passes dpr on to check_positive;
+        Description: A ruleset parameter passed on to another user defined operator.
+        Git Issue: GH_1237.
+        Goal: Check Result.
+        """
+        code = "GH_1237_7"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
+
+    def test_GH_1237_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_positive(DS_1, HR_1), with a parameter of type datapoint;
+        Description: A hierarchical ruleset for a datapoint parameter.
+        Git Issue: GH_1237.
+        Goal: Check Exception.
+        """
+        code = "GH_1237_8"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-3-1-1"
+        )
+
+    def test_GH_1237_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_positive(DS_1, DPR_1), with a parameter of type datapoint_on_variables {Me_2};
+        Description: A datapoint ruleset defined on other variables than its type constraint names.
+        Git Issue: GH_1237.
+        Goal: Check Exception.
+        """
+        code = "GH_1237_9"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-3-1-1"
+        )
+
+    def test_GH_1237_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_total(DS_1, HR_1), with a parameter of type hierarchical_on_variables {Id_2 (Id_1)};
+        Description: A hierarchical ruleset without the conditions its type constraint names.
+        Git Issue: GH_1237.
+        Goal: Check Exception.
+        """
+        code = "GH_1237_10"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-3-1-1"
+        )
+
+    def test_GH_1237_11(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_positive(DS_1, DS_1);
+        Description: A Data Set for a ruleset parameter.
+        Git Issue: GH_1237.
+        Goal: Check Exception.
+        """
+        code = "GH_1237_11"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-3-1-1"
+        )
+
+    def test_GH_1237_12(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_positive(DS_1, DPR_2);
+        Description: A ruleset that is not defined.
+        Git Issue: GH_1237.
+        Goal: Check Exception.
+        """
+        code = "GH_1237_12"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-2-6"
+        )
+
+    def test_GH_1237_13(self):
+        """
+        Status: OK
+        Description: The datapoint_on_variables {Me_1} parameter of GH_1237_3 is written back
+            as declared, and the rendered script gives the same result.
+        Git Issue: GH_1237.
+        Goal: Check Result.
+        """
+        code = "GH_1237_3"
+        rendered = ASTString().render(create_ast(self.LoadVTL(code)))
+        assert "dpr datapoint_on_variables {Me_1}" in rendered
+
+        self.BaseTest(code=code, number_inputs=1, references_names=["1"], text=rendered)
+
     def test_GH_1279_1(self):
         """
         Status: OK
@@ -1416,3 +1854,168 @@ class UdoTest(UDOHelper):
         references_names = ["1", "2"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1237_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- pass_on(DS_1, DPR_V), with a parameter of type
+            datapoint_on_valuedomains {VD_FLOW * VD_AMOUNT};
+        Description: A datapoint ruleset defined on the value domains its type constraint
+            names, in that order.
+        Git Issue: GH_1237.
+        Goal: Check Result.
+        """
+        code = "GH_1237_14"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["VD_FLOW", "VD_AMOUNT"],
+        )
+
+    def test_GH_1237_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- pass_on(DS_1, DPR_V), with a parameter of type datapoint_on_valuedomains {VD_AMOUNT * VD_FLOW};
+        Description: A datapoint ruleset defined on the value domains of its type constraint in another order.
+        Git Issue: GH_1237.
+        Goal: Check Exception.
+        """
+        code = "GH_1237_15"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-3-1-1",
+            vd_names=["VD_FLOW", "VD_AMOUNT"],
+        )
+
+    def test_GH_1237_16(self):
+        """
+        Status: OK
+        Expression: DS_r <- pass_on(DS_1, DPR_1), with a parameter of type datapoint_on_valuedomains;
+        Description: A datapoint ruleset defined on variables for a parameter on value domains.
+        Git Issue: GH_1237.
+        Goal: Check Exception.
+        """
+        code = "GH_1237_16"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-3-1-1",
+            vd_names=["VD_FLOW", "VD_AMOUNT"],
+        )
+
+    def test_GH_1237_17(self):
+        """
+        Status: OK
+        Expression: DS_r <- pass_on(DS_1, DPR_V), with a parameter of type datapoint_on_variables;
+        Description: A datapoint ruleset defined on value domains for a parameter on variables.
+        Git Issue: GH_1237.
+        Goal: Check Exception.
+        """
+        code = "GH_1237_17"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-3-1-1",
+            vd_names=["VD_FLOW", "VD_AMOUNT"],
+        )
+
+    def test_GH_1304_2(self):
+        """
+        Status: OK
+        Expression: define operator f (DS_2 dataset) returns dataset is DS_2 + 1 end operator;
+                    DS_r1 <- f(DS_1);
+                    DS_r2 <- f(DS_2);
+        Description: The arguments of a call are bound for that call only. On the pandas engine
+            the binding of the first call stayed for the rest of the run, so the argument DS_2
+            of the second call, the name of the parameter, read DS_1 and DS_r2 was DS_1 + 1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1304
+        Goal: Check Result.
+        """
+        code = "GH_1304_2"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1314_43(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- DS_1[calc Me_2 := if sc_1 > 0 then 0 else f(sc_2)];
+                    DS_r2 <- DS_1[calc Me_2 := if Me_1 > 100 then f(sc_2) else 0];
+                    DS_r3 <- DS_1[calc Me_2 := g(sc_1 + 1)];
+                    sc_r := sc_1 + 1;
+                    DS_r5 <- DS_1[calc Me_2 := f(sc_r)];
+        Description: The constraints of the parameters and of the output of a user defined
+            operator are checked on the values of a call where the call is computed: in the
+            operand that a scalar if selects (DS_r1), on the Data Points that take the branch
+            of a Component level if (DS_r2), and on computed values (DS_r3: sc_1 + 1 is not
+            null). The DuckDB engine checked the scalar values in its semantic analysis, with
+            the values of the input scalars: sc_2, 9, raised 2-3-9 in a branch that is not
+            taken, a computed value was null there, so sc_1 + 1 broke not null, and a computed
+            value that breaks a condition was not checked. A scalar computed by a statement
+            (sc_r) was given to the operator as a null, so DS_r5 was null instead of 3.
+            The errors, on both engines: a computed argument (sc_1 + 4 is 5, and
+            sc_s := sc_2 - 1 is 8), a null computed argument, a computed output (-9) and a
+            Data Set call, which checks its arguments also without Data Points (DS_2 has
+            none).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1314
+        Goal: Check Result and Exception.
+        """
+        code = "GH_1314_43"
+        number_inputs = 2
+        references_names = ["1", "2", "3", "5", "6"]
+        scalars = {"sc_1": 1, "sc_2": 9, "sc_3": None}
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            scalars=scalars,
+        )
+
+        operators = self.LoadVTL(code).split("DS_r1 <-")[0]
+        not_allowed = "which its type constraint {} does not allow."
+        cases = [
+            (
+                "DS_1[calc Me_2 := f(sc_1 + 4)]",
+                "At op f: parameter x has the value 5",
+                "[value < 5]",
+            ),
+            (
+                "DS_1[calc Me_2 := g(sc_3 + 1)]",
+                "At op g: parameter x has the value null",
+                "not null",
+            ),
+            (
+                "DS_1[calc Me_2 := o(sc_1)]",
+                "At op o: the output has the value -9",
+                "[value > 0]",
+            ),
+            ("d(DS_2, sc_1 - 1)", "At op d: parameter k has the value 0", "[value > 0]"),
+            (
+                "DS_1[calc Me_2 := f(sc_s)]",
+                "At op f: parameter x has the value 8",
+                "[value < 5]",
+            ),
+        ]
+        for expression, error, constraint in cases:
+            with self.subTest(expression=expression):
+                self.NewSemanticExceptionTest(
+                    code=code,
+                    number_inputs=number_inputs,
+                    exception_code="2-3-9",
+                    text=f"{operators}sc_s := sc_2 - 1;\nDS_r <- {expression};",
+                    scalars=scalars,
+                    exception_message=f"{error}, {not_allowed.format(constraint)}",
+                )

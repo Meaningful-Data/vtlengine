@@ -296,7 +296,15 @@ class Aggregation(Operator.Unary):
         )
         if len(grouping_keys) == 0:
             aux_df = result_df
-            aux_df.dropna(subset=result.get_measures_names(), how="all", inplace=True)
+            # All the Data Points make one group, so the result is one Data Point, also when
+            # the aggregated values are all null. As on DuckDB, an operand with Identifiers and
+            # no Data Points gives none (issue #1314)
+            if (
+                cls.op != COUNT
+                and operand.get_identifiers_names()
+                and (operand.data is None or len(operand.data) == 0)
+            ):
+                aux_df = aux_df.iloc[:0].copy()
             if cls.op == COUNT and len(result_df) == 0:
                 aux_df["int_var"] = 0
         elif len(aux_df) == 0:

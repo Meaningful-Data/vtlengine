@@ -1,6 +1,8 @@
 from pathlib import Path
 
 from tests.Helper import TestHelper
+from vtlengine.API import create_ast
+from vtlengine.AST.ASTString import ASTString
 
 
 class JoinHelper(TestHelper):
@@ -1891,7 +1893,7 @@ class JoinUsingTests(JoinHelper):
         """
         code = "GL_342_19"
         number_inputs = 3
-        error_code = "1-1-13-4"
+        error_code = "1-1-13-9"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -1910,7 +1912,7 @@ class JoinUsingTests(JoinHelper):
         """
         code = "GL_384_1"
         number_inputs = 2
-        error_code = "1-1-13-4"
+        error_code = "1-1-13-9"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2189,7 +2191,7 @@ class JoinsGeneralTests(JoinHelper):
 
         #
         # self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-        error_code = "1-1-13-11"
+        error_code = "1-1-13-9"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2269,7 +2271,7 @@ class JoinsGeneralTests(JoinHelper):
         """
         code = "GL_384_7"
         number_inputs = 3
-        error_code = "1-1-13-11"
+        error_code = "1-1-13-9"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2288,7 +2290,7 @@ class JoinsGeneralTests(JoinHelper):
         """
         code = "GL_384_8"
         number_inputs = 3
-        error_code = "1-1-13-4"
+        error_code = "1-1-13-9"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=error_code
@@ -2689,6 +2691,232 @@ class JoinsGeneralTests(JoinHelper):
             exception_message="At op inner_join: Duplicated name DS_2 among the join operands.",
         )
 
+    def test_GH_1238_1(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(d2#Id_2, "X") rename ...);
+        Description: The identifier of d2 that is not a join key takes X where the key is not found, and Me_2 is null.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_1"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1238_2(self):
+        """
+        Expression: DS_r <- full_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(d1#Id_2, "Y"), nvl(d2#Id_2, "X") rename ...);
+        Description: The identifiers that are not join keys take the value of the nvl rule of their operand.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_2"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1238_3(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(Id_2, "X") rename ...);
+        Description: A nvl rule without the alias applies to the identifier of every operand.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_3"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1238_4(self):
+        """
+        Expression: DS_r <- full_join(DS_1, DS_2 using Id_1, Id_2);
+        Description: A full_join using all the common identifiers, which no nvl rule needs.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_4"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1238_5(self):
+        """
+        Expression: DS_r <- full_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(Id_2, "Z"), nvl(d2#Id_2, "X") rename ...);
+        Description: The nvl rule of an operand comes before the one of every operand.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_5"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1238_6(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2 as d2, DS_3 as d3 using Id_1, nvl(Id_2, "X") rename ...);
+        Description: Three operands, each joined on Id_1.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_6"
+        number_inputs = 3
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1238_7(self):
+        """
+        Expression: DS_r <- full_join(DS_1, DS_2 using Id_1, nvl(Id_2, "X"), nvl(Id_3, "Y"));
+        Description: Identifiers of one operand only keep their name and take the value of their nvl rule.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_7"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1238_8(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2 as d2 using Id_1 rename ...);
+        Description: An identifier of d2 that is neither a join key nor given a nvl rule.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_8"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-24"
+        )
+
+    def test_GH_1238_9(self):
+        """
+        Expression: DS_r <- full_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(d2#Id_2, "X") rename ...);
+        Description: In a full_join the identifiers of the first operand need a nvl rule too.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_9"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-24"
+        )
+
+    def test_GH_1238_10(self):
+        """
+        Expression: DS_r <- full_join(DS_1, DS_2 using Id_1, Id_2, nvl(Id_3, "Y"));
+        Description: A using clause that names an identifier not common to every operand.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_10"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-5"
+        )
+
+    def test_GH_1238_11(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(d2#Id_2, 5) rename ...);
+        Description: A nvl constant of another type than its identifier.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_11"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-25"
+        )
+
+    def test_GH_1238_12(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(d3#Id_2, "X") rename ...);
+        Description: A nvl rule for an operand that is not in the join.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_12"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-1-10"
+        )
+
+    def test_GH_1238_13(self):
+        """
+        Description: The nvl rules of GH_1238_2 are written back, and the rendered script
+            gives the same result.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_2"
+        rendered = ASTString().render(create_ast(self.LoadVTL(code)))
+        self.BaseTest(code=code, number_inputs=2, references_names=["1"], text=rendered)
+
+    def test_GH_1239_1(self):
+        """
+        Expression: DS_r <- inner_join(DS_3, DS_4);
+        Description: No operand has all the identifiers: the join is on Id_2, the identifier both have.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_1"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1239_2(self):
+        """
+        Expression: DS_r <- inner_join(DS_1 as d1, DS_2 as d2 using Id_1 rename d1#Id_2 to Id_21, d2#Id_2 to Id_22);
+        Description: A using clause on part of the identifiers joins on them, and the other identifiers are kept for each operand.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_2"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1239_3(self):
+        """
+        Expression: DS_r <- inner_join(DS_3, DS_4, DS_5);
+        Description: Three operands, each with an identifier in common with the one before it.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_3"
+        number_inputs = 3
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1239_4(self):
+        """
+        Expression: DS_r <- inner_join(DS_3, DS_5, DS_4);
+        Description: The same operands written in another order: DS_5 has no identifier in common with DS_3, so DS_4 is joined before it.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_4"
+        number_inputs = 3
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1239_5(self):
+        """
+        Expression: DS_r <- inner_join(DS_4, IBSC[drop Me_3][rename ...] as IBSC, IBSD[rename ...] as IBSD);
+        Description: The Inner Join Example 5 of the VTL 2.2 manual, with Me_3 dropped from IBSC as only one Me_3 is in its result.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_5"
+        number_inputs = 3
+        references_names = ["1", "2", "3"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1239_6(self):
+        """
+        Expression: DS_r <- inner_join(DS_4, IBSC[rename ...] as IBSC, IBSD[rename ...] as IBSD);
+        Description: The Example 5 as the manual writes it: IBSC and IBSD both have Me_3, which gives two Me_3 when the prefixes are taken out.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_6"
+        number_inputs = 3
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-9"
+        )
+
+    def test_GH_1239_7(self):
+        """
+        Expression: DS_r <- inner_join(DS_3, DS_6);
+        Description: Operands with no identifier in common.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_7"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-26"
+        )
+
     def test_GH_1299_1(self):
         """
         Expression: DS_r <- inner_join(DS_1, DS_2 rename Me_9 to Me_8);
@@ -2768,3 +2996,144 @@ class JoinsGeneralTests(JoinHelper):
             exception_code="1-1-1-10",
             exception_message="Component Me_9 not found",
         )
+
+    def test_GH_1238_14(self):
+        """
+        Expression: DS_r <- full_join(DS_1[filter Id_1 > 1] as d1, DS_2 as d2 using Id_1, nvl(Id_2, "Z"), nvl(d2#Id_2, "X") rename ...);
+        Description: nvl rules on a join of a filtered operand, the same on both engines.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_14"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1238_15(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2[calc Me_2 := Me_2 * 10] as d2 using Id_1, nvl(d2#Id_2, "X") rename ...);
+        Description: A nvl rule on a join of an operand with a calc.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_15"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1238_16(self):
+        """
+        Expression: DS_r <- full_join(DS_1[calc Me_1 := Me_1 + 1] as d1, DS_2[filter Me_2 > 0] as d2 using Id_1, nvl(Id_2, "Z") rename ...);
+        Description: A nvl rule on a join of two operands that are sub-expressions.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_16"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1238_17(self):
+        """
+        Expression: DS_r <- left_join(DS_1[filter Id_1 > 1] as d1, DS_2 as d2 using Id_1, nvl(d2#Id_2, "X") rename ...)[calc Me_3 := Me_1 + 1];
+        Description: A calc on the result of a join with a nvl rule.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_17"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1238_18(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(d2#Id_2, null) rename ...);
+        Description: A null rule for an Identifier, which cannot be null.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_18"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-27"
+        )
+
+    def test_GH_1238_19(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(d2#Id_2, 1.5) rename ...);
+        Description: A constant with decimals for an Integer Identifier, which the engines rounded differently.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_19"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-25"
+        )
+
+    def test_GH_1238_20(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(d2#Id_2, "X"), nvl(Me_2, 1.5) rename ...);
+        Description: A constant with decimals for an Integer Measure.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_20"
+        number_inputs = 2
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-25"
+        )
+
+    def test_GH_1238_21(self):
+        """
+        Expression: DS_r <- left_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(d2#Id_2, 9), nvl(Me_2, null) rename ...);
+        Description: A null rule for a Measure leaves its nulls as they are.
+        Git Issue: GH_1238.
+        """
+        code = "GH_1238_21"
+        number_inputs = 2
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1239_8(self):
+        """
+        Expression: DS_r <- inner_join(DS_1, DS_2, DS_3);
+        Description: DS_2 and DS_3 share Id_3 as Integer and String; the types of a join key
+            are checked between every two operands that have it, not only against the first.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_8"
+        number_inputs = 3
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-18"
+        )
+
+    def test_GH_1239_9(self):
+        """
+        Expression: DS_r <- inner_join(DS_1, DS_3, DS_2);
+        Description: The same operands in another order raise the same error.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_9"
+        number_inputs = 3
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-18"
+        )
+
+    def test_GH_1239_10(self):
+        """
+        Expression: DS_r <- inner_join(DS_1, DS_2, DS_3);
+        Description: DS_2 and DS_3 share Id_3 as Integer and Number, which are compatible.
+        Git Issue: GH_1239.
+        """
+        code = "GH_1239_10"
+        number_inputs = 3
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1306_1(self):
+        """
+        Expression: DS_r <- full_join(DS_1, DS_2, DS_3);
+        Description: A full_join of three Data Sets gives one Data Point for Id_1 = 2, which
+            DS_1 lacks and both DS_2 and DS_3 have, as on the pandas engine. The DuckDB engine
+            matched DS_3 on the Id_1 of DS_1 and gave a Data Point from DS_2 and another one
+            from DS_3.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1306
+        """
+        code = "GH_1306_1"
+        number_inputs = 3
+        references_names = ["1"]
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

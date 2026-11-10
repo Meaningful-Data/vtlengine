@@ -458,9 +458,11 @@ centralised_messages = {
         "specific type of components do not match.",
     },
     "1-1-1-16": {
-        "message": "Found structure not nullable and null values.",
-        "description": "Raised when null values are found in a structure that "
-        "is defined as non-nullable.",
+        "message": "Identifier {comp_name} cannot be calculated from an expression that is "
+        "declared nullable.",
+        "description": "Raised when an Identifier is calculated from an expression whose "
+        "structure allows null values, such as a nullable Component or the null literal. "
+        "Use nvl, or a Component declared not nullable.",
     },
     "1-1-1-20": {
         "message": "At op {op}: Only applies to Datasets, instead of this a Scalar was provided.",
@@ -850,12 +852,6 @@ centralised_messages = {
         "description": "Raised when a Join operation encounters column "
         "name conflicts across input Datasets.",
     },
-    "1-1-13-4": {
-        "message": "At op {op}: Using clause, using={using_names}, does not define all the "
-        "Identifiers, of non reference Dataset {dataset}.",
-        "description": "Occurs when a 'using' clause in a join does not cover all Identifiers of a "
-        "non-reference Dataset.",
-    },
     "1-1-13-5": {
         "message": "At op {op}: Invalid subcase B1, All the Datasets must share as "
         "Identifiers the using ones.",
@@ -891,6 +887,30 @@ centralised_messages = {
         "binary operation between operands of the join, such as d1 + d2.",
         "description": "Raised when the apply expression of a join is not a binary operation, "
         "such as a function call or an if-then-else.",
+    },
+    "1-1-13-24": {
+        "message": "At op {op}: Identifier {name} of {dataset} is not in the using clause and "
+        "has no nvl rule.",
+        "description": "Raised when an identifier of a left_join or full_join operand is neither "
+        "a join key of the using clause nor given a value by a nvl rule.",
+    },
+    "1-1-13-25": {
+        "message": "At op {op}: The nvl rule of {name} gives a constant of type {type_1} to a "
+        "component of type {type_2}.",
+        "description": "Raised when the constant of a nvl rule of a join does not have the type "
+        "of the component it gives a value to.",
+    },
+    "1-1-13-26": {
+        "message": "At op {op}: The operands cannot be ordered so that each one has an "
+        "identifier in common with one before it, as {dataset} has none in common with the "
+        "others.",
+        "description": "Raised when the operands of an inner_join without using cannot be "
+        "ordered so that each one shares an identifier with an operand before it.",
+    },
+    "1-1-13-27": {
+        "message": "At op {op}: The nvl rule of {name} gives null to an Identifier, which "
+        "cannot be null.",
+        "description": "Raised when a nvl rule of a join gives the null constant to an Identifier.",
     },
     "1-1-13-9": {
         "message": "Ambiguity for this variable {comp_name} inside a Join clause.",
@@ -941,8 +961,8 @@ centralised_messages = {
     "1-1-13-18": {
         "message": "At op {op}: Incompatible types for common identifier {id_name}: "
         "{type_1} and {type_2}.",
-        "description": "Raised when datasets in a join operation have a common identifier "
-        "with incompatible types.",
+        "description": "Raised when datasets in a join or a binary operation have a common "
+        "identifier with incompatible types.",
     },
     "1-1-13-19": {
         "message": "At op {op}: Join operator requires at least 1 dataset.",
