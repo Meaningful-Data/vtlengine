@@ -128,15 +128,20 @@ def check_downcasts(result: Any, operands: List[Any], op: str) -> None:
     if result.data is None:
         return
     for name, value_domain in downcasts(result, operands).items():
-        outside = value_domain.outside(result.data if name is None else result.data[name])
-        if len(outside):
-            raise RunTimeError(
-                "2-1-5-4",
-                op=op,
-                value=outside.iloc[0],
-                type=SCALAR_TYPES_CLASS_REVERSE[value_domain.type],
-                value_domain=value_domain.name,
-            )
+        check_values(result.data if name is None else result.data[name], value_domain, op)
+
+
+def check_values(values: Any, value_domain: ValueDomain, op: str) -> None:
+    """The values an operator converts into a value domain must be values of it."""
+    outside = value_domain.outside(values)
+    if len(outside):
+        raise RunTimeError(
+            "2-1-5-4",
+            op=op,
+            value=outside.iloc[0],
+            type=SCALAR_TYPES_CLASS_REVERSE[value_domain.type],
+            value_domain=value_domain.name,
+        )
 
 
 class Operator:

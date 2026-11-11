@@ -694,3 +694,22 @@ generic name based on the target type:
     When the source type can be implicitly promoted to the
     target type (e.g. Boolean to String, Integer to Number,
     or Number to Integer), the measure is **not** renamed.
+
+
+Cast to a value domain
+----------------------
+
+The target of ``cast`` can be the name of a value domain given in
+``value_domains`` (see :ref:`components_on_value_domains`):
+
+.. code-block::
+
+    DS_r <- DS_1 [calc Me_2 := cast(Me_1, VD_1)];
+
+The operand must be of the basic type of the value domain, or on
+another value domain of that type. Any other type raises
+``1-1-5-1``; cast it to the basic type first. A value that is not a
+value of the value domain raises ``2-1-5-4`` (``1-1-5-6`` for a
+literal). The result is defined on the value domain, and the
+Measure of a Data Set keeps its name. A scalar keeps the basic type,
+as no scalar is defined on a value domain.

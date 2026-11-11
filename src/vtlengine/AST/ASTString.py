@@ -569,7 +569,11 @@ class ASTString(ASTTemplate):
 
         elif node.op == CAST:
             operand = self.visit(node.children[0])
-            data_type = SCALAR_TYPES_CLASS_REVERSE[node.children[1]].lower()
+            data_type = (
+                self.visit(node.children[1])
+                if isinstance(node.children[1], AST.Collection)
+                else SCALAR_TYPES_CLASS_REVERSE[node.children[1]].lower()
+            )
             mask = ""
             if len(node.params) == 1:
                 mask = f", {_handle_literal(self.visit(node.params[0]))}"

@@ -174,10 +174,16 @@ class Terminals:
     def visitValueDomainName(self, ctx):
         """
         valueDomainName: IDENTIFIER ;
+
+        The value domain a cast converts to.
         """
-        ctx_list = ctx.children
-        # AST_ASTCONSTRUCTOR.48
-        raise InputValidationException(code="0-5-1-8", name=ctx_list[0].text)
+        return Collection(
+            name=ctx.children[0].text,
+            children=[],
+            kind="ValueDomain",
+            type="",
+            **extract_token_info(ctx),
+        )
 
     def visitValueDomainValue(self, ctx):
         child = ctx.children[0]

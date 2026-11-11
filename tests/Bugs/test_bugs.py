@@ -7078,17 +7078,135 @@ class CastBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, VD_1)];
-        Description: A value domain is no scalar type for cast: a script error, where a
-                     NotImplementedError was raised.
+        Description: A cast to a value domain when no value domains are given is a script
+                     error, where a NotImplementedError was raised. It raised 0-5-1-8 until
+                     a cast takes a value domain (issue #1241).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
         Goal: Check Exception.
         """
         code = "GH_1192_29"
         number_inputs = 1
-        message = "0-5-1-8"
+        message = "1-2-22"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
+        )
+
+    def test_GH_1241_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , VD_1 ) ];
+        Description: A cast to the value domain VD_1 gives Me_2 on it, as A and B are values
+                     of it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1241
+        Goal: Check Result.
+        """
+        code = "GH_1241_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1241-VD_1"],
+        )
+
+    def test_GH_1241_2(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- cast ( DS_1 , VD_1 );
+                    DS_r2 <- cast ( DS_2 , VD_2 );
+        Description: The Measure of a Data Set cast to a value domain is defined on it, from
+                     its basic type (a null stays null) and from another value domain on it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1241
+        Goal: Check Result.
+        """
+        code = "GH_1241_2"
+        number_inputs = 2
+        references_names = ["1", "2"]
+
+        self.BaseTest(
+            code=code,
+            number_inputs=number_inputs,
+            references_names=references_names,
+            vd_names=["GH_1241-VD_1", "GH_1241-VD_2"],
+        )
+
+    def test_GH_1241_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , VD_2 ) ];
+        Description: C, a value of VD_1, is not a value of VD_2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1241
+        Goal: Check Exception.
+        """
+        code = "GH_1241_3"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="2-1-5-4",
+            exception_message="At op cast: Cannot cast C of String to Value Domain VD_2",
+            vd_names=["GH_1241-VD_1", "GH_1241-VD_2"],
+        )
+
+    def test_GH_1241_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , VD_1 ) ];
+        Description: VD_1, a value domain of Strings, takes no Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1241
+        Goal: Check Exception.
+        """
+        code = "GH_1241_4"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-5-1",
+            exception_message="Type Integer, cannot be cast to VD_1",
+            vd_names=["GH_1241-VD_1"],
+        )
+
+    def test_GH_1241_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "D" , VD_1 ) ];
+        Description: The literal D is not a value of VD_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1241
+        Goal: Check Exception.
+        """
+        code = "GH_1241_5"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-1-5-6",
+            exception_message="Impossible to cast D from type String to VD_1",
+            vd_names=["GH_1241-VD_1"],
+        )
+
+    def test_GH_1241_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , VD_3 ) ];
+        Description: VD_3 is not one of the value domains given.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1241
+        Goal: Check Exception.
+        """
+        code = "GH_1241_6"
+        number_inputs = 1
+
+        self.NewSemanticExceptionTest(
+            code=code,
+            number_inputs=number_inputs,
+            exception_code="1-2-8",
+            exception_message="Missing value domain 'VD_3' definition",
+            vd_names=["GH_1241-VD_1"],
         )
 
 

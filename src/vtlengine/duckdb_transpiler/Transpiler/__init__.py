@@ -1856,7 +1856,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         elif isinstance(node, AST.ParamOp) and node.op == tokens.CAST:
             type_node = node.children[1]
-            return type_node == target_type
+            return bool(self._cast_type(type_node) == target_type)
 
         return False
 
@@ -2639,7 +2639,7 @@ FROM (
             and len(node.children) >= 2
         ):
             type_node = node.children[1]
-            return self._get_node_value(type_node)
+            return self._get_node_value(self._cast_type(type_node))
         if isinstance(node, AST.TimeAggregation):
             return "TimePeriod"
         if isinstance(node, AST.VarID):
@@ -2692,13 +2692,28 @@ FROM (
             return "Integer"
         return None
 
+    def _cast_type(self, type_node: Any) -> Any:
+        """The basic type a cast converts to: its type, or the basic type of its value domain."""
+        if isinstance(type_node, AST.Collection):
+            return self.value_domains[type_node.name].type
+        return type_node
+
     def visit_ParamOp_cast(self, node: AST.ParamOp) -> str:
-        """Visit CAST operation."""
+        """Visit CAST operation. A cast to a value domain is a cast to its basic type, whose
+        values must be values of the value domain."""
         operand = node.children[0]
         target_type_str = ""
+        value_domain: Optional[ValueDomain] = None
         if len(node.children) >= 2:
             type_node = node.children[1]
-            target_type_str = self._get_node_value(type_node)
+            if isinstance(type_node, AST.Collection):
+                value_domain = self.value_domains[type_node.name]
+            target_type_str = self._get_node_value(self._cast_type(type_node))
+
+        def _checked(expr: str) -> str:
+            if value_domain is None:
+                return expr
+            return self._downcast_expr(expr, tokens.CAST, value_domain)
 
         duckdb_type = get_duckdb_type(target_type_str)
 
@@ -2721,7 +2736,7 @@ FROM (
             def _cast_measure(col: str) -> str:
                 col_name = col.strip('"')
                 src_type = comp_types.get(col_name)
-                return self._cast_expr(col, duckdb_type, target_type_str, mask, src_type)
+                return _checked(self._cast_expr(col, duckdb_type, target_type_str, mask, src_type))
 
             return self._apply_measures(operand, _cast_measure, self._result_measure_name(node))
         else:
@@ -2731,7 +2746,9 @@ FROM (
             if source_type is None and mask is not None:
                 detected = self._detect_scalar_type(operand)
                 source_type = detected.__name__ if detected is not None else None
-            return self._cast_expr(operand_sql, duckdb_type, target_type_str, mask, source_type)
+            return _checked(
+                self._cast_expr(operand_sql, duckdb_type, target_type_str, mask, source_type)
+            )
 
     def _cast_expr(
         self,

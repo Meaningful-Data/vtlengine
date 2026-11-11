@@ -140,8 +140,8 @@ class StructureVisitor(ASTTemplate):
         """Return dataset structure for a parameterized op."""
         if node.op == tokens.CAST and len(node.children) >= 2:
             ds = self._get_dataset_structure(node.children[0])
-            if ds is None:
-                return None
+            if ds is None or isinstance(node.children[1], AST.Collection):
+                return ds
             target_str = self._resolve_name(node.children[1])
             target_type = SCALAR_TYPES.get(
                 target_str, _DUCKDB_TYPE_TO_VTL.get(target_str.upper(), Number)

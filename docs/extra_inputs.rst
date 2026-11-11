@@ -275,6 +275,14 @@ type conversion rules:
     /* Me_2 is on the value domain of Me_1, and 0 must be one of its values */
     DS_r <- DS_1 [calc Me_2 := nvl(Me_1, 0)];
 
+``cast`` converts a value of the basic type, or of another value
+domain on it, into a value domain, with the same check:
+
+.. code-block:: text
+
+    /* Me_2 is on VD_1, and every value of Me_1 must be one of its values */
+    DS_r <- DS_1 [calc Me_2 := cast(Me_1, VD_1)];
+
 Scalars typed by a value domain are not supported.
 
 
