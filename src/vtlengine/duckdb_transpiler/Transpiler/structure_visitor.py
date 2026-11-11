@@ -1,6 +1,7 @@
 """Resolve VTL dataset structures for the DuckDB transpiler."""
 
 from contextlib import contextmanager
+from copy import copy
 from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union
 
 import vtlengine.AST as AST
@@ -26,6 +27,7 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS, get
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Operators.CastOperator import Cast
+from vtlengine.Operators.Clause import Pivot
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.Operators.Validation import error_level_type
 from vtlengine.Utils import ANALYTIC_MAPPING
@@ -608,6 +610,8 @@ class StructureVisitor(ASTTemplate):
             result = self._build_calc_structure(node)
             if result is not None:
                 return result
+        elif op == tokens.PIVOT:
+            return self._build_pivot_structure(node)
         builder_attr = self._CLAUSE_BUILDER_ATTRS.get(op)
         if builder_attr is not None:
             return getattr(self, builder_attr)(node)
@@ -646,7 +650,7 @@ class StructureVisitor(ASTTemplate):
         comps: Dict[str, Component] = {}
         for name, comp in ds.components.items():
             stripped = name.split("#", 1)[-1]
-            comps[stripped] = self._make_comp(stripped, comp.data_type, comp.role, comp.nullable)
+            comps[stripped] = self._renamed(comp, stripped)
         return Dataset(name=ds.name, components=comps, data=None)
 
     @staticmethod
@@ -882,6 +886,13 @@ class StructureVisitor(ASTTemplate):
         return node.value if hasattr(node, "value") else str(node)
 
     @staticmethod
+    def _renamed(comp: Component, name: str) -> Component:
+        """The component under another name, with its type and its value domain."""
+        renamed = copy(comp)
+        renamed.name = name
+        return renamed
+
+    @staticmethod
     def _make_comp(
         name: str, dtype: Any, role: Role = Role.MEASURE, nullable: bool = True
     ) -> Component:
@@ -1011,6 +1022,14 @@ class StructureVisitor(ASTTemplate):
             if comp.role == Role.VIRAL_ATTRIBUTE:
                 comps[name] = comp
         return Dataset(name="_unpivot", components=comps, data=None)
+
+    def _build_pivot_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
+        """The structure of a pivot clause, as the semantic analysis builds it."""
+        input_ds = self._get_dataset_structure(node.dataset)
+        if input_ds is None:
+            return None
+        names = [self._resolve_udo_name(self._resolve_name(child)) for child in node.children]
+        return Pivot.validate(names, input_ds)
 
     def _build_calc_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
         """Build the output dataset structure for a calc clause."""
@@ -1241,9 +1260,7 @@ class StructureVisitor(ASTTemplate):
                 unqual = name.split("#", 1)[1]
                 matched_new = renames.get(unqual)
             if matched_new is not None:
-                comps[matched_new] = self._make_comp(
-                    matched_new, comp.data_type, role=comp.role, nullable=comp.nullable
-                )
+                comps[matched_new] = self._renamed(comp, matched_new)
             else:
                 comps[name] = comp
 

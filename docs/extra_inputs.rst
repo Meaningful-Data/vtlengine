@@ -283,6 +283,20 @@ domain on it, into a value domain, with the same check:
     /* Me_2 is on VD_1, and every value of Me_1 must be one of its values */
     DS_r <- DS_1 [calc Me_2 := cast(Me_1, VD_1)];
 
+``pivot`` needs the Identifier it pivots defined on a value domain:
+the result has one Measure per value of the value domain, named after
+the value, of the type (and on the value domain) of the pivoted
+Measure. The other Identifiers group the data points, a value with no
+data point in a group leaves its Measure null, the other Measures and
+the non-viral Attributes are dropped, and the viral Attributes of a
+group are combined by their propagation rule. An Identifier on no
+value domain raises ``1-1-6-18``.
+
+.. code-block:: text
+
+    /* Id_2 is on a value domain of A and B: DS_r has the Measures A and B */
+    DS_r <- DS_1 [pivot Id_2, Me_1];
+
 Scalars typed by a value domain are not supported.
 
 

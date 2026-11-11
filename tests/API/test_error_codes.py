@@ -270,7 +270,6 @@ def test_unsupported_constructs_quote_the_script(script: str, construct: str) ->
             'DS_r <- DS_1[calc Me_2 := cast(Me_1, string, "DD.DDEE")];',
             'the exponent E in the mask "DD.DDEE"',
         ),
-        ("DS_r <- DS_1[pivot Id_1, Me_1];", "pivot clause"),
     ],
 )
 def test_unsupported_operations_name_the_transformation(script: str, construct: str) -> None:
