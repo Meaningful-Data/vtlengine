@@ -2785,3 +2785,64 @@ def test_referenced_structure_not_found():
     with pytest.raises(InputValidationException, match="0-2-1-1") as excinfo:
         load_datasets(data_structures)
     assert "Missing" in excinfo.value.args[0]
+
+
+def test_GH_1326_load_value_domain_objects():
+    """``ValueDomain`` objects are accepted, alone or mixed in a list (GH #1326).
+
+    https://github.com/Meaningful-Data/vtlengine/issues/1326
+    """
+    value_domain = ValueDomain(name="VD_1", type=String, setlist=["DE", "FR"])
+    assert load_value_domains(value_domain) == {"VD_1": value_domain}
+
+    loaded = load_value_domains(
+        [
+            value_domain,
+            {"name": "VD_2", "type": "Integer", "setlist": [1, 2]},
+            filepath_ValueDomains / "VD_2.json",
+        ]
+    )
+    assert loaded["VD_1"] == value_domain
+    assert loaded["VD_2"] == ValueDomain(name="VD_2", type=Integer, setlist=[1, 2])
+    assert "Countries" in loaded
+    validate_value_domain([value_domain])
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("as_list", [False, True])
+def test_GH_1326_run_with_value_domain_object(use_duckdb, as_list):
+    """``run`` and ``semantic_analysis`` take ``ValueDomain`` objects (GH #1326).
+
+    https://github.com/Meaningful-Data/vtlengine/issues/1326
+    """
+    value_domain = ValueDomain(name="vd", type=String, setlist=["A", "B"])
+    value_domains = [value_domain] if as_list else value_domain
+    script = "DS_r <- DS_1 [filter Id_1 in vd];"
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": ["A", "C"], "Me_1": [1.0, 2.0]})}
+
+    semantic_result = semantic_analysis(
+        script=script, data_structures=data_structures, value_domains=value_domains
+    )
+    assert "DS_r" in semantic_result
+
+    result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        value_domains=value_domains,
+        use_duckdb=use_duckdb,
+    )
+    data = result["DS_r"].data
+    assert data["Id_1"].tolist() == ["A"]
+    assert data["Me_1"].tolist() == [1.0]

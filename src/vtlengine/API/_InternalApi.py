@@ -694,14 +694,14 @@ def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
 
 
 def load_value_domains(
-    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    input: Union[Dict[str, Any], Path, ValueDomain, List[Union[Dict[str, Any], Path, ValueDomain]]],
 ) -> Dict[str, ValueDomain]:
     """
     Loads the value domains.
 
     Args:
-        input: Dict or Path, or a list of them \
-        of the json file that contains the value domains data.
+        input: Dict, Path or ValueDomain, or a list of them \
+        with the value domains data.
 
     Returns:
         A dictionary with the value domains data, or a list of dictionaries with them.
@@ -710,6 +710,8 @@ def load_value_domains(
         Exception: If the value domains file is wrong, the Path is invalid, \
         or the value domains file does not exist.
     """
+    if isinstance(input, ValueDomain):
+        return {input.name: input}
     if isinstance(input, dict):
         _validate_json(input, vd_schema, kind="Value Domain", name=input.get("name"))
         vd = ValueDomain.from_dict(input)

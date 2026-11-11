@@ -121,11 +121,16 @@ The ``value_domains`` parameter accepts the following formats:
   file containing one or more value domain definitions.
 - **Path to a directory**: A ``Path`` pointing to a directory;
   all ``.json`` files in the directory are loaded.
+- **ValueDomain object**: A ``vtlengine.Model.ValueDomain``, for example one
+  built from an SDMX codelist.
 - **List**: A list mixing any of the above formats.
 
 .. code-block:: python
 
     from pathlib import Path
+
+    from vtlengine.DataTypes import String
+    from vtlengine.Model import ValueDomain
 
     # Single dict
     value_domains = {
@@ -140,10 +145,14 @@ The ``value_domains`` parameter accepts the following formats:
     # Path to directory (loads all .json files)
     value_domains = Path("data/value_domains/")
 
+    # ValueDomain object
+    value_domains = ValueDomain(name="Countries", type=String, setlist=["DE", "FR", "IT"])
+
     # List of mixed formats
     value_domains = [
         {"name": "Countries", "type": "String", "setlist": ["DE", "FR"]},
         Path("data/extra_domains.json"),
+        ValueDomain(name="Currencies", type=String, setlist=["EUR", "USD"]),
     ]
 
 
@@ -435,11 +444,16 @@ The ``external_routines`` parameter accepts the following formats:
 - **Path to a file**: A ``Path`` pointing to a ``.json`` file.
 - **Path to a directory**: A ``Path`` pointing to a directory;
   all ``.json`` files in the directory are loaded.
+- **ValueDomain object**: A ``vtlengine.Model.ValueDomain``, for example one
+  built from an SDMX codelist.
 - **List**: A list mixing any of the above formats.
 
 .. code-block:: python
 
     from pathlib import Path
+
+    from vtlengine.DataTypes import String
+    from vtlengine.Model import ValueDomain
 
     # Single dict
     external_routines = {
