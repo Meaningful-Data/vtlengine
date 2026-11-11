@@ -39,6 +39,8 @@ class Scalar:
     persistent: bool = False
     # A literal written in the script, whose value the semantic analysis already knows
     literal: bool = field(default=False, repr=False)
+    # The value domain the scalar is defined on, whose basic type is its data type
+    value_domain: Optional["ValueDomain"] = None
 
     def __init__(
         self,
@@ -48,6 +50,7 @@ class Scalar:
         nullable: bool = True,
         persistent: bool = False,
         literal: bool = False,
+        value_domain: Optional["ValueDomain"] = None,
     ) -> None:
         self.name = name
         self.data_type = data_type
@@ -55,6 +58,7 @@ class Scalar:
         self.nullable = nullable
         self.persistent = persistent
         self.literal = literal
+        self.value_domain = value_domain
 
     @property
     def value(self) -> Any:
@@ -90,7 +94,7 @@ class Scalar:
             data_type = self.data_type.__class__
         return {
             "name": self.name,
-            "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
+            "type": component_type_name(data_type, self.value_domain),
             "value": self.value,
             "nullable": self.nullable,
         }
@@ -104,7 +108,8 @@ class Scalar:
         x = None if not pd.isnull(self.value) else self.value
         y = None if not pd.isnull(other.value) else other.value
         same_value = x == y
-        return same_name and same_type and same_value
+        same_domain = _domain_name(self) == _domain_name(other)
+        return same_name and same_type and same_value and same_domain
 
 
 Role_keys = [
@@ -124,6 +129,11 @@ class Role(Enum):
     ATTRIBUTE = "Attribute"
     MEASURE = "Measure"
     VIRAL_ATTRIBUTE = "Viral Attribute"
+
+
+def _domain_name(element: Any) -> Optional[str]:
+    value_domain = getattr(element, "value_domain", None)
+    return None if value_domain is None else value_domain.name
 
 
 def component_type_name(data_type: Any, value_domain: Optional["ValueDomain"]) -> str:
