@@ -54,6 +54,7 @@ class Membership(Binary):
                 data_type=component.data_type,
                 role=Role.MEASURE,
                 nullable=component.nullable,
+                value_domain=component.value_domain,
             )
         return Dataset(name=dataset_name, components=result_components, data=None)
 
@@ -76,6 +77,7 @@ class Membership(Binary):
                 role=Role.MEASURE,
                 nullable=component.nullable,
                 data=left_operand.data[right_operand],
+                value_domain=component.value_domain,
             )
 
         if isinstance(result, Scalar):

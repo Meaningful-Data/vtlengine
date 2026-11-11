@@ -54,8 +54,8 @@ roles, regardless of which method you use:
 
 A few optional inputs let you extend or tune the run:
 
-* ``value_domains`` — codelists referenced by the ``in`` operator.
-  See :doc:`extra_inputs`.
+* ``value_domains`` — codelists referenced by the ``in`` operator and
+  by the type of a Component. See :doc:`extra_inputs`.
 * ``external_routines`` — SQL snippets invoked from inside ``eval``.
   See :doc:`extra_inputs`.
 * ``scalar_values`` — scalar inputs to the script (``run`` only). See

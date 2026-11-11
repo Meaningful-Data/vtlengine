@@ -28,6 +28,7 @@ from vtlengine.AST.Grammar import tokens
 from vtlengine.AST.UDOTypes import udo_dataset_components
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
+    SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Date,
     Duration,
@@ -396,6 +397,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     value_domains: Dict[str, ValueDomain] = field(default_factory=dict)
     external_routines: Dict[str, ExternalRoutine] = field(default_factory=dict)
+    downcasts: Dict[Tuple[Any, ...], Tuple[str, Dict[Optional[str], ValueDomain]]] = field(
+        default_factory=dict
+    )
 
     # Dependency graph
     dag: Any = field(default=None)
@@ -423,6 +427,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     # Qualified names consumed by join clauses
     _consumed_join_aliases: Set[str] = field(default_factory=set, init=False)
+    # Where the script writes the user defined operator calls being expanded, outermost first
+    _udo_call_positions: List[Tuple[Any, ...]] = field(default_factory=list, init=False)
 
     # UDO definitions
     _udos: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
@@ -661,7 +667,35 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         sql = super().visit(node)
         if isinstance(node, AST.RegularAggregation) and node.isLast:
             return self._unqualify_join_columns(node, sql)
+        if self.downcasts and isinstance(node, AST.AST):
+            return self._downcast_sql(node, sql)
         return sql
+
+    def _downcast_sql(self, node: AST.AST, sql: str) -> str:
+        """sql, the result of the node, with the values its operator downcasts into the value
+        domain of a component checked against it."""
+        key = (AST.node_position(node), tuple(self._udo_call_positions))
+        if key not in self.downcasts:
+            return sql
+        op, components = self.downcasts[key]
+        if None in components:
+            return self._downcast_expr(sql, op, components[None])
+        replaced = ", ".join(
+            f"{self._downcast_expr(quote_name(name), op, value_domain)} AS {quote_name(name)}"
+            for name, value_domain in components.items()
+            if name is not None
+        )
+        return f"SELECT * REPLACE ({replaced}) FROM ({sql})"
+
+    def _downcast_expr(self, expr: str, op: str, value_domain: ValueDomain) -> str:
+        """expr, raising VTL 2-1-5-4 on a value that is not one of the value domain."""
+        type_name = value_domain.type.__name__
+        values = ", ".join(
+            self._to_sql_literal(value, type_name) for value in value_domain.values()
+        )
+        basic_type = SCALAR_TYPES_CLASS_REVERSE[value_domain.type]
+        info = "\u00a6".join((op, basic_type, value_domain.name, "")).replace("'", "''")
+        return f"vtl_downcast({expr}, [{values}], '{info}')"
 
     def _unqualify_join_columns(self, node: AST.RegularAggregation, query: str) -> str:
         """Rename remaining alias#comp columns to plain component names."""
@@ -4334,6 +4368,7 @@ FROM (
         expression = deepcopy(udo_def["expression"])
 
         self._push_udo_params(bindings)
+        self._udo_call_positions.append(AST.node_position(node))
         try:
             sql = self.visit(expression)
             declared, constraints = udo_def["return_type"], udo_def["return_constraints"]
@@ -4351,6 +4386,7 @@ FROM (
                 )
             return self._udo_checked_arguments(sql, node.op, udo_def["params"], is_dataset)
         finally:
+            self._udo_call_positions.pop()
             self._pop_udo_params()
 
     # Datapoint rulesets

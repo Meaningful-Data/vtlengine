@@ -81,16 +81,18 @@ class TestHelper(TestCase):
 
     @classmethod
     def LoadDataset(
-        cls, ds_path, dp_path, only_semantic=False
+        cls, ds_path, dp_path, only_semantic=False, value_domains=None
     ) -> Dict[str, Union[Dataset, Scalar]]:
-        from vtlengine.API._InternalApi import _validate_json, schema
+        from vtlengine.API._InternalApi import _structure_schema, _validate_json
 
         with open(ds_path, "r") as file:
             structures = json.load(file)
 
         # Validate against the public JSON schema so the pandas loading path reports
         # the same structural errors as the DuckDB one (run() validates in
-        # _load_dataset_from_structure).
+        # _load_dataset_from_structure). A Component type can name a value domain.
+        value_domains = value_domains or {}
+        schema = _structure_schema(tuple(sorted(value_domains)))
         _validate_json(structures, schema, kind="DataStructures")
 
         datasets = {}
@@ -102,15 +104,26 @@ class TestHelper(TestCase):
 
                 for component in dataset_json["DataStructure"]:
                     type_key = "type" if "type" in component else "data_type"
-                    check_key(type_key, SCALAR_TYPES.keys(), component[type_key])
+                    value_domain = (
+                        None
+                        if component[type_key] in SCALAR_TYPES
+                        else value_domains.get(component[type_key])
+                    )
+                    if value_domain is None:
+                        check_key(type_key, SCALAR_TYPES.keys(), component[type_key])
                     if component["role"] == "ViralAttribute":
                         component["role"] = "Viral Attribute"
                     check_key("role", Role_keys, component["role"])
                     components[component["name"]] = Component(
                         name=component["name"],
-                        data_type=SCALAR_TYPES[component["type"]],
+                        data_type=(
+                            SCALAR_TYPES[component["type"]]
+                            if value_domain is None
+                            else value_domain.type
+                        ),
                         role=Role(component["role"]),
                         nullable=component["nullable"],
+                        value_domain=value_domain,
                     )
 
                 if only_semantic:
@@ -135,7 +148,9 @@ class TestHelper(TestCase):
         return datasets
 
     @classmethod
-    def LoadInputs(cls, code: str, number_inputs: int, only_semantic=False) -> Dict[str, Dataset]:
+    def LoadInputs(
+        cls, code: str, number_inputs: int, only_semantic=False, value_domains=None
+    ) -> Dict[str, Dataset]:
         """ """
         datasets = {}
         for i in range(number_inputs):
@@ -145,7 +160,9 @@ class TestHelper(TestCase):
             csv_file_name = str(
                 cls.filepath_csv / f"{code}-{cls.ds_input_prefix}{str(i + 1)}{cls.CSV}"
             )
-            new_datasets = cls.LoadDataset(json_file_name, csv_file_name, only_semantic)
+            new_datasets = cls.LoadDataset(
+                json_file_name, csv_file_name, only_semantic, value_domains
+            )
             for x in new_datasets:
                 if x in datasets:
                     raise Exception(f"Trying to redefine input datasets: {x}")
@@ -155,14 +172,16 @@ class TestHelper(TestCase):
 
     @classmethod
     def LoadOutputs(
-        cls, code: str, references_names: List[str], only_semantic=False
+        cls, code: str, references_names: List[str], only_semantic=False, value_domains=None
     ) -> Dict[str, Dataset]:
         """ """
         datasets = {}
         for name in references_names:
             json_file_name = str(cls.filepath_out_json / f"{code}-{name}{cls.JSON}")
             csv_file_name = str(cls.filepath_out_csv / f"{code}-{name}{cls.CSV}")
-            new_datasets = cls.LoadDataset(json_file_name, csv_file_name, only_semantic)
+            new_datasets = cls.LoadDataset(
+                json_file_name, csv_file_name, only_semantic, value_domains
+            )
             for dataset in new_datasets.values():
                 dataset.ref_name = name
             datasets.update(new_datasets)
@@ -191,6 +210,7 @@ class TestHelper(TestCase):
         warnings.filterwarnings("ignore", category=FutureWarning)
         if text is None:
             text = cls.LoadVTL(code)
+        value_domains = None if vd_names is None else cls.LoadValueDomains(vd_names)
 
         # Use DuckDB backend if configured
         if _use_duckdb_backend() and not only_semantic:
@@ -205,11 +225,7 @@ class TestHelper(TestCase):
         else:
             # Original Pandas/Interpreter backend
             ast = create_ast(text)
-            input_datasets = cls.LoadInputs(code, number_inputs, only_semantic)
-
-            value_domains = None
-            if vd_names is not None:
-                value_domains = cls.LoadValueDomains(vd_names)
+            input_datasets = cls.LoadInputs(code, number_inputs, only_semantic, value_domains)
 
             external_routines = None
             if sql_names is not None:
@@ -235,7 +251,7 @@ class TestHelper(TestCase):
             )
             result = interpreter.visit(ast)
 
-        reference_datasets = cls.LoadOutputs(code, references_names, only_semantic)
+        reference_datasets = cls.LoadOutputs(code, references_names, only_semantic, value_domains)
 
         for dataset in result.values():
             format_time_period_external_representation(
@@ -417,11 +433,12 @@ class TestHelper(TestCase):
                         scalars=scalars,
                     )
             else:
-                input_datasets = cls.LoadInputs(code=code, number_inputs=number_inputs)
-
                 value_domains = None
                 if vd_names is not None:
                     value_domains = cls.LoadValueDomains(vd_names)
+                input_datasets = cls.LoadInputs(
+                    code=code, number_inputs=number_inputs, value_domains=value_domains
+                )
 
                 external_routines = None
                 if sql_names is not None:
@@ -545,17 +562,21 @@ class TestHelper(TestCase):
         number_inputs: int,
         exception_message: Optional[str] = None,
         exception_code: Optional[str] = None,
+        vd_names: Optional[List[str]] = None,
     ):
         if _use_duckdb_backend():
-            cls._DataLoadExceptionTestDuckDB(code, number_inputs, exception_message, exception_code)
+            cls._DataLoadExceptionTestDuckDB(
+                code, number_inputs, exception_message, exception_code, vd_names
+            )
             return
 
+        value_domains = None if vd_names is None else cls.LoadValueDomains(vd_names)
         if exception_code is not None:
             with pytest.raises(VTLEngineException) as context:
-                cls.LoadInputs(code=code, number_inputs=number_inputs)
+                cls.LoadInputs(code=code, number_inputs=number_inputs, value_domains=value_domains)
         else:
             with pytest.raises(Exception, match=exception_message) as context:
-                cls.LoadInputs(code=code, number_inputs=number_inputs)
+                cls.LoadInputs(code=code, number_inputs=number_inputs, value_domains=value_domains)
         # Test Assertion.------------------------------------------------------
 
         if len(context.value.args) > 1 and exception_code is not None:
@@ -571,6 +592,7 @@ class TestHelper(TestCase):
         number_inputs: int,
         exception_message: Optional[str] = None,
         exception_code: Optional[str] = None,
+        vd_names: Optional[List[str]] = None,
     ):
         """Execute DataLoadExceptionTest using DuckDB backend."""
         data_structures = []
@@ -590,12 +612,18 @@ class TestHelper(TestCase):
         # Use renamed outputs to avoid DAG cycles (DS_1 <- DS_1 creates a cycle)
         script = "\n".join(f"DS_r_{name} <- {name};" for name in dataset_names)
 
+        value_domains = (
+            None
+            if vd_names is None
+            else [cls.filepath_valueDomain / f"{name}.json" for name in vd_names]
+        )
         if exception_code is not None:
             with pytest.raises(VTLEngineException) as context:
                 run(
                     script=script,
                     data_structures=data_structures,
                     datapoints=datapoints,
+                    value_domains=value_domains,
                     return_only_persistent=False,
                     use_duckdb=True,
                 )
@@ -605,6 +633,7 @@ class TestHelper(TestCase):
                     script=script,
                     data_structures=data_structures,
                     datapoints=datapoints,
+                    value_domains=value_domains,
                     return_only_persistent=False,
                     use_duckdb=True,
                 )

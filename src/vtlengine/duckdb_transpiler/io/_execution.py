@@ -95,6 +95,18 @@ def _map_udo_constraint_error(msg: str) -> Optional[Exception]:
     return RunTimeError("2-3-9", op=op, element=element, value=value, constraint=constraint)
 
 
+def _downcast_error(msg: str) -> Optional[RunTimeError]:
+    """VTL macro vtl_downcast: a value put into a value domain that is not one of its values."""
+    match = re.search("VTL 2-1-5-4 (.*?)\u00a6(.*?)\u00a6(.*?)\u00a6(.*)", msg)
+    if match is None:
+        return None
+    op, type_, value_domain, value = match.groups()
+    if type_ == "Date":
+        # A TIMESTAMP column writes a date with its time: write it as the pandas engine does
+        value = _format_timestamp(pd.Timestamp(value))
+    return RunTimeError("2-1-5-4", op=op, value=value, type=type_, value_domain=value_domain)
+
+
 def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
     """Map the errors raised by the VTL SQL macros, which carry their own code."""
     # calc identifier: the calculated expression produced a null
@@ -139,6 +151,10 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
         match = re.search(r"VTL 2-1-5-1 (\w+) (.*)", msg)
         type_2, value = match.groups() if match else ("Number", "unknown")
         return RunTimeError("2-1-5-1", value=value, type_1="String", type_2=type_2)
+
+    downcast = _downcast_error(msg)
+    if downcast is not None:
+        return downcast
 
     if "vtl 2-1-5-3 " in msg_lower:
         match = re.search(r"VTL 2-1-5-3 (.*?)\|~\|(.*?)\|~\|(.*?)\|~\|(.*?)\|~\|", msg, re.S)

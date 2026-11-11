@@ -265,16 +265,18 @@ def apply_viral_return_types(components: Iterable[Any], result_components: Dict[
     """
     registry = get_current_registry()
     for comp in components:
-        rule = registry.rule_for(comp)
-        if rule is None or rule.aggregate_function is None:
-            continue
         result_comp = result_components.get(comp.name)
         if result_comp is None:
             continue
+        rule = registry.rule_for(comp)
+        aggregate = rule.aggregate_function if rule is not None else None
+        if aggregate is None and result_comp.value_domain is None:
+            continue
         promoted = copy(result_comp)
-        if rule.aggregate_function == "avg":
+        promoted.value_domain = None
+        if aggregate == "avg":
             promoted.data_type = Number
-        else:
+        elif aggregate is not None:
             common = _common_type(result_comp.data_type, comp.data_type)
             promoted.data_type = result_comp.data_type if common is None else common
         result_components[comp.name] = promoted

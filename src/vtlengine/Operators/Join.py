@@ -16,7 +16,12 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role
-from vtlengine.Operators import Operator, _id_type_promotion_join_keys
+from vtlengine.Operators import (
+    Operator,
+    _id_type_promotion_join_keys,
+    check_downcasts,
+    share_value_domains,
+)
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
@@ -246,6 +251,7 @@ class Join(Operator):
             cls._validate_nvl(operands, nvl)
             if result.data is not None:
                 cls._apply_nvl(result, nvl)
+        check_downcasts(result, operands, cls.op)
         return result
 
     @classmethod
@@ -422,6 +428,12 @@ class Join(Operator):
         components = cls.merge_components(operands, using)
         if len(set(components.keys())) != len(components):
             raise SemanticError("1-1-13-9", comp_name="")
+        matched = [
+            name
+            for name, comp in components.items()
+            if name in (using or []) or (comp.role == Role.IDENTIFIER and cls.how != "cross")
+        ]
+        share_value_domains(components, operands, matched)
 
         return Dataset(name=dataset_name, components=components, data=None)
 

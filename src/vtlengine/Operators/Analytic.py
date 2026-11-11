@@ -237,6 +237,11 @@ class Analytic(Operator.Unary):
                         result_components[measure.name] = cls._as_nullable(
                             result_components[measure.name]
                         )
+        analyzed = [component_name] if component_name is not None else operand.get_measures_names()
+        for name in analyzed:
+            if name in result_components and result_components[name].value_domain is not None:
+                result_components[name] = copy(result_components[name])
+                result_components[name].value_domain = None
         dataset_name = VirtualCounter._new_ds_name()
         # Analytic combines the data points within each partition, so the surviving viral
         # attributes are combined and require a propagation rule (issue #906).

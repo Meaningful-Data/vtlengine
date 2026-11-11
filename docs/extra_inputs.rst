@@ -27,7 +27,8 @@ Value Domains
 A Value Domain is a named set of unique values that share
 a common data type. Value domains are used with the ``in``
 and ``not_in`` operators to perform membership checks
-in VTL scripts.
+in VTL scripts, and a Component can be defined on one
+(see :ref:`components_on_value_domains`).
 
 
 Definition Format
@@ -220,6 +221,61 @@ Example
     )
 
     print(result["DS_r"])
+
+
+.. _components_on_value_domains:
+
+Components Defined on a Value Domain
+====================================
+
+The ``type`` (or ``data_type``) of a Component in the data
+structures can name a value domain given in ``value_domains``,
+instead of a basic type. The Component is then defined on that
+value domain and has its basic type:
+
+.. code-block:: json
+
+    {"name": "Id_2", "type": "VD_FLOW", "role": "Identifier", "nullable": false}
+
+A type that is neither a basic type nor the name of a value
+domain given raises ``0-2-1-1``. Loading the datapoints checks
+that every value of the Component is a value of its value
+domain, and raises ``0-3-1-6`` on another one. Nulls follow
+``nullable``, as with a basic type.
+
+The operators handle the Component as one of its basic type:
+the same type checks and the same result types. ``Id_2 || "_X"``
+is a ``String``, and ``Me_1 + 1`` on a value domain of integers
+is an ``Integer``. The Components that an operator keeps as they
+are keep their value domain: the Identifiers, the Components that
+``filter``, ``keep``, ``drop``, ``rename``, ``sub`` and the joins
+keep, and a Component written alone in ``calc``
+(``calc Me_3 := Id_2``). ``run()`` and ``semantic_analysis()``
+write ``"type": "VD_FLOW"`` for them.
+
+The operators that put the values of several operands into one
+Component (the set operators, the Identifiers that a join
+matches, ``nvl``, ``if-then-else`` and ``case``) follow the VTL
+type conversion rules:
+
+- Operands on the same value domain give that value domain.
+- A value domain and its basic type give the value domain: the
+  values of the basic type are converted into it (downcast), and
+  one that is not a value of the value domain raises ``2-1-5-4``.
+- Two different value domains on the same basic type give that
+  basic type, and any other mix follows the promotion of the basic
+  types (a value domain of integers and a ``Number`` give a
+  ``Number``).
+
+.. code-block:: text
+
+    /* Id_2 keeps VD_FLOW; the Strings of DS_2 must be values of it */
+    DS_r <- union(DS_1, DS_2);
+
+    /* Me_2 is on the value domain of Me_1, and 0 must be one of its values */
+    DS_r <- DS_1 [calc Me_2 := nvl(Me_1, 0)];
+
+Scalars typed by a value domain are not supported.
 
 
 Validation

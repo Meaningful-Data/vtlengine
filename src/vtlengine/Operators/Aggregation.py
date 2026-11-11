@@ -169,10 +169,10 @@ class Aggregation(Operator.Unary):
                 context="aggregate",
             )
 
-        # Change Measure data type
         for _, comp in result_components.items():
             if comp.role == Role.MEASURE:
                 unary_implicit_promotion(comp.data_type, cls.type_to_check)
+                comp.value_domain = None
                 if cls.return_type is not None:
                     comp.data_type = cls.return_type
         if cls.op == COUNT:

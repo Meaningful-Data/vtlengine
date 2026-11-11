@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional, SupportsInt, Type, Union, cast
 import pandas as pd
 
 from vtlengine.DataTypes import (
-    SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Date,
     Duration,
@@ -32,7 +31,7 @@ from vtlengine.files.sdmx_handler import (
     is_sdmx_datapoint_file,
     load_sdmx_datapoints,
 )
-from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Model import Component, Dataset, Role, component_type_name
 
 TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
     Date: check_date,
@@ -271,6 +270,17 @@ def _check_non_nullable_components(
         raise DataLoadError("0-3-1-17", name=dataset_name, comp_name=comp_name)
 
 
+def _check_value_domain(comp: Component, values: Any) -> None:
+    """A component defined on a value domain takes only its values."""
+    if comp.value_domain is None:
+        return
+    outside = comp.value_domain.outside(values)
+    if len(outside):
+        raise InputValidationException(
+            code="0-1-1-36", value=outside.iloc[0], value_domain=comp.value_domain.name
+        )
+
+
 def _validate_pandas(
     components: Dict[str, Component], data: pd.DataFrame, dataset_name: str
 ) -> pd.DataFrame:
@@ -352,9 +362,10 @@ def _validate_pandas(
             else:
                 data[comp_name] = data[comp_name].map(string_value, na_action="ignore")
             data[comp_name] = data[comp_name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
+            _check_value_domain(comp, data[comp_name])
 
     except (ValueError, InputValidationException) as e:
-        str_comp = SCALAR_TYPES_CLASS_REVERSE.get(comp.data_type, "Null")
+        str_comp = component_type_name(comp.data_type, comp.value_domain)
         error = e.args[0] if isinstance(e, InputValidationException) else str(e)
         raise DataLoadError(
             "0-3-1-6", name=dataset_name, column=comp_name, type=str_comp, error=error

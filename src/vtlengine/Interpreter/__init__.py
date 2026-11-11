@@ -25,6 +25,7 @@ from vtlengine.AST.Grammar.tokens import (
     AS,
     BETWEEN,
     CALC,
+    CASE,
     CAST,
     CHECK_DATAPOINT,
     CHECK_HIERARCHY,
@@ -41,6 +42,7 @@ from vtlengine.AST.Grammar.tokens import (
     FILTER,
     HAVING,
     HIERARCHY,
+    IF,
     INSTR,
     KEEP,
     MEMBERSHIP,
@@ -230,6 +232,11 @@ class InterpreterAnalyzer(ASTTemplate):
     udo_params: Optional[List[Dict[str, Any]]] = None
     # Names of the user defined operators being called, outermost first
     udo_calls: List[str] = field(default_factory=list)
+    # Where the script writes each of those calls
+    udo_call_positions: List[Tuple[Any, ...]] = field(default_factory=list)
+    downcasts: Dict[Tuple[Any, ...], Tuple[str, Dict[Optional[str], ValueDomain]]] = field(
+        default_factory=dict
+    )
     # The constraints on the values of the component parameters of each of those calls
     udo_constraints: List[Dict[str, List[Tuple[str, str, AST.TypeConstraint]]]] = field(
         default_factory=list
@@ -668,7 +675,19 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
             elif self.is_from_regular_aggregation:
                 raise SemanticError("1-1-6-6", dataset_name=left_operand, comp_name=right_operand)
-        return BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
+        result = BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
+        if node.op == NVL:
+            self._record_downcasts(node, NVL, result, [left_operand, right_operand])
+        return result
+
+    def _record_downcasts(self, node: AST.AST, op: str, result: Any, operands: List[Any]) -> None:
+        """Keeps the components into which the operator of a node downcasts values, for the
+        DuckDB engine to check them."""
+        if isinstance(result, (Dataset, DataComponent)):
+            found = Operators.downcasts(result, operands)
+            if found:
+                key = (AST.node_position(node), tuple(self.udo_call_positions))
+                self.downcasts[key] = (op, found)
 
     def _visit_right_operand(self, op: str, left: Any, node: AST.AST) -> Any:
         """The right operand of a binary operator. The right operand of an and or an or, and
@@ -1240,7 +1259,9 @@ class InterpreterAnalyzer(ASTTemplate):
                 if not isinstance(ds, Dataset):
                     raise SemanticError("1-2-23", pos=f"Each {node.op}")
 
-            return SET_MAPPING[node.op].analyze(datasets)
+            result = SET_MAPPING[node.op].analyze(datasets)
+            self._record_downcasts(node, node.op, result, datasets)
+            return result
 
         elif node.op == CURRENT_DATE:
             return Current_Date.analyze()
@@ -1297,6 +1318,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 data_type=self.aggregation_dataset.components[node.value].data_type,
                 role=self.aggregation_dataset.components[node.value].role,
                 nullable=self.aggregation_dataset.components[node.value].nullable,
+                value_domain=self.aggregation_dataset.components[node.value].value_domain,
             )
         if self.is_from_regular_aggregation:
             if self.is_from_join and node.value in self.datasets:
@@ -1340,12 +1362,14 @@ class InterpreterAnalyzer(ASTTemplate):
                     data = copy(self.regular_aggregation_dataset.data[node.value])
                 else:
                     data = None
+                component = self.regular_aggregation_dataset.components[node.value]
                 return DataComponent(
                     name=node.value,
                     data=data,
-                    data_type=self.regular_aggregation_dataset.components[node.value].data_type,
-                    role=self.regular_aggregation_dataset.components[node.value].role,
-                    nullable=self.regular_aggregation_dataset.components[node.value].nullable,
+                    data_type=component.data_type,
+                    role=component.role,
+                    nullable=component.nullable,
+                    value_domain=component.value_domain,
                 )
         if (
             self.is_from_rule
@@ -1568,7 +1592,9 @@ class InterpreterAnalyzer(ASTTemplate):
         elseOp = self._visit_in_branch(node.elseOp)
         self.condition_stack.pop()
 
-        return If.analyze(condition, thenOp, elseOp, self.is_from_having)
+        result = If.analyze(condition, thenOp, elseOp, self.is_from_having)
+        self._record_downcasts(node, IF, result, [thenOp, elseOp])
+        return result
 
     def visit_Case(self, node: AST.Case) -> Any:
         conditions: List[Any] = []
@@ -1605,7 +1631,9 @@ class InterpreterAnalyzer(ASTTemplate):
         elseOp = (self._visit_structure if selected else self._visit_in_branch)(node.elseOp)
         del self.condition_stack[depth:]
 
-        return Case.analyze(conditions, thenOps, elseOp, self.is_from_having)
+        result = Case.analyze(conditions, thenOps, elseOp, self.is_from_having)
+        self._record_downcasts(node, CASE, result, [*thenOps, elseOp])
+        return result
 
     def generate_then_else_datasets(
         self,
@@ -1767,6 +1795,7 @@ class InterpreterAnalyzer(ASTTemplate):
         # No need to check using, regular aggregation is executed afterwards
         self.is_from_join = True
         result = JOIN_MAPPING[node.op].analyze(clause_elements, node.using, nvl_defaults)
+        self._record_downcasts(node, node.op, result, clause_elements)
         if node.isLast:
             self._strip_join_prefixes(result)
             self.is_from_join = False
@@ -2677,12 +2706,14 @@ class InterpreterAnalyzer(ASTTemplate):
                 "1-3-2-7", op=node.op, calls=" -> ".join([*self.udo_calls, node.op])
             )
         self.udo_calls.append(node.op)
+        self.udo_call_positions.append(AST.node_position(node))
         self.udo_constraints.append(component_constraints)
 
         # Calling the UDO AST, we use deepcopy to avoid changing the original UDO AST
         if operator is not None:
             result = self.visit(deepcopy(operator["expression"]))
         self.udo_calls.pop()
+        self.udo_call_positions.pop()
         self.udo_constraints.pop()
 
         if self.is_from_regular_aggregation or self.is_from_rule:

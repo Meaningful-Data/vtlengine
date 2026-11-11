@@ -118,6 +118,18 @@ class AST:
     __eq__ = ast_equality
 
 
+def node_position(node: AST) -> Tuple[str, int, int, int, int]:
+    """The class of a node and where the script writes it, which tell the node apart in
+    any copy of the AST."""
+    return (
+        type(node).__name__,
+        node.line_start,
+        node.column_start,
+        node.line_stop,
+        node.column_stop,
+    )
+
+
 @dataclass
 class Comment(AST):
     """

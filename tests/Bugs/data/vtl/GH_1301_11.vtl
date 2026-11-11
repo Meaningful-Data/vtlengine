@@ -1,0 +1,7 @@
+define operator u ( a dataset , b dataset )
+  returns dataset is
+    union ( a , b )
+end operator;
+
+DS_r1 <- u ( DS_1 , DS_2 );
+DS_r2 <- u ( DS_1 , DS_3 );
