@@ -27,8 +27,9 @@ Value Domains
 A Value Domain is a named set of unique values that share
 a common data type. Value domains are used with the ``in``
 and ``not_in`` operators to perform membership checks
-in VTL scripts, and a Component can be defined on one
-(see :ref:`components_on_value_domains`).
+in VTL scripts, and a Component or a scalar can be defined on one
+(see :ref:`components_on_value_domains` and
+:ref:`scalars_on_value_domains`).
 
 
 Definition Format
@@ -324,8 +325,9 @@ Value domains also appear in the VTL-DL definitions:
 - A value domain types a scalar or a component parameter of a user
   defined operator (``x VD_FLOW``, ``x component<VD_FLOW>``): the
   argument is of the basic type of the value domain, and its values
-  must be values of it (``2-1-5-4``). In the body it behaves as its
-  basic type.
+  must be values of it (``2-1-5-4``). In the body a scalar parameter
+  is defined on the value domain, and a component parameter behaves
+  as its basic type.
 
 .. code-block:: text
 
@@ -353,7 +355,53 @@ type the error codes and the error levels of ``check``,
 and level of a rule or of ``check`` must be one of their values
 (``1-1-10-13``). Without them, the Measures keep their usual types.
 
-Scalars typed by a value domain are not supported.
+.. _scalars_on_value_domains:
+
+Scalars Defined on a Value Domain
+=================================
+
+The ``type`` (or ``data_type``) of a scalar in the data structures
+can name a value domain given in ``value_domains``, as the type of a
+Component can. The scalar is then defined on that value domain and
+has its basic type:
+
+.. code-block:: json
+
+    {"scalars": [{"name": "SC_1", "type": "VD_FLOW"}]}
+
+The value given in ``scalar_values`` must be one of the values of
+the value domain, or ``run()`` raises ``0-1-1-36``. A null value is
+allowed.
+
+The operators handle a scalar on a value domain as a Component on
+it:
+
+- An assignment (``SC_r <- SC_1``) and a scalar written alone in
+  ``calc`` (``calc Me_2 := SC_1``) keep the value domain.
+- ``nvl``, ``if-then-else`` and ``case`` follow the type conversion
+  rules above. A value of the basic type put into the value domain
+  must be one of its values (``2-1-5-4``), and two different value
+  domains give the basic type.
+- ``cast(SC_2, VD_FLOW)`` gives a scalar on ``VD_FLOW``.
+- An operator that computes a new value gives its basic type:
+  ``SC_1 || "_X"`` is a ``String``.
+- A scalar parameter of a user defined operator typed by a value
+  domain is defined on it. One of a basic type keeps the value domain
+  of an argument of that same type.
+
+``run()`` and ``semantic_analysis()`` write ``"type": "VD_FLOW"`` for
+the scalar results on a value domain.
+
+.. code-block:: text
+
+    /* SC_r is on VD_FLOW, and "OTHER" must be one of its values */
+    SC_r <- nvl(SC_1, "OTHER");
+
+    /* Me_2 is on VD_FLOW */
+    DS_r <- DS_1 [calc Me_2 := SC_1];
+
+The value domains in the ``returns`` of a user defined operator are
+not supported (``1-3-2-6``).
 
 
 Validation
