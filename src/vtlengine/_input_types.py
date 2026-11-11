@@ -7,17 +7,14 @@ The aliases do not include ``None``: a parameter that can be left out is annotat
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 from pysdmx.model import TransformationScheme
 from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
 from pysdmx.model.vtl import VtlDataflowMapping
 
-if TYPE_CHECKING:
-    # Imported for type checking only: importing vtlengine.Model here, before the API has loaded
-    # vtlengine.AST, starts the DataTypes <-> AST import cycle.
-    from vtlengine.Model import ValueDomain
+from vtlengine.Model import ValueDomain
 
 ScriptInput = Union[str, TransformationScheme, Path]
 """A VTL script as a string, a Path to a ``.vtl`` file or a pysdmx TransformationScheme."""
@@ -34,7 +31,7 @@ DatapointsInput = Union[
 """The datapoints: a dict of dataset name to DataFrame or file, or the files themselves."""
 
 ValueDomainsInput = Union[
-    Dict[str, Any], Path, "ValueDomain", List[Union[Dict[str, Any], Path, "ValueDomain"]]
+    Dict[str, Any], Path, ValueDomain, List[Union[Dict[str, Any], Path, ValueDomain]]
 ]
 """Value domains as dicts, Paths to JSON files or folders, ValueDomain objects, or a list."""
 
