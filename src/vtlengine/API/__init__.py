@@ -45,7 +45,7 @@ from vtlengine.files.output._time_period_representation import (
 )
 from vtlengine.files.sdmx_handler import to_vtl_json
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Dataset, Scalar
+from vtlengine.Model import Dataset, Scalar, ValueDomain
 from vtlengine.Utils._recursion import recursion_headroom, with_recursion_headroom
 
 pd.options.mode.chained_assignment = None
@@ -128,7 +128,9 @@ def validate_dataset(
     ] = None,
     scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
     use_duckdb: bool = False,
-    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
+    value_domains: Optional[
+        Union[Dict[str, Any], Path, ValueDomain, List[Union[Dict[str, Any], Path, ValueDomain]]]
+    ] = None,
 ) -> None:
     """
     Validate that datasets can be loaded from the given data_structures and optional datapoints.
@@ -160,13 +162,13 @@ def validate_dataset(
 
 
 def validate_value_domain(
-    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    input: Union[Dict[str, Any], Path, ValueDomain, List[Union[Dict[str, Any], Path, ValueDomain]]],
 ) -> None:
     """
     Validate ValueDomain(s) using JSON Schema.
 
     Args:
-        input: Dict, Path, or List of Dict/Path objects representing value domain definitions.
+        input: Dict, Path or ValueDomain, or a List of them, with the value domain definitions.
 
     Raises:
         Exception: If the input file is invalid, does not exist,
@@ -203,7 +205,9 @@ def semantic_analysis(
         Dataflow,
         List[Union[Dict[str, Any], Path, str, Schema, DataStructureDefinition, Dataflow]],
     ],
-    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
+    value_domains: Optional[
+        Union[Dict[str, Any], Path, ValueDomain, List[Union[Dict[str, Any], Path, ValueDomain]]]
+    ] = None,
     external_routines: Optional[
         Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
     ] = None,
@@ -233,9 +237,9 @@ def semantic_analysis(
         that holds the vtl script.
         data_structures: Dict or Path (file or folder), \
         or List of Dicts or Paths with the data structures JSON files.
-        value_domains: Dict or Path, or List of Dicts or Paths of the \
-        value domains JSON files. (default:None) It is passed as an object, that can be read from \
-        a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        value_domains: Dict, Path or ValueDomain, or List of them, with the value domains. \
+        (default:None) A Dict or a Path to a JSON file (or folder of JSON files) holds the \
+        value domain definitions; a ValueDomain object is used as it is. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
@@ -339,7 +343,9 @@ def _run_with_duckdb(
         List[Union[str, Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
     ],
     datapoints: Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path],
-    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
+    value_domains: Optional[
+        Union[Dict[str, Any], Path, ValueDomain, List[Union[Dict[str, Any], Path, ValueDomain]]]
+    ] = None,
     external_routines: Optional[
         Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
     ] = None,
@@ -464,7 +470,9 @@ def run(
         List[Union[Dict[str, Any], Path, str, Schema, DataStructureDefinition, Dataflow]],
     ],
     datapoints: Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path],
-    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
+    value_domains: Optional[
+        Union[Dict[str, Any], Path, ValueDomain, List[Union[Dict[str, Any], Path, ValueDomain]]]
+    ] = None,
     external_routines: Optional[
         Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
     ] = None,
@@ -540,9 +548,9 @@ def run(
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
-        value_domains: Dict or Path, or List of Dicts or Paths of the \
-        value domains JSON files. (default:None) It is passed as an object, that can be read from \
-        a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        value_domains: Dict, Path or ValueDomain, or List of them, with the value domains. \
+        (default:None) A Dict or a Path to a JSON file (or folder of JSON files) holds the \
+        value domain definitions; a ValueDomain object is used as it is. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
@@ -678,7 +686,9 @@ def run_sdmx(
     script: Union[str, TransformationScheme, Path],
     datasets: Sequence[PandasDataset],
     mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
-    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
+    value_domains: Optional[
+        Union[Dict[str, Any], Path, ValueDomain, List[Union[Dict[str, Any], Path, ValueDomain]]]
+    ] = None,
     external_routines: Optional[
         Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
     ] = None,
@@ -723,9 +733,9 @@ def run_sdmx(
 
         mappings: A dictionary or VtlDataflowMapping object that maps the dataset names.
 
-        value_domains: Dict or Path, or List of Dicts or Paths of the \
-        value domains JSON files. (default:None) It is passed as an object, that can be read from \
-        a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        value_domains: Dict, Path or ValueDomain, or List of them, with the value domains. \
+        (default:None) A Dict or a Path to a JSON file (or folder of JSON files) holds the \
+        value domain definitions; a ValueDomain object is used as it is. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
