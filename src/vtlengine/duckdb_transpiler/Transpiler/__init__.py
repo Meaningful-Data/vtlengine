@@ -79,6 +79,7 @@ from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_out
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.Operators.Time import Period_indicator
+from vtlengine.Operators.Validation import error_level_text, error_level_type
 from vtlengine.Utils._recursion import recursion_headroom
 from vtlengine.ViralPropagation import apply_viral_return_types, get_current_registry
 from vtlengine.ViralPropagation.sql import (
@@ -734,14 +735,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     def _unwrap_assignment(self, child: AST.AST) -> AST.AST:
         """Return the inner ``Assignment`` from ``UnaryOp(Assignment)`` wrappers."""
         return child.operand if isinstance(child, AST.UnaryOp) else child
-
-    def _is_numeric(self, value: Any) -> bool:
-        """Return True if ``value`` is ``None`` or coerces to ``float`` without error."""
-        try:
-            float(value)
-        except (ValueError, TypeError):
-            return False
-        return True
 
     def _get_dataset_sql(self, node: Optional[AST.AST]) -> str:
         """Get the SQL FROM source for a dataset node, built without the result of the statement:
@@ -4512,7 +4505,7 @@ FROM (
 
         rule_name = rule.name or ""
         ec_sql = self._error_code_sql(rule.erCode)
-        el_sql = self._error_code_sql(rule.erLevel)
+        el_sql = self._error_level_sql(rule)
         # An operand component the rule writes again (an operand coming out of a
         # validation) is replaced by the rule's value, as in the pandas engine.
         written = {"ruleid", "errorcode", "errorlevel"}
@@ -5168,10 +5161,7 @@ FROM (
         inner_sql = f"SELECT {', '.join(inner_cols)} FROM ({val_sql}) _v"
 
         ec_sql = self._error_code_sql(rule.erCode)
-        el_sql = self._error_code_sql(rule.erLevel)
-        el_null = (
-            "CAST(NULL AS DOUBLE)" if self._is_numeric(rule.erLevel) else "CAST(NULL AS VARCHAR)"
-        )
+        el_sql = self._error_level_sql(rule)
 
         q_rc = quote_name(rule_comp)
         q_m = quote_name(measure)
@@ -5186,7 +5176,7 @@ FROM (
 
         for val, null_expr, col in (
             (ec_sql, "CAST(NULL AS VARCHAR)", "errorcode"),
-            (el_sql, el_null, "errorlevel"),
+            (el_sql, "NULL", "errorlevel"),
         ):
             if output == "invalid":
                 outer_cols.append(f"{val} AS {quote_name(col)}")
@@ -5571,6 +5561,21 @@ FROM (
         any other expression on them, with their types (issue #1223).
         """
         return self.visit(_rename_var_ids(node, cond_mapping))
+
+    def _ruleset_error_levels(self, ruleset_name: str) -> List[Any]:
+        """The error levels of the rules of a datapoint or hierarchical ruleset."""
+        info = self._dprs.get(ruleset_name) or self._hrs.get(ruleset_name)
+        return [rule.erLevel for rule in info["rules"]] if info else []
+
+    def _error_level_sql(self, rule: Any) -> str:
+        """The errorlevel of a rule, written as text when the levels of its ruleset mix types."""
+        for info in (*self._dprs.values(), *self._hrs.values()):
+            if any(r is rule for r in info["rules"]):
+                levels = [r.erLevel for r in info["rules"]]
+                if rule.erLevel is not None and error_level_type(levels) is String:
+                    return self._error_code_sql(error_level_text(rule.erLevel))
+                break
+        return self._error_code_sql(rule.erLevel)
 
     def _error_code_sql(self, value: Any) -> str:
         """Convert an errorcode value to a SQL literal."""
