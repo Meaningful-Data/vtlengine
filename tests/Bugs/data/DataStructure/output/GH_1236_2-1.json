@@ -36,7 +36,7 @@
         {
           "name": "errorlevel",
           "role": "Measure",
-          "type": "Number",
+          "type": "Integer",
           "nullable": true
         }
       ]
