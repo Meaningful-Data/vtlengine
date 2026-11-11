@@ -1,3 +1,3 @@
 Id_1,ruleid,bool_var,errorcode,errorlevel,Me_2
-1,R1,false,E1,1.0,3.0
+1,R1,false,E1,1,3.0
 2,R1,true,,,4.0

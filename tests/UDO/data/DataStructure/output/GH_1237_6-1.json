@@ -36,13 +36,13 @@
                 {
                     "name": "errorlevel",
                     "role": "Measure",
-                    "type": "Number",
+                    "type": "Integer",
                     "nullable": true
                 },
                 {
                     "name": "imbalance",
                     "role": "Measure",
-                    "type": "Number",
+                    "type": "Integer",
                     "nullable": true
                 }
             ]
