@@ -37,6 +37,7 @@ from vtlengine.Exceptions import (
     check_key,
 )
 from vtlengine.files.parser import (
+    _check_value_domain,
     _fill_dataset_empty_data,
     _validate_pandas,
     load_datapoints,
@@ -158,15 +159,19 @@ def _structure_schema(value_domain_names: Tuple[str, ...]) -> Dict[str, Any]:
 
 
 def _build_scalar(
-    scalar_json: Dict[str, Any], value_domains: Optional[Dict[str, ValueDomain]] = None
+    scalar_json: Dict[str, Any], value_domains: Optional[Dict[str, ValueDomain]]
 ) -> Scalar:
-    nullable = scalar_json.get("nullable", True)
     value_domain = _type_value_domain(scalar_json, value_domains)
-    if value_domain is not None:
-        return Scalar(
-            scalar_json["name"], value_domain.type, None, nullable, value_domain=value_domain
-        )
-    return Scalar(scalar_json["name"], _extract_data_type(scalar_json)[1], None, nullable)
+    data_type = (
+        value_domain.type if value_domain is not None else _extract_data_type(scalar_json)[1]
+    )
+    return Scalar(
+        name=scalar_json["name"],
+        data_type=data_type,
+        value=None,
+        nullable=scalar_json.get("nullable", True),
+        value_domain=value_domain,
+    )
 
 
 def _load_dataset_from_structure(
@@ -508,13 +513,7 @@ def _handle_scalars_values(
                 name=name,
             )
         scalars[name].value = scalars[name].data_type.cast(value)
-        value_domain = scalars[name].value_domain
-        if value_domain is not None:
-            outside = value_domain.outside(pd.Series([scalars[name].value], dtype=object))
-            if len(outside):
-                raise InputValidationException(
-                    code="0-1-1-36", value=outside.iloc[0], value_domain=value_domain.name
-                )
+        _check_value_domain(scalars[name], pd.Series([scalars[name].value], dtype=object))
 
 
 def _handle_empty_datasets(datasets: Dict[str, Dataset]) -> None:

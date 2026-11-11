@@ -108,7 +108,9 @@ class Scalar:
         x = None if not pd.isnull(self.value) else self.value
         y = None if not pd.isnull(other.value) else other.value
         same_value = x == y
-        same_domain = _domain_name(self) == _domain_name(other)
+        same_domain = getattr(self.value_domain, "name", None) == getattr(
+            other.value_domain, "name", None
+        )
         return same_name and same_type and same_value and same_domain
 
 
@@ -129,11 +131,6 @@ class Role(Enum):
     ATTRIBUTE = "Attribute"
     MEASURE = "Measure"
     VIRAL_ATTRIBUTE = "Viral Attribute"
-
-
-def _domain_name(element: Any) -> Optional[str]:
-    value_domain = getattr(element, "value_domain", None)
-    return None if value_domain is None else value_domain.name
 
 
 def component_type_name(data_type: Any, value_domain: Optional["ValueDomain"]) -> str:

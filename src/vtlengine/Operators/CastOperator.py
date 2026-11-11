@@ -191,17 +191,17 @@ class Cast(Operator.Unary):
         """This method validates the operation when the operand is a Scalar. A scalar cast to
         a value domain is defined on it, with its basic type as data type."""
         from_type, to_type = operand.data_type, cls.target_type(target)
+        value_domain = cls.target_domain(target)
         cls.check_cast(operand, target, mask)
         if operand.value is not None and not pd.isna(operand.value):
             try:
                 value = cls.cast_value(operand.value, from_type, to_type, mask)
-                value_domain = cls.target_domain(target)
                 if value_domain is not None:
                     Operator.check_values(pd.Series([value]), value_domain, cls.op)
             except (RunTimeError, InputValidationException) as error:
                 types = {
                     "type_1": component_type_name(from_type, operand.value_domain),
-                    "type_2": component_type_name(to_type, cls.target_domain(target)),
+                    "type_2": component_type_name(to_type, value_domain),
                 }
                 # A literal is part of the script, a scalar value is data (issue #1192)
                 if operand.literal:
@@ -214,7 +214,7 @@ class Cast(Operator.Unary):
             data_type=to_type,
             value=None,
             nullable=operand.nullable,
-            value_domain=cls.target_domain(target),
+            value_domain=value_domain,
         )
 
     @classmethod

@@ -83,7 +83,7 @@ class TestHelper(TestCase):
     def LoadDataset(
         cls, ds_path, dp_path, only_semantic=False, value_domains=None
     ) -> Dict[str, Union[Dataset, Scalar]]:
-        from vtlengine.API._InternalApi import _structure_schema, _validate_json
+        from vtlengine.API._InternalApi import _build_scalar, _structure_schema, _validate_json
 
         with open(ds_path, "r") as file:
             structures = json.load(file)
@@ -136,26 +136,8 @@ class TestHelper(TestCase):
                 )
         if "scalars" in structures:
             for scalar_json in structures["scalars"]:
-                scalar_name = scalar_json["name"]
-                # A scalar type can name a value domain, as a Component type can
-                value_domain = (
-                    None
-                    if scalar_json["type"] in SCALAR_TYPES
-                    else value_domains.get(scalar_json["type"])
-                )
-                scalar = Scalar(
-                    name=scalar_name,
-                    data_type=(
-                        SCALAR_TYPES[scalar_json["type"]]
-                        if value_domain is None
-                        else value_domain.type
-                    ),
-                    value=None,
-                    # As the API loads it
-                    nullable=scalar_json.get("nullable", True),
-                    value_domain=value_domain,
-                )
-                datasets[scalar_name] = scalar
+                # As the API loads it: its type can name a value domain
+                datasets[scalar_json["name"]] = _build_scalar(scalar_json, value_domains)
         return datasets
 
     @classmethod

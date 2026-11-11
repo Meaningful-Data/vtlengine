@@ -126,14 +126,11 @@ def downcasts(result: Any, operands: List[Any]) -> Dict[Optional[str], ValueDoma
 def check_downcasts(result: Any, operands: List[Any], op: str) -> None:
     """Checks the values downcast into the value domain of a component of the result, or
     into the value domain of a scalar result."""
-    if isinstance(result, Scalar):
-        for value_domain in downcasts(result, operands).values():
-            check_values(pd.Series([result.value], dtype=object), value_domain, op)
-        return
-    if result.data is None:
+    data = pd.Series([result.value], dtype=object) if isinstance(result, Scalar) else result.data
+    if data is None:
         return
     for name, value_domain in downcasts(result, operands).items():
-        check_values(result.data if name is None else result.data[name], value_domain, op)
+        check_values(data if name is None else data[name], value_domain, op)
 
 
 def check_values(values: Any, value_domain: ValueDomain, op: str) -> None:

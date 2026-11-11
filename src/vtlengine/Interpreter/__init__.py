@@ -1612,31 +1612,28 @@ class InterpreterAnalyzer(ASTTemplate):
                 if condition.value
                 else (self._visit_structure, self.visit)
             )
-            thenValue = visit_then(node.thenOp)
-            elseValue = visit_else(node.elseOp)
-            if not isinstance(thenValue, Scalar) or not isinstance(elseValue, Scalar):
+            thenOp = visit_then(node.thenOp)
+            elseOp = visit_else(node.elseOp)
+            if not isinstance(thenOp, Scalar) or not isinstance(elseOp, Scalar):
                 raise SemanticError(
                     "1-1-9-3",
                     op="If_op",
-                    then_name=thenValue.name,
-                    else_name=elseValue.name,
+                    then_name=thenOp.name,
+                    else_name=elseOp.name,
                 )
-            # Typed and checked as at Component and Data Set level (issue #1314)
-            result = If.analyze(condition, thenValue, elseValue, self.is_from_having)
-            self._record_downcasts(node, IF, result, [thenValue, elseValue])
-            return result
+        else:
+            # Analysis for data component and dataset
+            then_ds, else_ds = self.generate_then_else_datasets(condition)
 
-        # Analysis for data component and dataset
-        then_ds, else_ds = self.generate_then_else_datasets(condition)
+            self.condition_stack.append(then_ds)
+            thenOp = self._visit_in_branch(node.thenOp)
+            self.condition_stack.pop()
 
-        self.condition_stack.append(then_ds)
-        thenOp = self._visit_in_branch(node.thenOp)
-        self.condition_stack.pop()
+            self.condition_stack.append(else_ds)
+            elseOp = self._visit_in_branch(node.elseOp)
+            self.condition_stack.pop()
 
-        self.condition_stack.append(else_ds)
-        elseOp = self._visit_in_branch(node.elseOp)
-        self.condition_stack.pop()
-
+        # Typed and checked as at Component and Data Set level (issue #1314)
         result = If.analyze(condition, thenOp, elseOp, self.is_from_having)
         self._record_downcasts(node, IF, result, [thenOp, elseOp])
         return result

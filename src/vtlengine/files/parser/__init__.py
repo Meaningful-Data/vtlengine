@@ -31,7 +31,7 @@ from vtlengine.files.sdmx_handler import (
     is_sdmx_datapoint_file,
     load_sdmx_datapoints,
 )
-from vtlengine.Model import Component, Dataset, Role, component_type_name
+from vtlengine.Model import Component, Dataset, Role, Scalar, component_type_name
 
 TIME_CHECKS_MAPPING: Dict[Type[ScalarType], Any] = {
     Date: check_date,
@@ -270,14 +270,14 @@ def _check_non_nullable_components(
         raise DataLoadError("0-3-1-17", name=dataset_name, comp_name=comp_name)
 
 
-def _check_value_domain(comp: Component, values: Any) -> None:
-    """A component defined on a value domain takes only its values."""
-    if comp.value_domain is None:
+def _check_value_domain(element: Union[Component, Scalar], values: Any) -> None:
+    """A component or a scalar defined on a value domain takes only its values."""
+    if element.value_domain is None:
         return
-    outside = comp.value_domain.outside(values)
+    outside = element.value_domain.outside(values)
     if len(outside):
         raise InputValidationException(
-            code="0-1-1-36", value=outside.iloc[0], value_domain=comp.value_domain.name
+            code="0-1-1-36", value=outside.iloc[0], value_domain=element.value_domain.name
         )
 
 
