@@ -79,6 +79,24 @@ def _cast_error_columns(result: Dataset, value_domains: Optional[Dict[str, Value
             result.data[element] = result.data[element].astype(value_domain.type.dtype())  # type: ignore[call-overload]
 
 
+def error_level_type(levels: Collection[Any]) -> Type[ScalarType]:
+    """The type of errorlevel: Integer when the levels are integers or omitted, as the VTL 2.2
+    manual says when there is no errorlevel_vd, and the type of the literals otherwise, with
+    String when they mix."""
+    given = [level for level in levels if level is not None]
+    if given and all(isinstance(level, bool) for level in given):
+        return Boolean
+    numbers = [level for level in given if isinstance(level, (int, float))]
+    if len(numbers) < len(given) or any(isinstance(level, bool) for level in numbers):
+        return String
+    return Integer if all(isinstance(level, int) for level in numbers) else Number
+
+
+def error_level_text(level: Any) -> str:
+    """A level written as VTL writes it, for an errorlevel of String type."""
+    return str(level).lower() if isinstance(level, bool) else str(level)
+
+
 # noinspection PyTypeChecker
 def bind_value_domains(
     ruleset: str,
@@ -140,16 +158,6 @@ class Check(Operator):
         measure = validation_element.get_measures()[0]
         if measure.data_type != Boolean:
             raise SemanticError("1-1-10-1", op=cls.op, op_type="validation", me_type="Boolean")
-        error_level_type: Optional[Type[ScalarType]] = None
-        if isinstance(error_level, bool):
-            error_level_type = Boolean
-        elif error_level is None or isinstance(error_level, int):
-            error_level_type = Integer
-        elif isinstance(error_level, str):
-            error_level_type = String
-        else:
-            error_level_type = String
-
         imbalance_measure = None
         if imbalance_element is not None:
             operand_identifiers = validation_element.get_identifiers_names()
@@ -183,7 +191,7 @@ class Check(Operator):
 
         result_components["errorlevel"] = Component(
             name="errorlevel",
-            data_type=error_level_type,
+            data_type=error_level_type([error_level]),
             role=Role.MEASURE,
             nullable=True,
         )
@@ -267,22 +275,7 @@ class Validation(Operator):
         viral_values: Optional[pd.DataFrame] = None,
         value_domains: Optional[Dict[str, ValueDomain]] = None,
     ) -> Dataset:
-        error_level_type: Optional[Type[ScalarType]] = None
-        error_levels = [
-            rule_data.get("errorlevel")
-            for rule_data in rule_info.values()
-            if "errorlevel" in rule_data
-        ]
-        non_null_levels = [el for el in error_levels if el is not None]
-
-        if all(isinstance(el, bool) for el in non_null_levels) and len(non_null_levels) > 0:
-            error_level_type = Boolean
-        elif len(non_null_levels) == 0 or all(isinstance(el, int) for el in non_null_levels):
-            error_level_type = Number
-        elif all(isinstance(el, str) for el in non_null_levels):
-            error_level_type = String
-        else:
-            error_level_type = String
+        error_levels = [rule_data.get("errorlevel") for rule_data in rule_info.values()]
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {comp.name: comp for comp in dataset_element.get_identifiers()}
         result_components["ruleid"] = Component(
@@ -310,7 +303,7 @@ class Validation(Operator):
         )
         result_components["errorlevel"] = Component(
             name="errorlevel",
-            data_type=error_level_type,
+            data_type=error_level_type(error_levels),
             role=Role.MEASURE,
             nullable=True,
         )
@@ -345,6 +338,17 @@ class Validation(Operator):
             viral_components=viral_components,
             value_domains=value_domains,
         )
+        if result.components["errorlevel"].data_type is String:
+            # Levels of mixed types are written as text, a boolean as true or false
+            rule_info = {
+                name: {
+                    **data,
+                    "errorlevel": None
+                    if data.get("errorlevel") is None
+                    else error_level_text(data["errorlevel"]),
+                }
+                for name, data in rule_info.items()
+            }
         result.data = cls._generate_result_data(rule_info)
 
         result.data = result.data.dropna(subset=result.get_identifiers_names(), how="any")
@@ -442,8 +446,12 @@ class Check_Hierarchy(Validation):
             viral_components=viral_components,
             value_domains=value_domains,
         )
+        measures = dataset_element.get_measures()
         result.components["imbalance"] = Component(
-            name="imbalance", data_type=Number, role=Role.MEASURE, nullable=True
+            name="imbalance",
+            data_type=measures[0].data_type if measures else Number,
+            role=Role.MEASURE,
+            nullable=True,
         )
         return result
 

@@ -29,7 +29,7 @@ from vtlengine.Model import Component, Dataset, Role, ValueDomain
 from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Clause import Pivot
 from vtlengine.Operators.Join import merged_viral_attribute_names
-from vtlengine.Operators.Validation import error_domains
+from vtlengine.Operators.Validation import error_domains, error_level_type
 from vtlengine.Utils import ANALYTIC_MAPPING
 
 
@@ -856,15 +856,22 @@ class StructureVisitor(ASTTemplate):
         finally:
             self._pop_udo_params()
 
+    def _ruleset_error_levels(self, ruleset_name: str) -> List[Any]:
+        """The error levels of the rules of a ruleset, which the transpiler records."""
+        return []
+
     def _build_validation_structure(self, node: AST.Validation) -> Optional[Dataset]:
         """Build the output structure for a Validation node."""
         inner_ds = self._get_dataset_structure(node.validation)
         if inner_ds is None:
             return None
         val_comps = self._identifiers_dict(inner_ds)
+        imbalance_ds = self._get_dataset_structure(node.imbalance)
+        imbalance_measures = imbalance_ds.get_measures() if imbalance_ds is not None else []
         self._add_error_measures(
             val_comps,
-            errorlevel_type=Integer,
+            errorlevel_type=error_level_type([node.error_level]),
+            imbalance_type=imbalance_measures[0].data_type if imbalance_measures else Number,
             with_ruleid=False,
             with_bool_var=True,
         )
@@ -902,7 +909,8 @@ class StructureVisitor(ASTTemplate):
         self,
         comps: Dict[str, Component],
         *,
-        errorlevel_type: Any = Number,
+        errorlevel_type: Any = Integer,
+        imbalance_type: Any = Number,
         with_ruleid: bool = True,
         with_imbalance: bool = True,
         with_bool_var: bool = False,
@@ -911,7 +919,7 @@ class StructureVisitor(ASTTemplate):
         if with_bool_var:
             comps["bool_var"] = self._make_comp("bool_var", Boolean)
         if with_imbalance:
-            comps["imbalance"] = self._make_comp("imbalance", Number)
+            comps["imbalance"] = self._make_comp("imbalance", imbalance_type)
         if with_ruleid:
             comps["ruleid"] = self._make_comp("ruleid", StringType, Role.IDENTIFIER, False)
         domains = error_domains(self.value_domains)
@@ -947,7 +955,14 @@ class StructureVisitor(ASTTemplate):
             with_bool_var = output_mode in ("all", "all_measures")
             if output_mode == "invalid" and measure_name:
                 comps[measure_name] = inner_ds.components[measure_name]
-            self._add_error_measures(comps, with_bool_var=with_bool_var)
+            self._add_error_measures(
+                comps,
+                errorlevel_type=error_level_type(self._ruleset_error_levels(node.ruleset_name)),
+                imbalance_type=inner_ds.components[measure_name].data_type
+                if measure_name
+                else Number,
+                with_bool_var=with_bool_var,
+            )
             # Viral attributes propagate to the check_hierarchy result (issue #877).
             for name, comp in inner_ds.components.items():
                 if comp.role == Role.VIRAL_ATTRIBUTE:
@@ -969,6 +984,7 @@ class StructureVisitor(ASTTemplate):
 
         self._add_error_measures(
             comps,
+            errorlevel_type=error_level_type(self._ruleset_error_levels(node.ruleset_name)),
             with_imbalance=False,
             with_bool_var=output_mode in ("all", "all_measures"),
         )
