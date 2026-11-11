@@ -123,13 +123,26 @@ def test_definition_statement_ordering(code: str, number_inputs: int) -> None:
 validation_codes = [
     ("6-1", "1-3-3-1"),  # duplicate variable-level rule
     ("6-2", "1-3-3-4"),  # duplicate enumeration combination
-    ("5-1", "1-3-3-8"),  # a value-domain rule is not supported yet
 ]
 
 
 @pytest.mark.parametrize("code,exception_code", validation_codes)
 def test_validation(code: str, exception_code: str) -> None:
     ViralHelper.NewSemanticExceptionTest(code=code, number_inputs=1, exception_code=exception_code)
+
+
+# -- Rules on the value domain a viral attribute is defined on, issue #1236 --
+value_domain_rule_codes = [
+    ("5-1", 1),  # aggregation, enumerated rule on the value domain, which the result keeps
+    ("5-2", 2),  # binary, the rule on the variable overrides the one on the value domain
+]
+
+
+@pytest.mark.parametrize("code,number_inputs", value_domain_rule_codes)
+def test_value_domain_rule(code: str, number_inputs: int) -> None:
+    ViralHelper.BaseTest(
+        code=code, number_inputs=number_inputs, references_names=["DS_r"], vd_names=["CL_OBS"]
+    )
 
 
 # -- Rule constants must be values of the viral attribute's type, issue #1158 --

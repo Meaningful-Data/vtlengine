@@ -13,7 +13,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from vtlengine.DataTypes import ScalarType
-from vtlengine.Model import Dataset, Role
+from vtlengine.Model import Dataset, Role, ValueDomain
 
 if hasattr(inspect, "get_annotations"):
     _get_annotations = inspect.get_annotations
@@ -610,6 +610,22 @@ class TypeConstraint:
     not_null: bool = False
     condition: Optional[AST] = None
     values: Optional[List[AST]] = None
+    # The value domain that types the parameter, whose values the values must be (issue #1236)
+    value_domain: Optional[ValueDomain] = None
+
+
+@dataclass
+class ValueDomainType:
+    """A value domain that types a parameter of a user defined operator, as the signature names
+    it, and where: the operator, once defined, gives the parameter its basic type and checks
+    the values against the value domain."""
+
+    name: str
+    # Where the signature names it, for the error raised when no value domain has the name
+    definition: str = field(default="", compare=False, repr=False)
+
+    def __str__(self) -> str:
+        return self.name
 
 
 @dataclass

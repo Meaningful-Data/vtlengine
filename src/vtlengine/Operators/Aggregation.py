@@ -321,7 +321,9 @@ class Aggregation(Operator.Unary):
                     aux_df[measure_name] = aux_df[measure_name].fillna(0)
         # Propagate viral attributes using the registry
         if viral_df is not None and viral_attr_names:
-            resolved = combine_viral_groups(viral_df, grouping_keys, viral_attr_names)
+            resolved = combine_viral_groups(
+                viral_df, grouping_keys, [operand.components[name] for name in viral_attr_names]
+            )
             if grouping_keys:
                 aux_df = merge_frames(
                     aux_df.drop(columns=viral_attr_names, errors="ignore"),

@@ -25,7 +25,7 @@ from vtlengine.AST.ASTString import _format_constraint
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.DAG import HRDAGAnalyzer
 from vtlengine.AST.Grammar import tokens
-from vtlengine.AST.UDOTypes import udo_dataset_components
+from vtlengine.AST.UDOTypes import resolve_value_domain_type, udo_dataset_components
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
@@ -80,7 +80,7 @@ from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, V
 from vtlengine.Operators.Clause import Pivot
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.Operators.Time import Period_indicator
-from vtlengine.Operators.Validation import error_level_text, error_level_type
+from vtlengine.Operators.Validation import bind_value_domains, error_level_text, error_level_type
 from vtlengine.Utils._recursion import recursion_headroom
 from vtlengine.ViralPropagation import apply_viral_return_types, get_current_registry
 from vtlengine.ViralPropagation.sql import (
@@ -808,6 +808,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         argument of a constrained parameter reads another one, sql is written once, as the
         argument of a lambda: written in each place the CASE reads it, the SQL would grow
         threefold with each operator."""
+        for op, _, constraint in checks:
+            if constraint.value_domain is not None:
+                sql = self._downcast_expr(sql, op, constraint.value_domain)
         nested = _UDO_CHECK_MARKER in sql
         target = _UDO_CHECK_LAMBDA_VALUE if nested else sql
         shown = f"COALESCE(CAST({target} AS VARCHAR), 'null')"
@@ -842,7 +845,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             message = "'" + text.replace("'", "''") + "'"
             branches.append(f"WHEN {' OR '.join(broken)} THEN error({message} || {shown})")
         if not branches:
-            return sql if otherwise is None else otherwise
+            if otherwise is None:
+                return sql
+            if any(constraint.value_domain is not None for _, _, constraint in checks):
+                # sql raises on a value outside the value domain only where it is read
+                return f"CASE WHEN {sql} IS NULL THEN {otherwise} ELSE {otherwise} END"
+            return otherwise
         checked = f"CASE {' '.join(branches)} ELSE {target if otherwise is None else otherwise} END"
         if not nested:
             return checked
@@ -4392,17 +4400,18 @@ FROM (
     # UDO definition and call
 
     def visit_Operator(self, node: AST.Operator) -> None:
-        """Register a UDO definition."""
+        """Register a UDO definition. A value domain types a parameter with its basic type, whose
+        values are checked against it (issue #1236)."""
+        params = []
+        for p in node.parameters:
+            declared, constraints = resolve_value_domain_type(
+                p.type_, p.constraints, self.value_domains
+            )
+            params.append(
+                {"name": p.name, "type": declared, "default": p.default, "constraints": constraints}
+            )
         self._udos[node.op] = {
-            "params": [
-                {
-                    "name": p.name,
-                    "type": p.type_,
-                    "default": p.default,
-                    "constraints": p.constraints,
-                }
-                for p in node.parameters
-            ],
+            "params": params,
             "output": node.output_type,
             "expression": node.expression,
             "return_type": node.return_type,
@@ -4475,6 +4484,20 @@ FROM (
         ds = self._get_dataset_structure(node.dataset)
         table_src = self._get_dataset_sql(node.dataset)
         id_cols = ds.get_identifiers_names()
+        signature = dpr_info["signature"]
+        if dpr_info["signature_type"] == "valuedomain" and node.components and signature:
+            signature, checks = bind_value_domains(
+                node.ruleset_name, signature, node.components, ds.components, self.value_domains
+            )
+            if checks:
+                replaced = ", ".join(
+                    f"{self._downcast_expr(quote_name(name), tokens.CHECK_DATAPOINT, vd)} "
+                    f"AS {quote_name(name)}"
+                    for name, vd in checks.items()
+                )
+                table_src = self._materialize_raising_operand(
+                    f"(SELECT * REPLACE ({replaced}) FROM {table_src})"
+                )
 
         if not dpr_info["rules"]:
             cols = [quote_name(c) for c in id_cols]
@@ -4493,7 +4516,7 @@ FROM (
             self._build_dp_rule_sql(
                 rule=rule,
                 table_src=rule_table_src,
-                signature=dpr_info["signature"],
+                signature=signature,
                 id_cols=id_cols,
                 measure_cols=ds.get_measures_names(),
                 output_mode=node.output.value if node.output else "invalid",

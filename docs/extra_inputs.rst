@@ -297,6 +297,46 @@ value domain raises ``1-1-6-18``.
     /* Id_2 is on a value domain of A and B: DS_r has the Measures A and B */
     DS_r <- DS_1 [pivot Id_2, Me_1];
 
+Value domains also appear in the VTL-DL definitions:
+
+- A datapoint ruleset on value domains binds them, or their aliases,
+  in order to the components listed in ``check_datapoint ...
+  components``. A component of the basic type of its value domain
+  has its values checked against it (``2-1-5-4``), and one of
+  another basic type raises ``1-1-10-12``. A value domain that is
+  not given is not checked. Without ``components``, the names of the
+  signature are read as components of the Data Set. For backwards
+  compatibility, a ruleset whose value domains are all named as
+  components of the Data Set reads those components, whatever
+  components the call lists.
+- A viral propagation rule on a value domain applies to the viral
+  attributes defined on it, unless a rule on the variable overrides
+  it.
+- A value domain types a scalar or a component parameter of a user
+  defined operator (``x VD_FLOW``, ``x component<VD_FLOW>``): the
+  argument is of the basic type of the value domain, and its values
+  must be values of it (``2-1-5-4``). In the body it behaves as its
+  basic type.
+
+.. code-block:: text
+
+    define datapoint ruleset DPR_1 (valuedomain VD_FLOW as F, VD_AMOUNT as A) is
+        when F = "CREDIT" then A >= 0
+    end datapoint ruleset;
+
+    define viral propagation VP_1 (valuedomain CL_CONF) is
+        when "C" then "C";
+        else "F"
+    end viral propagation;
+
+    define operator with_suffix (x component<VD_FLOW>)
+        returns component<string> is
+            x || "_X"
+    end operator;
+
+    DS_r <- check_datapoint(DS_1, DPR_1 components Id_2, Me_1 all);
+    DS_s <- DS_1 [calc Me_2 := with_suffix(Id_2)];
+
 Scalars typed by a value domain are not supported.
 
 

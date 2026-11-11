@@ -366,9 +366,9 @@ class Pivot(Operator):
         wide = wide.reindex(columns=list(names)).rename(columns=names)
         wide.columns.name = None
         wide = wide.reset_index()
-        viral_names = dataset.get_viral_attributes_names()
-        if viral_names and len(data):
-            groups = combine_viral_groups(data, index, viral_names)
+        viral_components = dataset.get_viral_attributes()
+        if viral_components and len(data):
+            groups = combine_viral_groups(data, index, viral_components)
             wide = merge_frames(wide, groups, how="left", on=index)
         result.data = wide.drop(columns="__pivot_group__", errors="ignore")
         for name, comp in result.components.items():

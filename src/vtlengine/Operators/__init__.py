@@ -652,8 +652,9 @@ class Binary(Operator):
             has_y = va + "_y" in result_data.columns
             if has_x and has_y:
                 # Both operands have this viral attr — apply propagation rule
+                component = left_operand.components[va]
                 result_data[va] = result_data[[va + "_x", va + "_y"]].apply(
-                    lambda row: registry.resolve_pair(va, row.iloc[0], row.iloc[1]),
+                    lambda row, c=component: registry.resolve_pair(c, row.iloc[0], row.iloc[1]),
                     axis=1,
                 )
                 result_data = result_data.drop([va + "_x", va + "_y"], axis=1)

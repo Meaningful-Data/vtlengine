@@ -379,7 +379,7 @@ class Join(Operator):
                         how=cls.how,
                         on=merge_join_keys,
                     )
-                    cls._combine_viral_attributes(result, viral_common, registry)
+                    cls._combine_viral_attributes(result, viral_common, registry, operands)
                 else:
                     result.data = pd.DataFrame()
         if result.data is not None:
@@ -388,14 +388,16 @@ class Join(Operator):
 
     @classmethod
     def _combine_viral_attributes(
-        cls, result: Dataset, viral_common: Set[str], registry: Any
+        cls, result: Dataset, viral_common: Set[str], registry: Any, operands: List[Dataset]
     ) -> None:
         if result.data is None:
             return
         for name in viral_common:
             if name + "_x" in result.data.columns and name + "_y" in result.data.columns:
+                # The rule of the attribute is the one of its variable or its value domain
+                comp = next(op.components[name] for op in operands if name in op.components)
                 result.data[name] = result.data[[name + "_x", name + "_y"]].apply(
-                    lambda row, n=name: registry.resolve_pair(n, row.iloc[0], row.iloc[1]),
+                    lambda row, c=comp: registry.resolve_pair(c, row.iloc[0], row.iloc[1]),
                     axis=1,
                 )
                 result.data = result.data.drop([name + "_x", name + "_y"], axis=1)
@@ -632,7 +634,7 @@ class CrossJoin(Join):
                         op.data,
                         how=cls.how,
                     )
-                    cls._combine_viral_attributes(result, viral_common, registry)
+                    cls._combine_viral_attributes(result, viral_common, registry, operands)
             if result.data is not None:
                 result.data = result.data.rename(
                     columns={
