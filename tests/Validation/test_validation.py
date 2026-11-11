@@ -489,3 +489,123 @@ class ValidationOperatorsTests(ValidationHelper):
         self.BaseTest(
             code=code, number_inputs=number_inputs, references_names=references_names, text=rendered
         )
+
+    def test_GH_1256_1(self):
+        """
+        Expression: DS_r <- check_datapoint(DS_1, dpr1 all);
+        Description: Integer levels give an Integer errorlevel.
+        Git Issue: GH_1256.
+        """
+        code = "GH_1256_1"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1256_2(self):
+        """
+        Expression: DS_r <- check_datapoint(DS_1, dpr1 all);
+        Description: A decimal level gives a Number errorlevel.
+        Git Issue: GH_1256.
+        """
+        code = "GH_1256_2"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1256_3(self):
+        """
+        Expression: DS_r <- check_datapoint(DS_1, dpr1 all);
+        Description: Integer and string levels give a String errorlevel, written 1 and high.
+        Git Issue: GH_1256.
+        """
+        code = "GH_1256_3"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1256_4(self):
+        """
+        Expression: DS_r <- check_datapoint(DS_1, dpr1 all);
+        Description: Integer and boolean levels give a String errorlevel, written 1 and true.
+        Git Issue: GH_1256.
+        """
+        code = "GH_1256_4"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1256_5(self):
+        """
+        Expression: DS_r <- check_datapoint(DS_1, dpr1 all);
+        Description: A boolean errorcode is written true or false.
+        Git Issue: GH_1256.
+        """
+        code = "GH_1256_5"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1256_6(self):
+        """
+        Expression: DS_r <- check_hierarchy(DS_1, hr1 rule Id_2 always_zero dataset all);
+        Description: Integer Measures give an Integer imbalance, and an integer level an Integer errorlevel.
+        Git Issue: GH_1256.
+        """
+        code = "GH_1256_6"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1256_7(self):
+        """
+        Expression: DS_r <- check_hierarchy(DS_1, hr1 rule Id_2 always_zero dataset all);
+        Description: Number Measures give a Number imbalance.
+        Git Issue: GH_1256.
+        """
+        code = "GH_1256_7"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1256_8(self):
+        """
+        Expression: DS_r <- check_hierarchy(DS_1, hr1 rule Id_2 always_zero dataset all);
+        Description: A boolean level gives a Boolean errorlevel, which the DuckDB engine rejected.
+        Git Issue: GH_1256.
+        """
+        code = "GH_1256_8"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1256_9(self):
+        """
+        Expression: DS_r <- check(DS_1 >= 0 errorcode "neg" errorlevel 2.5 imbalance DS_1 - 0 all);
+        Description: A decimal level gives a Number errorlevel, which the pandas engine rejected.
+        Git Issue: GH_1256.
+        """
+        code = "GH_1256_9"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
+    def test_GH_1256_10(self):
+        """
+        Expression: DS_r <- check(DS_1 >= 0 imbalance DS_1 - 0 all);
+        Description: An omitted level gives an Integer errorlevel, and the imbalance keeps the Number type.
+        Git Issue: GH_1256.
+        """
+        code = "GH_1256_10"
+        number_inputs = 1
+        references_names = ["1"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)

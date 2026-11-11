@@ -287,8 +287,8 @@ class GeneralBugs(BugHelper):
         Description: in-memory outputs must materialize the declared component
             dtypes in both engines; the DuckDB engine returned the physical
             SQL type from fetchdf() (errorlevel INTEGER -> int32) instead of
-            the declared Number (double[pyarrow]).
-        Git Issue: GH_976.
+            the declared type, Integer (int64[pyarrow]) since issue #1256.
+        Git Issue: GH_976, GH_1256.
         Goal: Check returned DataFrame dtypes.
         """
         code = "GH_976_1"
@@ -299,7 +299,7 @@ class GeneralBugs(BugHelper):
             datapoints={"DS_1": self.filepath_csv / f"{code}-1.csv"},
             use_duckdb=_use_duckdb_backend(),
         )
-        assert str(result["DS_r"].data["errorlevel"].dtype) == "double[pyarrow]"
+        assert str(result["DS_r"].data["errorlevel"].dtype) == "int64[pyarrow]"
 
     @pytest.mark.skipif(not _use_duckdb_backend(), reason="parquet output_format is DuckDB-only")
     def test_GH_976_1_parquet(self):
@@ -308,8 +308,8 @@ class GeneralBugs(BugHelper):
         Description: parquet files written to output_folder must carry the
             declared component type for physical/declared mismatches; the
             errorlevel column (declared Number) was written as INT32 instead
-            of DOUBLE.
-        Git Issue: GH_976.
+            of DOUBLE. Since issue #1256 errorlevel is declared Integer.
+        Git Issue: GH_976, GH_1256.
         Goal: Check written parquet schema.
         """
         code = "GH_976_1"
@@ -328,7 +328,7 @@ class GeneralBugs(BugHelper):
                     f"DESCRIBE SELECT * FROM read_parquet('{Path(tmpdir) / 'DS_r.parquet'}')"
                 ).fetchall()
         types = {name: sql_type for name, sql_type, *_ in rows}
-        assert types["errorlevel"] == "DOUBLE"
+        assert types["errorlevel"] in ("INTEGER", "BIGINT")
 
     def test_GH_976_2(self):
         """
