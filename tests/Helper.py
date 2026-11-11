@@ -137,12 +137,23 @@ class TestHelper(TestCase):
         if "scalars" in structures:
             for scalar_json in structures["scalars"]:
                 scalar_name = scalar_json["name"]
+                # A scalar type can name a value domain, as a Component type can
+                value_domain = (
+                    None
+                    if scalar_json["type"] in SCALAR_TYPES
+                    else value_domains.get(scalar_json["type"])
+                )
                 scalar = Scalar(
                     name=scalar_name,
-                    data_type=SCALAR_TYPES[scalar_json["type"]],
+                    data_type=(
+                        SCALAR_TYPES[scalar_json["type"]]
+                        if value_domain is None
+                        else value_domain.type
+                    ),
                     value=None,
                     # As the API loads it
                     nullable=scalar_json.get("nullable", True),
+                    value_domain=value_domain,
                 )
                 datasets[scalar_name] = scalar
         return datasets
