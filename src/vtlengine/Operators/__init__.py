@@ -104,8 +104,8 @@ def share_value_domains(
 
 
 def downcasts(result: Any, operands: List[Any]) -> Dict[Optional[str], ValueDomain]:
-    """The components of a result, a Data Set or a component (None), that take values of
-    their basic type from an operand, which must then be values of their value domain
+    """The components of a result, a Data Set or a component or scalar (None), that take
+    values of their basic type from an operand, which must then be values of their value domain
     (downcast)."""
     parts: List[Tuple[Optional[str], Any, List[Any]]] = [(None, result, operands)]
     if isinstance(result, Dataset):
@@ -124,7 +124,12 @@ def downcasts(result: Any, operands: List[Any]) -> Dict[Optional[str], ValueDoma
 
 
 def check_downcasts(result: Any, operands: List[Any], op: str) -> None:
-    """Checks the values downcast into the value domain of a component of the result."""
+    """Checks the values downcast into the value domain of a component of the result, or
+    into the value domain of a scalar result."""
+    if isinstance(result, Scalar):
+        for value_domain in downcasts(result, operands).values():
+            check_values(pd.Series([result.value], dtype=object), value_domain, op)
+        return
     if result.data is None:
         return
     for name, value_domain in downcasts(result, operands).items():

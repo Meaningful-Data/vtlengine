@@ -183,6 +183,17 @@ def _udo_value_text(value: Any) -> Any:
     return "null" if pd.isna(value) else value
 
 
+def _udo_scalar_value_domain(param: Dict[str, Any], argument: Scalar) -> Optional[ValueDomain]:
+    """The value domain of a scalar parameter of a user defined operator: the one that types
+    it, or else the one of the argument, which keeps it when it is passed in its own type."""
+    constraint = param["constraints"].value if param["constraints"] is not None else None
+    if constraint is not None and constraint.value_domain is not None:
+        return constraint.value_domain
+    if argument.data_type is param["type"]:
+        return argument.value_domain
+    return None
+
+
 def _check_udo_return_type(op: str, declared: Any, result: Any) -> None:
     """The result of a user defined operator must have the type it returns (issue #1161)."""
     if isinstance(declared, Component):
@@ -709,9 +720,9 @@ class InterpreterAnalyzer(ASTTemplate):
         return result
 
     def _record_downcasts(self, node: AST.AST, op: str, result: Any, operands: List[Any]) -> None:
-        """Keeps the components into which the operator of a node downcasts values, for the
-        DuckDB engine to check them."""
-        if isinstance(result, (Dataset, DataComponent)):
+        """Keeps the components, or the scalar, into which the operator of a node downcasts
+        values, for the DuckDB engine to check them."""
+        if isinstance(result, (Dataset, DataComponent, Scalar)):
             found = Operators.downcasts(result, operands)
             if found:
                 key = (AST.node_position(node), tuple(self.udo_call_positions))
@@ -1611,7 +1622,9 @@ class InterpreterAnalyzer(ASTTemplate):
                     else_name=elseValue.name,
                 )
             # Typed and checked as at Component and Data Set level (issue #1314)
-            return If.analyze(condition, thenValue, elseValue, self.is_from_having)
+            result = If.analyze(condition, thenValue, elseValue, self.is_from_having)
+            self._record_downcasts(node, IF, result, [thenValue, elseValue])
+            return result
 
         # Analysis for data component and dataset
         then_ds, else_ds = self.generate_then_else_datasets(condition)
@@ -2651,6 +2664,9 @@ class InterpreterAnalyzer(ASTTemplate):
                         data_type=BASIC_TYPES[type(value)],
                         nullable=value is None,
                         literal=default.literal,
+                        # A default of a parameter typed by a value domain is on it, as an
+                        # argument passed to it is
+                        value_domain=_udo_scalar_value_domain(param, default),
                     )
                 else:
                     raise SemanticError(
@@ -2732,6 +2748,7 @@ class InterpreterAnalyzer(ASTTemplate):
                         nullable=param_element.nullable,
                         # A literal argument stays a literal inside the operator (issue #1192)
                         literal=param_element.literal,
+                        value_domain=_udo_scalar_value_domain(param, param_element),
                     )
 
         component_constraints = self._check_udo_arguments(node, operator, signature_values)

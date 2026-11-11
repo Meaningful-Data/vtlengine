@@ -60,12 +60,15 @@ class Calc(Operator):
                 result_dataset.delete_component(operand.name)
 
             if isinstance(operand, Scalar):
+                # A scalar written alone keeps the value domain it is defined on, as a
+                # component does
                 result_dataset.add_component(
                     Component(
                         name=operand.name,
                         data_type=operand.data_type,
                         role=Role.MEASURE,
                         nullable=True,
+                        value_domain=operand.value_domain,
                     )
                 )
             else:

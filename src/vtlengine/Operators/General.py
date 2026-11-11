@@ -37,7 +37,12 @@ class Membership(Binary):
 
         component = left_operand.components[right_operand]
         if len(left_operand.get_identifiers()) == 0:
-            return Scalar(name=dataset_name, data_type=component.data_type, value=None)
+            return Scalar(
+                name=dataset_name,
+                data_type=component.data_type,
+                value=None,
+                value_domain=component.value_domain,
+            )
 
         promote_to_measure = component.role in (Role.IDENTIFIER, Role.ATTRIBUTE)
         result_components = {
