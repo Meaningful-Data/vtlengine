@@ -14,6 +14,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
+from vtlengine._input_types import DatapointsInput
 from vtlengine.DataTypes import Date, Integer, Number, String, TimeInterval, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     build_create_table_sql,
@@ -668,9 +669,7 @@ def _sdmx_dataframe(
 
 
 def extract_datapoint_paths(
-    datapoints: Optional[
-        Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path]
-    ],
+    datapoints: Optional[DatapointsInput],
     input_datasets: Dict[str, Dataset],
 ) -> Tuple[Optional[Dict[str, Path]], Dict[str, pd.DataFrame]]:
     """

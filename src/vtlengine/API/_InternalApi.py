@@ -19,6 +19,15 @@ from pysdmx.model.vtl import (
 )
 
 from vtlengine import AST as AST
+from vtlengine._input_types import (
+    DatapointsInput,
+    DataStructureInput,
+    DataStructuresInput,
+    ExternalRoutinesInput,
+    ScalarValuesInput,
+    ScriptInput,
+    ValueDomainsInput,
+)
 from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentAssignment, Start
 from vtlengine.AST.ASTString import ASTString
 from vtlengine.DataTypes import SCALAR_TYPES
@@ -356,7 +365,7 @@ def _load_datapoints_path(
 
 
 def _load_datastructure_single(
-    data_structure: Union[str, Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow],
+    data_structure: DataStructureInput,
     sdmx_mappings: Optional[Dict[str, str]] = None,
     value_domains: Optional[Dict[str, ValueDomain]] = None,
 ) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
@@ -428,15 +437,7 @@ def _load_datastructure_single(
 
 
 def load_datasets(
-    data_structure: Union[
-        str,
-        Dict[str, Any],
-        Path,
-        Schema,
-        DataStructureDefinition,
-        Dataflow,
-        List[Union[str, Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
-    ],
+    data_structure: DataStructuresInput,
     sdmx_mappings: Optional[Dict[str, str]] = None,
     value_domains: Optional[Dict[str, ValueDomain]] = None,
 ) -> Tuple[Dict[str, Dataset], Dict[str, Scalar]]:
@@ -471,7 +472,7 @@ def load_datasets(
 
 def _handle_scalars_values(
     scalars: Dict[str, Scalar],
-    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+    scalar_values: Optional[ScalarValuesInput] = None,
 ) -> None:
     if scalar_values is None:
         return
@@ -498,11 +499,9 @@ def _handle_empty_datasets(datasets: Dict[str, Dataset]) -> None:
 
 
 def load_datasets_with_data(
-    data_structures: Any,
-    datapoints: Optional[
-        Union[Dict[str, Union[pd.DataFrame, Path, str]], List[Union[str, Path]], Path, str]
-    ] = None,
-    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+    data_structures: DataStructuresInput,
+    datapoints: Optional[DatapointsInput] = None,
+    scalar_values: Optional[ScalarValuesInput] = None,
     sdmx_mappings: Optional[Dict[str, str]] = None,
     validate: bool = False,
     value_domains: Optional[Dict[str, ValueDomain]] = None,
@@ -694,7 +693,7 @@ def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
 
 
 def load_value_domains(
-    input: Union[Dict[str, Any], Path, ValueDomain, List[Union[Dict[str, Any], Path, ValueDomain]]],
+    input: ValueDomainsInput,
 ) -> Dict[str, ValueDomain]:
     """
     Loads the value domains.
@@ -739,7 +738,7 @@ def load_value_domains(
 
 
 def load_external_routines(
-    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    input: ExternalRoutinesInput,
 ) -> Any:
     """
     Load the external routines.
@@ -1074,7 +1073,7 @@ def _handle_url_datapoints(
     return datasets, {}, dataframes
 
 
-def _check_script(script: Union[str, TransformationScheme, Path]) -> str:
+def _check_script(script: ScriptInput) -> str:
     """
     Check if the TransformationScheme object is valid to generate a vtl script.
     """

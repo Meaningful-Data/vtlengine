@@ -6,7 +6,7 @@ between SDMX URNs and VTL dataset names.
 """
 
 import warnings
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence
 
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import DataflowRef, Reference
@@ -14,6 +14,7 @@ from pysdmx.model.dataflow import Dataflow, Schema
 from pysdmx.model.vtl import VtlDataflowMapping
 from pysdmx.util import parse_urn
 
+from vtlengine._input_types import SdmxMappingsInput
 from vtlengine.Exceptions import InputValidationException
 
 
@@ -56,7 +57,7 @@ def _convert_vtl_dataflow_mapping(mapping: VtlDataflowMapping) -> Dict[str, str]
 
 
 def _convert_sdmx_mappings(
-    mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]],
+    mappings: Optional[SdmxMappingsInput],
 ) -> Optional[Dict[str, str]]:
     """
     Convert sdmx_mappings parameter to dict format for internal use.
@@ -81,7 +82,7 @@ def _convert_sdmx_mappings(
 
 def _build_mapping_dict(
     datasets: Sequence[PandasDataset],
-    mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]],
+    mappings: Optional[SdmxMappingsInput],
     input_names: List[str],
 ) -> Dict[str, str]:
     """
