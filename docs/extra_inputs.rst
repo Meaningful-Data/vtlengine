@@ -337,6 +337,13 @@ Value domains also appear in the VTL-DL definitions:
     DS_r <- check_datapoint(DS_1, DPR_1 components Id_2, Me_1 all);
     DS_s <- DS_1 [calc Me_2 := with_suffix(Id_2)];
 
+The value domains ``errorcode_vd`` and ``errorlevel_vd``, when given,
+type the error codes and the error levels of ``check``,
+``check_datapoint`` and ``check_hierarchy``: the ``errorcode`` and
+``errorlevel`` Measures take their basic types, and every error code
+and level of a rule or of ``check`` must be one of their values
+(``1-1-10-13``). Without them, the Measures keep their usual types.
+
 Scalars typed by a value domain are not supported.
 
 

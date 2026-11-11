@@ -1,0 +1,8 @@
+{
+  "name": "errorlevel_vd",
+  "type": "Integer",
+  "setlist": [
+    1,
+    2
+  ]
+}

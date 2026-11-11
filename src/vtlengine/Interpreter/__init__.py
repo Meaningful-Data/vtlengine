@@ -27,6 +27,7 @@ from vtlengine.AST.Grammar.tokens import (
     CALC,
     CASE,
     CAST,
+    CHECK,
     CHECK_DATAPOINT,
     CHECK_HIERARCHY,
     COUNT,
@@ -123,6 +124,7 @@ from vtlengine.Operators.Validation import (
     Check_Datapoint,
     Check_Hierarchy,
     bind_value_domains,
+    error_values,
 )
 from vtlengine.Utils import (
     AGGREGATION_MAPPING,
@@ -508,6 +510,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 names=", ".join(not_unique),
                 ruleset_name=node.name,
             )
+        self._check_error_values(node.name, node.rules)
 
         # Signature has the actual parameters names or aliases if provided
         signature_actual_names = {}
@@ -537,6 +540,22 @@ class InterpreterAnalyzer(ASTTemplate):
 
         self.dprs[node.name] = ruleset_data
 
+    def _check_error_values(self, ruleset: str, rules: List[Any]) -> None:
+        """The error codes and levels of the rules are values of errorcode_vd and errorlevel_vd,
+        when they are given."""
+        for rule in rules:
+            error_values(
+                rule.erCode, rule.erLevel, self.value_domains, f"rule {rule.name} of {ruleset}"
+            )
+
+    def _rule_output(self, ruleset: str, rule: Any) -> Dict[str, Any]:
+        """The error code and level of a rule, as values of errorcode_vd and errorlevel_vd when
+        they are given, and its output."""
+        code, level = error_values(
+            rule.erCode, rule.erLevel, self.value_domains, f"rule {rule.name} of {ruleset}"
+        )
+        return {"errorcode": code, "errorlevel": level, "output": self.visit(rule)}
+
     def visit_HRuleset(self, node: AST.HRuleset) -> None:
         if self.hrs is None:
             self.hrs = {}
@@ -561,6 +580,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 names=", ".join(not_unique),
                 ruleset_name=node.name,
             )
+        self._check_error_values(node.name, node.rules)
 
         cond_comp: List[Any] = []
         cond_variables: List[str] = []
@@ -2087,11 +2107,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     self.is_from_hr_agg = False
                 self.is_from_hr_val = True
                 for rule in rules:
-                    rule_output_values[rule.name] = {
-                        "errorcode": rule.erCode,
-                        "errorlevel": rule.erLevel,
-                        "output": self.visit(rule),
-                    }
+                    rule_output_values[rule.name] = self._rule_output(hr_name, rule)
                 self.is_from_hr_val = False
                 self.hr_agg_rules_computed = None
                 self.hr_agg_item_rules = None
@@ -2114,6 +2130,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     output=output,
                     viral_components=hr_viral_components,
                     viral_values=hr_viral_values,
+                    value_domains=self.value_domains,
                 )
                 del rule_output_values
             else:
@@ -2226,11 +2243,7 @@ class InterpreterAnalyzer(ASTTemplate):
         # Gather rule data
         if dpr_info:
             for rule in dpr_info["rules"]:
-                rule_output_values[rule.name] = {
-                    "errorcode": rule.erCode,
-                    "errorlevel": rule.erLevel,
-                    "output": self.visit(rule),
-                }
+                rule_output_values[rule.name] = self._rule_output(dpr_name, rule)
 
         self.ruleset_mode = None
         self.ruleset_signature = None
@@ -2241,6 +2254,7 @@ class InterpreterAnalyzer(ASTTemplate):
             dataset_element=dataset_element,
             rule_info=rule_output_values,
             output=output,
+            value_domains=self.value_domains,
         )
 
     def visit_DPRule(self, node: AST.DPRule) -> None:
@@ -2389,12 +2403,16 @@ class InterpreterAnalyzer(ASTTemplate):
             if not isinstance(imbalance_element, Dataset):
                 raise SemanticError("1-2-23", pos="Imbalance")
 
+        error_code, error_level = error_values(
+            node.error_code, node.error_level, self.value_domains, CHECK
+        )
         return Check.analyze(
             validation_element=validation_element,
             imbalance_element=imbalance_element,
-            error_code=node.error_code,
-            error_level=node.error_level,
+            error_code=error_code,
+            error_level=error_level,
             invalid=node.invalid,
+            value_domains=self.value_domains,
         )
 
     def visit_EvalOp(self, node: AST.EvalOp) -> Dataset:

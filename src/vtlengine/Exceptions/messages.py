@@ -819,6 +819,12 @@ centralised_messages = {
         "description": "Raised when a ruleset defined on value domains is called with a "
         "component whose basic type is not the one of the value domain it is bound to.",
     },
+    "1-1-10-13": {
+        "message": "The {element} {value} of {where} is not one of the values of the Value "
+        "Domain {value_domain}.",
+        "description": "Raised when an error code or an error level is not a value of "
+        "errorcode_vd or errorlevel_vd, given as value domains.",
+    },
     "1-1-10-11": {
         "message": "At op {op}: The validation and imbalance operands must have the same "
         "identifiers.",

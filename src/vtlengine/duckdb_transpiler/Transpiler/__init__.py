@@ -80,7 +80,13 @@ from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, V
 from vtlengine.Operators.Clause import Pivot
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.Operators.Time import Period_indicator
-from vtlengine.Operators.Validation import bind_value_domains, error_level_text, error_level_type
+from vtlengine.Operators.Validation import (
+    bind_value_domains,
+    error_domains,
+    error_level_text,
+    error_level_type,
+    error_value,
+)
 from vtlengine.Utils._recursion import recursion_headroom
 from vtlengine.ViralPropagation import apply_viral_return_types, get_current_registry
 from vtlengine.ViralPropagation.sql import (
@@ -5234,6 +5240,11 @@ FROM (
 
         ec_sql = self._error_code_sql(rule.erCode)
         el_sql = self._error_level_sql(rule)
+        domains = error_domains(self.value_domains)
+        ec_null = self._error_code_sql(None)
+        el_null = (
+            "NULL" if domains["errorlevel"] is None else self._error_code_sql(None, "errorlevel")
+        )
 
         q_rc = quote_name(rule_comp)
         q_m = quote_name(measure)
@@ -5247,8 +5258,8 @@ FROM (
         outer_cols.append(f"{_hr_literal(rule_name)} AS {quote_name('ruleid')}")
 
         for val, null_expr, col in (
-            (ec_sql, "CAST(NULL AS VARCHAR)", "errorcode"),
-            (el_sql, "NULL", "errorlevel"),
+            (ec_sql, ec_null, "errorcode"),
+            (el_sql, el_null, "errorlevel"),
         ):
             if output == "invalid":
                 outer_cols.append(f"{val} AS {quote_name(col)}")
@@ -5640,18 +5651,27 @@ FROM (
         return [rule.erLevel for rule in info["rules"]] if info else []
 
     def _error_level_sql(self, rule: Any) -> str:
-        """The errorlevel of a rule, written as text when the levels of its ruleset mix types."""
-        for info in (*self._dprs.values(), *self._hrs.values()):
-            if any(r is rule for r in info["rules"]):
-                levels = [r.erLevel for r in info["rules"]]
-                if rule.erLevel is not None and error_level_type(levels) is String:
-                    return self._error_code_sql(error_level_text(rule.erLevel))
-                break
-        return self._error_code_sql(rule.erLevel)
+        """The errorlevel of a rule, written as text when the levels of its ruleset mix types
+        and errorlevel_vd is not given."""
+        level = rule.erLevel
+        if level is not None and error_domains(self.value_domains)["errorlevel"] is None:
+            for info in (*self._dprs.values(), *self._hrs.values()):
+                if any(r is rule for r in info["rules"]):
+                    if error_level_type([r.erLevel for r in info["rules"]]) is String:
+                        level = error_level_text(level)
+                    break
+        return self._error_code_sql(level, "errorlevel")
 
-    def _error_code_sql(self, value: Any) -> str:
-        """Convert an errorcode value to a SQL literal."""
-        return "CAST(NULL AS VARCHAR)" if value is None else self._to_sql_literal(value=value)
+    def _error_code_sql(self, value: Any, element: str = "errorcode") -> str:
+        """Convert an errorcode or errorlevel value (element) to a SQL literal, of the basic type
+        of errorcode_vd or errorlevel_vd when it is given."""
+        value_domain = error_domains(self.value_domains)[element]
+        if value_domain is None:
+            return "CAST(NULL AS VARCHAR)" if value is None else self._to_sql_literal(value=value)
+        type_name = value_domain.type.__name__
+        if value is None:
+            return f"CAST(NULL AS {get_duckdb_type(type_name)})"
+        return self._to_sql_literal(error_value(element, value, value_domain, ""), type_name)
 
     def _check_shared_join(self, node: AST.Validation) -> Optional[str]:
         """One join computing both the comparison and the imbalance of a ``check``.
@@ -5702,7 +5722,7 @@ FROM (
                 validation_sql = self.visit(node.validation)
 
         error_code = self._error_code_sql(node.error_code)
-        error_level = self._error_code_sql(node.error_level)
+        error_level = self._error_code_sql(node.error_level, "errorlevel")
 
         ds = self._get_dataset_structure(node.validation)
         if ds is None:
