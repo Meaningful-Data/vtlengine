@@ -34,11 +34,13 @@ _HAVING: Final = (ANY_SCALAR, "boolean")  # and the havingCondition: component<b
 _FILTER: Final = (ANY_SCALAR, "boolean")  # filterCondition: component<boolean>
 _SUB: Final = (ANY_SCALAR,)  # value: scalar
 
-# vtlengine pivots only an Identifier defined on a value domain (#1234), whose values give the
-# Measures of the result; the page types Id_2 String.
-_PIVOT_DOMAIN: Final = (
-    "Id_2 is defined on the value domain VD_1 of its values A, B and C, where the page types it "
-    "String: vtlengine pivots only an Identifier defined on a value domain (1-1-6-18 otherwise)"
+# The page takes the Measures of the result from the data ("each distinct value of identifier in
+# op") and types Id_2 String, but the structure must be known without the data: the Measures are
+# the values of the value domain of the Identifier (#1234; Javier, 2026-11-12).
+_PIVOT_ERRATUM: Final = (
+    "the Measures come from the data (each distinct value of identifier) and ds_1.json types Id_2 "
+    "String, but they must be known without the data: Id_2 is defined on the value domain VD_1 "
+    "of A, B and C, whose values give the Measures"
 )
 
 
@@ -228,7 +230,7 @@ CHAPTER = Chapter(
                     "basic",
                     "DS[pivot Id, Me]",
                     _OPERAND,
-                    manual("ex_1", adaptation=_PIVOT_DOMAIN),
+                    manual("ex_1", erratum=_PIVOT_ERRATUM),
                     authored("missing_combination_is_null"),
                 ),
             ),

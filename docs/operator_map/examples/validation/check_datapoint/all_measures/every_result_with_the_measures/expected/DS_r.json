@@ -9,7 +9,7 @@
         {"name": "Me_1", "type": "Number", "role": "Measure"},
         {"name": "bool_var", "type": "Boolean", "role": "Measure"},
         {"name": "errorcode", "type": "String", "role": "Measure"},
-        {"name": "errorlevel", "type": ["Integer", "Number"], "role": "Measure"}
+        {"name": "errorlevel", "type": "Integer", "role": "Measure"}
       ]
     }
   ]

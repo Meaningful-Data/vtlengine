@@ -1,3 +1,3 @@
 :Tests: ``A = B + C - D``, code items combined with ``+`` and ``-``.
 :Manual: `define hierarchical ruleset <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/hierarchical_rulesets.html>`__: the relations "allow to obtain the measure values of the compound Code Items ... by summing or subtracting the measure values relevant to the component Code Items".
-:Expected: 6 against 5 + 3 - 2 = 6: ``bool_var`` true, ``imbalance`` 0 and ``ruleid`` 1. ``errorcode`` and ``errorlevel`` are null, ``imbalance`` is a Number like ``Me_1``, ``ruleid`` and ``errorcode`` Strings, and ``errorlevel`` Integer or Number, as the manual does not fix its type.
+:Expected: 6 against 5 + 3 - 2 = 6: ``bool_var`` true, ``imbalance`` 0 and ``ruleid`` 1. ``errorcode`` and ``errorlevel`` are null, ``imbalance`` is a Number like ``Me_1``, ``ruleid`` and ``errorcode`` Strings, and ``errorlevel`` Integer, the manual's default without errorlevel_vd (#1256).
