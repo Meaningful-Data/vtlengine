@@ -34,7 +34,7 @@ Aggregate and Analytic operators
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Aggregate and Analytic operators"]:::block
        aggregate__aggregate_invocation["Aggregate invocation · group by<br/>🟢4"]:::ok
-       aggregate__analytic_invocation["Analytic invocation · over<br/>🟢11"]:::ok
+       aggregate__analytic_invocation["Analytic invocation · over 📌<br/>🟢11"]:::ok
        aggregate__count["Counting the number of data points · count 📌<br/>🟢9"]:::ok
        aggregate__min["Minimum value · min<br/>🟢8"]:::ok
        aggregate__max["Maximum value · max<br/>🟢8"]:::ok

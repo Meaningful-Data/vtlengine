@@ -36,7 +36,7 @@ Analytic invocation · ``over``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Analytic invocation · over<br/>🟢11"]:::ok
+       O["Analytic invocation · over 📌<br/>🟢11"]:::ok
        subgraph G_ds["Dataset"]
            direction LR
            v_window_data_points["an(DS over (order by Id data points between n preceding and n following))"]:::ok
@@ -46,7 +46,7 @@ Analytic invocation · ``over``
            direction LR
            v_partition_by["an(Me over (partition by Id))"]:::ok
            v_partition_except["an(Me over (partition except Id))"]:::ok
-           v_partition_except_all["an(over (partition except all order by Id))"]:::ok
+           v_partition_except_all["an(over (partition except all order by Id)) 📌"]:::ok
            v_order_asc["an(over (partition by Id order by Me asc))"]:::ok
            v_order_desc["an(over (partition by Id order by Me desc))"]:::ok
            v_window_range["an(Me over (partition by Id order by Me range between n preceding and n following))"]:::ok
@@ -230,8 +230,7 @@ an(over (partition except all order by Id)) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partition-except-all-manual-ex-2"><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-1-10</code> · DuckDB 🛡 <code>1-1-1-10</code></span></summary>
-   <p class="om-detail">SemanticError 1-1-1-10: Component id_1 not found in Dataset DS_1. Please check transformation with output Dataset DS_r</p>
+   <details class="om-example" id="ex-partition-except-all-manual-ex-2"><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/notes.rst
 
@@ -242,11 +241,12 @@ an(over (partition except all order by Id)) 🟢 · any scalar → any type
 .. raw:: html
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Id_3</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>2010</td><td>E</td><td>XX</td><td>5</td></tr><tr><td>2010</td><td>B</td><td>XX</td><td>-3</td></tr><tr><td>2010</td><td>R</td><td>XX</td><td>9</td></tr><tr><td>2010</td><td>E</td><td>YY</td><td>13</td></tr><tr><td>2011</td><td>E</td><td>XX</td><td>11</td></tr><tr><td>2011</td><td>B</td><td>ZZ</td><td>7</td></tr><tr><td>2011</td><td>E</td><td>YY</td><td>-1</td></tr><tr><td>2011</td><td>F</td><td>XX</td><td>0</td></tr><tr><td>2012</td><td>L</td><td>ZZ</td><td>-2</td></tr><tr><td>2012</td><td>E</td><td>YY</td><td>3</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Id_3</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>2010</td><td>E</td><td>XX</td><td>5</td><td>1</td></tr><tr><td>2010</td><td>B</td><td>XX</td><td>-3</td><td>1</td></tr><tr><td>2010</td><td>R</td><td>XX</td><td>9</td><td>1</td></tr><tr><td>2010</td><td>E</td><td>YY</td><td>13</td><td>1</td></tr><tr><td>2011</td><td>E</td><td>XX</td><td>11</td><td>5</td></tr><tr><td>2011</td><td>B</td><td>ZZ</td><td>7</td><td>5</td></tr><tr><td>2011</td><td>F</td><td>XX</td><td>0</td><td>5</td></tr><tr><td>2011</td><td>E</td><td>YY</td><td>-1</td><td>5</td></tr><tr><td>2012</td><td>E</td><td>YY</td><td>3</td><td>9</td></tr><tr><td>2012</td><td>L</td><td>ZZ</td><td>-2</td><td>9</td></tr></tbody></table>
+
+Expected error ``1-1-1-10``: Component {comp\_name} not found in Dataset {dataset\_name}.
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/script.vtl">script.vtl</a> · <a href="../examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/script.vtl">script.vtl</a> · <a href="../examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/expected/error.json">expected/error.json</a> · <a href="../examples/aggregate/analytic_invocation/partition_except_all/manual_ex_2/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html

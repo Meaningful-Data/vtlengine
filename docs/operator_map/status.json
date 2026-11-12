@@ -130,19 +130,19 @@
     },
     "aggregate/analytic_invocation/partition_except_all/manual_ex_2": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-10: Component id_1 not found in Dataset DS_1. Please check transformation with output Dataset DS_r",
+        "detail": "",
         "error_code": "1-1-1-10",
         "error_type": "SemanticError",
-        "outcome": "error"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-10: Component id_1 not found in Dataset DS_1. Please check transformation with output Dataset DS_r",
+        "detail": "",
         "error_code": "1-1-1-10",
         "error_type": "SemanticError",
-        "outcome": "error"
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "aggregate/analytic_invocation/partition_except_all/whole_data_set_one_partition": {
       "duckdb": {
@@ -15318,7 +15318,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "e86fa8cb",
+    "vtlengine_commit": "6a9e688d",
     "vtlengine_version": "1.9.7"
   }
 }

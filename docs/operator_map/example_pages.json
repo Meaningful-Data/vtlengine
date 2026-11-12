@@ -65,10 +65,10 @@
   },
   "aggregate/analytic_invocation/partition_except_all/manual_ex_2": {
     "anchor": "ex-partition-except-all-manual-ex-2",
-    "duckdb": "🛡 1-1-1-10",
+    "duckdb": "✅",
     "operator_page": "aggregate/analytic_invocation.html",
-    "pandas": "🛡 1-1-1-10",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Manual example 2"
   },
   "aggregate/analytic_invocation/partition_except_all/whole_data_set_one_partition": {
