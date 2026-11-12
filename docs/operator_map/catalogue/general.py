@@ -87,9 +87,9 @@ _OPTIONAL_MASK: Final[tuple[tuple[str, str, str, str], ...]] = (
 
 
 # The text of a cast follows the pandas engine (team decision #1254), where the manual writes
-# another one: ``True``/``False`` for a boolean, and the period code for a time_period.
+# another one: the period code for a time_period. A boolean gives the manual's ``true`` and
+# ``false`` since #1314.
 _DECIDED: Final[dict[tuple[str, str, str], int]] = {
-    ("boolean", "string", "true_and_false"): 1254,
     ("time_period", "string", "start_and_end_dates"): 1254,
 }
 

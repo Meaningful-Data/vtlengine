@@ -1,4 +1,3 @@
 :Tests: ``using Id_1, nvl(Id_2, "X")``: ``DS_1`` has ``Id_1`` and ``DS_2`` has ``Id_1`` and ``Id_2``, so "the using clause is mandatory", with a rule for ``Id_2``.
 :Manual: `Left Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Left%20Join/index.html>`__: when a key is not found, "the Identifiers of the joined operand that were not used as join keys assume the value specified in the relevant nvl() clause, while Measures coming from that data set take the null value".
 :Expected: ``(1, A, 10, 1)`` and ``(2, X, 20, null)`` as ``Id_1``, ``Id_2``, ``Me_1``, ``Me_2``: ``Id_1`` = 2 is not in ``DS_2``, and ``Id_1`` = 3 of ``DS_2`` is not kept.
-:Finding: both engines refuse with SemanticError ``1-1-13-4`` "Using clause, using=['Id_1'], does not define all the Identifiers, of non reference Dataset DS_2".

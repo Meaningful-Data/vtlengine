@@ -1,4 +1,3 @@
 :Tests: a natural join of ``DS_1`` (``Id_1``, ``Id_2``) and ``DS_2`` (``Id_2``, ``Id_3``): they share ``Id_2``, and neither has all the identifiers of the other.
 :Manual: `Inner Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html>`__: inner_join requires "that there exists a permutation of the join operands such that each operand has at least one identifier in common with any of the operands preceding it", and joins on "all the identifiers appearing in more than one dataset".
 :Expected: the key is ``Id_2``. ``A`` pairs the data point of ``DS_1`` with both of ``DS_2``, so the result has ``Id_1``, ``Id_2``, ``Id_3`` = ``(1,A,X)`` and ``(1,A,Y)``; ``B`` and ``C`` have no match.
-:Finding: both engines refuse with SemanticError ``1-1-13-11`` "Invalid subcase A, DS_1 should be a superset but Id_3 not found": they ask one operand to have every identifier of the others.

@@ -1,4 +1,3 @@
 :Tests: ``using Id_1, nvl(Id_2, "X")``: ``DS_1`` has ``Id_1`` and ``DS_2`` has ``Id_1`` and ``Id_2``, so the using clause is mandatory, with a rule for ``Id_2``.
 :Manual: `Full Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Full%20Join/index.html>`__: "For every other identifier not included in the using clause, a nvl() expression must be specified", and for a key that is not found "the missing Identifiers assume the value specified in the relevant nvl() clause, while the Measures take the null value".
 :Expected: ``(1, A, 10, 1)``, ``(2, X, 20, null)`` and ``(3, B, null, 3)`` as ``Id_1``, ``Id_2``, ``Me_1``, ``Me_2``: ``Id_1`` = 2 is in ``DS_1`` only, and ``Id_1`` = 3 is added from ``DS_2`` with its own ``Id_2``.
-:Finding: both engines refuse any ``using`` clause on ``full_join`` with SemanticError ``1-1-13-8``, "No available using clause".

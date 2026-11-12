@@ -17,17 +17,11 @@
         },
         {
           "name": "At_1",
-          "type": "String",
+          "type": "CL_CONF",
           "role": "Viral Attribute",
           "nullable": true
         }
       ]
-    }
-  ],
-  "variables": [
-    {
-      "name": "At_1",
-      "domain": "CL_CONF"
     }
   ]
 }

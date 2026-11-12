@@ -1,5 +1,4 @@
 :Tests: three statements: the last joins ``DS_4`` with two aliased expressions, ``IBSC`` and ``IBSD``, renamed so that ``Id_1`` is their only common identifier.
 :Manual: `Inner Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html>`__, Example 5, with the page's result: "The contents of inner_join are ideally determined stepwise".
 :Expected: five data points on the key ``Id_1``, with the ``Me_3`` of ``IBSD`` (null, and 50 for ``Id_1`` = 3); only ``DS_r`` is compared.
-:Finding: both engines refuse the first statement with SemanticError ``1-1-13-11`` "Invalid subcase A, DS_5 should be a superset but Id_1 not found".
 :Erratum: ``Me_3`` is in both ``IBSC`` and ``IBSD``, and stripping the prefixes would give two ``Me_3``, an error by the Behaviour section, so the script adds ``drop IBSC#Me_3`` (null everywhere); ``ds_5.json`` declares ``Me_2`` an Identifier, but the result has ``Me_21`` and ``Me_22`` as Measures, so it is loaded as a Measure. The input files also name their data set ``DS_r``, a slip with no effect: they are loaded as ``DS_5`` and ``DS_6``.
