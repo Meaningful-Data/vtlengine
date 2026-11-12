@@ -39,7 +39,7 @@ class Membership(Binary):
         if len(left_operand.get_identifiers()) == 0:
             return Scalar(name=dataset_name, data_type=component.data_type, value=None)
 
-        promote_to_measure = component.role in (Role.IDENTIFIER, Role.ATTRIBUTE)
+        promote_to_measure = component.role != Role.MEASURE
         result_components = {
             name: comp
             for name, comp in left_operand.components.items()
@@ -88,7 +88,7 @@ class Membership(Binary):
 
         result_dataset = result
         promoted_name = None
-        if component.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
+        if component.role != Role.MEASURE:
             promoted_name = COMP_NAME_MAPPING[component.data_type]
         result_data = pd.DataFrame()
         for name in result_dataset.components:

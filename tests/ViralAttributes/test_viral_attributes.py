@@ -47,7 +47,7 @@ execution_codes = [
     ("11-1", 1),  # measure target: Me_1 kept + all three virals copied per row
     ("11-2", 1),  # identifier target: promoted to int_var, virals kept
     ("11-3", 1),  # plain-attribute target: promoted to str_var (At_1 gone), virals kept
-    ("11-4", 1),  # viral target: stays viral under its own name, no measure added
+    ("11-4", 1),  # viral target: promoted to str_var and kept as viral (#1257)
     ("11-5", 1),  # aggregate-max rule defined: still copied per row, NOT collapsed (#906)
     ("11-6", 1),  # unary over membership: abs(DS_1#Me_1)
     ("11-7", 1),  # calc over a viral-target membership (regression: BinderException)
