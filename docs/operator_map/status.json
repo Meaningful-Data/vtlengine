@@ -7410,35 +7410,35 @@
     },
     "general/membership/viral_attribute/manual_ex_6": {
       "duckdb": {
-        "detail": "missing components: str_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing components: str_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "general/membership/viral_attribute/manual_ex_8": {
       "duckdb": {
-        "detail": "missing components: str_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "missing components: str_var",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "general/non_persistent_assignment/ds/boolean_measure": {
       "duckdb": {
@@ -15318,7 +15318,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "6a9e688d",
+    "vtlengine_commit": "897aa151",
     "vtlengine_version": "1.9.7"
   }
 }

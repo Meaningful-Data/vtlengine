@@ -22,11 +22,11 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🔴
      - 🔵
    * - :doc:`General purpose operators <general/index>`
-     - 🟡
+     - 🟢
      - 7
      - 62
-     - 61
-     - 1
+     - 62
+     - 0
      - 0
      - 0
      - 0
@@ -139,11 +139,11 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 0
      - 0
    * - **Total**
-     - 🟡
+     - 🟢
      - 111
      - 700
-     - 699
-     - 1
+     - 700
+     - 0
      - 0
      - 0
      - 0

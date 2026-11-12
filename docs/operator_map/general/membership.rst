@@ -4,7 +4,7 @@ Membership · ``#``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 4 of 5 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Membership/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 5 of 5 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Membership/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -32,11 +32,11 @@ Membership · ``#``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Membership · #35; 📌<br/>🟢4 🟡1"]:::partial
+       O["Membership · #35; 📌<br/>🟢5"]:::ok
        v_identifier["DS#35;Id 📌"]:::ok
        v_measure["DS#35;Me 📌"]:::ok
        v_attribute["DS#35;At"]:::ok
-       v_viral_attribute["DS#35;At (viral) 📌"]:::partial
+       v_viral_attribute["DS#35;At (viral) 📌"]:::ok
        v_on_aggregate["agg(DS)#35;Me"]:::ok
        v_identifier --- O
        v_measure --- O
@@ -219,13 +219,12 @@ DS#At 🟢 · any scalar → any type
 
    <span class="om-anchor" id="form-viral-attribute"></span>
 
-DS#At (viral) 🟡 · any scalar → any type
+DS#At (viral) 🟢 · any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-viral-attribute-manual-ex-6"><summary><span class="om-ex-title">Manual example 6</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">missing components: str_var</p>
+   <details class="om-example" id="ex-viral-attribute-manual-ex-6"><summary><span class="om-ex-title">Manual example 6</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/membership/viral_attribute/manual_ex_6/notes.rst
 
@@ -245,8 +244,7 @@ DS#At (viral) 🟡 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-viral-attribute-manual-ex-8"><summary><span class="om-ex-title">Manual example 8</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">missing components: str_var</p>
+   <details class="om-example" id="ex-viral-attribute-manual-ex-8"><summary><span class="om-ex-title">Manual example 8</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/general/membership/viral_attribute/manual_ex_8/notes.rst
 

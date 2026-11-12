@@ -3705,18 +3705,18 @@
   },
   "general/membership/viral_attribute/manual_ex_6": {
     "anchor": "ex-viral-attribute-manual-ex-6",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "general/membership.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Manual example 6"
   },
   "general/membership/viral_attribute/manual_ex_8": {
     "anchor": "ex-viral-attribute-manual-ex-8",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "general/membership.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Manual example 8"
   },
   "general/non_persistent_assignment/ds/boolean_measure": {

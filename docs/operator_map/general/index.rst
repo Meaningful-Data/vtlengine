@@ -4,7 +4,7 @@ General purpose operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 6 of 7 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 7 of 7 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -36,7 +36,7 @@ General purpose operators
        general__parentheses["Parentheses · ( )<br/>🟢3"]:::ok
        general__persistent_assignment["Persistent assignment · #60;-<br/>🟢3"]:::ok
        general__non_persistent_assignment["Non-persistent assignment · #58;#61;<br/>🟢2"]:::ok
-       general__membership["Membership · #35; 📌<br/>🟢4 🟡1"]:::partial
+       general__membership["Membership · #35; 📌<br/>🟢5"]:::ok
        general__udo_call["User-defined operator call · name( )<br/>🟢4"]:::ok
        general__eval["Evaluation of an external routine · eval<br/>🟢4"]:::ok
        general__cast["Type conversion · cast 📌<br/>🟢41"]:::ok
@@ -78,7 +78,7 @@ General purpose operators
      - 🟢
      - 2
    * - :doc:`Membership <membership>` ``#``
-     - 🟡
+     - 🟢
      - 5
    * - :doc:`User-defined operator call <udo_call>` ``name( )``
      - 🟢
@@ -211,26 +211,7 @@ General purpose operators
 
 .. rubric:: Forms that are not green
 
-Every form that is neither 🟢 nor 🛡️, with the example that shows its status: the first that is neither, or the first that diverges for a 🔵 form.
-
-.. list-table::
-   :header-rows: 1
-   :widths: auto
-
-   * - Operator
-     - Form
-     - Status
-     - Example
-     - pandas
-     - DuckDB
-     - Detail
-   * - :doc:`Membership <membership>`
-     - `DS#At (viral) <membership.html#form-viral-attribute>`__
-     - 🟡
-     - `Manual example 6 <membership.html#ex-viral-attribute-manual-ex-6>`__
-     - ❌
-     - ❌
-     - missing components: str\_var
+Every form is 🟢 or 🛡️.
 
 .. toctree::
    :maxdepth: 1
