@@ -4,7 +4,7 @@ General purpose operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip diverge">🔵 5 of 7 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip partial">🟡 5 of 7 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -39,7 +39,7 @@ General purpose operators
        general__membership["Membership · #35;<br/>🟢4 🟡1"]:::partial
        general__udo_call["User-defined operator call · name( )<br/>🟢4"]:::ok
        general__eval["Evaluation of an external routine · eval<br/>🟢4"]:::ok
-       general__cast["Type conversion · cast 📌<br/>🟢33 🟡6 🔵2"]:::diverge
+       general__cast["Type conversion · cast 📌<br/>🟢39 🟡2"]:::partial
        general__parentheses --- B
        general__persistent_assignment --- B
        general__non_persistent_assignment --- B
@@ -87,7 +87,7 @@ General purpose operators
      - 🟢
      - 4
    * - :doc:`Type conversion <cast>` ``cast``
-     - 🔵
+     - 🟡
      - 41
 
 .. rubric:: Types
@@ -232,20 +232,6 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
      - ❌
      - missing components: str\_var
    * - :doc:`Type conversion <cast>`
-     - `cast(comp<number>, string, mask) <cast.html#form-number-to-string-mask>`__
-     - 🟡
-     - `Exponent mask <cast.html#ex-number-to-string-mask-exponent-mask>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: the exponent E in the mask \"DD.DDDEEEE\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<time>, string, mask) <cast.html#form-time-to-string-mask>`__
-     - 🔵
-     - `Decimals of second <cast.html#ex-time-to-string-mask-decimals-of-second>`__
-     - ✅
-     - 🛡 0-3-1-6
-     - DuckDB: DataLoadError 0-3-1-6: On Dataset DS\_1 loading: not possible to cast column Me\_1 to Time. Error found: \"Invalid format: \'2018-04-05T12:30:15.250/2018-04-05T12:30:16.125\'\" Please check loaded …
-   * - :doc:`Type conversion <cast>`
      - `cast(comp<date>, string, mask) <cast.html#form-date-to-string-mask>`__
      - 🟡
      - `Day and month names <cast.html#ex-date-to-string-mask-day-and-month-names>`__
@@ -253,40 +239,12 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
      - 🛡 1-3-13
      - SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask \"Day3 DD MONTH YYYY\". Please check transformation with output Dataset DS\_r
    * - :doc:`Type conversion <cast>`
-     - `cast(comp<duration>, string, mask) <cast.html#form-duration-to-string-mask>`__
-     - 🟡
-     - `Iso weeks <cast.html#ex-duration-to-string-mask-iso-weeks>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: an ISO composite duration in the mask \"\\PWWW\\W\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<string>, number, mask) <cast.html#form-string-to-number-mask>`__
-     - 🟡
-     - `Exponent mask <cast.html#ex-string-to-number-mask-exponent-mask>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: the exponent E in the mask \"DD.DDDEEEE\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
      - `cast(comp<string>, time, mask) <cast.html#form-string-to-time-mask>`__
      - 🟡
      - `Start and end with times <cast.html#ex-string-to-time-mask-start-and-end-with-times>`__
      - ❌
      - ❌
      - row Id\_1=1: Me\_2 expected 2015-03-03T09:30:45/2018-04-05T12:30:15 got 2015-03-03 09:30:45/2018-04-05 12:30:15
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<string>, date, mask) <cast.html#form-string-to-date-mask>`__
-     - 🔵
-     - `Decimals of second <cast.html#ex-string-to-date-mask-decimals-of-second>`__
-     - ✅
-     - ❌
-     - DuckDB: row Id\_1=1: Me\_2 expected 2018-04-05T12:30:15.250 got 2018-04-05T12:30:15.250000; row Id\_1=2: Me\_2 expected 2018-04-05T12:30:15.050 got 2018-04-05T12:30:15.050000
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<string>, duration, mask) <cast.html#form-string-to-duration-mask>`__
-     - 🟡
-     - `Iso weeks <cast.html#ex-string-to-duration-mask-iso-weeks>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: an ISO composite duration in the mask \"\\PWWW\\W\". Please check transformation with output Dataset DS\_r
 
 .. toctree::
    :maxdepth: 1
