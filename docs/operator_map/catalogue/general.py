@@ -218,10 +218,11 @@ _TIME_MASKS: Final[_MaskExamples] = {
     ),
 }
 
-# The time formatting mask of a time_period: the masks of the cast page's Example 9 and of the
-# time_period examples of the section, and its general rules (zero padding, braces, other and
-# escaped characters, semesters and weeks). ``dash_not_in_mask`` expects the error of a string
-# that the mask does not describe, which the conversion without a mask reads.
+# The time formatting mask of a time_period: the masks of the cast page's Example 9 that add a
+# kind (all but "YYYY-\QQ"), those of the time_period examples of the section, and its general
+# rules (zero padding, braces, other and escaped characters, semesters and weeks).
+# ``dash_not_in_mask`` expects the error of a string that the mask does not describe, which the
+# conversion without a mask reads.
 _TIME_PERIOD_MASKS: Final[_MaskExamples] = {
     ("time_period", "string"): (
         "monthly_period_mask",
