@@ -1,3 +1,4 @@
 :Tests: ``cast(Me_1, string, "Day3 DD MONTH YYYY")`` on a Date measure: the name of the day in three characters with a capital initial, and the name of the month in capitals.
 :Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "An optional number following the special word denote the maximum length, for example DAY3 is a textual representation that uses three characters (MON, TUE …)", "for example Day3 denotes the values Mon, Tue …", and "MONTH textual representation of the month (e.g., JANUARY for January)".
 :Expected: ``Thu 05 APRIL 2018`` and ``Fri 31 DECEMBER 2021``, with the English names of the manual.
+:Finding: Both engines refuse the mask with SemanticError ``1-3-13``, "Unsupported VTL construct: the textual word Day in the mask "Day3 DD MONTH YYYY".".
