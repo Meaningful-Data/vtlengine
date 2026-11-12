@@ -189,19 +189,19 @@ class Cast(Operator.Unary):
         mask: Optional[str] = None,
     ) -> Scalar:
         """This method validates the operation when the operand is a Scalar. A scalar cast to
-        a value domain keeps its basic type, as no scalar is defined on a value domain."""
+        a value domain is defined on it, with its basic type as data type."""
         from_type, to_type = operand.data_type, cls.target_type(target)
+        value_domain = cls.target_domain(target)
         cls.check_cast(operand, target, mask)
         if operand.value is not None and not pd.isna(operand.value):
             try:
                 value = cls.cast_value(operand.value, from_type, to_type, mask)
-                value_domain = cls.target_domain(target)
                 if value_domain is not None:
                     Operator.check_values(pd.Series([value]), value_domain, cls.op)
             except (RunTimeError, InputValidationException) as error:
                 types = {
-                    "type_1": SCALAR_TYPES_CLASS_REVERSE[from_type],
-                    "type_2": component_type_name(to_type, cls.target_domain(target)),
+                    "type_1": component_type_name(from_type, operand.value_domain),
+                    "type_2": component_type_name(to_type, value_domain),
                 }
                 # A literal is part of the script, a scalar value is data (issue #1192)
                 if operand.literal:
@@ -209,7 +209,13 @@ class Cast(Operator.Unary):
                 if isinstance(error, RunTimeError):
                     raise
                 raise RunTimeError("2-1-5-1", value=operand.value, **types) from error
-        return Scalar(name=operand.name, data_type=to_type, value=None, nullable=operand.nullable)
+        return Scalar(
+            name=operand.name,
+            data_type=to_type,
+            value=None,
+            nullable=operand.nullable,
+            value_domain=value_domain,
+        )
 
     @classmethod
     def cast_value(
@@ -275,14 +281,9 @@ class Cast(Operator.Unary):
     ) -> Scalar:
         from_type, to_type = operand.data_type, cls.target_type(target)
         result_scalar = cls.scalar_validation(operand, target, mask)
-        if pd.isna(operand.value):
-            return Scalar(
-                name=result_scalar.name, data_type=to_type, value=None, nullable=operand.nullable
-            )
-        casted_data = cls.cast_value(operand.value, from_type, to_type, mask)
-        return Scalar(
-            name=result_scalar.name, data_type=to_type, value=casted_data, nullable=operand.nullable
-        )
+        if not pd.isna(operand.value):
+            result_scalar.value = cls.cast_value(operand.value, from_type, to_type, mask)
+        return result_scalar
 
     @classmethod
     def component_evaluation(  # type: ignore[override]
