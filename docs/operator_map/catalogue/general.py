@@ -17,7 +17,7 @@ level (``DS_1[calc Me_2 := cast(Me_1, <type>)]``): the explicit ones, the implic
 as an explicit cast, and each conversion with an optional mask both without and with a mask. The
 masks follow the manual's section "Type Conversion and Formatting Mask": each conversion with a
 mask has the mask of the manual's examples, with inputs whose result only the mask explains
-where a value can show it, and ten more examples give the most relevant other kinds of mask
+where a value can show it, and a few more examples give the most relevant other kinds of mask
 (``_MASKED``). ``string_to_integer`` also has a dataset and a scalar variant, and two
 variants cast to a value domain (``value_domains/``): from a string, and from another value
 domain on the same basic type.
@@ -91,9 +91,8 @@ _OPTIONAL_MASK: Final[tuple[tuple[str, str, str], ...]] = (
 # The examples of each conversion with a mask, by its source and target types: the mask of the
 # manual's examples, and the most relevant other kinds of mask of the section "Type Conversion
 # and Formatting Mask": the decimal comma, the day before the month, optional digits, a date
-# with its time of day, the names of the day and the month, a time with times of day, the
-# quarter of the cast page's Example 9, the generic time_period mask, a number of periods, and a
-# string that the mask does not match.
+# with its time of day, the quarter of the cast page's Example 9, the generic time_period mask,
+# a number of periods, and a string that the mask does not match.
 _MASKED: Final[dict[tuple[str, str], tuple[str, ...]]] = {
     ("integer", "string"): ("two_digit_mask",),
     ("string", "integer"): ("two_digit_mask",),
@@ -103,11 +102,10 @@ _MASKED: Final[dict[tuple[str, str], tuple[str, ...]]] = {
         "year_month_day_mask",
         "optional_digits",
         "date_and_time_with_separators",
-        "day_and_month_names",
     ),
     ("string", "date"): ("year_month_day_mask", "day_month_year_order", "string_not_matching_mask"),
     ("time", "string"): ("start_and_end_mask",),
-    ("string", "time"): ("start_and_end_mask", "start_and_end_with_times"),
+    ("string", "time"): ("start_and_end_mask",),
     ("time_period", "string"): ("monthly_period_mask",),
     ("string", "time_period"): (
         "quarter_mask",
