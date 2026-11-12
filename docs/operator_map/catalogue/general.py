@@ -16,10 +16,12 @@ parameter (``$1``, ``$2``...).
 level (``DS_1[calc Me_2 := cast(Me_1, <type>)]``): the explicit ones, the implicit ones written
 as an explicit cast, and each conversion with an optional mask both without and with a mask. The
 masks follow the manual's section "Type Conversion and Formatting Mask": a conversion with a mask
-has an example for each kind of mask that the section describes for its types, with inputs whose
-result only the mask explains, and the strings that a mask does not match. ``string_to_integer``
-also has a dataset and a scalar variant, and two variants cast to a value domain
-(``value_domains/``): from a string, and from another value domain on the same basic type.
+has an example of each kind of mask that the section defines for its types, with inputs whose
+result only the mask explains, or strings that the mask does not match where a string that it
+matches gives what the conversion without a mask gives; the kinds whose result the section
+leaves open have none. ``string_to_integer`` also has a dataset and a scalar variant, and two
+variants cast to a value domain (``value_domains/``): from a string, and from another value
+domain on the same basic type.
 
 Every form declares the types it takes and gives. A conversion takes its source type, and the
 string of its mask when it has one, and gives its target type; a cast to a value domain takes
@@ -94,8 +96,9 @@ _MaskExamples = dict[tuple[str, str], tuple[str, ...]]
 # The numbers formatting mask: ``D``, ``E``, ``*``, ``+`` and the dot or comma separator, in the
 # manual's order, then strings that the mask does not match. An integer has no decimal part, so
 # its masks have no separator, and the exponent is shown on numbers. ``D*`` and ``D+`` may be
-# read as a ``D`` and then digits, or as a repeated ``D``, which differ on a part of one digit:
-# the number examples have no such part, and the integer masks put ``*`` and ``+`` first.
+# read as a ``D`` and then digits, or as a repeated ``D``, which differ on a part with no digit
+# for ``D*`` and on a part of one digit for ``D+``: the number examples have no such part, and
+# the integer masks put ``*`` and ``+`` first.
 _NUMBER_MASKS: Final[_MaskExamples] = {
     ("integer", "string"): (
         "two_digit_mask",
@@ -107,6 +110,7 @@ _NUMBER_MASKS: Final[_MaskExamples] = {
         "too_few_digits",
         "too_many_digits",
         "no_digit_for_the_plus",
+        "no_two_digits_after_the_star",
     ),
     ("number", "string"): (
         "decimal_mask",
