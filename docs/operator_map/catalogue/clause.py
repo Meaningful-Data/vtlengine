@@ -34,6 +34,13 @@ _HAVING: Final = (ANY_SCALAR, "boolean")  # and the havingCondition: component<b
 _FILTER: Final = (ANY_SCALAR, "boolean")  # filterCondition: component<boolean>
 _SUB: Final = (ANY_SCALAR,)  # value: scalar
 
+# vtlengine pivots only an Identifier defined on a value domain (#1234), whose values give the
+# Measures of the result; the page types Id_2 String.
+_PIVOT_DOMAIN: Final = (
+    "Id_2 is defined on the value domain VD_1 of its values A, B and C, where the page types it "
+    "String: vtlengine pivots only an Identifier defined on a value domain (1-1-6-18 otherwise)"
+)
+
 
 def _form(variant_id: str, label: str, takes: tuple[str, ...], *examples: Example) -> Variant:
     """A form of a clause: it takes ``takes`` and gives a data set whose types follow its input."""
@@ -221,7 +228,7 @@ CHAPTER = Chapter(
                     "basic",
                     "DS[pivot Id, Me]",
                     _OPERAND,
-                    manual("ex_1"),
+                    manual("ex_1", adaptation=_PIVOT_DOMAIN),
                     authored("missing_combination_is_null"),
                 ),
             ),
