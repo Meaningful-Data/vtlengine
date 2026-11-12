@@ -739,9 +739,11 @@ def test_the_example_goes_to_vtlengine_as_it_is(
     for engine in ENGINES:
         # No value domains and no input scalars: none are passed.
         assert child._run_once(load_example(plain), engine) == []
-        assert calls.pop() == vtlengine_call(plain, engine)
+        call = calls.pop()
+        assert call == vtlengine_call(plain, engine)
         assert child._run_once(load_example(full), engine) == []
-        assert calls.pop() == vtlengine_call(
+        call = calls.pop()
+        assert call == vtlengine_call(
             full,
             engine,
             value_domains=[full / "value_domains/vd.json"],
@@ -750,9 +752,12 @@ def test_the_example_goes_to_vtlengine_as_it_is(
         # The values of the scalars go as ``scalar_values``, typed, a null as None. Their
         # structure goes with the others, and their file is not the data of a dataset.
         assert child._run_once(load_example(scalars), engine) == []
-        call = vtlengine_call(scalars, engine, scalar_values={"sc_1": 2, "sc_2": None, "sc_3": 1.5})
-        call["data_structures"].append(scalars / "input/scalars.json")
-        assert calls.pop() == call
+        expected = vtlengine_call(
+            scalars, engine, scalar_values={"sc_1": 2, "sc_2": None, "sc_3": 1.5}
+        )
+        expected["data_structures"].append(scalars / "input/scalars.json")
+        call = calls.pop()
+        assert call == expected
     assert calls == []
 
 

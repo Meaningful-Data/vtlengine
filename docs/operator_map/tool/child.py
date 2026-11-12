@@ -117,7 +117,7 @@ def main(argv: Sequence[str], out: TextIO) -> int:
             "scalars": [asdict(item) for item in outputs if isinstance(item, ActualScalar)],
             "stable": stable,
         }
-    except BaseException as exc:
+    except (Exception, KeyboardInterrupt, SystemExit) as exc:  # every failure gets its answer
         payload = failure(exc)
     out.write(RESULT_PREFIX + json.dumps(payload) + "\n")
     out.flush()

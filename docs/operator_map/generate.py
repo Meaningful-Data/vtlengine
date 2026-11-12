@@ -279,8 +279,7 @@ def _generate(args: argparse.Namespace, progress: _Progress) -> int:
         )
 
     items = _items(cat)
-    writes = not (args.check_only or args.compare)
-    checked = _check(cat, items, only, ROOT, with_previous=writes)
+    checked = _check(cat, items, only, ROOT, with_previous=not (args.check_only or args.compare))
     if checked.problems:
         return _fail(checked.problems)
     if args.check_only:
@@ -1120,7 +1119,7 @@ def _put_back(root: Path, backups: Path, names: Sequence[str]) -> list[str]:
                 os.replace(backups / name, root / name)
             else:
                 (root / name).unlink(missing_ok=True)
-        except BaseException:  # a failure, or a second interrupt, must not stop the others
+        except (Exception, KeyboardInterrupt, SystemExit):  # a failure or a second interrupt
             lost.append(name)
     return lost
 
