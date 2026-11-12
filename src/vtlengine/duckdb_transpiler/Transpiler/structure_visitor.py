@@ -1192,9 +1192,9 @@ class StructureVisitor(ASTTemplate):
         """Build the output structure for a membership (#) operation.
 
         Mirrors ``Membership.validate``: identifiers and all viral attributes are
-        kept; a measure target keeps its name and role; an identifier or plain
-        attribute target is promoted to a measure named ``COMP_NAME_MAPPING[dtype]``;
-        a viral-attribute target stays viral under its original name (issue #944).
+        kept; a measure target keeps its name and role; any other target is promoted
+        to a measure named ``COMP_NAME_MAPPING[dtype]``, and a viral one also stays
+        viral under its own name (issue #1257).
         """
         parent_ds = self._get_dataset_structure(node.left)
         if parent_ds is None:
@@ -1209,12 +1209,11 @@ class StructureVisitor(ASTTemplate):
         orig = parent_ds.components.get(name)
         if orig is None:
             comps[name] = self._make_comp(name, Number)
-        elif orig.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
-            alias_name = COMP_NAME_MAPPING[orig.data_type]
-            comps[alias_name] = self._make_comp(alias_name, orig.data_type, nullable=orig.nullable)
         elif orig.role == Role.MEASURE:
             comps[name] = orig
-        # A VIRAL_ATTRIBUTE target is already in comps from the loop above (no promotion).
+        else:
+            alias_name = COMP_NAME_MAPPING[orig.data_type]
+            comps[alias_name] = self._make_comp(alias_name, orig.data_type, nullable=orig.nullable)
         return Dataset(name=parent_ds.name, components=comps, data=None)
 
     @staticmethod

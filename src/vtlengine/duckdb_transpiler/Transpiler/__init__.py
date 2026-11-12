@@ -1762,7 +1762,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         target_comp = ds.components.get(comp_name)
         alias_name = comp_name
-        if target_comp and target_comp.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
+        if target_comp and target_comp.role != Role.MEASURE:
             alias_name = COMP_NAME_MAPPING.get(target_comp.data_type, comp_name)
 
         # Without identifiers membership is a scalar extraction
