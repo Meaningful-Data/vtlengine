@@ -144,7 +144,7 @@ _DATE_MASKS: Final[_MaskExamples] = {
         "date_and_time_without_separators",
         "day_and_month_names",
         "am_pm_indicator",
-        "cast_example_5",
+        "two_digit_year",
     ),
     ("string", "date"): (
         "year_month_day_mask",
