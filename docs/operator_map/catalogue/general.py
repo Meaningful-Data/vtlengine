@@ -69,21 +69,65 @@ _IMPLICIT: Final[tuple[tuple[str, str, tuple[str, ...]], ...]] = (
     ("date", "time", ("same_start_and_end",)),
     ("time_period", "time", ("start_and_end_of_the_period",)),
 )
-# "Optional mask": once without and once with a mask, each with the name of its example.
-_OPTIONAL_MASK: Final[tuple[tuple[str, str, str, str], ...]] = (
-    ("integer", "string", "digits_and_sign", "two_digit_mask"),
-    ("number", "string", "plain_decimal_notation", "decimal_mask"),
-    ("time", "string", "iso_8601_intervals", "start_and_end_mask"),
-    ("date", "string", "iso_8601_dates", "year_month_day_mask"),
-    ("time_period", "string", "start_and_end_dates", "monthly_period_mask"),
-    ("duration", "string", "iso_8601_durations", "period_indicator_mask"),
-    ("string", "integer", "signs_leading_zeros_and_null", "two_digit_mask"),
-    ("string", "number", "sign_decimals_and_exponent", "decimal_mask"),
-    ("string", "time", "iso_8601_intervals", "start_and_end_mask"),
-    ("string", "date", "iso_8601_dates", "year_month_day_mask"),
-    ("string", "time_period", "quarter_month_and_year", "quarter_mask"),
-    ("string", "duration", "one_letter_codes", "period_indicator_mask"),
+# "Optional mask": once without a mask, with the name of its example, and once with a mask, whose
+# examples are in ``_MASKED``.
+_OPTIONAL_MASK: Final[tuple[tuple[str, str, str], ...]] = (
+    ("integer", "string", "digits_and_sign"),
+    ("number", "string", "plain_decimal_notation"),
+    ("time", "string", "iso_8601_intervals"),
+    ("date", "string", "iso_8601_dates"),
+    ("time_period", "string", "start_and_end_dates"),
+    ("duration", "string", "iso_8601_durations"),
+    ("string", "integer", "signs_leading_zeros_and_null"),
+    ("string", "number", "sign_decimals_and_exponent"),
+    ("string", "time", "iso_8601_intervals"),
+    ("string", "date", "iso_8601_dates"),
+    ("string", "time_period", "quarter_month_and_year"),
+    ("string", "duration", "one_letter_codes"),
 )
+# The examples of each conversion with a mask, by its source and target types: a kind of mask
+# each, as the section "Type Conversion and Formatting Mask" describes them, in ``_MASKED``.
+_MaskExamples = dict[tuple[str, str], tuple[str, ...]]
+
+# The numbers formatting mask.
+_NUMBER_MASKS: Final[_MaskExamples] = {
+    ("integer", "string"): ("two_digit_mask",),
+    ("string", "integer"): ("two_digit_mask",),
+    ("number", "string"): ("decimal_mask",),
+    ("string", "number"): ("decimal_mask",),
+}
+
+# The time formatting mask of a date.
+_DATE_MASKS: Final[_MaskExamples] = {
+    ("date", "string"): ("year_month_day_mask",),
+    ("string", "date"): ("year_month_day_mask",),
+}
+
+# The time formatting mask of a time.
+_TIME_MASKS: Final[_MaskExamples] = {
+    ("time", "string"): ("start_and_end_mask",),
+    ("string", "time"): ("start_and_end_mask",),
+}
+
+# The time formatting mask of a time_period.
+_TIME_PERIOD_MASKS: Final[_MaskExamples] = {
+    ("time_period", "string"): ("monthly_period_mask",),
+    ("string", "time_period"): ("quarter_mask",),
+}
+
+# The masks of a duration.
+_DURATION_MASKS: Final[_MaskExamples] = {
+    ("duration", "string"): ("period_indicator_mask",),
+    ("string", "duration"): ("period_indicator_mask",),
+}
+
+_MASKED: Final[_MaskExamples] = {
+    **_NUMBER_MASKS,
+    **_DATE_MASKS,
+    **_TIME_MASKS,
+    **_TIME_PERIOD_MASKS,
+    **_DURATION_MASKS,
+}
 
 
 # The text of a cast follows the pandas engine (team decision #1254), where the manual writes
@@ -128,9 +172,9 @@ def _cast(source: str, target: str, names: tuple[str, ...], *, mask: bool = Fals
 
 def _cast_variants() -> tuple[Variant, ...]:
     variants = [_cast(source, target, names) for source, target, names in (*_EXPLICIT, *_IMPLICIT)]
-    for source, target, plain, masked in _OPTIONAL_MASK:
+    for source, target, plain in _OPTIONAL_MASK:
         variants.append(_cast(source, target, (plain,)))
-        variants.append(_cast(source, target, (masked,), mask=True))
+        variants.append(_cast(source, target, _MASKED[(source, target)], mask=True))
     variants.append(
         Variant(
             "string_to_integer_ds",
