@@ -32,26 +32,26 @@ Full Join · ``full_join``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Full Join · full_join<br/>🟢23"]:::ok
+       O["Full Join · full_join 📌<br/>🟢23"]:::ok
        v_bare["full_join(DS, DS)"]:::ok
        v_aliases["full_join(DS as a, DS as b)"]:::ok
        v_using["full_join(DS, DS using Id)"]:::ok
        v_using_nvl["full_join(DS, DS using Id, nvl(Id, c))"]:::ok
        v_filter["full_join(DS, DS filter cond)"]:::ok
        v_apply["full_join(DS, DS apply expr)"]:::ok
-       v_calc_default["full_join(DS, DS calc C #58;#61; expr)"]:::ok
+       v_calc_default["full_join(DS, DS calc C #58;#61; expr) 📌"]:::ok
        v_calc_measure["full_join(DS, DS calc measure C #58;#61; expr)"]:::ok
        v_calc_identifier["full_join(DS, DS calc identifier C #58;#61; expr)"]:::ok
        v_calc_attribute["full_join(DS, DS calc attribute C #58;#61; expr)"]:::ok
-       v_calc_viral_attribute["full_join(DS, DS calc viral attribute C #58;#61; expr)"]:::ok
+       v_calc_viral_attribute["full_join(DS, DS calc viral attribute C #58;#61; expr) 📌"]:::ok
        v_aggr_no_group["full_join(DS, DS aggr C #58;#61; agg)"]:::ok
-       v_aggr_group_by["full_join(DS, DS aggr C #58;#61; agg group by Id)"]:::ok
+       v_aggr_group_by["full_join(DS, DS aggr C #58;#61; agg group by Id) 📌"]:::ok
        v_aggr_group_except["full_join(DS, DS aggr C #58;#61; agg group except Id)"]:::ok
        v_aggr_group_all["full_join(DS, DS aggr C #58;#61; agg group all time_agg(p))"]:::ok
        v_aggr_having["full_join(DS, DS aggr C #58;#61; agg group by Id having cond)"]:::ok
        v_aggr_measure["full_join(DS, DS aggr measure C #58;#61; agg group by Id)"]:::ok
        v_aggr_attribute["full_join(DS, DS aggr C #58;#61; agg, attribute A #58;#61; agg group by Id)"]:::ok
-       v_aggr_viral_attribute["full_join(DS, DS aggr C #58;#61; agg, viral attribute A #58;#61; agg group by Id)"]:::ok
+       v_aggr_viral_attribute["full_join(DS, DS aggr C #58;#61; agg, viral attribute A #58;#61; agg group by Id) 📌"]:::ok
        v_keep["full_join(DS, DS keep C)"]:::ok
        v_drop["full_join(DS, DS drop C)"]:::ok
        v_rename["full_join(DS, DS rename C to C2)"]:::ok

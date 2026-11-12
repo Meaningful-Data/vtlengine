@@ -124,6 +124,10 @@ _DECIDED: Final[dict[tuple[str, str, str], int]] = {
     ("time_period", "string", "start_and_end_dates"): 1254,
 }
 
+# A viral Attribute needs a propagation rule only where its values are combined, until the VTL
+# Task Force discusses it (sdmx-twg/vtl#731).
+_VIRAL_RULE_DECISION: Final = 1257
+
 
 # The manual's default measure name of a string, ``string_var``, is one that "can be personalised
 # in the implementations" (typical behaviour, "Default Names"); vtlengine documents ``str_var``.
@@ -307,14 +311,14 @@ CHAPTER = Chapter(
                 Variant(
                     "identifier",
                     "DS#Id",
-                    (manual("ex_2"), manual("ex_5")),
+                    (manual("ex_2"), manual("ex_5", decision=_VIRAL_RULE_DECISION)),
                     takes=(ANY_SCALAR,),
                     gives=(ANY_TYPE,),
                 ),
                 Variant(
                     "measure",
                     "DS#Me",
-                    (manual("ex_1"), manual("ex_4")),
+                    (manual("ex_1"), manual("ex_4", decision=_VIRAL_RULE_DECISION)),
                     takes=(ANY_SCALAR,),
                     gives=(ANY_TYPE,),
                 ),
@@ -329,12 +333,13 @@ CHAPTER = Chapter(
                     "viral_attribute",
                     "DS#At (viral)",
                     (
-                        manual("ex_6", adaptation=_STR_VAR),
+                        manual("ex_6", adaptation=_STR_VAR, decision=_VIRAL_RULE_DECISION),
                         manual(
                             "ex_8",
                             erratum="DS_2 has identifiers, so DS_2#At_1 is a dataset (the one "
                             "of ex_6), not the scalar 'P' that the manual gives",
                             adaptation=_STR_VAR,
+                            decision=_VIRAL_RULE_DECISION,
                         ),
                     ),
                     takes=(ANY_SCALAR,),

@@ -33,8 +33,8 @@ Clause operators
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Clause operators"]:::block
-       clause__calc["Calculation of a Component · calc<br/>🟢6"]:::ok
-       clause__aggr["Aggregation · aggr<br/>🟢9"]:::ok
+       clause__calc["Calculation of a Component · calc 📌<br/>🟢6"]:::ok
+       clause__aggr["Aggregation · aggr 📌<br/>🟢9"]:::ok
        clause__filter["Filtering Data Points · filter<br/>🟢1"]:::ok
        clause__keep["Maintaining Components · keep<br/>🟢1"]:::ok
        clause__drop["Removal of Components · drop<br/>🟢1"]:::ok

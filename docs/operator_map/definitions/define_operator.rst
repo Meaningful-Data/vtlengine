@@ -32,7 +32,7 @@ define operator
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["define operator<br/>🟢13"]:::ok
+       O["define operator 📌<br/>🟢13"]:::ok
        subgraph G_b1["Signature"]
            direction LR
            v_no_parameters["f ()"]:::ok
@@ -40,7 +40,7 @@ define operator
            v_value_domain["x #60;value domain#62;"]:::ok
            v_constrained_scalar["x #60;scalar type#62; #91;value …#93; #124; #123; … #125; #124; not null"]:::ok
            v_set["s set#60;…#62;"]:::ok
-           v_component["c component #124; identifier #124; measure #124; attribute #124; viral attribute #60;…#62;"]:::ok
+           v_component["c component #124; identifier #124; measure #124; attribute #124; viral attribute #60;…#62; 📌"]:::ok
            v_dataset["ds dataset #91;#123; … #125;#93;"]:::ok
            v_ruleset["r #60;ruleset type#62;"]:::ok
            v_default_value["y #60;type#62; default …"]:::ok

@@ -34,8 +34,8 @@ Join operators
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Join operators"]:::block
        join__inner_join["Inner Join · inner_join 📌<br/>🟢22"]:::ok
-       join__left_join["Left Join · left_join<br/>🟢23"]:::ok
-       join__full_join["Full Join · full_join<br/>🟢23"]:::ok
+       join__left_join["Left Join · left_join 📌<br/>🟢23"]:::ok
+       join__full_join["Full Join · full_join 📌<br/>🟢23"]:::ok
        join__cross_join["Cross Join · cross_join 📌<br/>🟢21"]:::ok
        join__inner_join --- B
        join__left_join --- B

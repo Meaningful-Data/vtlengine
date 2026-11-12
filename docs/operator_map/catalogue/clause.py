@@ -34,6 +34,10 @@ _HAVING: Final = (ANY_SCALAR, "boolean")  # and the havingCondition: component<b
 _FILTER: Final = (ANY_SCALAR, "boolean")  # filterCondition: component<boolean>
 _SUB: Final = (ANY_SCALAR,)  # value: scalar
 
+# A viral Attribute needs a propagation rule only where its values are combined, until the VTL
+# Task Force discusses it (sdmx-twg/vtl#731).
+_VIRAL_RULE_DECISION: Final = 1257
+
 # The page takes the Measures of the result from the data ("each distinct value of identifier in
 # op") and types Id_2 String, but the structure must be known without the data: the Measures are
 # the values of the value domain of the Identifier (#1234; Javier, 2026-11-12).
@@ -87,7 +91,7 @@ CHAPTER = Chapter(
                     "viral_attribute",
                     "DS[calc viral attribute At := expr]",
                     _CALC,
-                    authored("constant_viral_attribute"),
+                    authored("constant_viral_attribute", decision=_VIRAL_RULE_DECISION),
                 ),
                 _form(
                     "multiple",
@@ -148,8 +152,8 @@ CHAPTER = Chapter(
                     "viral_attribute_role",
                     "DS[aggr viral attribute At := agg(Me) group by Id]",
                     _AGGR,
-                    authored("viral_attribute_next_to_measure"),
-                    authored("viral_attribute_without_measure"),
+                    authored("viral_attribute_next_to_measure", decision=_VIRAL_RULE_DECISION),
+                    authored("viral_attribute_without_measure", decision=_VIRAL_RULE_DECISION),
                 ),
                 _form(
                     "role_omitted_attribute",

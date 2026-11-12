@@ -3,3 +3,4 @@
 :Expected: ``Id_1``, ``Id_2``, ``str_var`` with the values of ``At_1``, and the viral ``At_1``; the values are the manual's.
 :Finding: Both engines return ``Id_1``, ``Id_2`` and the viral ``At_1`` only, with no measure.
 :Adaptation: ``string_var`` is written ``str_var``, as in Manual example 3.
+:Team decision: `#1257 <https://github.com/Meaningful-Data/vtlengine/issues/1257>`__: as the comments on `sdmx-twg/vtl#731 <https://github.com/sdmx-twg/vtl/issues/731>`__ propose, a viral Attribute needs a propagation rule only where its values are combined, until the VTL Task Force discusses it.

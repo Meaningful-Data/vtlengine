@@ -15318,7 +15318,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "cf7142af",
+    "vtlengine_commit": "e86fa8cb",
     "vtlengine_version": "1.9.7"
   }
 }

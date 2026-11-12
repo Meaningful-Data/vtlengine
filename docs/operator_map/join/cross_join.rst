@@ -41,7 +41,7 @@ Cross Join · ``cross_join``
        v_calc_measure["cross_join(DS, DS calc measure C #58;#61; expr)"]:::ok
        v_calc_identifier["cross_join(DS, DS calc identifier C #58;#61; expr)"]:::ok
        v_calc_attribute["cross_join(DS, DS calc attribute C #58;#61; expr)"]:::ok
-       v_calc_viral_attribute["cross_join(DS, DS calc viral attribute C #58;#61; expr)"]:::ok
+       v_calc_viral_attribute["cross_join(DS, DS calc viral attribute C #58;#61; expr) 📌"]:::ok
        v_aggr_no_group["cross_join(DS, DS aggr C #58;#61; agg)"]:::ok
        v_aggr_group_by["cross_join(DS, DS aggr C #58;#61; agg group by Id) 📌"]:::ok
        v_aggr_group_except["cross_join(DS, DS aggr C #58;#61; agg group except Id)"]:::ok
@@ -49,7 +49,7 @@ Cross Join · ``cross_join``
        v_aggr_having["cross_join(DS, DS aggr C #58;#61; agg group by Id having cond)"]:::ok
        v_aggr_measure["cross_join(DS, DS aggr measure C #58;#61; agg group by Id)"]:::ok
        v_aggr_attribute["cross_join(DS, DS aggr C #58;#61; agg, attribute A #58;#61; agg group by Id)"]:::ok
-       v_aggr_viral_attribute["cross_join(DS, DS aggr C #58;#61; agg, viral attribute A #58;#61; agg group by Id)"]:::ok
+       v_aggr_viral_attribute["cross_join(DS, DS aggr C #58;#61; agg, viral attribute A #58;#61; agg group by Id) 📌"]:::ok
        v_keep["cross_join(DS, DS keep C)"]:::ok
        v_drop["cross_join(DS, DS drop C)"]:::ok
        v_rename["cross_join(DS, DS rename C to C2)"]:::ok

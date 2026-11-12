@@ -32,11 +32,11 @@ Membership · ``#``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Membership · #35;<br/>🟢4 🟡1"]:::partial
-       v_identifier["DS#35;Id"]:::ok
-       v_measure["DS#35;Me"]:::ok
+       O["Membership · #35; 📌<br/>🟢4 🟡1"]:::partial
+       v_identifier["DS#35;Id 📌"]:::ok
+       v_measure["DS#35;Me 📌"]:::ok
        v_attribute["DS#35;At"]:::ok
-       v_viral_attribute["DS#35;At (viral)"]:::partial
+       v_viral_attribute["DS#35;At (viral) 📌"]:::partial
        v_on_aggregate["agg(DS)#35;Me"]:::ok
        v_identifier --- O
        v_measure --- O

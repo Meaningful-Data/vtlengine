@@ -36,7 +36,7 @@ General purpose operators
        general__parentheses["Parentheses · ( )<br/>🟢3"]:::ok
        general__persistent_assignment["Persistent assignment · #60;-<br/>🟢3"]:::ok
        general__non_persistent_assignment["Non-persistent assignment · #58;#61;<br/>🟢2"]:::ok
-       general__membership["Membership · #35;<br/>🟢4 🟡1"]:::partial
+       general__membership["Membership · #35; 📌<br/>🟢4 🟡1"]:::partial
        general__udo_call["User-defined operator call · name( )<br/>🟢4"]:::ok
        general__eval["Evaluation of an external routine · eval<br/>🟢4"]:::ok
        general__cast["Type conversion · cast 📌<br/>🟢41"]:::ok

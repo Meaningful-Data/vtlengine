@@ -32,12 +32,12 @@ Calculation of a Component · ``calc``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Calculation of a Component · calc<br/>🟢6"]:::ok
+       O["Calculation of a Component · calc 📌<br/>🟢6"]:::ok
        v_measure_default["DS#91;calc Me #58;#61; expr#93;"]:::ok
        v_measure_explicit["DS#91;calc measure Me #58;#61; expr#93;"]:::ok
        v_identifier["DS#91;calc identifier Id #58;#61; expr#93;"]:::ok
        v_attribute["DS#91;calc attribute At #58;#61; expr#93;"]:::ok
-       v_viral_attribute["DS#91;calc viral attribute At #58;#61; expr#93;"]:::ok
+       v_viral_attribute["DS#91;calc viral attribute At #58;#61; expr#93; 📌"]:::ok
        v_multiple["DS#91;calc Me #58;#61; expr, attribute At #58;#61; expr#93;"]:::ok
        subgraph G_use["Used with"]
            direction LR

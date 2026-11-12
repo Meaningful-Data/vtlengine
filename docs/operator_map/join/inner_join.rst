@@ -42,7 +42,7 @@ Inner Join · ``inner_join``
        v_calc_measure["inner_join(DS, DS calc measure C #58;#61; expr)"]:::ok
        v_calc_identifier["inner_join(DS, DS calc identifier C #58;#61; expr)"]:::ok
        v_calc_attribute["inner_join(DS, DS calc attribute C #58;#61; expr)"]:::ok
-       v_calc_viral_attribute["inner_join(DS, DS calc viral attribute C #58;#61; expr)"]:::ok
+       v_calc_viral_attribute["inner_join(DS, DS calc viral attribute C #58;#61; expr) 📌"]:::ok
        v_aggr_no_group["inner_join(DS, DS aggr C #58;#61; agg)"]:::ok
        v_aggr_group_by["inner_join(DS, DS aggr C #58;#61; agg group by Id) 📌"]:::ok
        v_aggr_group_except["inner_join(DS, DS aggr C #58;#61; agg group except Id)"]:::ok
@@ -50,7 +50,7 @@ Inner Join · ``inner_join``
        v_aggr_having["inner_join(DS, DS aggr C #58;#61; agg group by Id having cond)"]:::ok
        v_aggr_measure["inner_join(DS, DS aggr measure C #58;#61; agg group by Id)"]:::ok
        v_aggr_attribute["inner_join(DS, DS aggr C #58;#61; agg, attribute A #58;#61; agg group by Id)"]:::ok
-       v_aggr_viral_attribute["inner_join(DS, DS aggr C #58;#61; agg, viral attribute A #58;#61; agg group by Id)"]:::ok
+       v_aggr_viral_attribute["inner_join(DS, DS aggr C #58;#61; agg, viral attribute A #58;#61; agg group by Id) 📌"]:::ok
        v_keep["inner_join(DS, DS keep C)"]:::ok
        v_drop["inner_join(DS, DS drop C)"]:::ok
        v_rename["inner_join(DS, DS rename C to C2)"]:::ok

@@ -72,6 +72,10 @@ def _form(variant_id: str, label: str, takes: tuple[str, ...], *examples: Exampl
 # The joins keep their non-viral attributes until sdmx-twg/vtl#730 is settled.
 _ATTRIBUTES_DECISION: Final = 1258
 
+# A viral Attribute needs a propagation rule only where its values are combined, until the VTL
+# Task Force discusses it (sdmx-twg/vtl#731).
+_VIRAL_RULE_DECISION: Final = 1257
+
 _EX_5_ERRATUM = (
     "Me_3 is in both IBSC and IBSD, so stripping the alias prefixes gives two Me_3, an error by "
     "the Behaviour section; the script adds drop IBSC#Me_3 (all null), which gives the printed "
@@ -160,7 +164,7 @@ CHAPTER = Chapter(
                     "calc_viral_attribute",
                     "inner_join(DS, DS calc viral attribute C := expr)",
                     _CALC,
-                    authored("constant_viral_attribute"),
+                    authored("constant_viral_attribute", decision=_VIRAL_RULE_DECISION),
                 ),
                 _form(
                     "aggr_no_group",
@@ -209,7 +213,7 @@ CHAPTER = Chapter(
                     "aggr_viral_attribute",
                     "inner_join(DS, DS aggr C := agg, viral attribute A := agg group by Id)",
                     _AGGR,
-                    authored("max_as_viral_attribute"),
+                    authored("max_as_viral_attribute", decision=_VIRAL_RULE_DECISION),
                 ),
                 _form(
                     "keep",
@@ -293,7 +297,7 @@ CHAPTER = Chapter(
                     "left_join(DS, DS calc C := expr)",
                     _CALC,
                     authored("default_role_is_measure"),
-                    authored("viral_attribute_becomes_measure"),
+                    authored("viral_attribute_becomes_measure", decision=_VIRAL_RULE_DECISION),
                 ),
                 _form(
                     "calc_measure",
@@ -317,7 +321,7 @@ CHAPTER = Chapter(
                     "calc_viral_attribute",
                     "left_join(DS, DS calc viral attribute C := expr)",
                     _CALC,
-                    authored("constant_viral_attribute"),
+                    authored("constant_viral_attribute", decision=_VIRAL_RULE_DECISION),
                 ),
                 _form(
                     "aggr_no_group",
@@ -330,7 +334,7 @@ CHAPTER = Chapter(
                     "left_join(DS, DS aggr C := agg group by Id)",
                     _AGGR,
                     authored("sum_by_id_1"),
-                    authored("viral_attribute_becomes_measure"),
+                    authored("viral_attribute_becomes_measure", decision=_VIRAL_RULE_DECISION),
                 ),
                 _form(
                     "aggr_group_except",
@@ -366,7 +370,7 @@ CHAPTER = Chapter(
                     "aggr_viral_attribute",
                     "left_join(DS, DS aggr C := agg, viral attribute A := agg group by Id)",
                     _AGGR,
-                    authored("max_as_viral_attribute"),
+                    authored("max_as_viral_attribute", decision=_VIRAL_RULE_DECISION),
                 ),
                 _form(
                     "keep",
@@ -447,7 +451,7 @@ CHAPTER = Chapter(
                     "full_join(DS, DS calc C := expr)",
                     _CALC,
                     authored("default_role_is_measure"),
-                    authored("viral_attribute_becomes_measure"),
+                    authored("viral_attribute_becomes_measure", decision=_VIRAL_RULE_DECISION),
                     authored("overwrite_identifier"),
                 ),
                 _form(
@@ -472,7 +476,7 @@ CHAPTER = Chapter(
                     "calc_viral_attribute",
                     "full_join(DS, DS calc viral attribute C := expr)",
                     _CALC,
-                    authored("constant_viral_attribute"),
+                    authored("constant_viral_attribute", decision=_VIRAL_RULE_DECISION),
                 ),
                 _form(
                     "aggr_no_group",
@@ -485,7 +489,7 @@ CHAPTER = Chapter(
                     "full_join(DS, DS aggr C := agg group by Id)",
                     _AGGR,
                     authored("sum_by_id_1"),
-                    authored("viral_attribute_becomes_measure"),
+                    authored("viral_attribute_becomes_measure", decision=_VIRAL_RULE_DECISION),
                 ),
                 _form(
                     "aggr_group_except",
@@ -521,7 +525,7 @@ CHAPTER = Chapter(
                     "aggr_viral_attribute",
                     "full_join(DS, DS aggr C := agg, viral attribute A := agg group by Id)",
                     _AGGR,
-                    authored("max_as_viral_attribute"),
+                    authored("max_as_viral_attribute", decision=_VIRAL_RULE_DECISION),
                 ),
                 _form(
                     "keep",
@@ -614,7 +618,7 @@ CHAPTER = Chapter(
                     "calc_viral_attribute",
                     "cross_join(DS, DS calc viral attribute C := expr)",
                     _CALC,
-                    authored("constant_viral_attribute"),
+                    authored("constant_viral_attribute", decision=_VIRAL_RULE_DECISION),
                 ),
                 _form(
                     "aggr_no_group",
@@ -663,7 +667,7 @@ CHAPTER = Chapter(
                     "aggr_viral_attribute",
                     "cross_join(DS, DS aggr C := agg, viral attribute A := agg group by Id)",
                     _AGGR,
-                    authored("max_as_viral_attribute"),
+                    authored("max_as_viral_attribute", decision=_VIRAL_RULE_DECISION),
                 ),
                 _form(
                     "keep",

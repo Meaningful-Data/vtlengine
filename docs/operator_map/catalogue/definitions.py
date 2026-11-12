@@ -72,6 +72,9 @@ _SCALAR_TYPES: Final = (
 )
 _COMPONENT_TYPES: Final = ("scalar", "integer", "string")
 _RULESETS: Final = ("datapoint_ruleset", "hierarchical_ruleset")
+# A viral Attribute needs a propagation rule only where its values are combined, until the VTL
+# Task Force discusses it (sdmx-twg/vtl#731).
+_VIRAL_RULE_DECISION: Final = 1257
 # The error level of a rule is an integer and its error code a string.
 _DATAPOINT_RULE_OPTIONS: Final = ("integer", "string", "boolean")
 _HIERARCHICAL_RULE_OPTIONS: Final = ("integer", "string")
@@ -192,7 +195,7 @@ DEFINE_OPERATOR = Operator(
             authored("identifier_in_calc"),
             authored("measure_role_in_calc"),
             authored("attribute_overwritten_in_calc"),
-            authored("viral_attribute_overwritten_in_calc"),
+            authored("viral_attribute_overwritten_in_calc", decision=_VIRAL_RULE_DECISION),
         ),
         _form(
             "dataset",

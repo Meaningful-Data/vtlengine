@@ -33,7 +33,7 @@ Definitions (VTL-DL)
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Definitions (VTL-DL)"]:::block
-       definitions__define_operator["define operator<br/>🟢13"]:::ok
+       definitions__define_operator["define operator 📌<br/>🟢13"]:::ok
        definitions__define_datapoint_ruleset["define datapoint ruleset<br/>🟢5"]:::ok
        definitions__define_hierarchical_ruleset["define hierarchical ruleset<br/>🟢7"]:::ok
        definitions__define_viral_propagation["define viral propagation<br/>🟢4"]:::ok

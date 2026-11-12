@@ -32,7 +32,7 @@ Aggregation · ``aggr``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Aggregation · aggr<br/>🟢9"]:::ok
+       O["Aggregation · aggr 📌<br/>🟢9"]:::ok
        v_no_group["DS#91;aggr Me #58;#61; agg(Me)#93;"]:::ok
        v_group_by["DS#91;aggr Me #58;#61; agg(Me) group by Id#93;"]:::ok
        v_group_except["DS#91;aggr Me #58;#61; agg(Me) group except Id#93;"]:::ok
@@ -40,7 +40,7 @@ Aggregation · ``aggr``
        v_having["DS#91;aggr Me #58;#61; agg(Me) group by Id having cond#93;"]:::ok
        v_measure_role["DS#91;aggr measure Me #58;#61; agg(Me) group by Id#93;"]:::ok
        v_attribute_role["DS#91;aggr attribute At #58;#61; agg(Me) group by Id#93;"]:::ok
-       v_viral_attribute_role["DS#91;aggr viral attribute At #58;#61; agg(Me) group by Id#93;"]:::ok
+       v_viral_attribute_role["DS#91;aggr viral attribute At #58;#61; agg(Me) group by Id#93; 📌"]:::ok
        v_role_omitted_attribute["DS#91;aggr At #58;#61; agg(At) group by Id#93;"]:::ok
        subgraph G_use["Used with"]
            direction LR
