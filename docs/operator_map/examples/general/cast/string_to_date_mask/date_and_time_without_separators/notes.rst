@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, date, "YYYYMMDDThhmmss-01")`` on a String measure: the manual's mask for a "Date and day time without separators".
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "Date and day time without separators "20150303T093045-01 "" with the mask ``YYYYMMDDThhmmss-01``, and "Any other character can be used in the mask, meaning simply that it appears in the same position".
+:Expected: ``2015-03-03T09:30:45`` and ``2018-04-05T12:30:15``, from ``20150303T093045-01``, the manual's value without the blank that ends it, and ``20180405T123015-01``. The offset ``-01`` is fixed text: the time is kept as it is written.

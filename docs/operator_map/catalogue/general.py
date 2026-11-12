@@ -124,16 +124,92 @@ _NUMBER_MASKS: Final[_MaskExamples] = {
     ),
 }
 
-# The time formatting mask of a date.
+# The time formatting mask of a date: the numeric special characters, their number and padding,
+# the braces, the order and the other characters, the reverse slash, several units, the special
+# words, and the manual's masks for a date with a time of day. A string that the mask does not
+# match, or that it does not consume to the end, raises an error.
 _DATE_MASKS: Final[_MaskExamples] = {
-    ("date", "string"): ("year_month_day_mask",),
-    ("string", "date"): ("year_month_day_mask",),
+    ("date", "string"): (
+        "year_month_day_mask",
+        "optional_digits",
+        "day_month_year_order",
+        "escaped_letters",
+        "escaped_reverse_slash",
+        "week_and_day_of_week",
+        "century",
+        "quarter",
+        "semester",
+        "decimals_of_second",
+        "date_and_time_with_separators",
+        "date_and_time_without_separators",
+        "day_and_month_names",
+        "am_pm_indicator",
+        "cast_example_5",
+    ),
+    ("string", "date"): (
+        "year_month_day_mask",
+        "optional_digits",
+        "day_month_year_order",
+        "escaped_letters",
+        "escaped_reverse_slash",
+        "week_and_day_of_week",
+        "century",
+        "day_within_quarter",
+        "day_within_semester",
+        "decimals_of_second",
+        "date_and_time_with_separators",
+        "date_and_time_without_separators",
+        "lower_case_month_abbreviation",
+        "day_and_month_names",
+        "am_pm_indicator",
+        "string_not_matching_mask",
+        "characters_left_over",
+    ),
 }
 
-# The time formatting mask of a time.
+# The time formatting mask of a time: the manual's masks for a start and an end, a start and a
+# duration and a duration and an end, then the kinds of the date masks on both dates. The
+# manual's sample for the start and end to the day does not match its mask, which refuses it.
 _TIME_MASKS: Final[_MaskExamples] = {
-    ("time", "string"): ("start_and_end_mask",),
-    ("string", "time"): ("start_and_end_mask",),
+    ("time", "string"): (
+        "start_and_end_mask",
+        "start_and_end_with_times",
+        "start_and_duration",
+        "duration_and_end",
+        "start_and_duration_with_times",
+        "duration_and_end_with_times",
+        "optional_digits",
+        "day_month_year_order",
+        "escaped_letters",
+        "escaped_reverse_slash",
+        "week_dates",
+        "century",
+        "quarters",
+        "semesters",
+        "decimals_of_second",
+        "day_and_month_names",
+        "am_pm_indicator",
+    ),
+    ("string", "time"): (
+        "start_and_end_mask",
+        "start_and_end_with_times",
+        "start_and_duration",
+        "duration_and_end",
+        "start_and_duration_with_times",
+        "duration_and_end_with_times",
+        "optional_digits",
+        "day_month_year_order",
+        "escaped_letters",
+        "escaped_reverse_slash",
+        "week_dates",
+        "century",
+        "days_within_quarters",
+        "days_within_semesters",
+        "decimals_of_second",
+        "day_and_month_names",
+        "am_pm_indicator",
+        "basic_format_sample",
+    ),
 }
 
 # The time formatting mask of a time_period: the masks of the cast page's Example 9 and of the

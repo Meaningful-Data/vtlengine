@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, string, "DD/MM/YYYY")`` on a Date measure: the day first, then the month and the year, separated by ``/``.
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "The position of the digits in the mask denotes the position of the corresponding values", "Any other character can be used in the mask, meaning simply that it appears in the same position", and "The numerical representation is assumed to be padded by leading 0 by default".
+:Expected: ``05/04/2018`` and ``31/12/2021``.

@@ -1,3 +1,3 @@
 :Tests: ``cast(Me_1, time, "YYYY-MM-DD/YYYY-MM-DD")`` on a String measure: the mask that the manual gives for a time with "Start and end".
 :Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "The number of letters matches the number of digits", and "Any other character can be used in the mask, meaning simply that it appears in the same position".
-:Expected: ``2015-03-03/2018-04-05`` and ``2020-01-01/2020-06-30``. The manual's sample value for this mask, ``20150303/20180405``, has no ``-``; the inputs follow the mask.
+:Expected: ``2015-03-03/2018-04-05`` and ``2020-01-01/2020-06-30``. The manual's sample value for this mask, ``20150303/20180405``, has no ``-``; the inputs follow the mask. They are ISO 8601 intervals that the conversion reads without a mask as well: the sample, which only the mask refuses, is in ``basic_format_sample``.

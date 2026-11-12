@@ -1,0 +1,4 @@
+:Tests: ``cast(Me_1, string, "YYYY-\SS/YYYY-\SS")`` on a Time measure: the semesters of the start and of the end, after the letter ``S``.
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: the special character "S semester", "it is assumed that the more detailed units (e.g., the day) are expressed through the order number that they assume within the less detailed ones (e.g., the month and the year)", and "The special characters and the special words, if prefixed by the reverse slash [...] in the mask, appear in the same position in the time format".
+:Expected: ``2018-S1/2021-S2`` for the time from ``2018-04-05``, in the first half of its year, to ``2021-12-31``, in the second.
+:Finding: Both engines raise SemanticError ``1-1-5-4``, "Invalid mask to cast from type Time to String.": vtlengine takes no semester in the dates of a time.

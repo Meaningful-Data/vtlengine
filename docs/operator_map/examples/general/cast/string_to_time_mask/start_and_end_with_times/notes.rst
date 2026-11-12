@@ -1,0 +1,4 @@
+:Tests: ``cast(Me_1, time, "YYYY-MM-DDThh:mm:ssZ/YYYY-MM-DDThh:mm:ssZ")`` on a String measure: the manual's mask for "Start and end time points".
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "Start and end time points, such as "2015-03-03T09:30:45Z/2018-04-05T12:30:15Z"" with this mask, and ``T`` and ``Z`` are among the "fixed characters used in the ISO 8601 standard which can appear as fixed characters in the relevant masks".
+:Expected: ``2015-03-03T09:30:45/2018-04-05T12:30:15``, from the manual's value: the times of day are kept, as the mask has them, and ``Z`` is fixed text.
+:Finding: Both engines give the same times with a blank, not the ``T`` of ISO 8601, between the date and the time of day: ``2015-03-03 09:30:45/2018-04-05 12:30:15``.

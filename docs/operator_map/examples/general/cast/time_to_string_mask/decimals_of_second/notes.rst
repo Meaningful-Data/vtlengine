@@ -1,0 +1,4 @@
+:Tests: ``cast(Me_1, string, "DD.MM.YYYY hh:mm:ss.ddd/DD.MM.YYYY hh:mm:ss.ddd")`` on a Time measure whose start and end have times of day: ``ddd``, three decimals of the second.
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: the special characters "h hour digit (by default on 24 hours)", "m minute", "s second" and "d decimal of second", and "The number of letters matches the number of digits".
+:Expected: ``05.04.2018 12:30:15.250/05.04.2018 12:30:16.125`` for the time from ``2018-04-05T12:30:15.250`` to ``2018-04-05T12:30:16.125``.
+:Finding: pandas gives this value. DuckDB does not load the input: DataLoadError ``0-3-1-6``, "not possible to cast column Me_1 to Time", as it takes no decimals of the second in the dates of a time.
