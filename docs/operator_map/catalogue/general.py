@@ -15,7 +15,9 @@ parameter (``$1``, ``$2``...).
 ``cast`` has one variant per conversion that the manual's conversion table allows, at component
 level (``DS_1[calc Me_2 := cast(Me_1, <type>)]``): the explicit ones, the implicit ones written
 as an explicit cast, and each conversion with an optional mask both without and with a mask. The
-masks follow the manual's section "Type Conversion and Formatting Mask". ``string_to_integer``
+masks follow the manual's section "Type Conversion and Formatting Mask": a conversion with a mask
+has an example for each kind of mask that the section describes for its types, with inputs whose
+result only the mask explains, and the strings that a mask does not match. ``string_to_integer``
 also has a dataset and a scalar variant, and two variants cast to a value domain
 (``value_domains/``): from a string, and from another value domain on the same basic type.
 
