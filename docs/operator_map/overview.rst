@@ -26,7 +26,7 @@ A node for each block, with how many operators it has, and how many of them are 
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        R["VTL 2.2<br/>Reference Manual"]:::block
-       chapter__general["General purpose operators<br/>7 operators · 🟢5 🟡2"]:::partial
+       chapter__general["General purpose operators<br/>7 operators · 🟢6 🟡1"]:::partial
        chapter__join["Join operators<br/>4 operators · 🟢4"]:::ok
        chapter__string["String operators<br/>11 operators · 🟢11"]:::ok
        chapter__numeric["Numeric operators<br/>18 operators · 🟢18"]:::ok
@@ -94,8 +94,8 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🟡
      - 7
      - 62
-     - 59
-     - 3
+     - 61
+     - 1
      - 0
      - 0
      - 0
@@ -211,8 +211,8 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🟡
      - 111
      - 700
-     - 697
-     - 3
+     - 699
+     - 1
      - 0
      - 0
      - 0

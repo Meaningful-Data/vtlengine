@@ -6496,22 +6496,6 @@
       },
       "status": "ok"
     },
-    "general/cast/date_to_string_mask/day_and_month_names": {
-      "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask \"Day3 DD MONTH YYYY\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask \"Day3 DD MONTH YYYY\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
-      },
-      "status": "missing"
-    },
     "general/cast/date_to_string_mask/optional_digits": {
       "duckdb": {
         "detail": "",
@@ -7007,22 +6991,6 @@
         "outcome": "match"
       },
       "status": "ok"
-    },
-    "general/cast/string_to_time_mask/start_and_end_with_times": {
-      "duckdb": {
-        "detail": "row Id_1=1: Me_2 expected 2015-03-03T09:30:45/2018-04-05T12:30:15 got 2015-03-03 09:30:45/2018-04-05 12:30:15",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "mismatch"
-      },
-      "engines_agree": true,
-      "pandas": {
-        "detail": "row Id_1=1: Me_2 expected 2015-03-03T09:30:45/2018-04-05T12:30:15 got 2015-03-03 09:30:45/2018-04-05 12:30:15",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "mismatch"
-      },
-      "status": "partial"
     },
     "general/cast/string_to_time_period/quarter_month_and_year": {
       "duckdb": {
@@ -15350,7 +15318,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "7d318e01",
+    "vtlengine_commit": "cf7142af",
     "vtlengine_version": "1.9.7"
   }
 }

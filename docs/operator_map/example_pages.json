@@ -3247,14 +3247,6 @@
     "status": "ok",
     "title": "Date and time with separators"
   },
-  "general/cast/date_to_string_mask/day_and_month_names": {
-    "anchor": "ex-date-to-string-mask-day-and-month-names",
-    "duckdb": "🛡 1-3-13",
-    "operator_page": "general/cast.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
-    "title": "Day and month names"
-  },
   "general/cast/date_to_string_mask/optional_digits": {
     "anchor": "ex-date-to-string-mask-optional-digits",
     "duckdb": "✅",
@@ -3502,14 +3494,6 @@
     "pandas": "✅",
     "status": "ok",
     "title": "Start and end mask"
-  },
-  "general/cast/string_to_time_mask/start_and_end_with_times": {
-    "anchor": "ex-string-to-time-mask-start-and-end-with-times",
-    "duckdb": "❌",
-    "operator_page": "general/cast.html",
-    "pandas": "❌",
-    "status": "partial",
-    "title": "Start and end with times"
   },
   "general/cast/string_to_time_period/quarter_month_and_year": {
     "anchor": "ex-string-to-time-period-quarter-month-and-year",

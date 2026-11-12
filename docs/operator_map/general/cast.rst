@@ -4,7 +4,7 @@ Type conversion · ``cast``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 39 of 41 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 41 of 41 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -36,7 +36,7 @@ Type conversion · ``cast``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Type conversion · cast 📌<br/>🟢39 🟡2"]:::partial
+       O["Type conversion · cast 📌<br/>🟢41"]:::ok
        subgraph G_ds["Dataset"]
            direction LR
            v_string_to_integer_ds["cast(DS#60;string#62;, integer)"]:::ok
@@ -63,7 +63,7 @@ Type conversion · ``cast``
            v_time_to_string["cast(comp#60;time#62;, string)"]:::ok
            v_time_to_string_mask["cast(comp#60;time#62;, string, mask)"]:::ok
            v_date_to_string["cast(comp#60;date#62;, string)"]:::ok
-           v_date_to_string_mask["cast(comp#60;date#62;, string, mask)"]:::partial
+           v_date_to_string_mask["cast(comp#60;date#62;, string, mask)"]:::ok
            v_time_period_to_string["cast(comp#60;time_period#62;, string) 📌"]:::ok
            v_time_period_to_string_mask["cast(comp#60;time_period#62;, string, mask)"]:::ok
            v_duration_to_string["cast(comp#60;duration#62;, string)"]:::ok
@@ -73,7 +73,7 @@ Type conversion · ``cast``
            v_string_to_number["cast(comp#60;string#62;, number)"]:::ok
            v_string_to_number_mask["cast(comp#60;string#62;, number, mask)"]:::ok
            v_string_to_time["cast(comp#60;string#62;, time)"]:::ok
-           v_string_to_time_mask["cast(comp#60;string#62;, time, mask)"]:::partial
+           v_string_to_time_mask["cast(comp#60;string#62;, time, mask)"]:::ok
            v_string_to_date["cast(comp#60;string#62;, date)"]:::ok
            v_string_to_date_mask["cast(comp#60;string#62;, date, mask)"]:::ok
            v_string_to_time_period["cast(comp#60;string#62;, time_period)"]:::ok
@@ -762,7 +762,7 @@ cast(comp<date>, string) 🟢 · date → string
 
    <span class="om-anchor" id="form-date-to-string-mask"></span>
 
-cast(comp<date>, string, mask) 🟡 · date, string → string
+cast(comp<date>, string, mask) 🟢 · date, string → string
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -823,27 +823,6 @@ cast(comp<date>, string, mask) 🟡 · date, string → string
 .. raw:: html
 
    <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/date_and_time_with_separators/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/date_and_time_with_separators/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/date_and_time_with_separators/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/date_and_time_with_separators/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/date_and_time_with_separators/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/date_and_time_with_separators/index.html">example page ↗</a></p>
-   </details>
-
-.. raw:: html
-
-   <details class="om-example" id="ex-date-to-string-mask-day-and-month-names"><summary><span class="om-ex-title">Day and month names</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask &quot;Day3 DD MONTH YYYY&quot;. Please check transformation with output Dataset DS_r</p>
-
-.. include:: ../examples/general/cast/date_to_string_mask/day_and_month_names/notes.rst
-
-.. literalinclude:: ../examples/general/cast/date_to_string_mask/day_and_month_names/script.vtl
-   :caption: script.vtl
-   :language: none
-
-.. raw:: html
-
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td></tr><tr><td>2</td><td>2021-12-31</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td><td>Thu 05 APRIL 2018</td></tr><tr><td>2</td><td>2021-12-31</td><td>Fri 31 DECEMBER 2021</td></tr></tbody></table>
-
-.. raw:: html
-
-   <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/day_and_month_names/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/day_and_month_names/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/day_and_month_names/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/day_and_month_names/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/day_and_month_names/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/day_and_month_names/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -1133,7 +1112,7 @@ cast(comp<string>, time) 🟢 · string → time
 
    <span class="om-anchor" id="form-string-to-time-mask"></span>
 
-cast(comp<string>, time, mask) 🟡 · string → time
+cast(comp<string>, time, mask) 🟢 · string → time
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -1154,27 +1133,6 @@ cast(comp<string>, time, mask) 🟡 · string → time
 .. raw:: html
 
    <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/start_and_end_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_mask/index.html">example page ↗</a></p>
-   </details>
-
-.. raw:: html
-
-   <details class="om-example" id="ex-string-to-time-mask-start-and-end-with-times"><summary><span class="om-ex-title">Start and end with times</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
-   <p class="om-detail">row Id_1=1: Me_2 expected 2015-03-03T09:30:45/2018-04-05T12:30:15 got 2015-03-03 09:30:45/2018-04-05 12:30:15</p>
-
-.. include:: ../examples/general/cast/string_to_time_mask/start_and_end_with_times/notes.rst
-
-.. literalinclude:: ../examples/general/cast/string_to_time_mask/start_and_end_with_times/script.vtl
-   :caption: script.vtl
-   :language: none
-
-.. raw:: html
-
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45Z/2018-04-05T12:30:15Z</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45Z/2018-04-05T12:30:15Z</td><td>2015-03-03T09:30:45/2018-04-05T12:30:15</td></tr></tbody></table>
-
-.. raw:: html
-
-   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/start_and_end_with_times/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_with_times/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_with_times/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_with_times/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_with_times/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_with_times/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html

@@ -4,7 +4,7 @@ General purpose operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 5 of 7 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip partial">🟡 6 of 7 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -39,7 +39,7 @@ General purpose operators
        general__membership["Membership · #35;<br/>🟢4 🟡1"]:::partial
        general__udo_call["User-defined operator call · name( )<br/>🟢4"]:::ok
        general__eval["Evaluation of an external routine · eval<br/>🟢4"]:::ok
-       general__cast["Type conversion · cast 📌<br/>🟢39 🟡2"]:::partial
+       general__cast["Type conversion · cast 📌<br/>🟢41"]:::ok
        general__parentheses --- B
        general__persistent_assignment --- B
        general__non_persistent_assignment --- B
@@ -87,7 +87,7 @@ General purpose operators
      - 🟢
      - 4
    * - :doc:`Type conversion <cast>` ``cast``
-     - 🟡
+     - 🟢
      - 41
 
 .. rubric:: Types
@@ -231,20 +231,6 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
      - ❌
      - ❌
      - missing components: str\_var
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<date>, string, mask) <cast.html#form-date-to-string-mask>`__
-     - 🟡
-     - `Day and month names <cast.html#ex-date-to-string-mask-day-and-month-names>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask \"Day3 DD MONTH YYYY\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<string>, time, mask) <cast.html#form-string-to-time-mask>`__
-     - 🟡
-     - `Start and end with times <cast.html#ex-string-to-time-mask-start-and-end-with-times>`__
-     - ❌
-     - ❌
-     - row Id\_1=1: Me\_2 expected 2015-03-03T09:30:45/2018-04-05T12:30:15 got 2015-03-03 09:30:45/2018-04-05 12:30:15
 
 .. toctree::
    :maxdepth: 1
