@@ -7504,6 +7504,22 @@
       },
       "status": "ok"
     },
+    "general/cast/string_to_integer_mask/no_two_digits_after_the_star": {
+      "duckdb": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
     "general/cast/string_to_integer_mask/too_few_digits": {
       "duckdb": {
         "detail": "",
@@ -16806,7 +16822,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "a29939d7",
+    "vtlengine_commit": "f368ff5a",
     "vtlengine_version": "1.9.7"
   }
 }

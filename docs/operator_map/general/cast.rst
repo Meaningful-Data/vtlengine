@@ -1929,6 +1929,27 @@ Expected error ``2-1-5-3``: Impossible to cast {value} from type {type\_1} to {t
 
 .. raw:: html
 
+   <details class="om-example" id="ex-string-to-integer-mask-no-two-digits-after-the-star"><summary><span class="om-ex-title">No two digits after the star</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_integer_mask/no_two_digits_after_the_star/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_integer_mask/no_two_digits_after_the_star/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>7</td></tr></tbody></table>
+
+Expected error ``2-1-5-3``: Impossible to cast {value} from type {type\_1} to {type\_2} using mask {mask}.
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_integer_mask/no_two_digits_after_the_star/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_integer_mask/no_two_digits_after_the_star/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_integer_mask/no_two_digits_after_the_star/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_integer_mask/no_two_digits_after_the_star/expected/error.json">expected/error.json</a> · <a href="../examples/general/cast/string_to_integer_mask/no_two_digits_after_the_star/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
    <span class="om-anchor" id="form-string-to-number"></span>
 
 cast(comp<string>, number) 🟢 · string → number

@@ -3751,6 +3751,14 @@
     "status": "ok",
     "title": "No digit for the plus"
   },
+  "general/cast/string_to_integer_mask/no_two_digits_after_the_star": {
+    "anchor": "ex-string-to-integer-mask-no-two-digits-after-the-star",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "No two digits after the star"
+  },
   "general/cast/string_to_integer_mask/too_few_digits": {
     "anchor": "ex-string-to-integer-mask-too-few-digits",
     "duckdb": "✅",
