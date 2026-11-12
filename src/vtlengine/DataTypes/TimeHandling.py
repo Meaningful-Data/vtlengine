@@ -7,7 +7,6 @@ from typing import Any, Dict, Optional, Union
 
 import pandas as pd
 
-from vtlengine.AST.Grammar.tokens import GT, GTE, LT, LTE
 from vtlengine.Exceptions import InputValidationException, RunTimeError
 
 PERIOD_IND_MAPPING = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
@@ -484,16 +483,16 @@ class TimeIntervalHandler:
         return str(self) != str(other) if other is not None else None
 
     def __lt__(self, other: Any) -> Optional[bool]:
-        raise RunTimeError("2-1-19-17", op=LT, type="Time")
+        raise RunTimeError("2-1-19-17", op="<", type="Time")
 
     def __le__(self, other: Any) -> Optional[bool]:
-        raise RunTimeError("2-1-19-17", op=LTE, type="Time")
+        raise RunTimeError("2-1-19-17", op="<=", type="Time")
 
     def __gt__(self, other: Any) -> Optional[bool]:
-        raise RunTimeError("2-1-19-17", op=GT, type="Time")
+        raise RunTimeError("2-1-19-17", op=">", type="Time")
 
     def __ge__(self, other: Any) -> Optional[bool]:
-        raise RunTimeError("2-1-19-17", op=GTE, type="Time")
+        raise RunTimeError("2-1-19-17", op=">=", type="Time")
 
     @classmethod
     def from_time_period(cls, value: TimePeriodHandler) -> "TimeIntervalHandler":

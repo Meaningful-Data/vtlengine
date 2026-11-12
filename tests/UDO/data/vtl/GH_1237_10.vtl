@@ -1,0 +1,10 @@
+define hierarchical ruleset HR_1 (variable rule Id_2) is
+    A = B + C
+end hierarchical ruleset;
+
+define operator check_total (ds dataset, hr hierarchical_on_variables {Id_2 (Id_1)})
+    returns dataset is
+        check_hierarchy(ds, hr rule Id_2 all)
+end operator;
+
+DS_r <- check_total(DS_1, HR_1);

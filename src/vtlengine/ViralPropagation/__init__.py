@@ -23,6 +23,8 @@ from vtlengine.DataTypes import (
     ScalarType,
     String,
     TimeInterval,
+    binary_implicit_promotion,
+    check_binary_implicit_promotion,
     check_unary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
@@ -54,37 +56,26 @@ class ViralPropagationRegistry:
         else:
             self._valuedomain_rules[rule.target] = rule
 
-    def get_rule_for_variable(self, variable_name: str) -> Optional[ViralPropagationRule]:
-        """Get the propagation rule for a variable (variable-level overrides value domain)."""
-        if variable_name in self._variable_rules:
-            return self._variable_rules[variable_name]
-        # Value domain lookup would require knowing which VD the variable uses.
-        # For v1, only variable-level rules are supported.
-        return None
-
     def get_existing(self, signature_type: str, target: str) -> Optional["ViralPropagationRule"]:
         """Return an already-registered rule with the same signature_type and target."""
         rules = self._variable_rules if signature_type == "variable" else self._valuedomain_rules
         return rules.get(target)
 
     def rule_for(self, component: Any) -> Optional["ViralPropagationRule"]:
-        """Resolve the rule for a component: variable-level overrides value-domain-level.
-
-        ``component.value_domain`` may not exist yet (added in a later phase); use
-        getattr so this is forward-compatible.
-        """
+        """Resolve the rule for a component: a rule on the variable overrides one on the value
+        domain the component is defined on."""
         rule = self._variable_rules.get(component.name)
         if rule is not None:
             return rule
         value_domain = getattr(component, "value_domain", None)
         if value_domain is not None:
-            return self._valuedomain_rules.get(value_domain)
+            return self._valuedomain_rules.get(value_domain.name)
         return None
 
-    # Pandas resolution methods
-    def resolve_pair(self, variable_name: str, value_a: Any, value_b: Any) -> Any:
+    # Pandas resolution methods, on the viral attribute of the operand whose values combine
+    def resolve_pair(self, component: Any, value_a: Any, value_b: Any) -> Any:
         """Resolve two viral attribute values into one (for binary operators)."""
-        rule = self.get_rule_for_variable(variable_name)
+        rule = self.rule_for(component)
         if rule is None:
             return None
 
@@ -117,13 +108,13 @@ class ViralPropagationRegistry:
 
         return rule.default_value
 
-    def resolve_single(self, variable_name: str, value: Any) -> Any:
+    def resolve_single(self, component: Any, value: Any) -> Any:
         """Resolve a single viral value through the rule (row-preserving operators).
 
         Enumerated rules apply the matching single-value clause, else the default;
         aggregate rules and "no rule" leave a lone value unchanged.
         """
-        rule = self.get_rule_for_variable(variable_name)
+        rule = self.rule_for(component)
         if rule is None or rule.aggregate_function is not None:
             return value
         for clause in rule.enumerated_clauses:
@@ -133,13 +124,13 @@ class ViralPropagationRegistry:
                 return clause["result"]
         return rule.default_value
 
-    def resolve_group(self, variable_name: str, values: List[Any]) -> Any:
+    def resolve_group(self, component: Any, values: List[Any]) -> Any:
         """Resolve N values (for aggregation/analytic operators)."""
         if len(values) == 0:
             return None
         if len(values) == 1:
-            return self.resolve_single(variable_name, values[0])
-        rule = self.get_rule_for_variable(variable_name)
+            return self.resolve_single(component, values[0])
+        rule = self.rule_for(component)
         if rule is None:
             return None
 
@@ -158,7 +149,7 @@ class ViralPropagationRegistry:
             return funcs[rule.aggregate_function](non_null)
 
         # Enumerated: reduce pairwise (associative + commutative guarantees correctness)
-        return reduce(lambda a, b: self.resolve_pair(variable_name, a, b), values)
+        return reduce(lambda a, b: self.resolve_pair(component, a, b), values)
 
     def clear(self) -> None:
         """Clear all registered rules."""
@@ -239,28 +230,73 @@ def require_rules(components: Iterable[Any]) -> None:
                 )
 
 
+def _common_type(type_a: Any, type_b: Any) -> Any:
+    """The common type of two types of one viral attribute, or None when they have none."""
+    if type_a == type_b:
+        return type_a
+    if check_binary_implicit_promotion(type_a, type_b):
+        return binary_implicit_promotion(type_a, type_b)
+    return None
+
+
 def apply_viral_return_types(components: Iterable[Any], result_components: Dict[str, Any]) -> None:
-    """Set the result data type of viral attributes combined under an ``avg`` rule to
-    Number: avg yields fractional values, mirroring the Avg operator's return type.
-    min/max/sum and enumerated rules keep the input type (sum mirrors Sum, which has no
-    return type). Promoted entries are always replaced with a copy, because some
-    operators share the result component objects (or the dict itself) with their input
-    datasets and the input structure must never be mutated.
+    """Set the result data type of viral attributes combined under an aggregate rule:
+    ``avg`` gives Number, as it yields fractional values, mirroring the Avg operator's
+    return type, and min/max/sum give the type of the combined component, the common
+    type of the operands that :func:`combined_viral_components` gives (sum mirrors Sum,
+    which has no return type) (issue #1314). Enumerated rules keep the input type.
+    Promoted entries are always replaced with a copy, because some operators share the
+    result component objects (or the dict itself) with their input datasets and the input
+    structure must never be mutated.
 
     Call this right after :func:`require_rules` at every combination point, with the
     same combined components and the result-components mapping under construction.
     """
     registry = get_current_registry()
     for comp in components:
-        rule = registry.rule_for(comp)
-        if rule is None or rule.aggregate_function != "avg":
-            continue
         result_comp = result_components.get(comp.name)
         if result_comp is None:
             continue
+        rule = registry.rule_for(comp)
+        aggregate = rule.aggregate_function if rule is not None else None
+        on_domain = rule is not None and rule.signature_type == "valuedomain"
+        if on_domain and aggregate != "avg":
+            continue
+        if aggregate is None and result_comp.value_domain is None:
+            continue
         promoted = copy(result_comp)
-        promoted.data_type = Number
+        promoted.value_domain = None
+        if aggregate == "avg":
+            promoted.data_type = Number
+        elif aggregate is not None:
+            common = _common_type(result_comp.data_type, comp.data_type)
+            promoted.data_type = result_comp.data_type if common is None else common
         result_components[comp.name] = promoted
+
+
+def combine_viral_groups(
+    data: pd.DataFrame, keys: List[str], components: List[Any]
+) -> pd.DataFrame:
+    """The viral attributes ``components`` of each group of data points by ``keys``, combined by
+    their propagation rules: one row per group, or a single row when there are no keys."""
+    registry = get_current_registry()
+    if not keys:
+        return pd.DataFrame(
+            {
+                comp.name: [registry.resolve_group(comp, list(data[comp.name]))]
+                for comp in components
+            }
+        )
+    grouped = data.groupby(keys, sort=False)
+
+    def _group_resolver(component: Any) -> Any:
+        # Binds the attribute per column: a lambda in the comprehension below would see the
+        # last one only.
+        return lambda values: registry.resolve_group(component, list(values))
+
+    return pd.DataFrame(
+        {comp.name: grouped[comp.name].agg(_group_resolver(comp)) for comp in components}
+    ).reset_index()
 
 
 def combined_viral_components(operands: Iterable[Any]) -> List[Any]:
@@ -268,12 +304,19 @@ def combined_viral_components(operands: Iterable[Any]) -> List[Any]:
 
     A viral attribute whose data points are combined appears (by name) as a viral
     attribute in two or more operands; those require a propagation rule. A viral
-    attribute present in a single operand is copied through and needs no rule.
+    attribute present in a single operand is copied through and needs no rule. The
+    component returned has the common type of the operands, when their types have one
+    (issue #1314).
     """
     counts: Dict[str, int] = {}
     comp_by_name: Dict[str, Any] = {}
     for op in operands:
         for comp in op.get_viral_attributes():
             counts[comp.name] = counts.get(comp.name, 0) + 1
+            seen = comp_by_name.get(comp.name)
+            common = None if seen is None else _common_type(seen.data_type, comp.data_type)
+            if common is not None and common != comp.data_type:
+                comp = copy(comp)
+                comp.data_type = common
             comp_by_name[comp.name] = comp
     return [comp_by_name[name] for name, n in counts.items() if n >= 2]

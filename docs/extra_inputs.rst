@@ -27,7 +27,8 @@ Value Domains
 A Value Domain is a named set of unique values that share
 a common data type. Value domains are used with the ``in``
 and ``not_in`` operators to perform membership checks
-in VTL scripts.
+in VTL scripts, and a Component can be defined on one
+(see :ref:`components_on_value_domains`).
 
 
 Definition Format
@@ -120,11 +121,16 @@ The ``value_domains`` parameter accepts the following formats:
   file containing one or more value domain definitions.
 - **Path to a directory**: A ``Path`` pointing to a directory;
   all ``.json`` files in the directory are loaded.
+- **ValueDomain object**: A ``vtlengine.Model.ValueDomain``, for example one
+  built from an SDMX codelist.
 - **List**: A list mixing any of the above formats.
 
 .. code-block:: python
 
     from pathlib import Path
+
+    from vtlengine.DataTypes import String
+    from vtlengine.Model import ValueDomain
 
     # Single dict
     value_domains = {
@@ -139,10 +145,14 @@ The ``value_domains`` parameter accepts the following formats:
     # Path to directory (loads all .json files)
     value_domains = Path("data/value_domains/")
 
+    # ValueDomain object
+    value_domains = ValueDomain(name="Countries", type=String, setlist=["DE", "FR", "IT"])
+
     # List of mixed formats
     value_domains = [
         {"name": "Countries", "type": "String", "setlist": ["DE", "FR"]},
         Path("data/extra_domains.json"),
+        ValueDomain(name="Currencies", type=String, setlist=["EUR", "USD"]),
     ]
 
 
@@ -220,6 +230,130 @@ Example
     )
 
     print(result["DS_r"])
+
+
+.. _components_on_value_domains:
+
+Components Defined on a Value Domain
+====================================
+
+The ``type`` (or ``data_type``) of a Component in the data
+structures can name a value domain given in ``value_domains``,
+instead of a basic type. The Component is then defined on that
+value domain and has its basic type:
+
+.. code-block:: json
+
+    {"name": "Id_2", "type": "VD_FLOW", "role": "Identifier", "nullable": false}
+
+A type that is neither a basic type nor the name of a value
+domain given raises ``0-2-1-1``. Loading the datapoints checks
+that every value of the Component is a value of its value
+domain, and raises ``0-3-1-6`` on another one. Nulls follow
+``nullable``, as with a basic type.
+
+The operators handle the Component as one of its basic type:
+the same type checks and the same result types. ``Id_2 || "_X"``
+is a ``String``, and ``Me_1 + 1`` on a value domain of integers
+is an ``Integer``. The Components that an operator keeps as they
+are keep their value domain: the Identifiers, the Components that
+``filter``, ``keep``, ``drop``, ``rename``, ``sub`` and the joins
+keep, and a Component written alone in ``calc``
+(``calc Me_3 := Id_2``). ``run()`` and ``semantic_analysis()``
+write ``"type": "VD_FLOW"`` for them.
+
+The operators that put the values of several operands into one
+Component (the set operators, the Identifiers that a join
+matches, ``nvl``, ``if-then-else`` and ``case``) follow the VTL
+type conversion rules:
+
+- Operands on the same value domain give that value domain.
+- A value domain and its basic type give the value domain: the
+  values of the basic type are converted into it (downcast), and
+  one that is not a value of the value domain raises ``2-1-5-4``.
+- Two different value domains on the same basic type give that
+  basic type, and any other mix follows the promotion of the basic
+  types (a value domain of integers and a ``Number`` give a
+  ``Number``).
+
+.. code-block:: text
+
+    /* Id_2 keeps VD_FLOW; the Strings of DS_2 must be values of it */
+    DS_r <- union(DS_1, DS_2);
+
+    /* Me_2 is on the value domain of Me_1, and 0 must be one of its values */
+    DS_r <- DS_1 [calc Me_2 := nvl(Me_1, 0)];
+
+``cast`` converts a value of the basic type, or of another value
+domain on it, into a value domain, with the same check:
+
+.. code-block:: text
+
+    /* Me_2 is on VD_1, and every value of Me_1 must be one of its values */
+    DS_r <- DS_1 [calc Me_2 := cast(Me_1, VD_1)];
+
+``pivot`` needs the Identifier it pivots defined on a value domain:
+the result has one Measure per value of the value domain, named after
+the value, of the type (and on the value domain) of the pivoted
+Measure. The other Identifiers group the data points, a value with no
+data point in a group leaves its Measure null, the other Measures and
+the non-viral Attributes are dropped, and the viral Attributes of a
+group are combined by their propagation rule. An Identifier on no
+value domain raises ``1-1-6-18``.
+
+.. code-block:: text
+
+    /* Id_2 is on a value domain of A and B: DS_r has the Measures A and B */
+    DS_r <- DS_1 [pivot Id_2, Me_1];
+
+Value domains also appear in the VTL-DL definitions:
+
+- A datapoint ruleset on value domains binds them, or their aliases,
+  in order to the components listed in ``check_datapoint ...
+  components``. A component of the basic type of its value domain
+  has its values checked against it (``2-1-5-4``), and one of
+  another basic type raises ``1-1-10-12``. A value domain that is
+  not given is not checked. Without ``components``, the names of the
+  signature are read as components of the Data Set. For backwards
+  compatibility, a ruleset whose value domains are all named as
+  components of the Data Set reads those components, whatever
+  components the call lists.
+- A viral propagation rule on a value domain applies to the viral
+  attributes defined on it, unless a rule on the variable overrides
+  it.
+- A value domain types a scalar or a component parameter of a user
+  defined operator (``x VD_FLOW``, ``x component<VD_FLOW>``): the
+  argument is of the basic type of the value domain, and its values
+  must be values of it (``2-1-5-4``). In the body it behaves as its
+  basic type.
+
+.. code-block:: text
+
+    define datapoint ruleset DPR_1 (valuedomain VD_FLOW as F, VD_AMOUNT as A) is
+        when F = "CREDIT" then A >= 0
+    end datapoint ruleset;
+
+    define viral propagation VP_1 (valuedomain CL_CONF) is
+        when "C" then "C";
+        else "F"
+    end viral propagation;
+
+    define operator with_suffix (x component<VD_FLOW>)
+        returns component<string> is
+            x || "_X"
+    end operator;
+
+    DS_r <- check_datapoint(DS_1, DPR_1 components Id_2, Me_1 all);
+    DS_s <- DS_1 [calc Me_2 := with_suffix(Id_2)];
+
+The value domains ``errorcode_vd`` and ``errorlevel_vd``, when given,
+type the error codes and the error levels of ``check``,
+``check_datapoint`` and ``check_hierarchy``: the ``errorcode`` and
+``errorlevel`` Measures take their basic types, and every error code
+and level of a rule or of ``check`` must be one of their values
+(``1-1-10-13``). Without them, the Measures keep their usual types.
+
+Scalars typed by a value domain are not supported.
 
 
 Validation
@@ -310,11 +444,16 @@ The ``external_routines`` parameter accepts the following formats:
 - **Path to a file**: A ``Path`` pointing to a ``.json`` file.
 - **Path to a directory**: A ``Path`` pointing to a directory;
   all ``.json`` files in the directory are loaded.
+- **ValueDomain object**: A ``vtlengine.Model.ValueDomain``, for example one
+  built from an SDMX codelist.
 - **List**: A list mixing any of the above formats.
 
 .. code-block:: python
 
     from pathlib import Path
+
+    from vtlengine.DataTypes import String
+    from vtlengine.Model import ValueDomain
 
     # Single dict
     external_routines = {

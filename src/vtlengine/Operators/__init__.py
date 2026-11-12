@@ -1,6 +1,6 @@
 import re
 from copy import copy
-from typing import Any, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import pandas as pd
 
@@ -22,6 +22,7 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
+    Null,
     binary_implicit_promotion,
     check_binary_implicit_promotion,
     check_unary_implicit_promotion,
@@ -33,7 +34,15 @@ from vtlengine.DataTypes.TimeHandling import (
     TimePeriodHandler,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
+from vtlengine.Model import (
+    Component,
+    DataComponent,
+    Dataset,
+    Role,
+    Scalar,
+    ScalarSet,
+    ValueDomain,
+)
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
@@ -54,6 +63,85 @@ BINARY_COMPARISON_OPERATORS = [EQ, NEQ, GT, GTE, LT, LTE]
 BINARY_BOOLEAN_OPERATORS = [AND, OR, XOR]
 
 only_semantic = False
+
+
+def _part_of(operand: Any, component: Any) -> Any:
+    """What an operand puts into a component of the result: its component of that name, or
+    the operand itself when it is a scalar or a component, which goes into the Measures."""
+    if isinstance(operand, Dataset):
+        return operand.components.get(component.name)
+    return operand if component.role == Role.MEASURE else None
+
+
+def _on_domain(part: Any) -> bool:
+    return getattr(part, "value_domain", None) is not None
+
+
+def shared_value_domain(parts: Iterable[Any]) -> Optional[ValueDomain]:
+    """The value domain a component keeps when an operator puts the values of several
+    operands into it: the one they share, the operands of its basic type being downcast
+    into it. Two value domains, or a value domain and another basic type, give the
+    promotion of the basic types."""
+    parts = [part for part in parts if part is not None]
+    domains = {part.value_domain.name: part.value_domain for part in parts if _on_domain(part)}
+    if len(domains) != 1:
+        return None
+    (value_domain,) = domains.values()
+    if all(_on_domain(part) or part.data_type in (value_domain.type, Null) for part in parts):
+        return value_domain
+    return None
+
+
+def share_value_domains(
+    components: Dict[str, Any], operands: List[Any], names: Optional[Iterable[str]] = None
+) -> None:
+    """Gives the components of the result the value domain their operands share."""
+    for name in components if names is None else names:
+        component = components[name]
+        component.value_domain = shared_value_domain(
+            _part_of(operand, component) for operand in operands
+        )
+
+
+def downcasts(result: Any, operands: List[Any]) -> Dict[Optional[str], ValueDomain]:
+    """The components of a result, a Data Set or a component (None), that take values of
+    their basic type from an operand, which must then be values of their value domain
+    (downcast)."""
+    parts: List[Tuple[Optional[str], Any, List[Any]]] = [(None, result, operands)]
+    if isinstance(result, Dataset):
+        parts = [
+            (name, comp, [_part_of(operand, comp) for operand in operands])
+            for name, comp in result.components.items()
+        ]
+    return {
+        name: comp.value_domain
+        for name, comp, comp_parts in parts
+        if comp.value_domain is not None
+        and not all(
+            _on_domain(part) or part.data_type is Null for part in comp_parts if part is not None
+        )
+    }
+
+
+def check_downcasts(result: Any, operands: List[Any], op: str) -> None:
+    """Checks the values downcast into the value domain of a component of the result."""
+    if result.data is None:
+        return
+    for name, value_domain in downcasts(result, operands).items():
+        check_values(result.data if name is None else result.data[name], value_domain, op)
+
+
+def check_values(values: Any, value_domain: ValueDomain, op: str) -> None:
+    """The values an operator converts into a value domain must be values of it."""
+    outside = value_domain.outside(values)
+    if len(outside):
+        raise RunTimeError(
+            "2-1-5-4",
+            op=op,
+            value=outside.iloc[0],
+            type=SCALAR_TYPES_CLASS_REVERSE[value_domain.type],
+            value_domain=value_domain.name,
+        )
 
 
 class Operator:
@@ -307,6 +395,19 @@ class Binary(Operator):
                 right_name=right_operand.name,
                 right=sorted(right_ids_set),
             )
+        # The Data Points match on the values of the common Identifiers, which need a common
+        # type, as in a join (issue #1314)
+        for id_name in sorted(left_ids_set & right_ids_set):
+            left_type = left_operand.components[id_name].data_type
+            right_type = right_operand.components[id_name].data_type
+            if not check_binary_implicit_promotion(left_type, right_type):
+                raise SemanticError(
+                    "1-1-13-18",
+                    op=cls.op,
+                    id_name=id_name,
+                    type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
+                    type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
+                )
 
         # Deleting extra identifiers that we do not need anymore
 
@@ -327,6 +428,10 @@ class Binary(Operator):
                 left_comp = left_operand.components[comp.name]
                 right_comp = right_operand.components[comp.name]
                 comp.nullable = left_comp.nullable or right_comp.nullable
+        # The Identifiers of both operands are matched, so their values are the ones of both
+        share_value_domains(
+            result_components, [left_operand, right_operand], left_ids_set & right_ids_set
+        )
 
         # Viral attributes present in BOTH operands have their data points merged, so they
         # are combined and require a propagation rule; a viral attribute in a single operand
@@ -516,6 +621,7 @@ class Binary(Operator):
                 raise SemanticError("1-1-1-4", op=cls.op)
             else:
                 measure.data_type = result_data_type
+                measure.value_domain = None
 
     @staticmethod
     def _cleanup_attributes_after_merge(
@@ -546,8 +652,9 @@ class Binary(Operator):
             has_y = va + "_y" in result_data.columns
             if has_x and has_y:
                 # Both operands have this viral attr — apply propagation rule
+                component = left_operand.components[va]
                 result_data[va] = result_data[[va + "_x", va + "_y"]].apply(
-                    lambda row: registry.resolve_pair(va, row.iloc[0], row.iloc[1]),
+                    lambda row, c=component: registry.resolve_pair(c, row.iloc[0], row.iloc[1]),
                     axis=1,
                 )
                 result_data = result_data.drop([va + "_x", va + "_y"], axis=1)
@@ -945,6 +1052,7 @@ class Unary(Operator):
                 raise SemanticError("1-1-1-4", op=cls.op)
             else:
                 measure.data_type = result_data_type
+                measure.value_domain = None
 
     @classmethod
     def evaluate(cls, operand: ALL_MODEL_DATA_TYPES) -> Any:

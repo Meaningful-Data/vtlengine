@@ -7,6 +7,9 @@ from vtlengine.AST import (
     OrderBy,
     ParamConstant,
     ParamOp,
+    RulesetType,
+    SetType,
+    ValueDomainType,
     VarID,
     Windowing,
 )
@@ -172,10 +175,16 @@ class Terminals:
     def visitValueDomainName(self, ctx):
         """
         valueDomainName: IDENTIFIER ;
+
+        The value domain a cast converts to.
         """
-        ctx_list = ctx.children
-        # AST_ASTCONSTRUCTOR.48
-        raise InputValidationException(code="0-5-1-8", name=ctx_list[0].text)
+        return Collection(
+            name=ctx.children[0].text,
+            children=[],
+            kind="ValueDomain",
+            type="",
+            **extract_token_info(ctx),
+        )
 
     def visitValueDomainValue(self, ctx):
         child = ctx.children[0]
@@ -333,12 +342,13 @@ class Terminals:
         if not c.is_terminal and c.rule_index == RC.CONSTANT[0]:
             return self.visitConstant(c)
 
-    def visitScalarType(self, ctx, allow_constraints=False):
+    def visitScalarType(self, ctx, allow_constraints=False, allow_value_domain=False):
         """
         scalarType: (basicScalarType|valueDomainName)scalarTypeConstraint?((NOT)? NULL_CONSTANT)? ;
 
         A user defined operator signature allows the constraints, which ASTVisitor reads apart
-        anywhere else they are not supported.
+        anywhere else they are not supported. The type of a scalar or component parameter can be
+        a value domain.
         """
         ctx_list = ctx.children
 
@@ -375,6 +385,11 @@ class Terminals:
             if scalartype.children[0].symbol_type == vtl_cpp_parser.SCALAR:
                 return Scalar(name="", data_type=None, value=None)
             type_node = self.visitBasicScalarType(scalartype)
+
+        elif allow_value_domain and scalartype.ctx_id == RC.VALUE_DOMAIN_NAME:
+            type_node = ValueDomainType(
+                name=scalartype.children[0].text, definition=script_location(scalartype)
+            )
 
         else:
             raise InputValidationException(code="0-5-1-10", definition=script_location(scalartype))
@@ -419,10 +434,48 @@ class Terminals:
                    | dpRuleset
                    | hrRuleset
                    ;
+        dpRuleset: DATAPOINT
+                 | DATAPOINT_ON_VD (GLPAREN valueDomainName (MUL valueDomainName)* GRPAREN)?
+                 | DATAPOINT_ON_VAR (GLPAREN varID (MUL varID)* GRPAREN)? ;
+        hrRuleset: HIERARCHICAL
+                 | HIERARCHICAL_ON_VD (GLPAREN vdName=IDENTIFIER
+                       (LPAREN valueDomainName (MUL valueDomainName)* RPAREN)? GRPAREN)?
+                 | HIERARCHICAL_ON_VAR (GLPAREN varName=varID
+                       (LPAREN varID (MUL varID)* RPAREN)? GRPAREN)? ;
         """
-        raise SemanticError("1-3-13", construct=f"ruleset type {script_location(ctx)}")
+        c = ctx.children[0]
+        if c.is_terminal:
+            return RulesetType(kind="ruleset")
+        kind = "datapoint" if c.rule_index == RC.DATA_POINT[0] else "hierarchical"
+        signature_type = None
+        if c.ctx_id in (RC.DATA_POINT_VD, RC.HR_RULESET_VD_TYPE):
+            signature_type = "valuedomain"
+        elif c.ctx_id in (RC.DATA_POINT_VAR, RC.HR_RULESET_VAR_TYPE):
+            signature_type = "variable"
+        # The names of the constraint, in order, and where the conditions of a hierarchical
+        # ruleset start, after the parenthesis
+        names, conditions, in_conditions = [], [], False
+        for child in c.children[1:]:
+            if child.is_terminal:
+                if child.symbol_type == vtl_cpp_parser.LPAREN:
+                    in_conditions = True
+                elif child.symbol_type == vtl_cpp_parser.IDENTIFIER:
+                    names.append(child.text)
+                continue
+            name = child.children[0].text
+            (conditions if in_conditions else names).append(name)
+        if not names:
+            return RulesetType(kind=kind, signature_type=signature_type)
+        if kind == "hierarchical":
+            return RulesetType(
+                kind=kind,
+                signature_type=signature_type,
+                names=tuple(names),
+                conditions=tuple(conditions) if in_conditions else None,
+            )
+        return RulesetType(kind=kind, signature_type=signature_type, names=tuple(names))
 
-    def visitComponentType(self, ctx, allow_constraints=False):
+    def visitComponentType(self, ctx, allow_constraints=False, allow_value_domain=False):
         """
         componentType:  componentRole ( LT   scalarType  MT  )?
         """
@@ -430,7 +483,7 @@ class Terminals:
 
         role_node = self.visitComponentRole(ctx_list[0])
         data_type = [
-            self.visitScalarType(constraint, allow_constraints)
+            self.visitScalarType(constraint, allow_constraints, allow_value_domain)
             for constraint in ctx_list
             if not constraint.is_terminal and constraint.ctx_id == RC.SCALAR_TYPE
         ]
@@ -454,7 +507,7 @@ class Terminals:
         c = ctx_list[0]
 
         if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
-            return self.visitScalarType(c, allow_constraints)
+            return self.visitScalarType(c, allow_constraints, allow_value_domain=True)
 
         elif not c.is_terminal and c.ctx_id == RC.DATASET_TYPE:
             return self.visitDatasetType(c, allow_constraints)
@@ -466,7 +519,7 @@ class Terminals:
             return self.visitRulesetType(c)
 
         # componentType, the last alternative of the grammar
-        return self.visitComponentType(c, allow_constraints)
+        return self.visitComponentType(c, allow_constraints, allow_value_domain=True)
 
     def visitOutputParameterType(self, ctx):
         """
@@ -563,8 +616,14 @@ class Terminals:
         """
         scalarSetType: SET ('<' scalarType '>')? ;
         """
-        # AST_ASTCONSTRUCTOR.60
-        raise SemanticError("1-3-13", construct=f"set type {script_location(ctx)}")
+        types = [
+            self.visitScalarType(c)
+            for c in ctx.children
+            if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE
+        ]
+        # set and set<scalar> take the values of any scalar type
+        data_type = types[0] if types and not isinstance(types[0], Scalar) else None
+        return SetType(data_type=data_type)
 
     def visitRetainType(self, ctx):
         """
@@ -627,7 +686,8 @@ class Terminals:
         ctx_list = ctx.children
 
         try:
-            return str(self.visitConstant(ctx_list[1]).value)
+            value = self.visitConstant(ctx_list[1]).value
+            return str(value).lower() if isinstance(value, bool) else str(value)
         except Exception:
             raise InputValidationException(code="0-5-1-5", definition=script_location(ctx_list[1]))
 

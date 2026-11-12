@@ -11,6 +11,7 @@ from vtlengine.AST.Grammar.tokens import (
     DROP,
     FILTER,
     KEEP,
+    PIVOT,
     RENAME,
     SUBSPACE,
     UNPIVOT,
@@ -23,9 +24,15 @@ from vtlengine.DataTypes import (
     binary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
+from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ValueDomain
 from vtlengine.Operators import Operator
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils._dataframe import merge_frames
+from vtlengine.ViralPropagation import (
+    apply_viral_return_types,
+    combine_viral_groups,
+    require_rules,
+)
 
 
 def _check_repeated(op: str, operands: List[str]) -> None:
@@ -62,12 +69,14 @@ class Calc(Operator):
                     )
                 )
             else:
+                # A component written alone keeps the value domain it is defined on
                 result_dataset.add_component(
                     Component(
                         name=operand.name,
                         data_type=operand.data_type,
                         role=operand.role,
                         nullable=operand.nullable,
+                        value_domain=operand.value_domain,
                     )
                 )
         return result_dataset
@@ -265,6 +274,7 @@ class Rename(Operator):
                     data_type=comp.data_type,
                     role=comp.role,
                     nullable=comp.nullable,
+                    value_domain=comp.value_domain,
                 )
             else:
                 result_components[comp.name] = comp
@@ -281,13 +291,92 @@ class Rename(Operator):
 
 
 class Pivot(Operator):
+    """pivot identifier, measure: one Measure per value of the value domain the Identifier is
+    defined on, named after the value, which holds the value of the measure of the data point
+    of that value in each group of the other Identifiers."""
+
+    op = PIVOT
+
+    @staticmethod
+    def measure_names(value_domain: ValueDomain) -> List[str]:
+        """The names of the Measures, the values of the value domain as it writes them."""
+        return [str(value) for value in value_domain.setlist]
+
+    @classmethod
+    def _check_role(cls, dataset: Dataset, name: str, role: Role) -> Component:
+        if name not in dataset.components:
+            raise SemanticError("1-1-1-10", op=cls.op, comp_name=name, dataset_name=dataset.name)
+        component = dataset.components[name]
+        if component.role != role:
+            raise SemanticError(
+                "1-1-1-13",
+                op=cls.op,
+                comp_name=name,
+                role_1=role.value,
+                role_2=component.role.value,
+            )
+        return component
+
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        raise SemanticError("1-3-13", construct="pivot clause")
+        if len(operands) != 2:
+            raise SemanticError("1-1-6-17", op=cls.op)
+        identifier = cls._check_role(dataset, operands[0], Role.IDENTIFIER)
+        measure = cls._check_role(dataset, operands[1], Role.MEASURE)
+        if identifier.value_domain is None:
+            raise SemanticError("1-1-6-18", op=cls.op, name=identifier.name)
+
+        components = {
+            comp.name: comp for comp in dataset.get_identifiers() if comp.name != identifier.name
+        }
+        viral_attributes = dataset.get_viral_attributes()
+        names = cls.measure_names(identifier.value_domain)
+        kept = {*components, *(comp.name for comp in viral_attributes)}
+        repeated = sorted({name for name in names if name in kept})
+        if repeated:
+            raise SemanticError("1-1-6-9", op=cls.op, from_components=repeated)
+        # The Measures are of the type, and on the value domain, of the input Measure
+        for name in names:
+            components[name] = Component(
+                name=name,
+                data_type=measure.data_type,
+                role=Role.MEASURE,
+                nullable=True,
+                value_domain=measure.value_domain,
+            )
+        # The data points of a group are combined, so are their viral attributes
+        components.update((comp.name, copy(comp)) for comp in viral_attributes)
+        require_rules(viral_attributes)
+        apply_viral_return_types(viral_attributes, components)
+        return Dataset(name=VirtualCounter._new_ds_name(), components=components, data=None)
 
     @classmethod
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        raise SemanticError("1-3-13", construct="pivot clause")
+        result = cls.validate(operands, dataset)
+        identifier, measure = operands
+        value_domain = dataset.components[identifier].value_domain
+        if dataset.data is None or value_domain is None:
+            return result
+        keys = [name for name in dataset.get_identifiers_names() if name != identifier]
+        names = dict(zip(value_domain.values(), cls.measure_names(value_domain)))
+        # A key for the single group of a pivot of the only Identifier
+        index = keys or ["__pivot_group__"]
+        data = dataset.data.assign(__pivot_group__=0) if not keys else dataset.data
+        wide = data.pivot(index=index, columns=identifier, values=measure)
+        wide = wide.reindex(columns=list(names)).rename(columns=names)
+        wide.columns.name = None
+        wide = wide.reset_index()
+        viral_components = dataset.get_viral_attributes()
+        if viral_components and len(data):
+            groups = combine_viral_groups(data, index, viral_components)
+            wide = merge_frames(wide, groups, how="left", on=index)
+        result.data = wide.drop(columns="__pivot_group__", errors="ignore")
+        for name, comp in result.components.items():
+            if name not in result.data.columns:
+                result.data[name] = None
+            result.data[name] = result.data[name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
+        result.data = result.data[result.get_components_names()]
+        return result
 
 
 class Unpivot(Operator):

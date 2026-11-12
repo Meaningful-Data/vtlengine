@@ -1,0 +1,11 @@
+define operator q2 (ds dataset, m component)
+    returns dataset is
+        ds[calc Me_2 := m]
+end operator;
+
+define operator q (ds dataset, m component<number [value > 0]>)
+    returns dataset is
+        q2(ds, m)
+end operator;
+
+DS_r <- q(DS_1, Me_1);
