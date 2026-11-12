@@ -1,0 +1,9 @@
+{
+  "name": "CL_CONF",
+  "type": "String",
+  "setlist": [
+    "C",
+    "N",
+    "F"
+  ]
+}

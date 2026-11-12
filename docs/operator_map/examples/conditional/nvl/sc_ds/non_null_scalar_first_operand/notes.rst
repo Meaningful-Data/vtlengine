@@ -1,0 +1,3 @@
+:Tests: ``nvl ( 5, DS_1 )``: a scalar as op1 and a data set as op2.
+:Manual: `Nvl <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Nvl/index.html>`__: "The operator has the typical behaviour of the operators applicable on two scalar values or Data Sets or Data Set Components"; there "DS_1 or DS_2 may be replaced by a Scalar value", and "An operand Scalar value is treated as a Data Point that couples with all the Data Points of the other operand" (Typical behaviours).
+:Expected: the error ``1-1-9-2``, "At op {op}: The applicable operand cannot be a {right_type} when the operand is a {left_type}": by a team decision, a Scalar first operand of ``nvl`` takes only a Scalar second one.

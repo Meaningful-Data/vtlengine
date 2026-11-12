@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, string, "YYYY-MM-DDThh:mm:ssZ")`` on a Date measure with a time of day: the manual's mask for a "Date and day time with separators".
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "A *date* scalar type is a point in time", "Date and day time with separators: "2015-03-03T09:30:45Z"" with the mask ``YYYY-MM-DDThh:mm:ssZ``, and ``T`` and ``Z`` are among the "fixed characters used in the ISO 8601 standard which can appear as fixed characters in the relevant masks".
+:Expected: ``2015-03-03T09:30:45Z``, the manual's value, and ``2018-04-05T12:30:15Z``. ``Z`` is a fixed character: the time is written as it is.

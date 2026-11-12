@@ -1,0 +1,3 @@
+:Tests: ``using Id_1`` only, on operands with ``Id_1`` and ``Id_2`` that share no ``(Id_1, Id_2)`` key; the renames name the two ``Id_2``.
+:Manual: `Inner Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html>`__: with using, it "only uses the remaining identifiers as join keys"; the other components of several data sets "appear as many times as the data sets they come from", with a prefix.
+:Expected: ``Id_1`` = 1 pairs both data points of ``DS_1`` with the one of ``DS_2``: ``(1,A,C)`` and ``(1,B,C)`` as ``Id_1``, ``Id_21``, ``Id_22``. The natural join would match nothing, and without the renames, stripping the prefixes would give two ``Id_2``, an error.

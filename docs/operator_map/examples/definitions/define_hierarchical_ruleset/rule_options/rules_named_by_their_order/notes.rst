@@ -1,0 +1,3 @@
+:Tests: two unnamed rules, ``A = B`` and ``C > B``.
+:Manual: `define hierarchical ruleset <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/hierarchical_rulesets.html>`__: "The ruleName is optional and, if not specified, is assumed to be the progressive order number of the Rule in the Ruleset".
+:Expected: ``ruleid`` 1 and 2: rule 1 fails, 5 against 4 with ``imbalance`` 1, and rule 2 holds, 6 against 4 with ``imbalance`` 2. ``errorcode`` and ``errorlevel`` are null, ``imbalance`` is a Number like ``Me_1``, ``ruleid`` and ``errorcode`` Strings, and ``errorlevel`` Integer, the manual's default without errorlevel_vd (#1256).

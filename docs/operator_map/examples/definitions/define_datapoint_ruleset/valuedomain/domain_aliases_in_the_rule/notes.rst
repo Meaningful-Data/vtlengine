@@ -1,0 +1,4 @@
+:Tests: the value domains with the aliases ``F`` and ``A``, which the rule uses, bound to ``Id_2`` and ``Me_1`` with ``components``.
+:Manual: `define datapoint ruleset <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/datapoint_rulesets.html>`__: the alias is "an (optional) alias assigned to a Value Domain and valid only within the Ruleset", and in check_datapoint, "If dpr is defined on Value Domains then it is mandatory to specify listComp".
+:Expected: ``ruleid`` 1 and ``bool_var`` true, false and true for (CREDIT, 10), (CREDIT, -5) and (DEBIT, -2), the last as its antecedent is false. ``errorcode`` and ``errorlevel`` are null, ``ruleid`` and ``errorcode`` Strings, and ``errorlevel`` Integer, the manual's default without errorlevel_vd (#1256).
+:Finding: ``VD_AMOUNT``, the integer amounts, has no file, as a vtlengine value-domain file lists values only, and the loader ignores the ``variables`` and ``domains`` of its structure schema.

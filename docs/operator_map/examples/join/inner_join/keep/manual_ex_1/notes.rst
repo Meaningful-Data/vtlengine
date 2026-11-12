@@ -1,0 +1,3 @@
+:Tests: ``keep Me_1, d2#Me_2, Me_1A`` on two operands that both have ``Me_2``: the aliases let ``d2#Me_2`` name one of them.
+:Manual: `Inner Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html>`__, Example 1, output verbatim: "keep will maintain all the identifiers and only the specified non-identifier components", and then "all components that originally appeared in multiple input data sets, are renamed by stripping their previously determined prefix".
+:Expected: the keys in both operands, ``(1,A)`` and ``(1,B)``; ``d1#Me_2`` goes and ``d2#Me_2`` becomes ``Me_2`` (``Q``, ``T``).

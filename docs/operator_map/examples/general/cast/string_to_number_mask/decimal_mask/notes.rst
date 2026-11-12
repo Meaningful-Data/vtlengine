@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, number, "DD.DDD")`` on a String measure: the mask of the page's Example 1, ``cast(m1, number, "DD.DDD") + 2``.
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "“D” one numeric digit (for the mantissa of the scientific notation)" and "“.” (dot) can be used as a separator between the integer and the decimal parts".
+:Expected: ``12.375``, and ``3.5`` from ``03.500``: two digits, a dot and three digits. The conversion without a mask, which skips leading zeroes, gives the same: the mask shows in the strings that it refuses, such as ``12.5`` or ``12.3755``.

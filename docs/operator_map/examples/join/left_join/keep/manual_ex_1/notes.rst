@@ -1,0 +1,3 @@
+:Tests: ``keep Me_1, d2#Me_2, Me_1A`` on two operands that both have ``Me_2``: the aliases let ``d2#Me_2`` name one of them.
+:Manual: `Left Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Left%20Join/index.html>`__, Example 1, output verbatim: ``DS_2`` has the identifiers of ``DS_1``, so "the using clause is optional", and where a key is not in ``DS_2`` the "Measures coming from that data set take the null value of their respective domains".
+:Expected: the three keys of ``DS_1``; ``(2,A)`` is not in ``DS_2``, so its ``Me_2`` and ``Me_1A`` are null. ``d1#Me_2`` goes and ``d2#Me_2`` becomes ``Me_2``.

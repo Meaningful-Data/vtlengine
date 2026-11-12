@@ -1,0 +1,3 @@
+:Tests: ``eval`` with a dataset and a scalar argument, which the routine reads by its position.
+:Manual: `Evaluation of an external routine <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Evaluation%20of%20an%20external%20routine/index.html>`__: an argument "can be a name or a value of a VTL artefacts", and "The arguments passed to the routine correspond to the parameters of the invoked external routine in positional order".
+:Expected: the error ``1-2-23``, "{pos} operand must be a Dataset": by a team decision, ``eval`` runs on data sets only, so its arguments are data sets, never scalars.

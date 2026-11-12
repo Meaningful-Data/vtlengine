@@ -1,0 +1,3 @@
+:Tests: ``unpivot Id_2, Me_3``, on a data point whose ``Me_2`` is null.
+:Manual: `Unpivoting <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Unpivoting/index.html>`__: "For each Data Point DP and for each Measure M of op whose value is not null, the operator inserts a Data Point into VDS", and "When a Measure is null then unpivot does not create a Data Point for that Measure."
+:Expected: ``(1, Me_1)`` = 5, ``(2, Me_1)`` = 3 and ``(2, Me_2)`` = 4, with no data point for the null ``Me_2`` of ``Id_1`` = 1. ``Id_2`` holds component names, so it is a String, and ``Me_3`` has the type of the measures, Integer.

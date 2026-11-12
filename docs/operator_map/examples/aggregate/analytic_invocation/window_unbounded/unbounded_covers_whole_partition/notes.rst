@@ -1,0 +1,3 @@
+:Tests: ``data points between unbounded preceding and unbounded following``, with an order clause.
+:Manual: `Analytic invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html>`__: "unbounded preceding means that the sliding window starts at the first Data Point of the partition" and "unbounded following indicates that the sliding window ends at the last Data Point of the partition". With an order clause, an omitted window would be "range between unbounded preceding and current data point" instead.
+:Expected: ``Me_3`` is the sum of the whole partition on each data point: 10 in ``A`` and 12 in ``B``.

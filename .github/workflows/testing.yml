@@ -256,3 +256,37 @@ jobs:
             while read -r id; do
               gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id"
             done
+
+  # The operator map (docs/operator_map): its generator's tests, the checks of its catalogue and
+  # examples, and every example run on both engines and compared with the committed status.json.
+  # Only a regression fails; improvements are listed in the job summary.
+  operator-map:
+    name: Operator map
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install poetry
+        run: pipx install poetry
+      - name: Set up Python 3.13
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Build the C++ parser
+        uses: ./.github/actions/build-cpp-parser
+        with:
+          python-version: "3.13"
+          # The testing job on Ubuntu with Python 3.13 saves the entries of these keys
+          save-cache: false
+      - name: Install dependencies
+        run: poetry install --no-root --all-extras
+      - name: Run the operator map's tests
+        run: >-
+          poetry run pytest -p no:cacheprovider -o python_files='check_*.py'
+          -o pythonpath="src docs/operator_map" docs/operator_map/tool/tests -q
+      - name: Check the operator map's catalogue and examples
+        run: poetry run python docs/operator_map/generate.py --check-only
+      - name: Compare the engine with the operator map
+        run: poetry run python docs/operator_map/generate.py --compare --summary "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, string, "P")`` on a Duration measure: the one-character mask of a duration, with each of its codes.
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "Non ISO representation of the *duration* in one character, whose possible codes are": "D Day", "W Week", "M Month", "Q Quarter", "S Semester" and "A Year", with "VTL Mask: P (period indicator)".
+:Expected: The codes ``A``, ``M``, ``D``, ``W``, ``Q`` and ``S``. Only the mask explains them: without it, a duration is printed in ISO 8601, such as ``P1Y`` for a year.

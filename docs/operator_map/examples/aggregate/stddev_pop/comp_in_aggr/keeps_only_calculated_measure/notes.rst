@@ -1,0 +1,3 @@
+:Tests: ``stddev_pop`` at component level in ``aggr``, grouped by ``Id_1``.
+:Manual: `Aggregate invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Aggregate%20invocation/index.html>`__: "For the invocation at Component level, the resulting Data Set has the Measures explicitly calculated (all the other Measures are dropped because no aggregation behaviour is specified for them)."
+:Expected: ``Id_1`` and ``Me_3`` only: 1.658312 for ``A`` and 2 for ``B``, by ``sqrt(sum((x - mean)^2) / n)``, which gives the page's 1.632993 for 3, 5 and 7.

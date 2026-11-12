@@ -1,0 +1,3 @@
+:Tests: ``replace(DS_1, "l")`` with ``pattern2`` omitted.
+:Manual: `String pattern replacement <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/String%20pattern%20replacement/index.html>`__: "If ``pattern2`` is omitted then all occurrences of ``pattern1`` are removed."
+:Expected: ``hello world``, which has three ``l``, gives ``heo word``; ``say`` has none and is kept. A null operand gives a null result: "most of the scalar operations (arithmetic, logical, and others) return null when any of their arguments is null" (User Manual), as the manual's ``length`` and ``instr`` examples show.

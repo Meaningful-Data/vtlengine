@@ -1,0 +1,3 @@
+:Tests: ``period_indicator(SC_1)`` on a scalar time_period, ``SC_1`` = 2010Q1, an input scalar, as VTL has no time_period literal.
+:Manual: `Period indicator <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Period%20indicator/index.html>`__: "**period_indicator** returns the period indicator of a *time_period* value. The period indicator is the part of the *time_period* value which denotes the duration of the time period (e.g. day, week, month...)."
+:Expected: ``DS_r = Q``, a Duration: the manual's default conversion from string to time_period (Type conversion) reads ``2010Q1`` as the first quarter of 2010.

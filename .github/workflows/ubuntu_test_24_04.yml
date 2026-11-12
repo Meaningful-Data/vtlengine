@@ -40,3 +40,14 @@ jobs:
         env:
           VTL_ENGINE_BACKEND: duckdb
         run: pytest -n auto --dist worksteal --verbose --tb=short --strict-markers --strict-config --durations=10
+
+      - name: Run the operator map's tests
+        run: >-
+          pytest -p no:cacheprovider -o python_files='check_*.py'
+          -o pythonpath="src docs/operator_map" docs/operator_map/tool/tests -q
+
+      - name: Check the operator map's catalogue and examples
+        run: python3 docs/operator_map/generate.py --check-only
+
+      - name: Compare the engine with the operator map
+        run: python3 docs/operator_map/generate.py --compare --summary "$GITHUB_STEP_SUMMARY"

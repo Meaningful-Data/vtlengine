@@ -1,0 +1,3 @@
+:Tests: ``round`` with ``numDigit`` omitted, on a dataset with one Number measure.
+:Manual: `Rounding <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Rounding/index.html>`__: "The basic scalar type of the result is *integer* if *numDigit* is omitted", and in the `Typical behaviours <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html>`__, "Operators changing the data type", the measure whose type changes is replaced: "A default generic Measure is assigned by default to the result Data Set, depending on the data type of the result", ``int_var`` for an Integer.
+:Expected: ``int_var``, an Integer: 3.14159, 2.71828 and 12345.6 give 3, 3 and 12346.

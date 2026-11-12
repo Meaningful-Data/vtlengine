@@ -1,0 +1,3 @@
+:Tests: ``DS_r <- DS_1 - DS_2``: the result of an expression assigned to a persistent result.
+:Manual: `Persistent assignment <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Persistent%20assignment/index.html>`__: "the operand ``op`` can be obtained through an expression as complex as needed (for example ``op`` can be the expression ``DS_1 - DS_2``)", and ``re`` "assumes the same value as ``op``" and "has the same data structure as the Operand".
+:Expected: The inputs have the same identifiers, so ``Me_1`` is ``10 - 3 = 7`` and ``20 - 5 = 15``, Integers (Subtraction page).

@@ -1,0 +1,3 @@
+:Tests: ``sub Id_1 = 1``, alone, on one of two identifiers.
+:Manual: `Subspace <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Subspace/index.html>`__: "It maintains the Data Points of VDS for which identifier = value (for all the specified identifier) and eliminates all the Data Points for which identifier <> value", then "It projects out (“drops”, in VTL terms) all the identifier (s)".
+:Expected: ``(1,A)`` = 10 and ``(1,B)`` = 20 are kept and ``(2,A)`` = 30 is eliminated; ``Id_1`` is projected out, leaving ``Id_2`` and ``Me_1``. Manual example 3 adds two subspaces with ``+``; this one shows ``sub`` alone.

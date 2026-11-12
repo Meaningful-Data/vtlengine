@@ -1,0 +1,3 @@
+:Tests: ``A = B errorcode "E_AB"`` on two groups of ``Id_1``.
+:Manual: `define hierarchical ruleset <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/hierarchical_rulesets.html>`__: the error code is "a literal denoting the error code associated to the rule, to be assigned to the possible non-valid results", and in check_hierarchy "if the Measure bool_var is true or null then errorcode is null".
+:Expected: 5 = 5 holds, and 5 = 4 fails with ``imbalance`` 1 and ``errorcode`` ``E_AB``, both with ``ruleid`` 1. ``imbalance`` is a Number like ``Me_1``, ``ruleid`` and ``errorcode`` Strings, and the null ``errorlevel`` Integer, the manual's default without errorlevel_vd (#1256).

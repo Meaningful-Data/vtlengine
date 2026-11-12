@@ -1,0 +1,3 @@
+:Tests: ``substr(SC_1, SC_2, SC_3)`` with ``SC_1`` = ``abcdefghijklmnopqrstuvwxyz``, ``SC_2`` = 30 and ``SC_3`` = 10, where ``start`` is past the end of the string.
+:Manual: `Sub-string extraction <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/Sub-string%20extraction/index.html>`__: "If ``start`` is greater than the length of the input string, an empty string is extracted.", and ``substr ("abcdefghijklmnopqrstuvwxyz", 30 , 10 )`` gives ``""``.
+:Expected: ``SC_r`` is the empty string. The map compares an empty value and a null as the same one, so this example cannot tell the two apart.

@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, string)`` on a Number measure, without a mask: the default format.
+:Manual: `Type conversion <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html>`__: "From **number**: the ``number`` value may be printed either in the scientific notation, or as a sequence of digits, possibly preceded by a ``-``, with ``.`` as the decimal separator, without any leading zeroes or thousands separators."
+:Expected: The sequence of digits, ``3.5`` and ``-12.75``, values exact in binary floating point; they are not between -1 and 1, so the reading of "without any leading zeroes" (``0.5`` or ``.5``) does not matter. A scientific result, which the manual allows too, would not match these strings.

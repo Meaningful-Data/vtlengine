@@ -1,0 +1,3 @@
+:Tests: the measure ``Me_1`` of both operands, named through the aliases (``d1#Me_1``, ``d2#Me_1``) and renamed: the result depends on the operand each alias stands for.
+:Manual: `Left Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Left%20Join/index.html>`__: the components in several data sets are in VDS₁ once per data set, and their "names ... are prefixed with the alias of the data set they come from, separated by the “#” symbol".
+:Expected: the four keys of ``DS_1``: ``Me_11`` holds the values of ``DS_1`` (10, 20, 30, 40) and ``Me_12`` those of ``DS_2`` (1, null, 3, 4). An engine that swapped the aliases would swap the columns.

@@ -1,0 +1,3 @@
+:Tests: ``case when DS_1 > 10 then DS_2 else DS_3``: a data set condition written inline, with data sets as branches.
+:Manual: `Case <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Case/index.html>`__: "The same rules apply as for the if-then-else operator", and "its true Data Points are inner joined with *thenOperand* and its false Data Points are inner joined with *elseOperand*, finally the union is made of these two partial results".
+:Expected: (1, 1), (2, 200) and (3, 300): id 1 is false (5), so it comes from ``DS_3``; ids 2 and 3 are true (15 and 25), so they come from ``DS_2``. All three ids are in both branches, so none is left out.

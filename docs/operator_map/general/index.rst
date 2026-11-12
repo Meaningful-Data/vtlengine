@@ -1,0 +1,226 @@
+==================================================
+General purpose operators
+==================================================
+
+.. raw:: html
+
+   <div class="om-head"><span class="om-chip ok">🟢 7 of 7 operators all ok</span> · <span class="om-gen">
+
+.. raw:: html
+   :file: ../run.html
+
+.. raw:: html
+
+   </span></div>
+
+.. raw:: html
+
+   <div class="om-legend"><span class="om-chip ok">🟢 all ok</span><span class="om-chip partial">🟡 partially implemented</span><span class="om-chip refused">🛡️ refused with an error</span><span class="om-chip missing">🔴 not implemented or crash</span><span class="om-chip diverge">🔵 engines differ</span> <span class="om-key">✅ match · ❌ wrong result · 🛡 guarded error (code) · 💥 crash · 📌 team decision</span></div>
+
+.. raw:: html
+
+   <div class="om-diagram">
+
+.. mermaid::
+   :config: {"flowchart": {"useMaxWidth": false}}
+
+   flowchart LR
+       classDef ok fill:#d4edda,stroke:#28a745,color:#000
+       classDef partial fill:#fff3cd,stroke:#ffc107,color:#000
+       classDef refused fill:#d4edda,stroke:#28a745,stroke-width:3px,stroke-dasharray: 2 2,color:#000
+       classDef missing fill:#f8d7da,stroke:#dc3545,color:#000
+       classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
+       classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
+       classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
+       B["General purpose operators"]:::block
+       general__parentheses["Parentheses · ( )<br/>🟢3"]:::ok
+       general__persistent_assignment["Persistent assignment · #60;-<br/>🟢3"]:::ok
+       general__non_persistent_assignment["Non-persistent assignment · #58;#61;<br/>🟢2"]:::ok
+       general__membership["Membership · #35; 📌<br/>🟢5"]:::ok
+       general__udo_call["User-defined operator call · name( )<br/>🟢4"]:::ok
+       general__eval["Evaluation of an external routine · eval<br/>🟢4"]:::ok
+       general__cast["Type conversion · cast 📌<br/>🟢41"]:::ok
+       general__parentheses --- B
+       general__persistent_assignment --- B
+       general__non_persistent_assignment --- B
+       general__membership --- B
+       B --- general__udo_call
+       B --- general__eval
+       B --- general__cast
+       click general__parentheses href "parentheses.html"
+       click general__persistent_assignment href "persistent_assignment.html"
+       click general__non_persistent_assignment href "non_persistent_assignment.html"
+       click general__membership href "membership.html"
+       click general__udo_call href "udo_call.html"
+       click general__eval href "eval.html"
+       click general__cast href "cast.html"
+
+.. raw:: html
+
+   </div>
+
+.. rubric:: Operators
+
+.. list-table::
+   :header-rows: 1
+   :widths: auto
+
+   * - Operator
+     - Status
+     - Forms
+   * - :doc:`Parentheses <parentheses>` ``( )``
+     - 🟢
+     - 3
+   * - :doc:`Persistent assignment <persistent_assignment>` ``<-``
+     - 🟢
+     - 3
+   * - :doc:`Non-persistent assignment <non_persistent_assignment>` ``:=``
+     - 🟢
+     - 2
+   * - :doc:`Membership <membership>` ``#``
+     - 🟢
+     - 5
+   * - :doc:`User-defined operator call <udo_call>` ``name( )``
+     - 🟢
+     - 4
+   * - :doc:`Evaluation of an external routine <eval>` ``eval``
+     - 🟢
+     - 4
+   * - :doc:`Type conversion <cast>` ``cast``
+     - 🟢
+     - 41
+
+.. rubric:: Types
+
+.. list-table::
+   :header-rows: 1
+   :widths: auto
+
+   * - Operator
+     - number
+     - integer
+     - string
+     - boolean
+     - time
+     - date
+     - time_period
+     - duration
+     - value domain
+     - operator
+     - external routine
+     - any scalar
+     - any type
+   * - :doc:`Parentheses <parentheses>`
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     - in
+     - out
+   * - :doc:`Persistent assignment <persistent_assignment>`
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     - in
+     - out
+   * - :doc:`Non-persistent assignment <non_persistent_assignment>`
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     - in
+     - out
+   * - :doc:`Membership <membership>`
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     - in
+     - out
+   * - :doc:`User-defined operator call <udo_call>`
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     - in
+     -
+     - in
+     - out
+   * - :doc:`Evaluation of an external routine <eval>`
+     -
+     - out
+     - out
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     - in
+     - in
+     - out
+   * - :doc:`Type conversion <cast>`
+     - in · out
+     - in · out
+     - in · out
+     - in · out
+     - in · out
+     - in · out
+     - in · out
+     - in · out
+     - in
+     -
+     -
+     - in
+     - out
+
+.. rubric:: Forms that are not green
+
+Every form is 🟢 or 🛡️.
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   parentheses
+   persistent_assignment
+   non_persistent_assignment
+   membership
+   udo_call
+   eval
+   cast

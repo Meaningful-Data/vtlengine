@@ -1,0 +1,3 @@
+:Tests: ``calc Me_2 := Me_1 + 1, attribute At_1 := "N"``: two calculated components in one clause, each with its own role.
+:Manual: `Calculation of a Component <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Calculation%20of%20a%20Component/index.html>`__: "Each Component is calculated through an independent sub-expression", and when the role is omitted, "if the component does not exist in the operand Data Set then its role is Measure".
+:Expected: Both are added to ``DS_1``: ``Me_2``, a new component with no role, is a Measure, 11 and 21, and ``At_1`` is an Attribute, ``N``.

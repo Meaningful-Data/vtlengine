@@ -1,0 +1,3 @@
+:Tests: the logarithm of every measure of ``DS_1`` to base 2, the number being the first operand.
+:Manual: `Logarithm <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Logarithm/index.html>`__, Example 1, output verbatim. The parameter table calls ``op`` the base and ``num`` the number, but the page's examples read the first operand as the number: "``log ( 1024, 2 )`` gives ``10``".
+:Expected: ``Me_1`` 1024, 64 and 32 give 10.0, 6.0 and 5.0, which agrees with the scalar example; ``Me_2`` has the page's values, printed with all the digits of a double, such as -0.4064071941354039. The output follows the examples, so it is not an erratum.
