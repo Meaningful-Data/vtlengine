@@ -95,6 +95,7 @@ def _scalar_result(conditions: List[Scalar], then_ops: List[Scalar], else_op: Sc
         data_type=data_type,
         nullable=any(op.nullable or op.data_type == Null for op in operands),
         literal=selected is not None and selected.literal,
+        value_domain=shared_value_domain(operands),
     )
 
 
@@ -211,8 +212,7 @@ class If(Operator):
                 result.data = to_strings(result.data)
         elif isinstance(result, Dataset):
             cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
-        if not isinstance(result, Scalar):
-            check_downcasts(result, [true_branch, false_branch], IF)
+        check_downcasts(result, [true_branch, false_branch], IF)
         return result
 
     @classmethod
@@ -456,7 +456,7 @@ class Nvl(Binary):
                     result.data = result.data.fillna(_as_type(right.data, result.data_type))
                 if isinstance(result, Dataset):
                     result.data = result.data[result.get_components_names()]
-                check_downcasts(result, [left, right], NVL)
+        check_downcasts(result, [left, right], NVL)
         return result
 
     @classmethod
@@ -476,7 +476,13 @@ class Nvl(Binary):
             # Matching main (#762): a scalar nvl result is reported non-nullable. The flag
             # must not depend on the operand VALUES (keeps_nulls tests right.value), or
             # semantic_analysis and run() would disagree on the same script's structure.
-            return Scalar(name="result", value=None, data_type=data_type, nullable=False)
+            return Scalar(
+                name="result",
+                value=None,
+                data_type=data_type,
+                nullable=False,
+                value_domain=shared_value_domain([left, right]),
+            )
         if isinstance(left, DataComponent):
             if isinstance(right, Dataset):
                 raise SemanticError(
@@ -543,7 +549,7 @@ class Case(Operator):
                 )
             else:
                 cls.dataset_level_evaluation(result, conditions, thenOps, elseOp)
-            check_downcasts(result, [*thenOps, elseOp], CASE)
+        check_downcasts(result, [*thenOps, elseOp], CASE)
         return result
 
     @staticmethod
