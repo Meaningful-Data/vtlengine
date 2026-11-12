@@ -31,13 +31,13 @@
           "name": "TTL_NMBR_DBTRS",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "TTL_NMBR_DFLT_DBTRS",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "DFLT_STTS",

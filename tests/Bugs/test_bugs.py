@@ -3260,6 +3260,27 @@ class AggregationBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1277_1(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- count ( DS_1 group by Id_1 );
+                    DS_r2 <- DS_1 [ aggr Me_2 := count ( Me_1 ) group by Id_1 ];
+                    DS_r3 <- count ( DS_1 over ( partition by Id_1 ) );
+                    DS_r4 <- DS_1 [ calc Me_2 := count ( Me_1 over ( partition by Id_1 ) ) ];
+        Description: count never returns null: a group or a window with nothing to count
+                     gives 0. Its result is not nullable in the Aggregate (DS_r1, DS_r2) and
+                     the Analytic (DS_r3, DS_r4) invocation alike, although the Measure Me_1
+                     is nullable. The Aggregate invocation gave a nullable result and the
+                     Analytic one followed the nullability of its operand.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1277
+        Goal: Check Result.
+        """
+        code = "GH_1277_1"
+        number_inputs = 1
+        references_names = ["1", "2", "3", "4"]
+
+        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+
     def test_VTLEN_503(self):
         """ """
         code = "VTLEN_503"
