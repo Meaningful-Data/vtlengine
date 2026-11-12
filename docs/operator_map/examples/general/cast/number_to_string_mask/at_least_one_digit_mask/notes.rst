@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, string, "D+,D+")`` on a Number measure: the manual's valid mask ``D+.D+``, with a comma for the dot.
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "“+” at least one digit", "“,” (comma) can be used as a separator between the integer and the decimal parts", and the examples of valid masks, among them ``D+.D+``.
+:Expected: ``12,25`` and ``1234,125``: each part has the digits of the value, and the comma, which the conversion without a mask does not write, shows the mask at work. Each part has two digits at least, so the result does not depend on whether ``D+`` is a ``D`` and then at least one digit, or at least one ``D``.

@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, string, "+D")`` on an Integer measure: at least one digit, then one.
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "“+” at least one digit" and "“D” one numeric digit (for the mantissa of the scientific notation)".
+:Expected: ``07`` from ``7``, and ``12345``: the ``D`` writes the last digit and ``+`` at least one digit before it, ``1234`` for ``12345`` and a leading zero for ``7``, which the conversion without a mask does not write. The mask starts with ``+``: ``D+``, as in the manual's ``D+.D+``, may be read as a ``D`` and then at least one digit, or as at least one ``D``, which differ on a value of one digit.

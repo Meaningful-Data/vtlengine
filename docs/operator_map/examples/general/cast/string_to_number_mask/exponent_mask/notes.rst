@@ -1,0 +1,4 @@
+:Tests: ``cast(Me_1, number, "DD.DDDEEEE")`` on a String measure: the manual's valid mask with an exponent.
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "“D” one numeric digit (for the mantissa of the scientific notation)", "“E” one numeric digit (for the exponent of the scientific notation)", and the examples of valid masks, among them ``DD.DDDEEEE``.
+:Expected: ``12345`` from ``12.3450003``: two digits, a dot and three digits of the mantissa, ``12.345``, then the four digits of the exponent, ``0003``, as the mask has no character for an ``E`` letter or a sign; ``12.345`` times ten to the power ``3`` is ``12345``. Without the mask, the string would give ``12.3450003``.
+:Finding: Both engines refuse the mask with SemanticError ``1-3-13``, "Unsupported VTL construct: the exponent E in the mask "DD.DDDEEEE".".

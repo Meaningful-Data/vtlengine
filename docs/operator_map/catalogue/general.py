@@ -89,12 +89,39 @@ _OPTIONAL_MASK: Final[tuple[tuple[str, str, str], ...]] = (
 # each, as the section "Type Conversion and Formatting Mask" describes them, in ``_MASKED``.
 _MaskExamples = dict[tuple[str, str], tuple[str, ...]]
 
-# The numbers formatting mask.
+# The numbers formatting mask: ``D``, ``E``, ``*``, ``+`` and the dot or comma separator, in the
+# manual's order, then strings that the mask does not match. An integer has no decimal part, so
+# its masks have no separator, and the exponent is shown on numbers. ``D*`` and ``D+`` may be
+# read as a ``D`` and then digits, or as a repeated ``D``, which differ on a part of one digit:
+# the number examples have no such part, and the integer masks put ``*`` and ``+`` first.
 _NUMBER_MASKS: Final[_MaskExamples] = {
-    ("integer", "string"): ("two_digit_mask",),
-    ("string", "integer"): ("two_digit_mask",),
-    ("number", "string"): ("decimal_mask",),
-    ("string", "number"): ("decimal_mask",),
+    ("integer", "string"): (
+        "two_digit_mask",
+        "any_number_of_digits_mask",
+        "at_least_one_digit_mask",
+    ),
+    ("string", "integer"): (
+        "two_digit_mask",
+        "too_few_digits",
+        "too_many_digits",
+        "no_digit_for_the_plus",
+    ),
+    ("number", "string"): (
+        "decimal_mask",
+        "exponent_mask",
+        "any_number_of_digits_mask",
+        "at_least_one_digit_mask",
+        "decimal_comma_mask",
+    ),
+    ("string", "number"): (
+        "decimal_mask",
+        "exponent_mask",
+        "any_number_of_digits_mask",
+        "at_least_one_digit_mask",
+        "decimal_comma_mask",
+        "too_few_digits",
+        "too_many_digits",
+    ),
 }
 
 # The time formatting mask of a date.
