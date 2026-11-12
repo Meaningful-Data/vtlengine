@@ -183,20 +183,6 @@ def authored(name: str = "minimal", **kw: Any) -> Example:
     return Example(name=name, source="authored", **kw)
 
 
-def load_catalogue() -> Catalogue:
-    """Read ``catalogue.CHAPTERS``."""
-    import catalogue  # late: the catalogue modules import this one
-
-    return Catalogue(chapters=tuple(catalogue.CHAPTERS))
-
-
-def load_viral_groups() -> tuple[ViralGroup, ...]:
-    """Read ``catalogue.viral.GROUPS``: the operators that apply the viral propagation rules."""
-    from catalogue import viral  # late: the catalogue modules import this one
-
-    return viral.GROUPS
-
-
 # --- Forms, links and examples ---
 
 

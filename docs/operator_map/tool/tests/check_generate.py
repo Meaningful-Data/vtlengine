@@ -26,6 +26,7 @@ from catalogue import manual_index
 
 from tool import runner
 from tool.compare import ActualComponent, ActualDataset, ActualScalar
+from tool.loader import load_catalogue
 from tool.mermaid import MermaidLimitError
 from tool.model import (
     Catalogue,
@@ -34,7 +35,6 @@ from tool.model import (
     Operator,
     Variant,
     authored,
-    load_catalogue,
     manual,
 )
 from tool.runner import Engine, RunOutput

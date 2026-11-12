@@ -107,6 +107,7 @@ from tool.examples import (
     notes_problems,
     scan_example_dirs,
 )
+from tool.loader import load_catalogue
 from tool.mermaid import MermaidLimitError, check_limits, example_anchor, form_anchor
 from tool.model import (
     Catalogue,
@@ -114,7 +115,6 @@ from tool.model import (
     Operator,
     Status,
     example_title,
-    load_catalogue,
     validate_catalogue,
 )
 from tool.render import (

@@ -21,7 +21,8 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from tool.importer import ManualImportError, build_index_source, import_chapter, list_manual
-from tool.model import DL_PAGES, load_catalogue
+from tool.loader import load_catalogue
+from tool.model import DL_PAGES
 
 _ROOT = Path(__file__).resolve().parent
 _INDEX = _ROOT / "catalogue" / "manual_index.py"

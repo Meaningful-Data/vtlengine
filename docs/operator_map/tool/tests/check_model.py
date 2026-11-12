@@ -7,10 +7,10 @@ from __future__ import annotations
 import dataclasses
 from typing import Any
 
-import catalogue
+import catalogue.manual_index
 import pytest
-from catalogue import manual_index
 
+from tool.loader import load_catalogue
 from tool.model import (
     ANY_SCALAR,
     ANY_TYPE,
@@ -32,7 +32,6 @@ from tool.model import (
     form_kind,
     form_types,
     has_titled_boxes,
-    load_catalogue,
     manual,
     reverse_label,
     validate_catalogue,
@@ -231,7 +230,9 @@ def test_the_real_catalogue_links_no_definition() -> None:
     cat = load_catalogue()
     # The guard goes by the id of the chapter of the definitions: it is there to guard.
     assert "definitions" in {chapter.id for chapter in cat.chapters}
-    problems = validate_catalogue(cat, manual_index.MANUAL_PAGES, manual_index.MANUAL_EXAMPLES)
+    problems = validate_catalogue(
+        cat, catalogue.manual_index.MANUAL_PAGES, catalogue.manual_index.MANUAL_EXAMPLES
+    )
     assert problems == []
 
 

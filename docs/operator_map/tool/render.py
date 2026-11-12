@@ -104,6 +104,7 @@ from typing import Any, Final
 from urllib.parse import quote
 
 from tool.examples import example_dir
+from tool.loader import load_viral_groups
 from tool.mermaid import (
     USED_WITH_MAX,
     block_diagram,
@@ -130,7 +131,6 @@ from tool.model import (
     example_title,
     form_types,
     has_titled_boxes,
-    load_viral_groups,
 )
 from tool.status import (
     EMOJI,

@@ -30,6 +30,7 @@ from typing import Any
 import pytest
 from catalogue import manual_index
 
+from tool.loader import load_catalogue, load_viral_groups
 from tool.mermaid import (
     USED_WITH_MAX,
     block_diagram,
@@ -47,8 +48,6 @@ from tool.model import (
     Variant,
     ViralGroup,
     authored,
-    load_catalogue,
-    load_viral_groups,
     manual,
 )
 from tool.render import (
