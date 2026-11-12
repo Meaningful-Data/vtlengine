@@ -3239,6 +3239,118 @@
     "status": "ok",
     "title": "Iso 8601 dates"
   },
+  "general/cast/date_to_string_mask/am_pm_indicator": {
+    "anchor": "ex-date-to-string-mask-am-pm-indicator",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Am pm indicator"
+  },
+  "general/cast/date_to_string_mask/century": {
+    "anchor": "ex-date-to-string-mask-century",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Century"
+  },
+  "general/cast/date_to_string_mask/date_and_time_with_separators": {
+    "anchor": "ex-date-to-string-mask-date-and-time-with-separators",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Date and time with separators"
+  },
+  "general/cast/date_to_string_mask/date_and_time_without_separators": {
+    "anchor": "ex-date-to-string-mask-date-and-time-without-separators",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Date and time without separators"
+  },
+  "general/cast/date_to_string_mask/day_and_month_names": {
+    "anchor": "ex-date-to-string-mask-day-and-month-names",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Day and month names"
+  },
+  "general/cast/date_to_string_mask/day_month_year_order": {
+    "anchor": "ex-date-to-string-mask-day-month-year-order",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Day month year order"
+  },
+  "general/cast/date_to_string_mask/decimals_of_second": {
+    "anchor": "ex-date-to-string-mask-decimals-of-second",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Decimals of second"
+  },
+  "general/cast/date_to_string_mask/escaped_letters": {
+    "anchor": "ex-date-to-string-mask-escaped-letters",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Escaped letters"
+  },
+  "general/cast/date_to_string_mask/escaped_reverse_slash": {
+    "anchor": "ex-date-to-string-mask-escaped-reverse-slash",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Escaped reverse slash"
+  },
+  "general/cast/date_to_string_mask/optional_digits": {
+    "anchor": "ex-date-to-string-mask-optional-digits",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Optional digits"
+  },
+  "general/cast/date_to_string_mask/quarter": {
+    "anchor": "ex-date-to-string-mask-quarter",
+    "duckdb": "🛡 1-1-5-4",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-1-5-4",
+    "status": "refused",
+    "title": "Quarter"
+  },
+  "general/cast/date_to_string_mask/semester": {
+    "anchor": "ex-date-to-string-mask-semester",
+    "duckdb": "🛡 1-1-5-4",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-1-5-4",
+    "status": "refused",
+    "title": "Semester"
+  },
+  "general/cast/date_to_string_mask/two_digit_year": {
+    "anchor": "ex-date-to-string-mask-two-digit-year",
+    "duckdb": "🛡 2-1-5-3",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 2-1-5-3",
+    "status": "refused",
+    "title": "Two digit year"
+  },
+  "general/cast/date_to_string_mask/week_and_day_of_week": {
+    "anchor": "ex-date-to-string-mask-week-and-day-of-week",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Week and day of week"
+  },
   "general/cast/date_to_string_mask/year_month_day_mask": {
     "anchor": "ex-date-to-string-mask-year-month-day-mask",
     "duckdb": "✅",
@@ -3270,6 +3382,30 @@
     "pandas": "✅",
     "status": "ok",
     "title": "Iso 8601 durations"
+  },
+  "general/cast/duration_to_string_mask/iso_composite_duration": {
+    "anchor": "ex-duration-to-string-mask-iso-composite-duration",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Iso composite duration"
+  },
+  "general/cast/duration_to_string_mask/iso_weeks": {
+    "anchor": "ex-duration-to-string-mask-iso-weeks",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Iso weeks"
+  },
+  "general/cast/duration_to_string_mask/number_of_periods": {
+    "anchor": "ex-duration-to-string-mask-number-of-periods",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Number of periods"
   },
   "general/cast/duration_to_string_mask/period_indicator_mask": {
     "anchor": "ex-duration-to-string-mask-period-indicator-mask",
@@ -3303,6 +3439,22 @@
     "status": "ok",
     "title": "Digits and sign"
   },
+  "general/cast/integer_to_string_mask/any_number_of_digits_mask": {
+    "anchor": "ex-integer-to-string-mask-any-number-of-digits-mask",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Any number of digits mask"
+  },
+  "general/cast/integer_to_string_mask/at_least_one_digit_mask": {
+    "anchor": "ex-integer-to-string-mask-at-least-one-digit-mask",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "At least one digit mask"
+  },
   "general/cast/integer_to_string_mask/two_digit_mask": {
     "anchor": "ex-integer-to-string-mask-two-digit-mask",
     "duckdb": "✅",
@@ -3327,6 +3479,30 @@
     "status": "ok",
     "title": "Plain decimal notation"
   },
+  "general/cast/number_to_string_mask/any_number_of_digits_mask": {
+    "anchor": "ex-number-to-string-mask-any-number-of-digits-mask",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Any number of digits mask"
+  },
+  "general/cast/number_to_string_mask/at_least_one_digit_mask": {
+    "anchor": "ex-number-to-string-mask-at-least-one-digit-mask",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "At least one digit mask"
+  },
+  "general/cast/number_to_string_mask/decimal_comma_mask": {
+    "anchor": "ex-number-to-string-mask-decimal-comma-mask",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Decimal comma mask"
+  },
   "general/cast/number_to_string_mask/decimal_mask": {
     "anchor": "ex-number-to-string-mask-decimal-mask",
     "duckdb": "✅",
@@ -3334,6 +3510,14 @@
     "pandas": "✅",
     "status": "ok",
     "title": "Decimal mask"
+  },
+  "general/cast/number_to_string_mask/exponent_mask": {
+    "anchor": "ex-number-to-string-mask-exponent-mask",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Exponent mask"
   },
   "general/cast/string_to_boolean/other_strings_are_false": {
     "anchor": "ex-string-to-boolean-other-strings-are-false",
@@ -3359,6 +3543,134 @@
     "status": "ok",
     "title": "Iso 8601 dates"
   },
+  "general/cast/string_to_date_mask/am_pm_indicator": {
+    "anchor": "ex-string-to-date-mask-am-pm-indicator",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Am pm indicator"
+  },
+  "general/cast/string_to_date_mask/century": {
+    "anchor": "ex-string-to-date-mask-century",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Century"
+  },
+  "general/cast/string_to_date_mask/characters_left_over": {
+    "anchor": "ex-string-to-date-mask-characters-left-over",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Characters left over"
+  },
+  "general/cast/string_to_date_mask/date_and_time_with_separators": {
+    "anchor": "ex-string-to-date-mask-date-and-time-with-separators",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Date and time with separators"
+  },
+  "general/cast/string_to_date_mask/date_and_time_without_separators": {
+    "anchor": "ex-string-to-date-mask-date-and-time-without-separators",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Date and time without separators"
+  },
+  "general/cast/string_to_date_mask/day_and_month_names": {
+    "anchor": "ex-string-to-date-mask-day-and-month-names",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Day and month names"
+  },
+  "general/cast/string_to_date_mask/day_month_year_order": {
+    "anchor": "ex-string-to-date-mask-day-month-year-order",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Day month year order"
+  },
+  "general/cast/string_to_date_mask/day_within_quarter": {
+    "anchor": "ex-string-to-date-mask-day-within-quarter",
+    "duckdb": "🛡 1-1-5-4",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-1-5-4",
+    "status": "refused",
+    "title": "Day within quarter"
+  },
+  "general/cast/string_to_date_mask/day_within_semester": {
+    "anchor": "ex-string-to-date-mask-day-within-semester",
+    "duckdb": "🛡 1-1-5-4",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-1-5-4",
+    "status": "refused",
+    "title": "Day within semester"
+  },
+  "general/cast/string_to_date_mask/decimals_of_second": {
+    "anchor": "ex-string-to-date-mask-decimals-of-second",
+    "duckdb": "❌",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "diverge",
+    "title": "Decimals of second"
+  },
+  "general/cast/string_to_date_mask/escaped_letters": {
+    "anchor": "ex-string-to-date-mask-escaped-letters",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Escaped letters"
+  },
+  "general/cast/string_to_date_mask/escaped_reverse_slash": {
+    "anchor": "ex-string-to-date-mask-escaped-reverse-slash",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Escaped reverse slash"
+  },
+  "general/cast/string_to_date_mask/lower_case_month_abbreviation": {
+    "anchor": "ex-string-to-date-mask-lower-case-month-abbreviation",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Lower case month abbreviation"
+  },
+  "general/cast/string_to_date_mask/optional_digits": {
+    "anchor": "ex-string-to-date-mask-optional-digits",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Optional digits"
+  },
+  "general/cast/string_to_date_mask/string_not_matching_mask": {
+    "anchor": "ex-string-to-date-mask-string-not-matching-mask",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "String not matching mask"
+  },
+  "general/cast/string_to_date_mask/week_and_day_of_week": {
+    "anchor": "ex-string-to-date-mask-week-and-day-of-week",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Week and day of week"
+  },
   "general/cast/string_to_date_mask/year_month_day_mask": {
     "anchor": "ex-string-to-date-mask-year-month-day-mask",
     "duckdb": "✅",
@@ -3375,6 +3687,30 @@
     "status": "ok",
     "title": "One letter codes"
   },
+  "general/cast/string_to_duration_mask/iso_composite_duration": {
+    "anchor": "ex-string-to-duration-mask-iso-composite-duration",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Iso composite duration"
+  },
+  "general/cast/string_to_duration_mask/iso_weeks": {
+    "anchor": "ex-string-to-duration-mask-iso-weeks",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Iso weeks"
+  },
+  "general/cast/string_to_duration_mask/number_of_periods": {
+    "anchor": "ex-string-to-duration-mask-number-of-periods",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Number of periods"
+  },
   "general/cast/string_to_duration_mask/period_indicator_mask": {
     "anchor": "ex-string-to-duration-mask-period-indicator-mask",
     "duckdb": "✅",
@@ -3382,6 +3718,14 @@
     "pandas": "✅",
     "status": "ok",
     "title": "Period indicator mask"
+  },
+  "general/cast/string_to_duration_mask/unmatched_iso_8601_duration": {
+    "anchor": "ex-string-to-duration-mask-unmatched-iso-8601-duration",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Unmatched iso 8601 duration"
   },
   "general/cast/string_to_integer/signs_leading_zeros_and_null": {
     "anchor": "ex-string-to-integer-signs-leading-zeros-and-null",
@@ -3398,6 +3742,30 @@
     "pandas": "✅",
     "status": "ok",
     "title": "Default measure name"
+  },
+  "general/cast/string_to_integer_mask/no_digit_for_the_plus": {
+    "anchor": "ex-string-to-integer-mask-no-digit-for-the-plus",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "No digit for the plus"
+  },
+  "general/cast/string_to_integer_mask/too_few_digits": {
+    "anchor": "ex-string-to-integer-mask-too-few-digits",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Too few digits"
+  },
+  "general/cast/string_to_integer_mask/too_many_digits": {
+    "anchor": "ex-string-to-integer-mask-too-many-digits",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Too many digits"
   },
   "general/cast/string_to_integer_mask/two_digit_mask": {
     "anchor": "ex-string-to-integer-mask-two-digit-mask",
@@ -3423,6 +3791,30 @@
     "status": "ok",
     "title": "Sign decimals and exponent"
   },
+  "general/cast/string_to_number_mask/any_number_of_digits_mask": {
+    "anchor": "ex-string-to-number-mask-any-number-of-digits-mask",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Any number of digits mask"
+  },
+  "general/cast/string_to_number_mask/at_least_one_digit_mask": {
+    "anchor": "ex-string-to-number-mask-at-least-one-digit-mask",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "At least one digit mask"
+  },
+  "general/cast/string_to_number_mask/decimal_comma_mask": {
+    "anchor": "ex-string-to-number-mask-decimal-comma-mask",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Decimal comma mask"
+  },
   "general/cast/string_to_number_mask/decimal_mask": {
     "anchor": "ex-string-to-number-mask-decimal-mask",
     "duckdb": "✅",
@@ -3430,6 +3822,30 @@
     "pandas": "✅",
     "status": "ok",
     "title": "Decimal mask"
+  },
+  "general/cast/string_to_number_mask/exponent_mask": {
+    "anchor": "ex-string-to-number-mask-exponent-mask",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Exponent mask"
+  },
+  "general/cast/string_to_number_mask/too_few_digits": {
+    "anchor": "ex-string-to-number-mask-too-few-digits",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Too few digits"
+  },
+  "general/cast/string_to_number_mask/too_many_digits": {
+    "anchor": "ex-string-to-number-mask-too-many-digits",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Too many digits"
   },
   "general/cast/string_to_time/iso_8601_intervals": {
     "anchor": "ex-string-to-time-iso-8601-intervals",
@@ -3439,6 +3855,126 @@
     "status": "ok",
     "title": "Iso 8601 intervals"
   },
+  "general/cast/string_to_time_mask/am_pm_indicator": {
+    "anchor": "ex-string-to-time-mask-am-pm-indicator",
+    "duckdb": "🛡 1-1-5-4",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-1-5-4",
+    "status": "refused",
+    "title": "Am pm indicator"
+  },
+  "general/cast/string_to_time_mask/basic_format_sample": {
+    "anchor": "ex-string-to-time-mask-basic-format-sample",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Basic format sample"
+  },
+  "general/cast/string_to_time_mask/century": {
+    "anchor": "ex-string-to-time-mask-century",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Century"
+  },
+  "general/cast/string_to_time_mask/day_and_month_names": {
+    "anchor": "ex-string-to-time-mask-day-and-month-names",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Day and month names"
+  },
+  "general/cast/string_to_time_mask/day_month_year_order": {
+    "anchor": "ex-string-to-time-mask-day-month-year-order",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Day month year order"
+  },
+  "general/cast/string_to_time_mask/days_within_quarters": {
+    "anchor": "ex-string-to-time-mask-days-within-quarters",
+    "duckdb": "🛡 1-1-5-4",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-1-5-4",
+    "status": "refused",
+    "title": "Days within quarters"
+  },
+  "general/cast/string_to_time_mask/days_within_semesters": {
+    "anchor": "ex-string-to-time-mask-days-within-semesters",
+    "duckdb": "🛡 1-1-5-4",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-1-5-4",
+    "status": "refused",
+    "title": "Days within semesters"
+  },
+  "general/cast/string_to_time_mask/decimals_of_second": {
+    "anchor": "ex-string-to-time-mask-decimals-of-second",
+    "duckdb": "❌",
+    "operator_page": "general/cast.html",
+    "pandas": "❌",
+    "status": "partial",
+    "title": "Decimals of second"
+  },
+  "general/cast/string_to_time_mask/duration_and_end": {
+    "anchor": "ex-string-to-time-mask-duration-and-end",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Duration and end"
+  },
+  "general/cast/string_to_time_mask/duration_and_end_with_times": {
+    "anchor": "ex-string-to-time-mask-duration-and-end-with-times",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Duration and end with times"
+  },
+  "general/cast/string_to_time_mask/escaped_letters": {
+    "anchor": "ex-string-to-time-mask-escaped-letters",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Escaped letters"
+  },
+  "general/cast/string_to_time_mask/escaped_reverse_slash": {
+    "anchor": "ex-string-to-time-mask-escaped-reverse-slash",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Escaped reverse slash"
+  },
+  "general/cast/string_to_time_mask/optional_digits": {
+    "anchor": "ex-string-to-time-mask-optional-digits",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Optional digits"
+  },
+  "general/cast/string_to_time_mask/start_and_duration": {
+    "anchor": "ex-string-to-time-mask-start-and-duration",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Start and duration"
+  },
+  "general/cast/string_to_time_mask/start_and_duration_with_times": {
+    "anchor": "ex-string-to-time-mask-start-and-duration-with-times",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Start and duration with times"
+  },
   "general/cast/string_to_time_mask/start_and_end_mask": {
     "anchor": "ex-string-to-time-mask-start-and-end-mask",
     "duckdb": "✅",
@@ -3446,6 +3982,22 @@
     "pandas": "✅",
     "status": "ok",
     "title": "Start and end mask"
+  },
+  "general/cast/string_to_time_mask/start_and_end_with_times": {
+    "anchor": "ex-string-to-time-mask-start-and-end-with-times",
+    "duckdb": "❌",
+    "operator_page": "general/cast.html",
+    "pandas": "❌",
+    "status": "partial",
+    "title": "Start and end with times"
+  },
+  "general/cast/string_to_time_mask/week_dates": {
+    "anchor": "ex-string-to-time-mask-week-dates",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Week dates"
   },
   "general/cast/string_to_time_period/quarter_month_and_year": {
     "anchor": "ex-string-to-time-period-quarter-month-and-year",
@@ -3455,6 +4007,62 @@
     "status": "ok",
     "title": "Quarter month and year"
   },
+  "general/cast/string_to_time_period_mask/daily_dotted_date": {
+    "anchor": "ex-string-to-time-period-mask-daily-dotted-date",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Daily dotted date"
+  },
+  "general/cast/string_to_time_period_mask/daily_month_and_day": {
+    "anchor": "ex-string-to-time-period-mask-daily-month-and-day",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Daily month and day"
+  },
+  "general/cast/string_to_time_period_mask/dash_not_in_mask": {
+    "anchor": "ex-string-to-time-period-mask-dash-not-in-mask",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Dash not in mask"
+  },
+  "general/cast/string_to_time_period_mask/escaped_reverse_slash": {
+    "anchor": "ex-string-to-time-period-mask-escaped-reverse-slash",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Escaped reverse slash"
+  },
+  "general/cast/string_to_time_period_mask/period_indicator_and_number": {
+    "anchor": "ex-string-to-time-period-mask-period-indicator-and-number",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Period indicator and number"
+  },
+  "general/cast/string_to_time_period_mask/quarter_after_dash": {
+    "anchor": "ex-string-to-time-period-mask-quarter-after-dash",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Quarter after dash"
+  },
+  "general/cast/string_to_time_period_mask/quarter_before_year": {
+    "anchor": "ex-string-to-time-period-mask-quarter-before-year",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Quarter before year"
+  },
   "general/cast/string_to_time_period_mask/quarter_mask": {
     "anchor": "ex-string-to-time-period-mask-quarter-mask",
     "duckdb": "✅",
@@ -3462,6 +4070,30 @@
     "pandas": "✅",
     "status": "ok",
     "title": "Quarter mask"
+  },
+  "general/cast/string_to_time_period_mask/semester_after_dash": {
+    "anchor": "ex-string-to-time-period-mask-semester-after-dash",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Semester after dash"
+  },
+  "general/cast/string_to_time_period_mask/two_digit_quarter": {
+    "anchor": "ex-string-to-time-period-mask-two-digit-quarter",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Two digit quarter"
+  },
+  "general/cast/string_to_time_period_mask/week_after_dash": {
+    "anchor": "ex-string-to-time-period-mask-week-after-dash",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Week after dash"
   },
   "general/cast/string_to_value_domain/values_in_the_domain": {
     "anchor": "ex-string-to-value-domain-values-in-the-domain",
@@ -3495,6 +4127,22 @@
     "status": "ok",
     "title": "Start and end dates"
   },
+  "general/cast/time_period_to_string_mask/daily_month_and_day": {
+    "anchor": "ex-time-period-to-string-mask-daily-month-and-day",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Daily month and day"
+  },
+  "general/cast/time_period_to_string_mask/escaped_reverse_slash": {
+    "anchor": "ex-time-period-to-string-mask-escaped-reverse-slash",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Escaped reverse slash"
+  },
   "general/cast/time_period_to_string_mask/monthly_period_mask": {
     "anchor": "ex-time-period-to-string-mask-monthly-period-mask",
     "duckdb": "✅",
@@ -3502,6 +4150,38 @@
     "pandas": "✅",
     "status": "ok",
     "title": "Monthly period mask"
+  },
+  "general/cast/time_period_to_string_mask/period_indicator_and_number": {
+    "anchor": "ex-time-period-to-string-mask-period-indicator-and-number",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Period indicator and number"
+  },
+  "general/cast/time_period_to_string_mask/quarter_before_year": {
+    "anchor": "ex-time-period-to-string-mask-quarter-before-year",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Quarter before year"
+  },
+  "general/cast/time_period_to_string_mask/semester_after_dash": {
+    "anchor": "ex-time-period-to-string-mask-semester-after-dash",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Semester after dash"
+  },
+  "general/cast/time_period_to_string_mask/week_after_dash": {
+    "anchor": "ex-time-period-to-string-mask-week-after-dash",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Week after dash"
   },
   "general/cast/time_period_to_time/start_and_end_of_the_period": {
     "anchor": "ex-time-period-to-time-start-and-end-of-the-period",
@@ -3527,6 +4207,118 @@
     "status": "ok",
     "title": "Iso 8601 intervals"
   },
+  "general/cast/time_to_string_mask/am_pm_indicator": {
+    "anchor": "ex-time-to-string-mask-am-pm-indicator",
+    "duckdb": "🛡 1-1-5-4",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-1-5-4",
+    "status": "refused",
+    "title": "Am pm indicator"
+  },
+  "general/cast/time_to_string_mask/century": {
+    "anchor": "ex-time-to-string-mask-century",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Century"
+  },
+  "general/cast/time_to_string_mask/day_and_month_names": {
+    "anchor": "ex-time-to-string-mask-day-and-month-names",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Day and month names"
+  },
+  "general/cast/time_to_string_mask/day_month_year_order": {
+    "anchor": "ex-time-to-string-mask-day-month-year-order",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Day month year order"
+  },
+  "general/cast/time_to_string_mask/decimals_of_second": {
+    "anchor": "ex-time-to-string-mask-decimals-of-second",
+    "duckdb": "🛡 0-3-1-6",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "diverge",
+    "title": "Decimals of second"
+  },
+  "general/cast/time_to_string_mask/duration_and_end": {
+    "anchor": "ex-time-to-string-mask-duration-and-end",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Duration and end"
+  },
+  "general/cast/time_to_string_mask/duration_and_end_with_times": {
+    "anchor": "ex-time-to-string-mask-duration-and-end-with-times",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Duration and end with times"
+  },
+  "general/cast/time_to_string_mask/escaped_letters": {
+    "anchor": "ex-time-to-string-mask-escaped-letters",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Escaped letters"
+  },
+  "general/cast/time_to_string_mask/escaped_reverse_slash": {
+    "anchor": "ex-time-to-string-mask-escaped-reverse-slash",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Escaped reverse slash"
+  },
+  "general/cast/time_to_string_mask/optional_digits": {
+    "anchor": "ex-time-to-string-mask-optional-digits",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Optional digits"
+  },
+  "general/cast/time_to_string_mask/quarters": {
+    "anchor": "ex-time-to-string-mask-quarters",
+    "duckdb": "🛡 1-1-5-4",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-1-5-4",
+    "status": "refused",
+    "title": "Quarters"
+  },
+  "general/cast/time_to_string_mask/semesters": {
+    "anchor": "ex-time-to-string-mask-semesters",
+    "duckdb": "🛡 1-1-5-4",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-1-5-4",
+    "status": "refused",
+    "title": "Semesters"
+  },
+  "general/cast/time_to_string_mask/start_and_duration": {
+    "anchor": "ex-time-to-string-mask-start-and-duration",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Start and duration"
+  },
+  "general/cast/time_to_string_mask/start_and_duration_with_times": {
+    "anchor": "ex-time-to-string-mask-start-and-duration-with-times",
+    "duckdb": "🛡 1-3-13",
+    "operator_page": "general/cast.html",
+    "pandas": "🛡 1-3-13",
+    "status": "missing",
+    "title": "Start and duration with times"
+  },
   "general/cast/time_to_string_mask/start_and_end_mask": {
     "anchor": "ex-time-to-string-mask-start-and-end-mask",
     "duckdb": "✅",
@@ -3534,6 +4326,22 @@
     "pandas": "✅",
     "status": "ok",
     "title": "Start and end mask"
+  },
+  "general/cast/time_to_string_mask/start_and_end_with_times": {
+    "anchor": "ex-time-to-string-mask-start-and-end-with-times",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Start and end with times"
+  },
+  "general/cast/time_to_string_mask/week_dates": {
+    "anchor": "ex-time-to-string-mask-week-dates",
+    "duckdb": "✅",
+    "operator_page": "general/cast.html",
+    "pandas": "✅",
+    "status": "ok",
+    "title": "Week dates"
   },
   "general/cast/time_to_time_period/year_quarter_and_month": {
     "anchor": "ex-time-to-time-period-year-quarter-and-month",

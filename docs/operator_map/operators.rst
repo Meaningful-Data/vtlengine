@@ -22,14 +22,14 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🔴
      - 🔵
    * - :doc:`General purpose operators <general/index>`
-     - 🟡
+     - 🔵
      - 7
      - 62
-     - 61
-     - 1
+     - 53
+     - 7
      - 0
      - 0
-     - 0
+     - 2
    * - :doc:`Join operators <join/index>`
      - 🟢
      - 4
@@ -139,14 +139,14 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 0
      - 0
    * - **Total**
-     - 🟡
+     - 🔵
      - 111
      - 700
-     - 699
-     - 1
+     - 691
+     - 7
      - 0
      - 0
-     - 0
+     - 2
 
 .. toctree::
    :maxdepth: 1

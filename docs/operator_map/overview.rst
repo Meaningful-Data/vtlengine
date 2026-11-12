@@ -26,7 +26,7 @@ A node for each block, with how many operators it has, and how many of them are 
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        R["VTL 2.2<br/>Reference Manual"]:::block
-       chapter__general["General purpose operators<br/>7 operators · 🟢6 🟡1"]:::partial
+       chapter__general["General purpose operators<br/>7 operators · 🟢5 🟡1 🔵1"]:::diverge
        chapter__join["Join operators<br/>4 operators · 🟢4"]:::ok
        chapter__string["String operators<br/>11 operators · 🟢11"]:::ok
        chapter__numeric["Numeric operators<br/>18 operators · 🟢18"]:::ok
@@ -91,14 +91,14 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🔴
      - 🔵
    * - :doc:`General purpose operators <general/index>`
-     - 🟡
+     - 🔵
      - 7
      - 62
-     - 61
-     - 1
+     - 53
+     - 7
      - 0
      - 0
-     - 0
+     - 2
    * - :doc:`Join operators <join/index>`
      - 🟢
      - 4
@@ -208,14 +208,14 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 0
      - 0
    * - **Total**
-     - 🟡
+     - 🔵
      - 111
      - 700
-     - 699
-     - 1
+     - 691
+     - 7
      - 0
      - 0
-     - 0
+     - 2
 
 .. rubric:: Definitions (VTL-DL)
 

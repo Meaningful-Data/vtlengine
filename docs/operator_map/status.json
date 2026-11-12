@@ -6480,6 +6480,230 @@
       },
       "status": "ok"
     },
+    "general/cast/date_to_string_mask/am_pm_indicator": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word am/pm in the mask \"DD/MM/YYYY hh:mm am/pm\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word am/pm in the mask \"DD/MM/YYYY hh:mm am/pm\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/date_to_string_mask/century": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/date_to_string_mask/date_and_time_with_separators": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/date_to_string_mask/date_and_time_without_separators": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/date_to_string_mask/day_and_month_names": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask \"Day3 DD MONTH YYYY\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask \"Day3 DD MONTH YYYY\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/date_to_string_mask/day_month_year_order": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/date_to_string_mask/decimals_of_second": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/date_to_string_mask/escaped_letters": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/date_to_string_mask/escaped_reverse_slash": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/date_to_string_mask/optional_digits": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/date_to_string_mask/quarter": {
+      "duckdb": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type Date to String. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type Date to String. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "refused"
+    },
+    "general/cast/date_to_string_mask/semester": {
+      "duckdb": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type Date to String. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type Date to String. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "refused"
+    },
+    "general/cast/date_to_string_mask/two_digit_year": {
+      "duckdb": {
+        "detail": "RunTimeError 2-1-5-3: Impossible to cast 2018-04-05 00:00:00 from type Date to String using mask DD/MM/YY. Please check transformation with output Dataset DS_r",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "RunTimeError 2-1-5-3: Impossible to cast 2018-04-05 from type Date to String using mask DD/MM/YY. Please check transformation with output Dataset DS_r",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "error"
+      },
+      "status": "refused"
+    },
+    "general/cast/date_to_string_mask/week_and_day_of_week": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
     "general/cast/date_to_string_mask/year_month_day_mask": {
       "duckdb": {
         "detail": "",
@@ -6529,6 +6753,54 @@
       "status": "ok"
     },
     "general/cast/duration_to_string/iso_8601_durations": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/duration_to_string_mask/iso_composite_duration": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: an ISO composite duration in the mask \"\\PYY\\YM\\MDD\\DThh\\Hmm\\Mss\\S\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: an ISO composite duration in the mask \"\\PYY\\YM\\MDD\\DThh\\Hmm\\Mss\\S\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/duration_to_string_mask/iso_weeks": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: an ISO composite duration in the mask \"\\PWWW\\W\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: an ISO composite duration in the mask \"\\PWWW\\W\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/duration_to_string_mask/number_of_periods": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6608,6 +6880,38 @@
       },
       "status": "ok"
     },
+    "general/cast/integer_to_string_mask/any_number_of_digits_mask": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/integer_to_string_mask/at_least_one_digit_mask": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
     "general/cast/integer_to_string_mask/two_digit_mask": {
       "duckdb": {
         "detail": "",
@@ -6656,6 +6960,54 @@
       },
       "status": "ok"
     },
+    "general/cast/number_to_string_mask/any_number_of_digits_mask": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/number_to_string_mask/at_least_one_digit_mask": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/number_to_string_mask/decimal_comma_mask": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
     "general/cast/number_to_string_mask/decimal_mask": {
       "duckdb": {
         "detail": "",
@@ -6671,6 +7023,22 @@
         "outcome": "match"
       },
       "status": "ok"
+    },
+    "general/cast/number_to_string_mask/exponent_mask": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the exponent E in the mask \"DD.DDDEEEE\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the exponent E in the mask \"DD.DDDEEEE\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
     },
     "general/cast/string_to_boolean/other_strings_are_false": {
       "duckdb": {
@@ -6720,6 +7088,262 @@
       },
       "status": "ok"
     },
+    "general/cast/string_to_date_mask/am_pm_indicator": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word AM/PM in the mask \"DD/MM/YYYY hh:mm AM/PM\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word AM/PM in the mask \"DD/MM/YYYY hh:mm AM/PM\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/string_to_date_mask/century": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_date_mask/characters_left_over": {
+      "duckdb": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_date_mask/date_and_time_with_separators": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_date_mask/date_and_time_without_separators": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_date_mask/day_and_month_names": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask \"Day3 DD MONTH YYYY\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask \"Day3 DD MONTH YYYY\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/string_to_date_mask/day_month_year_order": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_date_mask/day_within_quarter": {
+      "duckdb": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type String to Date. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type String to Date. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "refused"
+    },
+    "general/cast/string_to_date_mask/day_within_semester": {
+      "duckdb": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type String to Date. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type String to Date. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "refused"
+    },
+    "general/cast/string_to_date_mask/decimals_of_second": {
+      "duckdb": {
+        "detail": "row Id_1=1: Me_2 expected 2018-04-05T12:30:15.250 got 2018-04-05T12:30:15.250000; row Id_1=2: Me_2 expected 2018-04-05T12:30:15.050 got 2018-04-05T12:30:15.050000",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "engines_agree": false,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "diverge"
+    },
+    "general/cast/string_to_date_mask/escaped_letters": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_date_mask/escaped_reverse_slash": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_date_mask/lower_case_month_abbreviation": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word month in the mask \"DDmonth3YYYY\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word month in the mask \"DDmonth3YYYY\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/string_to_date_mask/optional_digits": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_date_mask/string_not_matching_mask": {
+      "duckdb": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_date_mask/week_and_day_of_week": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
     "general/cast/string_to_date_mask/year_month_day_mask": {
       "duckdb": {
         "detail": "",
@@ -6752,6 +7376,54 @@
       },
       "status": "ok"
     },
+    "general/cast/string_to_duration_mask/iso_composite_duration": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: an ISO composite duration in the mask \"\\PYY\\YM\\MDD\\DThh\\Hmm\\Mss\\S\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: an ISO composite duration in the mask \"\\PYY\\YM\\MDD\\DThh\\Hmm\\Mss\\S\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/string_to_duration_mask/iso_weeks": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: an ISO composite duration in the mask \"\\PWWW\\W\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: an ISO composite duration in the mask \"\\PWWW\\W\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/string_to_duration_mask/number_of_periods": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
     "general/cast/string_to_duration_mask/period_indicator_mask": {
       "duckdb": {
         "detail": "",
@@ -6764,6 +7436,22 @@
         "detail": "",
         "error_code": null,
         "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_duration_mask/unmatched_iso_8601_duration": {
+      "duckdb": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
         "outcome": "match"
       },
       "status": "ok"
@@ -6796,6 +7484,54 @@
         "detail": "",
         "error_code": null,
         "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_integer_mask/no_digit_for_the_plus": {
+      "duckdb": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_integer_mask/too_few_digits": {
+      "duckdb": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_integer_mask/too_many_digits": {
+      "duckdb": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
         "outcome": "match"
       },
       "status": "ok"
@@ -6848,6 +7584,54 @@
       },
       "status": "ok"
     },
+    "general/cast/string_to_number_mask/any_number_of_digits_mask": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_number_mask/at_least_one_digit_mask": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_number_mask/decimal_comma_mask": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
     "general/cast/string_to_number_mask/decimal_mask": {
       "duckdb": {
         "detail": "",
@@ -6860,6 +7644,54 @@
         "detail": "",
         "error_code": null,
         "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_number_mask/exponent_mask": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the exponent E in the mask \"DD.DDDEEEE\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the exponent E in the mask \"DD.DDDEEEE\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/string_to_number_mask/too_few_digits": {
+      "duckdb": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_number_mask/too_many_digits": {
+      "duckdb": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
         "outcome": "match"
       },
       "status": "ok"
@@ -6880,7 +7712,279 @@
       },
       "status": "ok"
     },
+    "general/cast/string_to_time_mask/am_pm_indicator": {
+      "duckdb": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type String to Time. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type String to Time. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "refused"
+    },
+    "general/cast/string_to_time_mask/basic_format_sample": {
+      "duckdb": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_mask/century": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_mask/day_and_month_names": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask \"Day3 DD MONTH3 YYYY\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask \"Day3 DD MONTH3 YYYY\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/string_to_time_mask/day_month_year_order": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_mask/days_within_quarters": {
+      "duckdb": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type String to Time. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type String to Time. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "refused"
+    },
+    "general/cast/string_to_time_mask/days_within_semesters": {
+      "duckdb": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type String to Time. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type String to Time. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "refused"
+    },
+    "general/cast/string_to_time_mask/decimals_of_second": {
+      "duckdb": {
+        "detail": "row Id_1=1: Me_2 expected 2018-04-05T12:30:15.250/2018-04-05T12:30:16.125 got 2018-04-05 12:30:15.250/2018-04-05 12:30:16.125",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "row Id_1=1: Me_2 expected 2018-04-05T12:30:15.250/2018-04-05T12:30:16.125 got 2018-04-05 12:30:15.250/2018-04-05 12:30:16.125",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "status": "partial"
+    },
+    "general/cast/string_to_time_mask/duration_and_end": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"PY\\YM\\MDD\\DT/YYYY-MM-DD\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"PY\\YM\\MDD\\DT/YYYY-MM-DD\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/string_to_time_mask/duration_and_end_with_times": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"PY\\YM\\MDD\\DT{h}h\\Hmm\\M/YYYY-MM-DDThh:mm:ssZ\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"PY\\YM\\MDD\\DT{h}h\\Hmm\\M/YYYY-MM-DDThh:mm:ssZ\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/string_to_time_mask/escaped_letters": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_mask/escaped_reverse_slash": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_mask/optional_digits": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_mask/start_and_duration": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"YYYY-MM-DD/PY\\YM\\MDD\\D\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"YYYY-MM-DD/PY\\YM\\MDD\\D\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/string_to_time_mask/start_and_duration_with_times": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"YYYY-MM-DDThh:mm:ss-01/PY\\YM\\MDD\\DT{h}h\\Hmm\\M\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"YYYY-MM-DDThh:mm:ss-01/PY\\YM\\MDD\\DT{h}h\\Hmm\\M\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
     "general/cast/string_to_time_mask/start_and_end_mask": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_mask/start_and_end_with_times": {
+      "duckdb": {
+        "detail": "row Id_1=1: Me_2 expected 2015-03-03T09:30:45/2018-04-05T12:30:15 got 2015-03-03 09:30:45/2018-04-05 12:30:15",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "row Id_1=1: Me_2 expected 2015-03-03T09:30:45/2018-04-05T12:30:15 got 2015-03-03 09:30:45/2018-04-05 12:30:15",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "mismatch"
+      },
+      "status": "partial"
+    },
+    "general/cast/string_to_time_mask/week_dates": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6912,7 +8016,167 @@
       },
       "status": "ok"
     },
+    "general/cast/string_to_time_period_mask/daily_dotted_date": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_period_mask/daily_month_and_day": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_period_mask/dash_not_in_mask": {
+      "duckdb": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": "2-1-5-3",
+        "error_type": "RunTimeError",
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_period_mask/escaped_reverse_slash": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_period_mask/period_indicator_and_number": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_period_mask/quarter_after_dash": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_period_mask/quarter_before_year": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
     "general/cast/string_to_time_period_mask/quarter_mask": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_period_mask/semester_after_dash": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_period_mask/two_digit_quarter": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/string_to_time_period_mask/week_after_dash": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -6992,7 +8256,103 @@
       },
       "status": "ok"
     },
+    "general/cast/time_period_to_string_mask/daily_month_and_day": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/time_period_to_string_mask/escaped_reverse_slash": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
     "general/cast/time_period_to_string_mask/monthly_period_mask": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/time_period_to_string_mask/period_indicator_and_number": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/time_period_to_string_mask/quarter_before_year": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/time_period_to_string_mask/semester_after_dash": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/time_period_to_string_mask/week_after_dash": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -7056,7 +8416,263 @@
       },
       "status": "ok"
     },
+    "general/cast/time_to_string_mask/am_pm_indicator": {
+      "duckdb": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type Time to String. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type Time to String. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "refused"
+    },
+    "general/cast/time_to_string_mask/century": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/time_to_string_mask/day_and_month_names": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask \"Day3 DD month YYYY\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask \"Day3 DD month YYYY\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/time_to_string_mask/day_month_year_order": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/time_to_string_mask/decimals_of_second": {
+      "duckdb": {
+        "detail": "DataLoadError 0-3-1-6: On Dataset DS_1 loading: not possible to cast column Me_1 to Time. Error found: \"Invalid format: '2018-04-05T12:30:15.250/2018-04-05T12:30:16.125'\" Please check loaded file DS_r",
+        "error_code": "0-3-1-6",
+        "error_type": "DataLoadError",
+        "outcome": "error"
+      },
+      "engines_agree": false,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "diverge"
+    },
+    "general/cast/time_to_string_mask/duration_and_end": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"PY\\YM\\MDD\\DT/YYYY-MM-DD\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"PY\\YM\\MDD\\DT/YYYY-MM-DD\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/time_to_string_mask/duration_and_end_with_times": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"PY\\YM\\MDD\\DT{h}h\\Hmm\\M/YYYY-MM-DDThh:mm:ssZ\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"PY\\YM\\MDD\\DT{h}h\\Hmm\\M/YYYY-MM-DDThh:mm:ssZ\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/time_to_string_mask/escaped_letters": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/time_to_string_mask/escaped_reverse_slash": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/time_to_string_mask/optional_digits": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/time_to_string_mask/quarters": {
+      "duckdb": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type Time to String. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type Time to String. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "refused"
+    },
+    "general/cast/time_to_string_mask/semesters": {
+      "duckdb": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type Time to String. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-1-5-4: Invalid mask to cast from type Time to String. Please check transformation with output Dataset DS_r",
+        "error_code": "1-1-5-4",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "refused"
+    },
+    "general/cast/time_to_string_mask/start_and_duration": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"YYYY-MM-DD/PY\\YM\\MDD\\D\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"YYYY-MM-DD/PY\\YM\\MDD\\D\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
+    "general/cast/time_to_string_mask/start_and_duration_with_times": {
+      "duckdb": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"YYYY-MM-DDThh:mm:ss-01/PY\\YM\\MDD\\DT{h}h\\Hmm\\M\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask \"YYYY-MM-DDThh:mm:ss-01/PY\\YM\\MDD\\DT{h}h\\Hmm\\M\". Please check transformation with output Dataset DS_r",
+        "error_code": "1-3-13",
+        "error_type": "SemanticError",
+        "outcome": "error"
+      },
+      "status": "missing"
+    },
     "general/cast/time_to_string_mask/start_and_end_mask": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/time_to_string_mask/start_and_end_with_times": {
+      "duckdb": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "engines_agree": true,
+      "pandas": {
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
+      },
+      "status": "ok"
+    },
+    "general/cast/time_to_string_mask/week_dates": {
       "duckdb": {
         "detail": "",
         "error_code": null,
@@ -15190,7 +16806,7 @@
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "c26c9723",
+    "vtlengine_commit": "a29939d7",
     "vtlengine_version": "1.9.7"
   }
 }

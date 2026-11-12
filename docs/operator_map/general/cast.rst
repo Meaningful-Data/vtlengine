@@ -4,7 +4,7 @@ Type conversion · ``cast``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 41 of 41 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip diverge">🔵 33 of 41 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -36,7 +36,7 @@ Type conversion · ``cast``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Type conversion · cast 📌<br/>🟢41"]:::ok
+       O["Type conversion · cast 📌<br/>🟢33 🟡6 🔵2"]:::diverge
        subgraph G_ds["Dataset"]
            direction LR
            v_string_to_integer_ds["cast(DS#60;string#62;, integer)"]:::ok
@@ -59,27 +59,27 @@ Type conversion · ``cast``
            v_integer_to_string["cast(comp#60;integer#62;, string)"]:::ok
            v_integer_to_string_mask["cast(comp#60;integer#62;, string, mask)"]:::ok
            v_number_to_string["cast(comp#60;number#62;, string)"]:::ok
-           v_number_to_string_mask["cast(comp#60;number#62;, string, mask)"]:::ok
+           v_number_to_string_mask["cast(comp#60;number#62;, string, mask)"]:::partial
            v_time_to_string["cast(comp#60;time#62;, string)"]:::ok
-           v_time_to_string_mask["cast(comp#60;time#62;, string, mask)"]:::ok
+           v_time_to_string_mask["cast(comp#60;time#62;, string, mask)"]:::diverge
            v_date_to_string["cast(comp#60;date#62;, string)"]:::ok
-           v_date_to_string_mask["cast(comp#60;date#62;, string, mask)"]:::ok
+           v_date_to_string_mask["cast(comp#60;date#62;, string, mask)"]:::partial
            v_time_period_to_string["cast(comp#60;time_period#62;, string) 📌"]:::ok
            v_time_period_to_string_mask["cast(comp#60;time_period#62;, string, mask)"]:::ok
            v_duration_to_string["cast(comp#60;duration#62;, string)"]:::ok
-           v_duration_to_string_mask["cast(comp#60;duration#62;, string, mask)"]:::ok
+           v_duration_to_string_mask["cast(comp#60;duration#62;, string, mask)"]:::partial
            v_string_to_integer["cast(comp#60;string#62;, integer)"]:::ok
            v_string_to_integer_mask["cast(comp#60;string#62;, integer, mask)"]:::ok
            v_string_to_number["cast(comp#60;string#62;, number)"]:::ok
-           v_string_to_number_mask["cast(comp#60;string#62;, number, mask)"]:::ok
+           v_string_to_number_mask["cast(comp#60;string#62;, number, mask)"]:::partial
            v_string_to_time["cast(comp#60;string#62;, time)"]:::ok
-           v_string_to_time_mask["cast(comp#60;string#62;, time, mask)"]:::ok
+           v_string_to_time_mask["cast(comp#60;string#62;, time, mask)"]:::partial
            v_string_to_date["cast(comp#60;string#62;, date)"]:::ok
-           v_string_to_date_mask["cast(comp#60;string#62;, date, mask)"]:::ok
+           v_string_to_date_mask["cast(comp#60;string#62;, date, mask)"]:::diverge
            v_string_to_time_period["cast(comp#60;string#62;, time_period)"]:::ok
            v_string_to_time_period_mask["cast(comp#60;string#62;, time_period, mask)"]:::ok
            v_string_to_duration["cast(comp#60;string#62;, duration)"]:::ok
-           v_string_to_duration_mask["cast(comp#60;string#62;, duration, mask)"]:::ok
+           v_string_to_duration_mask["cast(comp#60;string#62;, duration, mask)"]:::partial
            v_string_to_value_domain["cast(comp#60;string#62;, VD)"]:::ok
            v_value_domain_to_value_domain["cast(comp#60;VD#62;, VD)"]:::ok
        end
@@ -615,12 +615,52 @@ cast(comp<integer>, string, mask) 🟢 · integer, string → string
 
 .. raw:: html
 
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>42</td></tr><tr><td>2</td><td>17</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>42</td><td>42</td></tr><tr><td>2</td><td>17</td><td>17</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>42</td></tr><tr><td>2</td><td>17</td></tr><tr><td>3</td><td>7</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>42</td><td>42</td></tr><tr><td>2</td><td>17</td><td>17</td></tr><tr><td>3</td><td>7</td><td>07</td></tr></tbody></table>
 
 .. raw:: html
 
    <p class="om-files">Files: <a href="../examples/general/cast/integer_to_string_mask/two_digit_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/integer_to_string_mask/two_digit_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/integer_to_string_mask/two_digit_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/integer_to_string_mask/two_digit_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/integer_to_string_mask/two_digit_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/integer_to_string_mask/two_digit_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-integer-to-string-mask-any-number-of-digits-mask"><summary><span class="om-ex-title">Any number of digits mask</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/integer_to_string_mask/any_number_of_digits_mask/notes.rst
+
+.. literalinclude:: ../examples/general/cast/integer_to_string_mask/any_number_of_digits_mask/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>7</td></tr><tr><td>2</td><td>12345</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>7</td><td>07</td></tr><tr><td>2</td><td>12345</td><td>12345</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/integer_to_string_mask/any_number_of_digits_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/integer_to_string_mask/any_number_of_digits_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/integer_to_string_mask/any_number_of_digits_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/integer_to_string_mask/any_number_of_digits_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/integer_to_string_mask/any_number_of_digits_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/integer_to_string_mask/any_number_of_digits_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-integer-to-string-mask-at-least-one-digit-mask"><summary><span class="om-ex-title">At least one digit mask</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/integer_to_string_mask/at_least_one_digit_mask/notes.rst
+
+.. literalinclude:: ../examples/general/cast/integer_to_string_mask/at_least_one_digit_mask/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>7</td></tr><tr><td>2</td><td>12345</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>7</td><td>07</td></tr><tr><td>2</td><td>12345</td><td>12345</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/integer_to_string_mask/at_least_one_digit_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/integer_to_string_mask/at_least_one_digit_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/integer_to_string_mask/at_least_one_digit_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/integer_to_string_mask/at_least_one_digit_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/integer_to_string_mask/at_least_one_digit_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/integer_to_string_mask/at_least_one_digit_mask/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -654,7 +694,7 @@ cast(comp<number>, string) 🟢 · number → string
 
    <span class="om-anchor" id="form-number-to-string-mask"></span>
 
-cast(comp<number>, string, mask) 🟢 · number, string → string
+cast(comp<number>, string, mask) 🟡 · number, string → string
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -669,12 +709,93 @@ cast(comp<number>, string, mask) 🟢 · number, string → string
 
 .. raw:: html
 
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>12.375</td></tr><tr><td>2</td><td>40.125</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>12.375</td><td>12.375</td></tr><tr><td>2</td><td>40.125</td><td>40.125</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>12.375</td></tr><tr><td>2</td><td>40.125</td></tr><tr><td>3</td><td>3.5</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>12.375</td><td>12.375</td></tr><tr><td>2</td><td>40.125</td><td>40.125</td></tr><tr><td>3</td><td>3.5</td><td>03.500</td></tr></tbody></table>
 
 .. raw:: html
 
    <p class="om-files">Files: <a href="../examples/general/cast/number_to_string_mask/decimal_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/number_to_string_mask/decimal_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/number_to_string_mask/decimal_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/number_to_string_mask/decimal_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/number_to_string_mask/decimal_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/number_to_string_mask/decimal_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-number-to-string-mask-exponent-mask"><summary><span class="om-ex-title">Exponent mask</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: the exponent E in the mask &quot;DD.DDDEEEE&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/number_to_string_mask/exponent_mask/notes.rst
+
+.. literalinclude:: ../examples/general/cast/number_to_string_mask/exponent_mask/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>12345</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>12345</td><td>12.3450003</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/number_to_string_mask/exponent_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/number_to_string_mask/exponent_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/number_to_string_mask/exponent_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/number_to_string_mask/exponent_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/number_to_string_mask/exponent_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/number_to_string_mask/exponent_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-number-to-string-mask-any-number-of-digits-mask"><summary><span class="om-ex-title">Any number of digits mask</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/number_to_string_mask/any_number_of_digits_mask/notes.rst
+
+.. literalinclude:: ../examples/general/cast/number_to_string_mask/any_number_of_digits_mask/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>1234.5</td></tr><tr><td>2</td><td>7.25</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>1234.5</td><td>1234,5</td></tr><tr><td>2</td><td>7.25</td><td>7,25</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/number_to_string_mask/any_number_of_digits_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/number_to_string_mask/any_number_of_digits_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/number_to_string_mask/any_number_of_digits_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/number_to_string_mask/any_number_of_digits_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/number_to_string_mask/any_number_of_digits_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/number_to_string_mask/any_number_of_digits_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-number-to-string-mask-at-least-one-digit-mask"><summary><span class="om-ex-title">At least one digit mask</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/number_to_string_mask/at_least_one_digit_mask/notes.rst
+
+.. literalinclude:: ../examples/general/cast/number_to_string_mask/at_least_one_digit_mask/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>12.25</td></tr><tr><td>2</td><td>1234.125</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>12.25</td><td>12,25</td></tr><tr><td>2</td><td>1234.125</td><td>1234,125</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/number_to_string_mask/at_least_one_digit_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/number_to_string_mask/at_least_one_digit_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/number_to_string_mask/at_least_one_digit_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/number_to_string_mask/at_least_one_digit_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/number_to_string_mask/at_least_one_digit_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/number_to_string_mask/at_least_one_digit_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-number-to-string-mask-decimal-comma-mask"><summary><span class="om-ex-title">Decimal comma mask</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/number_to_string_mask/decimal_comma_mask/notes.rst
+
+.. literalinclude:: ../examples/general/cast/number_to_string_mask/decimal_comma_mask/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>12.375</td></tr><tr><td>2</td><td>40.125</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>12.375</td><td>12,375</td></tr><tr><td>2</td><td>40.125</td><td>40,125</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/number_to_string_mask/decimal_comma_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/number_to_string_mask/decimal_comma_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/number_to_string_mask/decimal_comma_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/number_to_string_mask/decimal_comma_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/number_to_string_mask/decimal_comma_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/number_to_string_mask/decimal_comma_mask/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -708,7 +829,7 @@ cast(comp<time>, string) 🟢 · time → string
 
    <span class="om-anchor" id="form-time-to-string-mask"></span>
 
-cast(comp<time>, string, mask) 🟢 · time, string → string
+cast(comp<time>, string, mask) 🔵 · time, string → string
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -723,12 +844,341 @@ cast(comp<time>, string, mask) 🟢 · time, string → string
 
 .. raw:: html
 
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03/2018-04-05</td></tr><tr><td>2</td><td>2020-01-01/2020-06-30</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03/2018-04-05</td><td>2015-03-03/2018-04-05</td></tr><tr><td>2</td><td>2020-01-01/2020-06-30</td><td>2020-01-01/2020-06-30</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03/2018-04-05</td></tr><tr><td>2</td><td>2020-01-01/2020-06-30</td></tr><tr><td>3</td><td>2015-03-03T09:30:45/2018-04-05T12:30:15</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03/2018-04-05</td><td>2015-03-03/2018-04-05</td></tr><tr><td>2</td><td>2020-01-01/2020-06-30</td><td>2020-01-01/2020-06-30</td></tr><tr><td>3</td><td>2015-03-03T09:30:45/2018-04-05T12:30:15</td><td>2015-03-03/2018-04-05</td></tr></tbody></table>
 
 .. raw:: html
 
    <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/start_and_end_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_end_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_end_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_end_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_end_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_end_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-start-and-end-with-times"><summary><span class="om-ex-title">Start and end with times</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/time_to_string_mask/start_and_end_with_times/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/start_and_end_with_times/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45/2018-04-05T12:30:15</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45/2018-04-05T12:30:15</td><td>2015-03-03T09:30:45Z/2018-04-05T12:30:15Z</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/start_and_end_with_times/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_end_with_times/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_end_with_times/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_end_with_times/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_end_with_times/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_end_with_times/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-start-and-duration"><summary><span class="om-ex-title">Start and duration</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask &quot;YYYY-MM-DD/PY\YM\MDD\D&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/time_to_string_mask/start_and_duration/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/start_and_duration/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03/2016-05-13</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03/2016-05-13</td><td>2015-03-03/P1Y2M10D</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/start_and_duration/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_duration/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_duration/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_duration/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_duration/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_duration/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-duration-and-end"><summary><span class="om-ex-title">Duration and end</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask &quot;PY\YM\MDD\DT/YYYY-MM-DD&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/time_to_string_mask/duration_and_end/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/duration_and_end/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2017-01-26/2018-04-05</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2017-01-26/2018-04-05</td><td>P1Y2M10DT/2018-04-05</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/duration_and_end/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/duration_and_end/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/duration_and_end/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/duration_and_end/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/duration_and_end/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/duration_and_end/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-start-and-duration-with-times"><summary><span class="om-ex-title">Start and duration with times</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask &quot;YYYY-MM-DDThh:mm:ss-01/PY\YM\MDD\DT{h}h\Hmm\M&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/time_to_string_mask/start_and_duration_with_times/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/start_and_duration_with_times/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45/2016-05-13T12:00:45</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45/2016-05-13T12:00:45</td><td>2015-03-03T09:30:45-01/P1Y2M10DT2H30M</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/start_and_duration_with_times/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_duration_with_times/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_duration_with_times/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_duration_with_times/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_duration_with_times/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/start_and_duration_with_times/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-duration-and-end-with-times"><summary><span class="om-ex-title">Duration and end with times</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask &quot;PY\YM\MDD\DT{h}h\Hmm\M/YYYY-MM-DDThh:mm:ssZ&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/time_to_string_mask/duration_and_end_with_times/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/duration_and_end_with_times/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2017-01-26T10:00:00/2018-04-05T12:30:00</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2017-01-26T10:00:00/2018-04-05T12:30:00</td><td>P1Y2M10DT2H30M/2018-04-05T12:30:00Z</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/duration_and_end_with_times/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/duration_and_end_with_times/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/duration_and_end_with_times/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/duration_and_end_with_times/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/duration_and_end_with_times/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/duration_and_end_with_times/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-optional-digits"><summary><span class="om-ex-title">Optional digits</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/time_to_string_mask/optional_digits/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/optional_digits/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2021-12-31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2021-12-31</td><td>5.4.2018/31.12.2021</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/optional_digits/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/optional_digits/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/optional_digits/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/optional_digits/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/optional_digits/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/optional_digits/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-day-month-year-order"><summary><span class="om-ex-title">Day month year order</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/time_to_string_mask/day_month_year_order/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/day_month_year_order/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2021-12-31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2021-12-31</td><td>05.04.2018/31.12.2021</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/day_month_year_order/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/day_month_year_order/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/day_month_year_order/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/day_month_year_order/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/day_month_year_order/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/day_month_year_order/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-escaped-letters"><summary><span class="om-ex-title">Escaped letters</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/time_to_string_mask/escaped_letters/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/escaped_letters/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2021-12-31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2021-12-31</td><td>2018M04D05/2021M12D31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/escaped_letters/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/escaped_letters/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/escaped_letters/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/escaped_letters/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/escaped_letters/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/escaped_letters/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-escaped-reverse-slash"><summary><span class="om-ex-title">Escaped reverse slash</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/time_to_string_mask/escaped_reverse_slash/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/escaped_reverse_slash/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2021-12-31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2021-12-31</td><td>2018\04\05/2021\12\31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/escaped_reverse_slash/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/escaped_reverse_slash/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/escaped_reverse_slash/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/escaped_reverse_slash/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/escaped_reverse_slash/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/escaped_reverse_slash/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-week-dates"><summary><span class="om-ex-title">Week dates</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/time_to_string_mask/week_dates/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/week_dates/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2018-12-30</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2018-12-30</td><td>2018.W14.4/2018.W52.7</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/week_dates/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/week_dates/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/week_dates/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/week_dates/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/week_dates/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/week_dates/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-century"><summary><span class="om-ex-title">Century</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/time_to_string_mask/century/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/century/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>1999-12-31/2018-04-05</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>1999-12-31/2018-04-05</td><td>31.12.1999/05.04.2018</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/century/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/century/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/century/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/century/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/century/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/century/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-quarters"><summary><span class="om-ex-title">Quarters</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-5-4</code> · DuckDB 🛡 <code>1-1-5-4</code></span></summary>
+   <p class="om-detail">SemanticError 1-1-5-4: Invalid mask to cast from type Time to String. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/time_to_string_mask/quarters/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/quarters/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2021-12-31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2021-12-31</td><td>2018Q2/2021Q4</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/quarters/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/quarters/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/quarters/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/quarters/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/quarters/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/quarters/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-semesters"><summary><span class="om-ex-title">Semesters</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-5-4</code> · DuckDB 🛡 <code>1-1-5-4</code></span></summary>
+   <p class="om-detail">SemanticError 1-1-5-4: Invalid mask to cast from type Time to String. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/time_to_string_mask/semesters/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/semesters/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2021-12-31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2021-12-31</td><td>2018-S1/2021-S2</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/semesters/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/semesters/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/semesters/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/semesters/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/semesters/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/semesters/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-decimals-of-second"><summary><span class="om-ex-title">Decimals of second</span> <span class="om-chip diverge" title="engines differ">🔵</span> <span class="om-marks">pandas ✅ · DuckDB 🛡 <code>0-3-1-6</code></span></summary>
+   <p class="om-detail">DuckDB: DataLoadError 0-3-1-6: On Dataset DS_1 loading: not possible to cast column Me_1 to Time. Error found: &quot;Invalid format: &#x27;2018-04-05T12:30:15.250/2018-04-05T12:30:16.125&#x27;&quot; Please check loaded …</p>
+
+.. include:: ../examples/general/cast/time_to_string_mask/decimals_of_second/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/decimals_of_second/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05T12:30:15.250/2018-04-05T12:30:16.125</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05T12:30:15.250/2018-04-05T12:30:16.125</td><td>05.04.2018 12:30:15.250/05.04.2018 12:30:16.125</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/decimals_of_second/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/decimals_of_second/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/decimals_of_second/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/decimals_of_second/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/decimals_of_second/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/decimals_of_second/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-day-and-month-names"><summary><span class="om-ex-title">Day and month names</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask &quot;Day3 DD month YYYY&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/time_to_string_mask/day_and_month_names/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/day_and_month_names/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2021-12-31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05/2021-12-31</td><td>Thu 05 april 2018/Fri 31 december 2021</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/day_and_month_names/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/day_and_month_names/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/day_and_month_names/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/day_and_month_names/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/day_and_month_names/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/day_and_month_names/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-to-string-mask-am-pm-indicator"><summary><span class="om-ex-title">Am pm indicator</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-5-4</code> · DuckDB 🛡 <code>1-1-5-4</code></span></summary>
+   <p class="om-detail">SemanticError 1-1-5-4: Invalid mask to cast from type Time to String. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/time_to_string_mask/am_pm_indicator/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_to_string_mask/am_pm_indicator/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05T09:30:00/2018-04-05T12:30:00</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05T09:30:00/2018-04-05T12:30:00</td><td>05.04.2018 09:30 AM/05.04.2018 12:30 PM</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_to_string_mask/am_pm_indicator/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_to_string_mask/am_pm_indicator/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_to_string_mask/am_pm_indicator/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_to_string_mask/am_pm_indicator/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_to_string_mask/am_pm_indicator/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_to_string_mask/am_pm_indicator/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -762,7 +1212,7 @@ cast(comp<date>, string) 🟢 · date → string
 
    <span class="om-anchor" id="form-date-to-string-mask"></span>
 
-cast(comp<date>, string, mask) 🟢 · date, string → string
+cast(comp<date>, string, mask) 🟡 · date, string → string
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -783,6 +1233,291 @@ cast(comp<date>, string, mask) 🟢 · date, string → string
 .. raw:: html
 
    <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/year_month_day_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/year_month_day_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/year_month_day_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/year_month_day_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/year_month_day_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/year_month_day_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-date-to-string-mask-optional-digits"><summary><span class="om-ex-title">Optional digits</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/date_to_string_mask/optional_digits/notes.rst
+
+.. literalinclude:: ../examples/general/cast/date_to_string_mask/optional_digits/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td></tr><tr><td>2</td><td>2021-12-31</td></tr><tr><td>3</td><td>2020-01-15</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td><td>5/4/2018</td></tr><tr><td>2</td><td>2021-12-31</td><td>31/12/2021</td></tr><tr><td>3</td><td>2020-01-15</td><td>15/1/2020</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/optional_digits/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/optional_digits/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/optional_digits/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/optional_digits/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/optional_digits/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/optional_digits/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-date-to-string-mask-day-month-year-order"><summary><span class="om-ex-title">Day month year order</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/date_to_string_mask/day_month_year_order/notes.rst
+
+.. literalinclude:: ../examples/general/cast/date_to_string_mask/day_month_year_order/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td></tr><tr><td>2</td><td>2021-12-31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td><td>05/04/2018</td></tr><tr><td>2</td><td>2021-12-31</td><td>31/12/2021</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/day_month_year_order/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/day_month_year_order/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/day_month_year_order/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/day_month_year_order/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/day_month_year_order/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/day_month_year_order/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-date-to-string-mask-escaped-letters"><summary><span class="om-ex-title">Escaped letters</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/date_to_string_mask/escaped_letters/notes.rst
+
+.. literalinclude:: ../examples/general/cast/date_to_string_mask/escaped_letters/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td></tr><tr><td>2</td><td>2021-12-31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td><td>2018M04D05</td></tr><tr><td>2</td><td>2021-12-31</td><td>2021M12D31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/escaped_letters/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/escaped_letters/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/escaped_letters/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/escaped_letters/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/escaped_letters/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/escaped_letters/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-date-to-string-mask-escaped-reverse-slash"><summary><span class="om-ex-title">Escaped reverse slash</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/date_to_string_mask/escaped_reverse_slash/notes.rst
+
+.. literalinclude:: ../examples/general/cast/date_to_string_mask/escaped_reverse_slash/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td></tr><tr><td>2</td><td>2021-12-31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td><td>2018\04\05</td></tr><tr><td>2</td><td>2021-12-31</td><td>2021\12\31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/escaped_reverse_slash/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/escaped_reverse_slash/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/escaped_reverse_slash/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/escaped_reverse_slash/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/escaped_reverse_slash/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/escaped_reverse_slash/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-date-to-string-mask-week-and-day-of-week"><summary><span class="om-ex-title">Week and day of week</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/date_to_string_mask/week_and_day_of_week/notes.rst
+
+.. literalinclude:: ../examples/general/cast/date_to_string_mask/week_and_day_of_week/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td></tr><tr><td>2</td><td>2018-12-30</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td><td>2018-W14-4</td></tr><tr><td>2</td><td>2018-12-30</td><td>2018-W52-7</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/week_and_day_of_week/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/week_and_day_of_week/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/week_and_day_of_week/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/week_and_day_of_week/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/week_and_day_of_week/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/week_and_day_of_week/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-date-to-string-mask-century"><summary><span class="om-ex-title">Century</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/date_to_string_mask/century/notes.rst
+
+.. literalinclude:: ../examples/general/cast/date_to_string_mask/century/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td></tr><tr><td>2</td><td>1999-12-31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td><td>05.04.2018</td></tr><tr><td>2</td><td>1999-12-31</td><td>31.12.1999</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/century/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/century/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/century/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/century/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/century/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/century/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-date-to-string-mask-quarter"><summary><span class="om-ex-title">Quarter</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-5-4</code> · DuckDB 🛡 <code>1-1-5-4</code></span></summary>
+   <p class="om-detail">SemanticError 1-1-5-4: Invalid mask to cast from type Date to String. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/date_to_string_mask/quarter/notes.rst
+
+.. literalinclude:: ../examples/general/cast/date_to_string_mask/quarter/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td></tr><tr><td>2</td><td>2021-12-31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td><td>2018Q2</td></tr><tr><td>2</td><td>2021-12-31</td><td>2021Q4</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/quarter/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/quarter/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/quarter/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/quarter/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/quarter/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/quarter/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-date-to-string-mask-semester"><summary><span class="om-ex-title">Semester</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-5-4</code> · DuckDB 🛡 <code>1-1-5-4</code></span></summary>
+   <p class="om-detail">SemanticError 1-1-5-4: Invalid mask to cast from type Date to String. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/date_to_string_mask/semester/notes.rst
+
+.. literalinclude:: ../examples/general/cast/date_to_string_mask/semester/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td></tr><tr><td>2</td><td>2021-12-31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td><td>2018-S1</td></tr><tr><td>2</td><td>2021-12-31</td><td>2021-S2</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/semester/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/semester/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/semester/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/semester/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/semester/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/semester/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-date-to-string-mask-decimals-of-second"><summary><span class="om-ex-title">Decimals of second</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/date_to_string_mask/decimals_of_second/notes.rst
+
+.. literalinclude:: ../examples/general/cast/date_to_string_mask/decimals_of_second/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05T12:30:15.250000</td></tr><tr><td>2</td><td>2018-04-05T12:30:15.050000</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05T12:30:15.250000</td><td>05/04/2018 12:30:15.250</td></tr><tr><td>2</td><td>2018-04-05T12:30:15.050000</td><td>05/04/2018 12:30:15.050</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/decimals_of_second/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/decimals_of_second/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/decimals_of_second/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/decimals_of_second/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/decimals_of_second/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/decimals_of_second/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-date-to-string-mask-date-and-time-with-separators"><summary><span class="om-ex-title">Date and time with separators</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/date_to_string_mask/date_and_time_with_separators/notes.rst
+
+.. literalinclude:: ../examples/general/cast/date_to_string_mask/date_and_time_with_separators/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45</td></tr><tr><td>2</td><td>2018-04-05T12:30:15</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45</td><td>2015-03-03T09:30:45Z</td></tr><tr><td>2</td><td>2018-04-05T12:30:15</td><td>2018-04-05T12:30:15Z</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/date_and_time_with_separators/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/date_and_time_with_separators/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/date_and_time_with_separators/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/date_and_time_with_separators/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/date_and_time_with_separators/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/date_and_time_with_separators/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-date-to-string-mask-date-and-time-without-separators"><summary><span class="om-ex-title">Date and time without separators</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/date_to_string_mask/date_and_time_without_separators/notes.rst
+
+.. literalinclude:: ../examples/general/cast/date_to_string_mask/date_and_time_without_separators/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45</td></tr><tr><td>2</td><td>2018-04-05T12:30:15</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45</td><td>20150303T093045-01</td></tr><tr><td>2</td><td>2018-04-05T12:30:15</td><td>20180405T123015-01</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/date_and_time_without_separators/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/date_and_time_without_separators/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/date_and_time_without_separators/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/date_and_time_without_separators/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/date_and_time_without_separators/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/date_and_time_without_separators/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-date-to-string-mask-day-and-month-names"><summary><span class="om-ex-title">Day and month names</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask &quot;Day3 DD MONTH YYYY&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/date_to_string_mask/day_and_month_names/notes.rst
+
+.. literalinclude:: ../examples/general/cast/date_to_string_mask/day_and_month_names/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td></tr><tr><td>2</td><td>2021-12-31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td><td>Thu 05 APRIL 2018</td></tr><tr><td>2</td><td>2021-12-31</td><td>Fri 31 DECEMBER 2021</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/day_and_month_names/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/day_and_month_names/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/day_and_month_names/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/day_and_month_names/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/day_and_month_names/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/day_and_month_names/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-date-to-string-mask-am-pm-indicator"><summary><span class="om-ex-title">Am pm indicator</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: the textual word am/pm in the mask &quot;DD/MM/YYYY hh:mm am/pm&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/date_to_string_mask/am_pm_indicator/notes.rst
+
+.. literalinclude:: ../examples/general/cast/date_to_string_mask/am_pm_indicator/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05T09:30:00</td></tr><tr><td>2</td><td>2018-04-05T12:30:00</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05T09:30:00</td><td>05/04/2018 09:30 am</td></tr><tr><td>2</td><td>2018-04-05T12:30:00</td><td>05/04/2018 12:30 pm</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/am_pm_indicator/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/am_pm_indicator/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/am_pm_indicator/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/am_pm_indicator/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/am_pm_indicator/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/am_pm_indicator/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-date-to-string-mask-two-digit-year"><summary><span class="om-ex-title">Two digit year</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>2-1-5-3</code> · DuckDB 🛡 <code>2-1-5-3</code></span></summary>
+   <p class="om-detail">pandas: RunTimeError 2-1-5-3: Impossible to cast 2018-04-05 from type Date to String using mask DD/MM/YY. Please check transformation with output Dataset DS_r; DuckDB: RunTimeError 2-1-5-3: Impossibl…</p>
+
+.. include:: ../examples/general/cast/date_to_string_mask/two_digit_year/notes.rst
+
+.. literalinclude:: ../examples/general/cast/date_to_string_mask/two_digit_year/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td></tr><tr><td>2</td><td>1999-12-31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td><td>05/04/18</td></tr><tr><td>2</td><td>1999-12-31</td><td>31/12/99</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/date_to_string_mask/two_digit_year/script.vtl">script.vtl</a> · <a href="../examples/general/cast/date_to_string_mask/two_digit_year/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/date_to_string_mask/two_digit_year/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/date_to_string_mask/two_digit_year/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/date_to_string_mask/two_digit_year/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/date_to_string_mask/two_digit_year/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -841,6 +1576,126 @@ cast(comp<time\_period>, string, mask) 🟢 · time_period, string → string
 
 .. raw:: html
 
+   <details class="om-example" id="ex-time-period-to-string-mask-quarter-before-year"><summary><span class="om-ex-title">Quarter before year</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/time_period_to_string_mask/quarter_before_year/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_period_to_string_mask/quarter_before_year/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2000Q1</td></tr><tr><td>2</td><td>2001Q3</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2000Q1</td><td>Q1-2000</td></tr><tr><td>2</td><td>2001Q3</td><td>Q3-2001</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_period_to_string_mask/quarter_before_year/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_period_to_string_mask/quarter_before_year/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_period_to_string_mask/quarter_before_year/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_period_to_string_mask/quarter_before_year/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_period_to_string_mask/quarter_before_year/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_period_to_string_mask/quarter_before_year/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-period-to-string-mask-daily-month-and-day"><summary><span class="om-ex-title">Daily month and day</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/time_period_to_string_mask/daily_month_and_day/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_period_to_string_mask/daily_month_and_day/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2000D1</td></tr><tr><td>2</td><td>2000D61</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2000D1</td><td>2000M01D01</td></tr><tr><td>2</td><td>2000D61</td><td>2000M03D01</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_period_to_string_mask/daily_month_and_day/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_period_to_string_mask/daily_month_and_day/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_period_to_string_mask/daily_month_and_day/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_period_to_string_mask/daily_month_and_day/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_period_to_string_mask/daily_month_and_day/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_period_to_string_mask/daily_month_and_day/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-period-to-string-mask-period-indicator-and-number"><summary><span class="om-ex-title">Period indicator and number</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/time_period_to_string_mask/period_indicator_and_number/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_period_to_string_mask/period_indicator_and_number/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015Q4</td></tr><tr><td>2</td><td>2015M12</td></tr><tr><td>3</td><td>2015D365</td></tr><tr><td>4</td><td>2015S2</td></tr><tr><td>5</td><td>2015W12</td></tr><tr><td>6</td><td>2015A</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015Q4</td><td>2015Q4</td></tr><tr><td>2</td><td>2015M12</td><td>2015M12</td></tr><tr><td>3</td><td>2015D365</td><td>2015D365</td></tr><tr><td>4</td><td>2015S2</td><td>2015S2</td></tr><tr><td>5</td><td>2015W12</td><td>2015W12</td></tr><tr><td>6</td><td>2015A</td><td>2015A1</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_period_to_string_mask/period_indicator_and_number/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_period_to_string_mask/period_indicator_and_number/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_period_to_string_mask/period_indicator_and_number/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_period_to_string_mask/period_indicator_and_number/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_period_to_string_mask/period_indicator_and_number/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_period_to_string_mask/period_indicator_and_number/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-period-to-string-mask-escaped-reverse-slash"><summary><span class="om-ex-title">Escaped reverse slash</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/time_period_to_string_mask/escaped_reverse_slash/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_period_to_string_mask/escaped_reverse_slash/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015M03</td></tr><tr><td>2</td><td>2015M12</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015M03</td><td>2015\03</td></tr><tr><td>2</td><td>2015M12</td><td>2015\12</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_period_to_string_mask/escaped_reverse_slash/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_period_to_string_mask/escaped_reverse_slash/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_period_to_string_mask/escaped_reverse_slash/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_period_to_string_mask/escaped_reverse_slash/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_period_to_string_mask/escaped_reverse_slash/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_period_to_string_mask/escaped_reverse_slash/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-period-to-string-mask-semester-after-dash"><summary><span class="om-ex-title">Semester after dash</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/time_period_to_string_mask/semester_after_dash/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_period_to_string_mask/semester_after_dash/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015S1</td></tr><tr><td>2</td><td>2015S2</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015S1</td><td>2015-1</td></tr><tr><td>2</td><td>2015S2</td><td>2015-2</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_period_to_string_mask/semester_after_dash/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_period_to_string_mask/semester_after_dash/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_period_to_string_mask/semester_after_dash/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_period_to_string_mask/semester_after_dash/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_period_to_string_mask/semester_after_dash/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_period_to_string_mask/semester_after_dash/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-time-period-to-string-mask-week-after-dash"><summary><span class="om-ex-title">Week after dash</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/time_period_to_string_mask/week_after_dash/notes.rst
+
+.. literalinclude:: ../examples/general/cast/time_period_to_string_mask/week_after_dash/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015W07</td></tr><tr><td>2</td><td>2020W53</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015W07</td><td>2015-07</td></tr><tr><td>2</td><td>2020W53</td><td>2020-53</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/time_period_to_string_mask/week_after_dash/script.vtl">script.vtl</a> · <a href="../examples/general/cast/time_period_to_string_mask/week_after_dash/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/time_period_to_string_mask/week_after_dash/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/time_period_to_string_mask/week_after_dash/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/time_period_to_string_mask/week_after_dash/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/time_period_to_string_mask/week_after_dash/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
    <span class="om-anchor" id="form-duration-to-string"></span>
 
 cast(comp<duration>, string) 🟢 · duration → string
@@ -870,7 +1725,7 @@ cast(comp<duration>, string) 🟢 · duration → string
 
    <span class="om-anchor" id="form-duration-to-string-mask"></span>
 
-cast(comp<duration>, string, mask) 🟢 · duration, string → string
+cast(comp<duration>, string, mask) 🟡 · duration, string → string
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -885,12 +1740,74 @@ cast(comp<duration>, string, mask) 🟢 · duration, string → string
 
 .. raw:: html
 
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>A</td></tr><tr><td>2</td><td>M</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>A</td></tr><tr><td>2</td><td>M</td><td>M</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>A</td></tr><tr><td>2</td><td>M</td></tr><tr><td>3</td><td>D</td></tr><tr><td>4</td><td>W</td></tr><tr><td>5</td><td>Q</td></tr><tr><td>6</td><td>S</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>A</td></tr><tr><td>2</td><td>M</td><td>M</td></tr><tr><td>3</td><td>D</td><td>D</td></tr><tr><td>4</td><td>W</td><td>W</td></tr><tr><td>5</td><td>Q</td><td>Q</td></tr><tr><td>6</td><td>S</td><td>S</td></tr></tbody></table>
 
 .. raw:: html
 
    <p class="om-files">Files: <a href="../examples/general/cast/duration_to_string_mask/period_indicator_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/duration_to_string_mask/period_indicator_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/duration_to_string_mask/period_indicator_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/duration_to_string_mask/period_indicator_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/duration_to_string_mask/period_indicator_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/duration_to_string_mask/period_indicator_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-duration-to-string-mask-number-of-periods"><summary><span class="om-ex-title">Number of periods</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/duration_to_string_mask/number_of_periods/notes.rst
+
+.. literalinclude:: ../examples/general/cast/duration_to_string_mask/number_of_periods/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>M</td></tr><tr><td>2</td><td>Q</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>M</td><td>P01M</td></tr><tr><td>2</td><td>Q</td><td>P01Q</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/duration_to_string_mask/number_of_periods/script.vtl">script.vtl</a> · <a href="../examples/general/cast/duration_to_string_mask/number_of_periods/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/duration_to_string_mask/number_of_periods/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/duration_to_string_mask/number_of_periods/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/duration_to_string_mask/number_of_periods/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/duration_to_string_mask/number_of_periods/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-duration-to-string-mask-iso-weeks"><summary><span class="om-ex-title">Iso weeks</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: an ISO composite duration in the mask &quot;\PWWW\W&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/duration_to_string_mask/iso_weeks/notes.rst
+
+.. literalinclude:: ../examples/general/cast/duration_to_string_mask/iso_weeks/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>W</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>W</td><td>P001W</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/duration_to_string_mask/iso_weeks/script.vtl">script.vtl</a> · <a href="../examples/general/cast/duration_to_string_mask/iso_weeks/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/duration_to_string_mask/iso_weeks/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/duration_to_string_mask/iso_weeks/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/duration_to_string_mask/iso_weeks/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/duration_to_string_mask/iso_weeks/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-duration-to-string-mask-iso-composite-duration"><summary><span class="om-ex-title">Iso composite duration</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: an ISO composite duration in the mask &quot;\PYY\YM\MDD\DThh\Hmm\Mss\S&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/duration_to_string_mask/iso_composite_duration/notes.rst
+
+.. literalinclude:: ../examples/general/cast/duration_to_string_mask/iso_composite_duration/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>A</td></tr><tr><td>2</td><td>M</td></tr><tr><td>3</td><td>D</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>P01Y0M00DT00H00M00S</td></tr><tr><td>2</td><td>M</td><td>P00Y1M00DT00H00M00S</td></tr><tr><td>3</td><td>D</td><td>P00Y0M01DT00H00M00S</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/duration_to_string_mask/iso_composite_duration/script.vtl">script.vtl</a> · <a href="../examples/general/cast/duration_to_string_mask/iso_composite_duration/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/duration_to_string_mask/iso_composite_duration/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/duration_to_string_mask/iso_composite_duration/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/duration_to_string_mask/iso_composite_duration/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/duration_to_string_mask/iso_composite_duration/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -949,6 +1866,69 @@ cast(comp<string>, integer, mask) 🟢 · string → integer
 
 .. raw:: html
 
+   <details class="om-example" id="ex-string-to-integer-mask-too-few-digits"><summary><span class="om-ex-title">Too few digits</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_integer_mask/too_few_digits/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_integer_mask/too_few_digits/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>7</td></tr></tbody></table>
+
+Expected error ``2-1-5-3``: Impossible to cast {value} from type {type\_1} to {type\_2} using mask {mask}.
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_integer_mask/too_few_digits/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_integer_mask/too_few_digits/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_integer_mask/too_few_digits/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_integer_mask/too_few_digits/expected/error.json">expected/error.json</a> · <a href="../examples/general/cast/string_to_integer_mask/too_few_digits/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-integer-mask-too-many-digits"><summary><span class="om-ex-title">Too many digits</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_integer_mask/too_many_digits/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_integer_mask/too_many_digits/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>123</td></tr></tbody></table>
+
+Expected error ``2-1-5-3``: Impossible to cast {value} from type {type\_1} to {type\_2} using mask {mask}.
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_integer_mask/too_many_digits/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_integer_mask/too_many_digits/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_integer_mask/too_many_digits/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_integer_mask/too_many_digits/expected/error.json">expected/error.json</a> · <a href="../examples/general/cast/string_to_integer_mask/too_many_digits/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-integer-mask-no-digit-for-the-plus"><summary><span class="om-ex-title">No digit for the plus</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_integer_mask/no_digit_for_the_plus/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_integer_mask/no_digit_for_the_plus/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>7</td></tr></tbody></table>
+
+Expected error ``2-1-5-3``: Impossible to cast {value} from type {type\_1} to {type\_2} using mask {mask}.
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_integer_mask/no_digit_for_the_plus/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_integer_mask/no_digit_for_the_plus/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_integer_mask/no_digit_for_the_plus/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_integer_mask/no_digit_for_the_plus/expected/error.json">expected/error.json</a> · <a href="../examples/general/cast/string_to_integer_mask/no_digit_for_the_plus/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
    <span class="om-anchor" id="form-string-to-number"></span>
 
 cast(comp<string>, number) 🟢 · string → number
@@ -978,7 +1958,7 @@ cast(comp<string>, number) 🟢 · string → number
 
    <span class="om-anchor" id="form-string-to-number-mask"></span>
 
-cast(comp<string>, number, mask) 🟢 · string → number
+cast(comp<string>, number, mask) 🟡 · string → number
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -999,6 +1979,129 @@ cast(comp<string>, number, mask) 🟢 · string → number
 .. raw:: html
 
    <p class="om-files">Files: <a href="../examples/general/cast/string_to_number_mask/decimal_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_number_mask/decimal_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_number_mask/decimal_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_number_mask/decimal_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_number_mask/decimal_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_number_mask/decimal_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-number-mask-exponent-mask"><summary><span class="om-ex-title">Exponent mask</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: the exponent E in the mask &quot;DD.DDDEEEE&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_number_mask/exponent_mask/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_number_mask/exponent_mask/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>12.3450003</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>12.3450003</td><td>12345</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_number_mask/exponent_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_number_mask/exponent_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_number_mask/exponent_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_number_mask/exponent_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_number_mask/exponent_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_number_mask/exponent_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-number-mask-any-number-of-digits-mask"><summary><span class="om-ex-title">Any number of digits mask</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_number_mask/any_number_of_digits_mask/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_number_mask/any_number_of_digits_mask/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>1234,5</td></tr><tr><td>2</td><td>7,25</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>1234,5</td><td>1234.5</td></tr><tr><td>2</td><td>7,25</td><td>7.25</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_number_mask/any_number_of_digits_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_number_mask/any_number_of_digits_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_number_mask/any_number_of_digits_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_number_mask/any_number_of_digits_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_number_mask/any_number_of_digits_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_number_mask/any_number_of_digits_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-number-mask-at-least-one-digit-mask"><summary><span class="om-ex-title">At least one digit mask</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_number_mask/at_least_one_digit_mask/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_number_mask/at_least_one_digit_mask/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>12,25</td></tr><tr><td>2</td><td>1234,125</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>12,25</td><td>12.25</td></tr><tr><td>2</td><td>1234,125</td><td>1234.125</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_number_mask/at_least_one_digit_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_number_mask/at_least_one_digit_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_number_mask/at_least_one_digit_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_number_mask/at_least_one_digit_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_number_mask/at_least_one_digit_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_number_mask/at_least_one_digit_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-number-mask-decimal-comma-mask"><summary><span class="om-ex-title">Decimal comma mask</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_number_mask/decimal_comma_mask/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_number_mask/decimal_comma_mask/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>12,375</td></tr><tr><td>2</td><td>03,500</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>12,375</td><td>12.375</td></tr><tr><td>2</td><td>03,500</td><td>3.5</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_number_mask/decimal_comma_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_number_mask/decimal_comma_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_number_mask/decimal_comma_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_number_mask/decimal_comma_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_number_mask/decimal_comma_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_number_mask/decimal_comma_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-number-mask-too-few-digits"><summary><span class="om-ex-title">Too few digits</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_number_mask/too_few_digits/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_number_mask/too_few_digits/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>12.5</td></tr></tbody></table>
+
+Expected error ``2-1-5-3``: Impossible to cast {value} from type {type\_1} to {type\_2} using mask {mask}.
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_number_mask/too_few_digits/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_number_mask/too_few_digits/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_number_mask/too_few_digits/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_number_mask/too_few_digits/expected/error.json">expected/error.json</a> · <a href="../examples/general/cast/string_to_number_mask/too_few_digits/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-number-mask-too-many-digits"><summary><span class="om-ex-title">Too many digits</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_number_mask/too_many_digits/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_number_mask/too_many_digits/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>12.3755</td></tr></tbody></table>
+
+Expected error ``2-1-5-3``: Impossible to cast {value} from type {type\_1} to {type\_2} using mask {mask}.
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_number_mask/too_many_digits/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_number_mask/too_many_digits/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_number_mask/too_many_digits/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_number_mask/too_many_digits/expected/error.json">expected/error.json</a> · <a href="../examples/general/cast/string_to_number_mask/too_many_digits/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -1032,7 +2135,7 @@ cast(comp<string>, time) 🟢 · string → time
 
    <span class="om-anchor" id="form-string-to-time-mask"></span>
 
-cast(comp<string>, time, mask) 🟢 · string → time
+cast(comp<string>, time, mask) 🟡 · string → time
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -1053,6 +2156,357 @@ cast(comp<string>, time, mask) 🟢 · string → time
 .. raw:: html
 
    <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/start_and_end_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-start-and-end-with-times"><summary><span class="om-ex-title">Start and end with times</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <p class="om-detail">row Id_1=1: Me_2 expected 2015-03-03T09:30:45/2018-04-05T12:30:15 got 2015-03-03 09:30:45/2018-04-05 12:30:15</p>
+
+.. include:: ../examples/general/cast/string_to_time_mask/start_and_end_with_times/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/start_and_end_with_times/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45Z/2018-04-05T12:30:15Z</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45Z/2018-04-05T12:30:15Z</td><td>2015-03-03T09:30:45/2018-04-05T12:30:15</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/start_and_end_with_times/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_with_times/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_with_times/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_with_times/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_with_times/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_end_with_times/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-start-and-duration"><summary><span class="om-ex-title">Start and duration</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask &quot;YYYY-MM-DD/PY\YM\MDD\D&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_time_mask/start_and_duration/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/start_and_duration/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03/P1Y2M10D</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03/P1Y2M10D</td><td>2015-03-03/2016-05-13</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/start_and_duration/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_duration/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_duration/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_duration/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_duration/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_duration/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-duration-and-end"><summary><span class="om-ex-title">Duration and end</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask &quot;PY\YM\MDD\DT/YYYY-MM-DD&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_time_mask/duration_and_end/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/duration_and_end/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>P1Y2M10DT/2018-04-05</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>P1Y2M10DT/2018-04-05</td><td>2017-01-26/2018-04-05</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/duration_and_end/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/duration_and_end/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/duration_and_end/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/duration_and_end/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/duration_and_end/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/duration_and_end/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-start-and-duration-with-times"><summary><span class="om-ex-title">Start and duration with times</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask &quot;YYYY-MM-DDThh:mm:ss-01/PY\YM\MDD\DT{h}h\Hmm\M&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_time_mask/start_and_duration_with_times/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/start_and_duration_with_times/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45-01/P1Y2M10DT2H30M</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45-01/P1Y2M10DT2H30M</td><td>2015-03-03T09:30:45/2016-05-13T12:00:45</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/start_and_duration_with_times/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_duration_with_times/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_duration_with_times/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_duration_with_times/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_duration_with_times/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/start_and_duration_with_times/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-duration-and-end-with-times"><summary><span class="om-ex-title">Duration and end with times</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: a time written with a duration in the mask &quot;PY\YM\MDD\DT{h}h\Hmm\M/YYYY-MM-DDThh:mm:ssZ&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_time_mask/duration_and_end_with_times/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/duration_and_end_with_times/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>P1Y2M10DT2H30M/2018-04-05T12:30:00Z</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>P1Y2M10DT2H30M/2018-04-05T12:30:00Z</td><td>2017-01-26T10:00:00/2018-04-05T12:30:00</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/duration_and_end_with_times/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/duration_and_end_with_times/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/duration_and_end_with_times/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/duration_and_end_with_times/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/duration_and_end_with_times/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/duration_and_end_with_times/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-optional-digits"><summary><span class="om-ex-title">Optional digits</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_mask/optional_digits/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/optional_digits/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>5.4.2018/31.12.2021</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>5.4.2018/31.12.2021</td><td>2018-04-05/2021-12-31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/optional_digits/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/optional_digits/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/optional_digits/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/optional_digits/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/optional_digits/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/optional_digits/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-day-month-year-order"><summary><span class="om-ex-title">Day month year order</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_mask/day_month_year_order/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/day_month_year_order/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>05.04.2018/31.12.2021</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>05.04.2018/31.12.2021</td><td>2018-04-05/2021-12-31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/day_month_year_order/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/day_month_year_order/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/day_month_year_order/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/day_month_year_order/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/day_month_year_order/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/day_month_year_order/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-escaped-letters"><summary><span class="om-ex-title">Escaped letters</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_mask/escaped_letters/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/escaped_letters/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018M04D05/2021M12D31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018M04D05/2021M12D31</td><td>2018-04-05/2021-12-31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/escaped_letters/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/escaped_letters/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/escaped_letters/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/escaped_letters/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/escaped_letters/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/escaped_letters/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-escaped-reverse-slash"><summary><span class="om-ex-title">Escaped reverse slash</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_mask/escaped_reverse_slash/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/escaped_reverse_slash/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018\04\05/2021\12\31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018\04\05/2021\12\31</td><td>2018-04-05/2021-12-31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/escaped_reverse_slash/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/escaped_reverse_slash/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/escaped_reverse_slash/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/escaped_reverse_slash/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/escaped_reverse_slash/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/escaped_reverse_slash/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-week-dates"><summary><span class="om-ex-title">Week dates</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_mask/week_dates/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/week_dates/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018.W14.4/2018.W52.7</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018.W14.4/2018.W52.7</td><td>2018-04-05/2018-12-30</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/week_dates/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/week_dates/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/week_dates/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/week_dates/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/week_dates/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/week_dates/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-century"><summary><span class="om-ex-title">Century</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_mask/century/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/century/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>31.12.1999/05.04.2018</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>31.12.1999/05.04.2018</td><td>1999-12-31/2018-04-05</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/century/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/century/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/century/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/century/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/century/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/century/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-days-within-quarters"><summary><span class="om-ex-title">Days within quarters</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-5-4</code> · DuckDB 🛡 <code>1-1-5-4</code></span></summary>
+   <p class="om-detail">SemanticError 1-1-5-4: Invalid mask to cast from type String to Time. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_time_mask/days_within_quarters/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/days_within_quarters/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-Q2-05/2021-Q4-92</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-Q2-05/2021-Q4-92</td><td>2018-04-05/2021-12-31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/days_within_quarters/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/days_within_quarters/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/days_within_quarters/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/days_within_quarters/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/days_within_quarters/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/days_within_quarters/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-days-within-semesters"><summary><span class="om-ex-title">Days within semesters</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-5-4</code> · DuckDB 🛡 <code>1-1-5-4</code></span></summary>
+   <p class="om-detail">SemanticError 1-1-5-4: Invalid mask to cast from type String to Time. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_time_mask/days_within_semesters/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/days_within_semesters/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-S1-095/2021-S2-184</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-S1-095/2021-S2-184</td><td>2018-04-05/2021-12-31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/days_within_semesters/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/days_within_semesters/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/days_within_semesters/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/days_within_semesters/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/days_within_semesters/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/days_within_semesters/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-decimals-of-second"><summary><span class="om-ex-title">Decimals of second</span> <span class="om-chip partial" title="partially implemented">🟡</span> <span class="om-marks">pandas ❌ · DuckDB ❌</span></summary>
+   <p class="om-detail">row Id_1=1: Me_2 expected 2018-04-05T12:30:15.250/2018-04-05T12:30:16.125 got 2018-04-05 12:30:15.250/2018-04-05 12:30:16.125</p>
+
+.. include:: ../examples/general/cast/string_to_time_mask/decimals_of_second/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/decimals_of_second/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>05.04.2018 12:30:15.250/05.04.2018 12:30:16.125</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>05.04.2018 12:30:15.250/05.04.2018 12:30:16.125</td><td>2018-04-05T12:30:15.250/2018-04-05T12:30:16.125</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/decimals_of_second/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/decimals_of_second/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/decimals_of_second/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/decimals_of_second/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/decimals_of_second/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/decimals_of_second/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-day-and-month-names"><summary><span class="om-ex-title">Day and month names</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask &quot;Day3 DD MONTH3 YYYY&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_time_mask/day_and_month_names/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/day_and_month_names/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>Thu 05 APR 2018/Fri 31 DEC 2021</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>Thu 05 APR 2018/Fri 31 DEC 2021</td><td>2018-04-05/2021-12-31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/day_and_month_names/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/day_and_month_names/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/day_and_month_names/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/day_and_month_names/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/day_and_month_names/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/day_and_month_names/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-am-pm-indicator"><summary><span class="om-ex-title">Am pm indicator</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-5-4</code> · DuckDB 🛡 <code>1-1-5-4</code></span></summary>
+   <p class="om-detail">SemanticError 1-1-5-4: Invalid mask to cast from type String to Time. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_time_mask/am_pm_indicator/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/am_pm_indicator/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>05.04.2018 09:30 am/05.04.2018 12:30 pm</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>05.04.2018 09:30 am/05.04.2018 12:30 pm</td><td>2018-04-05T09:30:00/2018-04-05T12:30:00</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/am_pm_indicator/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/am_pm_indicator/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/am_pm_indicator/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/am_pm_indicator/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_mask/am_pm_indicator/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_mask/am_pm_indicator/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-mask-basic-format-sample"><summary><span class="om-ex-title">Basic format sample</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_mask/basic_format_sample/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_mask/basic_format_sample/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>20150303/20180405</td></tr></tbody></table>
+
+Expected error ``2-1-5-3``: Impossible to cast {value} from type {type\_1} to {type\_2} using mask {mask}.
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_mask/basic_format_sample/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_mask/basic_format_sample/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_mask/basic_format_sample/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_mask/basic_format_sample/expected/error.json">expected/error.json</a> · <a href="../examples/general/cast/string_to_time_mask/basic_format_sample/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -1086,7 +2540,7 @@ cast(comp<string>, date) 🟢 · string → date
 
    <span class="om-anchor" id="form-string-to-date-mask"></span>
 
-cast(comp<string>, date, mask) 🟢 · string → date
+cast(comp<string>, date, mask) 🔵 · string → date
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -1107,6 +2561,334 @@ cast(comp<string>, date, mask) 🟢 · string → date
 .. raw:: html
 
    <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/year_month_day_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/year_month_day_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/year_month_day_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/year_month_day_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_date_mask/year_month_day_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_date_mask/year_month_day_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-optional-digits"><summary><span class="om-ex-title">Optional digits</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_date_mask/optional_digits/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/optional_digits/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>5/4/2018</td></tr><tr><td>2</td><td>31/12/2021</td></tr><tr><td>3</td><td>15/1/2020</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>5/4/2018</td><td>2018-04-05</td></tr><tr><td>2</td><td>31/12/2021</td><td>2021-12-31</td></tr><tr><td>3</td><td>15/1/2020</td><td>2020-01-15</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/optional_digits/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/optional_digits/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/optional_digits/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/optional_digits/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_date_mask/optional_digits/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_date_mask/optional_digits/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-day-month-year-order"><summary><span class="om-ex-title">Day month year order</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_date_mask/day_month_year_order/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/day_month_year_order/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>05/04/2018</td></tr><tr><td>2</td><td>31/12/2021</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>05/04/2018</td><td>2018-04-05</td></tr><tr><td>2</td><td>31/12/2021</td><td>2021-12-31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/day_month_year_order/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/day_month_year_order/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/day_month_year_order/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/day_month_year_order/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_date_mask/day_month_year_order/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_date_mask/day_month_year_order/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-escaped-letters"><summary><span class="om-ex-title">Escaped letters</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_date_mask/escaped_letters/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/escaped_letters/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018M04D05</td></tr><tr><td>2</td><td>2021M12D31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018M04D05</td><td>2018-04-05</td></tr><tr><td>2</td><td>2021M12D31</td><td>2021-12-31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/escaped_letters/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/escaped_letters/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/escaped_letters/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/escaped_letters/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_date_mask/escaped_letters/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_date_mask/escaped_letters/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-escaped-reverse-slash"><summary><span class="om-ex-title">Escaped reverse slash</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_date_mask/escaped_reverse_slash/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/escaped_reverse_slash/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018\04\05</td></tr><tr><td>2</td><td>2021\12\31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018\04\05</td><td>2018-04-05</td></tr><tr><td>2</td><td>2021\12\31</td><td>2021-12-31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/escaped_reverse_slash/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/escaped_reverse_slash/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/escaped_reverse_slash/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/escaped_reverse_slash/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_date_mask/escaped_reverse_slash/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_date_mask/escaped_reverse_slash/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-week-and-day-of-week"><summary><span class="om-ex-title">Week and day of week</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_date_mask/week_and_day_of_week/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/week_and_day_of_week/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-W14-4</td></tr><tr><td>2</td><td>2018-W52-7</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-W14-4</td><td>2018-04-05</td></tr><tr><td>2</td><td>2018-W52-7</td><td>2018-12-30</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/week_and_day_of_week/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/week_and_day_of_week/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/week_and_day_of_week/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/week_and_day_of_week/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_date_mask/week_and_day_of_week/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_date_mask/week_and_day_of_week/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-century"><summary><span class="om-ex-title">Century</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_date_mask/century/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/century/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>05.04.2018</td></tr><tr><td>2</td><td>31.12.1999</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>05.04.2018</td><td>2018-04-05</td></tr><tr><td>2</td><td>31.12.1999</td><td>1999-12-31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/century/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/century/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/century/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/century/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_date_mask/century/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_date_mask/century/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-day-within-quarter"><summary><span class="om-ex-title">Day within quarter</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-5-4</code> · DuckDB 🛡 <code>1-1-5-4</code></span></summary>
+   <p class="om-detail">SemanticError 1-1-5-4: Invalid mask to cast from type String to Date. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_date_mask/day_within_quarter/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/day_within_quarter/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-Q2-05</td></tr><tr><td>2</td><td>2021-Q4-92</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-Q2-05</td><td>2018-04-05</td></tr><tr><td>2</td><td>2021-Q4-92</td><td>2021-12-31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/day_within_quarter/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/day_within_quarter/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/day_within_quarter/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/day_within_quarter/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_date_mask/day_within_quarter/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_date_mask/day_within_quarter/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-day-within-semester"><summary><span class="om-ex-title">Day within semester</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-5-4</code> · DuckDB 🛡 <code>1-1-5-4</code></span></summary>
+   <p class="om-detail">SemanticError 1-1-5-4: Invalid mask to cast from type String to Date. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_date_mask/day_within_semester/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/day_within_semester/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-S1-095</td></tr><tr><td>2</td><td>2021-S2-184</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2018-S1-095</td><td>2018-04-05</td></tr><tr><td>2</td><td>2021-S2-184</td><td>2021-12-31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/day_within_semester/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/day_within_semester/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/day_within_semester/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/day_within_semester/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_date_mask/day_within_semester/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_date_mask/day_within_semester/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-decimals-of-second"><summary><span class="om-ex-title">Decimals of second</span> <span class="om-chip diverge" title="engines differ">🔵</span> <span class="om-marks">pandas ✅ · DuckDB ❌</span></summary>
+   <p class="om-detail">DuckDB: row Id_1=1: Me_2 expected 2018-04-05T12:30:15.250 got 2018-04-05T12:30:15.250000; row Id_1=2: Me_2 expected 2018-04-05T12:30:15.050 got 2018-04-05T12:30:15.050000</p>
+
+.. include:: ../examples/general/cast/string_to_date_mask/decimals_of_second/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/decimals_of_second/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>05/04/2018 12:30:15.250</td></tr><tr><td>2</td><td>05/04/2018 12:30:15.050</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>05/04/2018 12:30:15.250</td><td>2018-04-05T12:30:15.250</td></tr><tr><td>2</td><td>05/04/2018 12:30:15.050</td><td>2018-04-05T12:30:15.050</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/decimals_of_second/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/decimals_of_second/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/decimals_of_second/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/decimals_of_second/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_date_mask/decimals_of_second/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_date_mask/decimals_of_second/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-date-and-time-with-separators"><summary><span class="om-ex-title">Date and time with separators</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_date_mask/date_and_time_with_separators/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/date_and_time_with_separators/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45Z</td></tr><tr><td>2</td><td>2018-04-05T12:30:15Z</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015-03-03T09:30:45Z</td><td>2015-03-03T09:30:45</td></tr><tr><td>2</td><td>2018-04-05T12:30:15Z</td><td>2018-04-05T12:30:15</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/date_and_time_with_separators/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/date_and_time_with_separators/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/date_and_time_with_separators/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/date_and_time_with_separators/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_date_mask/date_and_time_with_separators/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_date_mask/date_and_time_with_separators/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-date-and-time-without-separators"><summary><span class="om-ex-title">Date and time without separators</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_date_mask/date_and_time_without_separators/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/date_and_time_without_separators/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>20150303T093045-01</td></tr><tr><td>2</td><td>20180405T123015-01</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>20150303T093045-01</td><td>2015-03-03T09:30:45</td></tr><tr><td>2</td><td>20180405T123015-01</td><td>2018-04-05T12:30:15</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/date_and_time_without_separators/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/date_and_time_without_separators/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/date_and_time_without_separators/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/date_and_time_without_separators/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_date_mask/date_and_time_without_separators/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_date_mask/date_and_time_without_separators/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-lower-case-month-abbreviation"><summary><span class="om-ex-title">Lower case month abbreviation</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: the textual word month in the mask &quot;DDmonth3YYYY&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_date_mask/lower_case_month_abbreviation/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/lower_case_month_abbreviation/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>01jan2025</td></tr><tr><td>2</td><td>05apr2018</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>01jan2025</td><td>2025-01-01</td></tr><tr><td>2</td><td>05apr2018</td><td>2018-04-05</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/lower_case_month_abbreviation/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/lower_case_month_abbreviation/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/lower_case_month_abbreviation/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/lower_case_month_abbreviation/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_date_mask/lower_case_month_abbreviation/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_date_mask/lower_case_month_abbreviation/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-day-and-month-names"><summary><span class="om-ex-title">Day and month names</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: the textual word Day in the mask &quot;Day3 DD MONTH YYYY&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_date_mask/day_and_month_names/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/day_and_month_names/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>Thu 05 APRIL 2018</td></tr><tr><td>2</td><td>Fri 31 DECEMBER 2021</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>Thu 05 APRIL 2018</td><td>2018-04-05</td></tr><tr><td>2</td><td>Fri 31 DECEMBER 2021</td><td>2021-12-31</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/day_and_month_names/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/day_and_month_names/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/day_and_month_names/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/day_and_month_names/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_date_mask/day_and_month_names/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_date_mask/day_and_month_names/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-am-pm-indicator"><summary><span class="om-ex-title">Am pm indicator</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: the textual word AM/PM in the mask &quot;DD/MM/YYYY hh:mm AM/PM&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_date_mask/am_pm_indicator/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/am_pm_indicator/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>05/04/2018 09:30 AM</td></tr><tr><td>2</td><td>05/04/2018 12:30 PM</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>05/04/2018 09:30 AM</td><td>2018-04-05T09:30:00</td></tr><tr><td>2</td><td>05/04/2018 12:30 PM</td><td>2018-04-05T12:30:00</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/am_pm_indicator/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/am_pm_indicator/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/am_pm_indicator/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/am_pm_indicator/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_date_mask/am_pm_indicator/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_date_mask/am_pm_indicator/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-string-not-matching-mask"><summary><span class="om-ex-title">String not matching mask</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_date_mask/string_not_matching_mask/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/string_not_matching_mask/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2018-04-05</td></tr></tbody></table>
+
+Expected error ``2-1-5-3``: Impossible to cast {value} from type {type\_1} to {type\_2} using mask {mask}.
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/string_not_matching_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/string_not_matching_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/string_not_matching_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/string_not_matching_mask/expected/error.json">expected/error.json</a> · <a href="../examples/general/cast/string_to_date_mask/string_not_matching_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-date-mask-characters-left-over"><summary><span class="om-ex-title">Characters left over</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_date_mask/characters_left_over/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_date_mask/characters_left_over/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>05/04/2018 10:00</td></tr></tbody></table>
+
+Expected error ``2-1-5-3``: Impossible to cast {value} from type {type\_1} to {type\_2} using mask {mask}.
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_date_mask/characters_left_over/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_date_mask/characters_left_over/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_date_mask/characters_left_over/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_date_mask/characters_left_over/expected/error.json">expected/error.json</a> · <a href="../examples/general/cast/string_to_date_mask/characters_left_over/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -1165,6 +2947,207 @@ cast(comp<string>, time\_period, mask) 🟢 · string → time_period
 
 .. raw:: html
 
+   <details class="om-example" id="ex-string-to-time-period-mask-quarter-after-dash"><summary><span class="om-ex-title">Quarter after dash</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_period_mask/quarter_after_dash/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_period_mask/quarter_after_dash/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2000-1</td></tr><tr><td>2</td><td>2001-4</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2000-1</td><td>2000Q1</td></tr><tr><td>2</td><td>2001-4</td><td>2001Q4</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_period_mask/quarter_after_dash/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_period_mask/quarter_after_dash/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/quarter_after_dash/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/quarter_after_dash/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/quarter_after_dash/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/quarter_after_dash/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-period-mask-quarter-before-year"><summary><span class="om-ex-title">Quarter before year</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_period_mask/quarter_before_year/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_period_mask/quarter_before_year/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>Q1-2000</td></tr><tr><td>2</td><td>Q3-2001</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>Q1-2000</td><td>2000Q1</td></tr><tr><td>2</td><td>Q3-2001</td><td>2001Q3</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_period_mask/quarter_before_year/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_period_mask/quarter_before_year/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/quarter_before_year/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/quarter_before_year/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/quarter_before_year/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/quarter_before_year/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-period-mask-two-digit-quarter"><summary><span class="om-ex-title">Two digit quarter</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_period_mask/two_digit_quarter/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_period_mask/two_digit_quarter/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2000Q01</td></tr><tr><td>2</td><td>2001Q04</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2000Q01</td><td>2000Q1</td></tr><tr><td>2</td><td>2001Q04</td><td>2001Q4</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_period_mask/two_digit_quarter/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_period_mask/two_digit_quarter/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/two_digit_quarter/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/two_digit_quarter/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/two_digit_quarter/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/two_digit_quarter/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-period-mask-daily-month-and-day"><summary><span class="om-ex-title">Daily month and day</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_period_mask/daily_month_and_day/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_period_mask/daily_month_and_day/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2000M01D01</td></tr><tr><td>2</td><td>2000M03D01</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2000M01D01</td><td>2000D1</td></tr><tr><td>2</td><td>2000M03D01</td><td>2000D61</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_period_mask/daily_month_and_day/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_period_mask/daily_month_and_day/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/daily_month_and_day/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/daily_month_and_day/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/daily_month_and_day/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/daily_month_and_day/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-period-mask-daily-dotted-date"><summary><span class="om-ex-title">Daily dotted date</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_period_mask/daily_dotted_date/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_period_mask/daily_dotted_date/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2000.01.01</td></tr><tr><td>2</td><td>2001.12.31</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2000.01.01</td><td>2000D1</td></tr><tr><td>2</td><td>2001.12.31</td><td>2001D365</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_period_mask/daily_dotted_date/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_period_mask/daily_dotted_date/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/daily_dotted_date/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/daily_dotted_date/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/daily_dotted_date/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/daily_dotted_date/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-period-mask-period-indicator-and-number"><summary><span class="om-ex-title">Period indicator and number</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_period_mask/period_indicator_and_number/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_period_mask/period_indicator_and_number/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015Q4</td></tr><tr><td>2</td><td>2015M12</td></tr><tr><td>3</td><td>2015D365</td></tr><tr><td>4</td><td>2015S2</td></tr><tr><td>5</td><td>2015W12</td></tr><tr><td>6</td><td>2015A1</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015Q4</td><td>2015Q4</td></tr><tr><td>2</td><td>2015M12</td><td>2015M12</td></tr><tr><td>3</td><td>2015D365</td><td>2015D365</td></tr><tr><td>4</td><td>2015S2</td><td>2015S2</td></tr><tr><td>5</td><td>2015W12</td><td>2015W12</td></tr><tr><td>6</td><td>2015A1</td><td>2015A</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_period_mask/period_indicator_and_number/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_period_mask/period_indicator_and_number/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/period_indicator_and_number/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/period_indicator_and_number/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/period_indicator_and_number/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/period_indicator_and_number/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-period-mask-escaped-reverse-slash"><summary><span class="om-ex-title">Escaped reverse slash</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_period_mask/escaped_reverse_slash/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_period_mask/escaped_reverse_slash/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015\03</td></tr><tr><td>2</td><td>2015\12</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015\03</td><td>2015M03</td></tr><tr><td>2</td><td>2015\12</td><td>2015M12</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_period_mask/escaped_reverse_slash/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_period_mask/escaped_reverse_slash/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/escaped_reverse_slash/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/escaped_reverse_slash/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/escaped_reverse_slash/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/escaped_reverse_slash/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-period-mask-semester-after-dash"><summary><span class="om-ex-title">Semester after dash</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_period_mask/semester_after_dash/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_period_mask/semester_after_dash/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015-1</td></tr><tr><td>2</td><td>2015-2</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015-1</td><td>2015S1</td></tr><tr><td>2</td><td>2015-2</td><td>2015S2</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_period_mask/semester_after_dash/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_period_mask/semester_after_dash/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/semester_after_dash/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/semester_after_dash/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/semester_after_dash/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/semester_after_dash/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-period-mask-week-after-dash"><summary><span class="om-ex-title">Week after dash</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_period_mask/week_after_dash/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_period_mask/week_after_dash/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2015-07</td></tr><tr><td>2</td><td>2020-53</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>2015-07</td><td>2015W07</td></tr><tr><td>2</td><td>2020-53</td><td>2020W53</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_period_mask/week_after_dash/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_period_mask/week_after_dash/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/week_after_dash/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/week_after_dash/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/week_after_dash/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/week_after_dash/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-time-period-mask-dash-not-in-mask"><summary><span class="om-ex-title">Dash not in mask</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_time_period_mask/dash_not_in_mask/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_time_period_mask/dash_not_in_mask/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>2000-Q1</td></tr></tbody></table>
+
+Expected error ``2-1-5-3``: Impossible to cast {value} from type {type\_1} to {type\_2} using mask {mask}.
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_time_period_mask/dash_not_in_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_time_period_mask/dash_not_in_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_time_period_mask/dash_not_in_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/dash_not_in_mask/expected/error.json">expected/error.json</a> · <a href="../examples/general/cast/string_to_time_period_mask/dash_not_in_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
    <span class="om-anchor" id="form-string-to-duration"></span>
 
 cast(comp<string>, duration) 🟢 · string → duration
@@ -1194,7 +3177,7 @@ cast(comp<string>, duration) 🟢 · string → duration
 
    <span class="om-anchor" id="form-string-to-duration-mask"></span>
 
-cast(comp<string>, duration, mask) 🟢 · string → duration
+cast(comp<string>, duration, mask) 🟡 · string → duration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
@@ -1209,12 +3192,95 @@ cast(comp<string>, duration, mask) 🟢 · string → duration
 
 .. raw:: html
 
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>A</td></tr><tr><td>2</td><td>M</td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>A</td></tr><tr><td>2</td><td>M</td><td>M</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>A</td></tr><tr><td>2</td><td>M</td></tr><tr><td>3</td><td>D</td></tr><tr><td>4</td><td>W</td></tr><tr><td>5</td><td>Q</td></tr><tr><td>6</td><td>S</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>A</td></tr><tr><td>2</td><td>M</td><td>M</td></tr><tr><td>3</td><td>D</td><td>D</td></tr><tr><td>4</td><td>W</td><td>W</td></tr><tr><td>5</td><td>Q</td><td>Q</td></tr><tr><td>6</td><td>S</td><td>S</td></tr></tbody></table>
 
 .. raw:: html
 
    <p class="om-files">Files: <a href="../examples/general/cast/string_to_duration_mask/period_indicator_mask/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_duration_mask/period_indicator_mask/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_duration_mask/period_indicator_mask/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_duration_mask/period_indicator_mask/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_duration_mask/period_indicator_mask/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_duration_mask/period_indicator_mask/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-duration-mask-number-of-periods"><summary><span class="om-ex-title">Number of periods</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_duration_mask/number_of_periods/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_duration_mask/number_of_periods/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>P01M</td></tr><tr><td>2</td><td>P01Q</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>P01M</td><td>M</td></tr><tr><td>2</td><td>P01Q</td><td>Q</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_duration_mask/number_of_periods/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_duration_mask/number_of_periods/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_duration_mask/number_of_periods/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_duration_mask/number_of_periods/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_duration_mask/number_of_periods/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_duration_mask/number_of_periods/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-duration-mask-iso-weeks"><summary><span class="om-ex-title">Iso weeks</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: an ISO composite duration in the mask &quot;\PWWW\W&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_duration_mask/iso_weeks/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_duration_mask/iso_weeks/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>P001W</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>P001W</td><td>W</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_duration_mask/iso_weeks/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_duration_mask/iso_weeks/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_duration_mask/iso_weeks/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_duration_mask/iso_weeks/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_duration_mask/iso_weeks/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_duration_mask/iso_weeks/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-duration-mask-iso-composite-duration"><summary><span class="om-ex-title">Iso composite duration</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
+   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: an ISO composite duration in the mask &quot;\PYY\YM\MDD\DThh\Hmm\Mss\S&quot;. Please check transformation with output Dataset DS_r</p>
+
+.. include:: ../examples/general/cast/string_to_duration_mask/iso_composite_duration/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_duration_mask/iso_composite_duration/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>P01Y0M00DT00H00M00S</td></tr><tr><td>2</td><td>P00Y1M00DT00H00M00S</td></tr><tr><td>3</td><td>P00Y0M01DT00H00M00S</td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>1</td><td>P01Y0M00DT00H00M00S</td><td>A</td></tr><tr><td>2</td><td>P00Y1M00DT00H00M00S</td><td>M</td></tr><tr><td>3</td><td>P00Y0M01DT00H00M00S</td><td>D</td></tr></tbody></table>
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_duration_mask/iso_composite_duration/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_duration_mask/iso_composite_duration/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_duration_mask/iso_composite_duration/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_duration_mask/iso_composite_duration/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/general/cast/string_to_duration_mask/iso_composite_duration/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/general/cast/string_to_duration_mask/iso_composite_duration/index.html">example page ↗</a></p>
+   </details>
+
+.. raw:: html
+
+   <details class="om-example" id="ex-string-to-duration-mask-unmatched-iso-8601-duration"><summary><span class="om-ex-title">Unmatched iso 8601 duration</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+
+.. include:: ../examples/general/cast/string_to_duration_mask/unmatched_iso_8601_duration/notes.rst
+
+.. literalinclude:: ../examples/general/cast/string_to_duration_mask/unmatched_iso_8601_duration/script.vtl
+   :caption: script.vtl
+   :language: none
+
+.. raw:: html
+
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>P1M</td></tr></tbody></table>
+
+Expected error ``2-1-5-3``: Impossible to cast {value} from type {type\_1} to {type\_2} using mask {mask}.
+
+.. raw:: html
+
+   <p class="om-files">Files: <a href="../examples/general/cast/string_to_duration_mask/unmatched_iso_8601_duration/script.vtl">script.vtl</a> · <a href="../examples/general/cast/string_to_duration_mask/unmatched_iso_8601_duration/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/general/cast/string_to_duration_mask/unmatched_iso_8601_duration/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/general/cast/string_to_duration_mask/unmatched_iso_8601_duration/expected/error.json">expected/error.json</a> · <a href="../examples/general/cast/string_to_duration_mask/unmatched_iso_8601_duration/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
