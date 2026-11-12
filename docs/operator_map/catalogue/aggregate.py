@@ -348,13 +348,9 @@ _ANALYTIC_INVOCATION = Operator(
             "partition_except_all",
             "an(over (partition except all order by Id))",
             (
-                manual(
-                    "ex_2",
-                    erratum=(
-                        "The result declares Me_1 and Me_2 Number: calc leaves Me_1 Integer as in "
-                        "DS_1, and rank returns integer, so both are Integer."
-                    ),
-                ),
+                # It orders by ``id_1`` for the identifier ``Id_1``: vtlengine keeps regular names
+                # case sensitive until 2.0, so it expects the error (team decision, #633).
+                manual("ex_2", decision=633),
                 authored("whole_data_set_one_partition"),
             ),
             takes=_INVOCATION_TAKES,
