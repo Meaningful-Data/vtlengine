@@ -631,10 +631,14 @@ def test_every_anchor_that_is_shared_is_one_line_naming_all_that_have_it() -> No
         form("a", "z", authored("b_c_d"), authored("only_one")),
     )
     assert three == [
-        "alpha.first: the anchor 'ex-a-b-c-d' is shared by "
-        "example 'a_b_c/d', example 'a_b/c_d', example 'a/b_c_d'",
-        "alpha.first: the anchor 'ex-a-b-c-e-f' is shared by example 'a_b_c/e_f', "
-        "example 'a_b/c_e_f'",
+        (
+            "alpha.first: the anchor 'ex-a-b-c-d' is shared by "
+            "example 'a_b_c/d', example 'a_b/c_d', example 'a/b_c_d'"
+        ),
+        (
+            "alpha.first: the anchor 'ex-a-b-c-e-f' is shared by example 'a_b_c/e_f', "
+            "example 'a_b/c_e_f'"
+        ),
     ]
 
 
@@ -1740,7 +1744,7 @@ def run_main_interrupted() -> int:
     try:
         return generate.main([])
     except KeyboardInterrupt:
-        pytest.fail("the interrupt got out of main")
+        raise AssertionError("the interrupt got out of main")
 
 
 def interrupt_judging(world: World, monkeypatch: pytest.MonkeyPatch) -> None:

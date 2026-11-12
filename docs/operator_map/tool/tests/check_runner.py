@@ -1388,8 +1388,10 @@ def test_the_preflight_gives_the_versions_of_the_engines() -> None:
 @pytest.mark.parametrize(
     "code",
     [
-        "import sys\nsys.stderr.write('Traceback\\nModuleNotFoundError: No module named "
-        "\\'vtlengine.AST.Grammar._cpp_parser.vtl_cpp_parser\\'\\n')\nsys.exit(1)\n",
+        (
+            "import sys\nsys.stderr.write('Traceback\\nModuleNotFoundError: No module named "
+            "\\'vtlengine.AST.Grammar._cpp_parser.vtl_cpp_parser\\'\\n')\nsys.exit(1)\n"
+        ),
         "print('PREFLIGHT:not json')\n",
         "print('nothing to say')\n",
     ],
