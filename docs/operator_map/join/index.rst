@@ -4,7 +4,7 @@ Join operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 2 of 4 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 4 of 4 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -34,8 +34,8 @@ Join operators
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Join operators"]:::block
        join__inner_join["Inner Join · inner_join 📌<br/>🟢22"]:::ok
-       join__left_join["Left Join · left_join<br/>🟢22 🟡1"]:::partial
-       join__full_join["Full Join · full_join<br/>🟢21 🟡1 🛡️1"]:::partial
+       join__left_join["Left Join · left_join<br/>🟢23"]:::ok
+       join__full_join["Full Join · full_join<br/>🟢23"]:::ok
        join__cross_join["Cross Join · cross_join 📌<br/>🟢21"]:::ok
        join__inner_join --- B
        join__left_join --- B
@@ -63,10 +63,10 @@ Join operators
      - 🟢
      - 22
    * - :doc:`Left Join <left_join>` ``left_join``
-     - 🟡
+     - 🟢
      - 23
    * - :doc:`Full Join <full_join>` ``full_join``
-     - 🟡
+     - 🟢
      - 23
    * - :doc:`Cross Join <cross_join>` ``cross_join``
      - 🟢
@@ -101,33 +101,7 @@ Join operators
 
 .. rubric:: Forms that are not green
 
-Every form that is neither 🟢 nor 🛡️, with the example that shows its status: the first that is neither, or the first that diverges for a 🔵 form.
-
-.. list-table::
-   :header-rows: 1
-   :widths: auto
-
-   * - Operator
-     - Form
-     - Status
-     - Example
-     - pandas
-     - DuckDB
-     - Detail
-   * - :doc:`Left Join <left_join>`
-     - `left\_join(DS, DS using Id, nvl(Id, c)) <left_join.html#form-using-nvl>`__
-     - 🟡
-     - `Nvl on aliased identifier <left_join.html#ex-using-nvl-nvl-on-aliased-identifier>`__
-     - 💥 AttributeError
-     - 💥 AttributeError
-     - AttributeError: \'BinOp\' object has no attribute \'value\'
-   * - :doc:`Full Join <full_join>`
-     - `full\_join(DS, DS using Id, nvl(Id, c)) <full_join.html#form-using-nvl>`__
-     - 🟡
-     - `Nvl per operand alias <full_join.html#ex-using-nvl-nvl-per-operand-alias>`__
-     - 💥 AttributeError
-     - 💥 AttributeError
-     - AttributeError: \'BinOp\' object has no attribute \'value\'
+Every form is 🟢 or 🛡️.
 
 .. toctree::
    :maxdepth: 1

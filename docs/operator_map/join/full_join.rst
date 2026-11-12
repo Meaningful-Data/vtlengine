@@ -4,7 +4,7 @@ Full Join · ``full_join``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 21 of 23 forms all ok, 1 refused</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Full%20Join/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 23 of 23 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Full%20Join/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -32,11 +32,11 @@ Full Join · ``full_join``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Full Join · full_join<br/>🟢21 🟡1 🛡️1"]:::partial
+       O["Full Join · full_join<br/>🟢23"]:::ok
        v_bare["full_join(DS, DS)"]:::ok
        v_aliases["full_join(DS as a, DS as b)"]:::ok
-       v_using["full_join(DS, DS using Id)"]:::refused
-       v_using_nvl["full_join(DS, DS using Id, nvl(Id, c))"]:::partial
+       v_using["full_join(DS, DS using Id)"]:::ok
+       v_using_nvl["full_join(DS, DS using Id, nvl(Id, c))"]:::ok
        v_filter["full_join(DS, DS filter cond)"]:::ok
        v_apply["full_join(DS, DS apply expr)"]:::ok
        v_calc_default["full_join(DS, DS calc C #58;#61; expr)"]:::ok
@@ -217,13 +217,12 @@ full\_join(DS as a, DS as b) 🟢 · any scalar → any type
 
    <span class="om-anchor" id="form-using"></span>
 
-full\_join(DS, DS using Id) 🛡️ · any scalar → any type
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+full\_join(DS, DS using Id) 🟢 · any scalar → any type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-using-all-common-identifiers"><summary><span class="om-ex-title">All common identifiers</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-13-8</code> · DuckDB 🛡 <code>1-1-13-8</code></span></summary>
-   <p class="om-detail">SemanticError 1-1-13-8: At op full_join: No available using clause. Please check transformation with output Dataset DS_r</p>
+   <details class="om-example" id="ex-using-all-common-identifiers"><summary><span class="om-ex-title">All common identifiers</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/using/all_common_identifiers/notes.rst
 
@@ -246,13 +245,12 @@ full\_join(DS, DS using Id) 🛡️ · any scalar → any type
 
    <span class="om-anchor" id="form-using-nvl"></span>
 
-full\_join(DS, DS using Id, nvl(Id, c)) 🟡 · any scalar → any type
+full\_join(DS, DS using Id, nvl(Id, c)) 🟢 · any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-using-nvl-nvl-for-extra-identifier"><summary><span class="om-ex-title">Nvl for extra identifier</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-13-8</code> · DuckDB 🛡 <code>1-1-13-8</code></span></summary>
-   <p class="om-detail">SemanticError 1-1-13-8: At op full_join: No available using clause. Please check transformation with output Dataset DS_r</p>
+   <details class="om-example" id="ex-using-nvl-nvl-for-extra-identifier"><summary><span class="om-ex-title">Nvl for extra identifier</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/using_nvl/nvl_for_extra_identifier/notes.rst
 
@@ -273,8 +271,7 @@ full\_join(DS, DS using Id, nvl(Id, c)) 🟡 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-using-nvl-nvl-per-operand-alias"><summary><span class="om-ex-title">Nvl per operand alias</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 💥 <code>AttributeError</code> · DuckDB 💥 <code>AttributeError</code></span></summary>
-   <p class="om-detail">AttributeError: &#x27;BinOp&#x27; object has no attribute &#x27;value&#x27;</p>
+   <details class="om-example" id="ex-using-nvl-nvl-per-operand-alias"><summary><span class="om-ex-title">Nvl per operand alias</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/full_join/using_nvl/nvl_per_operand_alias/notes.rst
 

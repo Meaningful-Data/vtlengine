@@ -163,8 +163,7 @@ inner\_join(DS, DS) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-bare-one-shared-identifier"><summary><span class="om-ex-title">One shared identifier</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-13-11</code> · DuckDB 🛡 <code>1-1-13-11</code></span></summary>
-   <p class="om-detail">SemanticError 1-1-13-11: At op inner_join: Invalid subcase A, DS_1 should be a superset but Id_3 not found. Please check transformation with output Dataset DS_r</p>
+   <details class="om-example" id="ex-bare-one-shared-identifier"><summary><span class="om-ex-title">One shared identifier</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/bare/one_shared_identifier/notes.rst
 
@@ -198,7 +197,7 @@ inner\_join(DS, DS) 🟢 · any scalar → any type
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Me_1</th></tr></thead><tbody><tr><td>1</td><td>10</td></tr><tr><td>2</td><td>20</td></tr></tbody></table>
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_2</code></span></caption><thead><tr><th class="head">Id_2</th><th class="head">Me_2</th></tr></thead><tbody><tr><td>A</td><td>1</td></tr><tr><td>B</td><td>2</td></tr></tbody></table>
 
-Expected error ``1-1-13-11``: At op {op}: Invalid subcase A, {dataset\_reference} should be a superset but {component} not found.
+Expected error ``1-1-13-26``: At op {op}: The operands cannot be ordered so that each one has an identifier in common with one before it, as {dataset} has none in common with the others.
 
 .. raw:: html
 
@@ -284,8 +283,7 @@ inner\_join(DS, DS using Id) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-using-subset-of-identifiers"><summary><span class="om-ex-title">Subset of identifiers</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-13-4</code> · DuckDB 🛡 <code>1-1-13-4</code></span></summary>
-   <p class="om-detail">SemanticError 1-1-13-4: At op inner_join: Using clause, using=[&#x27;Id_1&#x27;], does not define all the Identifiers, of non reference Dataset d2. Please check transformation with output Dataset DS_r</p>
+   <details class="om-example" id="ex-using-subset-of-identifiers"><summary><span class="om-ex-title">Subset of identifiers</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/using/subset_of_identifiers/notes.rst
 
@@ -942,8 +940,7 @@ inner\_join(DS, DS, DS) 🟢 · any scalar → any type
 
 .. raw:: html
 
-   <details class="om-example" id="ex-nary-manual-ex-5"><summary><span class="om-ex-title">Manual example 5</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-1-13-11</code> · DuckDB 🛡 <code>1-1-13-11</code></span></summary>
-   <p class="om-detail">SemanticError 1-1-13-11: At op inner_join: Invalid subcase A, DS_5 should be a superset but Id_1 not found. Please check transformation with output Dataset IBSC</p>
+   <details class="om-example" id="ex-nary-manual-ex-5"><summary><span class="om-ex-title">Manual example 5</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/join/inner_join/nary/manual_ex_5/notes.rst
 

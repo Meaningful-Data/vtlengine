@@ -4,7 +4,7 @@ Pivoting · ``pivot``
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip missing">🔴 0 of 1 form all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Pivoting/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 1 of 1 form all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Pivoting/index.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -32,8 +32,8 @@ Pivoting · ``pivot``
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["Pivoting · pivot<br/>🔴1"]:::missing
-       v_basic["DS#91;pivot Id, Me#93;"]:::missing
+       O["Pivoting · pivot<br/>🟢1"]:::ok
+       v_basic["DS#91;pivot Id, Me#93;"]:::ok
        v_basic --- O
        click v_basic href "#form-basic"
 
@@ -56,13 +56,12 @@ Forms
 
    <span class="om-anchor" id="form-basic"></span>
 
-DS[pivot Id, Me] 🔴 · any scalar → any type
+DS[pivot Id, Me] 🟢 · any scalar → any type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-basic-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: pivot clause. Please check transformation with output Dataset DS_r</p>
+   <details class="om-example" id="ex-basic-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/pivot/basic/manual_ex_1/notes.rst
 
@@ -77,13 +76,12 @@ DS[pivot Id, Me] 🔴 · any scalar → any type
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/clause/pivot/basic/manual_ex_1/script.vtl">script.vtl</a> · <a href="../examples/clause/pivot/basic/manual_ex_1/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/clause/pivot/basic/manual_ex_1/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/clause/pivot/basic/manual_ex_1/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/clause/pivot/basic/manual_ex_1/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/clause/pivot/basic/manual_ex_1/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/clause/pivot/basic/manual_ex_1/script.vtl">script.vtl</a> · <a href="../examples/clause/pivot/basic/manual_ex_1/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/clause/pivot/basic/manual_ex_1/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/clause/pivot/basic/manual_ex_1/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/clause/pivot/basic/manual_ex_1/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/clause/pivot/basic/manual_ex_1/value_domains/VD_1.json">value_domains/VD_1.json</a> · <a href="../examples/clause/pivot/basic/manual_ex_1/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
 
-   <details class="om-example" id="ex-basic-missing-combination-is-null"><summary><span class="om-ex-title">Missing combination is null</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: pivot clause. Please check transformation with output Dataset DS_r</p>
+   <details class="om-example" id="ex-basic-missing-combination-is-null"><summary><span class="om-ex-title">Missing combination is null</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/clause/pivot/basic/missing_combination_is_null/notes.rst
 
@@ -98,5 +96,5 @@ DS[pivot Id, Me] 🔴 · any scalar → any type
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/clause/pivot/basic/missing_combination_is_null/script.vtl">script.vtl</a> · <a href="../examples/clause/pivot/basic/missing_combination_is_null/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/clause/pivot/basic/missing_combination_is_null/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/clause/pivot/basic/missing_combination_is_null/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/clause/pivot/basic/missing_combination_is_null/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/clause/pivot/basic/missing_combination_is_null/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/clause/pivot/basic/missing_combination_is_null/script.vtl">script.vtl</a> · <a href="../examples/clause/pivot/basic/missing_combination_is_null/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/clause/pivot/basic/missing_combination_is_null/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/clause/pivot/basic/missing_combination_is_null/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/clause/pivot/basic/missing_combination_is_null/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/clause/pivot/basic/missing_combination_is_null/value_domains/VD_1.json">value_domains/VD_1.json</a> · <a href="../examples/clause/pivot/basic/missing_combination_is_null/index.html">example page ↗</a></p>
    </details>

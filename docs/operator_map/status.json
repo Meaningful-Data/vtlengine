@@ -3282,35 +3282,35 @@
     },
     "clause/pivot/basic/manual_ex_1": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: pivot clause. Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: pivot clause. Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "clause/pivot/basic/missing_combination_is_null": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: pivot clause. Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: pivot clause. Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "clause/rename/basic/identifier_renamed": {
       "duckdb": {
@@ -5090,19 +5090,19 @@
     },
     "definitions/define_datapoint_ruleset/rule_options/errorlevel_on_the_invalid_point": {
       "duckdb": {
-        "detail": "type of errorlevel expected Integer got Number",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "type of errorlevel expected Integer got Number",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "definitions/define_datapoint_ruleset/rule_options/rules_named_by_their_order": {
       "duckdb": {
@@ -5154,35 +5154,35 @@
     },
     "definitions/define_datapoint_ruleset/valuedomain/domain_aliases_in_the_rule": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-10: Component F not found in Dataset DS_1. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-10",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-10: Component F not found in Dataset DS_1. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-10",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "definitions/define_datapoint_ruleset/valuedomain/domains_bound_to_components": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-10: Component VD_FLOW not found in Dataset DS_1. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-10",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-10: Component VD_FLOW not found in Dataset DS_1. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-10",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "definitions/define_datapoint_ruleset/variable/variable_aliases_in_the_rule": {
       "duckdb": {
@@ -5442,19 +5442,19 @@
     },
     "definitions/define_hierarchical_ruleset/rule_options/errorlevel_on_the_failed_rule": {
       "duckdb": {
-        "detail": "type of errorlevel expected Integer got Number",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "type of errorlevel expected Integer got Number",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "definitions/define_hierarchical_ruleset/rule_options/rules_named_by_their_order": {
       "duckdb": {
@@ -5842,115 +5842,115 @@
     },
     "definitions/define_operator/ruleset/datapoint_on_valuedomains_type": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint_on_valuedomains' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint_on_valuedomains' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_operator/ruleset/datapoint_on_variables_type": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint_on_variables' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint_on_variables' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_operator/ruleset/datapoint_type": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'datapoint' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_operator/ruleset/generic_ruleset_type": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'ruleset' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'ruleset' (line 5, column 49).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_operator/ruleset/hierarchical_on_valuedomains_type": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical_on_valuedomains' (line 5, column 45).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical_on_valuedomains' (line 5, column 45).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_operator/ruleset/hierarchical_on_variables_type": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical_on_variables' (line 5, column 45).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical_on_variables' (line 5, column 45).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_operator/ruleset/hierarchical_type": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical' (line 5, column 45).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: ruleset type 'hierarchical' (line 5, column 45).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_operator/scalar_type/boolean_argument": {
       "duckdb": {
@@ -6098,35 +6098,35 @@
     },
     "definitions/define_operator/set/value_domain_as_the_set": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: set type 'set<string>' (line 1, column 36).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: set type 'set<string>' (line 1, column 36).",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_operator/value_domain/string_value_of_the_domain": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-10: Invalid parameter type definition 'VD_1' (line 1, column 32).",
-        "error_code": "0-5-1-10",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-10: Invalid parameter type definition 'VD_1' (line 1, column 32).",
-        "error_code": "0-5-1-10",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_viral_propagation/aggregation/avg_across_two_operators": {
       "duckdb": {
@@ -6370,19 +6370,19 @@
     },
     "definitions/define_viral_propagation/valuedomain/inherited_from_the_domain": {
       "duckdb": {
-        "detail": "SemanticError 1-3-3-8: Viral propagation definition VP_1 is defined on value domain CL_CONF, which is not supported yet; define it on a variable instead.",
-        "error_code": "1-3-3-8",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-3-8: Viral propagation definition VP_1 is defined on value domain CL_CONF, which is not supported yet; define it on a variable instead.",
-        "error_code": "1-3-3-8",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "definitions/define_viral_propagation/variable/conf_priority_rule": {
       "duckdb": {
@@ -6482,19 +6482,19 @@
     },
     "general/cast/date_to_string_mask/year_month_day_mask": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYYMMDD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYYMMDD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "general/cast/date_to_time/same_start_and_end": {
       "duckdb": {
@@ -6546,19 +6546,19 @@
     },
     "general/cast/duration_to_string_mask/period_indicator_mask": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"P\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"P\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "general/cast/integer_to_boolean/zero_and_non_zero": {
       "duckdb": {
@@ -6610,19 +6610,19 @@
     },
     "general/cast/integer_to_string_mask/two_digit_mask": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "general/cast/number_to_boolean/zero_and_non_zero": {
       "duckdb": {
@@ -6658,19 +6658,19 @@
     },
     "general/cast/number_to_string_mask/decimal_mask": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD.DDD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD.DDD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "general/cast/string_to_boolean/other_strings_are_false": {
       "duckdb": {
@@ -6722,19 +6722,19 @@
     },
     "general/cast/string_to_date_mask/year_month_day_mask": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY-MM-DD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY-MM-DD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "general/cast/string_to_duration/one_letter_codes": {
       "duckdb": {
@@ -6754,19 +6754,19 @@
     },
     "general/cast/string_to_duration_mask/period_indicator_mask": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"P\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"P\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "general/cast/string_to_integer/signs_leading_zeros_and_null": {
       "duckdb": {
@@ -6802,19 +6802,19 @@
     },
     "general/cast/string_to_integer_mask/two_digit_mask": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "general/cast/string_to_integer_sc/string_of_digits": {
       "duckdb": {
@@ -6850,19 +6850,19 @@
     },
     "general/cast/string_to_number_mask/decimal_mask": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD.DDD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD.DDD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "general/cast/string_to_time/iso_8601_intervals": {
       "duckdb": {
@@ -6882,19 +6882,19 @@
     },
     "general/cast/string_to_time_mask/start_and_end_mask": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY-MM-DD/YYYY-MM-DD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY-MM-DD/YYYY-MM-DD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "general/cast/string_to_time_period/quarter_month_and_year": {
       "duckdb": {
@@ -6914,35 +6914,35 @@
     },
     "general/cast/string_to_time_period_mask/quarter_mask": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY\\QQ\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY\\QQ\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "general/cast/string_to_value_domain/values_in_the_domain": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-8: Value Domain 'VD_1' not available for cast operator or scalar type representation or rulesets.",
-        "error_code": "0-5-1-8",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-8: Value Domain 'VD_1' not available for cast operator or scalar type representation or rulesets.",
-        "error_code": "0-5-1-8",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "general/cast/time_period_to_date/daily_periods": {
       "duckdb": {
@@ -6994,19 +6994,19 @@
     },
     "general/cast/time_period_to_string_mask/monthly_period_mask": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY\\MMM\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY\\MMM\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "general/cast/time_period_to_time/start_and_end_of_the_period": {
       "duckdb": {
@@ -7058,19 +7058,19 @@
     },
     "general/cast/time_to_string_mask/start_and_end_mask": {
       "duckdb": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY-MM-DD/YYYY-MM-DD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY-MM-DD/YYYY-MM-DD\". Please check transformation with output Dataset DS_r",
-        "error_code": "1-3-13",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "general/cast/time_to_time_period/year_quarter_and_month": {
       "duckdb": {
@@ -7090,19 +7090,19 @@
     },
     "general/cast/value_domain_to_value_domain/values_in_both_domains": {
       "duckdb": {
-        "detail": "InputValidationException 0-5-1-8: Value Domain 'VD_1' not available for cast operator or scalar type representation or rulesets.",
-        "error_code": "0-5-1-8",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "InputValidationException 0-5-1-8: Value Domain 'VD_1' not available for cast operator or scalar type representation or rulesets.",
-        "error_code": "0-5-1-8",
-        "error_type": "InputValidationException",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "general/eval/comp/inside_calc": {
       "duckdb": {
@@ -9378,51 +9378,51 @@
     },
     "join/full_join/using/all_common_identifiers": {
       "duckdb": {
-        "detail": "SemanticError 1-1-13-8: At op full_join: No available using clause. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-13-8",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-13-8: At op full_join: No available using clause. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-13-8",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "join/full_join/using_nvl/nvl_for_extra_identifier": {
       "duckdb": {
-        "detail": "SemanticError 1-1-13-8: At op full_join: No available using clause. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-13-8",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-13-8: At op full_join: No available using clause. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-13-8",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "join/full_join/using_nvl/nvl_per_operand_alias": {
       "duckdb": {
-        "detail": "AttributeError: 'BinOp' object has no attribute 'value'",
+        "detail": "",
         "error_code": null,
-        "error_type": "AttributeError",
-        "outcome": "error"
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "AttributeError: 'BinOp' object has no attribute 'value'",
+        "detail": "",
         "error_code": null,
-        "error_type": "AttributeError",
-        "outcome": "error"
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "join/inner_join/aggr_attribute/max_as_attribute": {
       "duckdb": {
@@ -9651,14 +9651,14 @@
     "join/inner_join/bare/no_common_identifier": {
       "duckdb": {
         "detail": "",
-        "error_code": "1-1-13-11",
+        "error_code": "1-1-13-26",
         "error_type": "SemanticError",
         "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
         "detail": "",
-        "error_code": "1-1-13-11",
+        "error_code": "1-1-13-26",
         "error_type": "SemanticError",
         "outcome": "match"
       },
@@ -9666,19 +9666,19 @@
     },
     "join/inner_join/bare/one_shared_identifier": {
       "duckdb": {
-        "detail": "SemanticError 1-1-13-11: At op inner_join: Invalid subcase A, DS_1 should be a superset but Id_3 not found. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-13-11",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-13-11: At op inner_join: Invalid subcase A, DS_1 should be a superset but Id_3 not found. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-13-11",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "join/inner_join/calc_attribute/constant_attribute": {
       "duckdb": {
@@ -9874,19 +9874,19 @@
     },
     "join/inner_join/nary/manual_ex_5": {
       "duckdb": {
-        "detail": "SemanticError 1-1-13-11: At op inner_join: Invalid subcase A, DS_5 should be a superset but Id_1 not found. Please check transformation with output Dataset IBSC",
-        "error_code": "1-1-13-11",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-13-11: At op inner_join: Invalid subcase A, DS_5 should be a superset but Id_1 not found. Please check transformation with output Dataset IBSC",
-        "error_code": "1-1-13-11",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "join/inner_join/nary/three_operands": {
       "duckdb": {
@@ -9938,19 +9938,19 @@
     },
     "join/inner_join/using/subset_of_identifiers": {
       "duckdb": {
-        "detail": "SemanticError 1-1-13-4: At op inner_join: Using clause, using=['Id_1'], does not define all the Identifiers, of non reference Dataset d2. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-13-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-13-4: At op inner_join: Using clause, using=['Id_1'], does not define all the Identifiers, of non reference Dataset d2. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-13-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "join/left_join/aggr_attribute/max_as_attribute": {
       "duckdb": {
@@ -10386,35 +10386,35 @@
     },
     "join/left_join/using_nvl/nvl_for_extra_identifier": {
       "duckdb": {
-        "detail": "SemanticError 1-1-13-4: At op left_join: Using clause, using=['Id_1'], does not define all the Identifiers, of non reference Dataset DS_2. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-13-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-13-4: At op left_join: Using clause, using=['Id_1'], does not define all the Identifiers, of non reference Dataset DS_2. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-13-4",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "join/left_join/using_nvl/nvl_on_aliased_identifier": {
       "duckdb": {
-        "detail": "AttributeError: 'BinOp' object has no attribute 'value'",
+        "detail": "",
         "error_code": null,
-        "error_type": "AttributeError",
-        "outcome": "error"
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "AttributeError: 'BinOp' object has no attribute 'value'",
+        "detail": "",
         "error_code": null,
-        "error_type": "AttributeError",
-        "outcome": "error"
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "missing"
+      "status": "ok"
     },
     "numeric/abs/comp/manual_ex_2": {
       "duckdb": {
@@ -14386,19 +14386,19 @@
     },
     "validation/check_datapoint/all/manual_ex_2": {
       "duckdb": {
-        "detail": "type of errorlevel expected Integer got Number",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "type of errorlevel expected Integer got Number",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "validation/check_datapoint/all_measures/every_result_with_the_measures": {
       "duckdb": {
@@ -14434,19 +14434,19 @@
     },
     "validation/check_datapoint/components/value_domains_bound_to_components": {
       "duckdb": {
-        "detail": "SemanticError 1-1-1-10: Component VD_2 not found in Dataset DS_1. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-10",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "SemanticError 1-1-1-10: Component VD_2 not found in Dataset DS_1. Please check transformation with output Dataset DS_r",
-        "error_code": "1-1-1-10",
-        "error_type": "SemanticError",
-        "outcome": "error"
+        "detail": "",
+        "error_code": null,
+        "error_type": null,
+        "outcome": "match"
       },
-      "status": "refused"
+      "status": "ok"
     },
     "validation/check_datapoint/errorcode/code_only_on_false_results": {
       "duckdb": {
@@ -14466,19 +14466,19 @@
     },
     "validation/check_datapoint/errorlevel/integer_level_on_false_results": {
       "duckdb": {
-        "detail": "type of errorlevel expected Integer got Number",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "type of errorlevel expected Integer got Number",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "validation/check_datapoint/invalid/false_results_with_the_measures": {
       "duckdb": {
@@ -14498,19 +14498,19 @@
     },
     "validation/check_datapoint/output_default/manual_ex_1": {
       "duckdb": {
-        "detail": "type of errorlevel expected Integer got Number",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "type of errorlevel expected Integer got Number",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "validation/check_hierarchy/always_null_dataset_all/rule_with_no_item_found_is_null": {
       "duckdb": {
@@ -14754,19 +14754,19 @@
     },
     "validation/check_hierarchy/errorlevel/integer_level_on_false_results": {
       "duckdb": {
-        "detail": "type of imbalance expected Integer got Number; type of errorlevel expected Integer got Number",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "type of imbalance expected Integer got Number; type of errorlevel expected Integer got Number",
+        "detail": "",
         "error_code": null,
         "error_type": null,
-        "outcome": "mismatch"
+        "outcome": "match"
       },
-      "status": "partial"
+      "status": "ok"
     },
     "validation/check_hierarchy/non_null_dataset_all/null_or_missing_item_drops_the_rule": {
       "duckdb": {
@@ -15186,11 +15186,11 @@
     }
   },
   "meta": {
-    "date": "2026-11-05",
+    "date": "2026-11-12",
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "7d512d9a",
-    "vtlengine_version": "1.9.7rc2"
+    "vtlengine_commit": "79c0517f",
+    "vtlengine_version": "1.9.7"
   }
 }

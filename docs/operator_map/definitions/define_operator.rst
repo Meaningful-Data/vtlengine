@@ -4,7 +4,7 @@ define operator
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 10 of 13 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 13 of 13 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_udo.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -32,17 +32,17 @@ define operator
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["define operator<br/>🟢10 🔴3"]:::partial
+       O["define operator<br/>🟢13"]:::ok
        subgraph G_b1["Signature"]
            direction LR
            v_no_parameters["f ()"]:::ok
            v_scalar_type["x #60;scalar type#62;"]:::ok
-           v_value_domain["x #60;value domain#62;"]:::missing
+           v_value_domain["x #60;value domain#62;"]:::ok
            v_constrained_scalar["x #60;scalar type#62; #91;value …#93; #124; #123; … #125; #124; not null"]:::ok
-           v_set["s set#60;…#62;"]:::missing
+           v_set["s set#60;…#62;"]:::ok
            v_component["c component #124; identifier #124; measure #124; attribute #124; viral attribute #60;…#62;"]:::ok
            v_dataset["ds dataset #91;#123; … #125;#93;"]:::ok
-           v_ruleset["r #60;ruleset type#62;"]:::missing
+           v_ruleset["r #60;ruleset type#62;"]:::ok
            v_default_value["y #60;type#62; default …"]:::ok
        end
        subgraph G_b2["Return type"]
@@ -80,7 +80,7 @@ Types
 .. raw:: html
 
    <p class="om-takes"><b>Takes</b> number, integer, string, boolean, time, date, time_period, duration, set, value domain, datapoint ruleset, hierarchical ruleset, any scalar · <b>Gives</b> operator</p>
-   <div class="om-cols"><div class="om-col"><p class="om-line"><b>Comes from:</b> any operator that returns a value</p><details class="om-dir"><summary><b>Comes from · set, value domain, datapoint ruleset, hierarchical ruleset</b> — 2 operators in 1 block 🟡2</summary><details class="om-blk"><summary>Definitions (VTL-DL) <b>(2)</b> 🟡2</summary><div><a class="om-chip partial" href="../definitions/define_datapoint_ruleset.html" title="partially implemented">define datapoint ruleset</a><a class="om-chip partial" href="../definitions/define_hierarchical_ruleset.html" title="partially implemented">define hierarchical ruleset</a></div></details></details></div><div class="om-col"><details class="om-dir"><summary><b>Goes to · operator</b> — 1 operator in 1 block 🟢1</summary><details class="om-blk"><summary>General purpose operators <b>(1)</b> 🟢1</summary><div><a class="om-chip ok" href="../general/udo_call.html" title="all ok">User-defined operator call <code>name( )</code></a></div></details></details></div></div>
+   <div class="om-cols"><div class="om-col"><p class="om-line"><b>Comes from:</b> any operator that returns a value</p><details class="om-dir"><summary><b>Comes from · set, value domain, datapoint ruleset, hierarchical ruleset</b> — 2 operators in 1 block 🟢2</summary><details class="om-blk"><summary>Definitions (VTL-DL) <b>(2)</b> 🟢2</summary><div><a class="om-chip ok" href="../definitions/define_datapoint_ruleset.html" title="all ok">define datapoint ruleset</a><a class="om-chip ok" href="../definitions/define_hierarchical_ruleset.html" title="all ok">define hierarchical ruleset</a></div></details></details></div><div class="om-col"><details class="om-dir"><summary><b>Goes to · operator</b> — 1 operator in 1 block 🟢1</summary><details class="om-blk"><summary>General purpose operators <b>(1)</b> 🟢1</summary><div><a class="om-chip ok" href="../general/udo_call.html" title="all ok">User-defined operator call <code>name( )</code></a></div></details></details></div></div>
 
 Forms
 ----------
@@ -403,13 +403,12 @@ x <scalar type> 🟢 · any scalar, number, integer, string, boolean, time, date
 
    <span class="om-anchor" id="form-value-domain"></span>
 
-x <value domain> 🔴 · value domain → operator
+x <value domain> 🟢 · value domain → operator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-value-domain-string-value-of-the-domain"><summary><span class="om-ex-title">String value of the domain</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>0-5-1-10</code> · DuckDB 🛡 <code>0-5-1-10</code></span></summary>
-   <p class="om-detail">InputValidationException 0-5-1-10: Invalid parameter type definition &#x27;VD_1&#x27; (line 1, column 32).</p>
+   <details class="om-example" id="ex-value-domain-string-value-of-the-domain"><summary><span class="om-ex-title">String value of the domain</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/value_domain/string_value_of_the_domain/notes.rst
 
@@ -538,13 +537,12 @@ x <scalar type> [value …] \| { … } \| not null 🟢 · integer → operator
 
    <span class="om-anchor" id="form-set"></span>
 
-s set<…> 🔴 · set → operator
+s set<…> 🟢 · set → operator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-set-value-domain-as-the-set"><summary><span class="om-ex-title">Value domain as the set</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: set type &#x27;set&lt;string&gt;&#x27; (line 1, column 36).</p>
+   <details class="om-example" id="ex-set-value-domain-as-the-set"><summary><span class="om-ex-title">Value domain as the set</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/set/value_domain_as_the_set/notes.rst
 
@@ -790,13 +788,12 @@ ds dataset [{ … }] 🟢 · any scalar → operator
 
    <span class="om-anchor" id="form-ruleset"></span>
 
-r <ruleset type> 🔴 · datapoint ruleset, hierarchical ruleset → operator
+r <ruleset type> 🟢 · datapoint ruleset, hierarchical ruleset → operator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ruleset-datapoint-type"><summary><span class="om-ex-title">Datapoint type</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: ruleset type &#x27;datapoint&#x27; (line 5, column 49).</p>
+   <details class="om-example" id="ex-ruleset-datapoint-type"><summary><span class="om-ex-title">Datapoint type</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/ruleset/datapoint_type/notes.rst
 
@@ -816,8 +813,7 @@ r <ruleset type> 🔴 · datapoint ruleset, hierarchical ruleset → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ruleset-datapoint-on-variables-type"><summary><span class="om-ex-title">Datapoint on variables type</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: ruleset type &#x27;datapoint_on_variables&#x27; (line 5, column 49).</p>
+   <details class="om-example" id="ex-ruleset-datapoint-on-variables-type"><summary><span class="om-ex-title">Datapoint on variables type</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/ruleset/datapoint_on_variables_type/notes.rst
 
@@ -837,8 +833,7 @@ r <ruleset type> 🔴 · datapoint ruleset, hierarchical ruleset → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ruleset-datapoint-on-valuedomains-type"><summary><span class="om-ex-title">Datapoint on valuedomains type</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: ruleset type &#x27;datapoint_on_valuedomains&#x27; (line 5, column 49).</p>
+   <details class="om-example" id="ex-ruleset-datapoint-on-valuedomains-type"><summary><span class="om-ex-title">Datapoint on valuedomains type</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/ruleset/datapoint_on_valuedomains_type/notes.rst
 
@@ -858,8 +853,7 @@ r <ruleset type> 🔴 · datapoint ruleset, hierarchical ruleset → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ruleset-generic-ruleset-type"><summary><span class="om-ex-title">Generic ruleset type</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: ruleset type &#x27;ruleset&#x27; (line 5, column 49).</p>
+   <details class="om-example" id="ex-ruleset-generic-ruleset-type"><summary><span class="om-ex-title">Generic ruleset type</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/ruleset/generic_ruleset_type/notes.rst
 
@@ -879,8 +873,7 @@ r <ruleset type> 🔴 · datapoint ruleset, hierarchical ruleset → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ruleset-hierarchical-type"><summary><span class="om-ex-title">Hierarchical type</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: ruleset type &#x27;hierarchical&#x27; (line 5, column 45).</p>
+   <details class="om-example" id="ex-ruleset-hierarchical-type"><summary><span class="om-ex-title">Hierarchical type</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/ruleset/hierarchical_type/notes.rst
 
@@ -900,8 +893,7 @@ r <ruleset type> 🔴 · datapoint ruleset, hierarchical ruleset → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ruleset-hierarchical-on-variables-type"><summary><span class="om-ex-title">Hierarchical on variables type</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: ruleset type &#x27;hierarchical_on_variables&#x27; (line 5, column 45).</p>
+   <details class="om-example" id="ex-ruleset-hierarchical-on-variables-type"><summary><span class="om-ex-title">Hierarchical on variables type</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/ruleset/hierarchical_on_variables_type/notes.rst
 
@@ -921,8 +913,7 @@ r <ruleset type> 🔴 · datapoint ruleset, hierarchical ruleset → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ruleset-hierarchical-on-valuedomains-type"><summary><span class="om-ex-title">Hierarchical on valuedomains type</span> <span class="om-chip missing" title="not implemented or crash">🔴</span> <span class="om-marks">pandas 🛡 <code>1-3-13</code> · DuckDB 🛡 <code>1-3-13</code></span></summary>
-   <p class="om-detail">SemanticError 1-3-13: Unsupported VTL construct: ruleset type &#x27;hierarchical_on_valuedomains&#x27; (line 5, column 45).</p>
+   <details class="om-example" id="ex-ruleset-hierarchical-on-valuedomains-type"><summary><span class="om-ex-title">Hierarchical on valuedomains type</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/definitions/define_operator/ruleset/hierarchical_on_valuedomains_type/notes.rst
 

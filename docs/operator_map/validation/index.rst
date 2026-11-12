@@ -4,7 +4,7 @@ Data validation operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 1 of 3 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 3 of 3 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -33,8 +33,8 @@ Data validation operators
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        B["Data validation operators"]:::block
-       validation__check_datapoint["Check datapoint · check_datapoint<br/>🟢4 🟡3"]:::partial
-       validation__check_hierarchy["Check hierarchy · check_hierarchy<br/>🟢39 🟡1"]:::partial
+       validation__check_datapoint["Check datapoint · check_datapoint<br/>🟢7"]:::ok
+       validation__check_hierarchy["Check hierarchy · check_hierarchy<br/>🟢40"]:::ok
        validation__check["Check · check<br/>🟢6"]:::ok
        validation__check_datapoint --- B
        validation__check_hierarchy --- B
@@ -57,10 +57,10 @@ Data validation operators
      - Status
      - Forms
    * - :doc:`Check datapoint <check_datapoint>` ``check_datapoint``
-     - 🟡
+     - 🟢
      - 7
    * - :doc:`Check hierarchy <check_hierarchy>` ``check_hierarchy``
-     - 🟡
+     - 🟢
      - 40
    * - :doc:`Check <check>` ``check``
      - 🟢
@@ -111,47 +111,7 @@ Data validation operators
 
 .. rubric:: Forms that are not green
 
-Every form that is neither 🟢 nor 🛡️, with the example that shows its status: the first that is neither, or the first that diverges for a 🔵 form.
-
-.. list-table::
-   :header-rows: 1
-   :widths: auto
-
-   * - Operator
-     - Form
-     - Status
-     - Example
-     - pandas
-     - DuckDB
-     - Detail
-   * - :doc:`Check datapoint <check_datapoint>`
-     - `check\_datapoint(DS, DPR) <check_datapoint.html#form-output-default>`__
-     - 🟡
-     - `Manual example 1 <check_datapoint.html#ex-output-default-manual-ex-1>`__
-     - ❌
-     - ❌
-     - type of errorlevel expected Integer got Number
-   * - :doc:`Check datapoint <check_datapoint>`
-     - `check\_datapoint(DS, DPR all) <check_datapoint.html#form-all>`__
-     - 🟡
-     - `Manual example 2 <check_datapoint.html#ex-all-manual-ex-2>`__
-     - ❌
-     - ❌
-     - type of errorlevel expected Integer got Number
-   * - :doc:`Check datapoint <check_datapoint>`
-     - `check\_datapoint(DS, DPR all), rules with errorlevel <check_datapoint.html#form-errorlevel>`__
-     - 🟡
-     - `Integer level on false results <check_datapoint.html#ex-errorlevel-integer-level-on-false-results>`__
-     - ❌
-     - ❌
-     - type of errorlevel expected Integer got Number
-   * - :doc:`Check hierarchy <check_hierarchy>`
-     - `check\_hierarchy(DS, HR partial\_zero dataset all), rules with errorlevel <check_hierarchy.html#form-errorlevel>`__
-     - 🟡
-     - `Integer level on false results <check_hierarchy.html#ex-errorlevel-integer-level-on-false-results>`__
-     - ❌
-     - ❌
-     - type of imbalance expected Integer got Number; type of errorlevel expected Integer got Number
+Every form is 🟢 or 🛡️.
 
 .. toctree::
    :maxdepth: 1

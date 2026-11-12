@@ -26,8 +26,8 @@ A node for each block, with how many operators it has, and how many of them are 
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
        R["VTL 2.2<br/>Reference Manual"]:::block
-       chapter__general["General purpose operators<br/>7 operators · 🟢5 🟡2"]:::partial
-       chapter__join["Join operators<br/>4 operators · 🟢2 🟡2"]:::partial
+       chapter__general["General purpose operators<br/>7 operators · 🟢6 🟡1"]:::partial
+       chapter__join["Join operators<br/>4 operators · 🟢4"]:::ok
        chapter__string["String operators<br/>11 operators · 🟢11"]:::ok
        chapter__numeric["Numeric operators<br/>18 operators · 🟢18"]:::ok
        chapter__comparison["Comparison operators<br/>12 operators · 🟢12"]:::ok
@@ -36,10 +36,10 @@ A node for each block, with how many operators it has, and how many of them are 
        chapter__set["Set operators<br/>4 operators · 🟢4"]:::ok
        chapter__hierarchy["Hierarchical aggregation<br/>1 operator · 🟢1"]:::ok
        chapter__aggregate["Aggregate and Analytic operators<br/>18 operators · 🟢18"]:::ok
-       chapter__validation["Data validation operators<br/>3 operators · 🟢1 🟡2"]:::partial
+       chapter__validation["Data validation operators<br/>3 operators · 🟢3"]:::ok
        chapter__conditional["Conditional operators<br/>3 operators · 🟢3"]:::ok
-       chapter__clause["Clause operators<br/>9 operators · 🟢8 🔴1"]:::partial
-       chapter__definitions["Definitions (VTL-DL)<br/>4 operators · 🟡4"]:::partial
+       chapter__clause["Clause operators<br/>9 operators · 🟢9"]:::ok
+       chapter__definitions["Definitions (VTL-DL)<br/>4 operators · 🟢4"]:::ok
        chapter__general --- R
        chapter__join --- R
        chapter__string --- R
@@ -94,18 +94,18 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🟡
      - 7
      - 62
-     - 47
+     - 61
      - 1
      - 0
-     - 14
+     - 0
      - 0
    * - :doc:`Join operators <join/index>`
-     - 🟡
+     - 🟢
      - 4
      - 89
-     - 86
-     - 2
-     - 1
+     - 89
+     - 0
+     - 0
      - 0
      - 0
    * - :doc:`String operators <string/index>`
@@ -181,11 +181,11 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 0
      - 0
    * - :doc:`Data validation operators <validation/index>`
-     - 🟡
+     - 🟢
      - 3
      - 53
-     - 49
-     - 4
+     - 53
+     - 0
      - 0
      - 0
      - 0
@@ -199,22 +199,22 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 0
      - 0
    * - :doc:`Clause operators <clause/index>`
-     - 🟡
+     - 🟢
      - 9
      - 24
-     - 23
+     - 24
      - 0
      - 0
-     - 1
+     - 0
      - 0
    * - **Total**
      - 🟡
      - 111
      - 700
-     - 677
-     - 7
+     - 699
      - 1
-     - 15
+     - 0
+     - 0
      - 0
 
 .. rubric:: Definitions (VTL-DL)
@@ -234,44 +234,44 @@ The definitions of the VTL-DL. The counts are over the forms of each one. Their 
      - 🔴
      - 🔵
    * - :doc:`define operator <definitions/define_operator>`
-     - 🟡
+     - 🟢
      - 13
-     - 10
+     - 13
      - 0
      - 0
-     - 3
+     - 0
      - 0
    * - :doc:`define datapoint ruleset <definitions/define_datapoint_ruleset>`
-     - 🟡
+     - 🟢
      - 5
-     - 3
-     - 1
-     - 1
+     - 5
+     - 0
+     - 0
      - 0
      - 0
    * - :doc:`define hierarchical ruleset <definitions/define_hierarchical_ruleset>`
-     - 🟡
+     - 🟢
      - 7
-     - 6
-     - 1
+     - 7
+     - 0
      - 0
      - 0
      - 0
    * - :doc:`define viral propagation <definitions/define_viral_propagation>`
-     - 🟡
+     - 🟢
      - 4
-     - 3
+     - 4
      - 0
      - 0
-     - 1
+     - 0
      - 0
    * - **Total**
-     - 🟡
+     - 🟢
      - 29
-     - 22
-     - 2
-     - 1
-     - 4
+     - 29
+     - 0
+     - 0
+     - 0
      - 0
 
 .. rubric:: Not implemented
@@ -286,10 +286,6 @@ The codes of the errors of vtlengine that say that it does not implement somethi
      - Message
    * - ``1-3-13``
      - Unsupported VTL construct: {construct}.
-   * - ``1-3-3-8``
-     - Viral propagation definition {name} is defined on value domain {value_domain}, which is not supported yet; define it on a variable instead.
-   * - ``0-5-1-8``
-     - Value Domain '{name}' not available for cast operator or scalar type representation or rulesets.
    * - ``0-5-1-10``
      - Invalid parameter type definition {definition}.
 

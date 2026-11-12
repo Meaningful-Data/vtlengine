@@ -4,7 +4,7 @@ Clause operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 8 of 9 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 9 of 9 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -39,7 +39,7 @@ Clause operators
        clause__keep["Maintaining Components · keep<br/>🟢1"]:::ok
        clause__drop["Removal of Components · drop<br/>🟢1"]:::ok
        clause__rename["Change of Component name · rename<br/>🟢2"]:::ok
-       clause__pivot["Pivoting · pivot<br/>🔴1"]:::missing
+       clause__pivot["Pivoting · pivot<br/>🟢1"]:::ok
        clause__unpivot["Unpivoting · unpivot<br/>🟢1"]:::ok
        clause__sub["Subspace · sub<br/>🟢2"]:::ok
        clause__calc --- B
@@ -93,7 +93,7 @@ Clause operators
      - 🟢
      - 2
    * - :doc:`Pivoting <pivot>` ``pivot``
-     - 🔴
+     - 🟢
      - 1
    * - :doc:`Unpivoting <unpivot>` ``unpivot``
      - 🟢
@@ -151,26 +151,7 @@ Clause operators
 
 .. rubric:: Forms that are not green
 
-Every form that is neither 🟢 nor 🛡️, with the example that shows its status: the first that is neither, or the first that diverges for a 🔵 form.
-
-.. list-table::
-   :header-rows: 1
-   :widths: auto
-
-   * - Operator
-     - Form
-     - Status
-     - Example
-     - pandas
-     - DuckDB
-     - Detail
-   * - :doc:`Pivoting <pivot>`
-     - `DS[pivot Id, Me] <pivot.html#form-basic>`__
-     - 🔴
-     - `Manual example 1 <pivot.html#ex-basic-manual-ex-1>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: pivot clause. Please check transformation with output Dataset DS\_r
+Every form is 🟢 or 🛡️.
 
 .. toctree::
    :maxdepth: 1

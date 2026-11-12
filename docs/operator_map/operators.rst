@@ -25,18 +25,18 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 🟡
      - 7
      - 62
-     - 47
+     - 61
      - 1
      - 0
-     - 14
+     - 0
      - 0
    * - :doc:`Join operators <join/index>`
-     - 🟡
+     - 🟢
      - 4
      - 89
-     - 86
-     - 2
-     - 1
+     - 89
+     - 0
+     - 0
      - 0
      - 0
    * - :doc:`String operators <string/index>`
@@ -112,11 +112,11 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 0
      - 0
    * - :doc:`Data validation operators <validation/index>`
-     - 🟡
+     - 🟢
      - 3
      - 53
-     - 49
-     - 4
+     - 53
+     - 0
      - 0
      - 0
      - 0
@@ -130,22 +130,22 @@ The blocks of operators, one for each chapter of operators of the manual. The co
      - 0
      - 0
    * - :doc:`Clause operators <clause/index>`
-     - 🟡
+     - 🟢
      - 9
      - 24
-     - 23
+     - 24
      - 0
      - 0
-     - 1
+     - 0
      - 0
    * - **Total**
      - 🟡
      - 111
      - 700
-     - 677
-     - 7
+     - 699
      - 1
-     - 15
+     - 0
+     - 0
      - 0
 
 .. toctree::

@@ -1641,18 +1641,18 @@
   },
   "clause/pivot/basic/manual_ex_1": {
     "anchor": "ex-basic-manual-ex-1",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "clause/pivot.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Manual example 1"
   },
   "clause/pivot/basic/missing_combination_is_null": {
     "anchor": "ex-basic-missing-combination-is-null",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "clause/pivot.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Missing combination is null"
   },
   "clause/rename/basic/identifier_renamed": {
@@ -2545,10 +2545,10 @@
   },
   "definitions/define_datapoint_ruleset/rule_options/errorlevel_on_the_invalid_point": {
     "anchor": "ex-rule-options-errorlevel-on-the-invalid-point",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "definitions/define_datapoint_ruleset.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Errorlevel on the invalid point"
   },
   "definitions/define_datapoint_ruleset/rule_options/rules_named_by_their_order": {
@@ -2577,18 +2577,18 @@
   },
   "definitions/define_datapoint_ruleset/valuedomain/domain_aliases_in_the_rule": {
     "anchor": "ex-valuedomain-domain-aliases-in-the-rule",
-    "duckdb": "🛡 1-1-1-10",
+    "duckdb": "✅",
     "operator_page": "definitions/define_datapoint_ruleset.html",
-    "pandas": "🛡 1-1-1-10",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Domain aliases in the rule"
   },
   "definitions/define_datapoint_ruleset/valuedomain/domains_bound_to_components": {
     "anchor": "ex-valuedomain-domains-bound-to-components",
-    "duckdb": "🛡 1-1-1-10",
+    "duckdb": "✅",
     "operator_page": "definitions/define_datapoint_ruleset.html",
-    "pandas": "🛡 1-1-1-10",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Domains bound to components"
   },
   "definitions/define_datapoint_ruleset/variable/variable_aliases_in_the_rule": {
@@ -2721,10 +2721,10 @@
   },
   "definitions/define_hierarchical_ruleset/rule_options/errorlevel_on_the_failed_rule": {
     "anchor": "ex-rule-options-errorlevel-on-the-failed-rule",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "definitions/define_hierarchical_ruleset.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Errorlevel on the failed rule"
   },
   "definitions/define_hierarchical_ruleset/rule_options/rules_named_by_their_order": {
@@ -2921,58 +2921,58 @@
   },
   "definitions/define_operator/ruleset/datapoint_on_valuedomains_type": {
     "anchor": "ex-ruleset-datapoint-on-valuedomains-type",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Datapoint on valuedomains type"
   },
   "definitions/define_operator/ruleset/datapoint_on_variables_type": {
     "anchor": "ex-ruleset-datapoint-on-variables-type",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Datapoint on variables type"
   },
   "definitions/define_operator/ruleset/datapoint_type": {
     "anchor": "ex-ruleset-datapoint-type",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Datapoint type"
   },
   "definitions/define_operator/ruleset/generic_ruleset_type": {
     "anchor": "ex-ruleset-generic-ruleset-type",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Generic ruleset type"
   },
   "definitions/define_operator/ruleset/hierarchical_on_valuedomains_type": {
     "anchor": "ex-ruleset-hierarchical-on-valuedomains-type",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Hierarchical on valuedomains type"
   },
   "definitions/define_operator/ruleset/hierarchical_on_variables_type": {
     "anchor": "ex-ruleset-hierarchical-on-variables-type",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Hierarchical on variables type"
   },
   "definitions/define_operator/ruleset/hierarchical_type": {
     "anchor": "ex-ruleset-hierarchical-type",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Hierarchical type"
   },
   "definitions/define_operator/scalar_type/boolean_argument": {
@@ -3049,18 +3049,18 @@
   },
   "definitions/define_operator/set/value_domain_as_the_set": {
     "anchor": "ex-set-value-domain-as-the-set",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Value domain as the set"
   },
   "definitions/define_operator/value_domain/string_value_of_the_domain": {
     "anchor": "ex-value-domain-string-value-of-the-domain",
-    "duckdb": "🛡 0-5-1-10",
+    "duckdb": "✅",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "🛡 0-5-1-10",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "String value of the domain"
   },
   "definitions/define_viral_propagation/aggregation/avg_across_two_operators": {
@@ -3185,10 +3185,10 @@
   },
   "definitions/define_viral_propagation/valuedomain/inherited_from_the_domain": {
     "anchor": "ex-valuedomain-inherited-from-the-domain",
-    "duckdb": "🛡 1-3-3-8",
+    "duckdb": "✅",
     "operator_page": "definitions/define_viral_propagation.html",
-    "pandas": "🛡 1-3-3-8",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Inherited from the domain"
   },
   "definitions/define_viral_propagation/variable/conf_priority_rule": {
@@ -3241,10 +3241,10 @@
   },
   "general/cast/date_to_string_mask/year_month_day_mask": {
     "anchor": "ex-date-to-string-mask-year-month-day-mask",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Year month day mask"
   },
   "general/cast/date_to_time/same_start_and_end": {
@@ -3273,10 +3273,10 @@
   },
   "general/cast/duration_to_string_mask/period_indicator_mask": {
     "anchor": "ex-duration-to-string-mask-period-indicator-mask",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Period indicator mask"
   },
   "general/cast/integer_to_boolean/zero_and_non_zero": {
@@ -3305,10 +3305,10 @@
   },
   "general/cast/integer_to_string_mask/two_digit_mask": {
     "anchor": "ex-integer-to-string-mask-two-digit-mask",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Two digit mask"
   },
   "general/cast/number_to_boolean/zero_and_non_zero": {
@@ -3329,10 +3329,10 @@
   },
   "general/cast/number_to_string_mask/decimal_mask": {
     "anchor": "ex-number-to-string-mask-decimal-mask",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Decimal mask"
   },
   "general/cast/string_to_boolean/other_strings_are_false": {
@@ -3361,10 +3361,10 @@
   },
   "general/cast/string_to_date_mask/year_month_day_mask": {
     "anchor": "ex-string-to-date-mask-year-month-day-mask",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Year month day mask"
   },
   "general/cast/string_to_duration/one_letter_codes": {
@@ -3377,10 +3377,10 @@
   },
   "general/cast/string_to_duration_mask/period_indicator_mask": {
     "anchor": "ex-string-to-duration-mask-period-indicator-mask",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Period indicator mask"
   },
   "general/cast/string_to_integer/signs_leading_zeros_and_null": {
@@ -3401,10 +3401,10 @@
   },
   "general/cast/string_to_integer_mask/two_digit_mask": {
     "anchor": "ex-string-to-integer-mask-two-digit-mask",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Two digit mask"
   },
   "general/cast/string_to_integer_sc/string_of_digits": {
@@ -3425,10 +3425,10 @@
   },
   "general/cast/string_to_number_mask/decimal_mask": {
     "anchor": "ex-string-to-number-mask-decimal-mask",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Decimal mask"
   },
   "general/cast/string_to_time/iso_8601_intervals": {
@@ -3441,10 +3441,10 @@
   },
   "general/cast/string_to_time_mask/start_and_end_mask": {
     "anchor": "ex-string-to-time-mask-start-and-end-mask",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Start and end mask"
   },
   "general/cast/string_to_time_period/quarter_month_and_year": {
@@ -3457,18 +3457,18 @@
   },
   "general/cast/string_to_time_period_mask/quarter_mask": {
     "anchor": "ex-string-to-time-period-mask-quarter-mask",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Quarter mask"
   },
   "general/cast/string_to_value_domain/values_in_the_domain": {
     "anchor": "ex-string-to-value-domain-values-in-the-domain",
-    "duckdb": "🛡 0-5-1-8",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "🛡 0-5-1-8",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Values in the domain"
   },
   "general/cast/time_period_to_date/daily_periods": {
@@ -3497,10 +3497,10 @@
   },
   "general/cast/time_period_to_string_mask/monthly_period_mask": {
     "anchor": "ex-time-period-to-string-mask-monthly-period-mask",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Monthly period mask"
   },
   "general/cast/time_period_to_time/start_and_end_of_the_period": {
@@ -3529,10 +3529,10 @@
   },
   "general/cast/time_to_string_mask/start_and_end_mask": {
     "anchor": "ex-time-to-string-mask-start-and-end-mask",
-    "duckdb": "🛡 1-3-13",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "🛡 1-3-13",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Start and end mask"
   },
   "general/cast/time_to_time_period/year_quarter_and_month": {
@@ -3545,10 +3545,10 @@
   },
   "general/cast/value_domain_to_value_domain/values_in_both_domains": {
     "anchor": "ex-value-domain-to-value-domain-values-in-both-domains",
-    "duckdb": "🛡 0-5-1-8",
+    "duckdb": "✅",
     "operator_page": "general/cast.html",
-    "pandas": "🛡 0-5-1-8",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Values in both domains"
   },
   "general/eval/comp/inside_calc": {
@@ -4689,26 +4689,26 @@
   },
   "join/full_join/using/all_common_identifiers": {
     "anchor": "ex-using-all-common-identifiers",
-    "duckdb": "🛡 1-1-13-8",
+    "duckdb": "✅",
     "operator_page": "join/full_join.html",
-    "pandas": "🛡 1-1-13-8",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "All common identifiers"
   },
   "join/full_join/using_nvl/nvl_for_extra_identifier": {
     "anchor": "ex-using-nvl-nvl-for-extra-identifier",
-    "duckdb": "🛡 1-1-13-8",
+    "duckdb": "✅",
     "operator_page": "join/full_join.html",
-    "pandas": "🛡 1-1-13-8",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Nvl for extra identifier"
   },
   "join/full_join/using_nvl/nvl_per_operand_alias": {
     "anchor": "ex-using-nvl-nvl-per-operand-alias",
-    "duckdb": "💥 AttributeError",
+    "duckdb": "✅",
     "operator_page": "join/full_join.html",
-    "pandas": "💥 AttributeError",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Nvl per operand alias"
   },
   "join/inner_join/aggr_attribute/max_as_attribute": {
@@ -4833,10 +4833,10 @@
   },
   "join/inner_join/bare/one_shared_identifier": {
     "anchor": "ex-bare-one-shared-identifier",
-    "duckdb": "🛡 1-1-13-11",
+    "duckdb": "✅",
     "operator_page": "join/inner_join.html",
-    "pandas": "🛡 1-1-13-11",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "One shared identifier"
   },
   "join/inner_join/calc_attribute/constant_attribute": {
@@ -4937,10 +4937,10 @@
   },
   "join/inner_join/nary/manual_ex_5": {
     "anchor": "ex-nary-manual-ex-5",
-    "duckdb": "🛡 1-1-13-11",
+    "duckdb": "✅",
     "operator_page": "join/inner_join.html",
-    "pandas": "🛡 1-1-13-11",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Manual example 5"
   },
   "join/inner_join/nary/three_operands": {
@@ -4969,10 +4969,10 @@
   },
   "join/inner_join/using/subset_of_identifiers": {
     "anchor": "ex-using-subset-of-identifiers",
-    "duckdb": "🛡 1-1-13-4",
+    "duckdb": "✅",
     "operator_page": "join/inner_join.html",
-    "pandas": "🛡 1-1-13-4",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Subset of identifiers"
   },
   "join/left_join/aggr_attribute/max_as_attribute": {
@@ -5193,18 +5193,18 @@
   },
   "join/left_join/using_nvl/nvl_for_extra_identifier": {
     "anchor": "ex-using-nvl-nvl-for-extra-identifier",
-    "duckdb": "🛡 1-1-13-4",
+    "duckdb": "✅",
     "operator_page": "join/left_join.html",
-    "pandas": "🛡 1-1-13-4",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Nvl for extra identifier"
   },
   "join/left_join/using_nvl/nvl_on_aliased_identifier": {
     "anchor": "ex-using-nvl-nvl-on-aliased-identifier",
-    "duckdb": "💥 AttributeError",
+    "duckdb": "✅",
     "operator_page": "join/left_join.html",
-    "pandas": "💥 AttributeError",
-    "status": "missing",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Nvl on aliased identifier"
   },
   "numeric/abs/comp/manual_ex_2": {
@@ -7193,10 +7193,10 @@
   },
   "validation/check_datapoint/all/manual_ex_2": {
     "anchor": "ex-all-manual-ex-2",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "validation/check_datapoint.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Manual example 2"
   },
   "validation/check_datapoint/all_measures/every_result_with_the_measures": {
@@ -7217,10 +7217,10 @@
   },
   "validation/check_datapoint/components/value_domains_bound_to_components": {
     "anchor": "ex-components-value-domains-bound-to-components",
-    "duckdb": "🛡 1-1-1-10",
+    "duckdb": "✅",
     "operator_page": "validation/check_datapoint.html",
-    "pandas": "🛡 1-1-1-10",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Value domains bound to components"
   },
   "validation/check_datapoint/errorcode/code_only_on_false_results": {
@@ -7233,10 +7233,10 @@
   },
   "validation/check_datapoint/errorlevel/integer_level_on_false_results": {
     "anchor": "ex-errorlevel-integer-level-on-false-results",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "validation/check_datapoint.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Integer level on false results"
   },
   "validation/check_datapoint/invalid/false_results_with_the_measures": {
@@ -7249,10 +7249,10 @@
   },
   "validation/check_datapoint/output_default/manual_ex_1": {
     "anchor": "ex-output-default-manual-ex-1",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "validation/check_datapoint.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Manual example 1"
   },
   "validation/check_hierarchy/always_null_dataset_all/rule_with_no_item_found_is_null": {
@@ -7377,10 +7377,10 @@
   },
   "validation/check_hierarchy/errorlevel/integer_level_on_false_results": {
     "anchor": "ex-errorlevel-integer-level-on-false-results",
-    "duckdb": "❌",
+    "duckdb": "✅",
     "operator_page": "validation/check_hierarchy.html",
-    "pandas": "❌",
-    "status": "partial",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Integer level on false results"
   },
   "validation/check_hierarchy/non_null_dataset_all/null_or_missing_item_drops_the_rule": {

@@ -4,7 +4,7 @@ General purpose operators
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip partial">🟡 5 of 7 operators all ok</span> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip partial">🟡 6 of 7 operators all ok</span> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -39,7 +39,7 @@ General purpose operators
        general__membership["Membership · #35;<br/>🟢4 🟡1"]:::partial
        general__udo_call["User-defined operator call · name( )<br/>🟢4"]:::ok
        general__eval["Evaluation of an external routine · eval<br/>🟢4"]:::ok
-       general__cast["Type conversion · cast 📌<br/>🟢27 🔴14"]:::partial
+       general__cast["Type conversion · cast 📌<br/>🟢41"]:::ok
        general__parentheses --- B
        general__persistent_assignment --- B
        general__non_persistent_assignment --- B
@@ -87,7 +87,7 @@ General purpose operators
      - 🟢
      - 4
    * - :doc:`Type conversion <cast>` ``cast``
-     - 🟡
+     - 🟢
      - 41
 
 .. rubric:: Types
@@ -231,104 +231,6 @@ Every form that is neither 🟢 nor 🛡️, with the example that shows its sta
      - ❌
      - ❌
      - missing components: str\_var
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<integer>, string, mask) <cast.html#form-integer-to-string-mask>`__
-     - 🔴
-     - `Two digit mask <cast.html#ex-integer-to-string-mask-two-digit-mask>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<number>, string, mask) <cast.html#form-number-to-string-mask>`__
-     - 🔴
-     - `Decimal mask <cast.html#ex-number-to-string-mask-decimal-mask>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD.DDD\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<time>, string, mask) <cast.html#form-time-to-string-mask>`__
-     - 🔴
-     - `Start and end mask <cast.html#ex-time-to-string-mask-start-and-end-mask>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY-MM-DD/YYYY-MM-DD\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<date>, string, mask) <cast.html#form-date-to-string-mask>`__
-     - 🔴
-     - `Year month day mask <cast.html#ex-date-to-string-mask-year-month-day-mask>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYYMMDD\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<time\_period>, string, mask) <cast.html#form-time-period-to-string-mask>`__
-     - 🔴
-     - `Monthly period mask <cast.html#ex-time-period-to-string-mask-monthly-period-mask>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY\\MMM\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<duration>, string, mask) <cast.html#form-duration-to-string-mask>`__
-     - 🔴
-     - `Period indicator mask <cast.html#ex-duration-to-string-mask-period-indicator-mask>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"P\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<string>, integer, mask) <cast.html#form-string-to-integer-mask>`__
-     - 🔴
-     - `Two digit mask <cast.html#ex-string-to-integer-mask-two-digit-mask>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<string>, number, mask) <cast.html#form-string-to-number-mask>`__
-     - 🔴
-     - `Decimal mask <cast.html#ex-string-to-number-mask-decimal-mask>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"DD.DDD\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<string>, time, mask) <cast.html#form-string-to-time-mask>`__
-     - 🔴
-     - `Start and end mask <cast.html#ex-string-to-time-mask-start-and-end-mask>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY-MM-DD/YYYY-MM-DD\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<string>, date, mask) <cast.html#form-string-to-date-mask>`__
-     - 🔴
-     - `Year month day mask <cast.html#ex-string-to-date-mask-year-month-day-mask>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY-MM-DD\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<string>, time\_period, mask) <cast.html#form-string-to-time-period-mask>`__
-     - 🔴
-     - `Quarter mask <cast.html#ex-string-to-time-period-mask-quarter-mask>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"YYYY\\QQ\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<string>, duration, mask) <cast.html#form-string-to-duration-mask>`__
-     - 🔴
-     - `Period indicator mask <cast.html#ex-string-to-duration-mask-period-indicator-mask>`__
-     - 🛡 1-3-13
-     - 🛡 1-3-13
-     - SemanticError 1-3-13: Unsupported VTL construct: cast with the mask \"P\". Please check transformation with output Dataset DS\_r
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<string>, VD) <cast.html#form-string-to-value-domain>`__
-     - 🔴
-     - `Values in the domain <cast.html#ex-string-to-value-domain-values-in-the-domain>`__
-     - 🛡 0-5-1-8
-     - 🛡 0-5-1-8
-     - InputValidationException 0-5-1-8: Value Domain \'VD\_1\' not available for cast operator or scalar type representation or rulesets.
-   * - :doc:`Type conversion <cast>`
-     - `cast(comp<VD>, VD) <cast.html#form-value-domain-to-value-domain>`__
-     - 🔴
-     - `Values in both domains <cast.html#ex-value-domain-to-value-domain-values-in-both-domains>`__
-     - 🛡 0-5-1-8
-     - 🛡 0-5-1-8
-     - InputValidationException 0-5-1-8: Value Domain \'VD\_1\' not available for cast operator or scalar type representation or rulesets.
 
 .. toctree::
    :maxdepth: 1

@@ -56,7 +56,7 @@ Types
 .. raw:: html
 
    <p class="om-takes"><b>Takes</b> operator, any scalar · <b>Gives</b> any type</p>
-   <div class="om-cols"><div class="om-col"><p class="om-line"><b>Comes from:</b> any operator that returns a value</p><details class="om-dir"><summary><b>Comes from · operator</b> — 1 operator in 1 block 🟡1</summary><details class="om-blk"><summary>Definitions (VTL-DL) <b>(1)</b> 🟡1</summary><div><a class="om-chip partial" href="../definitions/define_operator.html" title="partially implemented">define operator</a></div></details></details></div><div class="om-col"><p class="om-line"><b>Goes to:</b> whatever takes its input&#x27;s type</p></div></div>
+   <div class="om-cols"><div class="om-col"><p class="om-line"><b>Comes from:</b> any operator that returns a value</p><details class="om-dir"><summary><b>Comes from · operator</b> — 1 operator in 1 block 🟢1</summary><details class="om-blk"><summary>Definitions (VTL-DL) <b>(1)</b> 🟢1</summary><div><a class="om-chip ok" href="../definitions/define_operator.html" title="all ok">define operator</a></div></details></details></div><div class="om-col"><p class="om-line"><b>Goes to:</b> whatever takes its input&#x27;s type</p></div></div>
 
 Forms
 ----------
