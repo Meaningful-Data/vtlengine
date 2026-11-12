@@ -1,3 +1,0 @@
-:Tests: ``cast(Me_1, string, "YYYY\\MM")`` on a Time_Period measure: a reverse slash between the year and the month.
-:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "The reverse slash can appear in the format if needed by prefixing it with another reverse slash; for example ``YYYY\\MM`` means [...] a reverse slash and two digits for the month."
-:Expected: ``2015\03`` and ``2015\12``: the year, a reverse slash and the month in two digits. Only the mask explains them: without a mask, a period is printed as its interval, start/end, where vtlengine prints its code (``start_and_end_dates``).

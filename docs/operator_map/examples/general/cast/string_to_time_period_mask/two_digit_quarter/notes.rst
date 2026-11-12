@@ -1,3 +1,0 @@
-:Tests: ``cast(Me_1, time_period, "YYYY\QQQ")`` on a String measure: the mask of the page's Example 9, ``cast ( "2000Q01", time_period, "YYYY\QQQ" )``: a quarter of two digits.
-:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "The number of letters matches the number of digits", and "The numerical representation is assumed to be padded by leading 0 by default, for example MM means that April is represented as 04".
-:Expected: ``2000Q1`` from ``2000Q01`` and ``2001Q4`` from ``2001Q04``. Only the mask reads two digits: without it, the conversion takes a single digit, from 1 to 4, after the ``Q``, and ``0`` is not one.

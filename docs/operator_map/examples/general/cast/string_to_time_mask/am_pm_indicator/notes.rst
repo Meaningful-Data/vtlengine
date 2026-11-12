@@ -1,4 +1,0 @@
-:Tests: ``cast(Me_1, time, "DD.MM.YYYY hh:mm am/pm/DD.MM.YYYY hh:mm am/pm")`` on a String measure: the indicator of AM and PM, in lower case.
-:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "AM/PM indicator of AM / PM (e.g. am/pm for “am” or “pm”)", "The case of the special word correspond to the case of the value", and "h hour digit (by default on 24 hours)".
-:Expected: ``2018-04-05T09:30:00/2018-04-05T12:30:00``, from ``05.04.2018 09:30 am/05.04.2018 12:30 pm``. The manual does not say whether the indicator puts the hours on 12: ``09`` and ``12`` are the same hours on 12 and on 24 hours.
-:Finding: Both engines raise SemanticError ``1-1-5-4``, "Invalid mask to cast from type String to Time.": vtlengine also splits the mask at the ``/`` of ``am/pm``, and finds no two dates.

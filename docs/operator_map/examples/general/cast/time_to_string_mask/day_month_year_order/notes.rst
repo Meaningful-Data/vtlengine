@@ -1,3 +1,0 @@
-:Tests: ``cast(Me_1, string, "DD.MM.YYYY/DD.MM.YYYY")`` on a Time measure: the start and the end with the day first, then the month and the year, separated by dots.
-:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "The position of the digits in the mask denotes the position of the corresponding values", "Any other character can be used in the mask, meaning simply that it appears in the same position", and "The numerical representation is assumed to be padded by leading 0 by default".
-:Expected: ``05.04.2018/31.12.2021`` for the time from ``2018-04-05`` to ``2021-12-31``.

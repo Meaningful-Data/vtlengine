@@ -1,3 +1,0 @@
-:Tests: ``cast(Me_1, string, "{D}D.{M}M.YYYY/{D}D.{M}M.YYYY")`` on a Time measure: braces around the digit of the days and of the months that may be left out.
-:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "If the numerical representation is not padded, the optional digits that can be omitted (if equal to zero) are enclosed within braces; for example {M}M means that April is represented by 4 and December by 12".
-:Expected: ``5.4.2018/31.12.2021`` for the time from ``2018-04-05`` to ``2021-12-31``: the day and the month below 10 have one digit.

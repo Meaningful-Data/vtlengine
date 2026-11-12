@@ -1,3 +1,0 @@
-:Tests: ``cast(Me_1, string, "DD.MM.CCYY/DD.MM.CCYY")`` on a Time measure: ``CC`` the centuries and ``YY`` the years within them.
-:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: the special character "C century", and "it is assumed that the more detailed units (e.g., the day) are expressed through the order number that they assume within the less detailed ones (e.g., the month and the year)".
-:Expected: ``31.12.1999/05.04.2018`` for the time from ``1999-12-31`` to ``2018-04-05``. The manual does not number the centuries: the example takes the century of ISO 8601, whose letters the masks use: the two first digits of the year, ``19`` and ``20``.

@@ -15,11 +15,10 @@ parameter (``$1``, ``$2``...).
 ``cast`` has one variant per conversion that the manual's conversion table allows, at component
 level (``DS_1[calc Me_2 := cast(Me_1, <type>)]``): the explicit ones, the implicit ones written
 as an explicit cast, and each conversion with an optional mask both without and with a mask. The
-masks follow the manual's section "Type Conversion and Formatting Mask": a conversion with a mask
-has an example of each kind of mask that the section defines for its types, with inputs whose
-result only the mask explains, or strings that the mask does not match where a string that it
-matches gives what the conversion without a mask gives; the kinds whose result the section
-leaves open have none. ``string_to_integer`` also has a dataset and a scalar variant, and two
+masks follow the manual's section "Type Conversion and Formatting Mask": each conversion with a
+mask has the mask of the manual's examples, with inputs whose result only the mask explains
+where a value can show it, and ten more examples give the most relevant other kinds of mask
+(``_MASKED``). ``string_to_integer`` also has a dataset and a scalar variant, and two
 variants cast to a value domain (``value_domains/``): from a string, and from another value
 domain on the same basic type.
 
@@ -89,191 +88,34 @@ _OPTIONAL_MASK: Final[tuple[tuple[str, str, str], ...]] = (
     ("string", "time_period", "quarter_month_and_year"),
     ("string", "duration", "one_letter_codes"),
 )
-# The examples of each conversion with a mask, by its source and target types: a kind of mask
-# each, as the section "Type Conversion and Formatting Mask" describes them, in ``_MASKED``.
-_MaskExamples = dict[tuple[str, str], tuple[str, ...]]
-
-# The numbers formatting mask: ``D``, ``E``, ``*``, ``+`` and the dot or comma separator, in the
-# manual's order, then strings that the mask does not match. An integer has no decimal part, so
-# its masks have no separator, and the exponent is shown on numbers. ``D*`` and ``D+`` may be
-# read as a ``D`` and then digits, or as a repeated ``D``, which differ on a part with no digit
-# for ``D*`` and on a part of one digit for ``D+``: the number examples have no such part, and
-# the integer masks put ``*`` and ``+`` first.
-_NUMBER_MASKS: Final[_MaskExamples] = {
-    ("integer", "string"): (
-        "two_digit_mask",
-        "any_number_of_digits_mask",
-        "at_least_one_digit_mask",
-    ),
-    ("string", "integer"): (
-        "two_digit_mask",
-        "too_few_digits",
-        "too_many_digits",
-        "no_digit_for_the_plus",
-        "no_two_digits_after_the_star",
-    ),
-    ("number", "string"): (
-        "decimal_mask",
-        "exponent_mask",
-        "any_number_of_digits_mask",
-        "at_least_one_digit_mask",
-        "decimal_comma_mask",
-    ),
-    ("string", "number"): (
-        "decimal_mask",
-        "exponent_mask",
-        "any_number_of_digits_mask",
-        "at_least_one_digit_mask",
-        "decimal_comma_mask",
-        "too_few_digits",
-        "too_many_digits",
-    ),
-}
-
-# The time formatting mask of a date: the numeric special characters, their number and padding,
-# the braces, the order and the other characters, the reverse slash, several units, the special
-# words, and the manual's masks for a date with a time of day. A string that the mask does not
-# match, or that it does not consume to the end, raises an error.
-_DATE_MASKS: Final[_MaskExamples] = {
+# The examples of each conversion with a mask, by its source and target types: the mask of the
+# manual's examples, and the most relevant other kinds of mask of the section "Type Conversion
+# and Formatting Mask": the decimal comma, the day before the month, optional digits, a date
+# with its time of day, the names of the day and the month, a time with times of day, the
+# quarter of the cast page's Example 9, the generic time_period mask, a number of periods, and a
+# string that the mask does not match.
+_MASKED: Final[dict[tuple[str, str], tuple[str, ...]]] = {
+    ("integer", "string"): ("two_digit_mask",),
+    ("string", "integer"): ("two_digit_mask",),
+    ("number", "string"): ("decimal_mask",),
+    ("string", "number"): ("decimal_mask", "decimal_comma_mask"),
     ("date", "string"): (
         "year_month_day_mask",
         "optional_digits",
-        "day_month_year_order",
-        "escaped_letters",
-        "escaped_reverse_slash",
-        "week_and_day_of_week",
-        "century",
-        "quarter",
-        "semester",
-        "decimals_of_second",
         "date_and_time_with_separators",
-        "date_and_time_without_separators",
         "day_and_month_names",
-        "am_pm_indicator",
-        "two_digit_year",
     ),
-    ("string", "date"): (
-        "year_month_day_mask",
-        "optional_digits",
-        "day_month_year_order",
-        "escaped_letters",
-        "escaped_reverse_slash",
-        "week_and_day_of_week",
-        "century",
-        "day_within_quarter",
-        "day_within_semester",
-        "decimals_of_second",
-        "date_and_time_with_separators",
-        "date_and_time_without_separators",
-        "lower_case_month_abbreviation",
-        "day_and_month_names",
-        "am_pm_indicator",
-        "string_not_matching_mask",
-        "characters_left_over",
-    ),
-}
-
-# The time formatting mask of a time: the manual's masks for a start and an end, a start and a
-# duration and a duration and an end, then the kinds of the date masks on both dates. The
-# manual's sample for the start and end to the day does not match its mask, which refuses it.
-_TIME_MASKS: Final[_MaskExamples] = {
-    ("time", "string"): (
-        "start_and_end_mask",
-        "start_and_end_with_times",
-        "start_and_duration",
-        "duration_and_end",
-        "start_and_duration_with_times",
-        "duration_and_end_with_times",
-        "optional_digits",
-        "day_month_year_order",
-        "escaped_letters",
-        "escaped_reverse_slash",
-        "week_dates",
-        "century",
-        "quarters",
-        "semesters",
-        "decimals_of_second",
-        "day_and_month_names",
-        "am_pm_indicator",
-    ),
-    ("string", "time"): (
-        "start_and_end_mask",
-        "start_and_end_with_times",
-        "start_and_duration",
-        "duration_and_end",
-        "start_and_duration_with_times",
-        "duration_and_end_with_times",
-        "optional_digits",
-        "day_month_year_order",
-        "escaped_letters",
-        "escaped_reverse_slash",
-        "week_dates",
-        "century",
-        "days_within_quarters",
-        "days_within_semesters",
-        "decimals_of_second",
-        "day_and_month_names",
-        "am_pm_indicator",
-        "basic_format_sample",
-    ),
-}
-
-# The time formatting mask of a time_period: the masks of the cast page's Example 9 that add a
-# kind (all but "YYYY-\QQ"), those of the time_period examples of the section, and its general
-# rules (zero padding, braces, other and escaped characters, semesters and weeks).
-# ``dash_not_in_mask`` expects the error of a string that the mask does not describe, which the
-# conversion without a mask reads.
-_TIME_PERIOD_MASKS: Final[_MaskExamples] = {
-    ("time_period", "string"): (
-        "monthly_period_mask",
-        "quarter_before_year",
-        "daily_month_and_day",
-        "period_indicator_and_number",
-        "escaped_reverse_slash",
-        "semester_after_dash",
-        "week_after_dash",
-    ),
+    ("string", "date"): ("year_month_day_mask", "day_month_year_order", "string_not_matching_mask"),
+    ("time", "string"): ("start_and_end_mask",),
+    ("string", "time"): ("start_and_end_mask", "start_and_end_with_times"),
+    ("time_period", "string"): ("monthly_period_mask",),
     ("string", "time_period"): (
         "quarter_mask",
         "quarter_after_dash",
-        "quarter_before_year",
-        "two_digit_quarter",
-        "daily_month_and_day",
-        "daily_dotted_date",
         "period_indicator_and_number",
-        "escaped_reverse_slash",
-        "semester_after_dash",
-        "week_after_dash",
-        "dash_not_in_mask",
     ),
-}
-
-# The masks of a duration: the one-character codes, and the ISO representations with a number of
-# periods, of weeks, or of each unit, on a duration of one period, the only ones that a Duration of
-# vtlengine holds. ``unmatched_iso_8601_duration`` expects the error of a string that the mask
-# does not describe, which the conversion without a mask reads.
-_DURATION_MASKS: Final[_MaskExamples] = {
-    ("duration", "string"): (
-        "period_indicator_mask",
-        "number_of_periods",
-        "iso_weeks",
-        "iso_composite_duration",
-    ),
-    ("string", "duration"): (
-        "period_indicator_mask",
-        "number_of_periods",
-        "iso_weeks",
-        "iso_composite_duration",
-        "unmatched_iso_8601_duration",
-    ),
-}
-
-_MASKED: Final[_MaskExamples] = {
-    **_NUMBER_MASKS,
-    **_DATE_MASKS,
-    **_TIME_MASKS,
-    **_TIME_PERIOD_MASKS,
-    **_DURATION_MASKS,
+    ("duration", "string"): ("period_indicator_mask", "number_of_periods"),
+    ("string", "duration"): ("period_indicator_mask",),
 }
 
 

@@ -1,3 +1,0 @@
-:Tests: ``cast(Me_1, time_period, "YYYY-WW")`` on a String measure: weeks of two digits after the year and a ``-``.
-:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: the special characters include "W week"; "The number of letters matches the number of digits", and "if years, weeks and days are used, the weeks are within the year (from 1 to 53)".
-:Expected: The weeks ``2015W07`` and ``2020W53``. Only the mask reads the digits as a week: without it, the conversion consumes the year and the ``-``, finds none of ``H``, ``Q``, ``M`` or ``D``, and raises an error for the digits left over, and vtlengine reads ``2015-07`` as the month ``2015M7``.

@@ -1,3 +1,0 @@
-:Tests: ``cast(Me_1, date, "YYYY-\WWW-D")`` on a String measure: the week within the year, after the letter ``W``, and the day within the week.
-:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "For example, if years, weeks and days are used, the weeks are within the year (from 1 to 53) and the days are within the year and the week (from 1 to 7)."
-:Expected: ``2018-04-05``, the Thursday of the 14th week, and ``2018-12-30``, the Sunday of the 52nd. The manual does not say which day starts a week: the example numbers the days from Monday, as ISO 8601 does. 2018 starts on a Monday, so its weeks are the same counted from 1 January or as in ISO 8601.

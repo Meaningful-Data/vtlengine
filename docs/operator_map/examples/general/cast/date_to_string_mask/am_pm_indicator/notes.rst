@@ -1,4 +1,0 @@
-:Tests: ``cast(Me_1, string, "DD/MM/YYYY hh:mm am/pm")`` on a Date measure with a time of day: the indicator of AM and PM, in lower case.
-:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "AM/PM indicator of AM / PM (e.g. am/pm for “am” or “pm”)", "The case of the special word correspond to the case of the value", and "h hour digit (by default on 24 hours)".
-:Expected: ``05/04/2018 09:30 am`` and ``05/04/2018 12:30 pm``. The manual does not say whether the indicator puts the hours on 12: ``09`` and ``12`` are the same hours on 12 and on 24 hours.
-:Finding: Both engines refuse the mask with SemanticError ``1-3-13``, "Unsupported VTL construct: the textual word am/pm in the mask "DD/MM/YYYY hh:mm am/pm".".

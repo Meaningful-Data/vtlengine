@@ -1,4 +1,0 @@
-:Tests: ``cast(Me_1, string, "YYYY\QQ")`` on a Date measure: the quarter of the date, after the letter ``Q``.
-:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: the special character "Q quarter", "it is assumed that the more detailed units (e.g., the day) are expressed through the order number that they assume within the less detailed ones (e.g., the month and the year)", and "The special characters and the special words, if prefixed by the reverse slash [...] in the mask, appear in the same position in the time format".
-:Expected: ``2018Q2`` and ``2021Q4``: April is in the second quarter of its year, December in the fourth.
-:Finding: Both engines raise SemanticError ``1-1-5-4``, "Invalid mask to cast from type Date to String.": vtlengine takes no quarter in the mask of a date.
