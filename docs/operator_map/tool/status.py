@@ -85,14 +85,6 @@ VTL_ERRORS: Final[frozenset[str]] = frozenset(
 # compares, so that a message that changes there does not go unnoticed here.
 NOT_IMPLEMENTED: Final[dict[str, str]] = {
     "1-3-13": "Unsupported VTL construct: {construct}.",
-    "1-3-3-8": (
-        "Viral propagation definition {name} is defined on value domain {value_domain}, "
-        "which is not supported yet; define it on a variable instead."
-    ),
-    "0-5-1-8": (
-        "Value Domain '{name}' not available for cast operator or scalar type representation "
-        "or rulesets."
-    ),
     "0-5-1-10": "Invalid parameter type definition {definition}.",
 }
 
