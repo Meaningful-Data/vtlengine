@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, string, "YYYY-S")`` on a Time_Period measure: semesters, written as the page's Example 9 writes a quarter with ``"YYYY-Q"``.
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: the special characters include "S semester"; "The number of letters matches the number of digits", and "Any other character can be used in the mask, meaning simply that it appears in the same position".
+:Expected: ``2015-1`` and ``2015-2`` for ``2015S1`` and ``2015S2``: the year, a ``-`` and the semester. Only the mask explains them: without a mask, a period is printed as its interval, start/end, where vtlengine prints its code (``start_and_end_dates``).

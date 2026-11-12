@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, time_period, "YYYY-S")`` on a String measure: semesters, written as the page's Example 9 writes a quarter with ``"YYYY-Q"``.
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: the special characters include "S semester"; "The number of letters matches the number of digits", and "Any other character can be used in the mask, meaning simply that it appears in the same position".
+:Expected: The semesters ``2015S1`` and ``2015S2``. Only the mask reads the digit as a semester: without it, the conversion consumes the year and the ``-``, finds none of ``H``, ``Q``, ``M`` or ``D``, and raises an error for the digit left over.

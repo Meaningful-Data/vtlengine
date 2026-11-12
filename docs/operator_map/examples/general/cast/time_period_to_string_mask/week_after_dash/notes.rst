@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, string, "YYYY-WW")`` on a Time_Period measure: weeks of two digits after the year and a ``-``.
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: the special characters include "W week"; "The number of letters matches the number of digits", and "if years, weeks and days are used, the weeks are within the year (from 1 to 53)".
+:Expected: ``2015-07`` and ``2020-53`` for ``2015W07`` and ``2020W53``: the year, a ``-`` and the week in two digits. Only the mask explains them: without a mask, a period is printed as its interval, start/end, where vtlengine prints its code (``start_and_end_dates``).

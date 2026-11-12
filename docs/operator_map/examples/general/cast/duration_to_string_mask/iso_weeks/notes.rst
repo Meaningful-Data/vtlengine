@@ -1,0 +1,4 @@
+:Tests: ``cast(Me_1, string, "\PWWW\W")`` on a Duration measure: the mask of an "ISO 8601 duration in weeks".
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "ISO 8601 duration in weeks: "P018W" (P stands for “period”)", with "VTL Mask: ``\PWWW\W``", and "The numerical representation is assumed to be padded by leading 0 by default".
+:Expected: ``P001W``, one week: a ``P``, the number of weeks in three digits and a ``W``. Only the mask explains it: without it, a duration is printed in ISO 8601, ``P1W``.
+:Finding: Both engines refuse the mask with SemanticError ``1-3-13``, "Unsupported VTL construct: an ISO composite duration in the mask [...]": vtlengine reads a mask of a duration with ``P`` and ``p`` only, as a Duration of vtlengine is one period indicator.

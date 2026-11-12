@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, time_period, "YYYY\\MM")`` on a String measure: a reverse slash between the year and the month.
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "The reverse slash can appear in the format if needed by prefixing it with another reverse slash; for example ``YYYY\\MM`` means [...] a reverse slash and two digits for the month."
+:Expected: The months ``2015M03`` and ``2015M12``, from ``2015\03`` and ``2015\12``. Only the mask explains them: without it, the conversion reads the year, finds none of ``H``, ``Q``, ``M`` or ``D``, and raises an error for the characters left over, which start with a reverse slash.

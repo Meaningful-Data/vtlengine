@@ -136,16 +136,53 @@ _TIME_MASKS: Final[_MaskExamples] = {
     ("string", "time"): ("start_and_end_mask",),
 }
 
-# The time formatting mask of a time_period.
+# The time formatting mask of a time_period: the masks of the cast page's Example 9 and of the
+# time_period examples of the section, and its general rules (zero padding, braces, other and
+# escaped characters, semesters and weeks). ``dash_not_in_mask`` expects the error of a string
+# that the mask does not describe, which the conversion without a mask reads.
 _TIME_PERIOD_MASKS: Final[_MaskExamples] = {
-    ("time_period", "string"): ("monthly_period_mask",),
-    ("string", "time_period"): ("quarter_mask",),
+    ("time_period", "string"): (
+        "monthly_period_mask",
+        "quarter_before_year",
+        "daily_month_and_day",
+        "period_indicator_and_number",
+        "escaped_reverse_slash",
+        "semester_after_dash",
+        "week_after_dash",
+    ),
+    ("string", "time_period"): (
+        "quarter_mask",
+        "quarter_after_dash",
+        "quarter_before_year",
+        "two_digit_quarter",
+        "daily_month_and_day",
+        "daily_dotted_date",
+        "period_indicator_and_number",
+        "escaped_reverse_slash",
+        "semester_after_dash",
+        "week_after_dash",
+        "dash_not_in_mask",
+    ),
 }
 
-# The masks of a duration.
+# The masks of a duration: the one-character codes, and the ISO representations with a number of
+# periods, of weeks, or of each unit, on a duration of one period, the only ones that a Duration of
+# vtlengine holds. ``unmatched_iso_8601_duration`` expects the error of a string that the mask
+# does not describe, which the conversion without a mask reads.
 _DURATION_MASKS: Final[_MaskExamples] = {
-    ("duration", "string"): ("period_indicator_mask",),
-    ("string", "duration"): ("period_indicator_mask",),
+    ("duration", "string"): (
+        "period_indicator_mask",
+        "number_of_periods",
+        "iso_weeks",
+        "iso_composite_duration",
+    ),
+    ("string", "duration"): (
+        "period_indicator_mask",
+        "number_of_periods",
+        "iso_weeks",
+        "iso_composite_duration",
+        "unmatched_iso_8601_duration",
+    ),
 }
 
 _MASKED: Final[_MaskExamples] = {
