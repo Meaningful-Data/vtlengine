@@ -1,10 +1,11 @@
+import re
 from dataclasses import fields
 from pathlib import Path
 
 import pytest
 
 from vtlengine.API import create_ast, prettify
-from vtlengine.AST import AST, Comment
+from vtlengine.AST import AST, Comment, Start
 from vtlengine.AST.ASTComment import create_ast_with_comments
 from vtlengine.AST.ASTString import ASTString
 
@@ -87,6 +88,7 @@ params_prettier = [
     ("GH_1160.vtl", "reference_GH_1160.vtl"),
     ("GH_1166.vtl", "reference_GH_1166.vtl"),
     ("GH_1322.vtl", "reference_GH_1322.vtl"),
+    ("GH_1334.vtl", "reference_GH_1334.vtl"),
 ]
 
 POSITION_FIELDS = {"line_start", "column_start", "line_stop", "column_stop"}
@@ -234,6 +236,25 @@ def test_prettier_no_trailing_whitespace(filename, expected):
     lines = prettify(script).splitlines()
 
     assert [line for line in lines if line != line.rstrip()] == []
+
+
+def test_prettier_joined_modules():
+    """Modules parsed one by one and joined into one Start render like the whole script (GH_1334).
+
+    Each module numbers its lines from 1, and its banner comment is made at (0, 0).
+    """
+    with open(prettier_path / "GH_1334.vtl", "r") as file:
+        modules = re.split(r"^(?=/\* Module)", file.read(), flags=re.MULTILINE)[1:]
+    children = []
+    for module in modules:
+        banner, body = module.split("\n", 1)
+        children += [Comment(0, 0, 0, 0, banner), *create_ast_with_comments(body).children]
+
+    result_script = ASTString(pretty=True).render(Start(0, 0, 0, 0, children))
+
+    with open(prettier_path / "reference_GH_1334.vtl", "r") as file:
+        expected_script = file.read()
+    assert normalize_lines_in_text(result_script) == normalize_lines_in_text(expected_script)
 
 
 @pytest.mark.parametrize("filename", params)
