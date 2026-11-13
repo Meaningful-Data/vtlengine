@@ -1,3 +1,4 @@
+import re
 from dataclasses import fields
 from pathlib import Path
 
@@ -87,6 +88,7 @@ params_prettier = [
     ("GH_1160.vtl", "reference_GH_1160.vtl"),
     ("GH_1166.vtl", "reference_GH_1166.vtl"),
     ("GH_1322.vtl", "reference_GH_1322.vtl"),
+    ("GH_1334.vtl", "reference_GH_1334.vtl"),
 ]
 
 POSITION_FIELDS = {"line_start", "column_start", "line_stop", "column_stop"}
@@ -236,16 +238,17 @@ def test_prettier_no_trailing_whitespace(filename, expected):
     assert [line for line in lines if line != line.rstrip()] == []
 
 
-def test_prettier_joined_scripts_keep_comments_in_place():
-    """A Start joined from several scripts keeps each comment before its statement (GH_1334).
+def test_prettier_joined_modules():
+    """Modules parsed one by one and joined into one Start render like the whole script (GH_1334).
 
-    Each script numbers its lines from 1, and the banner of each module is made at (0, 0).
+    Each module numbers its lines from 1, and its banner comment is made at (0, 0).
     """
+    with open(prettier_path / "GH_1334.vtl", "r") as file:
+        modules = re.split(r"^(?=/\* Module)", file.read(), flags=re.MULTILINE)[1:]
     children = []
-    for module in ["mdl1", "mdl2", "mdl3"]:
-        children.append(Comment(0, 0, 0, 0, f"/* Module {module} */"))
-        with open(prettier_path / f"GH_1334_{module}.vtl", "r") as file:
-            children += create_ast_with_comments(file.read()).children
+    for module in modules:
+        banner, body = module.split("\n", 1)
+        children += [Comment(0, 0, 0, 0, banner), *create_ast_with_comments(body).children]
 
     result_script = ASTString(pretty=True).render(Start(0, 0, 0, 0, children))
 

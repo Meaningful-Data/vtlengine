@@ -1,3 +1,10 @@
+/* Module mdl1 */
+B:=A[filter var1 in {1, 2, 3}];
+//Comment
+B2:=B[rename var2 to varRel];
+/* Module mdl2 */
+C:= inner_join( mdl1.B2, A2 keep varRel, var3);
+/* Module mdl3 */
 // Figures computed from mdl2.C
 D := mdl2.C
     [calc varRel2 := varRel *5]
