@@ -1,0 +1,34 @@
+/* Module mdl1 */
+B :=
+	A
+		[filter
+				var1 in {1, 2, 3}
+		];
+//Comment
+B2 :=
+	B
+		[rename var2 to varRel];
+/* Module mdl2 */
+C :=
+	inner_join(
+		mdl1.B2,
+		A2
+		 keep varRel, var3
+	);
+/* Module mdl3 */
+// Figures computed from mdl2.C
+D :=
+	mdl2.C
+		[calc varRel2 := varRel * 5]
+		[calc varF := var3 * varRel2]
+		[filter
+				varF > 1000 and
+					var3 > 100
+		];
+D2 :=
+	sum(
+		D group by Id_1
+		);
+F <-
+	D2
+		[calc varF := cast(varF, number)];

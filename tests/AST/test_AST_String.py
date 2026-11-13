@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from vtlengine.API import create_ast, prettify
-from vtlengine.AST import AST, Comment
+from vtlengine.AST import AST, Comment, Start
 from vtlengine.AST.ASTComment import create_ast_with_comments
 from vtlengine.AST.ASTString import ASTString
 
@@ -234,6 +234,24 @@ def test_prettier_no_trailing_whitespace(filename, expected):
     lines = prettify(script).splitlines()
 
     assert [line for line in lines if line != line.rstrip()] == []
+
+
+def test_prettier_joined_scripts_keep_comments_in_place():
+    """A Start joined from several scripts keeps each comment before its statement (GH_1334).
+
+    Each script numbers its lines from 1, and the banner of each module is made at (0, 0).
+    """
+    children = []
+    for module in ["mdl1", "mdl2", "mdl3"]:
+        children.append(Comment(0, 0, 0, 0, f"/* Module {module} */"))
+        with open(prettier_path / f"GH_1334_{module}.vtl", "r") as file:
+            children += create_ast_with_comments(file.read()).children
+
+    result_script = ASTString(pretty=True).render(Start(0, 0, 0, 0, children))
+
+    with open(prettier_path / "reference_GH_1334.vtl", "r") as file:
+        expected_script = file.read()
+    assert normalize_lines_in_text(result_script) == normalize_lines_in_text(expected_script)
 
 
 @pytest.mark.parametrize("filename", params)
