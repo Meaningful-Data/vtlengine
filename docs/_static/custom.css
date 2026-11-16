@@ -76,3 +76,27 @@
 .rst-versions.version-current .rst-current-version {
     color: #f48fb1 !important;
 }
+
+/* Sidebar: the version selector is fixed at its bottom. Keep the selector compact, keep the
+   entries clear of it, and set captions and entries a little closer, so that the last entry of
+   the home sidebar (the operator map) shows without scrolling on a screen about 700px high. */
+.rst-versions .rst-current-version {
+    padding: 6px 12px !important;
+}
+
+.wy-nav-side {
+    padding-bottom: 32px !important;
+}
+
+.wy-menu-vertical p.caption {
+    margin-top: 4px !important;
+}
+
+.wy-menu-vertical a {
+    padding-top: 0.3em !important;
+    padding-bottom: 0.3em !important;
+}
+
+.wy-side-nav-search {
+    margin-bottom: 0.4em !important;
+}

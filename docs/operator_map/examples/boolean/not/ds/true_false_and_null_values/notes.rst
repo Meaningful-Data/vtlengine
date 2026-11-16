@@ -1,0 +1,3 @@
+:Tests: ``not DS_1``: a data set with ``Me_1`` true, false and null.
+:Manual: `Logical negation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Boolean%20operators/Logical%20negation/index.html>`__: "``not false`` gives ``true``", "``not true`` gives ``false``" and "``not null`` gives ``null``"; the page's sentence "returns **true** if *op* is **false**, otherwise **true**" has a typo ("otherwise true" would make ``not true`` true) and ignores null, and the listed rows govern.
+:Expected: ``Me_1`` is false, true and null: ``not true`` is false, ``not false`` is true and ``not null`` is null.

@@ -1,0 +1,3 @@
+:Tests: ``if ( DS_1#Me_1 > 10 ) then 0 else DS_1``: the scalar as thenOperand and the data set as elseOperand, on the same data set with two measures.
+:Manual: `if-then-else <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/if-then-else/index.html>`__: "at least one of *thenOperand* and *elseOperand* is a Data Set (the other one can be scalar)", and the scalar "feeds the values of all the Measures of the result Data Point".
+:Expected: ids 2 and 3 are true and get the scalar in both measures, (2, 0, 0) and (3, 0, 0); id 1 is false and keeps its data point of ``DS_1``, (1, 5, 50).

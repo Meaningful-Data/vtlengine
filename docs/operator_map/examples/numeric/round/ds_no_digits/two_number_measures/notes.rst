@@ -1,0 +1,3 @@
+:Tests: ``round`` with ``numDigit`` omitted, on a dataset with two Number measures.
+:Manual: `Rounding <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Rounding/index.html>`__: "The basic scalar type of the result is *integer* if *numDigit* is omitted"; the result is typed ``dataset { measure<number> _+ }``, and the unary operators give "homonymous Measures in DS_r".
+:Expected: both measures keep their names and become Integers: ``Me_1`` 3, 3 and 7, ``Me_2`` 12346, 0 and 6. Ceiling and Floor Example 1 do the same, and nothing puts ``round`` among the "Operators changing the data type", which allow one measure only.

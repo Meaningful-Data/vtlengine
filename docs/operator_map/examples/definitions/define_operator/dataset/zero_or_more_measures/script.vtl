@@ -1,0 +1,6 @@
+define operator twice (ds dataset { measure<integer> _* })
+    returns dataset is
+        ds * 2
+end operator;
+
+DS_r := twice(DS_1);

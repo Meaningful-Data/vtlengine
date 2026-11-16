@@ -1,0 +1,3 @@
+:Tests: ``A = - B + C``: the first right code item has a sign of its own.
+:Manual: `define hierarchical ruleset <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/hierarchical_rulesets.html>`__: ``codeItemRelation ::= ... leftCodeItem { = | > | < | >= | <= } { + | - } rightCodeItem ...``, and the relations "allow to obtain the measure values of the compound Code Items ... by summing or subtracting the measure values relevant to the component Code Items".
+:Expected: 2 against ``- 3 + 5`` = 2: ``bool_var`` true and ``imbalance`` 0. Read without the sign, the right member would be 8, false with ``imbalance`` -6.

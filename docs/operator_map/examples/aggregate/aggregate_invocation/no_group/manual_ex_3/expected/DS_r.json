@@ -1,0 +1,10 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r",
+      "DataStructure": [
+        {"name": "Me_1", "type": "Number", "role": "Measure"}
+      ]
+    }
+  ]
+}

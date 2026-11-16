@@ -1,0 +1,4 @@
+:Tests: ``timeshift(DS_1, -1)`` on annual series whose reference time identifier is a *time*.
+:Manual: `Time shift <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Time%20shift/index.html>`__, Example 1: "If *shiftNumber* is negative, the shift is in the past, otherwise it is in the future."
+:Expected: The manual's output with its time values rewritten: each year moves one year back, 2010 to 2013 becoming 2009 to 2012, each the whole year ``YYYY-01-01/YYYY-12-31``.
+:Adaptation: The page writes its *time* values in "the time format YYYY-MM/YYYY-MM", as ``2010M1/2010M12``, which vtlengine cannot load (DataLoadError ``0-3-1-6``, "Use YYYY-MM-DD/YYYY-MM-DD or YYYY or YYYY-MM", on both engines). Each ``YYYYM1/YYYYM12`` of the input and the output is written ``YYYY-01-01/YYYY-12-31``, the same interval in the ``YYYY-MM-DD/YYYY-MM-DD`` form of the manual's "Behaviour of Time operators" and of ``docs/data_types.rst``; nothing else changes.

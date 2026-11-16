@@ -1,0 +1,3 @@
+:Tests: ``symdiff ( DS_1, DS_2 )``: five data points are in both operands, one is only in ``DS_1`` and one only in ``DS_2``.
+:Manual: `Symmetric difference <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Set%20operators/Symmetric%20difference/index.html>`__, Example 1, output verbatim: the operator returns a Data Set "containing the Data Points that appear in the first Data Set but not in the second and the Data Points that appear in the second Data Set but not in the first one".
+:Expected: the page's two data points, one from each operand: (2012, B, Total, Total) and (2011, B, Total, Total), both with the measure 1.

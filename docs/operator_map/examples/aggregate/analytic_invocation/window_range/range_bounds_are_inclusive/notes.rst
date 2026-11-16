@@ -1,0 +1,3 @@
+:Tests: a ``range`` window of 2 on each side, where values exactly 2 away are inside it.
+:Manual: `Analytic invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html>`__: the window "includes all the Data Points whose values are in a certain range in respect to the value, for the current Data Point, of the Measure which the analytic is applied to", and num gives "the maximum difference to consider". The analytic is applied to ``Me_1`` and ordered by it, so SQL's range on the order key gives the same window.
+:Expected: in ``A`` (3, 1, 5, 1), ``Me_3`` is 10 for 3 (window [1, 5]), 5 for each 1 (window [-1, 3]) and 8 for 5 (window [3, 7]); in ``B``, 4 and 8 are alone in their windows.

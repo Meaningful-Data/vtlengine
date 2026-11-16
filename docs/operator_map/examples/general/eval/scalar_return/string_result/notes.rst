@@ -1,0 +1,3 @@
+:Tests: ``eval`` of a routine that returns a scalar, declared ``returns string`` as in the page's ``eval(routine1(DS_1) language "PL/SQL" returns string)``.
+:Manual: `Evaluation of an external routine <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Evaluation%20of%20an%20external%20routine/index.html>`__: eval "returns its result as a Data Set or a scalar", and its result "must be persistent", so the script uses ``<-``. Its "Result type" is ``result :: dataset``, against the Behaviour, the ``outputType`` and the page's syntax example.
+:Expected: the error ``1-3-2-1``, "Eval could not be called without a {option} type definition": by a team decision, ``eval`` runs on data sets only and returns a data set, never a scalar.

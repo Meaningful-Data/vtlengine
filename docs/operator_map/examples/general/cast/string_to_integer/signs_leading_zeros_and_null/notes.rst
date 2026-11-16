@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, integer)`` on a String measure, without a mask: signs, leading zeroes and a null.
+:Manual: `Type conversion <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html>`__: "First a ``+`` or ``-`` is possibly consumed to determine the sign of the integer [...] Finally, a sequence of digits is consumed to determine its absolute value; leading zeroes are skipped", and "a ``null`` input string is converted to the corresponding ``null`` value of the desired value domain".
+:Expected: ``42``, ``-7``, ``7`` from ``+007``, and null from the empty field. The inputs have no blanks for the conversion to remove.

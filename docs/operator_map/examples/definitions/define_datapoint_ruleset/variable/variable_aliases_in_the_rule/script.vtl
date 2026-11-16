@@ -1,0 +1,5 @@
+define datapoint ruleset DPR_1 (variable Id_2 as F, Me_1 as A) is
+    when F = "CREDIT" then A >= 0
+end datapoint ruleset;
+
+DS_r := check_datapoint(DS_1, DPR_1 all);

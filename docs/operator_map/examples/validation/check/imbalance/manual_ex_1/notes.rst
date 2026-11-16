@@ -1,0 +1,3 @@
+:Tests: ``check ( DS_1 >= DS_2 imbalance DS_1 - DS_2 )`` with no output, on two data sets of 12 data points.
+:Manual: `Check <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Data%20validation%20operators/Check/index.html>`__, Example 1, output verbatim: the result has "the Measure imbalance that contains the specified imbalance", and "If not specified then output is all".
+:Expected: all 12 data points, ``bool_var`` being ``DS_1 >= DS_2`` and ``imbalance`` ``DS_1 - DS_2``: false with -8, -3, -25 and -15 on 2010 I, 2013 I, 2010 D and 2014 D, true with 5 on 2012 D, and true with 0 where the two are equal. ``errorcode`` and ``errorlevel`` are null, as none is given.

@@ -1,0 +1,11 @@
+define hierarchical ruleset HR_1 ( variable rule Id_2 ) is
+    R1 : A = B + C
+    ; R2 : C = D + E
+    ; R3 : B >= D
+    ; R4 : E > X
+    ; R5 : Y < Z
+    ; R6 : D <= X
+    ; R7 : F > B
+end hierarchical ruleset;
+
+DS_r := check_hierarchy ( DS_1, HR_1 partial_zero dataset_priority all_measures );

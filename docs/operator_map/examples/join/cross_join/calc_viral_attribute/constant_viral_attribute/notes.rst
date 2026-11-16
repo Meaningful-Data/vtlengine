@@ -1,0 +1,4 @@
+:Tests: ``calc viral attribute At_1 := "EP"``, a constant viral attribute.
+:Manual: `Cross Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Cross%20Join/index.html>`__: on viral attributes, "if the calc clause is present instead, it may directly replace the computation algorithm used for the propagation".
+:Expected: the cartesian product of ``DS_1`` (``Id_1`` 1, 2) and ``DS_2`` (``Id_2`` A, B) has 2 × 2 = 4 data points, and each gets the String Viral Attribute ``At_1`` = ``EP``.
+:Team decision: `#1257 <https://github.com/Meaningful-Data/vtlengine/issues/1257>`__: as the comments on `sdmx-twg/vtl#731 <https://github.com/sdmx-twg/vtl/issues/731>`__ propose, a viral Attribute needs a propagation rule only where its values are combined, until the VTL Task Force discusses it.

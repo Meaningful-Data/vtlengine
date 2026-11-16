@@ -1,0 +1,15 @@
+{
+  "name": "myGeoValueDomain",
+  "setlist": [
+    "AF",
+    "BS",
+    "FJ",
+    "GA",
+    "KH",
+    "MO",
+    "PK",
+    "QA",
+    "UG"
+  ],
+  "type": "String"
+}

@@ -1,0 +1,3 @@
+:Tests: ``calc Me_1 := Me_1 * 2`` with no role, on the existing measure ``Me_1``.
+:Manual: `Calculation of a Component <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Calculation%20of%20a%20Component/index.html>`__, Example 1, output verbatim: "When the role is omitted, the following rule is applied: if the component exists in the operand Data Set then it maintains its role", and "If the Calculated component is a Measure or an Attribute that already exists in the input Data Set, the calculated values overwrite the original values".
+:Expected: ``Me_1`` stays a Measure, with its values doubled: 40, 4 and 4.

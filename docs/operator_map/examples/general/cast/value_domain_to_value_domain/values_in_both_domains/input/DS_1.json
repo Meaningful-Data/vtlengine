@@ -1,0 +1,11 @@
+{
+  "datasets": [
+    {
+      "name": "DS_1",
+      "DataStructure": [
+        {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": false},
+        {"name": "Me_1", "type": "VD_2", "role": "Measure", "nullable": true}
+      ]
+    }
+  ]
+}

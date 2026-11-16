@@ -1,0 +1,3 @@
+:Tests: ``DS_1 [ sub Id_2 = "A" ] + DS_1 [ sub Id_2 = "B" ]``: two subspaces on one identifier, added.
+:Manual: `Subspace <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Subspace/index.html>`__, Example 3, output verbatim: "It maintains the Data Points of VDS for which identifier = value", then "It projects out (“drops”, in VTL terms) all the identifier (s)".
+:Expected: Both subspaces have ``Id_1`` and ``Id_3``, and the sum pairs their data points on them: ``(1,XX)`` = 20 + 4 = 24, ``(1,YY)`` = 10, ``(2,XX)`` = 19 and ``(2,YY)`` = 20. ``At_1`` is non-viral, so the sum does not keep it: "the non-viral Attributes are not kept in the result" (`User Manual <https://sdmx-twg.github.io/vtl/v2.2/user_manual/operators.html>`__).

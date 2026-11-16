@@ -1,0 +1,3 @@
+:Tests: the placeholder ``_`` for ``numDigit``, on a dataset with one Number measure.
+:Manual: `Truncation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Truncation/index.html>`__: "``trunc ( 12345.6, _ )`` gives ``12345``", and in the `Typical behaviours <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html>`__, "Operators changing the data type", the measure whose type changes is replaced: "A default generic Measure is assigned by default to the result Data Set, depending on the data type of the result", ``int_var`` for an Integer.
+:Expected: the placeholder stands for an omitted ``numDigit``, so the result is an Integer, as with ``trunc(DS_1)``: ``int_var`` 3, 2 and 12345.

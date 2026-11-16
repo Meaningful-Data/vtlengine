@@ -1,0 +1,3 @@
+:Tests: ``if Me_1 > Me_2 then Me_1 else Me_2`` inside ``calc``: component branches, in the page's own syntax ``if A > B then A else B``.
+:Manual: `if-then-else <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/if-then-else/index.html>`__: "For operations at Component level, the operation is applied for each Data Point of the unique input Data Set, the **if-then-else** operator returns the value from the *thenOperand* Component when *condition* evaluates to **true**, otherwise it returns the value from the *elseOperand* Component."
+:Expected: ``Me_3`` is the larger measure: 10, 8 and 7. Where ``Me_1 > Me_2`` is false, as in the last data point where both are 7, the result is ``Me_2``.

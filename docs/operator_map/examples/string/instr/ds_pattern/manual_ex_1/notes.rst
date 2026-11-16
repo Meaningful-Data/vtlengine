@@ -1,0 +1,3 @@
+:Tests: ``instr(DS_1, "hello")`` on a dataset with one String measure: the position of ``hello`` in each value.
+:Manual: `String pattern location <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/String%20pattern%20location/index.html>`__, Example 1, output verbatim: "The operator returns the position in the input string of a specified string ( ``pattern`` )." For a data set, "``instr`` returns a dataset with a single measure ``int_var`` of type ``integer``."
+:Expected: ``int_var`` is 1 for ``hello world``, 5 for ``say hello`` and for ``"hi, hello! "``, and 0 for ``he``, where ``hello`` is not found and "the returned value is 0".

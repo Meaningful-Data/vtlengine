@@ -1,0 +1,6 @@
+{
+  "scalars": [
+    {"name": "SC_1", "type": "Boolean", "value": "false"},
+    {"name": "SC_2", "type": "Boolean", "value": "true"}
+  ]
+}

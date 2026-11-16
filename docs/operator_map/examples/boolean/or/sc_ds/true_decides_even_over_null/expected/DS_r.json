@@ -1,0 +1,11 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r",
+      "DataStructure": [
+        {"name": "Id_1", "type": "Integer", "role": "Identifier"},
+        {"name": "Me_1", "type": "Boolean", "role": "Measure"}
+      ]
+    }
+  ]
+}

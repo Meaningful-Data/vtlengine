@@ -218,10 +218,20 @@ jobs:
         run: |
           poetry install --no-root
           poetry run pip install .cpp-wheel/*.whl
+      - name: Put the compiled parser in src/
+        # The operator map's generator runs the examples with the engine of src/: the build of
+        # its map (build_multiversion.py) takes the parser from here.
+        run: |
+          unzip -o -j .cpp-wheel/*.whl \
+            'vtlengine/AST/Grammar/_cpp_parser/vtl_cpp_parser*' \
+            -d src/vtlengine/AST/Grammar/_cpp_parser/
       - name: Configure documentation versions
         run: |
           poetry run python docs/scripts/configure_doc_versions.py
       - name: Build multi-version documentation
+        env:
+          # Regenerate the operator map of every version that has one, against its own engine.
+          VTLENGINE_DOCS_REGENERATE_MAP: "1"
         run: |
           poetry run python docs/scripts/build_multiversion.py _site
       - name: Generate latest alias

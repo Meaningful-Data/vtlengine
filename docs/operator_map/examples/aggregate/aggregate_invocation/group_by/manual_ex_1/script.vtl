@@ -1,0 +1,5 @@
+DS_r := avg ( DS_1 group by Id_1 );
+
+// Or equivalently:
+// DS_r := avg ( DS_1 group except Id_2, Id_3 )
+// DS_r := avg ( DS_1#Me_1 group by Id_1 )

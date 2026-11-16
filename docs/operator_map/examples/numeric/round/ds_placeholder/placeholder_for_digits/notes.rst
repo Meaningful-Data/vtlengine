@@ -1,0 +1,3 @@
+:Tests: the placeholder ``_`` for ``numDigit``, on a dataset with one Number measure.
+:Manual: `Rounding <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Numeric%20operators/Rounding/index.html>`__: "``round ( 12345.6, _ )`` gives ``12346``", and in the `Typical behaviours <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html>`__, "Operators changing the data type", the measure whose type changes is replaced: "A default generic Measure is assigned by default to the result Data Set, depending on the data type of the result", ``int_var`` for an Integer.
+:Expected: the placeholder stands for an omitted ``numDigit``, so the result is an Integer, as with ``round(DS_1)``: ``int_var`` 3, 3 and 12346.

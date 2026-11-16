@@ -1,0 +1,3 @@
+:Tests: ``median`` with ``group except Id_2``: the data points are grouped by ``Id_1``, the identifier that it does not name.
+:Manual: `Aggregate invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Aggregate%20invocation/index.html>`__: "group except: the Data Points are grouped by the values of the Identifiers not specified as groupingId. The Identifiers specified as groupingId are dropped in the result."
+:Expected: ``Id_1`` and the two measures, without ``Id_2``: 2 and 2 for ``A``, 6 and 5.5 for ``B``, the middle value or, for an even count, the mean of the two middle ones (the page gives 3.0 for 2 and 4).

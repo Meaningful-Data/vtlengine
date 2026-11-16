@@ -1,0 +1,5 @@
+{
+  "scalars": [
+    {"name": "DS_r", "type": "Integer", "value": 100}
+  ]
+}

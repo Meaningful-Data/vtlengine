@@ -1,0 +1,3 @@
+:Tests: ``apply DS_1 + DS_2``, written with the data set names, on the homonym measure ``Me_1``.
+:Manual: `Cross Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Cross%20Join/index.html>`__: apply "applies the expression to each of the n-uple of homonym Measures in the input data sets producing in the target a single homonym Measure for each n-uple", and "All the input measures do not appear".
+:Expected: the cartesian product of ``DS_1`` (``Id_1`` 1, 2) and ``DS_2`` (``Id_2`` A, B) has 2 × 2 = 4 data points, with ``DS_1#Me_1`` and ``DS_2#Me_1``: ``Me_1`` is 11, 12, 21 and 22.

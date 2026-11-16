@@ -1,0 +1,3 @@
+:Tests: two ``instr`` calls in one ``calc`` on ``DS_2``, where ``Me_1`` is null in one data point.
+:Manual: `String pattern location <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/String%20pattern%20location/index.html>`__, Example 3, output verbatim: "If the nth ``occurrence`` of the string-pattern after the ``start`` th character is not found in the input string, the returned value is 0."
+:Expected: ``Me_10`` is 5 and null, and ``Me_20`` is 2 and 0: ``hi`` has no ``o``, so its position is 0, while the null ``Me_1`` gives null. A null operand gives a null result: "most of the scalar operations (arithmetic, logical, and others) return null when any of their arguments is null" (User Manual).

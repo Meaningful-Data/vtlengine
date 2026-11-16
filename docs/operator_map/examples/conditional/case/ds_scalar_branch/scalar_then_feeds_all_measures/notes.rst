@@ -1,0 +1,3 @@
+:Tests: ``case when DS_c then 0 else DS_1``, where ``DS_c := DS_1#Me_1 > 10``: the scalar as thenOperand and the data set as elseOperand. The condition is named, so that the example is about the scalar branch only.
+:Manual: `Case <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Case/index.html>`__: the operator "returns the Data Point from *elseOperand* if none of the **when** conditions evaluates to **true**", and a scalar operand "feeds the values of all the Measures of the result Data Point".
+:Expected: (2, 0, 0) and (3, 0, 0), where the condition is true, and (1, 5, 50), the data point of ``DS_1``, where no ``when`` is true.

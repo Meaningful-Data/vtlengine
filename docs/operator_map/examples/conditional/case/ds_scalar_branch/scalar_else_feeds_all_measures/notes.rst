@@ -1,0 +1,3 @@
+:Tests: ``case when DS_c then DS_1 else 0``, where ``DS_c := DS_1#Me_1 > 10``: a data set as thenOperand and a scalar as elseOperand, on a data set with two measures. The condition is named, so that the example is about the scalar branch only.
+:Manual: `Case <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Case/index.html>`__: "The same rules apply as for the if-then-else operator", and a scalar operand "feeds the values of all the Measures of the result Data Point".
+:Expected: (1, 0, 0), (2, 15, 150) and (3, 25, 250): id 1, where 5 is not above 10, gets the scalar in both measures; ids 2 and 3 keep their data point of ``DS_1``. The measures are Integer, like the scalar 0.

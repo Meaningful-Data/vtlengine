@@ -1,0 +1,3 @@
+:Tests: ``aggr`` with no grouping clause.
+:Manual: `Full Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Full%20Join/index.html>`__: "If no grouping clause is specified, then all the input Data Points are aggregated in a single group and the clause returns a data set that contains a single Data Point and has no Identifier Components." The User Manual: in aggregations "the input Data Points having a null value are in general not considered".
+:Expected: one data point with no identifier: ``Me_3`` = 10 + 20 + 30 + 40 = 100; the null ``Me_1`` of ``(1,C)`` is not considered.

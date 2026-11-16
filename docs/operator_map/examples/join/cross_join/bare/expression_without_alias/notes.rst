@@ -1,0 +1,3 @@
+:Tests: a cross join of ``DS_1`` and the expression ``DS_2 [filter Me_1 > 0]``, with no alias; both have ``Me_1``.
+:Manual: `Cross Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Cross%20Join/index.html>`__: the components of several data sets are prefixed with the alias, else with "the data set name", and the aliases "are mandatory ... for non-named data set obtained as result of a sub-expression".
+:Expected: the error ``1-1-13-2``, "the operand {operand} needs an alias": the expression is a non-named data set with no alias, and ``Me_1``, in both operands, needs a prefix.
