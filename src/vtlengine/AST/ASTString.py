@@ -250,16 +250,19 @@ class ASTString(ASTTemplate):
     def _inner_comments(children: List[AST.AST]) -> Dict[int, List[AST.Comment]]:
         """The comments written inside each statement, by the id of the statement.
 
-        The children come sorted by position, so a statement is followed by its comments.
+        A comment inside a statement follows it and starts within its span. The start
+        bound matters when the children come from several scripts, each numbering its
+        lines from 1, or hold comments made at (0, 0).
         """
         inner: Dict[int, List[AST.Comment]] = {}
         statement: Optional[AST.AST] = None
         for child in children:
             if not isinstance(child, AST.Comment):
                 statement = child
-            elif statement is not None and (child.line_start, child.column_start) < (
-                statement.line_stop,
-                statement.column_stop,
+            elif statement is not None and (
+                (statement.line_start, statement.column_start)
+                < (child.line_start, child.column_start)
+                < (statement.line_stop, statement.column_stop)
             ):
                 inner.setdefault(id(statement), []).append(child)
         return inner
