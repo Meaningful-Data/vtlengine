@@ -311,14 +311,10 @@ Value domains also appear in the VTL-DL definitions:
 
 - A datapoint ruleset on value domains binds them, or their aliases,
   in order to the components listed in ``check_datapoint ...
-  components``. A component of the basic type of its value domain
-  has its values checked against it (``2-1-5-4``), and one of
-  another basic type raises ``1-1-10-12``. A value domain that is
-  not given is not checked. Without ``components``, the names of the
-  signature are read as components of the Data Set. For backwards
-  compatibility, a ruleset whose value domains are all named as
-  components of the Data Set reads those components, whatever
-  components the call lists.
+  components``, which is required (``1-1-10-14``), with one
+  component per value domain (``1-1-10-15``). Each component must be
+  defined on the value domain it is bound to (``1-1-10-12``), and the
+  value domains must be given (``1-2-22``, ``1-2-8``).
 - A viral propagation rule on a value domain applies to the viral
   attributes defined on it, unless a rule on the variable overrides
   it.

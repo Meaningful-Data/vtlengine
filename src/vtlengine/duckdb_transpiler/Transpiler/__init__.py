@@ -4491,19 +4491,10 @@ FROM (
         table_src = self._get_dataset_sql(node.dataset)
         id_cols = ds.get_identifiers_names()
         signature = dpr_info["signature"]
-        if dpr_info["signature_type"] == "valuedomain" and node.components and signature:
-            signature, checks = bind_value_domains(
+        if dpr_info["signature_type"] == "valuedomain" and signature:
+            signature = bind_value_domains(
                 node.ruleset_name, signature, node.components, ds.components, self.value_domains
             )
-            if checks:
-                replaced = ", ".join(
-                    f"{self._downcast_expr(quote_name(name), tokens.CHECK_DATAPOINT, vd)} "
-                    f"AS {quote_name(name)}"
-                    for name, vd in checks.items()
-                )
-                table_src = self._materialize_raising_operand(
-                    f"(SELECT * REPLACE ({replaced}) FROM {table_src})"
-                )
 
         if not dpr_info["rules"]:
             cols = [quote_name(c) for c in id_cols]

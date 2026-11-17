@@ -7958,8 +7958,7 @@ class ValueDomainBugs(BugHelper):
         Expression: define datapoint ruleset DPR_1 ( valuedomain VD_FLOW , VD_AMOUNT ) is ...
                     DS_r <- check_datapoint ( DS_1 , DPR_1 components Id_2 , Me_1 all );
         Description: The components of the call are bound in order to the value domains of the
-                     ruleset, which the rules name. Id_2 and Me_1 are of their basic types, and
-                     their values are values of them.
+                     ruleset, which the rules name. Id_2 and Me_1 are defined on them (#1338).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
         Goal: Check Result.
         """
@@ -8002,23 +8001,24 @@ class ValueDomainBugs(BugHelper):
         Expression: define datapoint ruleset DR_1 ( valuedomain num , str ) is
                     r1 : when str = "X" then num > 0 end datapoint ruleset;
                     DS_r <- check_datapoint ( DS_1 , DR_1 components Me_1 , Me_2 all );
-        Description: The value domains num and str are not given, and are bound to Me_1 and
-                     Me_2, which were looked up as columns of DS_1 (issue #1159).
+        Description: The value domains num and str of the ruleset are not given, which the
+                     ruleset needs (issue #1338).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GH_1236_3"
         number_inputs = 1
-        references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-2-22"
+        )
 
     def test_GH_1236_4(self):
         """
         Status: OK
         Expression: DS_r <- check_datapoint ( DS_1 , DPR_1 components Id_2 , Me_1 );
-        Description: OTHER, a value of Id_2, is not one of VD_FLOW, the value domain it is
-                     bound to.
+        Description: Id_2, a String, is not defined on VD_FLOW, the value domain it is bound
+                     to (issue #1338).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
         Goal: Check Exception.
         """
@@ -8028,8 +8028,9 @@ class ValueDomainBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
-            exception_code="2-1-5-4",
-            exception_message="At op check_datapoint: Cannot cast OTHER of String to Value Domain",
+            exception_code="1-1-10-12",
+            exception_message="Component Id_2 of type String is not defined on the Value Domain "
+            "VD_FLOW",
             vd_names=["GH_1236-VD_FLOW", "GH_1236-VD_AMOUNT"],
         )
 
@@ -8048,8 +8049,8 @@ class ValueDomainBugs(BugHelper):
             code=code,
             number_inputs=number_inputs,
             exception_code="1-1-10-12",
-            exception_message="Component Me_1 of type Integer cannot take the values of the Value "
-            "Domain VD_FLOW",
+            exception_message="Component Me_1 of type Integer is not defined on the Value Domain "
+            "VD_FLOW",
             vd_names=["GH_1236-VD_FLOW", "GH_1236-VD_AMOUNT"],
         )
 
@@ -8067,7 +8068,7 @@ class ValueDomainBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
-            exception_code="1-1-10-2",
+            exception_code="1-1-10-15",
             vd_names=["GH_1236-VD_FLOW", "GH_1236-VD_AMOUNT"],
         )
 
@@ -8157,32 +8158,35 @@ class ValueDomainBugs(BugHelper):
         Expression: define datapoint ruleset dpr ( valuedomain Me_1 , Me_2 ) is
                     r1 : when Me_2 = "X" then Me_1 > 0 end datapoint ruleset;
                     DS_r <- check_datapoint ( DS_1 , dpr components Me_2 , Me_1 all );
-        Description: Backwards compatibility: the value domains are named as components of DS_1,
-                     so the rules read those components, as they did before the components of
-                     the call were bound to the value domains.
+        Description: The value domains Me_1 and Me_2 are named as components of DS_1 but not
+                     given. They were read as those components for backwards compatibility,
+                     which the spec does not allow (issue #1338).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GH_1236_11"
         number_inputs = 1
-        references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-2-22"
+        )
 
     def test_GH_1236_12(self):
         """
         Status: OK
         Expression: DS_r <- check_datapoint ( DS_1 , dpr components Me_1 all );
-        Description: Backwards compatibility: the call lists fewer components than the value
-                     domains of the ruleset, which are read as the components named as them.
+        Description: The call lists fewer components than the value domains of the ruleset,
+                     which were read as the components named as them for backwards
+                     compatibility, which the spec does not allow (issue #1338).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GH_1236_12"
         number_inputs = 1
-        references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-10-15"
+        )
 
     def test_GH_1236_13(self):
         """
@@ -8330,4 +8334,106 @@ class ValueDomainBugs(BugHelper):
             number_inputs=number_inputs,
             references_names=references_names,
             vd_names=["GH_1316-errorcode_vd"],
+        )
+
+    vd_1338 = ["GH_1338-VD_CTY", "GH_1338-VD_CTY2", "GH_1338-VD_INT"]
+
+    def test_GH_1338_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 , dpr_cty all );
+        Description: dpr_cty is defined on value domains, so the call must list the components,
+                     although DS_1 has a component named as the value domain VD_CTY.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1338
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1338_1",
+            number_inputs=1,
+            exception_code="1-1-10-14",
+            exception_message="The ruleset dpr_cty is defined on value domains, so the call must "
+            "list the components bound to them",
+            vd_names=self.vd_1338,
+        )
+
+    def test_GH_1338_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 , dpr_cty components Me_1 all );
+        Description: The rules read Me_1, the component of the call, and not the component
+                     named as the value domain VD_CTY. The constant consequent of the rule
+                     raised an AttributeError on the pandas engine.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1338
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1338_2", number_inputs=1, references_names=["1"], vd_names=self.vd_1338
+        )
+
+    def test_GH_1338_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 , dpr_cty components Me_3 all );
+        Description: Me_3, a String, is not defined on VD_CTY, the value domain it is bound to.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1338
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1338_3",
+            number_inputs=1,
+            exception_code="1-1-10-12",
+            exception_message="Component Me_3 of type String is not defined on the Value Domain "
+            "VD_CTY",
+            vd_names=self.vd_1338,
+        )
+
+    def test_GH_1338_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 , dpr_cty components Me_2 all );
+        Description: Me_2 is defined on VD_CTY2, a value domain of the same basic type as
+                     VD_CTY, the one it is bound to.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1338
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1338_4",
+            number_inputs=1,
+            exception_code="1-1-10-12",
+            exception_message="Component Me_2 of type VD_CTY2 is not defined on the Value Domain "
+            "VD_CTY",
+            vd_names=self.vd_1338,
+        )
+
+    def test_GH_1338_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 , dpr_nope components Me_1 all );
+        Description: VD_NOPE, the value domain of dpr_nope, is not given.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1338
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1338_5",
+            number_inputs=1,
+            exception_code="1-2-8",
+            exception_message="Missing value domain 'VD_NOPE' definition",
+            vd_names=self.vd_1338,
+        )
+
+    def test_GH_1338_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 , dpr_two components Me_1 all );
+        Description: dpr_two is defined on two value domains, and the call lists one component.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1338
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1338_6",
+            number_inputs=1,
+            exception_code="1-1-10-15",
+            exception_message="The ruleset dpr_two is defined on 2 value domains, but the call "
+            "lists 1 components",
+            vd_names=self.vd_1338,
         )

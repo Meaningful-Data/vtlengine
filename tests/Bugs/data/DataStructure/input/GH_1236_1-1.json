@@ -12,13 +12,13 @@
         {
           "name": "Id_2",
           "role": "Identifier",
-          "type": "String",
+          "type": "VD_FLOW",
           "nullable": false
         },
         {
           "name": "Me_1",
           "role": "Measure",
-          "type": "Integer",
+          "type": "VD_AMOUNT",
           "nullable": true
         }
       ]
