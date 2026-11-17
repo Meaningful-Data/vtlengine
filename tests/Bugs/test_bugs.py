@@ -6171,7 +6171,12 @@ class OtherBugs(BugHelper):
         number_inputs = 1
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code,
+            vd_names=["GL_566_1-COUNTRY", "GL_566_1-TIME_PERIOD"],
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GH_969_1(self):
         """
@@ -6189,7 +6194,12 @@ class OtherBugs(BugHelper):
         number_inputs = 1
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code,
+            vd_names=["GH_969_1-VD_1"],
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GH_969_2(self):
         """
@@ -6205,7 +6215,12 @@ class OtherBugs(BugHelper):
         number_inputs = 1
         references_names = ["1", "2", "3"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code,
+            vd_names=["GH_969_2-VD_1"],
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_564(self):
         """
@@ -8194,16 +8209,18 @@ class ValueDomainBugs(BugHelper):
         Expression: define hierarchical ruleset hr ( valuedomain condition At_1 rule Id_2 ) is
                     when At_1 = "x" then A = B + C end hierarchical ruleset;
                     DS_r <- check_hierarchy ( DS_1 , hr condition At_1 rule Id_2 all );
-        Description: Backwards compatibility: a hierarchical ruleset on value domains named as
-                     the components of the call.
+        Description: The value domains At_1 and Id_2 are named as components of DS_1 but not
+                     given. They were read as those components for backwards compatibility,
+                     which the spec does not allow (issue #1339).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
-        Goal: Check Result.
+        Goal: Check Exception.
         """
         code = "GH_1236_13"
         number_inputs = 1
-        references_names = ["1"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-2-22"
+        )
 
     error_vds = ["GH_1316-errorcode_vd", "GH_1316-errorlevel_vd"]
 
@@ -8270,7 +8287,7 @@ class ValueDomainBugs(BugHelper):
             code=code,
             number_inputs=number_inputs,
             references_names=references_names,
-            vd_names=["GH_1316-errorcode_vd", "GH_1316-errorlevel_vd_int"],
+            vd_names=["GH_1316-errorcode_vd", "GH_1316-errorlevel_vd_int", "GH_1316_3-Id_2"],
         )
 
     def test_GH_1316_4(self):
@@ -8436,4 +8453,160 @@ class ValueDomainBugs(BugHelper):
             exception_message="The ruleset dpr_two is defined on 2 value domains, but the call "
             "lists 1 components",
             vd_names=self.vd_1338,
+        )
+
+    vd_1339 = ["GH_1339-VD_CTY", "GH_1339-VD_CTY2", "GH_1339-VD_INT", "GH_1339-VD_YEAR"]
+
+    def test_GH_1339_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_hierarchy ( DS_1 , hr_cty rule Id_1 all );
+        Description: hr_cty is defined on the value domain VD_CTY, and Id_1 is a String
+                     component, with a value outside VD_CTY.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1339_1",
+            number_inputs=1,
+            exception_code="1-1-10-12",
+            exception_message="Component Id_1 of type String is not defined on the Value Domain "
+            "VD_CTY of the ruleset hr_cty",
+            vd_names=self.vd_1339,
+        )
+
+    def test_GH_1339_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- hierarchy ( DS_1 , hr_cty rule Id_1 );
+        Description: Id_1 is defined on VD_CTY2, which has the basic type of VD_CTY and more
+                     values. hierarchy kept the values outside VD_CTY.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1339_2",
+            number_inputs=1,
+            exception_code="1-1-10-12",
+            exception_message="Component Id_1 of type VD_CTY2 is not defined on the Value Domain "
+            "VD_CTY of the ruleset hr_cty",
+            vd_names=self.vd_1339,
+        )
+
+    def test_GH_1339_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_hierarchy ( DS_1 , hr_cty rule Id_1 all );
+        Description: Id_1 is defined on VD_INT, of another basic type. It failed only at run
+                     time, casting a code item of the rule.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1339_3",
+            number_inputs=1,
+            exception_code="1-1-10-12",
+            exception_message="Component Id_1 of type VD_INT is not defined on the Value Domain "
+            "VD_CTY of the ruleset hr_cty",
+            vd_names=self.vd_1339,
+        )
+
+    def test_GH_1339_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_hierarchy ( DS_1 , hr_cond condition Id_2 rule Id_1 all );
+        Description: The condition component Id_2 is an Integer component, not defined on the
+                     value domain VD_YEAR of the condition of hr_cond.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1339_4",
+            number_inputs=1,
+            exception_code="1-1-10-12",
+            exception_message="Component Id_2 of type Integer is not defined on the Value Domain "
+            "VD_YEAR of the ruleset hr_cond",
+            vd_names=self.vd_1339,
+        )
+
+    def test_GH_1339_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_hierarchy ( DS_1 , hr_nope rule Id_1 all );
+        Description: hr_nope is defined on the value domain VD_NOPE, which is not given.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1339_5",
+            number_inputs=1,
+            exception_code="1-2-8",
+            exception_message="Missing value domain 'VD_NOPE' definition",
+            vd_names=self.vd_1339,
+        )
+
+    def test_GH_1339_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- hierarchy ( DS_1 , hr_cond rule Id_1 );
+        Description: hr_cond has a condition on a value domain, and the call has no condition
+                     clause. The message spoke about variables.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1339_6",
+            number_inputs=1,
+            exception_code="1-1-10-16",
+            exception_message="The condition of the ruleset hr_cond is defined on 1 value "
+            "domains, but the call lists 0 condition components",
+            vd_names=self.vd_1339,
+        )
+
+    def test_GH_1339_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_hierarchy ( DS_1 , hr_cond condition Id_9 rule Id_1 all );
+        Description: The condition component Id_9 is not in DS_1. The message named the alias Y
+                     of the condition instead.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1339_7",
+            number_inputs=1,
+            exception_code="1-1-1-10",
+            exception_message="Component Id_9 not found in Dataset DS_1",
+            vd_names=self.vd_1339,
+        )
+
+    def test_GH_1339_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_hierarchy ( DS_1 , hr_cond condition Id_2 rule Id_1 all );
+        Description: Id_2 and Id_1 are defined on VD_YEAR and VD_CTY, the value domains of the
+                     condition and the rule of hr_cond, in that order.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1339_8",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1339,
+        )
+
+    def test_GH_1339_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- hierarchy ( DS_1 , hr_cty rule Id_1 );
+        Description: Id_1 is defined on VD_CTY, the value domain of the rule of hr_cty.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1339_9",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1339,
         )

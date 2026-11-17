@@ -36,7 +36,7 @@
                 {
                     "name": "PAYMENT_CATEGORY",
                     "role": "Identifier",
-                    "type": "String",
+                    "type": "payment_category",
                     "nullable": false
                 },
                 {

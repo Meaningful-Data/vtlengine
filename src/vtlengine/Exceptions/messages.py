@@ -831,6 +831,13 @@ centralised_messages = {
         "description": "Raised when check_datapoint calls a ruleset defined on value domains "
         "with another number of components than the value domains of its signature.",
     },
+    "1-1-10-16": {
+        "message": "At op {op}: The condition of the ruleset {ruleset} is defined on {expected} "
+        "value domains, but the call lists {found} condition components.",
+        "description": "Raised when check_hierarchy or hierarchy calls a ruleset defined on value "
+        "domains with another number of condition components than the value domains of its "
+        "condition.",
+    },
     "1-1-10-13": {
         "message": "The {element} {value} of {where} is not one of the values of the Value "
         "Domain {value_domain}.",

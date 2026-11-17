@@ -422,7 +422,12 @@ class ValidationOperatorsTests(ValidationHelper):
         number_inputs = 1
         references_names = ["1", "2", "3", "4", "5", "6", "7"]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code,
+            vd_names=["GL_cs_22-EXR_CURRENCY"],
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )
 
     def test_GH_427_1(self):
         """
