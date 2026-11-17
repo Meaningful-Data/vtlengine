@@ -42,7 +42,7 @@ from tool.examples import ERROR_CODE, load_example
 from tool.runner import Engine, RunOutput, child_env, run_all, run_example
 from vtlengine.DataTypes import Boolean, Integer, Null, Number, String, TimeInterval, TimePeriod
 from vtlengine.Exceptions import VTLEngineException
-from vtlengine.Model import Component, Dataset, Role, Scalar
+from vtlengine.Model import Component, Dataset, Role, Scalar, ValueDomain
 
 TIMEOUT = 120.0  # the tiny examples take about a second: the limit only has to be finite
 ENGINES: tuple[Engine, ...] = ("pandas", "duckdb")
@@ -864,6 +864,28 @@ def test_serialise_datasets_and_scalars() -> None:
     assert isinstance(dataset, ActualDataset)
     assert list(dataset.components) == list(components)
     assert all(list(row) == list(components) for row in dataset.rows)
+
+
+def test_serialise_names_the_value_domain_a_component_or_a_scalar_is_defined_on() -> None:
+    domain = ValueDomain("VD_1", String, ["A", "B"])
+    components = {
+        "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+        "Me_1": Component("Me_1", String, Role.MEASURE, True, domain),
+    }
+    frame = pd.DataFrame({"Id_1": [1], "Me_1": ["A"]})
+    scalar = Scalar("sc_1", String, "A")
+    scalar.value_domain = domain
+
+    outputs = child.serialise({"DS_r": Dataset("DS_r", components, frame), "sc_1": scalar})
+
+    structure = {
+        "Id_1": ActualComponent("Identifier", "Integer", False),
+        "Me_1": ActualComponent("Measure", "VD_1", True),
+    }
+    assert outputs == [
+        ActualDataset("DS_r", structure, [{"Id_1": "1", "Me_1": "A"}]),
+        ActualScalar("sc_1", "VD_1", "A"),
+    ]
 
 
 def test_serialise_refuses_what_is_neither_a_dataset_nor_a_scalar() -> None:
