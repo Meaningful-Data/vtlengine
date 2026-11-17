@@ -39,7 +39,7 @@ from tool.compare import (
 )
 from tool.examples import ERROR_CODE, ExampleFiles, load_example
 from vtlengine import run
-from vtlengine.Model import Dataset, Scalar
+from vtlengine.Model import Dataset, Scalar, ValueDomain
 
 RESULT_PREFIX: Final = "RESULT:"
 MAX_MESSAGE: Final = 300
@@ -59,7 +59,11 @@ def serialise(results: Mapping[str, Any]) -> list[Output]:
         if isinstance(result, Dataset):
             outputs.append(_dataset(name, result))
         elif isinstance(result, Scalar):
-            outputs.append(ActualScalar(name, _type_name(result.data_type), _text(result.value)))
+            outputs.append(
+                ActualScalar(
+                    name, _type_name(result.data_type, result.value_domain), _text(result.value)
+                )
+            )
         else:
             raise TypeError(
                 f"{name}: a Dataset or a Scalar was expected, not {type(result).__name__}"
@@ -162,7 +166,7 @@ def _dataset(name: str, dataset: Dataset) -> ActualDataset:
     components = {
         component_name: ActualComponent(
             normalize_role(component.role.value),
-            _type_name(component.data_type),
+            _type_name(component.data_type, component.value_domain),
             component.nullable,
         )
         for component_name, component in dataset.components.items()
@@ -174,8 +178,13 @@ def _dataset(name: str, dataset: Dataset) -> ActualDataset:
     return ActualDataset(name, components, rows)
 
 
-def _type_name(data_type: Any) -> str:
-    """The canonical VTL name of a type, which vtlengine holds as a class, or as an instance."""
+def _type_name(data_type: Any, value_domain: ValueDomain | None) -> str:
+    """The canonical VTL name of a type, which vtlengine holds as a class, or as an instance.
+
+    A component or a scalar defined on a value domain has the name of that value domain.
+    """
+    if value_domain is not None:
+        return value_domain.name
     kind = data_type if inspect.isclass(data_type) else type(data_type)
     return normalize_type(kind.__name__)
 
