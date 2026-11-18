@@ -3342,3 +3342,33 @@ def test_GH_1349_57(use_duckdb, tmp_path):
     assert result["DS_b"].data["Me_9"].tolist() == [12]
     assert list(result["DS_b"].components) == ["Id_1", "A B", "x-y", "Me_9"]
     validate_dataset(back[0], ds_1, use_duckdb=use_duckdb)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize(
+    "name",
+    ['a"b', "'a\"b'", "a\x00b", "'a\x00b'", "a\rb", "'a\rb'"],
+    ids=["double-quote", "quoted-double-quote", "nul", "quoted-nul", "cr", "quoted-cr"],
+)
+def test_GH_1349_57b(use_duckdb, name):
+    """A Component name holding a double quote, a NUL or a carriage return is rejected by the
+    structure schema (0-2-1-1), in run on both engines and in semantic_analysis, also between
+    single quotes: the DuckDB engine cannot create the table of a name with a double quote or
+    a NUL, and reads no row from a CSV file whose header holds a carriage return, so pandas
+    alone would run it."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False},
+                    {"name": name, "role": "Measure", "type": "Integer", "nullable": True},
+                ],
+            }
+        ]
+    }
+    data = pd.DataFrame({"Id_1": [1], name.strip("'"): [1]})
+    with pytest.raises(InputValidationException, match="0-2-1-1"):
+        run("DS_r <- DS_1;", structures, {"DS_1": data}, use_duckdb=use_duckdb)
+    with pytest.raises(InputValidationException, match="0-2-1-1"):
+        semantic_analysis("DS_r <- DS_1;", structures)

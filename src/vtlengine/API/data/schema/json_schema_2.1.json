@@ -8,7 +8,7 @@
         },
         "component-name": {
             "type": "string",
-            "pattern": "^[^']+$|^'[^']+'$"
+            "pattern": "^[^'\"\\u0000\\r]+$|^'[^'\"\\u0000\\r]+'$"
         },
         "data-type": {
             "type": "string",
