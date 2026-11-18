@@ -10644,3 +10644,470 @@ class ValueDomainBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1349_56b", number_inputs=1, references_names=["1", "2"])
+
+    vd_1351 = ["GH_1351-VD_1", "GH_1351-VD_2", "GH_1351-VD_S"]
+
+    def test_GH_1351_1(self):
+        """
+        Status: OK
+        Expression: define operator f ( ds dataset , s set < VD_1 > ) ... ds [ filter Me_1 in s ]
+                        ...
+                    DS_r <- f ( DS_2 , VD_1 );
+        Description: A value domain types the values of a set parameter, which takes VD_1 itself. In
+                     the body s holds the values of VD_1, and Me_1 stays an Integer. The value
+                     domain raised 0-5-1-10, as a name that is no type.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_1",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- f ( DS_2 , VD_2 ); (s set < VD_1 >)
+        Description: 4, a value of VD_2, is not a value of VD_1, which types the set parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_2",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op f: Cannot cast 4 of Integer to Value Domain VD_1",
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- f ( DS_2 , VD_S ); (s set < VD_1 >)
+        Description: VD_S, a value domain of Strings, is no argument of a set of VD_1, a value
+                     domain of Integers, as for set < integer >.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_3",
+            number_inputs=1,
+            exception_code="1-2-18",
+            exception_message="Expected set<VD_1>, got set<string> on UDO f, parameter s",
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- f ( DS_2 , VD_1 ); (s set < integer >)
+        Description: Control: a set of a basic type takes a value domain of that type.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_4",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- f ( DS_2 , VD_S ); (s set < integer >)
+        Description: Control: a value domain of Strings is no argument of a set of integers.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_5",
+            number_inputs=1,
+            exception_code="1-2-18",
+            exception_message="Expected set<integer>, got set<string> on UDO f, parameter s",
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_6(self):
+        """
+        Status: OK
+        Expression: define operator f ( ds dataset { measure < VD_1 > Me_1 } ) ... ds ...
+                    DS_r <- f ( DS_1 );
+        Description: A value domain types a component of a dataset parameter. Me_1 of DS_1 is on
+                     VD_1, and the argument is passed as it is. The value domain raised 0-5-1-10.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_6",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_7(self):
+        """
+        Status: OK
+        Expression: define operator f ( ds dataset { identifier < integer > Id_1 , identifier < VD_1
+                        > Id_2 ,
+                    measure < VD_1 > Me_1 , attribute < VD_1 > At_1 } ) ... ds ...
+                    DS_r <- f ( DS_1 );
+        Description: Value domains type an Identifier, a Measure and an Attribute of a dataset
+                     parameter, and the components of DS_1 on VD_1 keep it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_7",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_8(self):
+        """
+        Status: OK
+        Expression: define operator f ( ds dataset { measure < VD_1 > _+ } ) ... ds ...
+                    DS_r <- f ( DS_1 );
+        Description: A value domain types a component of a dataset parameter written with the
+                     multiplicity modifier _+, which takes Me_1 of DS_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_8",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- f ( DS_2 ); (ds dataset { measure < VD_1 > Me_1 })
+        Description: Me_1 of DS_2 is an Integer, which the constraint takes, as x component < VD_1 >
+                     does, but 5 is not a value of VD_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_9",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op f: Cannot cast 5 of Integer to Value Domain VD_1",
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- f ( DS_1 ); (ds dataset { measure < integer > Me_1 })
+        Description: Control: a constraint of a basic type takes Me_1 on VD_1, which keeps VD_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_10",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_11(self):
+        """
+        Status: OK
+        Expression: DS_r <- f ( DS_3 ); (ds dataset { measure < integer > Me_1 })
+        Description: Control: Me_1 of DS_3, a String, does not have the type of the constraint.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_11",
+            number_inputs=1,
+            exception_code="1-3-1-12",
+            exception_message=(
+                "component Me_1 of parameter ds is measure<string>, but its type "
+                "dataset {measure<integer> Me_1} declares it as measure<integer>"
+            ),
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_12(self):
+        """
+        Status: OK
+        Expression: define operator f ( x VD_1 ) returns integer is x end operator;
+                    DS_r <- DS_1 [ calc Me_2 := f ( 2 ) ];
+        Description: Control (#1236): a scalar parameter typed by VD_1 is on it, and a returns of
+                     its basic type keeps it, so Me_2 is on VD_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_12",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_13(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component < VD_1 > ) returns component < integer > is x
+                        ...
+                    DS_r <- DS_1 [ calc Me_2 := f ( Me_1 ) ];
+        Description: Control (#1236): a component parameter typed by VD_1 takes Me_1 on VD_1, and
+                     Me_2 keeps VD_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_13",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_14(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer ) returns VD_1 is x end operator;
+                    SC_r <- f ( 2 );
+                    DS_r <- DS_2 [ calc Me_2 := SC_r ];
+        Description: A value domain types the returns: the result 2 is on VD_1, which Me_2 keeps.
+                     The value domain raised 1-3-2-6.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_14",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_15(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( 5 ); (returns VD_1)
+        Description: The result 5 is not a value of VD_1, which the returns names.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_15",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op f: Cannot cast 5 of Integer to Value Domain VD_1",
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_16(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( "A" ); (x string, returns VD_1)
+        Description: The result is a String, which is not the basic type of VD_1, as for a returns
+                     integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_16",
+            number_inputs=1,
+            exception_code="1-3-1-1",
+            exception_message="User defined output declared as VD_1, found string",
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_17(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component ) returns measure < VD_1 > is x end operator;
+                    DS_r <- DS_1 [ calc Me_2 := f ( Me_1 ) ];
+        Description: A value domain types a component returns: Me_2 is on VD_1. The value domain
+                     raised 1-3-2-6.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_17",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_18(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_2 [ calc Me_2 := f ( Me_1 ) ]; (returns measure < VD_1 >)
+        Description: Me_1 of DS_2 is an Integer, the basic type of VD_1, but 5 is not a value of
+                     VD_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_18",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op f: Cannot cast 5 of Integer to Value Domain VD_1",
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_19(self):
+        """
+        Status: OK
+        Expression: define operator f ( ds dataset ) returns dataset { measure < VD_1 > Me_1 } is ds
+                        ...
+                    DS_r <- f ( DS_1 );
+        Description: A value domain types a component of a dataset returns: Me_1 of the result is on
+                     VD_1. The value domain raised 1-3-2-6.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_19",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_20(self):
+        """
+        Status: OK
+        Expression: DS_r <- f ( DS_3 ); (returns dataset { measure < VD_1 > Me_1 })
+        Description: Me_1 of DS_3 is a String, not the basic type of VD_1, as for a dataset returns
+                     of integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_20",
+            number_inputs=1,
+            exception_code="1-3-1-12",
+            exception_message=(
+                "component Me_1 of the output is measure<string>, but its type dataset "
+                "{measure<VD_1> Me_1} declares it as measure<VD_1>"
+            ),
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_21(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer ) returns integer is x end operator;
+                    SC_r <- f ( 2 );
+                    DS_r <- DS_2 [ calc Me_2 := SC_r ];
+        Description: Control: a returns of a basic type gives that type.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_21",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_22(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( "A" ); (x string, returns integer)
+        Description: Control: the result is a String, not the type the returns declares.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_22",
+            number_inputs=1,
+            exception_code="1-3-1-1",
+            exception_message="User defined output declared as integer, found string",
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_23(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component ) returns measure < integer > is x end operator;
+                    DS_r <- DS_2 [ calc Me_2 := f ( Me_1 ) ];
+        Description: Control: a component returns of a basic type gives that type.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_23",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_24(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_2 := f ( Me_1 ) ]; (returns measure < integer >)
+        Description: Control: Me_1 of DS_3 is a String, not the type the returns declares.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_24",
+            number_inputs=1,
+            exception_code="1-3-1-1",
+            exception_message=(
+                "User defined output declared as measure<integer>, found measure<string>"
+            ),
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_25(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := f ( Me_1 ) ]; (returns measure < integer >)
+        Description: Control: a component returns of a basic type keeps VD_1, the value domain of
+                     Me_1 of DS_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_25",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_26(self):
+        """
+        Status: OK
+        Expression: define operator f ( ds dataset ) returns dataset { measure < integer > Me_1 } is
+                        ds
+                    ... DS_r <- f ( DS_1 );
+        Description: Control: a dataset returns of a basic type keeps VD_1, the value domain of Me_1
+                     of DS_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_26",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_27(self):
+        """
+        Status: OK
+        Expression: DS_r <- f ( DS_3 ); (returns dataset { measure < integer > Me_1 })
+        Description: Control: Me_1 of DS_3 is a String, not the type the returns declares.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_27",
+            number_inputs=1,
+            exception_code="1-3-1-12",
+            exception_message=(
+                "component Me_1 of the output is measure<string>, but its type dataset "
+                "{measure<integer> Me_1} declares it as measure<integer>"
+            ),
+            vd_names=self.vd_1351,
+        )

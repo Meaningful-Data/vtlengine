@@ -20,6 +20,8 @@ from typing import (
     cast,
 )
 
+import pandas as pd
+
 import vtlengine.AST as AST
 from vtlengine.AST.ASTString import _format_constraint
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -851,10 +853,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 or argument is None
             ):
                 continue
+            if isinstance(param["type"], AST.SetType):
+                value = self._set_value_outside(name, constraints.value)
+                if value is None:
+                    continue
+            else:
+                value = self._resolve_udo_param(name, argument)
             scope = self._find_udo_scope(name)
             # TRUE, or the error of the argument
             check = self._udo_checked_sql(
-                self._resolve_udo_param(name, argument),
+                value,
                 argument,
                 [(op, f"parameter {name}", constraints.value)],
                 scope.get(f"{_UDO_DEPTH_PREFIX}{name}") if scope else None,
@@ -871,6 +879,19 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 f"(SELECT {holds} AS _vtl_holds) AS _vtl_check WHERE _vtl_check._vtl_holds"
             )
         return f"CASE WHEN {holds} THEN {sql} END"
+
+    def _set_value_outside(self, name: str, constraint: AST.TypeConstraint) -> Optional[str]:
+        """The first value of the value domain that a set parameter takes that is not a value
+        of the value domain that types the set, as an SQL literal, or None when there is none:
+        its check raises VTL 2-1-5-4 where the call is computed, as a scalar argument
+        (issue #1351)."""
+        argument = self.value_domains.get(self._resolve_value_domain_name(name))
+        if argument is None or constraint.value_domain is None:
+            return None
+        outside = constraint.value_domain.outside(pd.Series(argument.setlist, dtype=object))
+        if not len(outside):
+            return None
+        return self._to_sql_literal(outside.iloc[0], argument.type.__name__)
 
     def _udo_checked_dataset_sql(
         self,
@@ -4369,8 +4390,8 @@ FROM (
     # UDO definition and call
 
     def visit_Operator(self, node: AST.Operator) -> None:
-        """Register a UDO definition. A value domain types a parameter with its basic type, whose
-        values are checked against it (issue #1236)."""
+        """Register a UDO definition. A value domain types a parameter or the result with its
+        basic type, whose values are checked against it (issues #1236, #1351)."""
         params = []
         for p in node.parameters:
             declared, constraints = resolve_value_domain_type(
@@ -4379,12 +4400,15 @@ FROM (
             params.append(
                 {"name": p.name, "type": declared, "default": p.default, "constraints": constraints}
             )
+        return_type, return_constraints = resolve_value_domain_type(
+            node.return_type, node.return_constraints, self.value_domains
+        )
         self._udos[node.op] = {
             "params": params,
             "output": node.output_type,
             "expression": node.expression,
-            "return_type": node.return_type,
-            "return_constraints": node.return_constraints,
+            "return_type": return_type,
+            "return_constraints": return_constraints,
         }
 
     def visit_UDOCall(self, node: AST.UDOCall) -> str:  # type: ignore[override]
