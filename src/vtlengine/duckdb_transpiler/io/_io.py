@@ -614,8 +614,11 @@ def save_scalars_duckdb(
 DATAPOINT_SUFFIXES = (".csv", ".xml", ".parquet")
 
 
-def _as_datapoint_path(value: Union[str, Path]) -> Path:
-    """The Path a datapoint input stands for."""
+def _as_datapoint_path(value: Any) -> Path:
+    """The Path a datapoint input stands for. Anything else, such as a DataFrame in a list,
+    is rejected with 0-1-1-2, as the pandas engine rejects it (issue #1349)."""
+    if not isinstance(value, (str, Path)):
+        raise InputValidationException(code="0-1-1-2", input=value, message="Input must be a Path")
     return Path(value) if isinstance(value, str) else value
 
 

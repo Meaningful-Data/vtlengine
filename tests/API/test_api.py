@@ -3081,6 +3081,15 @@ def test_GH_1349_19(use_duckdb, tmp_path):
 
 
 @pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_25(use_duckdb):
+    """Datapoints given as a list holding a DataFrame is not an accepted form: both engines
+    raise 0-1-1-2; DuckDB raised a raw AttributeError."""
+    with pytest.raises(InputValidationException) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, datapoints=[_datapoints_1349()["DS_1"]])
+    assert error.value.args[1] == "0-1-1-2"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
 def test_GH_1349_31(use_duckdb, tmp_path):
     """external_routines given as a Path to a JSON file holding an array of routines loads
     every routine of the array, as the documentation says; it raised a raw TypeError."""
