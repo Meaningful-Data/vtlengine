@@ -27,7 +27,7 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS, get
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Model import Component, Dataset, Role, ValueDomain
 from vtlengine.Operators.CastOperator import Cast
-from vtlengine.Operators.Clause import Pivot
+from vtlengine.Operators.Clause import Pivot, Unpivot
 from vtlengine.Operators.Join import Apply, merged_viral_attribute_names
 from vtlengine.Operators.Time import Unary as TimeUnary
 from vtlengine.Operators.Validation import error_domains, error_level_type
@@ -1018,24 +1018,14 @@ class StructureVisitor(ASTTemplate):
     # =========================================================================
 
     def _build_unpivot_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
-        """Build the output dataset structure for an unpivot clause."""
+        """The structure of an unpivot clause, as the semantic analysis builds it: the new
+        Measure has the common type of the unpivoted Measures and the value domain they all
+        share (issue #1348)."""
         input_ds = self._get_dataset_structure(node.dataset)
         if input_ds is None:
             return None
-        new_id = self._resolve_name(node.children[0])
-        new_measure = self._resolve_name(node.children[1])
-        comps = self._identifiers_dict(input_ds)
-        comps[new_id] = self._make_comp(new_id, StringType, role=Role.IDENTIFIER, nullable=False)
-        measure_types = [
-            c.data_type for c in input_ds.components.values() if c.role == Role.MEASURE
-        ]
-        m_type = measure_types[0] if measure_types else StringType
-        comps[new_measure] = self._make_comp(new_measure, m_type)
-        # Viral attributes propagate to the unpivot result (issue #877).
-        for name, comp in input_ds.components.items():
-            if comp.role == Role.VIRAL_ATTRIBUTE:
-                comps[name] = comp
-        return Dataset(name="_unpivot", components=comps, data=None)
+        names = [self._resolve_udo_name(self._resolve_name(child)) for child in node.children]
+        return Unpivot.validate(names, input_ds)
 
     def _build_pivot_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
         """The structure of a pivot clause, as the semantic analysis builds it."""

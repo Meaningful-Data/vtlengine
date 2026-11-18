@@ -9600,3 +9600,38 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1348,
         )
+
+    def test_GH_1348_16(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ unpivot Id_3 , Me_3 ];
+        Description: Both unpivoted Measures are on VD_STR, so the new Measure Me_3 keeps VD_STR;
+                     it had the basic type String. The new Identifier Id_3 is a String.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_16",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_16b(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_STR as X ) is
+                        r1 : X = "A" errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 [ unpivot Id_3 , Me_3 ] ,
+                                DPR_1 components Me_3 all );
+        Description: Me_3 keeps VD_STR (case 16), so the ruleset on VD_STR applies to it; it
+                     raised 1-1-10-12, while it works on the input Measures.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_16b",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
