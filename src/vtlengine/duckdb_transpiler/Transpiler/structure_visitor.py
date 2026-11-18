@@ -21,6 +21,7 @@ from vtlengine.DataTypes import (
     TimePeriod,
 )
 from vtlengine.DataTypes import String as StringType
+from vtlengine.DataTypes._time_checking import _has_time_component
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.duckdb_transpiler.sql import references_raising_macro
 from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS, get_duckdb_type
@@ -343,7 +344,9 @@ class StructureVisitor(ASTTemplate):
             return "TRUE" if value else "FALSE"
         if isinstance(value, str):
             if type_name == "Date":
-                return f"DATE '{value}'"
+                # A Date keeps the time it has, as the loaders keep it (issue #1349)
+                sql_type = "TIMESTAMP" if _has_time_component(value) else "DATE"
+                return f"{sql_type} '{value}'"
             escaped = value.replace("'", "''")
             if type_name == "TimePeriod":
                 canonical = _try_normalize_time_period(value)

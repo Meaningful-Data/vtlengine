@@ -305,3 +305,41 @@ def test_GH_1349_6(use_duckdb):
     result = _run_1349(script, {"SC_2": "2024Q1"}, use_duckdb)
     assert result.to_dict()["type"] == "String"
     assert result.value == "2024Q1"
+
+
+def _run_date_1349(scalar_value, use_duckdb):
+    return run(
+        script='SC_r <- SC_5; SC_r2 <- SC_5 = cast("2024-01-05", date);',
+        data_structures={"scalars": [{"name": "SC_5", "type": "Date"}]},
+        datapoints={},
+        scalar_values={"SC_5": scalar_value},
+        use_duckdb=use_duckdb,
+    )
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_35(use_duckdb):
+    """A Date scalar given with a time other than midnight keeps it, as a Measure loaded from
+    the same text does: DuckDB dropped the time, so the comparison with 2024-01-05 was true."""
+    result = _run_date_1349("2024-01-05 10:00:00", use_duckdb)
+    assert result["SC_r"].value == "2024-01-05T10:00:00"
+    assert result["SC_r2"].value is False
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_36(use_duckdb):
+    """A Date scalar given with a time at midnight is the date alone, as a Measure loaded
+    from the same text is: pandas kept the midnight time."""
+    result = _run_date_1349("2024-01-05T00:00:00", use_duckdb)
+    assert result["SC_r"].value == "2024-01-05"
+    assert result["SC_r2"].value is True
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_37(use_duckdb):
+    """A Date scalar given as 2024-1-5 is the Date 2024-01-05, as a Measure loaded from the
+    same text is: pandas kept the text 2024-1-5."""
+    result = _run_date_1349("2024-1-5", use_duckdb)
+    assert result["SC_r"].value == "2024-01-05"
+    assert result["SC_r2"].value is True
+

@@ -179,6 +179,13 @@ Date
         ISO 8601 formats, or values pandas has already
         parsed into dates or datetimes, read on the
         same rule.
+    * - **Input (scalar value)**
+      - A ``Date`` value given in ``scalar_values`` is
+        read on the same rule, in both execution
+        engines: ``"2020-1-15"`` and
+        ``"2020-01-15T00:00:00"`` are
+        ``"2020-01-15"``, and
+        ``"2020-01-15 10:30:00"`` keeps its time.
     * - **Internal representation**
       - Python ``str`` in ``"YYYY-MM-DD"`` format, or
         ``"YYYY-MM-DD HH:MM:SS"`` for a value whose
