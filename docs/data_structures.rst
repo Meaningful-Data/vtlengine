@@ -62,6 +62,12 @@ a name and a list of components. Each component has the four fields:
     * - ``name``
       - string
       - Component name. Must match the column name in the datapoints.
+        Any non-empty name without a single quote is accepted, also one
+        that is not a regular VTL name, such as the ``2024-01-05`` or
+        ``A B`` Measures of a ``pivot`` result; a script reads such a
+        Component by its quoted name (``'2024-01-05'``). A name written
+        between single quotes (``"'A B'"``) names the same Component as
+        the name without them (``A B``).
     * - ``type``
       - string
       - VTL data type. See :doc:`data_types` for the full list.

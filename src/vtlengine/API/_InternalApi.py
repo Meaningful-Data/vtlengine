@@ -81,7 +81,17 @@ def _build_component(
     data_type, value_domain = named_type(
         _type_name(component), value_domains, f"Component '{component['name']}'"
     )
-    return VTL_Component(component["name"], data_type, role, nullable, value_domain)
+    return VTL_Component(_component_name(component), data_type, role, nullable, value_domain)
+
+
+def _component_name(component: Dict[str, Any]) -> str:
+    """The name of a Component, written as it is or between single quotes, as a script refers
+    to a name that is not a regular one ('2024-01-05', 'A B'): both forms name the same
+    Component (issue #1349)."""
+    name = str(component["name"])
+    if len(name) > 2 and name.startswith("'") and name.endswith("'"):
+        return name[1:-1]
+    return name
 
 
 def _resolve_components(
@@ -175,7 +185,7 @@ def _load_dataset_from_structure(
         dataset_json["name"]: Dataset(
             name=dataset_json["name"],
             components={
-                c["name"]: _build_component(c, value_domains)
+                _component_name(c): _build_component(c, value_domains)
                 for c in _resolve_components(dataset_json, structures)
             },
             data=None,

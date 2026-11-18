@@ -10190,13 +10190,12 @@ class ValueDomainBugs(BugHelper):
     def test_GH_1349_46(self):
         """
         Status: OK
-        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ]
-                                 [ rename '2024-01-05' to Me_1 , '2024-01-06' to Me_2 ];
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
                     DS_r2 <- DS_1 [ calc Me_2 := cast ( Id_2 , string ) ] [ keep Me_2 ];
         Description: pivot on Id_2, on the Date value domain VD_D whose setlist writes
                      2024-1-5, names the Measures as cast ( Id_2 , string ) writes the values:
-                     2024-01-05 and 2024-01-06, which rename finds (a structure file cannot
-                     name them). The first one was named 2024-1-5.
+                     2024-01-05 and 2024-01-06 (the reference structure names them, case 57).
+                     The first one was named 2024-1-5.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
         Goal: Check Result.
         """

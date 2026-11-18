@@ -3290,3 +3290,55 @@ def test_GH_1349_52(use_duckdb, tmp_path):
                 call()
             assert error.value.args[1] == "0-1-1-41"
             assert "SQL_1" in error.value.args[0]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_57(use_duckdb, tmp_path):
+    """The structure semantic_analysis writes for a pivot result, whose Measures are named
+    2024-01-05 or A B, is read back as an input structure by run and validate_dataset, and a
+    script reads those Measures by their quoted names; written between single quotes in the
+    structure, a name names the same Component. The structure schema rejected those names."""
+
+    def component(name, role, type_):
+        return {"name": name, "role": role, "type": type_, "nullable": role != "Identifier"}
+
+    value_domains = [
+        {"name": "VD_D", "type": "Date", "setlist": ["2024-1-5", "2024-01-06"]},
+        {"name": "VD_S", "type": "String", "setlist": ["A B", "x-y"]},
+    ]
+    structures = {
+        "datasets": [
+            {
+                "name": name,
+                "DataStructure": [
+                    component("Id_1", "Identifier", "Integer"),
+                    component("Id_2", "Identifier", value_domain),
+                    component("Me_1", "Measure", "Integer"),
+                ],
+            }
+            for name, value_domain in (("DS_1", "VD_D"), ("DS_2", "VD_S"))
+        ]
+    }
+    analysis = semantic_analysis(
+        "DS_r <- DS_1[pivot Id_2, Me_1]; DS_s <- DS_2[pivot Id_2, Me_1];", structures, value_domains
+    )
+    back = []
+    for result, name in (("DS_r", "DS_1"), ("DS_s", "DS_2")):
+        written = json.loads(analysis[result].to_json_datastructure())
+        written["datasets"][0]["name"] = name
+        back.append(written)
+    assert [c["name"] for c in back[1]["datasets"][0]["DataStructure"]] == ["Id_1", "A B", "x-y"]
+    back[1]["datasets"][0]["DataStructure"][2]["name"] = "'x-y'"
+    ds_1 = tmp_path / "DS_1.csv"
+    ds_1.write_text("Id_1,2024-01-05,2024-01-06\n1,1,2\n")
+    ds_2 = tmp_path / "DS_2.csv"
+    ds_2.write_text("Id_1,A B,x-y\n1,3,4\n")
+    script = (
+        "DS_a <- DS_1[calc Me_9 := '2024-01-05' + '2024-01-06'];"
+        " DS_b <- DS_2[calc Me_9 := 'A B' * 'x-y'];"
+    )
+    result = run(script, back, {"DS_1": ds_1, "DS_2": ds_2}, use_duckdb=use_duckdb)
+    assert result["DS_a"].data["Me_9"].tolist() == [3]
+    assert result["DS_b"].data["Me_9"].tolist() == [12]
+    assert list(result["DS_b"].components) == ["Id_1", "A B", "x-y", "Me_9"]
+    validate_dataset(back[0], ds_1, use_duckdb=use_duckdb)
