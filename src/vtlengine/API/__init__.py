@@ -362,6 +362,15 @@ def _run_with_duckdb(
     loaded_vds = load_value_domains(value_domains) if value_domains else None
     input_datasets, input_scalars = load_datasets(data_structures, mapping_dict, loaded_vds)
 
+    # The datapoints are checked after the structures and before the scalar values, the
+    # external routines and the output folder, in the order of the pandas engine, so a bad
+    # input is reported first and creates no output folder (issue #1349)
+    _load_url_datapoints(datapoints, data_structures, mapping_dict, input_datasets)
+
+    # Extract paths without pandas validation (DuckDB-optimized)
+    # This avoids the double CSV read that load_datasets_with_data causes
+    path_dict, dataframe_dict = extract_datapoint_paths(datapoints, input_datasets)
+
     # Apply scalar values if provided, casting them to the declared data type
     _handle_scalars_values(input_scalars, scalar_values)
 
@@ -393,12 +402,6 @@ def _run_with_duckdb(
 
     # Get DAG analysis for efficient load/save scheduling
     ds_analysis = DAGAnalyzer.ds_structure(ast)
-
-    _load_url_datapoints(datapoints, data_structures, mapping_dict, input_datasets)
-
-    # Extract paths without pandas validation (DuckDB-optimized)
-    # This avoids the double CSV read that load_datasets_with_data causes
-    path_dict, dataframe_dict = extract_datapoint_paths(datapoints, input_datasets)
 
     # Create transpiler and generate SQL
     transpiler = SQLTranspiler(

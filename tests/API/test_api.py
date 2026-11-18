@@ -3123,6 +3123,25 @@ def test_GH_1349_28(use_duckdb, tmp_path):
 
 
 @pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_28b(use_duckdb, tmp_path):
+    """The datapoints are checked before the output_folder on both engines: a missing
+    datapoint file raises 0-3-1-1 and creates no output folder, also when the output folder is
+    bad. DuckDB checked the output folder first, so it created the missing folder before
+    raising 0-3-1-1 and raised 0-3-1-2 for an existing file."""
+    datapoints = {"DS_1": tmp_path / "missing.csv"}
+    output_folder = tmp_path / "missing" / "deeper"
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, datapoints=datapoints, output_folder=output_folder)
+    assert error.value.args[1] == "0-3-1-1"
+    assert not (tmp_path / "missing").exists()
+    output_file = tmp_path / "out.txt"
+    output_file.write_text("x")
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, datapoints=datapoints, output_folder=output_file)
+    assert error.value.args[1] == "0-3-1-1"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
 def test_GH_1349_29(use_duckdb):
     """A list given as a value in scalar_values is not a scalar value: it raises 0-1-2-7 as a
     value of the wrong type does (case 30); it raised a raw ValueError."""
