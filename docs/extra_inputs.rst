@@ -348,8 +348,9 @@ value domain (``2-1-5-4``):
 
 ``pivot`` needs the Identifier it pivots defined on a value domain:
 the result has one Measure per value of the value domain, named after
-the value, of the type (and on the value domain) of the pivoted
-Measure. The other Identifiers group the data points, a value with no
+the value as a cast to ``string`` writes it (``true`` and ``false``
+for a ``Boolean`` value domain, so ``[keep 'true']`` keeps the first
+one), of the type (and on the value domain) of the pivoted Measure. The other Identifiers group the data points, a value with no
 data point in a group leaves its Measure null, the other Measures and
 the non-viral Attributes are dropped, and the viral Attributes of a
 group are combined by their propagation rule. An Identifier on no

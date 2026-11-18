@@ -22,6 +22,7 @@ from vtlengine.DataTypes import (
     ScalarType,
     String,
     binary_implicit_promotion,
+    to_string,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ValueDomain
@@ -302,8 +303,9 @@ class Pivot(Operator):
 
     @staticmethod
     def measure_names(value_domain: ValueDomain) -> List[str]:
-        """The names of the Measures, the values of the value domain as it writes them."""
-        return [str(value) for value in value_domain.setlist]
+        """The names of the Measures, the values of the value domain as a cast to string
+        writes them: true and false for a Boolean one (issue #1349)."""
+        return [to_string(value) for value in value_domain.setlist]
 
     @classmethod
     def _check_role(cls, dataset: Dataset, name: str, role: Role) -> Component:

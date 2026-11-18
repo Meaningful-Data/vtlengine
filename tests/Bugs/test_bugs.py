@@ -9801,6 +9801,39 @@ class ValueDomainBugs(BugHelper):
             vd_names=self.vd_1349,
         )
 
+    def test_GH_1349_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+                    DS_r2 <- DS_1 [ pivot Id_2 , Me_1 ] [ keep 'true' ];
+        Description: pivot on Id_2, on the Boolean value domain VD_B, names the Measures true
+                     and false, as cast ( Id_2 , string ) writes the values; they were True and
+                     False, so keep 'true' raised 1-1-1-10.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_8",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=self.vd_1349,
+        )
+
+    def test_GH_1349_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := cast ( Id_2 , string ) ];
+        Description: Control of case 8: the String of a Boolean of VD_B is true or false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_9",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1349,
+        )
+
     def test_GH_1349_21(self):
         """
         Status: OK
