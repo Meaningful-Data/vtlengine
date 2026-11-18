@@ -489,8 +489,8 @@ def _handle_scalars_values(
     for name, value in scalar_values.items():
         if name not in scalars:
             raise InputValidationException(code="0-1-2-6", name=name)
-        # Casting value to scalar data type
-        if not scalars[name].data_type.check(value):
+        # Casting value to scalar data type; a list or another collection is no scalar value
+        if not pd.api.types.is_scalar(value) or not scalars[name].data_type.check(value):
             raise InputValidationException(
                 code="0-1-2-7",
                 value=value,

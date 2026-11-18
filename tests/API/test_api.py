@@ -3123,6 +3123,23 @@ def test_GH_1349_28(use_duckdb, tmp_path):
 
 
 @pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_29(use_duckdb):
+    """A list given as a value in scalar_values is not a scalar value: it raises 0-1-2-7 as a
+    value of the wrong type does (case 30); it raised a raw ValueError."""
+    with pytest.raises(InputValidationException) as error:
+        _run_1349("DS_r <- DS_1 * SC_4;", use_duckdb, scalar_values={"SC_4": [1, 2]})
+    assert error.value.args[1] == "0-1-2-7"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_30(use_duckdb):
+    """Control of case 29: a text given as the value of an Integer scalar raises 0-1-2-7."""
+    with pytest.raises(InputValidationException) as error:
+        _run_1349("DS_r <- DS_1 * SC_4;", use_duckdb, scalar_values={"SC_4": "x"})
+    assert error.value.args[1] == "0-1-2-7"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
 def test_GH_1349_31(use_duckdb, tmp_path):
     """external_routines given as a Path to a JSON file holding an array of routines loads
     every routine of the array, as the documentation says; it raised a raw TypeError."""
