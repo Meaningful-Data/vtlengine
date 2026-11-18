@@ -9422,3 +9422,43 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1348,
         )
+
+    def test_GH_1348_8(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( variable rule Id_2 ) is
+                        r1 : C = A + B end hierarchical ruleset;
+                    DS_r <- hierarchy ( DS_1 , HR_1 rule Id_2 non_null all )
+                                [ calc Me_2 := Id_2 in VD_STR ];
+        Description: hierarchy writes the computed code item C into the rule Identifier Id_2,
+                     which is on VD_STR, so Id_2 has the basic type String; it kept VD_STR,
+                     while Id_2 in VD_STR is false on C.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_8",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_9(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( variable rule Id_2 ) is
+                        r1 : C = A + B end hierarchical ruleset;
+                    DS_r <- check_hierarchy ( DS_1 , HR_1 rule Id_2 always_zero all_measures );
+        Description: check_hierarchy writes the computed code item C into the rule Identifier
+                     Id_2, on VD_STR, and the 0 of the missing C into the Measure Me_1, on
+                     VD_INT, so Id_2 is a String and Me_1 an Integer, as in hierarchy; they
+                     kept their value domains.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_9",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )

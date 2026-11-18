@@ -355,7 +355,9 @@ class Hierarchy(Operators.Operator):
             comp_name: copy(comp) for comp_name, comp in dataset.components.items()
         }
         for comp in result_components.values():
-            if comp.role == Role.MEASURE:
+            # The Measures hold the computed values, and the rule Identifier the computed code
+            # items (issue #1348)
+            if comp.role == Role.MEASURE or comp.name == rule_component:
                 comp.value_domain = None
         # Viral attributes propagate to the hierarchy result (issue #877).
         for viral_comp in viral_components or []:
@@ -468,7 +470,13 @@ class Hierarchy(Operators.Operator):
         rule_component: Optional[str] = None,
         ruleset: Optional[str] = None,
     ) -> Dataset:
-        result = cls.validate(dataset, computed_dict, output, viral_components=viral_components)
+        result = cls.validate(
+            dataset,
+            computed_dict,
+            output,
+            viral_components=viral_components,
+            rule_component=rule_component,
+        )
         if len(computed_dict) == 0:
             computed_data = pd.DataFrame(columns=result.get_components_names())
         else:
