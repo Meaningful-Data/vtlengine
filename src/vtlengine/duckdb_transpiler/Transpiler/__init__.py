@@ -78,6 +78,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Operators.Clause import Pivot
+from vtlengine.Operators.HROperators import fills_with_zero
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.Operators.Time import Period_indicator
 from vtlengine.Operators.Validation import (
@@ -4967,7 +4968,7 @@ FROM (
     ) -> str:
         """Generate the value expression of a code item of a rule, per mode."""
         val, has, excluded = self._hr_item_sql(parsed, position)
-        if mode in ("always_zero", "non_zero", "partial_zero"):
+        if fills_with_zero(mode):
             val = f"CASE WHEN {has} = 0 THEN 0 ELSE {val} END"
         return val if excluded == "FALSE" else f"CASE WHEN {excluded} THEN 0 ELSE {val} END"
 

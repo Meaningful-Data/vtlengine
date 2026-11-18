@@ -3,13 +3,7 @@ from typing import Any, Collection, Dict, List, Optional, Tuple, Type, Union
 
 import pandas as pd
 
-from vtlengine.AST.Grammar.tokens import (
-    ALWAYS_ZERO,
-    CHECK,
-    CHECK_DATAPOINT,
-    CHECK_HIERARCHY,
-    PARTIAL_ZERO,
-)
+from vtlengine.AST.Grammar.tokens import CHECK, CHECK_DATAPOINT, CHECK_HIERARCHY
 from vtlengine.DataTypes import (
     Boolean,
     Integer,
@@ -21,6 +15,7 @@ from vtlengine.DataTypes import (
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Component, Dataset, Role, ValueDomain, component_type_name
 from vtlengine.Operators import Operator, on_basic_types
+from vtlengine.Operators.HROperators import fills_with_zero
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 
@@ -457,9 +452,9 @@ class Check_Hierarchy(Validation):
         )
         measures = dataset_element.get_measures()
         # As in hierarchy, the rule Identifier holds the computed code items, and the Measures
-        # the 0 of a missing one in always_zero and partial_zero (issue #1348)
+        # the 0 of a missing one in the modes that read it as 0 (issue #1348)
         computed = [rule_component] if rule_component in result.components else []
-        if mode in (ALWAYS_ZERO, PARTIAL_ZERO):
+        if mode is not None and fills_with_zero(mode):
             computed += [m.name for m in measures if m.name in result.components]
         result.components = on_basic_types(result.components, computed)
         result.components["imbalance"] = Component(

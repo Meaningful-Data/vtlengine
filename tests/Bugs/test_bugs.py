@@ -9481,3 +9481,21 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1348,
         )
+
+    def test_GH_1348_9b(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( variable rule Id_2 ) is
+                        r1 : C = A + B end hierarchical ruleset;
+                    DS_r <- check_hierarchy ( DS_1 , HR_1 rule Id_2 non_zero all_measures );
+        Description: non_zero also writes the 0 of the missing C into the Measure Me_1, on
+                     VD_INT, so Me_1 is an Integer, as in case 9; it kept VD_INT.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_9b",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
