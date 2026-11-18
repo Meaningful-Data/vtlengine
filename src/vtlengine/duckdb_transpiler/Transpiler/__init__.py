@@ -90,8 +90,8 @@ from vtlengine.Operators.Validation import (
 from vtlengine.Utils._recursion import recursion_headroom
 from vtlengine.ViralPropagation import (
     apply_viral_return_types,
-    combine_viral_component,
     get_current_registry,
+    operands_rule,
 )
 from vtlengine.ViralPropagation.sql import (
     vp_group_sql,
@@ -1284,7 +1284,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         ``nvl`` is single-operand and copies the primary operand (COALESCE-filled) (#906).
         A viral attribute present in only one operand is copied from that operand.
         """
-        vp_registry = get_current_registry()
         left_viral = {n for n, c in left_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
         right_viral = {n for n, c in right_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
         if output_ds is not None:
@@ -1309,11 +1308,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     result.append(f"{alias_b}.{qn} AS {qn}")
                 continue
             if in_left and in_right:
-                # The rule of the operands: the result of an avg rule has left their value
-                # domain (issue #1350)
-                rule = vp_registry.rule_for(
-                    combine_viral_component(left_ds.components[name], right_ds.components[name])
-                )
+                rule = operands_rule(name, [left_ds, right_ds])
                 comp = (
                     output_ds.components.get(name) if output_ds else None
                 ) or left_ds.components[name]
@@ -4105,12 +4100,12 @@ FROM (
                 f"CASE WHEN {cond_expr} THEN {t_ref} ELSE {e_ref} END AS {quote_name(col_name)}"
             )
 
-        vp_registry = get_current_registry()
+        branch_ds = [self._get_dataset_structure(op) for op in (node.thenOp, node.elseOp)]
         for v_name in output_viral:
             v_qn = quote_name(v_name)
             v_comp = ref_ds.components.get(v_name)
             if t_type == _DATASET and e_type == _DATASET:
-                v_rule = vp_registry.rule_for(v_comp) if v_comp is not None else None
+                v_rule = operands_rule(v_name, [ds for ds in branch_ds if ds is not None])
                 if v_rule is None:
                     v_type = get_duckdb_type(v_comp.data_type.__name__) if v_comp else "VARCHAR"
                     cols.append(f"CAST(NULL AS {v_type}) AS {v_qn}")
@@ -4328,7 +4323,8 @@ FROM (
 
         aliases = [t for _, _, t in whens if t] + ([e_alias] if e_alias else [])
         carried = any(is_ds[: branches.start])
-        cols.extend(self._case_viral_cols(output_ds, combined, aliases, carried, final))
+        operand_ds = [self._get_dataset_structure(op) for op, d in zip(operands, is_ds) if d]
+        cols.extend(self._case_viral_cols(output_ds, operand_ds, combined, aliases, carried, final))
         builder.select(*cols)
         if final and any(is_ds):
             e_match = f"e.{id_col} IS NOT NULL" if e_alias else "TRUE"
@@ -4344,13 +4340,18 @@ FROM (
 
     @staticmethod
     def _case_viral_cols(
-        output_ds: Dataset, combined: List[str], aliases: List[str], carried: bool, final: bool
+        output_ds: Dataset,
+        operand_ds: List[Dataset],
+        combined: List[str],
+        aliases: List[str],
+        carried: bool,
+        final: bool,
     ) -> List[str]:
         """The viral attributes ``combined`` by a stage of a dataset case: the list of the values
         of its dataset operands (``aliases``), null where one lacks the data point, after the
         ones the previous stages listed when they are ``carried``. The last stage combines the
-        whole list by the rule, as pandas does (issue #1304). Without a rule, they give null."""
-        vp_registry = get_current_registry()
+        whole list by the rule of the operands ``operand_ds``, as pandas does (issues #1304,
+        #1350). Without a rule, they give null."""
         cols: List[str] = []
         for v_name in combined:
             v_qn = quote_name(v_name)
@@ -4360,7 +4361,7 @@ FROM (
             elif not aliases:
                 continue
             v_comp = output_ds.components[v_name]
-            v_rule = vp_registry.rule_for(v_comp)
+            v_rule = operands_rule(v_name, operand_ds)
             if not final:
                 cols.append(f"{lst} AS {v_qn}")
             elif v_rule is None:

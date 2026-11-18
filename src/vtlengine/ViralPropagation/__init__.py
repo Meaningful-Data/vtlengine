@@ -318,6 +318,16 @@ def combined_viral_components(operands: Iterable[Any]) -> List[Any]:
     return [comp_by_name[name] for name, n in counts.items() if n >= 2]
 
 
+def operands_rule(name: str, operands: Iterable[Any]) -> Optional[ViralPropagationRule]:
+    """The rule that combines the viral attribute ``name`` of the Data Set ``operands``: the rule
+    of its Components in them, combined, and not of the result Component, which an ``avg`` rule
+    has left without their value domain (issue #1350)."""
+    comps = [op.components[name] for op in operands if name in op.components]
+    if not comps:
+        return None
+    return get_current_registry().rule_for(reduce(combine_viral_component, comps))
+
+
 def _domain_name(component: Any) -> Optional[str]:
     """The name of the value domain ``component`` is defined on, or None."""
     return None if component.value_domain is None else component.value_domain.name

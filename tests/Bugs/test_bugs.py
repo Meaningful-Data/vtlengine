@@ -9181,3 +9181,21 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1350,
         )
+
+    def test_GH_1350_5e(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_2 ) is aggregate avg ...;
+                    DS_r <- case when DS_1 > 1 then DS_1 else DS_2;
+        Description: At_1 is on VD_2 in both operands of the case, so the rule on VD_2 averages it
+                     into a Number. DuckDB looked the rule up on the result At_1, without the value
+                     domain, and gave null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_5e",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
