@@ -4,7 +4,7 @@ import json
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
+from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
 
 import jsonschema
 import pandas as pd
@@ -716,6 +716,17 @@ def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
     return {vd.name: vd}
 
 
+def _merge_value_domains(groups: Iterable[Dict[str, ValueDomain]]) -> Dict[str, ValueDomain]:
+    """The value domains of all the groups, whose names must not repeat."""
+    value_domains: Dict[str, ValueDomain] = {}
+    for group in groups:
+        for name, value_domain in group.items():
+            if name in value_domains:
+                raise InputValidationException(code="0-1-1-38", name=name)
+            value_domains[name] = value_domain
+    return value_domains
+
+
 def load_value_domains(
     input: ValueDomainsInput,
 ) -> Dict[str, ValueDomain]:
@@ -740,10 +751,7 @@ def load_value_domains(
         vd = ValueDomain.from_dict(input)
         return {vd.name: vd}
     if isinstance(input, list):
-        value_domains: Dict[str, Any] = {}
-        for item in input:
-            value_domains.update(load_value_domains(item))
-        return value_domains
+        return _merge_value_domains(load_value_domains(item) for item in input)
     if not isinstance(input, Path):
         raise InputValidationException(
             code="0-1-1-2", input=input, message="Input is not a Path object"
@@ -751,11 +759,7 @@ def load_value_domains(
     if not input.exists():
         raise DataLoadError(code="0-3-1-1", file=input)
     if input.is_dir():
-        value_domains = {}
-        for f in input.iterdir():
-            vd = _load_single_value_domain(f)
-            value_domains = {**value_domains, **vd}
-        return value_domains
+        return _merge_value_domains(_load_single_value_domain(f) for f in input.iterdir())
     if input.suffix != ".json":
         raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
     return _load_single_value_domain(input)

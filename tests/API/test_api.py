@@ -2846,3 +2846,111 @@ def test_GH_1326_run_with_value_domain_object(use_duckdb, as_list):
     data = result["DS_r"].data
     assert data["Id_1"].tolist() == ["A"]
     assert data["Me_1"].tolist() == [1.0]
+
+
+@pytest.mark.parametrize(
+    "value_domain, value, type_",
+    [
+        (
+            {"name": "VD_1", "type": "Date", "setlist": ["2020-01-01", "2020-13-45"]},
+            "2020-13-45",
+            "Date",
+        ),
+        (
+            {"name": "VD_1", "type": "Time_Period", "setlist": ["2020Q1", "2020Q9"]},
+            "2020Q9",
+            "Time_Period",
+        ),
+        ({"name": "VD_1", "type": "Duration", "setlist": ["A", "X"]}, "X", "Duration"),
+        ({"name": "VD_1", "type": "Time", "setlist": ["2020-01-01/2020-12-31", "X"]}, "X", "Time"),
+    ],
+)
+def test_GH_1343_invalid_setlist_values(value_domain, value, type_):
+    """Each value of a setlist must be a valid value of the type of the value domain (GH #1343).
+
+    https://github.com/Meaningful-Data/vtlengine/issues/1343
+    """
+    message = f"Value {value} of the setlist of Value Domain VD_1 is not a valid {type_}"
+    with pytest.raises(InputValidationException, match=message) as error:
+        validate_value_domain(value_domain)
+    assert error.value.args[1] == "0-1-1-37"
+
+
+@pytest.mark.parametrize(
+    "type_, setlist",
+    [
+        ("Time_Period", ["2020Q1", "2020-Q1"]),
+        ("Date", ["2020-01-01", "2020-1-1"]),
+    ],
+)
+def test_GH_1343_setlist_values_in_another_form(type_, setlist):
+    """A setlist cannot repeat a value written in another form of its type (GH #1343)."""
+    with pytest.raises(InputValidationException, match="0-1-1-21") as error:
+        validate_value_domain({"name": "VD_1", "type": type_, "setlist": setlist})
+    assert str(setlist) in error.value.args[0]
+
+
+def test_GH_1343_valid_time_setlists():
+    """Valid values of the time types are accepted (GH #1343)."""
+    validate_value_domain(
+        [
+            {"name": "VD_1", "type": "Date", "setlist": ["2020-01-01", "2020-12-31"]},
+            {"name": "VD_2", "type": "Time_Period", "setlist": ["2020Q1", "2020-M01", "2020"]},
+            {"name": "VD_3", "type": "Duration", "setlist": ["A", "Q", "D"]},
+            {"name": "VD_4", "type": "Time", "setlist": ["2020-01-01/2020-12-31"]},
+        ]
+    )
+
+
+def test_GH_1343_repeated_names(tmp_path):
+    """Two value domains cannot have the same name, given in a list or in a directory
+    (GH #1343)."""
+    first = {"name": "VD_1", "type": "String", "setlist": ["ES", "FR"]}
+    second = {"name": "VD_1", "type": "String", "setlist": ["IT"]}
+    with pytest.raises(InputValidationException, match="Value Domain VD_1 is defined more"):
+        validate_value_domain([first, second])
+    for name, value_domain in (("first.json", first), ("second.json", second)):
+        (tmp_path / name).write_text(json.dumps(value_domain))
+    with pytest.raises(InputValidationException, match="0-1-1-38"):
+        load_value_domains(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["string", "integer", "number", "boolean", "date", "time", "time_period", "duration", "scalar"],
+)
+def test_GH_1343_basic_type_names(name):
+    """A value domain cannot be named as a basic scalar type, which a script cannot refer to
+    as a value domain (GH #1343)."""
+    with pytest.raises(InputValidationException, match="0-1-1-39"):
+        validate_value_domain({"name": name, "type": "String", "setlist": ["ES"]})
+    with pytest.raises(InputValidationException, match="0-1-1-39"):
+        ValueDomain(name=name, type=String, setlist=["ES"])
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1343_run_rejects_an_unused_invalid_value_domain(use_duckdb):
+    """The value domains that run and semantic_analysis load are checked even when the script
+    does not use them, and a value domain named as a basic type with capitals can be used
+    (GH #1343)."""
+    structures = {"datasets": [], "scalars": [{"name": "SC_1", "type": "Date"}]}
+    invalid = [{"name": "VD_1", "type": "Date", "setlist": ["2020-01-01", "2020-13-45"]}]
+    with pytest.raises(InputValidationException, match="0-1-1-37"):
+        semantic_analysis(script="SC_r <- SC_1;", data_structures=structures, value_domains=invalid)
+    with pytest.raises(InputValidationException, match="0-1-1-37"):
+        run(
+            script="SC_r <- SC_1;",
+            data_structures=structures,
+            datapoints={},
+            value_domains=invalid,
+            scalar_values={"SC_1": "2020-01-01"},
+            use_duckdb=use_duckdb,
+        )
+    result = run(
+        script='SC_r <- "ES" in String;',
+        data_structures={"datasets": []},
+        datapoints={},
+        value_domains=[{"name": "String", "type": "String", "setlist": ["ES"]}],
+        use_duckdb=use_duckdb,
+    )
+    assert result["SC_r"].value is True
