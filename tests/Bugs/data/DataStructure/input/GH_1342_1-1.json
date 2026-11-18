@@ -1,0 +1,57 @@
+{
+  "datasets": [
+    {
+      "name": "DS_1",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "role": "Identifier",
+          "type": "Integer",
+          "nullable": false
+        },
+        {
+          "name": "Me_s",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "Me_d",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "Me_i",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        },
+        {
+          "name": "Me_b",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": true
+        },
+        {
+          "name": "Me_n",
+          "role": "Measure",
+          "type": "Number",
+          "nullable": true
+        },
+        {
+          "name": "Me_v",
+          "role": "Measure",
+          "type": "VD_INT2",
+          "nullable": true
+        },
+        {
+          "name": "Me_t",
+          "role": "Measure",
+          "type": "Date",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

@@ -711,7 +711,11 @@ class StructureVisitor(ASTTemplate):
         measures = ds.get_measures()
         if len(measures) == 1 and node.op == tokens.INSTR:
             return self._build_integer_result_structure(ds)
-        to_type = node.children[1] if node.op == tokens.CAST and len(node.children) > 1 else None
+        target = node.children[1] if node.op == tokens.CAST and len(node.children) > 1 else None
+        value_domain = (
+            self.value_domains.get(target.name) if isinstance(target, AST.Collection) else None
+        )
+        to_type = target if value_domain is None else value_domain.type
         if len(measures) == 1 and isinstance(to_type, type):
             name = Cast.result_measure_name(measures[0], to_type)
             comps = {
@@ -720,6 +724,7 @@ class StructureVisitor(ASTTemplate):
                 if c.role in (Role.IDENTIFIER, Role.VIRAL_ATTRIBUTE)
             }
             comps[name] = self._make_comp(name, to_type, nullable=measures[0].nullable)
+            comps[name].value_domain = value_domain
             return Dataset(name=ds.name, components=comps, data=None)
         return self._without_attributes(ds)
 

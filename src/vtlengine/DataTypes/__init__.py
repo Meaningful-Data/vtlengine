@@ -159,8 +159,9 @@ class String(ScalarType):
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> str:
+        if from_type is Integer:
+            return to_string(int(value))
         if from_type in {
-            Integer,
             Number,
             Boolean,
             String,

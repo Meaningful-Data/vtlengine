@@ -10,7 +10,6 @@ from vtlengine.DataTypes import (
     EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
     IMPLICIT_TYPE_PROMOTION_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
-    Null,
     ScalarType,
 )
 from vtlengine.DataTypes.CastMasks import cast_with_mask, check_mask
@@ -42,14 +41,15 @@ class Cast(Operator.Unary):
         target: CAST_TARGET,
         mask_value: Optional[str],
     ) -> None:
-        """A cast of the source, a component or a scalar, to the target. A value domain takes
-        the values of its basic type, also the ones on another value domain."""
+        """A cast of the source, a component or a scalar, to the target. A cast to a value
+        domain is a cast to its basic type, whose values must then be values of the value
+        domain."""
         from_type, to_type = source.data_type, cls.target_type(target)
         if mask_value is not None:
             cls.check_with_mask(from_type, to_type, mask_value)
         elif not isinstance(target, ValueDomain):
             cls.check_without_mask(from_type, to_type)
-        elif from_type not in (to_type, Null):
+        elif not cls.castable_without_mask(from_type, to_type):
             source_type = component_type_name(from_type, getattr(source, "value_domain", None))
             raise SemanticError("1-1-5-1", type_1=source_type, type_2=target.name)
 
@@ -68,11 +68,15 @@ class Cast(Operator.Unary):
     ) -> None:
         check_mask(from_type, to_type, mask_value)
 
+    @staticmethod
+    def castable_without_mask(from_type: Type[ScalarType], to_type: Type[ScalarType]) -> bool:
+        return to_type.is_included(
+            EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING[from_type]
+        ) or to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type])
+
     @classmethod
     def check_without_mask(cls, from_type: Type[ScalarType], to_type: Type[ScalarType]) -> None:
-        explicit_promotion = EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING[from_type]
-        implicit_promotion = IMPLICIT_TYPE_PROMOTION_MAPPING[from_type]
-        if not (to_type.is_included(explicit_promotion) or to_type.is_included(implicit_promotion)):
+        if not cls.castable_without_mask(from_type, to_type):
             raise SemanticError(
                 "1-1-5-4",
                 op=cls.op,
