@@ -19,6 +19,7 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
+    Duration,
     ScalarType,
     String,
     binary_implicit_promotion,
@@ -304,8 +305,13 @@ class Pivot(Operator):
     @staticmethod
     def measure_names(value_domain: ValueDomain) -> List[str]:
         """The names of the Measures, the values of the value domain as a cast to string
-        writes them: true and false for a Boolean one (issue #1349)."""
-        return [to_string(value) for value in value_domain.setlist]
+        writes them, whatever form the setlist writes them in: true and false for a Boolean
+        one, 2024Q1 for a Time_Period 2024-Q1, 2024-01-05 for a Date 2024-1-5 (issue #1349).
+        A Duration keeps the form of the data and the setlist (A, Q), not the one of the cast
+        (P1Y, P3M)."""
+        if value_domain.type is Duration:
+            return [to_string(value) for value in value_domain.setlist]
+        return [String.explicit_cast(value, value_domain.type) for value in value_domain.values()]
 
     @classmethod
     def _check_role(cls, dataset: Dataset, name: str, role: Role) -> Component:

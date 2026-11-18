@@ -1,0 +1,2 @@
+DS_r <- DS_1 [ pivot Id_2 , Me_1 ] [ rename '2024-01-05' to Me_1 , '2024-01-06' to Me_2 ];
+DS_r2 <- DS_1 [ calc Me_2 := cast ( Id_2 , string ) ] [ keep Me_2 ];

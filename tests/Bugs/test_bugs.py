@@ -10189,3 +10189,59 @@ class ValueDomainBugs(BugHelper):
             "indicator is not supported",
             scalars={"SC_2": "2024Q1"},
         )
+
+    def test_GH_1349_46(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ]
+                                 [ rename '2024-01-05' to Me_1 , '2024-01-06' to Me_2 ];
+                    DS_r2 <- DS_1 [ calc Me_2 := cast ( Id_2 , string ) ] [ keep Me_2 ];
+        Description: pivot on Id_2, on the Date value domain VD_D whose setlist writes
+                     2024-1-5, names the Measures as cast ( Id_2 , string ) writes the values:
+                     2024-01-05 and 2024-01-06, which rename finds (a structure file cannot
+                     name them). The first one was named 2024-1-5.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_46",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=["GH_1349-VD_D"],
+        )
+
+    def test_GH_1349_47(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+                    DS_r2 <- DS_1 [ calc Me_2 := cast ( Id_2 , string ) ] [ keep Me_2 ];
+        Description: pivot on Id_2, on the Time_Period value domain VD_TP2 whose setlist
+                     writes 2024-Q1, names the Measures as cast ( Id_2 , string ) writes the
+                     values: 2024Q1 and 2024Q2. The first one was named 2024-Q1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_47",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=["GH_1349-VD_TP2"],
+        )
+
+    def test_GH_1349_48(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+                    DS_r2 <- DS_1 [ calc Me_2 := cast ( Id_2 , string ) ] [ keep Me_2 ];
+        Description: pivot on Id_2, on the Duration value domain VD_DUR, keeps the names A and
+                     Q, the form the data and the setlist write the values in, while
+                     cast ( Id_2 , string ) writes P1Y and P3M (not decided: pinned as is).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_48",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=["GH_1349-VD_DUR"],
+        )

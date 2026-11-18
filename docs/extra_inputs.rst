@@ -365,10 +365,15 @@ value domain (``2-1-5-4``):
 
 ``pivot`` needs the Identifier it pivots defined on a value domain:
 the result has one Measure per value of the value domain, named after
-the value as a cast to ``string`` writes it (``true`` and ``false``
-for a ``Boolean`` value domain, so ``[keep 'true']`` keeps the first
-one), of the type (and on the value domain) of the pivoted Measure. The other Identifiers group the data points, a value with no
-data point in a group leaves its Measure null, the other Measures and
+the value as a cast to ``string`` writes it, whatever form the
+``setlist`` writes it in (``true`` and ``false`` for a ``Boolean``
+value domain, so ``[keep 'true']`` keeps the first one; ``2024Q1``
+for a ``Time_Period`` written ``"2024-Q1"``; ``2024-01-05`` for a
+``Date`` written ``"2024-1-5"``). A ``Duration`` value domain names
+them as its ``setlist`` writes the values (``A``, ``Q``), not as the
+cast does (``P1Y``, ``P3M``). The Measures are of the type (and on
+the value domain) of the pivoted Measure. The other Identifiers group
+the data points, a value with no data point in a group leaves its Measure null, the other Measures and
 the non-viral Attributes are dropped, and the viral Attributes of a
 group are combined by their propagation rule. An Identifier on no
 value domain raises ``1-1-6-18``.
