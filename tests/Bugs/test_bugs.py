@@ -5574,18 +5574,13 @@ class DefinedBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, date)]; (Me_1 = "2022-1-5")
-        Description: A date that is not written YYYY-MM-DD is a runtime error on both engines:
-                     DuckDB read it as 2022-01-05.
+        Description: A date written unpadded is read as the loaders read a Date, the Date
+                     2022-01-05, on both engines (issue #1349). It was a runtime error
+                     (2-1-19-8) on both engines since #1192.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
-        Goal: Check Exception.
+        Goal: Check Result.
         """
-        code = "GH_1192_53"
-        number_inputs = 1
-        message = "2-1-19-8"
-
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+        self.BaseTest(code="GH_1192_53", number_inputs=1, references_names=["1"])
 
     def test_GH_1192_54(self):
         """
@@ -10306,4 +10301,26 @@ class ValueDomainBugs(BugHelper):
             number_inputs=1,
             exception_code="1-3-3-4",
             exception_message="Duplicate enumeration combination",
+        )
+
+    def test_GH_1349_54(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "2024-1-5" , date ) ,
+                                   Me_3 := cast ( Me_1 , date ) ,
+                                   Me_4 := cast ( SC_1 , date ) ];
+                    DS_r2 <- cast ( DS_1 , date );
+        Description: A String cast to date reads the text as the loaders read a Date:
+                     2024-1-5, 20240105, 2024-1-5 00:00:00 and 2024-01-05T00:00:00 are
+                     2024-01-05, for a literal, a Component, a scalar and a Data Set (a time
+                     other than midnight is kept: test_GH_1349_54b). The literal raised
+                     1-1-5-6 and the other forms 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_54",
+            number_inputs=1,
+            references_names=["1", "2"],
+            scalars={"SC_1": "2024-1-5"},
         )

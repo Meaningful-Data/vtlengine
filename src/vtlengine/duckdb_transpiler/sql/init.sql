@@ -511,20 +511,6 @@ CREATE OR REPLACE MACRO vtl_text_to_duration(x) AS (
     END
 );
 
--- Text cast to Date, which mirrors VTL error 2-1-19-8 for text that is not a date
--- written YYYY-MM-DD (or YYYY-MM-D) or a full YYYY-MM-DD[T| ]HH:MM:SS datetime.
-CREATE OR REPLACE MACRO vtl_text_to_date(x) AS (
-    CASE WHEN x IS NULL THEN NULL
-         WHEN regexp_full_match(x, '[0-9]{4}-[0-9]{2}-[0-9]{1,2}')
-              OR regexp_full_match(
-                  x,
-                  '[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([+-][0-9]{2}:[0-9]{2}|Z)?'
-              )
-         THEN x
-         ELSE error('VTL 2-1-19-8 ' || x)
-    END
-);
-
 -- Date cast to text, as the pandas engine writes it: the date, and its time unless it is
 -- midnight (a Date read from a CSV file is a TIMESTAMP even when the file wrote no time).
 CREATE OR REPLACE MACRO vtl_date_to_text(d TIMESTAMP) AS (

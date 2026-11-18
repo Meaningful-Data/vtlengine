@@ -598,6 +598,12 @@ Conversion details:
   manual defines it, in both execution engines.
 - **String to Integer**: Must be a valid integer string
   (rejects ``"3.5"``).
+- **String to Date**: The text is read as the loaders read a
+  ``Date`` (see the Date section above): ``"2020-1-15"``,
+  ``"20200115"`` and ``"2020-01-15T00:00:00"`` are ``2020-01-15``,
+  and a time other than midnight is kept. A text that is not a
+  ``Date`` raises ``1-1-5-6`` for a literal and ``2-1-19-8`` for
+  data.
 - **Date to Time_Period**: Converts to daily period
   (e.g. ``"2020-01-15"`` becomes ``"2020D15"``
   with the default ``vtl`` output format).

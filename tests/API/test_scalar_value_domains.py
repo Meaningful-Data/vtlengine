@@ -415,3 +415,19 @@ def test_GH_1349_35b(use_duckdb, setlist):
     if setlist is not None:
         assert result["SC_r3"].value is True
         assert result["SC_r4"].value is False
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_54b(use_duckdb):
+    """As case 54 with a time other than midnight: a String cast to date keeps it, written
+    unpadded or not, for a literal and a scalar. The unpadded forms raised 1-1-5-6 (literal)
+    and 2-1-19-8 (scalar)."""
+    result = run(
+        script='SC_r <- cast("2024-1-5 10:00:00", date); SC_r2 <- cast(SC_1, date);',
+        data_structures={"scalars": [{"name": "SC_1", "type": "String"}]},
+        datapoints={},
+        scalar_values={"SC_1": "20240105"},
+        use_duckdb=use_duckdb,
+    )
+    assert result["SC_r"].value == "2024-01-05T10:00:00"
+    assert result["SC_r2"].value == "2024-01-05"

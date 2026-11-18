@@ -429,7 +429,14 @@ class Date(TimeInterval):
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
         if from_type == String:
-            return check_max_date(value)
+            # A text is read as the loaders read a Date: 2024-1-5 and 20240105 are the Date
+            # 2024-01-05, a time at midnight is no time (issue #1349)
+            if pd.isnull(value):
+                return None
+            try:
+                return check_date(value)
+            except (InputValidationException, ValueError):
+                raise RunTimeError("2-1-19-8", date=value) from None
         if from_type == TimePeriod:
             handler = TimePeriodHandler(str(value))
             if handler.period_indicator == "D":

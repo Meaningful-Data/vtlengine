@@ -38,6 +38,7 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
+from vtlengine.duckdb_transpiler.io._validation import text_to_date
 from vtlengine.duckdb_transpiler.Transpiler.macro_binding import bind_repeated_macro_arguments
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     _BOOLEAN_RESULT_BINOPS,
@@ -316,16 +317,17 @@ def _rename_var_ids(node: AST.AST, names: Dict[str, str]) -> AST.AST:
 _HR_PIVOT_RULES = 16
 
 # Text casts that check the text as the pandas engine does, by the lower case name of the
-# target type ({0}: the text, {1}: the SQL type)
-_TEXT_CASTS = {
-    "integer": "vtl_text_to_integer({0})",
-    "number": "vtl_text_to_double({0})",
-    "duration": "vtl_text_to_duration({0})",
-    "date": "CAST(vtl_text_to_date({0}) AS {1})",
+# target type, each called with the text and the SQL type. A Date is read as the loader
+# reads it (issue #1349)
+_TEXT_CASTS: Dict[str, Callable[[str, str], str]] = {
+    "integer": "vtl_text_to_integer({0})".format,
+    "number": "vtl_text_to_double({0})".format,
+    "duration": "vtl_text_to_duration({0})".format,
+    "date": text_to_date,
     "time": (
         f"CASE WHEN NOT {TIME_CHECK_FUNCTION}({{0}}) "
         "THEN error('VTL 2-1-5-1 Time ' || {0}) ELSE {0} END"
-    ),
+    ).format,
 }
 _TEXT_CASTS["timeinterval"] = _TEXT_CASTS["time"]
 
@@ -2750,7 +2752,7 @@ FROM (
 
         if source_lower == "string" and target_lower in _TEXT_CASTS:
             # Text the pandas engine does not cast raises its error (issue #1192)
-            return _TEXT_CASTS[target_lower].format(expr, duckdb_type)
+            return _TEXT_CASTS[target_lower](expr, duckdb_type)
 
         if (source_lower, target_lower) in _CASTS_TO_TEXT:
             return _CASTS_TO_TEXT[source_lower, target_lower].format(expr)

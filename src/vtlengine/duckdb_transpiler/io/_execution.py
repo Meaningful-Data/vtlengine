@@ -161,7 +161,7 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
         type_1, type_2, mask, value = match.groups() if match else ("", "", "", "unknown")
         return RunTimeError("2-1-5-3", value=value, type_1=type_1, type_2=type_2, mask=mask)
 
-    # VTL macro vtl_text_to_date: text that is not a date (mirrors 2-1-19-8)
+    # A text cast to Date that is not a date (text_to_date, mirrors 2-1-19-8)
     if "vtl 2-1-19-8 " in msg_lower:
         return RunTimeError("2-1-19-8", date=msg.split("VTL 2-1-19-8 ", 1)[-1])
 
