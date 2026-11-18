@@ -10,7 +10,7 @@ in :mod:`vtlengine.ViralPropagation.sql`.
 from copy import copy
 from dataclasses import dataclass, field, replace
 from functools import reduce
-from typing import Any, Dict, Iterable, List, Optional, Type
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type
 
 import pandas as pd
 
@@ -49,6 +49,11 @@ class ViralPropagationRegistry:
     def __init__(self) -> None:
         self._variable_rules: Dict[str, ViralPropagationRule] = {}
         self._valuedomain_rules: Dict[str, ViralPropagationRule] = {}
+        # The rule with its constants read as values of a type, by rule and type, so the
+        # pandas engine, which resolves a rule per row, reads them once (rule_for)
+        self._typed_rules: Dict[
+            Tuple[int, Any], Tuple[ViralPropagationRule, ViralPropagationRule]
+        ] = {}
 
     def register(self, rule: ViralPropagationRule) -> None:
         """Register a viral propagation rule."""
@@ -74,6 +79,9 @@ class ViralPropagationRegistry:
         if rule is None or not rule.enumerated_clauses:
             return rule
         data_type = component.data_type
+        cached = self._typed_rules.get((id(rule), data_type))
+        if cached is not None and cached[0] is rule:
+            return cached[1]
         clauses = [
             {
                 "values": [value_of(data_type, value) for value in clause["values"]],
@@ -81,11 +89,14 @@ class ViralPropagationRegistry:
             }
             for clause in rule.enumerated_clauses
         ]
-        return replace(
+        typed_rule = replace(
             rule,
             enumerated_clauses=clauses,
             default_value=value_of(data_type, rule.default_value),
         )
+        # The rule itself is kept next to it, so its id is not reused by another rule
+        self._typed_rules[(id(rule), data_type)] = (rule, typed_rule)
+        return typed_rule
 
     # Pandas resolution methods, on the viral attribute of the operand whose values combine
     def resolve_pair(self, component: Any, value_a: Any, value_b: Any) -> Any:
