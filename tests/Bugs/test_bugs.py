@@ -8676,3 +8676,86 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1350,
         )
+
+    def test_GH_1350_2a(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc identifier Id_2 := cast ( Me_2 , VD_1 ) ]
+                                 [ pivot Id_2 , Me_1 ];
+        Description: Id_2, created on VD_1 by the calc of the same statement, is pivoted into a
+                     Measure per value of VD_1. On DuckDB, the calc lost the value domain of Id_2
+                     (AttributeError).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_2a",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_2b(self):
+        """
+        Status: OK
+        Expression: DS_a <- DS_1 [ calc identifier Id_2 := cast ( Me_2 , VD_1 ) ];
+                    DS_r <- DS_a [ pivot Id_2 , Me_1 ];
+        Description: The same pivot as 2a, in two statements.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_2b",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4a(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 [ calc Me_3 := Me_1 ] ,
+                                              DPR_1 components Me_3 invalid );
+        Description: Me_3, written alone in calc from Me_1, keeps VD_2, the value domain of the
+                     ruleset. DuckDB gave Me_3 the basic type and raised 1-1-10-12.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4a",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4b(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( inner_join ( DS_1 as d calc Me_3 := Me_1 ) ,
+                                                DPR_1 components Me_3 invalid );
+        Description: The same as 4a, with the calc inside a join.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4b",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4c(self):
+        """
+        Status: OK
+        Expression: DS_a <- DS_1 [ calc Me_3 := Me_1 ];
+                    DS_r <- check_datapoint ( DS_a , DPR_1 components Me_3 invalid );
+        Description: The same as 4a, in two statements.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4c",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=self.vd_1350,
+        )

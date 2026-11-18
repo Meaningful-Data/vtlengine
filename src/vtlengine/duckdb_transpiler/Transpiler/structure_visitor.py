@@ -1069,6 +1069,7 @@ class StructureVisitor(ASTTemplate):
                     comp = output_ds.components[col]
                     value_type = self._calc_value_type(assignment.right, input_ds) or comp.data_type
                     comps[col] = self._make_comp(col, value_type, comp.role, comp.nullable)
+                    comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
                 elif col not in comps:
                     # calc_role comes from the clause itself, so a new component keeps
                     # its declared role even without an output structure to consult.
@@ -1078,6 +1079,7 @@ class StructureVisitor(ASTTemplate):
                         calc_role,
                         calc_role != Role.IDENTIFIER,
                     )
+                    comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
         return Dataset(name=input_ds.name, components=comps, data=None)
 
     @staticmethod
@@ -1094,13 +1096,28 @@ class StructureVisitor(ASTTemplate):
             return Role.MEASURE
         return comp.role
 
+    def _calc_value_domain(self, node: AST.AST, source: Dataset) -> Optional[ValueDomain]:
+        """The value domain of a calc expression: the one of a Component written alone, or the
+        one a cast gives (issue #1350)."""
+        if isinstance(node, AST.VarID):
+            comp = source.components.get(self._resolve_udo_name(node.value))
+            return None if comp is None else comp.value_domain
+        if isinstance(node, AST.ParamOp) and node.op == tokens.CAST and len(node.children) > 1:
+            target = node.children[1]
+            if isinstance(target, AST.Collection):
+                return self.value_domains.get(target.name)
+        return None
+
     def _calc_value_type(self, node: AST.AST, source: Dataset) -> Any:
         """Data type of a calc expression, or ``None`` when unknown.
 
-        Only literals, plain component references and a time_agg of a typed operand
-        are resolved. Callers must treat the result as a best effort, not as a
-        guarantee of the column type.
+        Only literals, plain component references, a cast into a value domain and a
+        time_agg of a typed operand are resolved. Callers must treat the result as a best
+        effort, not as a guarantee of the column type.
         """
+        value_domain = self._calc_value_domain(node, source)
+        if value_domain is not None:
+            return value_domain.type
         if isinstance(node, AST.Constant) and node.value is not None:
             return BASIC_TYPES.get(type(node.value), Number)
         if isinstance(node, AST.VarID):
