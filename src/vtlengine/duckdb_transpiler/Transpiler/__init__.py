@@ -3742,6 +3742,13 @@ FROM (
             from_sql = registry.sql(tokens.GTE, operand, low, data_type=TimePeriod)
             to_sql = registry.sql(tokens.LTE, operand, high, data_type=TimePeriod)
             inner = f"({from_sql} AND {to_sql})"
+            # The periods are compared first, also where the other bound is null, as op >= from
+            # and op <= to compare them, so different indicators raise 2-1-19-19 (issue #1349)
+            return (
+                f"CASE WHEN {inner} IS NULL THEN NULL "
+                f"WHEN {operand} IS NULL OR {low} IS NULL OR {high} IS NULL THEN NULL "
+                f"ELSE {inner} END"
+            )
         if is_number:
             ge_sql = number_tolerance_sql(tokens.GTE, operand, low)
             le_sql = number_tolerance_sql(tokens.LTE, operand, high)

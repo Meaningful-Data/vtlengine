@@ -251,6 +251,12 @@ Time_Period
         ``2020D-1``, ``2020D-01``, ``2020D-001``,
         ``2020-01-01``
 
+The operators ``>``, ``<``, ``>=``, ``<=`` and ``between`` order the
+periods of one period indicator; two periods of different indicators
+raise ``2-1-19-19``. ``between(op, from, to)`` stands for
+``op >= from and op <= to``: it raises ``2-1-19-19`` also when the
+other bound is null, and gives null when a bound is null.
+
 **Output formats** (controlled by ``time_period_output_format``
 parameter):
 

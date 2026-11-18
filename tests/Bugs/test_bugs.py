@@ -10120,3 +10120,72 @@ class ValueDomainBugs(BugHelper):
         self.BaseTest(
             code="GH_1349_42", number_inputs=1, references_names=["1"], vd_names=self.vd_1349_d
         )
+
+    def test_GH_1349_43(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := between ( Me_1 , SC_2 , SC_2 ) ];
+        Description: between stands for >= and <=, which do not compare periods of different
+                     period indicators (2024M01, 2025A and 2024Q1): both engines raise
+                     2-1-19-19, as >= and <= do. Both gave false for the other indicators.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_43",
+            number_inputs=1,
+            exception_code="2-1-19-19",
+            exception_message="Time Period comparison (>, <, >=, <=) with different period "
+            "indicator is not supported",
+            scalars={"SC_2": "2024Q1"},
+        )
+
+    def test_GH_1349_44(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := between ( Me_1 , SC_2 , null ) ];
+        Description: between compares the operand with the bound that is not null, as
+                     Me_1 >= SC_2 and Me_1 <= null does, so periods of different indicators
+                     raise 2-1-19-19 (case 45). Both engines gave null without comparing.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_44",
+            number_inputs=1,
+            exception_code="2-1-19-19",
+            exception_message="Time Period comparison (>, <, >=, <=) with different period "
+            "indicator is not supported",
+            scalars={"SC_2": "2024Q1"},
+        )
+
+    def test_GH_1349_44b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := between ( Me_1 , SC_2 , null ) ,
+                                   Me_3 := between ( Me_1 , null , SC_2 ) ];
+        Description: As case 44 with periods of one indicator: a null bound still gives null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_44b", number_inputs=1, references_names=["1"], scalars={"SC_2": "2024Q2"}
+        )
+
+    def test_GH_1349_45(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := Me_1 >= SC_2 and Me_1 <= null ];
+        Description: Control of case 44: >= raises 2-1-19-19 for periods of different
+                     indicators also when the other bound is null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_45",
+            number_inputs=1,
+            exception_code="2-1-19-19",
+            exception_message="Time Period comparison (>, <, >=, <=) with different period "
+            "indicator is not supported",
+            scalars={"SC_2": "2024Q1"},
+        )

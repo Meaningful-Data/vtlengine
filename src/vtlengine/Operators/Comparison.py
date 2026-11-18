@@ -349,6 +349,8 @@ class Between(Operator.Operator):
         y: Optional[Union[int, float, bool, str]],
         z: Optional[Union[int, float, bool, str]],
     ) -> Optional[bool]:
+        if isinstance(x, TimePeriodHandler):
+            return cls._periods_between(x, y, z)
         if pd.isnull(x) or pd.isnull(y) or pd.isnull(z):
             return None
 
@@ -364,6 +366,13 @@ class Between(Operator.Operator):
             return numbers_are_greater_equal(x, y) and numbers_are_less_equal(x, z)
 
         return y <= x <= z  # type: ignore[operator]
+
+    @staticmethod
+    def _periods_between(x: TimePeriodHandler, y: Any, z: Any) -> Optional[bool]:
+        """As op >= from and op <= to, which compare the periods also where the other bound is
+        null, so periods of different indicators raise 2-1-19-19 (issue #1349)."""
+        from_ok, to_ok = x >= y, x <= z
+        return None if from_ok is None or to_ok is None else from_ok and to_ok
 
     @classmethod
     def apply_operation_component(cls, series: Any, from_data: Any, to_data: Any) -> Any:
@@ -511,10 +520,13 @@ class Between(Operator.Operator):
                 cls._ordered(operand, operand.data), from_data, to_data
             )
         if isinstance(operand, Scalar) and isinstance(from_, Scalar) and isinstance(to, Scalar):
-            if operand.value is None or from_data is None or to_data is None:
+            value = cls._ordered(operand, operand.value)
+            if isinstance(value, TimePeriodHandler):
+                result.value = cls._periods_between(value, from_data, to_data)
+            elif value is None or from_data is None or to_data is None:
                 result.value = None
             else:
-                result.value = from_data <= cls._ordered(operand, operand.value) <= to_data
+                result.value = from_data <= value <= to_data
         elif isinstance(operand, Scalar) and (
             isinstance(from_data, pd.Series) or isinstance(to_data, pd.Series)
         ):  # From or To is a DataComponent, or both

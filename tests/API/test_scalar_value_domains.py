@@ -358,3 +358,29 @@ def test_GH_1349_39(use_duckdb):
     )
     assert result["SC_r"].value is True
     assert result["SC_r2"].value is True
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_44c(use_duckdb):
+    """As case 44 for scalars: between compares a Time_Period scalar with the bound that is
+    not null, so periods of different indicators raise 2-1-19-19, and a null bound gives null
+    for periods of one indicator. pandas gave null without comparing."""
+    structures = {"scalars": [{"name": "SC_2", "type": "Time_Period"}]}
+    structures["scalars"].append({"name": "SC_3", "type": "Time_Period"})
+    values = {"SC_2": "2024Q1", "SC_3": "2024M01"}
+    with pytest.raises(RunTimeError, match="different period indicator"):
+        run(
+            "SC_r <- between(SC_3, SC_2, null);",
+            structures,
+            {},
+            scalar_values=values,
+            use_duckdb=use_duckdb,
+        )
+    result = run(
+        "SC_r <- between(SC_2, SC_2, null);",
+        structures,
+        {},
+        scalar_values=values,
+        use_duckdb=use_duckdb,
+    )
+    assert result["SC_r"].value is None
