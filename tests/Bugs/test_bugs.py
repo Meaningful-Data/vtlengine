@@ -8475,7 +8475,7 @@ class ValueDomainBugs(BugHelper):
             code=code,
             number_inputs=number_inputs,
             exception_code="1-1-10-13",
-            exception_message="The errorcode E1 of check is not one of the values of the Value "
+            exception_message='The errorcode "E1" of check is not one of the values of the Value '
             "Domain errorcode_vd",
             vd_names=self.error_vds,
         )
@@ -9832,6 +9832,62 @@ class ValueDomainBugs(BugHelper):
             number_inputs=1,
             references_names=["1"],
             vd_names=self.vd_1349,
+        )
+
+    vd_1349_int = ["GH_1349-errorcode_vd_int", "GH_1349-errorlevel_vd_int"]
+
+    def test_GH_1349_13(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 1 errorcode "100" errorlevel "1" invalid );
+        Description: The String "100" is not a value of the Integer errorcode_vd, which does
+                     not convert it. It gave the errorcode 100 and the errorlevel 1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_13",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message='The errorcode "100" of check is not one of the values of the '
+            "Value Domain errorcode_vd",
+            vd_names=self.vd_1349_int,
+        )
+
+    def test_GH_1349_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 1 errorlevel 1 invalid );
+        Description: The Integer 1 is not a value of the String errorlevel_vd, which holds
+                     "1". It gave the errorlevel "1".
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_14",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message="The errorlevel 1 of check is not one of the values of the Value "
+            "Domain errorlevel_vd",
+            vd_names=["GH_1349-errorlevel_vd_str"],
+        )
+
+    def test_GH_1349_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 1 errorcode 100.0 invalid );
+        Description: Control of cases 13 and 14: the Number 100.0 is not a value of the
+                     Integer errorcode_vd.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_15",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message="The errorcode 100.0 of check is not one of the values of the "
+            "Value Domain errorcode_vd",
+            vd_names=self.vd_1349_int,
         )
 
     def test_GH_1349_21(self):

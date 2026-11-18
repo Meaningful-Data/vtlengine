@@ -851,7 +851,8 @@ centralised_messages = {
         "message": "The {element} {value} of {where} is not one of the values of the Value "
         "Domain {value_domain}.",
         "description": "Raised when an error code or an error level is not a value of "
-        "errorcode_vd or errorlevel_vd, given as value domains.",
+        "errorcode_vd or errorlevel_vd, given as value domains, also when it is a literal of "
+        "another type, which is not converted.",
     },
     "1-1-10-11": {
         "message": "At op {op}: The validation and imbalance operands must have the same "

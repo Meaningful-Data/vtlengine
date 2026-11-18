@@ -686,8 +686,8 @@ class Terminals:
         ctx_list = ctx.children
 
         try:
-            value = self.visitConstant(ctx_list[1]).value
-            return str(value).lower() if isinstance(value, bool) else str(value)
+            # The literal keeps its type, which errorcode_vd checks (issue #1349)
+            return self.visitConstant(ctx_list[1]).value
         except Exception:
             raise InputValidationException(code="0-5-1-5", definition=script_location(ctx_list[1]))
 

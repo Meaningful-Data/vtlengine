@@ -5545,7 +5545,9 @@ FROM (
         of errorcode_vd or errorlevel_vd when it is given."""
         value_domain = error_domains(self.value_domains)[element]
         if value_domain is None:
-            return "CAST(NULL AS VARCHAR)" if value is None else self._to_sql_literal(value=value)
+            if value is None:
+                return "CAST(NULL AS VARCHAR)"
+            return self._to_sql_literal(value=error_value(element, value, None, ""))
         type_name = value_domain.type.__name__
         if value is None:
             return f"CAST(NULL AS {get_duckdb_type(type_name)})"

@@ -5,12 +5,18 @@ import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_DATAPOINT, CHECK_HIERARCHY
 from vtlengine.DataTypes import (
+    BASIC_TYPES,
     Boolean,
+    Date,
+    Duration,
     Integer,
     Number,
     ScalarType,
     String,
+    TimeInterval,
+    TimePeriod,
     check_unary_implicit_promotion,
+    to_string,
 )
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Component, Dataset, Role, ValueDomain, component_type_name
@@ -31,20 +37,39 @@ def error_domains(
     }
 
 
+def _is_literal_of(value: Any, data_type: Type[ScalarType]) -> bool:
+    """Whether a literal is written as a value of the type, with no conversion: an Integer is a
+    Number, and the time types are written as strings."""
+    literal_type = BASIC_TYPES[type(value)]
+    if data_type in (Date, TimePeriod, TimeInterval, Duration):
+        return literal_type is String
+    return literal_type is data_type or (literal_type is Integer and data_type is Number)
+
+
+def literal_text(value: Any) -> str:
+    """A literal as a script writes it: a string in quotes, so that "1" and 1 read apart."""
+    return f'"{value}"' if isinstance(value, str) else to_string(value)
+
+
 def error_value(element: str, value: Any, value_domain: Optional[ValueDomain], where: str) -> Any:
     """The error code or level (element) that where writes, as a value of its value domain when
-    it is given: one that is not raises."""
-    if value is None or value_domain is None:
+    it is given: one that is not raises, also a literal of another type, which is not converted
+    (issue #1349). Without errorcode_vd, an error code is a String."""
+    if value is None:
         return value
+    if value_domain is None:
+        return to_string(value) if element == "errorcode" else value
     try:
-        cast_value = value_domain.type.cast(value)
+        cast_value = (
+            value_domain.type.cast(value) if _is_literal_of(value, value_domain.type) else None
+        )
     except (ValueError, TypeError, InputValidationException):
         cast_value = None
     if cast_value is None or len(value_domain.outside(pd.Series([cast_value]))):
         raise SemanticError(
             "1-1-10-13",
             element=element,
-            value=value,
+            value=literal_text(value),
             where=where,
             value_domain=value_domain.name,
         )

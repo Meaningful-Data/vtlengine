@@ -414,7 +414,12 @@ type the error codes and the error levels of ``check``,
 ``check_datapoint`` and ``check_hierarchy``: the ``errorcode`` and
 ``errorlevel`` Measures take their basic types, and every error code
 and level of a rule or of ``check`` must be one of their values
-(``1-1-10-13``). Without them, the Measures keep their usual types.
+(``1-1-10-13``). A literal of another type is not converted and
+raises the same error: ``errorcode "100"`` on an ``Integer``
+``errorcode_vd``, ``errorlevel 1`` on a ``String`` ``errorlevel_vd``
+or ``errorlevel 1.0`` on an ``Integer`` one (an ``Integer`` literal is
+a value of a ``Number`` value domain). Without them, the Measures
+keep their usual types.
 
 .. _scalars_on_value_domains:
 
