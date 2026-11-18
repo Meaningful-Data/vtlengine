@@ -284,8 +284,8 @@ grouped with ``time_agg``, the time Measure of ``time_agg`` on a
 Data Set, the Components that ``dateadd`` shifts, the rule
 Identifier and the Measures of ``hierarchy``, and the rule
 Identifier of ``check_hierarchy``, with its Measures in
-``always_zero`` and ``partial_zero``, which write a ``0`` for a
-missing code item.
+``non_zero``, ``partial_zero`` and ``always_zero``, which write a
+``0`` for a missing code item.
 
 The operators that put the values of several operands into one
 Component (the set operators, the Identifiers that a join

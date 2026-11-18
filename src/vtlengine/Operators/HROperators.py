@@ -82,6 +82,12 @@ def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
     )
 
 
+def fills_with_zero(mode: str) -> bool:
+    """Whether a hierarchical ruleset mode reads a missing code item as 0 (non_zero,
+    partial_zero, always_zero)."""
+    return mode.endswith("zero")
+
+
 class HRBinOp(Operators.Binary):
     @classmethod
     def apply_operation_two_series(cls, left: Any, right: Any, op: Any = None) -> Any:
@@ -91,7 +97,7 @@ class HRBinOp(Operators.Binary):
 
     @classmethod
     def align_series(cls, left: Any, right: Any, mode: str) -> Tuple[Any, Any]:
-        fill_value = 0 if mode.endswith("zero") else None
+        fill_value = 0 if fills_with_zero(mode) else None
         # Convert to object dtype for sentinel-based alignment. A rule whose right code
         # items are all excluded reads them as missing.
         left_obj = left.astype(object).replace(EXCLUDE, REMOVE)
