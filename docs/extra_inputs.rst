@@ -296,8 +296,9 @@ Measures of ``flow_to_stock`` and ``stock_to_flow``.
 
 The operators that put the values of several operands into one
 Component (the set operators, the Identifiers that a join
-matches, ``nvl``, ``if-then-else`` and ``case``) follow the VTL
-type conversion rules:
+matches, ``nvl``, ``if-then-else`` and ``case``, and the new
+Measure of ``unpivot``, which holds the values of the unpivoted
+Measures) follow the VTL type conversion rules:
 
 - Operands on the same value domain, nulls aside, give that value
   domain.
@@ -314,6 +315,9 @@ type conversion rules:
 
     /* Me_1 is on a value domain of integers: Me_2 is an Integer */
     DS_r <- DS_1 [calc Me_2 := nvl(Me_1, 0)];
+
+    /* Me_1 and Me_2 are on VD_FLOW: Me_3 keeps VD_FLOW (Id_3 is a String) */
+    DS_r <- DS_1 [unpivot Id_3, Me_3];
 
 ``cast`` converts a value into a value domain in two steps: it
 casts the value to the basic type of the value domain, as a cast
