@@ -233,13 +233,15 @@ def semantic_analysis(
         or List of Dicts or Paths with the data structures JSON files.
         value_domains: Dict, Path or ValueDomain, or List of them, with the value domains. \
         (default:None) A Dict or a Path to a JSON file (or folder of JSON files) holds the \
-        value domain definitions; a ValueDomain object is used as it is. \
+        value domain definitions, one or a list of them per file; a ValueDomain object is \
+        used as it is. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
         external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        A JSON file holds one routine or a list of them, each used under its name. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
@@ -519,13 +521,15 @@ def run(
 
         value_domains: Dict, Path or ValueDomain, or List of them, with the value domains. \
         (default:None) A Dict or a Path to a JSON file (or folder of JSON files) holds the \
-        value domain definitions; a ValueDomain object is used as it is. \
+        value domain definitions, one or a list of them per file; a ValueDomain object is \
+        used as it is. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
         external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        A JSON file holds one routine or a list of them, each used under its name. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
@@ -700,13 +704,15 @@ def run_sdmx(
 
         value_domains: Dict, Path or ValueDomain, or List of them, with the value domains. \
         (default:None) A Dict or a Path to a JSON file (or folder of JSON files) holds the \
-        value domain definitions; a ValueDomain object is used as it is. \
+        value domain definitions, one or a list of them per file; a ValueDomain object is \
+        used as it is. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
         external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        A JSON file holds one routine or a list of them, each used under its name. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 

@@ -133,7 +133,8 @@ The ``value_domains`` parameter accepts the following formats:
 
 - **Dictionary**: A single value domain as a Python dict.
 - **Path to a JSON file**: A ``Path`` pointing to a ``.json``
-  file containing one or more value domain definitions.
+  file containing one value domain definition, or a JSON array of
+  them.
 - **Path to a directory**: A ``Path`` pointing to a directory;
   all ``.json`` files in the directory are loaded.
 - **ValueDomain object**: A ``vtlengine.Model.ValueDomain``, for example one
@@ -574,7 +575,9 @@ Input Options
 The ``external_routines`` parameter accepts the following formats:
 
 - **Dictionary**: A single routine as a Python dict.
-- **Path to a file**: A ``Path`` pointing to a ``.json`` file.
+- **Path to a file**: A ``Path`` pointing to a ``.json`` file
+  holding one routine, or a JSON array of them. Each routine is
+  used under its ``name``, whatever the name of the file.
 - **Path to a directory**: A ``Path`` pointing to a directory;
   all ``.json`` files in the directory are loaded.
 - **ValueDomain object**: A ``vtlengine.Model.ValueDomain``, for example one

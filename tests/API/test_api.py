@@ -3053,6 +3053,48 @@ def _run_1349(script, use_duckdb, **arguments):
 
 
 @pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_19(use_duckdb, tmp_path):
+    """value_domains given as a Path to one JSON file holding a list of value domains, or to a
+    folder holding such a file, loads every value domain of the list, as the documentation
+    says; it raised 0-1-1-23."""
+    value_domains = [
+        {"name": "VD_B", "type": "Boolean", "setlist": [True, False]},
+        {"name": "VD_TP", "type": "Time_Period", "setlist": ["2024Q1", "2024Q2"]},
+    ]
+    folder = tmp_path / "value_domains"
+    folder.mkdir()
+    path = folder / "value_domains.json"
+    path.write_text(json.dumps(value_domains))
+    identifier = {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False}
+    id_2 = {"name": "Id_2", "type": "VD_B", "role": "Identifier", "nullable": False}
+    structures = {"datasets": [{"name": "DS_1", "DataStructure": [identifier, id_2]}]}
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Id_2": [True, False]})}
+    for given in (path, folder):
+        validate_value_domain(given)
+        assert sorted(load_value_domains(given)) == ["VD_B", "VD_TP"]
+        result = run("DS_r <- DS_1;", structures, datapoints, given, use_duckdb=use_duckdb)
+        ds_r = result["DS_r"]
+        assert ds_r.components["Id_2"].to_dict()["type"] == "VD_B"
+        assert ds_r.data.sort_values("Id_1")["Id_2"].tolist() == [True, False]
+        analysis = semantic_analysis("DS_r <- DS_1;", structures, given)
+        assert analysis["DS_r"].components["Id_2"].to_dict()["type"] == "VD_B"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_31(use_duckdb, tmp_path):
+    """external_routines given as a Path to a JSON file holding an array of routines loads
+    every routine of the array, as the documentation says; it raised a raw TypeError."""
+    path = tmp_path / "routines.json"
+    path.write_text(json.dumps([_SQL_1, {**_SQL_1, "name": "SQL_2"}]))
+    script = _ROUTINE_1349 + _ROUTINE_1349.replace("DS_r", "DS_s").replace("SQL_1", "SQL_2")
+    result = _run_1349(script, use_duckdb, external_routines=path)
+    for name in ("DS_r", "DS_s"):
+        assert result[name].data.sort_values("Id_1")["Me_1"].tolist() == [1, 3]
+    analysis = semantic_analysis(script, _STRUCTURES_1349, external_routines=path)
+    assert sorted(analysis["DS_s"].components) == ["Id_1", "Me_1"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
 def test_GH_1349_32(use_duckdb, tmp_path):
     """A value_domains .json file that is not valid JSON raises the input error 0-1-1-40
     naming the file; run and semantic_analysis raised a raw JSONDecodeError."""
@@ -3103,3 +3145,15 @@ def test_GH_1349_33(use_duckdb, tmp_path):
             call()
         assert error.value.args[1] == "0-1-1-40"
         assert "broken.json" in error.value.args[0]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_34(use_duckdb, tmp_path):
+    """A routine read from a file is registered under the name its JSON gives, not under the
+    name of the file: routine.json holding SQL_1 serves eval(SQL_1(...)); it raised 1-3-5."""
+    path = tmp_path / "routine.json"
+    path.write_text(json.dumps(_SQL_1))
+    result = _run_1349(_ROUTINE_1349, use_duckdb, external_routines=path)
+    assert result["DS_r"].data.sort_values("Id_1")["Me_1"].tolist() == [1, 3]
+    analysis = semantic_analysis(_ROUTINE_1349, _STRUCTURES_1349, external_routines=path)
+    assert sorted(analysis["DS_r"].components) == ["Id_1", "Me_1"]

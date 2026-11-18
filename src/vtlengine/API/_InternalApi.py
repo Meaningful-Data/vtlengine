@@ -705,13 +705,13 @@ def _load_json_file(input: Path) -> Any:
 
 
 def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
+    """The value domains of a JSON file, which holds one value domain or a list of them."""
     if input.suffix != ".json":
         raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
     data = _load_json_file(input)
     name = data.get("name") if isinstance(data, dict) else None
     _validate_json(data, vd_schema, kind="Value Domain", name=name or input.stem)
-    vd = ValueDomain.from_dict(data)
-    return {vd.name: vd}
+    return load_value_domains(data)
 
 
 def _merge_value_domains(groups: Iterable[Dict[str, ValueDomain]]) -> Dict[str, ValueDomain]:
@@ -804,12 +804,9 @@ def load_external_routines(
         for f in input.iterdir():
             if f.suffix != ".json":
                 continue
-            ext_rout = _load_single_external_routine_from_file(f)
-            external_routines[ext_rout.name] = ext_rout
+            external_routines.update(_load_single_external_routine_from_file(f))
         return external_routines
-    ext_rout = _load_single_external_routine_from_file(input)
-    external_routines[ext_rout.name] = ext_rout
-    return external_routines
+    return _load_single_external_routine_from_file(input)
 
 
 def _return_only_persistent_datasets(
@@ -821,21 +818,19 @@ def _return_only_persistent_datasets(
     return {dataset.name: dataset for dataset in datasets.values() if dataset.persistent}
 
 
-def _load_single_external_routine_from_file(input: Path) -> Any:
+def _load_single_external_routine_from_file(input: Path) -> Dict[str, ExternalRoutine]:
+    """The external routines of a JSON file, which holds one routine or a list of them, each
+    under the name it gives, whatever the name of the file."""
     if not isinstance(input, Path):
         raise InputValidationException(code="0-1-1-2", input=input, message="Input must be a Path.")
     if not input.exists():
         raise DataLoadError(code="0-3-1-1", file=input)
     if input.suffix != ".json":
         raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
-    routine_name = input.stem
     data = _load_json_file(input)
     name = data.get("name") if isinstance(data, dict) else None
-    _validate_json(
-        data, external_routine_schema, kind="External Routine", name=name or routine_name
-    )
-    ext_rout = ExternalRoutine.from_sql_query(routine_name, data["query"])
-    return ext_rout
+    _validate_json(data, external_routine_schema, kind="External Routine", name=name or input.stem)
+    return cast(Dict[str, ExternalRoutine], load_external_routines(data))
 
 
 def _check_output_folder(output_folder: Union[str, Path]) -> None:
