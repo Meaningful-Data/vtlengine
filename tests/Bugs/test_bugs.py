@@ -9800,3 +9800,52 @@ class ValueDomainBugs(BugHelper):
             references_names=["1", "2", "3"],
             vd_names=self.vd_1349,
         )
+
+    def test_GH_1349_21(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ filter between ( Id_2 , cast ( "2024Q2" , time_period ) ,
+                                                    cast ( "2024Q3" , time_period ) ) ];
+        Description: between orders Time_Period values as periods. pandas compared the text
+                     2024-Q2 with 2024Q2 and kept no data point.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_21", number_inputs=1, references_names=["1"])
+
+    def test_GH_1349_22(self):
+        """
+        Status: OK
+        Expression: DS_r <- between ( DS_1 , SC_2 , SC_2 );
+        Description: At Data Set level the period equal to SC_2 (2024Q1) is between SC_2 and
+                     SC_2; pandas gave false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_22", number_inputs=1, references_names=["1"], scalars={"SC_2": "2024Q1"}
+        )
+
+    def test_GH_1349_23(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := between ( Me_1 , SC_2 , SC_2 ) ];
+        Description: As case 22 on a Component; pandas gave false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_23", number_inputs=1, references_names=["1"], scalars={"SC_2": "2024Q1"}
+        )
+
+    def test_GH_1349_24(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := Me_1 >= SC_2 and Me_1 <= SC_2 ];
+        Description: Control of cases 21 to 23: the same check with >= and <=.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_24", number_inputs=1, references_names=["1"], scalars={"SC_2": "2024Q1"}
+        )

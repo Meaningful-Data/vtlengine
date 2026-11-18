@@ -25,9 +25,11 @@ from vtlengine.DataTypes import (
     Null,
     String,
     TimeInterval,
+    TimePeriod,
     to_string,
     to_strings,
 )
+from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet, values_of
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -467,6 +469,16 @@ class Between(Operator.Operator):
 
         return result
 
+    @staticmethod
+    def _ordered(element: Any, data: Any) -> Any:
+        """The values of the element as between orders them: a Time_Period as a period, not
+        as its text, as the other comparison operators do (issue #1349)."""
+        if element.data_type is not TimePeriod or data is None:
+            return data
+        if isinstance(data, pd.Series):
+            return data.map(TimePeriodHandler, na_action="ignore")
+        return None if pd.isnull(data) else TimePeriodHandler(data)
+
     @classmethod
     def evaluate(
         cls,
@@ -475,8 +487,10 @@ class Between(Operator.Operator):
         to: Union[DataComponent, Scalar],
     ) -> Any:
         result = cls.validate(operand, from_, to)
-        from_data = from_.data if isinstance(from_, DataComponent) else from_.value
-        to_data = to.data if isinstance(to, DataComponent) else to.value
+        from_data = cls._ordered(
+            from_, from_.data if isinstance(from_, DataComponent) else from_.value
+        )
+        to_data = cls._ordered(to, to.data if isinstance(to, DataComponent) else to.value)
 
         if (
             isinstance(from_data, pd.Series)
@@ -488,27 +502,31 @@ class Between(Operator.Operator):
         if isinstance(operand, Dataset):
             result.data = operand.data.copy()
             for measure_name in operand.get_measures_names():
+                values = cls._ordered(operand.components[measure_name], operand.data[measure_name])
                 result.data[measure_name] = cls.apply_operation_component(
-                    operand.data[measure_name], from_data, to_data
+                    values, from_data, to_data
                 )
                 if len(result.get_measures()) == 1:
                     result.data[COMP_NAME_MAPPING[cls.return_type]] = result.data[measure_name]
                     result.data = result.data.drop(columns=[measure_name])
             result.data = result.data[result.get_components_names()]
         if isinstance(operand, DataComponent):
-            result.data = cls.apply_operation_component(operand.data, from_data, to_data)
+            result.data = cls.apply_operation_component(
+                cls._ordered(operand, operand.data), from_data, to_data
+            )
         if isinstance(operand, Scalar) and isinstance(from_, Scalar) and isinstance(to, Scalar):
             if operand.value is None or from_data is None or to_data is None:
                 result.value = None
             else:
-                result.value = from_data <= operand.value <= to_data
+                result.value = from_data <= cls._ordered(operand, operand.value) <= to_data
         elif isinstance(operand, Scalar) and (
             isinstance(from_data, pd.Series) or isinstance(to_data, pd.Series)
         ):  # From or To is a DataComponent, or both
+            value = cls._ordered(operand, operand.value)
             if isinstance(from_data, pd.Series):
-                series = pd.Series(operand.value, index=from_data.index, dtype=from_data.dtype)
+                series = pd.Series(value, index=from_data.index, dtype=from_data.dtype)
             elif isinstance(to_data, pd.Series):
-                series = pd.Series(operand.value, index=to_data.index, dtype=to_data.dtype)
+                series = pd.Series(value, index=to_data.index, dtype=to_data.dtype)
             result_series = cls.apply_operation_component(series, from_data, to_data)
             result = DataComponent(
                 name=operand.name,
