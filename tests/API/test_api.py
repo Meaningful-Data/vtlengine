@@ -3246,3 +3246,28 @@ def test_GH_1349_34(use_duckdb, tmp_path):
     assert result["DS_r"].data.sort_values("Id_1")["Me_1"].tolist() == [1, 3]
     analysis = semantic_analysis(_ROUTINE_1349, _STRUCTURES_1349, external_routines=path)
     assert sorted(analysis["DS_r"].components) == ["Id_1", "Me_1"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_52(use_duckdb, tmp_path):
+    """Two external routines of one name raise 0-1-1-41, as two value domains of one name
+    raise 0-1-1-38, whether they are given in a list, in one JSON file or in two files of a
+    folder; the routine read last was used."""
+    other = {**_SQL_1, "query": "SELECT Id_1, Me_1 * 10 AS Me_1 FROM DS_1"}
+    array = tmp_path / "routines.json"
+    array.write_text(json.dumps([_SQL_1, other]))
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "a.json").write_text(json.dumps(_SQL_1))
+    (folder / "b.json").write_text(json.dumps(other))
+    for routines in ([_SQL_1, other], array, folder):
+        calls = [
+            lambda: _run_1349(_ROUTINE_1349, use_duckdb, external_routines=routines),
+            lambda: semantic_analysis(_ROUTINE_1349, _STRUCTURES_1349, external_routines=routines),
+            lambda: validate_external_routine(routines),
+        ]
+        for call in calls:
+            with pytest.raises(InputValidationException) as error:
+                call()
+            assert error.value.args[1] == "0-1-1-41"
+            assert "SQL_1" in error.value.args[0]

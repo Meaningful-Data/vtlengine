@@ -625,6 +625,10 @@ The ``external_routines`` parameter accepts the following formats:
 A ``.json`` file that is not valid JSON raises ``0-1-1-40``, naming
 the file.
 
+The names of the routines given must be unique, whether they are
+given in a list, in one JSON array or in the files of a directory:
+two routines of one name raise ``0-1-1-41``.
+
 
 VTL Syntax
 ==========

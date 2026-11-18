@@ -197,6 +197,10 @@ centralised_messages = {
         "description": "Raised when a JSON file given as data structures, value domains or "
         "external routines cannot be read as JSON.",
     },
+    "0-1-1-41": {
+        "message": "External Routine {name} is defined more than once.",
+        "description": "Raised when two of the External Routines given have the same name.",
+    },
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",
         "description": "Occurs when an element (e.g., Identifier or component) "

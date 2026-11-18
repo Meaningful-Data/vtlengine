@@ -714,15 +714,18 @@ def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
     return load_value_domains(data)
 
 
-def _merge_value_domains(groups: Iterable[Dict[str, ValueDomain]]) -> Dict[str, ValueDomain]:
-    """The value domains of all the groups, whose names must not repeat."""
-    value_domains: Dict[str, ValueDomain] = {}
+def _merge_by_name(groups: Iterable[Dict[str, Any]], routines: bool = False) -> Dict[str, Any]:
+    """The value domains, or the external routines, of all the groups, whose names must not
+    repeat."""
+    merged: Dict[str, Any] = {}
     for group in groups:
-        for name, value_domain in group.items():
-            if name in value_domains:
+        for name, item in group.items():
+            if name in merged and routines:
+                raise InputValidationException(code="0-1-1-41", name=name)
+            if name in merged:
                 raise InputValidationException(code="0-1-1-38", name=name)
-            value_domains[name] = value_domain
-    return value_domains
+            merged[name] = item
+    return merged
 
 
 def load_value_domains(
@@ -749,7 +752,7 @@ def load_value_domains(
         vd = ValueDomain.from_dict(input)
         return {vd.name: vd}
     if isinstance(input, list):
-        return _merge_value_domains(load_value_domains(item) for item in input)
+        return _merge_by_name(load_value_domains(item) for item in input)
     if not isinstance(input, Path):
         raise InputValidationException(
             code="0-1-1-2", input=input, message="Input is not a Path object"
@@ -757,7 +760,7 @@ def load_value_domains(
     if not input.exists():
         raise DataLoadError(code="0-3-1-1", file=input)
     if input.is_dir():
-        return _merge_value_domains(_load_single_value_domain(f) for f in input.iterdir())
+        return _merge_by_name(_load_single_value_domain(f) for f in input.iterdir())
     if input.suffix != ".json":
         raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
     return _load_single_value_domain(input)
@@ -781,19 +784,16 @@ def load_external_routines(
         Exception: If the JSON file does not exist, the Path is wrong, or the file is not a \
         JSON one.
     """
-    external_routines = {}
     if isinstance(input, dict):
         _validate_json(
             input, external_routine_schema, kind="External Routine", name=input.get("name")
         )
         ext_routine = ExternalRoutine.from_sql_query(input["name"], input["query"])
-        external_routines[ext_routine.name] = ext_routine
-        return external_routines
+        return {ext_routine.name: ext_routine}
+    # Two routines of one name raise 0-1-1-41, as two value domains raise 0-1-1-38, rather
+    # than the one read last being used (issue #1349)
     if isinstance(input, list):
-        ext_routines = {}
-        for item in input:
-            ext_routines.update(load_external_routines(item))
-        return ext_routines
+        return _merge_by_name((load_external_routines(item) for item in input), routines=True)
     if not isinstance(input, Path):
         raise InputValidationException(
             code="0-1-1-2", input=input, message="Input must be a json file."
@@ -801,11 +801,8 @@ def load_external_routines(
     if not input.exists():
         raise DataLoadError(code="0-3-1-1", file=input)
     if input.is_dir():
-        for f in input.iterdir():
-            if f.suffix != ".json":
-                continue
-            external_routines.update(_load_single_external_routine_from_file(f))
-        return external_routines
+        files = (f for f in input.iterdir() if f.suffix == ".json")
+        return _merge_by_name(map(_load_single_external_routine_from_file, files), routines=True)
     return _load_single_external_routine_from_file(input)
 
 
