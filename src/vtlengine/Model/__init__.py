@@ -666,7 +666,11 @@ class ValueDomain:
         return cls(value["name"], SCALAR_TYPES[value["type"]], value["setlist"])
 
     def to_dict(self) -> Dict[str, Any]:
-        return {"name": self.name, "type": self.type.__name__, "setlist": self.setlist}
+        return {
+            "name": self.name,
+            "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[self.type],
+            "setlist": self.setlist,
+        }
 
     def values(self) -> List[Any]:
         """The values of the domain, written as the loaders write the values of its type."""

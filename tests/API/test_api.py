@@ -2982,3 +2982,41 @@ def test_GH_1349_16(use_duckdb):
         assert error.value.args[1] == "0-2-1-1"
         assert "is not accepted; name the value domain in its type instead" in error.value.args[0]
         assert '("type": "VD_1")' in error.value.args[0]
+
+
+@pytest.mark.parametrize(
+    "type_name, value",
+    [
+        ("String", "A"),
+        ("Number", 1.5),
+        ("Integer", 1),
+        ("Boolean", True),
+        ("Date", "2024-01-05"),
+        ("Time_Period", "2024Q1"),
+        ("Time", "2024-01-01/2024-12-31"),
+        ("Duration", "A"),
+    ],
+)
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_18(use_duckdb, type_name, value):
+    """ValueDomain.to_dict and to_json write the type name that the loaders read, for every
+    basic type: a Time_Period value domain was written TimePeriod and a Time one TimeInterval,
+    which ValueDomain.from_dict rejected with 0-1-1-24 and the loaders with 0-2-1-1."""
+    value_domain = ValueDomain.from_dict({"name": "VD_1", "type": type_name, "setlist": [value]})
+    written = value_domain.to_dict()
+    assert written["type"] == type_name
+    assert ValueDomain.from_dict(written) == value_domain
+    assert ValueDomain.from_json(value_domain.to_json()) == value_domain
+    validate_value_domain(written)
+    structures = {"datasets": [], "scalars": [{"name": "SC_1", "type": "VD_1"}]}
+    analysis = semantic_analysis("SC_r <- SC_1;", structures, written)
+    assert analysis["SC_r"].to_dict()["type"] == "VD_1"
+    result = run(
+        "SC_r <- SC_1;",
+        structures,
+        {},
+        written,
+        scalar_values={"SC_1": value},
+        use_duckdb=use_duckdb,
+    )
+    assert result["SC_r"].to_dict()["type"] == "VD_1"

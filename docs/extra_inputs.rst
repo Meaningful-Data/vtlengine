@@ -170,6 +170,9 @@ The ``value_domains`` parameter accepts the following formats:
         ValueDomain(name="Currencies", type=String, setlist=["EUR", "USD"]),
     ]
 
+``ValueDomain.to_dict()`` and ``ValueDomain.to_json()`` write the
+definition in this format, so it can be given back.
+
 
 VTL Usage
 =========
