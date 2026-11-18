@@ -189,6 +189,15 @@ and component contexts.
     /* Filter rows where a component belongs to a domain */
     DS_r <- DS_1 [filter Me_1 in Thresholds];
 
+A value is compared with the values of a value domain as a value of
+its type, not as the text it is written in: a ``Time_Period``
+``2024Q1`` or ``2024-Q1`` is in a value domain whose ``setlist``
+holds ``"2024-Q1"`` or ``"2024Q1"``, and a ``Date`` ``2024-1-5`` in
+one holding ``"2024-01-05"``. The same holds wherever a value is
+checked against a value domain: ``in`` and ``not_in``, the values of
+a Component or a scalar on a value domain, ``cast`` into a value
+domain and the parameters of a user defined operator typed by one.
+
 
 Example
 =======

@@ -1,4 +1,4 @@
-"""Scalars defined on a value domain (GH #1328).
+"""Scalars defined on a value domain (GH #1328, #1349).
 
 https://github.com/Meaningful-Data/vtlengine/issues/1328
 
@@ -13,9 +13,9 @@ import pytest
 
 from tests.Helper import engine_params
 from vtlengine import run, semantic_analysis
-from vtlengine.DataTypes import String
+from vtlengine.DataTypes import Date, String
 from vtlengine.Exceptions import InputValidationException, RunTimeError
-from vtlengine.Model import Scalar, ValueDomain
+from vtlengine.Model import Scalar, ValueDomain, value_of
 
 VALUE_DOMAINS = [
     ValueDomain(name="VD_1", type=String, setlist=["A", "B"]),
@@ -207,3 +207,87 @@ def test_GH_1328_scalar_model():
     assert scalar.to_dict() == {"name": "SC_1", "type": "VD_1", "value": "A", "nullable": True}
     assert scalar != Scalar("SC_1", String, "A")
     assert scalar == Scalar("SC_1", String, "A", value_domain=value_domain)
+
+
+# Issue #1349: a Time_Period or Date value is checked against a value domain as a value of its
+# type, whatever form the value or the setlist is written in
+VALUE_DOMAINS_1349 = [
+    {"name": "VD_TP", "type": "Time_Period", "setlist": ["2024Q1", "2024Q2"]},
+    {"name": "VD_DATE", "type": "Date", "setlist": ["2024-01-05"]},
+]
+
+DATA_STRUCTURES_1349 = {
+    "scalars": [
+        {"name": "SC_1", "type": "VD_TP"},
+        {"name": "SC_2", "type": "Time_Period"},
+        {"name": "SC_3", "type": "VD_DATE"},
+    ]
+}
+
+
+def _run_1349(script, scalar_values, use_duckdb):
+    return run(
+        script=script,
+        data_structures=DATA_STRUCTURES_1349,
+        datapoints={},
+        value_domains=VALUE_DOMAINS_1349,
+        scalar_values=scalar_values,
+        use_duckdb=use_duckdb,
+    )["SC_r"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_1(use_duckdb):
+    """The scalar value 2024Q1 is the value 2024-Q1 of VD_TP; it raised 0-1-1-36."""
+    result = _run_1349("SC_r <- SC_1;", {"SC_1": "2024Q1"}, use_duckdb)
+    assert result.to_dict()["type"] == "VD_TP"
+    assert result.value == "2024Q1"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_2(use_duckdb):
+    """Control of case 1: the scalar value written 2024-Q1."""
+    result = _run_1349("SC_r <- SC_1;", {"SC_1": "2024-Q1"}, use_duckdb)
+    assert result.to_dict()["type"] == "VD_TP"
+    assert result.value == "2024Q1"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_3(use_duckdb):
+    """The Date value 2024-1-5 is the value 2024-01-05 of VD_DATE; it raised 0-1-1-36."""
+    result = _run_1349("SC_r <- SC_3;", {"SC_3": "2024-1-5"}, use_duckdb)
+    assert result.to_dict()["type"] == "VD_DATE"
+    assert value_of(Date, result.value) == "2024-01-05"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_4(use_duckdb):
+    """A Time_Period scalar 2024Q1 cast to VD_TP is a value of it; it raised 2-1-5-4."""
+    result = _run_1349("SC_r <- cast(SC_2, VD_TP);", {"SC_2": "2024Q1"}, use_duckdb)
+    assert result.to_dict()["type"] == "VD_TP"
+    assert result.value == "2024Q1"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_5(use_duckdb):
+    """The literal 2024Q1 cast to VD_TP is a value of it, also for the semantic analysis; it
+    raised 1-1-5-6."""
+    script = 'SC_r <- cast("2024Q1", VD_TP);'
+    result = _run_1349(script, {}, use_duckdb)
+    assert result.to_dict()["type"] == "VD_TP"
+    assert result.value == "2024Q1"
+    analysis = semantic_analysis(script, DATA_STRUCTURES_1349, VALUE_DOMAINS_1349)
+    assert analysis["SC_r"].to_dict()["type"] == "VD_TP"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_6(use_duckdb):
+    """A Time_Period scalar 2024Q1 passed to a parameter on VD_TP is a value of it; pandas
+    raised 2-1-5-4."""
+    script = (
+        "define operator f (x VD_TP) returns string is cast(x, string) end operator;"
+        " SC_r <- f(SC_2);"
+    )
+    result = _run_1349(script, {"SC_2": "2024Q1"}, use_duckdb)
+    assert result.to_dict()["type"] == "String"
+    assert result.value == "2024Q1"

@@ -9771,3 +9771,32 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1348_c,
         )
+
+    vd_1349 = ["GH_1349-VD_TP", "GH_1349-VD_DATE", "GH_1349-VD_B", "GH_1349-VD_1"]
+
+    def test_GH_1349_7(self):
+        """
+        Status: OK
+        Expression: define operator in_tp ( x time_period , s set < time_period > )
+                        returns boolean is x in s end operator;
+                    DS_r <- DS_1 [ calc Me_4 := Me_1 in VD_TP , Me_5 := Me_2 not_in VD_TP ,
+                                        Me_6 := Me_3 in VD_DATE ,
+                                        Me_7 := cast ( "2024-Q1" , time_period ) in VD_TP ,
+                                        Me_8 := in_tp ( cast ( "2024-Q2" , time_period ) ,
+                                                        VD_TP ) ] [ keep ... ];
+                    DS_r2 <- DS_1 [ filter Me_2 in VD_TP ] [ keep Me_2 ];
+                    DS_r3 <- DS_1 [ keep Me_2 ] in VD_TP;
+        Description: in and not_in compare a Time_Period or a Date as a value of its type with
+                     the values of the value domain, whatever form the setlist (2024Q1,
+                     2024-1-5) or the value (2024-Q2, 2024-1-6) is written in, for a Component,
+                     in filter, at Data Set level, for a scalar and for a value domain passed
+                     to a set parameter. pandas compared their text, so Me_4 was false, false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_7",
+            number_inputs=1,
+            references_names=["1", "2", "3"],
+            vd_names=self.vd_1349,
+        )

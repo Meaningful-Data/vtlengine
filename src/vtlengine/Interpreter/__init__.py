@@ -1451,7 +1451,7 @@ class InterpreterAnalyzer(ASTTemplate):
             ):
                 return self.udo_params[-1][node.name]
             vd = self._value_domain(node.name)
-            return ScalarSet(data_type=vd.type, values=vd.setlist)
+            return ScalarSet(data_type=vd.type, values=vd.setlist, value_domain=vd)
         else:
             raise SemanticError("1-2-9", name=node.name)
 
@@ -2839,7 +2839,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 value = bound
             elif self.value_domains is not None and argument.value in self.value_domains:
                 domain = self.value_domains[argument.value]
-                value = ScalarSet(data_type=domain.type, values=domain.setlist)
+                value = ScalarSet(data_type=domain.type, values=domain.setlist, value_domain=domain)
         declared = param["declared"]
         if value is None:
             found = self.visit(argument)

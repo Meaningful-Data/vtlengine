@@ -1,0 +1,8 @@
+{
+  "name": "VD_B",
+  "type": "Boolean",
+  "setlist": [
+    true,
+    false
+  ]
+}

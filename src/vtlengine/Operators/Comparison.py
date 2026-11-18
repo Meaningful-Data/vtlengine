@@ -29,7 +29,7 @@ from vtlengine.DataTypes import (
     to_strings,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
+from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet, values_of
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.Utils._number_config import (
@@ -286,8 +286,14 @@ class In(Binary):
         if right_series.data_type == String:
             # A Boolean operand is promoted to String (issue #1314)
             left_series = to_strings(left_series)
-
-        result = left_series.isin(right_series.values)
+        values: Any = right_series.values
+        domain = right_series.value_domain
+        if domain is not None:
+            # A value is compared with the values of a value domain as a value of its type,
+            # whatever form it is written in (issue #1349)
+            values = domain.values()
+            left_series = values_of(domain.type, left_series)
+        result = left_series.isin(values)
         return result.where(left_series.notna(), other=pd.NA).astype("bool[pyarrow]")
 
     @classmethod

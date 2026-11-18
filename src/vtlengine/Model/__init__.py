@@ -24,6 +24,27 @@ _TIME_VALUE_CHECKS: Dict[Any, Any] = {
     DataTypes.TimeInterval: check_time,
 }
 
+
+def value_of(data_type: Any, value: Any) -> Any:
+    """The value written in the one form the loaders write the values of its type in, so that
+    two forms of a value compare equal. A value that is not one of the type is kept as it is
+    written, equal to no value of it."""
+    check = _TIME_VALUE_CHECKS.get(data_type)
+    if check is None:
+        return value
+    try:
+        return check(str(value))
+    except (InputValidationException, ValueError, TypeError):
+        return value
+
+
+def values_of(data_type: Any, values: Any) -> Any:
+    """The values of the series, each written as value_of writes it."""
+    if data_type not in _TIME_VALUE_CHECKS:
+        return values
+    return values.map(lambda value: value_of(data_type, value), na_action="ignore")
+
+
 BASIC_TYPE_NAMES = frozenset(
     ("string", "integer", "number", "boolean", "date", "time", "time_period", "duration", "scalar")
 )
@@ -500,12 +521,19 @@ class ScalarSet:
 
     data_type: Type[ScalarType]
     _values: List[Union[int, float, str, bool]]
+    # The value domain the set holds the values of, which a value is compared with as a value
+    # of its type, whatever form it is written in (issue #1349)
+    value_domain: Optional["ValueDomain"]
 
     def __init__(
-        self, data_type: Type[ScalarType], values: List[Union[int, float, str, bool]]
+        self,
+        data_type: Type[ScalarType],
+        values: List[Union[int, float, str, bool]],
+        value_domain: Optional["ValueDomain"] = None,
     ) -> None:
         self.data_type = data_type
         self.values = values
+        self.value_domain = value_domain
 
     @property
     def values(self) -> List[Union[int, float, str, bool]]:
@@ -530,6 +558,8 @@ class ScalarSet:
         if self.data_type == DataTypes.Null:
             return None
         value = self.data_type.cast(item)
+        if self.value_domain is not None:
+            return value_of(self.data_type, value) in self.value_domain.values()
         return value in self.values
 
 
@@ -595,12 +625,14 @@ class ValueDomain:
 
     def values(self) -> List[Any]:
         """The values of the domain, written as the loaders write the values of its type."""
-        check = _TIME_VALUE_CHECKS.get(self.type)
-        return self.setlist if check is None else [check(value) for value in self.setlist]
+        return [value_of(self.type, value) for value in self.setlist]
 
     def outside(self, values: Any) -> Any:
-        """The values of the series, other than the nulls, that are not values of the domain."""
-        return values[values.notna() & ~values.isin(self.values())]
+        """The values of the series, other than the nulls, that are not values of the domain.
+        A value is compared as a value of the type, whatever form it is written in: 2024Q1
+        and 2024-Q1 are the same Time_Period (issue #1349)."""
+        values = values[values.notna()]
+        return values[~values_of(self.type, values).isin(self.values())]
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
