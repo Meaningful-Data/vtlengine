@@ -9931,6 +9931,25 @@ class ValueDomainBugs(BugHelper):
             vd_names=self.vd_1349_int,
         )
 
+    def test_GH_1349_13b(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 1 errorcode 100 errorlevel "1" invalid );
+        Description: As case 13 for the error level alone: the String "1" is not a value of
+                     the Integer errorlevel_vd, while the errorcode 100 is one of errorcode_vd.
+                     It gave the errorlevel 1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_13b",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message='The errorlevel "1" of check is not one of the values of the '
+            "Value Domain errorlevel_vd",
+            vd_names=self.vd_1349_int,
+        )
+
     def test_GH_1349_14(self):
         """
         Status: OK
