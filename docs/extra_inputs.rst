@@ -389,7 +389,11 @@ Value domains also appear in the VTL-DL definitions:
 - A viral propagation rule on a value domain needs it given
   (``1-2-8``), and the constants of its ``when``, ``then`` and
   ``else`` must be values of it (``1-1-10-13``); the definition
-  checks both, also when no statement uses the rule. The rule
+  checks both, also when no statement uses the rule. The constants
+  are values of the type of the value domain, whatever form they are
+  written in: ``when "2024Q1"`` matches the ``Time_Period``
+  ``2024-Q1``, and ``then "2024-1-6"`` gives the ``Date``
+  ``2024-01-06``. The rule
   applies to the viral attributes defined on the value domain,
   unless a rule on the variable overrides
   it. Where a viral attribute is combined, the rule on its value

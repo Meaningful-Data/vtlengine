@@ -93,6 +93,7 @@ from vtlengine.Model import (
     Scalar,
     ScalarSet,
     ValueDomain,
+    value_of,
 )
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
 from vtlengine.Operators.Assignment import Assignment
@@ -649,8 +650,20 @@ class InterpreterAnalyzer(ASTTemplate):
                         value_domain=domain.name,
                     )
 
+        # The constants of a rule on a value domain are values of its type, matched with the
+        # data and written in the form the loaders write them in, whatever form they are
+        # written in: "2024Q1" is the Time_Period 2024-Q1 (issue #1349)
+        def constant(value: Any) -> Any:
+            if node.signature_type != "valuedomain":
+                return value
+            return value_of(self._value_domain(node.target).type, value)
+
         enumerated_clauses = [
-            {"values": clause.values, "result": clause.result} for clause in node.enumerated_clauses
+            {
+                "values": [constant(value) for value in clause.values],
+                "result": constant(clause.result),
+            }
+            for clause in node.enumerated_clauses
         ]
         aggregate_function = node.aggregate_clause.function if node.aggregate_clause else None
 
@@ -660,7 +673,7 @@ class InterpreterAnalyzer(ASTTemplate):
             target=node.target,
             enumerated_clauses=enumerated_clauses,
             aggregate_function=aggregate_function,
-            default_value=node.default_value,
+            default_value=constant(node.default_value),
         )
         registry.register(rule)
 

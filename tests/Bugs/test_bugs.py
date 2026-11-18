@@ -10080,3 +10080,43 @@ class ValueDomainBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1349_40", number_inputs=1, references_names=["1"])
+
+    vd_1349_d = ["GH_1349-VD_TP", "GH_1349-VD_D"]
+
+    def test_GH_1349_41(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_TP ) is
+                        when "2024Q1" then "2024Q2"; else "2024Q1" end viral propagation;
+                    define viral propagation VP_2 ( valuedomain VD_D ) is
+                        when "2024-1-5" then "2024-1-6"; else "2024-1-5"
+                    end viral propagation;
+                    DS_r <- DS_1 + DS_1;
+        Description: The constants of a rule on a Time_Period or Date value domain are values
+                     of its type: the when matches the data holding that value in any form, and
+                     the result is written as a value of the type (2024Q2, 2024-01-06). pandas
+                     took the else for both data points and DuckDB gave null for At_1 and
+                     wrote the constants of At_2 as written.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_41", number_inputs=1, references_names=["1"], vd_names=self.vd_1349_d
+        )
+
+    def test_GH_1349_42(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_TP ) is
+                        when "2024-Q1" then "2024-Q2"; else "2024-Q1" end viral propagation;
+                    define viral propagation VP_2 ( valuedomain VD_D ) is
+                        when "2024-01-05" then "2024-01-06"; else "2024-01-05"
+                    end viral propagation;
+                    DS_r <- DS_1 + DS_1;
+        Description: Control of case 41: the constants written in the form the engines store.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_42", number_inputs=1, references_names=["1"], vd_names=self.vd_1349_d
+        )
