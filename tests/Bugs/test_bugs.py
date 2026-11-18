@@ -9589,3 +9589,52 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1348,
         )
+
+    def test_GH_1348_11(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b apply nvl ( a , b ) );
+        Description: Me_1 is on VD_INT in both operands and nvl only puts their values into it,
+                     so Me_1 keeps VD_INT, as in nvl ( DS_1 , DS_2 ); it had the basic type
+                     Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_11",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_12(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: Control of case 11: Me_1 is on VD_INT in both operands, so it keeps VD_INT.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_12",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_13(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b
+                                calc Me_2 := nvl ( a#Me_1 , b#Me_1 ) keep Me_2 );
+        Description: Control of case 11: both operands of nvl are on VD_INT, so Me_2 is on
+                     VD_INT.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_13",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )

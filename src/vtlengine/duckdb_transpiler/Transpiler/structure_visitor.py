@@ -28,9 +28,9 @@ from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Model import Component, Dataset, Role, ValueDomain
 from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Clause import Pivot
-from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.Operators.Join import Apply, merged_viral_attribute_names
 from vtlengine.Operators.Validation import error_domains, error_level_type
-from vtlengine.Utils import ANALYTIC_MAPPING
+from vtlengine.Utils import ANALYTIC_MAPPING, BINARY_MAPPING
 
 
 def _try_normalize_time_period(value: str) -> Optional[str]:
@@ -613,6 +613,8 @@ class StructureVisitor(ASTTemplate):
                 return result
         elif op == tokens.PIVOT:
             return self._build_pivot_structure(node)
+        elif op == tokens.APPLY:
+            return self._build_apply_structure(node)
         builder_attr = self._CLAUSE_BUILDER_ATTRS.get(op)
         if builder_attr is not None:
             return getattr(self, builder_attr)(node)
@@ -1040,6 +1042,14 @@ class StructureVisitor(ASTTemplate):
             return None
         names = [self._resolve_udo_name(self._resolve_name(child)) for child in node.children]
         return Pivot.validate(names, input_ds)
+
+    def _build_apply_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
+        """The structure of the apply clause of a join, as the semantic analysis builds it:
+        each Measure has the type and the value domain its expression gives (issue #1348)."""
+        input_ds = self._get_dataset_structure(node.dataset)
+        if input_ds is None:
+            return None
+        return Apply.validate(input_ds, node.children, BINARY_MAPPING)
 
     def _build_calc_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
         """Build the output dataset structure for a calc clause."""
