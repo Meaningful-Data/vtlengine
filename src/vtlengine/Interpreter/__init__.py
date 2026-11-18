@@ -888,6 +888,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 operand.data[time_comp.name] = time_comp.data
             if grouping_op != "group except":
                 regular_groupings.append(time_comp.name)
+            # The aggregated periods are new values of the time Identifier
+            operand.components = Operators.on_basic_types(operand.components, [time_comp.name])
         return regular_groupings
 
     @staticmethod

@@ -9393,3 +9393,74 @@ class ValueDomainBugs(BugHelper):
             vd_names=self.vd_1350,
             scalars={"SC_1": 1},
         )
+
+    vd_1348 = ["GH_1348-VD_TP", "GH_1348-VD_INT", "GH_1348-VD_STR"]
+
+    def test_GH_1348_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( DS_1 group all time_agg ( "A" ) );
+        Description: time_agg in the grouping writes the aggregated periods into Id_2, which
+                     is on VD_TP. The period 2024 is not a value of VD_TP, so Id_2 has the
+                     basic type Time_Period; it kept VD_TP.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_1",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( DS_1 group all time_agg ( "A" ) ) [ pivot Id_2 , Me_1 ];
+        Description: Id_2 holds the aggregated period 2024 with the basic type Time_Period, so
+                     pivot raises as in case 3. While Id_2 kept VD_TP, pivot gave the Measures
+                     2024Q1 and 2024Q3, both null, and the data point was lost.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_2",
+            number_inputs=1,
+            exception_code="1-1-6-18",
+            exception_message="The Identifier Id_2 is not defined on a value domain",
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( DS_1 group all time_agg ( "A" ) ) [ pivot Id_2 , Me_1 ];
+        Description: Control of case 2 with the basic types: Id_2 is a Time_Period, which is
+                     on no value domain, so pivot raises.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_3",
+            number_inputs=1,
+            exception_code="1-1-6-18",
+            exception_message="The Identifier Id_2 is not defined on a value domain",
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- time_agg ( "A" , _ , DS_1 );
+        Description: time_agg on a Data Set writes the aggregated periods into the time
+                     Measure Me_1, which is on VD_TP, so Me_1 has the basic type Time_Period;
+                     it kept VD_TP.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_4",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
