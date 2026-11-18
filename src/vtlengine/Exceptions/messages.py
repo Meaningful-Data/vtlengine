@@ -109,7 +109,8 @@ centralised_messages = {
     "0-1-1-21": {
         "message": "The setlist of Value Domain {name} must have unique values. Duplicated values: "
         "{duplicated}",
-        "description": "Raised when the setlist of a Value Domain repeats a value.",
+        "description": "Raised when the setlist of a Value Domain repeats a value, also written "
+        "in another form of its type, such as the time periods 2020Q1 and 2020-Q1.",
     },
     "0-1-1-22": {
         "message": "Empty JSON string for ValueDomain",
@@ -175,6 +176,21 @@ centralised_messages = {
         "message": "Value {value} is not one of the values of Value Domain {value_domain}.",
         "description": "Raised when a component defined on a Value Domain is given a value "
         "outside it.",
+    },
+    "0-1-1-37": {
+        "message": "Value {value} of the setlist of Value Domain {name} is not a valid {type}.",
+        "description": "Raised when a value of the setlist of a Value Domain is not a value of "
+        "its type, such as a Date that does not exist.",
+    },
+    "0-1-1-38": {
+        "message": "Value Domain {name} is defined more than once.",
+        "description": "Raised when two of the Value Domains given have the same name.",
+    },
+    "0-1-1-39": {
+        "message": "Value Domain {name} has the name of a basic scalar type.",
+        "description": "Raised when a Value Domain is named as a basic scalar type of VTL "
+        "(string, integer, number, boolean, date, time, time_period, duration, scalar), "
+        "which a script cannot refer to as a Value Domain.",
     },
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",

@@ -109,7 +109,21 @@ Supported Types
       - JSON string as ISO 8601 interval
         (e.g. ``"2024-01-01/2024-12-31"``)
     * - ``Duration``
-      - JSON string in duration format (e.g. ``"P1Y"``)
+      - JSON string with a period indicator (``"A"``, ``"S"``,
+        ``"Q"``, ``"M"``, ``"W"`` or ``"D"``)
+
+Each value of the ``setlist`` must be a valid value of the type
+(``0-1-1-37``): ``"2024-13-45"`` is not a ``Date`` and
+``"2024Q9"`` is not a ``Time_Period``. The values must be
+unique, also when written in another form of the type
+(``0-1-1-21``): ``"2024Q1"`` and ``"2024-Q1"`` are the same
+``Time_Period``.
+
+The names of the value domains given must be unique
+(``0-1-1-38``), and cannot be a basic scalar type of VTL:
+``string``, ``integer``, ``number``, ``boolean``, ``date``,
+``time``, ``time_period``, ``duration`` or ``scalar``
+(``0-1-1-39``).
 
 
 Input Options
@@ -408,7 +422,11 @@ Validation
 ==========
 
 Use :meth:`vtlengine.validate_value_domain` to validate
-the JSON structure of value domains before execution:
+value domains before execution: their JSON structure, the values
+of their ``setlist`` and their names, as described in
+`Supported Types`_. ``run()`` and ``semantic_analysis()`` check
+the same when they load the value domains, also the ones that the
+script does not use:
 
 .. code-block:: python
 
