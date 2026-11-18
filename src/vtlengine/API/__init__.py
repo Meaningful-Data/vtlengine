@@ -378,8 +378,7 @@ def _run_with_duckdb(
     loaded_routines = load_external_routines(external_routines) if external_routines else None
 
     # Checking the output path to be a folder before the analysis, as the pandas engine does
-    if output_folder:
-        _check_output_folder(output_folder, use_duckdb=True)
+    output_folder = _check_output_folder(output_folder, use_duckdb=True)
 
     interpreter = InterpreterAnalyzer(
         datasets=copy.deepcopy(input_datasets),
@@ -549,7 +548,8 @@ def run(
 
         output_folder: Path to the output folder. A missing folder is created with its \
         parents; an existing file, or a missing path with a file suffix (``result.csv``), \
-        raises ``0-3-1-2``. S3 URIs are supported when ``use_duckdb=True``. (default: None)
+        raises ``0-3-1-2``. An empty string is no output folder, as None is. S3 URIs are \
+        supported when ``use_duckdb=True``. (default: None)
 
         scalar_values: Dict with the scalar values to be used in the VTL script.
 
@@ -629,9 +629,8 @@ def run(
     # VTL Efficient analysis
     ds_analysis = DAGAnalyzer.ds_structure(ast)
 
-    # Checking the output path to be a Path object to a directory
-    if output_folder is not None:
-        _check_output_folder(output_folder)
+    # Checking the output path to be a directory; an empty string is no output folder
+    output_folder = _check_output_folder(output_folder)
 
     # Running the interpreter
     interpreter = InterpreterAnalyzer(

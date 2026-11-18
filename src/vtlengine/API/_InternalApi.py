@@ -833,16 +833,24 @@ def _load_single_external_routine_from_file(input: Path) -> Dict[str, ExternalRo
     return cast(Dict[str, ExternalRoutine], load_external_routines(data))
 
 
-def _check_output_folder(output_folder: Union[str, Path], use_duckdb: bool = False) -> None:
+def _check_output_folder(
+    output_folder: Optional[Union[str, Path]], use_duckdb: bool = False
+) -> Optional[Union[str, Path]]:
     """
     Check that the output folder is a folder, on both engines: an existing path must be a
     folder, and a missing one is created with its parents, unless it has a file suffix
     (result.csv), which is rejected. S3 URIs are left to the DuckDB engine.
+
+    Returns the folder the results are written to: None when no output folder is given, as
+    None or as an empty string, so that both engines return the results with their data and
+    write nothing (issue #1349).
     """
+    if output_folder is None or output_folder == "":
+        return None
     if isinstance(output_folder, str):
         if "s3://" in output_folder:
             if use_duckdb:
-                return
+                return output_folder
             raise InputValidationException(
                 code="0-1-1-2",
                 input=output_folder,
@@ -858,6 +866,7 @@ def _check_output_folder(output_folder: Union[str, Path], use_duckdb: bool = Fal
         if output_folder.suffix != "":
             raise DataLoadError("0-3-1-2", folder=str(output_folder))
         output_folder.mkdir(parents=True)
+    return output_folder
 
 
 def __generate_transformation(

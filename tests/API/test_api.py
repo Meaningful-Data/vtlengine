@@ -3142,6 +3142,17 @@ def test_GH_1349_28b(use_duckdb, tmp_path):
 
 
 @pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_51(use_duckdb, tmp_path, monkeypatch):
+    """An empty string as output_folder is no output folder, as None is: both engines write
+    nothing and return the results with their data. pandas wrote the results into the current
+    folder and returned them without data."""
+    monkeypatch.chdir(tmp_path)
+    result = _run_1349("DS_r <- DS_1;", use_duckdb, output_folder="")
+    assert result["DS_r"].data.sort_values("Id_1")["Me_1"].tolist() == [1, 3]
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
 def test_GH_1349_29(use_duckdb):
     """A list given as a value in scalar_values is not a scalar value: it raises 0-1-2-7 as a
     value of the wrong type does (case 30); it raised a raw ValueError."""
