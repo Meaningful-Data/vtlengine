@@ -10245,3 +10245,25 @@ class ValueDomainBugs(BugHelper):
             references_names=["1", "2"],
             vd_names=["GH_1349-VD_DUR"],
         )
+
+    def test_GH_1349_49(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_1 as b apply random ( a , b ) );
+        Description: random in a join apply gives on DuckDB the numbers pandas gives, those
+                     of random ( Me_1 , Me_1 ) in calc (case 50). DuckDB wrote a plain SQL
+                     random ( a , b ) and raised a BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_49", number_inputs=1, references_names=["1"])
+
+    def test_GH_1349_50(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := random ( Me_1 , Me_1 ) ];
+        Description: Control of case 49: random in calc.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_50", number_inputs=1, references_names=["1"])
