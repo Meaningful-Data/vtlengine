@@ -9635,3 +9635,36 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1348,
         )
+
+    def test_GH_1348_17(self):
+        """
+        Status: OK
+        Expression: DS_r <- if DS_1 then DS_2 else DS_3;
+        Description: Id_1 is on VD_INT in the condition and an Integer in the then and else
+                     operands, so the Identifiers match on the basic type and Id_1 is an Integer;
+                     Me_1 is on VD_INT in both branches and keeps it. It raised 1-1-9-10.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_17",
+            number_inputs=3,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_18(self):
+        """
+        Status: OK
+        Expression: DS_r <- case when DS_1 then DS_2 else DS_3;
+        Description: As in case 17, the Identifiers match on the basic type and Id_1 is an
+                     Integer; Me_1 keeps VD_INT. It raised 1-1-9-10.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_18",
+            number_inputs=3,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
