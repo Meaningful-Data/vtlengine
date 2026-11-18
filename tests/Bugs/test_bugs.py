@@ -9552,3 +9552,22 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1348,
         )
+
+    def test_GH_1348_10(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_INT ) is
+                        aggregate sum end viral propagation;
+                    DS_r <- DS_1 + DS_2;
+        Description: At_1 is on VD_INT in both operands, so the rule on VD_INT sums it. The
+                     sums 5 and 6 are not values of VD_INT, so At_1 has the basic type Integer;
+                     it kept VD_INT.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_10",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
