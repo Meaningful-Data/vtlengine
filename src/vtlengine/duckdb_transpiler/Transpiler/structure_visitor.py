@@ -1102,14 +1102,16 @@ class StructureVisitor(ASTTemplate):
 
     def _calc_value_domain(self, node: AST.AST, source: Dataset) -> Optional[ValueDomain]:
         """The value domain of a calc expression, as the pandas engine gives it (issue #1350):
-        the one of a Component written alone (also in parentheses, or as ``alias#name`` in a
-        join), the one a cast gives, and the one that all the operands of nvl, if-then-else
-        and case are on, nulls aside. Any other expression computes values of a basic type."""
+        the one of a Component or a scalar written alone (also in parentheses, or as
+        ``alias#name`` in a join), the one a cast gives, and the one that all the operands of
+        nvl, if-then-else and case are on, nulls aside. Any other expression computes values
+        of a basic type."""
         if isinstance(node, AST.ParFunction):
             return self._calc_value_domain(node.operand, source)
         if isinstance(node, AST.VarID):
-            comp = source.components.get(self._resolve_udo_name(node.value))
-            return None if comp is None else comp.value_domain
+            name = self._resolve_udo_name(node.value)
+            comp = source.components.get(name) or self.scalars.get(name)
+            return getattr(comp, "value_domain", None)
         if isinstance(node, AST.BinOp) and node.op == tokens.MEMBERSHIP:
             alias = self._resolve_udo_name(self._resolve_name(node.left))
             name = self._resolve_udo_name(self._resolve_name(node.right))

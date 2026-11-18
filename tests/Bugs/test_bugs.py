@@ -9280,3 +9280,26 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1350,
         )
+
+    def test_GH_1350_4j(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X > 1 errorcode "E1" end datapoint ruleset;
+                    DS_r1 <- check_datapoint ( DS_1 [ calc Me_5 := nvl ( Me_1 , SC_1 ) ] ,
+                                               DPR_1 components Me_5 invalid );
+                    DS_r2 <- check_datapoint ( DS_1 [ calc Me_6 := SC_1 ] ,
+                                               DPR_1 components Me_6 invalid );
+        Description: SC_1 is a scalar on VD_2, as are Me_1 and Me_5, so nvl of Me_1 and SC_1
+                     and SC_1 written alone keep VD_2. DuckDB gave Me_5 and Me_6 the basic type
+                     and raised 1-1-10-12.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4j",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=self.vd_1350,
+            scalars={"SC_1": 1},
+        )
