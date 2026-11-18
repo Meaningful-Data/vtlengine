@@ -9668,3 +9668,106 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1348,
         )
+
+    vd_1348_c = [*vd_1348, "GH_1348-VD_STR2"]
+
+    def test_GH_1348_19(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_STR ) is
+                        when "A" then "A"; else "B" end viral propagation;
+                    define viral propagation VP_2 ( valuedomain VD_STR2 ) is
+                        when "A" then "X"; else "X" end viral propagation;
+                    DS_r <- DS_1 + DS_2;
+        Description: At_1 is on VD_STR in DS_1 and on VD_STR2 in DS_2. The mix is promoted to
+                     String, on neither value domain, and At_1 has no rule on the variable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_19",
+            number_inputs=2,
+            exception_code="1-3-3-6",
+            exception_message="Viral attribute At_1 has no viral propagation rule",
+            vd_names=self.vd_1348_c,
+        )
+
+    def test_GH_1348_20(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_STR ) is
+                        when "A" then "A"; else "B" end viral propagation;
+                    define viral propagation VP_2 ( valuedomain VD_STR2 ) is
+                        when "A" then "X"; else "X" end viral propagation;
+                    DS_r <- DS_2 + DS_1;
+        Description: Case 19 in the other operand order raises the same error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_20",
+            number_inputs=2,
+            exception_code="1-3-3-6",
+            exception_message="Viral attribute At_1 has no viral propagation rule",
+            vd_names=self.vd_1348_c,
+        )
+
+    def test_GH_1348_21(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_STR ) is
+                        when "A" then "A"; else "B" end viral propagation;
+                    DS_r <- DS_1 + DS_2;
+        Description: At_1 is on VD_STR in DS_1 and a String in DS_2. The mix is promoted to
+                     String, so the rule on VD_STR does not apply and At_1 has no rule.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_21",
+            number_inputs=2,
+            exception_code="1-3-3-6",
+            exception_message="Viral attribute At_1 has no viral propagation rule",
+            vd_names=self.vd_1348_c,
+        )
+
+    def test_GH_1348_22(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_STR ) is
+                        when "A" then "A"; else "B" end viral propagation;
+                    DS_r <- DS_2 + DS_1;
+        Description: Case 21 in the other operand order raises the same error; it returned an
+                     all-null At_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_22",
+            number_inputs=2,
+            exception_code="1-3-3-6",
+            exception_message="Viral attribute At_1 has no viral propagation rule",
+            vd_names=self.vd_1348_c,
+        )
+
+    def test_GH_1348_23(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_STR ) is
+                        when "A" then "A"; else "B" end viral propagation;
+                    define viral propagation VP_2 ( valuedomain VD_STR2 ) is
+                        when "A" then "X"; else "X" end viral propagation;
+                    define viral propagation VP_3 ( variable At_1 ) is
+                        when "A" then "V"; else "W" end viral propagation;
+                    DS_r <- DS_2 + DS_1;
+        Description: Control of cases 19 and 20: the rule on the variable At_1 applies to the
+                     mix of VD_STR and VD_STR2, promoted to String.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_23",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1348_c,
+        )
