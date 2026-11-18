@@ -9374,3 +9374,51 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1348,
         )
+
+    def test_GH_1348_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , 1 );
+        Description: timeshift writes the shifted periods into the time Identifier Id_2, which
+                     is on VD_TP, so Id_2 has the basic type Time_Period; it kept VD_TP.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_5",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , all );
+        Description: fill_time_series writes the filled periods into the time Identifier Id_2,
+                     which is on VD_TP, so Id_2 has the basic type Time_Period; it kept VD_TP.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_6",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- dateadd ( DS_1 , 1 , "M" );
+        Description: dateadd on a Data Set writes Dates into the time Identifier Id_2, which is
+                     on VD_TP, so Id_2 has the basic type Date; it kept VD_TP.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_7",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
