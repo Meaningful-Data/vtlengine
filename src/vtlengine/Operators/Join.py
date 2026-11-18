@@ -19,7 +19,6 @@ from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Operators import (
     Operator,
     _id_type_promotion_join_keys,
-    check_downcasts,
     share_value_domains,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -251,7 +250,6 @@ class Join(Operator):
             cls._validate_nvl(operands, nvl)
             if result.data is not None:
                 cls._apply_nvl(result, nvl)
-        check_downcasts(result, operands, cls.op)
         return result
 
     @classmethod
