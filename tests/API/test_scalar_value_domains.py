@@ -384,3 +384,34 @@ def test_GH_1349_44c(use_duckdb):
         use_duckdb=use_duckdb,
     )
     assert result["SC_r"].value is None
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize(
+    "setlist", [None, ["2024-1-5 10:00:00"], ["2024-01-05 10:00:00"]], ids=["none", "short", "long"]
+)
+def test_GH_1349_35b(use_duckdb, setlist):
+    """A Date given unpadded with a time (2024-1-5 10:00:00) keeps the time on both engines,
+    as a scalar value and in the setlist of a value domain: DuckDB wrote the setlist value as
+    DATE '2024-1-5 10:00:00', which drops the time, so the scalar was not in VD_D."""
+    value_domains = (
+        None if setlist is None else [{"name": "VD_D", "type": "Date", "setlist": setlist}]
+    )
+    script = 'SC_r <- SC_5; SC_r2 <- SC_5 = cast("2024-01-05", date);'
+    if setlist is not None:
+        script += ' SC_r3 <- SC_5 in VD_D; SC_r4 <- cast("2024-01-05", date) in VD_D;'
+    result = run(
+        script=script,
+        data_structures={
+            "scalars": [{"name": "SC_5", "type": "Date" if setlist is None else "VD_D"}]
+        },
+        datapoints={},
+        value_domains=value_domains,
+        scalar_values={"SC_5": "2024-1-5 10:00:00"},
+        use_duckdb=use_duckdb,
+    )
+    assert result["SC_r"].value == "2024-01-05T10:00:00"
+    assert result["SC_r2"].value is False
+    if setlist is not None:
+        assert result["SC_r3"].value is True
+        assert result["SC_r4"].value is False
