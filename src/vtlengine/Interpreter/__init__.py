@@ -2204,19 +2204,14 @@ class InterpreterAnalyzer(ASTTemplate):
             dpr_info = {}
 
         signature = dpr_info.get("signature")
-        if dpr_info.get("signature_type") == "valuedomain" and node.components and signature:
-            signature, checks = bind_value_domains(
+        if dpr_info.get("signature_type") == "valuedomain" and signature:
+            signature = bind_value_domains(
                 dpr_name,
                 signature,
                 node.components,
                 dataset_element.components,
                 self.value_domains,
             )
-            if dataset_element.data is not None:
-                for comp_name, value_domain in checks.items():
-                    Operators.check_values(
-                        dataset_element.data[comp_name], value_domain, CHECK_DATAPOINT
-                    )
 
         rule_output_values = {}
         # Keep viral attributes out of rule handling; they are re-attached from the
@@ -2348,7 +2343,11 @@ class InterpreterAnalyzer(ASTTemplate):
             if self.is_from_hr_agg or self.is_from_hr_val:
                 # We only need to filter rule_data on DPR
                 return result_validation
-            self.rule_data["bool_var"] = result_validation.data
+            self.rule_data["bool_var"] = (
+                result_validation.value
+                if isinstance(result_validation, Scalar)
+                else result_validation.data
+            )
             original_data = merge_frames(
                 original_data, self.rule_data, how="left", on=original_data.columns.tolist()
             )

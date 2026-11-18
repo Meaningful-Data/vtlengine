@@ -101,32 +101,32 @@ def error_level_text(level: Any) -> str:
 def bind_value_domains(
     ruleset: str,
     signature: Dict[str, str],
-    called: List[str],
+    called: Optional[List[str]],
     components: Dict[str, Component],
     value_domains: Optional[Dict[str, ValueDomain]],
-) -> Tuple[Dict[str, str], Dict[str, ValueDomain]]:
+) -> Dict[str, str]:
     """The components a datapoint ruleset on value domains is called with, bound in order to the
-    value domains of its signature, or their aliases, and the ones whose
-    values must be checked against their value domain.
+    value domains of its signature, or their aliases.
 
-    A component defined on the value domain is used as it is, one of its basic type takes its
-    values (downcast), and one of another basic type raises. A value domain that is not given
-    is not checked."""
-    if all(name in components for name in signature.values()):
-        # Backwards compatibility, to be removed: value domains named as components of the
-        # Data Set are read as those components, whatever components the call lists
-        return signature, {}
+    The call must list the components, as many as the value domains, which must be given, and
+    each component must be defined on the value domain it is bound to."""
+    if not called:
+        raise SemanticError("1-1-10-14", op=CHECK_DATAPOINT, ruleset=ruleset)
     if len(called) != len(signature):
-        raise SemanticError("1-1-10-2", op=CHECK_DATAPOINT)
-    checks: Dict[str, ValueDomain] = {}
+        raise SemanticError(
+            "1-1-10-15",
+            op=CHECK_DATAPOINT,
+            ruleset=ruleset,
+            expected=len(signature),
+            found=len(called),
+        )
     for name, comp_name in zip(signature.values(), called):
-        value_domain = (value_domains or {}).get(name)
+        if value_domains is None:
+            raise SemanticError("1-2-22", comp_type="Value Domains")
+        if name not in value_domains:
+            raise SemanticError("1-2-8", name=name)
         component = components[comp_name]
-        if value_domain is None or (
-            component.value_domain is not None and component.value_domain.name == name
-        ):
-            continue
-        if component.data_type != value_domain.type:
+        if component.value_domain is None or component.value_domain.name != name:
             raise SemanticError(
                 "1-1-10-12",
                 op=CHECK_DATAPOINT,
@@ -135,8 +135,7 @@ def bind_value_domains(
                 value_domain=name,
                 ruleset=ruleset,
             )
-        checks[comp_name] = value_domain
-    return dict(zip(signature, called)), checks
+    return dict(zip(signature, called))
 
 
 class Check(Operator):

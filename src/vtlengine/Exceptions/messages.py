@@ -830,10 +830,22 @@ centralised_messages = {
         "operation and one of them has no when condition, so their results always overlap.",
     },
     "1-1-10-12": {
-        "message": "At op {op}: Component {comp_name} of type {type} cannot take the values of "
-        "the Value Domain {value_domain} of the ruleset {ruleset}.",
+        "message": "At op {op}: Component {comp_name} of type {type} is not defined on the Value "
+        "Domain {value_domain} of the ruleset {ruleset}.",
         "description": "Raised when a ruleset defined on value domains is called with a "
-        "component whose basic type is not the one of the value domain it is bound to.",
+        "component that is not defined on the value domain it is bound to.",
+    },
+    "1-1-10-14": {
+        "message": "At op {op}: The ruleset {ruleset} is defined on value domains, so the call "
+        "must list the components bound to them.",
+        "description": "Raised when check_datapoint calls a ruleset defined on value domains "
+        "without the components clause.",
+    },
+    "1-1-10-15": {
+        "message": "At op {op}: The ruleset {ruleset} is defined on {expected} value domains, "
+        "but the call lists {found} components.",
+        "description": "Raised when check_datapoint calls a ruleset defined on value domains "
+        "with another number of components than the value domains of its signature.",
     },
     "1-1-10-13": {
         "message": "The {element} {value} of {where} is not one of the values of the Value "
