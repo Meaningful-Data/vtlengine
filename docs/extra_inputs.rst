@@ -170,8 +170,9 @@ The ``value_domains`` parameter accepts the following formats:
         ValueDomain(name="Currencies", type=String, setlist=["EUR", "USD"]),
     ]
 
-``ValueDomain.to_dict()`` and ``ValueDomain.to_json()`` write the
-definition in this format, so it can be given back.
+A ``.json`` file that is not valid JSON raises ``0-1-1-40``, naming
+the file. ``ValueDomain.to_dict()`` and ``ValueDomain.to_json()``
+write the definition in this format, so it can be given back.
 
 
 VTL Usage
@@ -604,6 +605,9 @@ The ``external_routines`` parameter accepts the following formats:
         {"name": "SQL_1", "query": "SELECT * FROM DS_1;"},
         Path("data/SQL_2.json"),
     ]
+
+A ``.json`` file that is not valid JSON raises ``0-1-1-40``, naming
+the file.
 
 
 VTL Syntax

@@ -439,8 +439,7 @@ def _load_datastructure_single(
             except DataLoadError:
                 # Not SDMX-JSON, try as VTL JSON
                 pass
-            with open(data_structure, "r", encoding="utf-8-sig") as file:
-                structures = json.load(file)
+            structures = _load_json_file(data_structure)
             return _load_dataset_from_structure(structures, value_domains)
         # Unsupported extension
         raise InputValidationException(code="0-1-1-3", expected_ext=".json or .xml", ext=suffix)
@@ -696,11 +695,19 @@ def _validate_json(
         raise InputValidationException(code="0-2-1-1", element=identifier, error=e.message)
 
 
+def _load_json_file(input: Path) -> Any:
+    """The JSON a file holds. A file that is not valid JSON raises 0-1-1-40 naming it."""
+    with open(input, "r", encoding="utf-8-sig") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError as error:
+            raise InputValidationException(code="0-1-1-40", file=input, error=error) from None
+
+
 def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
     if input.suffix != ".json":
         raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
-    with open(input, "r", encoding="utf-8-sig") as f:
-        data = json.load(f)
+    data = _load_json_file(input)
     name = data.get("name") if isinstance(data, dict) else None
     _validate_json(data, vd_schema, kind="Value Domain", name=name or input.stem)
     vd = ValueDomain.from_dict(data)
@@ -822,8 +829,7 @@ def _load_single_external_routine_from_file(input: Path) -> Any:
     if input.suffix != ".json":
         raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
     routine_name = input.stem
-    with open(input, "r", encoding="utf-8-sig") as f:
-        data = json.load(f)
+    data = _load_json_file(input)
     name = data.get("name") if isinstance(data, dict) else None
     _validate_json(
         data, external_routine_schema, kind="External Routine", name=name or routine_name

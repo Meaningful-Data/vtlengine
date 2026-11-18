@@ -192,6 +192,11 @@ centralised_messages = {
         "(string, integer, number, boolean, date, time, time_period, duration, scalar), "
         "which a script cannot refer to as a Value Domain.",
     },
+    "0-1-1-40": {
+        "message": "File {file} is not valid JSON: {error}.",
+        "description": "Raised when a JSON file given as data structures, value domains or "
+        "external routines cannot be read as JSON.",
+    },
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",
         "description": "Occurs when an element (e.g., Identifier or component) "

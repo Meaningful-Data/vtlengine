@@ -3020,3 +3020,86 @@ def test_GH_1349_18(use_duckdb, type_name, value):
         use_duckdb=use_duckdb,
     )
     assert result["SC_r"].to_dict()["type"] == "VD_1"
+
+
+_STRUCTURES_1349 = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+            ],
+        }
+    ],
+    "scalars": [{"name": "SC_4", "type": "Integer"}],
+}
+
+_ROUTINE_1349 = (
+    'DS_r <- eval(SQL_1(DS_1) language "SQL" returns dataset'
+    " { identifier<integer> Id_1, measure<integer> Me_1 });"
+)
+
+_SQL_1 = {"name": "SQL_1", "query": "SELECT Id_1, Me_1 FROM DS_1"}
+
+
+def _datapoints_1349():
+    return {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [1, 3]})}
+
+
+def _run_1349(script, use_duckdb, **arguments):
+    arguments = {"datapoints": _datapoints_1349(), **arguments}
+    return run(script, _STRUCTURES_1349, use_duckdb=use_duckdb, **arguments)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_32(use_duckdb, tmp_path):
+    """A value_domains .json file that is not valid JSON raises the input error 0-1-1-40
+    naming the file; run and semantic_analysis raised a raw JSONDecodeError."""
+    path = tmp_path / "broken.json"
+    path.write_text("not json")
+    calls = [
+        lambda: _run_1349("DS_r <- DS_1;", use_duckdb, value_domains=path),
+        lambda: semantic_analysis("DS_r <- DS_1;", _STRUCTURES_1349, path),
+        lambda: validate_value_domain(path),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-1-1-40"
+        assert "broken.json" in error.value.args[0]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_32b(use_duckdb, tmp_path):
+    """The data structures read from a .json file that is not valid JSON raise the same input
+    error 0-1-1-40 as the value domains of case 32; they raised a raw JSONDecodeError."""
+    path = tmp_path / "broken.json"
+    path.write_text("not json")
+    calls = [
+        lambda: run("DS_r <- DS_1;", path, _datapoints_1349(), use_duckdb=use_duckdb),
+        lambda: semantic_analysis("DS_r <- DS_1;", path),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-1-1-40"
+        assert "broken.json" in error.value.args[0]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_33(use_duckdb, tmp_path):
+    """An external_routines .json file that is not valid JSON raises the input error 0-1-1-40
+    naming the file; run and semantic_analysis raised a raw JSONDecodeError."""
+    path = tmp_path / "broken.json"
+    path.write_text("not json")
+    calls = [
+        lambda: _run_1349(_ROUTINE_1349, use_duckdb, external_routines=path),
+        lambda: semantic_analysis(_ROUTINE_1349, _STRUCTURES_1349, external_routines=path),
+        lambda: validate_external_routine(path),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-1-1-40"
+        assert "broken.json" in error.value.args[0]
