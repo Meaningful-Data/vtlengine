@@ -174,6 +174,26 @@ def _build_scalar(
     )
 
 
+def _reject_subset_key(structures: Dict[str, Any]) -> None:
+    """A Component or a scalar names its value domain in its type: the legacy subset key, which
+    was ignored, is rejected (issue #1349)."""
+    elements = [
+        (f"{_SECTION_KINDS[section]} '{element['name']}'", item)
+        for section, key in (("datasets", "DataStructure"), ("structures", "components"))
+        for element in structures.get(section, [])
+        for item in element.get(key, [])
+    ]
+    elements += [(f"Scalar '{scalar['name']}'", scalar) for scalar in structures.get("scalars", [])]
+    for element, item in elements:
+        if "subset" in item:
+            raise InputValidationException(
+                code="0-2-1-1",
+                element=element,
+                error=f"the key 'subset' of {item['name']} is not accepted; name the value "
+                f'domain in its type instead ("type": "{item["subset"]}")',
+            )
+
+
 def _load_dataset_from_structure(
     structures: Dict[str, Any],
     value_domains: Optional[Dict[str, ValueDomain]] = None,
@@ -183,6 +203,7 @@ def _load_dataset_from_structure(
     """
     structure_schema = _structure_schema(tuple(sorted(value_domains or {})))
     _validate_json(structures, structure_schema, kind="DataStructures")
+    _reject_subset_key(structures)
 
     datasets = {
         dataset_json["name"]: Dataset(

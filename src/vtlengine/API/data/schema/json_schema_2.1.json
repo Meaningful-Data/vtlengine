@@ -41,7 +41,6 @@
                 "nullable": {"type": "boolean"},
                 "type": {"$ref": "#/$defs/data-type"},
                 "data_type": {"$ref": "#/$defs/data-type"},
-                "subset": {"$ref": "#/$defs/vtl-id"},
                 "description": {"type": "string"}
             },
             "required": ["name", "role"],

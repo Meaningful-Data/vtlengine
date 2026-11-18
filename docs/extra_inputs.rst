@@ -271,7 +271,9 @@ value domain and has its basic type:
     {"name": "Id_2", "type": "VD_FLOW", "role": "Identifier", "nullable": false}
 
 A type that is neither a basic type nor the name of a value
-domain given raises ``0-2-1-1``. Loading the datapoints checks
+domain given raises ``0-2-1-1``, and so does the legacy ``subset``
+key of a Component or a scalar, which is not accepted: the value
+domain is named in the ``type``. Loading the datapoints checks
 that every value of the Component is a value of its value
 domain, and raises ``0-3-1-6`` on another one. Nulls follow
 ``nullable``, as with a basic type.

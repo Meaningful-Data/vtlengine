@@ -2954,3 +2954,31 @@ def test_GH_1343_run_rejects_an_unused_invalid_value_domain(use_duckdb):
         use_duckdb=use_duckdb,
     )
     assert result["SC_r"].value is True
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_16(use_duckdb):
+    """The legacy subset key of a Component or a scalar was ignored, so OTHER loaded into a
+    Component declared String with subset VD_1. It is rejected with an input error that tells
+    to name the value domain in the type, by run, semantic_analysis and validate_dataset."""
+    value_domains = [{"name": "VD_1", "type": "String", "setlist": ["A", "B"]}]
+    identifier = {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False}
+    measure = {"name": "Me_3", "role": "Measure", "type": "String", "subset": "VD_1"}
+    dataset = {"datasets": [{"name": "DS_1", "DataStructure": [identifier, measure]}]}
+    scalar = {"datasets": [], "scalars": [{"name": "SC_1", "type": "String", "subset": "VD_1"}]}
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_3": ["A", "OTHER"]})}
+    calls = [
+        lambda: run("DS_r <- DS_1;", dataset, datapoints, value_domains, use_duckdb=use_duckdb),
+        lambda: run("SC_r <- SC_1;", scalar, {}, value_domains, use_duckdb=use_duckdb),
+        lambda: semantic_analysis("DS_r <- DS_1;", dataset, value_domains),
+        lambda: semantic_analysis("SC_r <- SC_1;", scalar, value_domains),
+        lambda: validate_dataset(
+            dataset, datapoints, use_duckdb=use_duckdb, value_domains=value_domains
+        ),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-2-1-1"
+        assert "is not accepted; name the value domain in its type instead" in error.value.args[0]
+        assert '("type": "VD_1")' in error.value.args[0]
