@@ -1101,16 +1101,40 @@ class StructureVisitor(ASTTemplate):
         return comp.role
 
     def _calc_value_domain(self, node: AST.AST, source: Dataset) -> Optional[ValueDomain]:
-        """The value domain of a calc expression: the one of a Component written alone, or the
-        one a cast gives (issue #1350)."""
+        """The value domain of a calc expression, as the pandas engine gives it (issue #1350):
+        the one of a Component written alone (also in parentheses, or as ``alias#name`` in a
+        join), the one a cast gives, and the one that all the operands of nvl, if-then-else
+        and case are on, nulls aside. Any other expression computes values of a basic type."""
+        if isinstance(node, AST.ParFunction):
+            return self._calc_value_domain(node.operand, source)
         if isinstance(node, AST.VarID):
             comp = source.components.get(self._resolve_udo_name(node.value))
+            return None if comp is None else comp.value_domain
+        if isinstance(node, AST.BinOp) and node.op == tokens.MEMBERSHIP:
+            alias = self._resolve_udo_name(self._resolve_name(node.left))
+            name = self._resolve_udo_name(self._resolve_name(node.right))
+            comp = source.components.get(f"{alias}#{name}") or source.components.get(name)
             return None if comp is None else comp.value_domain
         if isinstance(node, AST.ParamOp) and node.op == tokens.CAST and len(node.children) > 1:
             target = node.children[1]
             if isinstance(target, AST.Collection):
                 return self.value_domains.get(target.name)
-        return None
+            return None
+        if isinstance(node, AST.BinOp) and node.op == tokens.NVL:
+            operands = [node.left, node.right]
+        elif isinstance(node, AST.If):
+            operands = [node.thenOp, node.elseOp]
+        elif isinstance(node, AST.Case):
+            operands = [case.thenOp for case in node.cases] + [node.elseOp]
+        else:
+            return None
+        domains = [
+            self._calc_value_domain(operand, source)
+            for operand in operands
+            if not (isinstance(operand, AST.Constant) and operand.value is None)
+        ]
+        names = {None if domain is None else domain.name for domain in domains}
+        return domains[0] if len(names) == 1 else None
 
     def _calc_value_type(self, node: AST.AST, source: Dataset) -> Any:
         """Data type of a calc expression, or ``None`` when unknown.
@@ -1413,6 +1437,8 @@ class StructureVisitor(ASTTemplate):
                     comps[qualified] = self._make_comp(
                         qualified, comp.data_type, role=comp.role, nullable=comp.nullable
                     )
+                    # Only the name changes, so it keeps its value domain (issue #1350)
+                    comps[qualified].value_domain = comp.value_domain
                 elif comp_name not in comps:
                     comps[comp_name] = comp
         if not comps:

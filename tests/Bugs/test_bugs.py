@@ -9199,3 +9199,84 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1350,
         )
+
+    def test_GH_1350_4f(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X > 1 errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 [ calc Me_5 := nvl ( Me_1 , Me_5 ) ] ,
+                                                DPR_1 components Me_5 invalid );
+        Description: Me_5 is overwritten by nvl of Me_1 and Me_5, both on VD_2, so it keeps VD_2.
+                     DuckDB gave it the basic type and raised 1-1-10-12.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4f",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4g(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X > 1 errorcode "E1" end datapoint ruleset;
+                    DS_r1 <- check_datapoint ( DS_1 [ calc Me_5 := if Me_1 > 1 then Me_5
+                                                                       else Me_1 ] ,
+                                                 DPR_1 components Me_5 invalid );
+                    DS_r2 <- check_datapoint ( DS_1 [ calc Me_5 := case when Me_1 > 1 then Me_5
+                                                                         else Me_1 ] , ... );
+        Description: The same overwrite with if-then-else and with case: their operands Me_5
+                     and Me_1 are on VD_2, so Me_5 keeps VD_2 (1-1-10-12 on DuckDB).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4g",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4h(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X > 1 errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 [ calc Me_6 := nvl ( Me_1 , Me_5 ) ] ,
+                                                DPR_1 components Me_6 invalid );
+        Description: Me_6, a new Component from nvl of Me_1 and Me_5, both on VD_2, is on VD_2
+                     (1-1-10-12 on DuckDB).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4h",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4i(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X > 1 errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( inner_join ( DS_1 as d , DS_2 as e
+                                                             calc Me_5 := d#Me_1
+                                                             drop d#Me_1 , e#Me_1 ) ,
+                                                DPR_1 components Me_5 invalid );
+        Description: Me_5 is overwritten by d#Me_1, a Component on VD_2 written alone in the calc of
+                     a join, so it keeps VD_2 (1-1-10-12 on DuckDB).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4i",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
