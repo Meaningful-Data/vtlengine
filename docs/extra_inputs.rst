@@ -319,6 +319,13 @@ Measures) follow the VTL type conversion rules:
     /* Me_1 and Me_2 are on VD_FLOW: Me_3 keeps VD_FLOW (Id_3 is a String) */
     DS_r <- DS_1 [unpivot Id_3, Me_3];
 
+The Identifiers of the conditions and of the Data Set operands of
+``if-then-else`` and ``case`` match on their names and basic types,
+as in ``nvl`` and the set operators: an Identifier on a value domain
+matches one of its basic type, and the result Identifier follows the
+rules above, the conditions included. Identifiers of different basic
+types raise ``1-1-9-10``.
+
 ``cast`` converts a value into a value domain in two steps: it
 casts the value to the basic type of the value domain, as a cast
 to that type does, and the result must be one of the values of the
