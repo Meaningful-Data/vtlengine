@@ -833,28 +833,31 @@ def _load_single_external_routine_from_file(input: Path) -> Dict[str, ExternalRo
     return cast(Dict[str, ExternalRoutine], load_external_routines(data))
 
 
-def _check_output_folder(output_folder: Union[str, Path]) -> None:
+def _check_output_folder(output_folder: Union[str, Path], use_duckdb: bool = False) -> None:
     """
-    Check if the output folder exists. If not, it will create it.
+    Check that the output folder is a folder, on both engines: an existing path must be a
+    folder, and a missing one is created with its parents, unless it has a file suffix
+    (result.csv), which is rejected. S3 URIs are left to the DuckDB engine.
     """
     if isinstance(output_folder, str):
         if "s3://" in output_folder:
+            if use_duckdb:
+                return
             raise InputValidationException(
                 code="0-1-1-2",
                 input=output_folder,
                 message="S3 URIs are only supported with use_duckdb=True.",
             )
-        try:
-            output_folder = Path(output_folder)
-        except Exception:
-            raise DataLoadError("0-3-1-2", folder=str(output_folder))
+        output_folder = Path(output_folder)
 
     if not isinstance(output_folder, Path):
+        raise DataLoadError("0-3-1-2", folder=str(output_folder))
+    if output_folder.exists() and not output_folder.is_dir():
         raise DataLoadError("0-3-1-2", folder=str(output_folder))
     if not output_folder.exists():
         if output_folder.suffix != "":
             raise DataLoadError("0-3-1-2", folder=str(output_folder))
-        os.mkdir(output_folder)
+        output_folder.mkdir(parents=True)
 
 
 def __generate_transformation(

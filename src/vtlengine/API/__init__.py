@@ -368,6 +368,10 @@ def _run_with_duckdb(
     # Run semantic analysis to get output structures
     loaded_routines = load_external_routines(external_routines) if external_routines else None
 
+    # Checking the output path to be a folder before the analysis, as the pandas engine does
+    if output_folder:
+        _check_output_folder(output_folder, use_duckdb=True)
+
     interpreter = InterpreterAnalyzer(
         datasets=copy.deepcopy(input_datasets),
         value_domains=loaded_vds,
@@ -540,8 +544,9 @@ def run(
         return_only_persistent: If True, run function will only return the results of \
         Persistent Assignments. (default: True)
 
-        output_folder: Path to the output folder. S3 URIs are supported when \
-        ``use_duckdb=True``. (default: None)
+        output_folder: Path to the output folder. A missing folder is created with its \
+        parents; an existing file, or a missing path with a file suffix (``result.csv``), \
+        raises ``0-3-1-2``. S3 URIs are supported when ``use_duckdb=True``. (default: None)
 
         scalar_values: Dict with the scalar values to be used in the VTL script.
 
@@ -723,7 +728,7 @@ def run_sdmx(
         return_only_persistent: If True, run function will only return the results of \
         Persistent Assignments. (default: True)
 
-        output_folder: Path to the output folder. (default: None)
+        output_folder: Path to the output folder, checked as in :obj:`run`. (default: None)
 
         use_duckdb: If True, use DuckDB as the execution engine instead of pandas. \
         This transpiles VTL to SQL and executes it using DuckDB, which can be more \

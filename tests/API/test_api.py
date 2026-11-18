@@ -3090,6 +3090,39 @@ def test_GH_1349_25(use_duckdb):
 
 
 @pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_26(use_duckdb, tmp_path):
+    """An output_folder that does not exist yet, nested in another missing folder, is created
+    with its parents and the results are written there; pandas raised FileNotFoundError."""
+    output_folder = tmp_path / "missing" / "deeper"
+    _run_1349("DS_r <- DS_1;", use_duckdb, output_folder=output_folder)
+    written = pd.read_csv(output_folder / "DS_r.csv").sort_values("Id_1")
+    assert written["Me_1"].tolist() == [1, 3]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_27(use_duckdb, tmp_path):
+    """An output_folder that is an existing file raises 0-3-1-2 on both engines; pandas raised
+    a raw OSError and DuckDB a raw FileExistsError."""
+    output_folder = tmp_path / "out.txt"
+    output_folder.write_text("x")
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, output_folder=output_folder)
+    assert error.value.args[1] == "0-3-1-2"
+    assert output_folder.read_text() == "x"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_28(use_duckdb, tmp_path):
+    """A missing output_folder with a file suffix (result.csv) raises 0-3-1-2 on both engines;
+    DuckDB created a folder named result.csv and wrote the results into it."""
+    output_folder = tmp_path / "result.csv"
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, output_folder=output_folder)
+    assert error.value.args[1] == "0-3-1-2"
+    assert not output_folder.exists()
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
 def test_GH_1349_31(use_duckdb, tmp_path):
     """external_routines given as a Path to a JSON file holding an array of routines loads
     every routine of the array, as the documentation says; it raised a raw TypeError."""
