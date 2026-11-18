@@ -398,7 +398,10 @@ Value domains also appear in the VTL-DL definitions:
   are values of the type of the value domain, whatever form they are
   written in: ``when "2024Q1"`` matches the ``Time_Period``
   ``2024-Q1``, and ``then "2024-1-6"`` gives the ``Date``
-  ``2024-01-06``. The rule
+  ``2024-01-06``. A rule on a variable reads its constants as values
+  of the type of the Attribute it applies to in the same way, and two
+  ``when`` on the same values written in two forms raise
+  ``1-3-3-4``. The rule
   applies to the viral attributes defined on the value domain,
   unless a rule on the variable overrides
   it. Where a viral attribute is combined, the rule on its value

@@ -10267,3 +10267,43 @@ class ValueDomainBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1349_50", number_inputs=1, references_names=["1"])
+
+    def test_GH_1349_53(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( variable At_1 ) is
+                        when "2024Q1" then "2024Q2"; else "2024Q1" end viral propagation;
+                    define viral propagation VP_2 ( variable At_2 ) is
+                        when "2024-1-5" then "2024-1-6"; else "2024-1-5"
+                    end viral propagation;
+                    DS_r <- DS_1 + DS_1;
+                    DS_r2 <- DS_2 + DS_2;
+        Description: As case 41 for rules on a variable: the constants are values of the type
+                     of the Attribute the rule applies to (the Time_Period At_1, the Date
+                     At_2), whatever form they are written in, and the result is written as a
+                     value of that type. pandas took the else, DuckDB gave null for At_1 and
+                     wrote the constants of At_2 as written.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_53", number_inputs=2, references_names=["1", "2"])
+
+    def test_GH_1349_53b(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( variable At_1 ) is
+                        when "2024Q1" then "2024Q2"; when "2024-Q1" then "2024Q1";
+                        else "2024Q1" end viral propagation;
+                    DS_r <- DS_1 + DS_1;
+        Description: "2024Q1" and "2024-Q1" are one Time_Period, so the two when are the same
+                     combination for the Time_Period At_1 and raise 1-3-3-4. Only the text was
+                     compared, so the rule was accepted.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_53b",
+            number_inputs=1,
+            exception_code="1-3-3-4",
+            exception_message="Duplicate enumeration combination",
+        )

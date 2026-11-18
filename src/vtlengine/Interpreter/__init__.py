@@ -145,6 +145,7 @@ from vtlengine.Utils._number_config import format_scalar_value_for_csv
 from vtlengine.ViralPropagation import (
     ViralPropagationRegistry,
     ViralPropagationRule,
+    check_duplicate_clauses,
     get_current_registry,
     is_value_of_domain,
     set_current_registry,
@@ -623,13 +624,23 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.enumerated_clauses and node.aggregate_clause:
             raise SemanticError("1-3-3-3", name=node.name)
 
-        # Validate: no duplicate enumeration combinations
-        seen_values: Set[frozenset[str]] = set()
-        for clause in node.enumerated_clauses:
-            key = frozenset(clause.values)
-            if key in seen_values:
-                raise SemanticError("1-3-3-4", values=clause.values, name=node.name)
-            seen_values.add(key)
+        # Validate: no duplicate enumeration combinations, compared as values of the type of
+        # the value domain of the rule; a rule on a variable is checked again against the
+        # Attribute it applies to (issue #1349)
+        domain_type = (
+            self.value_domains[node.target].type
+            if node.signature_type == "valuedomain"
+            and self.value_domains is not None
+            and node.target in self.value_domains
+            else None
+        )
+        check_duplicate_clauses(
+            node.name,
+            (
+                [value_of(domain_type, v) for v in clause.values]
+                for clause in node.enumerated_clauses
+            ),
+        )
 
         # Validate: no duplicate rules for the same variable
         if registry.get_existing(node.signature_type, node.target) is not None:
@@ -650,20 +661,10 @@ class InterpreterAnalyzer(ASTTemplate):
                         value_domain=domain.name,
                     )
 
-        # The constants of a rule on a value domain are values of its type, matched with the
-        # data and written in the form the loaders write them in, whatever form they are
-        # written in: "2024Q1" is the Time_Period 2024-Q1 (issue #1349)
-        def constant(value: Any) -> Any:
-            if node.signature_type != "valuedomain":
-                return value
-            return value_of(self._value_domain(node.target).type, value)
-
+        # The constants are read as values of the type of the Attribute the rule applies to
+        # by ViralPropagationRegistry.rule_for (issue #1349)
         enumerated_clauses = [
-            {
-                "values": [constant(value) for value in clause.values],
-                "result": constant(clause.result),
-            }
-            for clause in node.enumerated_clauses
+            {"values": clause.values, "result": clause.result} for clause in node.enumerated_clauses
         ]
         aggregate_function = node.aggregate_clause.function if node.aggregate_clause else None
 
@@ -673,7 +674,7 @@ class InterpreterAnalyzer(ASTTemplate):
             target=node.target,
             enumerated_clauses=enumerated_clauses,
             aggregate_function=aggregate_function,
-            default_value=constant(node.default_value),
+            default_value=node.default_value,
         )
         registry.register(rule)
 
