@@ -983,19 +983,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Visit a Collection (Set or ValueDomain reference)."""
         if node.kind == "ValueDomain":
             return self._visit_value_domain(node)
-        values = [self._visit_collection_element(child) for child in node.children]
+        values = [self.visit(child) for child in node.children]
         return f"({', '.join(values)})"
-
-    def _visit_collection_element(self, child: AST.AST) -> str:
-        """Visit a set element, preserving raw CAST behavior for time_period literals."""
-        if isinstance(child, AST.ParamOp) and child.op == tokens.CAST:
-            type_node = child.children[1]
-            if type_node == TimePeriod:
-                source_type = self._get_source_vtl_type(child.children[0])
-                if source_type not in (Date, TimeInterval):
-                    operand_sql = self.visit(child.children[0])
-                    return f"CAST({operand_sql} AS VARCHAR)"
-        return self.visit(child)
 
     def _resolve_value_domain_name(self, name: str) -> str:
         """The value domain a set parameter of a user defined operator is bound to, through the

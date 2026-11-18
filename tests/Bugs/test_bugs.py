@@ -10053,3 +10053,30 @@ class ValueDomainBugs(BugHelper):
         self.BaseTest(
             code="GH_1349_24", number_inputs=1, references_names=["1"], scalars={"SC_2": "2024Q1"}
         )
+
+    def test_GH_1349_38(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := Me_1 in { cast ( "2024Q2" , time_period ) } ,
+                                   Me_3 := Me_1 not_in { cast ( "2024Q2" , time_period ) } ];
+                    DS_r2 <- DS_1 [ keep Me_1 ] in { cast ( "2024Q2" , time_period ) };
+                    DS_r3 <- DS_2 in { cast ( "2024-01-05T00:00:00" , date ) ,
+                                       cast ( "2024-01-06 10:00:00" , date ) };
+        Description: The elements of a literal set are values of their type: a Time_Period or
+                     a Date is in the set holding its value in any form, for a Component and
+                     at Data Set level. Both engines compared the text of the elements, so
+                     Me_2 was false for the data point holding 2024Q2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_38", number_inputs=2, references_names=["1", "2", "3"])
+
+    def test_GH_1349_40(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := Me_1 = cast ( "2024Q2" , time_period ) ];
+        Description: Control of case 38: the same value compared with =.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_40", number_inputs=1, references_names=["1"])

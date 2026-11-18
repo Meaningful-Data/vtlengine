@@ -1,0 +1,4 @@
+DS_r <- DS_1 [ calc Me_2 := Me_1 in { cast ( "2024Q2" , time_period ) } ,
+                   Me_3 := Me_1 not_in { cast ( "2024Q2" , time_period ) } ];
+DS_r2 <- DS_1 [ keep Me_1 ] in { cast ( "2024Q2" , time_period ) };
+DS_r3 <- DS_2 in { cast ( "2024-01-05T00:00:00" , date ) , cast ( "2024-01-06 10:00:00" , date ) };

@@ -566,19 +566,12 @@ class ScalarSet:
 
     data_type: Type[ScalarType]
     _values: List[Union[int, float, str, bool]]
-    # The value domain the set holds the values of, which a value is compared with as a value
-    # of its type, whatever form it is written in (issue #1349)
-    value_domain: Optional["ValueDomain"]
 
     def __init__(
-        self,
-        data_type: Type[ScalarType],
-        values: List[Union[int, float, str, bool]],
-        value_domain: Optional["ValueDomain"] = None,
+        self, data_type: Type[ScalarType], values: List[Union[int, float, str, bool]]
     ) -> None:
         self.data_type = data_type
         self.values = values
-        self.value_domain = value_domain
 
     @property
     def values(self) -> List[Union[int, float, str, bool]]:
@@ -603,9 +596,13 @@ class ScalarSet:
         if self.data_type == DataTypes.Null:
             return None
         value = self.data_type.cast(item)
-        if self.value_domain is not None:
-            return value_of(self.data_type, value) in self.value_domain.values()
-        return value in self.values
+        return value_of(self.data_type, value) in self.compared_values()
+
+    def compared_values(self) -> List[Any]:
+        """The values of the set, each written as the loaders write the values of its type: a
+        value is compared with them as a value of its type, whatever form it is written in
+        (issue #1349)."""
+        return [value_of(self.data_type, value) for value in self.values]
 
 
 @dataclass

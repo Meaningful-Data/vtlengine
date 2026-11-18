@@ -343,3 +343,18 @@ def test_GH_1349_37(use_duckdb):
     assert result["SC_r"].value == "2024-01-05"
     assert result["SC_r2"].value is True
 
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_39(use_duckdb):
+    """A Time_Period scalar is in a literal set holding its value in any form: pandas compared
+    the text of the elements, DuckDB the text of the elements cast to VARCHAR."""
+    result = run(
+        script='SC_r <- SC_2 in {cast("2024Q1", time_period)};'
+        ' SC_r2 <- SC_2 in {cast("2024-Q1", time_period)};',
+        data_structures={"scalars": [{"name": "SC_2", "type": "Time_Period"}]},
+        datapoints={},
+        scalar_values={"SC_2": "2024Q1"},
+        use_duckdb=use_duckdb,
+    )
+    assert result["SC_r"].value is True
+    assert result["SC_r2"].value is True

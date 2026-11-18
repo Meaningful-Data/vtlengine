@@ -202,6 +202,10 @@ one holding ``"2024-01-05"``. The same holds wherever a value is
 checked against a value domain: ``in`` and ``not_in``, the values of
 a Component or a scalar on a value domain, ``cast`` into a value
 domain and the parameters of a user defined operator typed by one.
+The elements of a literal set are compared in the same way, as values
+of their type: ``Me_1 in {cast("2024-Q2", time_period)}`` is true for
+the ``Time_Period`` ``2024Q2``, as ``Me_1 = cast("2024-Q2",
+time_period)`` is.
 
 
 Example

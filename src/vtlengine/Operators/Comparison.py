@@ -288,14 +288,10 @@ class In(Binary):
         if right_series.data_type == String:
             # A Boolean operand is promoted to String (issue #1314)
             left_series = to_strings(left_series)
-        values: Any = right_series.values
-        domain = right_series.value_domain
-        if domain is not None:
-            # A value is compared with the values of a value domain as a value of its type,
-            # whatever form it is written in (issue #1349)
-            values = domain.values()
-            left_series = values_of(domain.type, left_series)
-        result = left_series.isin(values)
+        # A value is compared with the values of the set as a value of its type, whatever form
+        # it is written in (issue #1349)
+        left_series = values_of(right_series.data_type, left_series)
+        result = left_series.isin(right_series.compared_values())
         return result.where(left_series.notna(), other=pd.NA).astype("bool[pyarrow]")
 
     @classmethod
