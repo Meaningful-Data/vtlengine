@@ -8604,3 +8604,75 @@ class ValueDomainBugs(BugHelper):
             "lists 1 components",
             vd_names=self.vd_1338,
         )
+
+    vd_1350 = [
+        "GH_1350-VD_1",
+        "GH_1350-VD_2",
+        "GH_1350-VD_TP",
+        "GH_1350-VD_TP1",
+        "GH_1350-VD_TI",
+    ]
+
+    def test_GH_1350_1a(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := cast ( Me_1 , VD_TP ) ];
+        Description: A String cast into VD_TP, a Time_Period value domain of two values, gives
+                     Me_3 on VD_TP. On DuckDB, the commas of the setlist split the argument of
+                     the macro that checks it into several arguments (ParserException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_1a",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_1b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := cast ( Me_2 , VD_TI ) ];
+        Description: A Time_Period cast into VD_TI, a Time value domain of two values, gives Me_3 on
+                     VD_TI. On DuckDB, it raised a ParserException as 1a.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_1b",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_1c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ filter Id_1 = 1 ] [ calc Me_3 := cast ( Me_1 , VD_TP1 ) ];
+        Description: A String cast into VD_TP1, a Time_Period value domain of one value, gives Me_3
+                     on VD_TP1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_1c",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_1d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := cast ( Me_1 , time_period ) ];
+        Description: A String cast into the basic type of VD_TP gives a Time_Period.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_1d",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
