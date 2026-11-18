@@ -276,6 +276,10 @@ below), the Components that ``filter``, ``keep``, ``drop``,
 ``rename``, ``sub`` and the joins keep, and a Component written
 alone in ``calc`` (``calc Me_3 := Id_2``). ``run()`` and
 ``semantic_analysis()`` write ``"type": "VD_FLOW"`` for them.
+A join ``apply`` gives each Measure the type and the value domain
+its expression gives, as ``calc`` does: ``apply nvl(a, b)`` follows
+the rules of ``nvl`` below, and ``apply a + b`` gives the basic
+type.
 
 A Component into which an operator writes new values has its basic
 type, as those values are not values of the value domain: the time
