@@ -9125,3 +9125,59 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1350,
         )
+
+    def test_GH_1350_2c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc identifier Me_2 := Me_2 ] [ pivot Me_2 , Me_4 ];
+        Description: Me_2, a Measure on VD_1, becomes an Identifier on VD_1 in the calc of the same
+                     statement, and is pivoted into a Measure per value of VD_1. On DuckDB, the calc
+                     rebuilt Me_2 without its value domain (AttributeError, as 2a).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_2c",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4d(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X > 1 errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 [ calc attribute Me_4 := Me_1 ] ,
+                                                DPR_1 components Me_4 invalid );
+        Description: Me_4, an Integer Measure, becomes an Attribute written from Me_1 alone, so
+                     it is on VD_2. DuckDB rebuilt it with its old type and no value domain and
+                     raised 1-1-10-12.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4d",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4e(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X > 1 errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 [ calc Me_5 := cast ( Me_5 , VD_2 ) ] ,
+                                                DPR_1 components Me_5 invalid );
+        Description: Me_5, a String Measure, is overwritten by its cast into VD_2. DuckDB kept the
+                     String of the operand and raised 1-1-10-12.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4e",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )

@@ -1059,18 +1059,22 @@ class StructureVisitor(ASTTemplate):
                 col = self._resolve_udo_name(self._resolve_name(assignment.left))
                 if getattr(child, "is_implicit_role", False):
                     calc_role = self._omitted_role(node, input_ds.components.get(col))
-                if col in comps and comps[col].role != calc_role:
+                if col in comps:
+                    # An overwritten Component takes the type and the value domain of its
+                    # expression, as a new one does, with its role or another (issue #1350)
                     old = comps[col]
                     nullable = old.nullable if calc_role != Role.IDENTIFIER else False
-                    comps[col] = self._make_comp(old.name, old.data_type, calc_role, nullable)
-                elif col not in comps and output_ds and col in output_ds.components:
+                    value_type = self._calc_value_type(assignment.right, input_ds) or old.data_type
+                    comps[col] = self._make_comp(col, value_type, calc_role, nullable)
+                    comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
+                elif output_ds and col in output_ds.components:
                     # The result holds the Component as the last calc computes it, so its
                     # type only stands in for an expression not typed here (issue #1309)
                     comp = output_ds.components[col]
                     value_type = self._calc_value_type(assignment.right, input_ds) or comp.data_type
                     comps[col] = self._make_comp(col, value_type, comp.role, comp.nullable)
                     comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
-                elif col not in comps:
+                else:
                     # calc_role comes from the clause itself, so a new component keeps
                     # its declared role even without an output structure to consult.
                     comps[col] = self._make_comp(

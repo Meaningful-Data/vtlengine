@@ -1,0 +1,6 @@
+define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+    r1 : X > 1 errorcode "E1"
+end datapoint ruleset;
+
+DS_r <- check_datapoint ( DS_1 [ calc Me_5 := cast ( Me_5 , VD_2 ) ] ,
+                            DPR_1 components Me_5 invalid );
