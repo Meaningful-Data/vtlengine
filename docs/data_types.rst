@@ -706,10 +706,18 @@ The target of ``cast`` can be the name of a value domain given in
 
     DS_r <- DS_1 [calc Me_2 := cast(Me_1, VD_1)];
 
-The operand must be of the basic type of the value domain, or on
-another value domain of that type. Any other type raises
-``1-1-5-1``; cast it to the basic type first. A value that is not a
-value of the value domain raises ``2-1-5-4`` (``1-1-5-6`` for a
-literal). The result is defined on the value domain, and the
-Measure of a Data Set keeps its name. A scalar keeps the basic type,
-as no scalar is defined on a value domain.
+As the VTL manual describes, the cast converts the operand to the
+basic type of the value domain, and then checks that the result is
+a value of the value domain: ``cast(Me_1, VD_1)`` gives the values
+of ``cast(cast(Me_1, <basic type of VD_1>), VD_1)``. The operand
+can be of any type that casts to the basic type without a mask,
+following the tables above, or on another value domain of such a
+type; any other type raises ``1-1-5-1``. With a mask, the cast to
+the basic type uses it. A value that is not a value of the value
+domain raises ``2-1-5-4`` (``1-1-5-6`` for a literal).
+
+The result is defined on the value domain. The Measure of a Data
+Set is named as in a cast to the basic type: it keeps its name when
+its type is implicitly promoted to the basic type, and takes the
+generic name otherwise (``int_var`` for a value domain of
+integers). A scalar is defined on the value domain as well.

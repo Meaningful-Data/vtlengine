@@ -7277,7 +7277,9 @@ class CastBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , VD_1 ) ];
-        Description: VD_1, a value domain of Strings, takes no Integer.
+        Description: The Integer 1 is cast to the String "1", the basic type of VD_1, which is
+                     not a value of VD_1. It raised 1-1-5-1 before the cast to a value domain
+                     applied the casts of the basic types (issue #1342).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1241
         Goal: Check Exception.
         """
@@ -7287,8 +7289,8 @@ class CastBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
-            exception_code="1-1-5-1",
-            exception_message="Type Integer, cannot be cast to VD_1",
+            exception_code="2-1-5-4",
+            exception_message="At op cast: Cannot cast 1 of String to Value Domain VD_1",
             vd_names=["GH_1241-VD_1"],
         )
 
@@ -7328,6 +7330,89 @@ class CastBugs(BugHelper):
             exception_code="1-2-8",
             exception_message="Missing value domain 'VD_3' definition",
             vd_names=["GH_1241-VD_1"],
+        )
+
+    vd_1342 = [
+        "GH_1342-VD_INT",
+        "GH_1342-VD_NUM",
+        "GH_1342-VD_CODE",
+        "GH_1342-VD_DATE",
+        "GH_1342-VD_INT2",
+    ]
+
+    def test_GH_1342_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_1 := cast ( Me_s , VD_INT ) ,
+                                        Me_2 := cast ( Me_i , VD_NUM ) ,
+                                        Me_3 := cast ( Me_i , VD_CODE ) ,
+                                        Me_4 := cast ( Me_b , VD_INT ) ,
+                                        Me_5 := cast ( Me_d , VD_DATE ) ,
+                                        Me_6 := cast ( Me_n , VD_INT ) ,
+                                        Me_7 := cast ( Me_v , VD_NUM ) ,
+                                        Me_8 := cast ( "3" , VD_INT ) ] [ keep ... ];
+        Description: A cast to a value domain casts to its basic type first, from any type that
+                     casts to it: String, Integer, Boolean and Number, and another value domain
+                     (VD_INT2) of another basic type. They raised 1-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1342
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1342_1",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1342,
+        )
+
+    def test_GH_1342_2(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- cast ( DS_1 , VD_INT ); DS_r2 <- cast ( DS_2 , VD_CODE );
+                    DS_r3 <- cast ( DS_2 , VD_NUM ) + 1; DS_r4 <- cast ( DS_2 , string );
+        Description: The Measure of a Data Set cast to a value domain is named as in a cast to
+                     its basic type: int_var and str_var, which the DuckDB engine left empty.
+                     The Integers of DS_2, with a null, are cast to "2" and not "2.0" on the
+                     pandas engine.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1342
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1342_2",
+            number_inputs=2,
+            references_names=["1", "2", "3", "4"],
+            vd_names=self.vd_1342,
+        )
+
+    def test_GH_1342_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_1 := cast ( Me_s , VD_INT2 ) ];
+        Description: The String "3" is cast to the Integer 3, which is not a value of VD_INT2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1342
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1342_3",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op cast: Cannot cast 3 of Integer to Value Domain VD_INT2",
+            vd_names=self.vd_1342,
+        )
+
+    def test_GH_1342_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_1 := cast ( Me_t , VD_INT ) ];
+        Description: A Date does not cast to an Integer, so it does not cast to VD_INT either.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1342
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1342_4",
+            number_inputs=1,
+            exception_code="1-1-5-1",
+            exception_message="Type Date, cannot be cast to VD_INT",
+            vd_names=self.vd_1342,
         )
 
 
