@@ -8711,6 +8711,136 @@ class ValueDomainBugs(BugHelper):
             vd_names=self.vd_1350,
         )
 
+    def test_GH_1350_3a(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : between ( X , 1 , 2 ) errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 invalid );
+        Description: between reads the alias X of VD_2, bound to Me_1. On DuckDB, X was written into
+                     the SQL instead of Me_1 (BinderException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3a",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3b(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_1 as X ) is
+                        r1 : substr ( X , 1 , 1 ) <> "C" errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_2 invalid );
+        Description: substr reads the alias X of VD_1, bound to Me_2 (BinderException on DuckDB).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3b",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3c(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : not ( X = 3 ) errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 invalid );
+        Description: not of a parenthesised condition reads the alias X of VD_2, bound to Me_1
+                     (BinderException on DuckDB).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3c",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3d(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 as X ) is
+                        r1 : between ( X , 1 , 2 ) errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: between reads X, the alias of the variable Me_1 (BinderException on DuckDB).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3d",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3e(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 ) is
+                        r1 : between ( Me_1 , 1 , 2 ) errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: between reads the variable Me_1, which has no alias.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3e",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3f(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X >= 1 and X <= 2 errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 invalid );
+        Description: Comparisons and and read the alias X of VD_2, bound to Me_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3f",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3g(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 , VD_1 ) is
+                        r1 : cast ( VD_2 , string ) <> "3" ...;
+                        r2 : case when VD_2 = 3 then false else true ...;
+                        r3 : round ( VD_2 * 1.2 , 0 ) <> 4 ...;
+                        r4 : trunc ( VD_2 * 1.5 , 0 ) <> 4 ...;
+                        r5 : replace ( VD_1 , "C" , "Z" ) <> "Z" ...;
+                        r6 : instr ( VD_1 , "C" ) = 0 ...;
+                        r7 : ( VD_2 < 3 ) ...
+                    end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 , Me_2 invalid );
+        Description: cast, case, round, trunc, replace, instr and a parenthesised condition read
+                     the value domains VD_2 and VD_1, which have no alias, bound to Me_1 and Me_2
+                     (BinderException on DuckDB). Each rule fails on the data point 3 only.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3g",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
     def test_GH_1350_4a(self):
         """
         Status: OK

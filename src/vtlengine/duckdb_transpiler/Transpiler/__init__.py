@@ -441,9 +441,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Datapoint rulesets
     _dprs: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
 
-    # Datapoint ruleset context
-    _dp_signature: Optional[Dict[str, str]] = field(default=None, init=False)
-
     # Hierarchical rulesets
     _hrs: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
 
@@ -552,18 +549,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             yield
         finally:
             self.current_assignment = saved
-
-    @contextmanager
-    def _stash_dp_signature(
-        self, signature: Optional[Dict[str, str]]
-    ) -> Generator[None, None, None]:
-        """Temporarily set ``_dp_signature`` and restore it on exit."""
-        saved = self._dp_signature
-        self._dp_signature = signature
-        try:
-            yield
-        finally:
-            self._dp_signature = saved
 
     @staticmethod
     def _ensure_rule_names(rules: List[Any]) -> None:
@@ -4526,16 +4511,18 @@ FROM (
         viral_comps: Optional[List[Any]] = None,
         components: Optional[Dict[str, Component]] = None,
     ) -> str:
-        """Build SQL for a single datapoint rule."""
-        rule_node = rule.rule
+        """Build SQL for a single datapoint rule.
+
+        The rule names the components by the parameters of the ruleset, which are replaced by
+        the components they are bound to before it is visited, as any other expression on
+        them (issue #1350).
+        """
+        rule_node = cast(AST.HRBinOp, _rename_var_ids(rule.rule, signature))
         has_when = isinstance(rule_node, AST.HRBinOp) and rule_node.op == tokens.WHEN  # type: ignore[redundant-expr]
         then_node = rule_node.right if has_when else rule_node
 
-        with self._stash_dp_signature(signature):
-            then_expr = self._visit_dp_expr(then_node, signature, components)
-            when_cond = (
-                self._visit_dp_expr(rule_node.left, signature, components) if has_when else "TRUE"
-            )
+        then_expr = self._visit_dp_expr(then_node, components)
+        when_cond = self._visit_dp_expr(rule_node.left, components) if has_when else "TRUE"
 
         if has_when:
             fail_cond = f"({when_cond}) AND NOT ({then_expr})"
@@ -4575,16 +4562,13 @@ FROM (
         return f"SELECT {', '.join(select_parts)} FROM {table_src}"
 
     def _detect_dp_type(
-        self,
-        node: AST.AST,
-        signature: Dict[str, str],
-        components: Optional[Dict[str, Component]],
+        self, node: AST.AST, components: Optional[Dict[str, Component]]
     ) -> Optional[type]:
         """Detect the data type of a datapoint-rule operand, mirroring
         ``_detect_scalar_type`` so rules get the same tolerance and per-op
         rounding dispatch as ordinary expressions (issue #985)."""
         if isinstance(node, (AST.DefIdentifier, AST.VarID)):
-            comp = (components or {}).get(signature.get(node.value, node.value))
+            comp = (components or {}).get(node.value)
             return comp.data_type if comp else None
         if isinstance(node, AST.Constant):
             return Number if isinstance(node.value, float) else None
@@ -4592,15 +4576,15 @@ FROM (
             if node.op in (tokens.DIV, tokens.POWER):
                 return Number
             if node.op in (tokens.PLUS, tokens.MINUS, tokens.MULT, tokens.MOD) and Number in (
-                self._detect_dp_type(node.left, signature, components),
-                self._detect_dp_type(node.right, signature, components),
+                self._detect_dp_type(node.left, components),
+                self._detect_dp_type(node.right, components),
             ):
                 return Number
         elif isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
             if node.op in (tokens.SQRT, tokens.EXP, tokens.LN):
                 return Number
             if node.op in (tokens.PLUS, tokens.MINUS):
-                inner = self._detect_dp_type(node.operand, signature, components)
+                inner = self._detect_dp_type(node.operand, components)
                 return Number if inner == Number else None
         elif (
             isinstance(node, AST.ParamOp)
@@ -4611,26 +4595,23 @@ FROM (
         return None
 
     def _visit_dp_expr(
-        self,
-        node: AST.AST,
-        signature: Dict[str, str],
-        components: Optional[Dict[str, Component]] = None,
+        self, node: AST.AST, components: Optional[Dict[str, Component]] = None
     ) -> str:
         """Visit an expression in datapoint-rule context."""
         if isinstance(node, (AST.HRBinOp, AST.BinOp)):
             chain_sql = self._build_expression_chain(
                 node,
-                lambda operand: self._visit_dp_expr(operand, signature, components),
-                lambda operand: self._detect_dp_type(operand, signature, components),
+                lambda operand: self._visit_dp_expr(operand, components),
+                lambda operand: self._detect_dp_type(operand, components),
             )
             if chain_sql is not None:
                 return chain_sql
             if isinstance(node, AST.BinOp) and node.op in (tokens.AND, tokens.OR):
                 return self._short_circuit_sql(
-                    node, lambda operand: self._visit_dp_expr(operand, signature, components)
+                    node, lambda operand: self._visit_dp_expr(operand, components)
                 )
-            left_sql = self._visit_dp_expr(node.left, signature, components)
-            right_sql = self._visit_dp_expr(node.right, signature, components)
+            left_sql = self._visit_dp_expr(node.left, components)
+            right_sql = self._visit_dp_expr(node.right, components)
             if isinstance(node, AST.HRBinOp) and node.op == tokens.WHEN:
                 return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
             # Route through the shared builder so rule expressions carry the
@@ -4639,27 +4620,25 @@ FROM (
                 left_sql,
                 right_sql,
                 node.op,
-                self._detect_dp_type(node.left, signature, components),
-                self._detect_dp_type(node.right, signature, components),
+                self._detect_dp_type(node.left, components),
+                self._detect_dp_type(node.right, components),
             )
         if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
-            operand_sql = self._visit_dp_expr(node.operand, signature, components)
+            operand_sql = self._visit_dp_expr(node.operand, components)
             return registry.sql(node.op, operand_sql)
         if isinstance(node, (AST.DefIdentifier, AST.VarID)):
-            col_name = signature.get(node.value, node.value)
-            return quote_name(col_name)
+            return quote_name(node.value)
         if isinstance(node, AST.Constant):
             return self._to_sql_literal(node.value)
         if isinstance(node, AST.If):
-            cond_sql = self._visit_dp_expr(node.condition, signature, components)
-            then_sql = self._visit_dp_expr(node.thenOp, signature, components)
-            else_sql = self._visit_dp_expr(node.elseOp, signature, components)
+            cond_sql = self._visit_dp_expr(node.condition, components)
+            then_sql = self._visit_dp_expr(node.thenOp, components)
+            else_sql = self._visit_dp_expr(node.elseOp, components)
             return (
                 f"CASE WHEN ({cond_sql}) THEN CAST(({then_sql}) AS BOOLEAN)"
                 f" ELSE CAST(({else_sql}) AS BOOLEAN) END"
             )
-        with self._stash_dp_signature(signature):
-            return self.visit(node)
+        return self.visit(node)
 
     # Hierarchical ruleset
 
