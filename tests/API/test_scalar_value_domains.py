@@ -13,9 +13,9 @@ import pytest
 
 from tests.Helper import engine_params
 from vtlengine import run, semantic_analysis
-from vtlengine.DataTypes import Date, String
+from vtlengine.DataTypes import String
 from vtlengine.Exceptions import InputValidationException, RunTimeError
-from vtlengine.Model import Scalar, ValueDomain, value_of
+from vtlengine.Model import Scalar, ValueDomain
 
 VALUE_DOMAINS = [
     ValueDomain(name="VD_1", type=String, setlist=["A", "B"]),
@@ -257,7 +257,21 @@ def test_GH_1349_3(use_duckdb):
     """The Date value 2024-1-5 is the value 2024-01-05 of VD_DATE; it raised 0-1-1-36."""
     result = _run_1349("SC_r <- SC_3;", {"SC_3": "2024-1-5"}, use_duckdb)
     assert result.to_dict()["type"] == "VD_DATE"
-    assert value_of(Date, result.value) == "2024-01-05"
+    assert result.value == "2024-01-05"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_3b(use_duckdb):
+    """A Date scalar on no value domain given as 2024-1-5 is the Date 2024-01-05, on both
+    engines: pandas kept the text 2024-1-5, so the comparison was false."""
+    result = run(
+        script='SC_r <- SC_1 = cast("2024-01-05", date);',
+        data_structures={"scalars": [{"name": "SC_1", "type": "Date"}]},
+        datapoints={},
+        scalar_values={"SC_1": "2024-1-5"},
+        use_duckdb=use_duckdb,
+    )["SC_r"]
+    assert result.value is True
 
 
 @pytest.mark.parametrize("use_duckdb", engine_params())

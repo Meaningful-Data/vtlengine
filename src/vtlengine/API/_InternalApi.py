@@ -30,7 +30,7 @@ from vtlengine._input_types import (
 )
 from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentAssignment, Start
 from vtlengine.AST.ASTString import ASTString
-from vtlengine.DataTypes import SCALAR_TYPES
+from vtlengine.DataTypes import SCALAR_TYPES, Date
 from vtlengine.Exceptions import (
     DataLoadError,
     InputValidationException,
@@ -56,6 +56,7 @@ from vtlengine.Model import (
     Role,
     Scalar,
     ValueDomain,
+    value_of,
 )
 
 # Cache SCALAR_TYPES keys for performance
@@ -534,6 +535,10 @@ def _handle_scalars_values(
                 name=name,
             )
         scalars[name].value = scalars[name].data_type.cast(value)
+        if scalars[name].data_type is Date:
+            # A Date is written in the one form the loaders and DuckDB write it in, as a
+            # Time_Period is: 2024-1-5 is 2024-01-05 (issue #1349)
+            scalars[name].value = value_of(Date, scalars[name].value)
         _check_value_domain(scalars[name], pd.Series([scalars[name].value], dtype=object))
 
 
