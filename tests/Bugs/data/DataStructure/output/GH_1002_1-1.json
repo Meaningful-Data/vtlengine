@@ -31,7 +31,7 @@
           "name": "m2",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "m3",

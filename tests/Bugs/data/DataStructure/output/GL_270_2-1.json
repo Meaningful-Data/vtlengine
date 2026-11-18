@@ -37,7 +37,7 @@
           "name": "NMBR_DBTR",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "IS_JNT_LBLTY_RPRTD_ALL",

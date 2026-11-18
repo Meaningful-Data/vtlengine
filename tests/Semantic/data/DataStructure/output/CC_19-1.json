@@ -19,7 +19,7 @@
           "name": "Me_5",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "Me_2",

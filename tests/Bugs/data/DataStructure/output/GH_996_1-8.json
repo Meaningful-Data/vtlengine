@@ -43,7 +43,7 @@
           "name": "n",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         }
       ]
     }

@@ -37,7 +37,7 @@
           "name": "NMBR_INSTRMNT_SCRD",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "INCRMNTL_3PPC",

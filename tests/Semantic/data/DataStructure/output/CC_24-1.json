@@ -7,7 +7,7 @@
           "name": "Me_c",
           "role": "Measure",
           "type": "Integer",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "Me_1",
