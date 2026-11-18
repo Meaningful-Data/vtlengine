@@ -371,8 +371,10 @@ Value domains also appear in the VTL-DL definitions:
   it. Where a viral attribute is combined, the rule on its value
   domain applies only when it is on that value domain in every
   operand: when an operand gives it on no value domain or on another
-  one, only a rule on the variable applies, and without one the
-  statement raises ``1-3-3-6``. A rule on a value domain with
+  one, the mix is promoted to the basic type, only a rule on the
+  variable applies, and without one the statement raises
+  ``1-3-3-6``, in either operand order (binary operators, joins,
+  ``if-then-else`` and ``case``). A rule on a value domain with
   ``aggregate sum`` or ``avg`` gives a result of the basic type
   (``avg`` a ``Number``), which is no longer on the value domain, so
   a further combination of that result needs a rule on the variable
