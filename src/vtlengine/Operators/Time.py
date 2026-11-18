@@ -484,7 +484,9 @@ class Fill_time_series(Binary):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         if fill_type not in ["all", "single"]:
             fill_type = "all"
-        return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
+        # The filled periods are new values of the time Identifier
+        components = Operators.on_basic_types(operand.components, [cls.time_id])
+        return Dataset(name=dataset_name, components=components, data=None)
 
     @classmethod
     def fill_periods(cls, data: pd.DataFrame, fill_type: str) -> pd.DataFrame:
@@ -746,7 +748,9 @@ class Time_Shift(Binary):
             )
         if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
-        return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
+        # The shifted periods are new values of the time Identifier
+        components = Operators.on_basic_types(operand.components, [cls._get_time_id(operand)])
+        return Dataset(name=dataset_name, components=components, data=None)
 
     @classmethod
     def shift_dates(cls, dates: Any, shift_value: int, frequency: str) -> Any:
@@ -1221,7 +1225,9 @@ class Date_Add(Parametrized):
         # (shared) Component objects (#1032)
         result_components = {name: copy(comp) for name, comp in operand.components.items()}
         for target in cls._dateadd_targets(operand):
+            # The shifted Dates are new values, of the basic type Date (issue #1348)
             result_components[target.name].data_type = Date
+            result_components[target.name].value_domain = None
         return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
