@@ -547,9 +547,9 @@ def run(
         Persistent Assignments. (default: True)
 
         output_folder: Path to the output folder. A missing folder is created with its \
-        parents; an existing file, or a missing path with a file suffix (``result.csv``), \
-        raises ``0-3-1-2``. An empty string is no output folder, as None is. S3 URIs are \
-        supported when ``use_duckdb=True``. (default: None)
+        parents when the first result is written; an existing file, or a missing path with \
+        a file suffix (``result.csv``), raises ``0-3-1-2``. An empty string is no output \
+        folder, as None is. S3 URIs are supported when ``use_duckdb=True``. (default: None)
 
         scalar_values: Dict with the scalar values to be used in the VTL script.
 

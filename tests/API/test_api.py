@@ -3142,6 +3142,25 @@ def test_GH_1349_28b(use_duckdb, tmp_path):
 
 
 @pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_28c(use_duckdb, tmp_path):
+    """Datapoints whose values do not fit the structure (a text in an Integer Measure), given
+    as a DataFrame or as a CSV file, raise 0-3-1-6 on both engines and create no output folder:
+    the folder is created with the first result written. DuckDB created the folder before
+    loading the DataFrame, pandas before loading the CSV file."""
+    csv_path = tmp_path / "DS_1.csv"
+    csv_path.write_text("Id_1,Me_1\n1,x\n")
+    frame = pd.DataFrame({"Id_1": [1], "Me_1": ["x"]})
+    output_folder = tmp_path / "missing" / "deeper"
+    for datapoints in ({"DS_1": frame}, {"DS_1": csv_path}):
+        with pytest.raises(DataLoadError) as error:
+            _run_1349(
+                "DS_r <- DS_1;", use_duckdb, datapoints=datapoints, output_folder=output_folder
+            )
+        assert error.value.args[1] == "0-3-1-6"
+        assert not (tmp_path / "missing").exists()
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
 def test_GH_1349_51(use_duckdb, tmp_path, monkeypatch):
     """An empty string as output_folder is no output folder, as None is: both engines write
     nothing and return the results with their data. pandas wrote the results into the current

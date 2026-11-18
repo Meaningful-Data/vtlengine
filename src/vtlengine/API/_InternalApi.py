@@ -835,8 +835,9 @@ def _check_output_folder(
 ) -> Optional[Union[str, Path]]:
     """
     Check that the output folder is a folder, on both engines: an existing path must be a
-    folder, and a missing one is created with its parents, unless it has a file suffix
-    (result.csv), which is rejected. S3 URIs are left to the DuckDB engine.
+    folder, and a missing one must not have a file suffix (result.csv). A missing folder is
+    created with its parents when the first result is written, so an input that fails to
+    load creates none (issue #1349). S3 URIs are left to the DuckDB engine.
 
     Returns the folder the results are written to: None when no output folder is given, as
     None or as an empty string, so that both engines return the results with their data and
@@ -859,10 +860,8 @@ def _check_output_folder(
         raise DataLoadError("0-3-1-2", folder=str(output_folder))
     if output_folder.exists() and not output_folder.is_dir():
         raise DataLoadError("0-3-1-2", folder=str(output_folder))
-    if not output_folder.exists():
-        if output_folder.suffix != "":
-            raise DataLoadError("0-3-1-2", folder=str(output_folder))
-        output_folder.mkdir(parents=True)
+    if not output_folder.exists() and output_folder.suffix != "":
+        raise DataLoadError("0-3-1-2", folder=str(output_folder))
     return output_folder
 
 

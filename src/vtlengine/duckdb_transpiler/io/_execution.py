@@ -757,10 +757,6 @@ def execute_queries(
         sql_fragments.append(repr_macro)
     initialize_time_types(conn, sql_fragments=sql_fragments)
 
-    # Ensure output folder exists if provided
-    if output_folder:
-        output_folder.mkdir(parents=True, exist_ok=True)
-
     copies, ds_analysis = _reuse_repeated_statements(queries, ds_analysis)
 
     # Execute each query with DAG scheduling

@@ -570,6 +570,9 @@ def save_datapoints_duckdb(
         )
 
     output_path = Path(output_path) if isinstance(output_path, str) else output_path
+    # The output folder is created with the first result written, so an input that fails to
+    # load creates none, as on the pandas engine (issue #1349)
+    output_path.mkdir(parents=True, exist_ok=True)
     output_file = output_path / f"{dataset_name}.{output_format}"
 
     source = f"({select_sql})" if select_sql else f'"{dataset_name}"'
@@ -598,6 +601,7 @@ def save_scalars_duckdb(
     if not scalars:
         return
     output_path = Path(output_path) if isinstance(output_path, str) else output_path
+    output_path.mkdir(parents=True, exist_ok=True)
     file_path = output_path / "_scalars.csv"
     with open(file_path, "w", newline="", encoding="utf-8") as csv_file:
         writer = csv.writer(csv_file)
