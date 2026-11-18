@@ -63,6 +63,7 @@ from vtlengine.AST.UDOTypes import (
     resolve_value_domain_type,
     udo_component_matches,
     udo_dataset_components,
+    udo_result_on_value_domains,
 )
 from vtlengine.DataTypes import (
     BASIC_TYPES,
@@ -196,7 +197,9 @@ def _udo_scalar_value_domain(param: Dict[str, Any], argument: Scalar) -> Optiona
     return None
 
 
-def _check_udo_return_type(op: str, declared: Any, result: Any) -> None:
+def _check_udo_return_type(
+    op: str, declared: Any, constraints: Optional[AST.SignatureConstraints], result: Any
+) -> None:
     """The result of a user defined operator must have the type it returns (issue #1161)."""
     if isinstance(declared, Component):
         matches = udo_component_matches(declared, result)
@@ -208,7 +211,11 @@ def _check_udo_return_type(op: str, declared: Any, result: Any) -> None:
         return
     if not matches:
         raise SemanticError(
-            "1-3-1-1", op=op, option="output", type_1=_format_type(declared), type_2=found_type
+            "1-3-1-1",
+            op=op,
+            option="output",
+            type_1=_format_type(declared, constraints),
+            type_2=found_type,
         )
 
 
@@ -493,12 +500,15 @@ class InterpreterAnalyzer(ASTTemplate):
                         raise SemanticError("1-3-12")
                     previous_default = param_info[i]
 
+        return_type, return_constraints = resolve_value_domain_type(
+            node.return_type, node.return_constraints, self.value_domains
+        )
         self.udos[node.op] = {
             "params": param_info,
             "expression": node.expression,
             "output": node.output_type,
-            "return_type": node.return_type,
-            "return_constraints": node.return_constraints,
+            "return_type": return_type,
+            "return_constraints": return_constraints,
         }
 
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
@@ -2811,10 +2821,12 @@ class InterpreterAnalyzer(ASTTemplate):
                 type_1=operator["output"],
                 type_2=result_type,
             )
-        _check_udo_return_type(node.op, operator["return_type"], result)
-        self._check_udo_signature(
-            node.op, "the output", operator["return_type"], operator["return_constraints"], result
+        return_type, return_constraints = operator["return_type"], operator["return_constraints"]
+        _check_udo_return_type(node.op, return_type, return_constraints, result)
+        taken = self._check_udo_signature(
+            node.op, "the output", return_type, return_constraints, result
         )
+        result = udo_result_on_value_domains(result, return_constraints, taken)
 
         # We pop the last element of the stack (current UDO params)
         # to avoid using them in the next UDO call
@@ -2885,14 +2897,14 @@ class InterpreterAnalyzer(ASTTemplate):
             elif self.value_domains is not None and argument.value in self.value_domains:
                 domain = self.value_domains[argument.value]
                 value = ScalarSet(data_type=domain.type, values=domain.setlist)
-        declared = param["declared"]
+        declared, written = param["declared"], _format_type(param["declared"], param["constraints"])
         if value is None:
             found = self.visit(argument)
             raise SemanticError(
                 "1-3-1-1",
                 op=op,
                 option=f"parameter {param['name']}",
-                type_1=_format_type(declared),
+                type_1=written,
                 type_2=type(found).__name__,
             )
         if declared.data_type is not None and not check_unary_implicit_promotion(
@@ -2900,7 +2912,7 @@ class InterpreterAnalyzer(ASTTemplate):
         ):
             raise SemanticError(
                 "1-2-18",
-                param_type=_format_type(declared),
+                param_type=written,
                 type_name=_format_type(AST.SetType(value.data_type)),
                 op=op,
                 param_name=param["name"],
@@ -2967,10 +2979,12 @@ class InterpreterAnalyzer(ASTTemplate):
         declared: Any,
         constraints: Optional[AST.SignatureConstraints],
         value: Any,
-    ) -> None:
-        """value, a Scalar, DataComponent or Dataset, must meet what the type of a parameter or
-        of the output of a user defined operator declares beyond its kind and data type: the
-        structure of a dataset type and the constraints on the values."""
+    ) -> Dict[str, Optional[AST.TypeConstraint]]:
+        """value, a Scalar, ScalarSet, DataComponent or Dataset, must meet what the type of a
+        parameter or of the output of a user defined operator declares beyond its kind and data
+        type: the structure of a dataset type and the constraints on the values. Gives the
+        components that a dataset type takes, each with its constraint."""
+        taken: Dict[str, Optional[AST.TypeConstraint]] = {}
         if isinstance(declared, Dataset) and isinstance(value, Dataset):
             taken = udo_dataset_components(op, element, declared, constraints, value)
             for name, constraint in taken.items():
@@ -2990,17 +3004,23 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
         elif constraints is not None and constraints.value is not None:
             self._check_udo_constraint(op, element, constraints.value, value)
+        return taken
 
     def _check_udo_constraint(
         self, op: str, element: str, constraint: AST.TypeConstraint, value: Any
     ) -> None:
-        """Raise when a value of a Scalar or DataComponent breaks a constraint of the type of a
-        user defined operator: not null, a condition on value or the values allowed."""
+        """Raise when a value of a Scalar, ScalarSet or DataComponent breaks a constraint of the
+        type of a user defined operator: not null, a condition on value or the values allowed."""
         if isinstance(value, DataComponent):
             if value.data is None:
                 # The semantic analysis has no data points
                 return
             values = value.data.astype(object).reset_index(drop=True)
+        elif isinstance(value, ScalarSet):
+            # The values of a set<VD_1> argument, checked as a scalar argument is (issue #1351)
+            if self.only_semantic:
+                return
+            values = pd.Series(value.values, dtype=object)
         elif isinstance(value, Scalar):
             if self.only_semantic:
                 # The values are checked when the call is computed: by the pandas engine, and by

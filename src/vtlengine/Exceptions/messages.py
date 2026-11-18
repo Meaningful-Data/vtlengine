@@ -1469,12 +1469,6 @@ centralised_messages = {
         "description": "Occurs when an evaluation is attempted without a necessary "
         "type definition.",
     },
-    "1-3-2-6": {
-        "message": "At op {op}: value domains are not supported in the returns of a user defined "
-        "operator.",
-        "description": "Raised when a user defined operator declares its result with a type "
-        "form that the engine cannot check.",
-    },
     "1-3-2-3": {
         "message": "At op {op}: Vtl Script contains Cycles, no DAG established. "
         "Nodes involved: {nodes}.",

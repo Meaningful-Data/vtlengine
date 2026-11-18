@@ -1,0 +1,31 @@
+define operator in_set (ds dataset, s set<VD_1>)
+    returns dataset is
+        ds[filter Me_1 in s]
+end operator;
+
+define operator constrained (ds dataset {identifier<integer> Id_1, identifier<VD_1> Id_2, measure<VD_1> Me_1, attribute<VD_1> At_1, viral attribute<VD_1> At_2, component<VD_1> Me_2})
+    returns dataset is
+        ds
+end operator;
+
+define operator unnamed (ds dataset {measure<VD_1> _, measure<VD_1> _+, attribute<VD_1> _*, component<VD_1> _})
+    returns dataset {identifier<VD_1> Id_1, measure<VD_1> Me_1, measure<VD_1> _*} is
+        ds
+end operator;
+
+define operator to_vd (x integer default 2)
+    returns VD_1 is
+        x
+end operator;
+
+define operator to_component (x component)
+    returns component<VD_1> is
+        x
+end operator;
+
+define operator to_measure (x component)
+    returns measure<VD_1> is
+        x
+end operator;
+
+DS_r <- in_set(DS_1, VD_1);
