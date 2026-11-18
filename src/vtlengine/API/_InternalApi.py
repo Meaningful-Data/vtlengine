@@ -30,12 +30,8 @@ from vtlengine._input_types import (
 )
 from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentAssignment, Start
 from vtlengine.AST.ASTString import ASTString
-from vtlengine.DataTypes import SCALAR_TYPES, Date
-from vtlengine.Exceptions import (
-    DataLoadError,
-    InputValidationException,
-    check_key,
-)
+from vtlengine.DataTypes import Date
+from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.files.parser import (
     _check_value_domain,
     _fill_dataset_empty_data,
@@ -56,11 +52,9 @@ from vtlengine.Model import (
     Role,
     Scalar,
     ValueDomain,
+    named_type,
     value_of,
 )
-
-# Cache SCALAR_TYPES keys for performance
-_SCALAR_TYPE_KEYS = SCALAR_TYPES.keys()
 
 base_path = Path(__file__).parent
 schema_path = base_path / "data" / "schema"
@@ -73,32 +67,10 @@ with open(schema_path / "external_routines_schema.json", "r") as file:
     external_routine_schema = json.load(file)
 
 
-def _extract_data_type(component: Dict[str, Any]) -> Tuple[str, Any]:
-    """
-    Extract and validate data type from component dictionary.
-
-    Supports both 'type' (preferred) and 'data_type' (backward compatibility) keys.
-
-    Args:
-        component: Component dictionary with either 'type' or 'data_type' key
-
-    Returns:
-        Tuple of (data_type_key, scalar_type_class)
-
-    Raises:
-        InputValidationException: If the data type key or value is invalid
-    """
-    key = "type" if "type" in component else "data_type"
-    check_key(key, _SCALAR_TYPE_KEYS, component[key])
-    return key, SCALAR_TYPES[component[key]]
-
-
-def _type_value_domain(
-    element: Dict[str, Any], value_domains: Optional[Dict[str, ValueDomain]]
-) -> Optional[ValueDomain]:
-    """The value domain the type of a Component or a scalar names, if it names one."""
-    type_name = element["type" if "type" in element else "data_type"]
-    return None if type_name in SCALAR_TYPES else (value_domains or {}).get(type_name)
+def _type_name(element: Dict[str, Any]) -> Any:
+    """The type a Component or a scalar is written with: its 'type' (preferred) or its
+    'data_type' (backward compatibility)."""
+    return element["type" if "type" in element else "data_type"]
 
 
 def _build_component(
@@ -106,16 +78,10 @@ def _build_component(
 ) -> VTL_Component:
     role = Role("Viral Attribute" if component["role"] == "ViralAttribute" else component["role"])
     nullable = component.get("nullable", role != Role.IDENTIFIER)
-    value_domain = _type_value_domain(component, value_domains)
-    if value_domain is not None:
-        return VTL_Component(component["name"], value_domain.type, role, nullable, value_domain)
-    _, scalar_type = _extract_data_type(component)
-    return VTL_Component(
-        name=component["name"],
-        data_type=scalar_type,
-        role=role,
-        nullable=nullable,
+    data_type, value_domain = named_type(
+        _type_name(component), value_domains, f"Component '{component['name']}'"
     )
+    return VTL_Component(component["name"], data_type, role, nullable, value_domain)
 
 
 def _resolve_components(
@@ -162,9 +128,8 @@ def _structure_schema(value_domain_names: Tuple[str, ...]) -> Dict[str, Any]:
 def _build_scalar(
     scalar_json: Dict[str, Any], value_domains: Optional[Dict[str, ValueDomain]]
 ) -> Scalar:
-    value_domain = _type_value_domain(scalar_json, value_domains)
-    data_type = (
-        value_domain.type if value_domain is not None else _extract_data_type(scalar_json)[1]
+    data_type, value_domain = named_type(
+        _type_name(scalar_json), value_domains, f"Scalar '{scalar_json['name']}'"
     )
     return Scalar(
         name=scalar_json["name"],

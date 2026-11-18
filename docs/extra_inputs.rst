@@ -289,7 +289,11 @@ below), the Components that ``filter``, ``keep``, ``drop``,
 ``Integer`` and ``Number`` ones, which they accumulate), and a
 Component written alone in ``calc`` (``calc Me_3 := Id_2``).
 ``run()`` and ``semantic_analysis()`` write ``"type": "VD_FLOW"``
-for them. A join ``apply`` gives each Measure the type and the value
+for them, and ``Dataset.from_json``, ``Component.from_json``,
+``DataComponent.from_json`` and ``Scalar.from_json`` read such a type
+back on the value domain given in their ``value_domains`` parameter,
+a dict by name (``{"VD_FLOW": vd_flow}``); a type that is neither a
+basic type nor one of them raises ``0-2-1-1``. A join ``apply`` gives each Measure the type and the value
 domain its expression gives, as ``calc`` does: ``apply nvl(a, b)``
 follows the rules of ``nvl`` below, and ``apply a + b`` gives the
 basic type.
