@@ -10159,7 +10159,9 @@ class ValueDomainBugs(BugHelper):
         Status: OK
         Expression: DS_r <- DS_1 [ calc Me_2 := between ( Me_1 , SC_2 , null ) ,
                                    Me_3 := between ( Me_1 , null , SC_2 ) ];
-        Description: As case 44 with periods of one indicator: a null bound still gives null.
+        Description: As case 44 with periods of one indicator: as op >= from and op <= to,
+                     a null bound gives false where the other comparison is false (2024Q1 is
+                     not >= 2024Q2, 2024Q3 is not <= 2024Q2) and null elsewhere (case 56).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
         Goal: Check Result.
         """
@@ -10358,3 +10360,21 @@ class ValueDomainBugs(BugHelper):
             exception_code="1-2-27",
             exception_message="A set must not contain duplicates",
         )
+
+    def test_GH_1349_56(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_5 := between ( Me_1 , 2 , null ) , ... ,
+                                   Me_13 := between ( 3 , null , 2 ) , ... ] [ drop ... ];
+                    DS_r2 <- between ( DS_1 [ keep Me_1 ] , 2 , null );
+                    DS_r3 <- between ( DS_1 [ keep Me_4 ] , null ,
+                                       cast ( "2024Q2" , time_period ) );
+        Description: between is op >= from and op <= to, as the VTL 2.2 manual defines it,
+                     for every type (Integer, String, Date, Time_Period), for a Component, a
+                     scalar and a Data Set: a null bound gives false where the other
+                     comparison is false, null elsewhere, and a null operand gives null. Both
+                     engines gave null whenever a bound was null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_56", number_inputs=1, references_names=["1", "2", "3"])

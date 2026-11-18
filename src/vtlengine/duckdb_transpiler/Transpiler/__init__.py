@@ -3728,38 +3728,24 @@ FROM (
     def _between_expr(
         operand: str, low: str, high: str, is_number: bool = False, is_period: bool = False
     ) -> str:
-        """Build a VTL-compliant BETWEEN expression with NULL propagation.
+        """Build the SQL of between: ``op >= from and op <= to``, as the VTL 2.2 manual
+        defines it, joined by the AND of three-valued logic, which is false where one
+        comparison is false, also when a bound is null (issue #1349).
 
-        VTL requires that if ANY operand of between is NULL, the result is NULL.
-        SQL's three-valued logic differs: FALSE AND NULL = FALSE.  To match VTL
-        semantics we wrap the expression with an explicit NULL check.
-
-        Number operands compare through the configured tolerance (issue #919),
-        mirroring ``x >= low and x <= high``. Time_Period operands compare as periods
-        through the SQL of ``>=`` and ``<=``, which raises 2-1-19-19 for periods of
-        different period indicators (issue #1349).
+        Number operands compare through the configured tolerance (issue #919). Time_Period
+        operands compare as periods through the SQL of ``>=`` and ``<=``, which raises
+        2-1-19-19 for periods of different period indicators (issue #1349).
         """
-        inner = f"({operand} BETWEEN {low} AND {high})"
         if is_period:
             from_sql = registry.sql(tokens.GTE, operand, low, data_type=TimePeriod)
             to_sql = registry.sql(tokens.LTE, operand, high, data_type=TimePeriod)
-            inner = f"({from_sql} AND {to_sql})"
-            # The periods are compared first, also where the other bound is null, as op >= from
-            # and op <= to compare them, so different indicators raise 2-1-19-19 (issue #1349)
-            return (
-                f"CASE WHEN {inner} IS NULL THEN NULL "
-                f"WHEN {operand} IS NULL OR {low} IS NULL OR {high} IS NULL THEN NULL "
-                f"ELSE {inner} END"
-            )
+            return f"({from_sql} AND {to_sql})"
         if is_number:
             ge_sql = number_tolerance_sql(tokens.GTE, operand, low)
             le_sql = number_tolerance_sql(tokens.LTE, operand, high)
             if ge_sql is not None and le_sql is not None:
-                inner = f"({ge_sql} AND {le_sql})"
-        return (
-            f"CASE WHEN {operand} IS NULL OR {low} IS NULL OR {high} IS NULL "
-            f"THEN NULL ELSE {inner} END"
-        )
+                return f"({ge_sql} AND {le_sql})"
+        return f"({operand} BETWEEN {low} AND {high})"
 
     def visit_MulOp_between(self, node: AST.MulOp) -> str:
         """Visit BETWEEN: expr BETWEEN low AND high. Handles dataset operand."""

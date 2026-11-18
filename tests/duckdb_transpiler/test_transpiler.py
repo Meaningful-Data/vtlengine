@@ -208,14 +208,10 @@ class TestBetweenOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        # VTL-compliant BETWEEN with NULL propagation, over the Number tolerance macros
+        # op >= from and op <= to, over the Number tolerance macros (issue #1349)
         ge_sql = number_cmp_sql('"Me_1"', ">=", str(low_value))
         le_sql = number_cmp_sql('"Me_1"', "<=", str(high_value))
-        expected_sql = (
-            f'SELECT * FROM "DS_1" WHERE CASE WHEN "Me_1" IS NULL'
-            f" OR {low_value} IS NULL OR {high_value} IS NULL"
-            f" THEN NULL ELSE ({ge_sql} AND {le_sql}) END"
-        )
+        expected_sql = f'SELECT * FROM "DS_1" WHERE ({ge_sql} AND {le_sql})'
         assert_sql_equal(sql, expected_sql)
 
 

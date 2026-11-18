@@ -349,30 +349,32 @@ class Between(Operator.Operator):
         y: Optional[Union[int, float, bool, str]],
         z: Optional[Union[int, float, bool, str]],
     ) -> Optional[bool]:
-        if isinstance(x, TimePeriodHandler):
-            return cls._periods_between(x, y, z)
-        if pd.isnull(x) or pd.isnull(y) or pd.isnull(z):
+        """Op >= from and op <= to, as the VTL 2.2 manual defines between: both comparisons are
+        made, so periods of different indicators raise 2-1-19-19 also where the other bound
+        is null, and they are joined by the and of three-valued logic, false where one of
+        them is false, also when the other is null (issue #1349)."""
+        from_ok = cls._compare(x, y, numbers_are_greater_equal, operator.ge)
+        to_ok = cls._compare(x, z, numbers_are_less_equal, operator.le)
+        if from_ok is False or to_ok is False:
+            return False
+        if from_ok is None or to_ok is None:
             return None
+        return True
 
-        # Use tolerance-based comparison for float-involved numeric types
-        # (exact integers compare exactly, like _tolerance_applies; the
-        # isinstance chain is spelled out so mypy narrows the operands)
+    @staticmethod
+    def _compare(x: Any, y: Any, numbers_compare: Any, compare: Any) -> Optional[bool]:
+        """One comparison of between: null where an operand is null, through the tolerance
+        where a Number is involved (exact integers compare exactly, like
+        _tolerance_applies)."""
+        if pd.isnull(x) or pd.isnull(y):
+            return None
         if (
             isinstance(x, (int, float))
             and isinstance(y, (int, float))
-            and isinstance(z, (int, float))
-            and (isinstance(x, float) or isinstance(y, float) or isinstance(z, float))
+            and (isinstance(x, float) or isinstance(y, float))
         ):
-            return numbers_are_greater_equal(x, y) and numbers_are_less_equal(x, z)
-
-        return y <= x <= z  # type: ignore[operator]
-
-    @staticmethod
-    def _periods_between(x: TimePeriodHandler, y: Any, z: Any) -> Optional[bool]:
-        """As op >= from and op <= to, which compare the periods also where the other bound is
-        null, so periods of different indicators raise 2-1-19-19 (issue #1349)."""
-        from_ok, to_ok = x >= y, x <= z
-        return None if from_ok is None or to_ok is None else from_ok and to_ok
+            return bool(numbers_compare(x, y))
+        return bool(compare(x, y))
 
     @classmethod
     def apply_operation_component(cls, series: Any, from_data: Any, to_data: Any) -> Any:
@@ -520,13 +522,7 @@ class Between(Operator.Operator):
                 cls._ordered(operand, operand.data), from_data, to_data
             )
         if isinstance(operand, Scalar) and isinstance(from_, Scalar) and isinstance(to, Scalar):
-            value = cls._ordered(operand, operand.value)
-            if isinstance(value, TimePeriodHandler):
-                result.value = cls._periods_between(value, from_data, to_data)
-            elif value is None or from_data is None or to_data is None:
-                result.value = None
-            else:
-                result.value = from_data <= value <= to_data
+            result.value = cls.op_func(cls._ordered(operand, operand.value), from_data, to_data)
         elif isinstance(operand, Scalar) and (
             isinstance(from_data, pd.Series) or isinstance(to_data, pd.Series)
         ):  # From or To is a DataComponent, or both

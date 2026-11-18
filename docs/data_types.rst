@@ -253,9 +253,11 @@ Time_Period
 
 The operators ``>``, ``<``, ``>=``, ``<=`` and ``between`` order the
 periods of one period indicator; two periods of different indicators
-raise ``2-1-19-19``. ``between(op, from, to)`` stands for
-``op >= from and op <= to``: it raises ``2-1-19-19`` also when the
-other bound is null, and gives null when a bound is null.
+raise ``2-1-19-19``. ``between(op, from, to)`` is
+``op >= from and op <= to``, as the VTL 2.2 manual defines it, for
+every type: it raises ``2-1-19-19`` also when the other bound is null,
+and a null bound gives ``false`` where the other comparison is false
+and null elsewhere.
 
 **Output formats** (controlled by ``time_period_output_format``
 parameter):
