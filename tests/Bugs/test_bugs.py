@@ -10360,6 +10360,24 @@ class ValueDomainBugs(BugHelper):
             exception_message="A set must not contain duplicates",
         )
 
+    def test_GH_1349_55c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := Me_2 in { cast ( "05/01/2024" , date ,
+                                                         "DD/MM/YYYY" ) ,
+                                                         cast ( "2024-01-07" , date ) } ];
+        Description: A cast with a mask inside a set reads its mask as a cast outside a set
+                     does, in the semantic analysis and on both engines. The mask of a cast
+                     inside a set was kept as a parser node, so every path failed with an
+                     internal error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_55c", number_inputs=1, references_names=["1"])
+        self.BaseTest(
+            code="GH_1349_55c", number_inputs=1, references_names=["1"], only_semantic=True
+        )
+
     def test_GH_1349_56(self):
         """
         Status: OK
