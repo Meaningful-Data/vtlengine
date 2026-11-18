@@ -9979,6 +9979,25 @@ class ValueDomainBugs(BugHelper):
         """
         self.BaseTest(code="GH_1349_21", number_inputs=1, references_names=["1"])
 
+    def test_GH_1349_21b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := between ( Me_1 , SC_1 , SC_1 ) ];
+        Description: between stands for >= and <=, which do not compare periods of different
+                     period indicators (2024M01 and 2024Q2): both engines raise 2-1-19-19, as
+                     >= and <= do. DuckDB returned false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_21b",
+            number_inputs=1,
+            exception_code="2-1-19-19",
+            exception_message="Time Period comparison (>, <, >=, <=) with different period "
+            "indicator is not supported",
+            scalars={"SC_1": "2024Q2"},
+        )
+
     def test_GH_1349_22(self):
         """
         Status: OK

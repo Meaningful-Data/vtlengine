@@ -3734,7 +3734,9 @@ FROM (
         return self._visit_set_operation(node, tokens.SYMDIFF)
 
     @staticmethod
-    def _between_expr(operand: str, low: str, high: str, is_number: bool = False) -> str:
+    def _between_expr(
+        operand: str, low: str, high: str, is_number: bool = False, is_period: bool = False
+    ) -> str:
         """Build a VTL-compliant BETWEEN expression with NULL propagation.
 
         VTL requires that if ANY operand of between is NULL, the result is NULL.
@@ -3742,9 +3744,15 @@ FROM (
         semantics we wrap the expression with an explicit NULL check.
 
         Number operands compare through the configured tolerance (issue #919),
-        mirroring ``x >= low and x <= high``.
+        mirroring ``x >= low and x <= high``. Time_Period operands compare as periods
+        through the SQL of ``>=`` and ``<=``, which raises 2-1-19-19 for periods of
+        different period indicators (issue #1349).
         """
         inner = f"({operand} BETWEEN {low} AND {high})"
+        if is_period:
+            from_sql = registry.sql(tokens.GTE, operand, low, data_type=TimePeriod)
+            to_sql = registry.sql(tokens.LTE, operand, high, data_type=TimePeriod)
+            inner = f"({from_sql} AND {to_sql})"
         if is_number:
             ge_sql = number_tolerance_sql(tokens.GTE, operand, low)
             le_sql = number_tolerance_sql(tokens.LTE, operand, high)
@@ -3769,7 +3777,11 @@ FROM (
                 comp = ds.components.get(col.strip('"')) if ds else None
                 dt = comp.data_type if comp else None
                 return self._between_expr(
-                    col, low_sql, high_sql, is_number_comparison(dt, *bound_types)
+                    col,
+                    low_sql,
+                    high_sql,
+                    is_number_comparison(dt, *bound_types),
+                    TimePeriod in (dt, *bound_types),
                 )
 
             return self._apply_measures(node.children[0], _between, self._result_measure_name(node))
@@ -3781,6 +3793,7 @@ FROM (
             low_sql,
             high_sql,
             is_number_comparison(operand_dt, *bound_types),
+            TimePeriod in (operand_dt, *bound_types),
         )
 
     def visit_MulOp_exists_in(self, node: AST.MulOp) -> str:
