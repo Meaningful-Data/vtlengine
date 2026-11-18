@@ -4486,7 +4486,7 @@ FROM (
                 measure_cols=ds.get_measures_names(),
                 output_mode=node.output.value if node.output else "invalid",
                 viral_comps=viral_comps,
-                components=ds.components,
+                ds=ds,
             )
             for rule in rules
         ]
@@ -4517,20 +4517,22 @@ FROM (
         measure_cols: List[str],
         output_mode: str,
         viral_comps: Optional[List[Any]] = None,
-        components: Optional[Dict[str, Component]] = None,
+        ds: Optional[Dataset] = None,
     ) -> str:
         """Build SQL for a single datapoint rule.
 
         The rule names the components by the parameters of the ruleset, which are replaced by
-        the components they are bound to before it is visited, as any other expression on
-        them (issue #1350).
+        the components they are bound to. Its conditions are then visited as the condition of
+        a filter on the operand, with the SQL and the types of any other expression on its
+        components (issue #1350).
         """
         rule_node = cast(AST.HRBinOp, _rename_var_ids(rule.rule, signature))
         has_when = isinstance(rule_node, AST.HRBinOp) and rule_node.op == tokens.WHEN  # type: ignore[redundant-expr]
         then_node = rule_node.right if has_when else rule_node
 
-        then_expr = self._visit_dp_expr(then_node, components)
-        when_cond = self._visit_dp_expr(rule_node.left, components) if has_when else "TRUE"
+        with self._clause_scope(ds):
+            then_expr = self.visit(then_node)
+            when_cond = self.visit(rule_node.left) if has_when else "TRUE"
 
         if has_when:
             fail_cond = f"({when_cond}) AND NOT ({then_expr})"
@@ -4568,85 +4570,6 @@ FROM (
             select_parts.append(f"CASE WHEN {fail_cond} THEN {val} ELSE NULL END AS {col}")
         select_parts.extend(viral_parts)
         return f"SELECT {', '.join(select_parts)} FROM {table_src}"
-
-    def _detect_dp_type(
-        self, node: AST.AST, components: Optional[Dict[str, Component]]
-    ) -> Optional[type]:
-        """Detect the data type of a datapoint-rule operand, mirroring
-        ``_detect_scalar_type`` so rules get the same tolerance and per-op
-        rounding dispatch as ordinary expressions (issue #985)."""
-        if isinstance(node, (AST.DefIdentifier, AST.VarID)):
-            comp = (components or {}).get(node.value)
-            return comp.data_type if comp else None
-        if isinstance(node, AST.Constant):
-            return Number if isinstance(node.value, float) else None
-        if isinstance(node, (AST.HRBinOp, AST.BinOp)):
-            if node.op in (tokens.DIV, tokens.POWER):
-                return Number
-            if node.op in (tokens.PLUS, tokens.MINUS, tokens.MULT, tokens.MOD) and Number in (
-                self._detect_dp_type(node.left, components),
-                self._detect_dp_type(node.right, components),
-            ):
-                return Number
-        elif isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
-            if node.op in (tokens.SQRT, tokens.EXP, tokens.LN):
-                return Number
-            if node.op in (tokens.PLUS, tokens.MINUS):
-                inner = self._detect_dp_type(node.operand, components)
-                return Number if inner == Number else None
-        elif (
-            isinstance(node, AST.ParamOp)
-            and node.op in (tokens.ROUND, tokens.TRUNC)
-            and node.params
-        ):
-            return Number
-        return None
-
-    def _visit_dp_expr(
-        self, node: AST.AST, components: Optional[Dict[str, Component]] = None
-    ) -> str:
-        """Visit an expression in datapoint-rule context."""
-        if isinstance(node, (AST.HRBinOp, AST.BinOp)):
-            chain_sql = self._build_expression_chain(
-                node,
-                lambda operand: self._visit_dp_expr(operand, components),
-                lambda operand: self._detect_dp_type(operand, components),
-            )
-            if chain_sql is not None:
-                return chain_sql
-            if isinstance(node, AST.BinOp) and node.op in (tokens.AND, tokens.OR):
-                return self._short_circuit_sql(
-                    node, lambda operand: self._visit_dp_expr(operand, components)
-                )
-            left_sql = self._visit_dp_expr(node.left, components)
-            right_sql = self._visit_dp_expr(node.right, components)
-            if isinstance(node, AST.HRBinOp) and node.op == tokens.WHEN:
-                return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
-            # Route through the shared builder so rule expressions carry the
-            # Number comparison tolerance and per-op rounding (issue #985).
-            return self._make_binary_expr(
-                left_sql,
-                right_sql,
-                node.op,
-                self._detect_dp_type(node.left, components),
-                self._detect_dp_type(node.right, components),
-            )
-        if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
-            operand_sql = self._visit_dp_expr(node.operand, components)
-            return registry.sql(node.op, operand_sql)
-        if isinstance(node, (AST.DefIdentifier, AST.VarID)):
-            return quote_name(node.value)
-        if isinstance(node, AST.Constant):
-            return self._to_sql_literal(node.value)
-        if isinstance(node, AST.If):
-            cond_sql = self._visit_dp_expr(node.condition, components)
-            then_sql = self._visit_dp_expr(node.thenOp, components)
-            else_sql = self._visit_dp_expr(node.elseOp, components)
-            return (
-                f"CASE WHEN ({cond_sql}) THEN CAST(({then_sql}) AS BOOLEAN)"
-                f" ELSE CAST(({else_sql}) AS BOOLEAN) END"
-            )
-        return self.visit(node)
 
     # Hierarchical ruleset
 
