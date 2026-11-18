@@ -9834,6 +9834,83 @@ class ValueDomainBugs(BugHelper):
             vd_names=self.vd_1349,
         )
 
+    def test_GH_1349_10(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_1 ) is
+                        when "A" then "Z"; else "Q" end viral propagation;
+                    DS_r <- DS_1 + DS_1;
+        Description: The constants of a rule on a value domain must be values of it: Z is not
+                     a value of VD_1. At_1 was on VD_1 holding Z and Q.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_10",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message='The constant "Z" of viral propagation rule VP_1 is not one of the '
+            "values of the Value Domain VD_1",
+            vd_names=self.vd_1349,
+        )
+
+    def test_GH_1349_11(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_X ) is
+                        when "A" then "A"; else "B" end viral propagation;
+                    DS_r <- DS_1 + DS_1;
+        Description: The value domain VD_X of the rule is not given, which the definition
+                     reports. It raised a misleading 1-3-3-6 for At_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_11",
+            number_inputs=1,
+            exception_code="1-2-8",
+            exception_message="Missing value domain 'VD_X'",
+            vd_names=self.vd_1349,
+        )
+
+    def test_GH_1349_11b(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_X ) is
+                        when "A" then "A"; else "B" end viral propagation;
+                    DS_r <- DS_1;
+        Description: As case 11 with no statement using the rule: the definition itself
+                     raises. It was accepted.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_11b",
+            number_inputs=1,
+            exception_code="1-2-8",
+            exception_message="Missing value domain 'VD_X'",
+            vd_names=self.vd_1349,
+        )
+
+    def test_GH_1349_12(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_X ) is
+                        R1 : VD_X > 0 end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 );
+        Description: Control of case 11: a datapoint ruleset on a value domain that is not
+                     given raises 1-2-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_12",
+            number_inputs=1,
+            exception_code="1-2-8",
+            exception_message="Missing value domain 'VD_X'",
+            vd_names=self.vd_1349,
+        )
+
     vd_1349_int = ["GH_1349-errorcode_vd_int", "GH_1349-errorlevel_vd_int"]
 
     def test_GH_1349_13(self):

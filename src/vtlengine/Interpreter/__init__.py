@@ -123,6 +123,7 @@ from vtlengine.Operators.Validation import (
     Check_Hierarchy,
     bind_value_domains,
     error_values,
+    literal_text,
 )
 from vtlengine.Utils import (
     AGGREGATION_MAPPING,
@@ -144,6 +145,7 @@ from vtlengine.ViralPropagation import (
     ViralPropagationRegistry,
     ViralPropagationRule,
     get_current_registry,
+    is_value_of_domain,
     set_current_registry,
 )
 
@@ -631,6 +633,21 @@ class InterpreterAnalyzer(ASTTemplate):
         # Validate: no duplicate rules for the same variable
         if registry.get_existing(node.signature_type, node.target) is not None:
             raise SemanticError("1-3-3-1", name=node.target)
+
+        # A rule on a value domain needs it, and its constants must be values of it, also when
+        # no statement uses the rule (issue #1349)
+        if node.signature_type == "valuedomain":
+            domain = self._value_domain(node.target)
+            constants = [v for c in node.enumerated_clauses for v in (*c.values, c.result)]
+            for value in [*constants, node.default_value]:
+                if not is_value_of_domain(value, domain):
+                    raise SemanticError(
+                        "1-1-10-13",
+                        element="constant",
+                        value=literal_text(value),
+                        where=f"viral propagation rule {node.name}",
+                        value_domain=domain.name,
+                    )
 
         enumerated_clauses = [
             {"values": clause.values, "result": clause.result} for clause in node.enumerated_clauses

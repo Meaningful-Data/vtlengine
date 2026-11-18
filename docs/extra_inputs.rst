@@ -369,8 +369,12 @@ Value domains also appear in the VTL-DL definitions:
   component per value domain (``1-1-10-15``). Each component must be
   defined on the value domain it is bound to (``1-1-10-12``), and the
   value domains must be given (``1-2-22``, ``1-2-8``).
-- A viral propagation rule on a value domain applies to the viral
-  attributes defined on it, unless a rule on the variable overrides
+- A viral propagation rule on a value domain needs it given
+  (``1-2-8``), and the constants of its ``when``, ``then`` and
+  ``else`` must be values of it (``1-1-10-13``); the definition
+  checks both, also when no statement uses the rule. The rule
+  applies to the viral attributes defined on the value domain,
+  unless a rule on the variable overrides
   it. Where a viral attribute is combined, the rule on its value
   domain applies only when it is on that value domain in every
   operand: when an operand gives it on no value domain or on another

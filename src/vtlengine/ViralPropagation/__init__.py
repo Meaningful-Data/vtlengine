@@ -192,6 +192,13 @@ def _is_value_of(value: Any, data_type: Type[ScalarType]) -> bool:
     return compatible and data_type.check(value)
 
 
+def is_value_of_domain(value: Any, value_domain: Any) -> bool:
+    """Check that a rule constant is a value of the value domain the rule is defined on: a
+    null, or a value of its basic type that is one of its values (issue #1349)."""
+    values = pd.Series([value], dtype=object)
+    return _is_value_of(value, value_domain.type) and not len(value_domain.outside(values))
+
+
 def require_rules(components: Iterable[Any]) -> None:
     """Raise SemanticError 1-3-3-6 for any viral component lacking a propagation rule.
 
