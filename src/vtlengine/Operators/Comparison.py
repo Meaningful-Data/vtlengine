@@ -25,13 +25,12 @@ from vtlengine.DataTypes import (
     Null,
     String,
     TimeInterval,
-    TimePeriod,
     to_string,
     to_strings,
 )
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet, values_of
+from vtlengine.Operators.Boolean import And
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.Utils._number_config import (
@@ -349,32 +348,16 @@ class Between(Operator.Operator):
         y: Optional[Union[int, float, bool, str]],
         z: Optional[Union[int, float, bool, str]],
     ) -> Optional[bool]:
-        """Op >= from and op <= to, as the VTL 2.2 manual defines between: both comparisons are
-        made, so periods of different indicators raise 2-1-19-19 also where the other bound
-        is null, and they are joined by the and of three-valued logic, false where one of
-        them is false, also when the other is null (issue #1349)."""
-        from_ok = cls._compare(x, y, numbers_are_greater_equal, operator.ge)
-        to_ok = cls._compare(x, z, numbers_are_less_equal, operator.le)
-        if from_ok is False or to_ok is False:
-            return False
-        if from_ok is None or to_ok is None:
-            return None
-        return True
-
-    @staticmethod
-    def _compare(x: Any, y: Any, numbers_compare: Any, compare: Any) -> Optional[bool]:
-        """One comparison of between: null where an operand is null, through the tolerance
-        where a Number is involved (exact integers compare exactly, like
-        _tolerance_applies)."""
-        if pd.isnull(x) or pd.isnull(y):
-            return None
-        if (
-            isinstance(x, (int, float))
-            and isinstance(y, (int, float))
-            and (isinstance(x, float) or isinstance(y, float))
-        ):
-            return bool(numbers_compare(x, y))
-        return bool(compare(x, y))
+        """Op >= from and op <= to, as the VTL 2.2 manual defines between: the functions of
+        the >= and <= operators on the values as they order them (see _ordered), so periods
+        of different indicators raise 2-1-19-19 also where the other bound is null, joined
+        by the and of three-valued logic, false where one of them is false, also when the
+        other is null (issue #1349)."""
+        from_ok = GreaterEqual.op_func(x, y)
+        to_ok = LessEqual.op_func(x, z)
+        return And.py_op(
+            None if from_ok is None else bool(from_ok), None if to_ok is None else bool(to_ok)
+        )
 
     @classmethod
     def apply_operation_component(cls, series: Any, from_data: Any, to_data: Any) -> Any:
@@ -382,10 +365,11 @@ class Between(Operator.Operator):
             to_data, pd.Series
         )
         if control_any_series_from_to:
+            # A scalar bound keeps its value, which may be of another type than the operand
             if not isinstance(from_data, pd.Series):
-                from_data = pd.Series(from_data, index=series.index, dtype=series.dtype)
+                from_data = pd.Series(from_data, index=series.index, dtype=object)
             if not isinstance(to_data, pd.Series):
-                to_data = pd.Series(to_data, index=series.index, dtype=series.dtype)
+                to_data = pd.Series(to_data, index=series.index, dtype=object)
             df = pd.DataFrame({"operand": series, "from_data": from_data, "to_data": to_data})
             return df.apply(  # type: ignore[call-overload]
                 lambda x: cls.op_func(x["operand"], x["from_data"], x["to_data"]),
@@ -464,27 +448,28 @@ class Between(Operator.Operator):
             # between orders its operands, which Time values do not support (issue #1192)
             raise SemanticError("1-1-19-18", op=cls.op)
 
-        if isinstance(operand, Dataset):
-            for measure in operand.get_measures():
-                cls.validate_type_compatibility(measure.data_type, from_.data_type)
-                cls.validate_type_compatibility(measure.data_type, to.data_type)
-                if isinstance(result, Dataset):
-                    cls.apply_return_type_dataset(result, operand)
-        else:
-            cls.validate_type_compatibility(operand.data_type, from_.data_type)
-            cls.validate_type_compatibility(operand.data_type, to.data_type)
+        # The types are checked as >= and <= check them (issue #1349)
+        for operand_type in operand_types:
+            GreaterEqual.type_validation(operand_type, from_.data_type)
+            LessEqual.type_validation(operand_type, to.data_type)
+        if isinstance(result, Dataset) and isinstance(operand, Dataset):
+            cls.apply_return_type_dataset(result, operand)
 
         return result
 
     @staticmethod
     def _ordered(element: Any, data: Any) -> Any:
-        """The values of the element as between orders them: a Time_Period as a period, not
-        as its text, as the other comparison operators do (issue #1349)."""
-        if element.data_type is not TimePeriod or data is None:
+        """The values of the element as >= and <= order them: a Time_Period as a period and
+        a Duration as its rank, not as their text (issue #1349)."""
+        if data is None:
             return data
         if isinstance(data, pd.Series):
-            return data.map(TimePeriodHandler, na_action="ignore")
-        return None if pd.isnull(data) else TimePeriodHandler(data)
+            return GreaterEqual.cast_time_types(element.data_type, data)
+        return (
+            None
+            if pd.isnull(data)
+            else GreaterEqual.cast_time_types_scalar(element.data_type, data)
+        )
 
     @classmethod
     def evaluate(
@@ -526,11 +511,10 @@ class Between(Operator.Operator):
         elif isinstance(operand, Scalar) and (
             isinstance(from_data, pd.Series) or isinstance(to_data, pd.Series)
         ):  # From or To is a DataComponent, or both
-            value = cls._ordered(operand, operand.value)
-            if isinstance(from_data, pd.Series):
-                series = pd.Series(value, index=from_data.index, dtype=from_data.dtype)
-            elif isinstance(to_data, pd.Series):
-                series = pd.Series(value, index=to_data.index, dtype=to_data.dtype)
+            # The operand keeps its value, which >= and <= compare as they do in the pair: a
+            # Boolean next to a String bound is written as cast to string writes it
+            index = from_data.index if isinstance(from_data, pd.Series) else to_data.index
+            series = pd.Series(cls._ordered(operand, operand.value), index=index, dtype=object)
             result_series = cls.apply_operation_component(series, from_data, to_data)
             result = DataComponent(
                 name=operand.name,

@@ -3724,35 +3724,35 @@ FROM (
         """Visit SYMDIFF set operation."""
         return self._visit_set_operation(node, tokens.SYMDIFF)
 
-    @staticmethod
     def _between_expr(
-        operand: str, low: str, high: str, is_number: bool = False, is_period: bool = False
+        self,
+        refs: List[str],
+        types: List[Optional[type]],
+        value_types: List[Optional[str]],
     ) -> str:
         """Build the SQL of between: ``op >= from and op <= to``, as the VTL 2.2 manual
         defines it, joined by the AND of three-valued logic, which is false where one
         comparison is false, also when a bound is null (issue #1349).
 
-        Number operands compare through the configured tolerance (issue #919). Time_Period
-        operands compare as periods through the SQL of ``>=`` and ``<=``, which raises
-        2-1-19-19 for periods of different period indicators (issue #1349).
+        Each comparison is the SQL of the ``>=`` / ``<=`` operator for the types of its
+        operands, so between orders every type as they do: Numbers through the configured
+        tolerance, Time_Periods as periods (2-1-19-19 for different period indicators) and
+        Durations by their rank (issue #1349).
         """
-        if is_period:
-            from_sql = registry.sql(tokens.GTE, operand, low, data_type=TimePeriod)
-            to_sql = registry.sql(tokens.LTE, operand, high, data_type=TimePeriod)
-            return f"({from_sql} AND {to_sql})"
-        if is_number:
-            ge_sql = number_tolerance_sql(tokens.GTE, operand, low)
-            le_sql = number_tolerance_sql(tokens.LTE, operand, high)
-            if ge_sql is not None and le_sql is not None:
-                return f"({ge_sql} AND {le_sql})"
-        return f"({operand} BETWEEN {low} AND {high})"
+        comparisons = []
+        for op, i in ((tokens.GTE, 1), (tokens.LTE, 2)):
+            left, right = self._promoted_to_text(
+                [refs[0], refs[i]], [value_types[0], value_types[i]]
+            )
+            comparisons.append(self._make_binary_expr(left, right, op, types[0], types[i]))
+        return f"({comparisons[0]} AND {comparisons[1]})"
 
     def visit_MulOp_between(self, node: AST.MulOp) -> str:
         """Visit BETWEEN: expr BETWEEN low AND high. Handles dataset operand."""
         operand_type = self._get_node_type(node.children[0])
-        low_sql = self.visit(node.children[1])
-        high_sql = self.visit(node.children[2])
+        bound_sqls = [self.visit(c) for c in node.children[1:3]]
         bound_types = [self._detect_scalar_type(c) for c in node.children[1:3]]
+        bound_value_types = [self._value_type(c) for c in node.children[1:3]]
 
         if operand_type == _DATASET:
             ds = self._get_dataset_structure(node.children[0])
@@ -3761,23 +3761,17 @@ FROM (
                 comp = ds.components.get(col.strip('"')) if ds else None
                 dt = comp.data_type if comp else None
                 return self._between_expr(
-                    col,
-                    low_sql,
-                    high_sql,
-                    is_number_comparison(dt, *bound_types),
-                    TimePeriod in (dt, *bound_types),
+                    [col, *bound_sqls],
+                    [dt, *bound_types],
+                    [getattr(dt, "__name__", None), *bound_value_types],
                 )
 
             return self._apply_measures(node.children[0], _between, self._result_measure_name(node))
 
-        operand_sql = self.visit(node.children[0])
-        operand_dt = self._detect_scalar_type(node.children[0])
         return self._between_expr(
-            operand_sql,
-            low_sql,
-            high_sql,
-            is_number_comparison(operand_dt, *bound_types),
-            TimePeriod in (operand_dt, *bound_types),
+            [self.visit(node.children[0]), *bound_sqls],
+            [self._detect_scalar_type(node.children[0]), *bound_types],
+            [self._value_type(c) for c in node.children],
         )
 
     def visit_MulOp_exists_in(self, node: AST.MulOp) -> str:

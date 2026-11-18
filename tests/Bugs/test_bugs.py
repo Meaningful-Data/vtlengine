@@ -10377,3 +10377,19 @@ class ValueDomainBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1349_56", number_inputs=1, references_names=["1", "2", "3"])
+
+    def test_GH_1349_56b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := between ( Me_1 , Me_2 , Me_3 ) ,
+                                   Me_5 := Me_1 >= Me_2 and Me_1 <= Me_3 , ... ] [ drop ... ];
+                    DS_r2 <- between ( DS_1 [ keep Me_1 ] , cast ( "D" , duration ) ,
+                                       cast ( "M" , duration ) );
+        Description: between of Duration operands is op >= from and op <= to: the values are
+                     ordered as durations (D < W < M < Q < S < A), as >= and <= order them, for
+                     a Component, a scalar and a Data Set, also with a null bound. Both engines
+                     ordered them as text, so between(A, A, M) was true where the pair is false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_56b", number_inputs=1, references_names=["1", "2"])

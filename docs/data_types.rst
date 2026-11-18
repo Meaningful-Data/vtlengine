@@ -255,7 +255,8 @@ The operators ``>``, ``<``, ``>=``, ``<=`` and ``between`` order the
 periods of one period indicator; two periods of different indicators
 raise ``2-1-19-19``. ``between(op, from, to)`` is
 ``op >= from and op <= to``, as the VTL 2.2 manual defines it, for
-every type: it raises ``2-1-19-19`` also when the other bound is null,
+every type (the same types are accepted, and the values are ordered
+as those two operators order them): it raises ``2-1-19-19`` also when the other bound is null,
 and a null bound gives ``false`` where the other comparison is false
 and null elsewhere.
 
@@ -339,6 +340,10 @@ Duration
         stored as ``string[pyarrow]``.
     * - **Output dtype**
       - ``string[pyarrow]``
+
+The operators ``>``, ``<``, ``>=``, ``<=`` and ``between`` order the
+Durations by their length, not by their text: ``D`` < ``W`` < ``M`` <
+``Q`` < ``S`` < ``A``.
 
 
 Null Handling
