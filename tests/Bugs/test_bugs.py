@@ -8889,3 +8889,73 @@ class ValueDomainBugs(BugHelper):
             references_names=["1", "2"],
             vd_names=self.vd_1350,
         )
+
+    def test_GH_1350_5a(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_2 ) is aggregate avg ...;
+                    DS_r <- DS_1 + DS_2;
+        Description: At_1 is on VD_2 in both operands, so the rule on VD_2 averages it into a
+                     Number. DuckDB looked the rule up on the result At_1, without the value
+                     domain, and gave null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_5a",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_5b(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_2 ) is aggregate avg ...;
+                    DS_r <- DS_1 + DS_2 + DS_1;
+        Description: The first + averages At_1 into a Number on no value domain, so the second
+                     + combines it with At_1 on VD_2. The rule on VD_2 does not apply when an
+                     operand is not on VD_2, and there is no rule on the variable At_1. Both
+                     engines gave null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1350_5b",
+            number_inputs=2,
+            exception_code="1-3-3-6",
+            exception_message="Viral attribute At_1 has no viral propagation rule",
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_5c(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( variable At_1 ) is aggregate avg ...;
+                    DS_r <- DS_1 + DS_2;
+        Description: The rule on the variable At_1 averages it into a Number.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_5c",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_5d(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( variable At_1 ) is aggregate avg ...;
+                    DS_r <- DS_1 + DS_2 + DS_1;
+        Description: The rule on the variable At_1 applies to both +: the average of the average.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_5d",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )

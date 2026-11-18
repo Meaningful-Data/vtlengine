@@ -333,7 +333,12 @@ Value domains also appear in the VTL-DL definitions:
   value domains must be given (``1-2-22``, ``1-2-8``).
 - A viral propagation rule on a value domain applies to the viral
   attributes defined on it, unless a rule on the variable overrides
-  it.
+  it. Where a viral attribute is combined, the rule on its value
+  domain applies only when it is on that value domain in every
+  operand: when an operand gives it on no value domain (as an
+  ``aggregate avg`` rule does) or on another one, only a rule on the
+  variable applies, and without one the statement raises
+  ``1-3-3-6``.
 - A value domain types a scalar or a component parameter of a user
   defined operator (``x VD_FLOW``, ``x component<VD_FLOW>``): the
   argument is of the basic type of the value domain, and its values

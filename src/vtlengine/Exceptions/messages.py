@@ -1523,8 +1523,9 @@ centralised_messages = {
         "'define viral propagation' rule for it.",
         "description": "Raised when a viral attribute is combined -- in an operation over "
         "two or more datasets, an aggregation/analytic group-by, or a hierarchy roll-up -- "
-        "without a 'define viral propagation' rule. Viral attributes that are only copied "
-        "through row-preserving operators do not require a rule.",
+        "without a 'define viral propagation' rule. A rule on a value domain applies only "
+        "when the viral attribute is on it in every operand combined. Viral attributes that "
+        "are only copied through row-preserving operators do not require a rule.",
     },
     "1-3-3-7": {
         "message": "Viral attribute {name} uses a reserved component name; "

@@ -88,7 +88,11 @@ from vtlengine.Operators.Validation import (
     error_value,
 )
 from vtlengine.Utils._recursion import recursion_headroom
-from vtlengine.ViralPropagation import apply_viral_return_types, get_current_registry
+from vtlengine.ViralPropagation import (
+    apply_viral_return_types,
+    combine_viral_component,
+    get_current_registry,
+)
 from vtlengine.ViralPropagation.sql import (
     vp_group_sql,
     vp_group_sql_windowed,
@@ -1305,10 +1309,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     result.append(f"{alias_b}.{qn} AS {qn}")
                 continue
             if in_left and in_right:
+                # The rule of the operands: the result of an avg rule has left their value
+                # domain (issue #1350)
+                rule = vp_registry.rule_for(
+                    combine_viral_component(left_ds.components[name], right_ds.components[name])
+                )
                 comp = (
                     output_ds.components.get(name) if output_ds else None
                 ) or left_ds.components[name]
-                rule = vp_registry.rule_for(comp)
                 if rule is None:
                     result.append(
                         f"CAST(NULL AS {get_duckdb_type(comp.data_type.__name__)}) AS {qn}"
