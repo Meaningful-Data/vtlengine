@@ -94,6 +94,17 @@ def share_value_domains(
         )
 
 
+def on_basic_types(components: Dict[str, Any], names: Iterable[str]) -> Dict[str, Any]:
+    """The components with the ones of ``names`` copied onto their basic type: an operator that
+    computes new values into a component takes it off its value domain, as the values are no
+    longer values of it (issue #1348). The components given are not changed."""
+    result = dict(components)
+    for name in names:
+        result[name] = copy(components[name])
+        result[name].value_domain = None
+    return result
+
+
 def check_values(values: Any, value_domain: ValueDomain, op: str) -> None:
     """The values an operator converts into a value domain must be values of it."""
     outside = value_domain.outside(values)

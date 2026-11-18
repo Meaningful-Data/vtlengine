@@ -913,7 +913,11 @@ class Time_Aggregation(Time):
             for comp in operand.components.values()
             if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
-
+        # The aggregated periods are new values of the time Measure
+        time_measure = [
+            m.name for m in operand.get_measures() if m.data_type in cls.TIME_DATA_TYPES
+        ]
+        result_components = Operators.on_basic_types(result_components, time_measure)
         return Dataset(name=operand.name, components=result_components, data=None)
 
     @classmethod
