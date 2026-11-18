@@ -465,7 +465,7 @@ the scalar results on a value domain.
 
 .. code-block:: text
 
-    /* SC_r is on VD_FLOW, and "OTHER" must be one of its values */
+    /* SC_r is a String: "OTHER" is a value of the basic type of VD_FLOW */
     SC_r <- nvl(SC_1, "OTHER");
 
     /* Me_2 is on VD_FLOW */
