@@ -402,7 +402,6 @@ def _run_with_duckdb(
         output_scalars=output_scalars,
         value_domains=loaded_vds or {},
         external_routines=loaded_routines or {},
-        downcasts=interpreter.downcasts,
         dag=dag,
         time_period_output_format=time_period_output_format,
     )

@@ -586,9 +586,9 @@ centralised_messages = {
     },
     "2-1-5-4": {
         "message": "At op {op}: Cannot cast {value} of {type} to Value Domain {value_domain}.",
-        "description": "Raised when an operator puts the values of a basic type into a "
-        "component defined on a Value Domain of that type (downcast), and one of them is not "
-        "a value of the Value Domain.",
+        "description": "Raised when the values of a basic type are converted into a Value "
+        "Domain of that type (downcast), as cast does, and one of them is not a value of the "
+        "Value Domain.",
     },
     # Clause errors
     "1-1-6-2": {

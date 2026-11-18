@@ -7791,8 +7791,8 @@ class ValueDomainBugs(BugHelper):
         Status: OK
         Expression: DS_r1 <- union ( DS_1 , DS_2 );
                     DS_r2 <- full_join ( DS_1 as A , DS_2 as B rename B#Me_1 to Me_2 );
-        Description: Id_2 is on VD_FLOW in DS_1 and a String in DS_2: the result keeps the
-                     value domain, into which the values of DS_2 are downcast.
+        Description: Id_2 is on VD_FLOW in DS_1 and a String in DS_2: the result is a String,
+                     as a value domain is upcast to its basic type (issue #1341).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
         Goal: Check Result.
         """
@@ -7811,19 +7811,20 @@ class ValueDomainBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- union ( DS_1 , DS_2 );
-        Description: OTHER, a String of DS_2, is not a value of VD_FLOW, into which the union
-                     downcasts it.
+        Description: Id_2 is on VD_FLOW in DS_1 and a String in DS_2, so the result is a
+                     String, and OTHER of DS_2 is kept. It raised 2-1-5-4, the union keeping
+                     VD_FLOW (issue #1341).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
-        Goal: Check Exception.
+        Goal: Check Result.
         """
         code = "GH_1301_6"
         number_inputs = 2
+        references_names = ["1"]
 
-        self.NewSemanticExceptionTest(
+        self.BaseTest(
             code=code,
             number_inputs=number_inputs,
-            exception_code="2-1-5-4",
-            exception_message="At op union: Cannot cast OTHER of String to Value Domain VD_FLOW",
+            references_names=references_names,
             vd_names=self.vd_flow,
         )
 
@@ -7854,8 +7855,8 @@ class ValueDomainBugs(BugHelper):
                                         Me_3 := if Me_1 > 1 then Me_1 else 3 ,
                                         Me_4 := case when Me_1 = 1 then 10 else Me_1 ,
                                         Me_5 := nvl ( Me_1 , 2.5 ) ];
-        Description: nvl, if-then-else and case keep the value domain VD_INT of Me_1, into
-                     which their Integer literals are downcast. A Number gives a Number.
+        Description: nvl, if-then-else and case give an Integer for Me_1, on VD_INT, and an
+                     Integer literal, and a Number for a Number (issue #1341).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
         Goal: Check Result.
         """
@@ -7874,18 +7875,19 @@ class ValueDomainBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- DS_1 [ calc Me_2 := nvl ( Me_1 , 5 ) ];
-        Description: 5 is not a value of VD_INT, into which nvl downcasts it.
+        Description: nvl gives an Integer for Me_1, on VD_INT, and the literal 5, which is not
+                     a value of VD_INT. It raised 2-1-5-4, nvl keeping VD_INT (issue #1341).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
-        Goal: Check Exception.
+        Goal: Check Result.
         """
         code = "GH_1301_9"
         number_inputs = 1
+        references_names = ["1"]
 
-        self.NewSemanticExceptionTest(
+        self.BaseTest(
             code=code,
             number_inputs=number_inputs,
-            exception_code="2-1-5-4",
-            exception_message="At op nvl: Cannot cast 5 of Integer to Value Domain VD_INT",
+            references_names=references_names,
             vd_names=self.vd_all,
         )
 
@@ -7893,19 +7895,20 @@ class ValueDomainBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- left_join ( DS_2 as A , DS_1 as B rename B#Me_1 to Me_2 );
-        Description: The join matches Id_2, a String in DS_2 and on VD_FLOW in DS_1, and
-                     OTHER, of DS_2, is not a value of VD_FLOW.
+        Description: The join matches Id_2, a String in DS_2 and on VD_FLOW in DS_1, so Id_2 is
+                     a String, and OTHER of DS_2 is kept. It raised 2-1-5-4, the join keeping
+                     VD_FLOW (issue #1341).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
-        Goal: Check Exception.
+        Goal: Check Result.
         """
         code = "GH_1301_10"
         number_inputs = 2
+        references_names = ["1"]
 
-        self.NewSemanticExceptionTest(
+        self.BaseTest(
             code=code,
             number_inputs=number_inputs,
-            exception_code="2-1-5-4",
-            exception_message="At op left_join: Cannot cast OTHER of String to Value Domain",
+            references_names=references_names,
             vd_names=self.vd_flow,
         )
 
@@ -7917,7 +7920,8 @@ class ValueDomainBugs(BugHelper):
                     DS_r1 <- u ( DS_1 , DS_2 );
                     DS_r2 <- u ( DS_1 , DS_3 );
         Description: The union of the operator gives a String for the two value domains of
-                     the first call, and keeps VD_FLOW for the String of the second one.
+                     the first call, and for VD_FLOW and a String in the second one
+                     (issue #1341).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
         Goal: Check Result.
         """
@@ -7936,20 +7940,98 @@ class ValueDomainBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- if DS_1 then DS_2 else DS_3;
-        Description: 2022-03-31 of DS_3 is not a value of VD_DATE. DS_3 also holds a date with
-                     a time, so the DuckDB engine wrote it 2022-03-31 00:00:00 in the message.
+        Description: DS_2 is on VD_DATE and DS_3 a Date, so the result is a Date, and
+                     2022-03-31 of DS_3, not a value of VD_DATE, is kept. It raised 2-1-5-4,
+                     the if keeping VD_DATE (issue #1341).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1301
-        Goal: Check Exception.
+        Goal: Check Result.
         """
         code = "GH_1301_12"
         number_inputs = 3
+        references_names = ["1"]
 
-        self.NewSemanticExceptionTest(
+        self.BaseTest(
             code=code,
             number_inputs=number_inputs,
-            exception_code="2-1-5-4",
-            exception_message="At op if: Cannot cast 2022-03-31 of Date to Value Domain VD_DATE",
+            references_names=references_names,
             vd_names=["GH_1301-VD_DATE"],
+        )
+
+    vd_1341 = ["GH_1341-VD_CTY"]
+
+    def test_GH_1341_1(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- union ( DS_1 , DS_2 ); DS_r2 <- union ( DS_2 , DS_1 );
+                    DS_r3 <- setdiff ( DS_2 , DS_1 ); DS_r4 <- symdiff ( DS_1 , DS_2 );
+                    DS_r5 <- intersect ( DS_1 , DS_2 ); DS_r6 <- setdiff ( DS_1 , DS_2 );
+                    DS_r7 <- union ( DS_1 , DS_1 [ calc Me_1 := Me_1 * 10 ] );
+        Description: Id_1 is on VD_CTY in DS_1 and a String in DS_2, so the set operators give
+                     a String and keep IT, of DS_2, which is not a value of VD_CTY. Two operands
+                     on VD_CTY keep it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1341
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1341_1",
+            number_inputs=2,
+            references_names=["1", "2", "3", "4", "5", "6", "7"],
+            vd_names=self.vd_1341,
+        )
+
+    def test_GH_1341_2(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- left_join ( DS_2 as A , DS_1 as B rename B#Me_1 to Me_2 );
+                    DS_r2 <- full_join ( DS_1 as A , DS_2 as B rename B#Me_1 to Me_2 );
+                    DS_r3 <- inner_join ( DS_1 as A , DS_2 as B rename B#Me_1 to Me_2 );
+                    DS_r4 <- left_join ( DS_1 as A , DS_2 as B rename B#Me_1 to Me_2 );
+        Description: The joins match Id_1, on VD_CTY in DS_1 and a String in DS_2, so Id_1 is a
+                     String and IT of DS_2 is kept.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1341
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1341_2",
+            number_inputs=2,
+            references_names=["1", "2", "3", "4"],
+            vd_names=self.vd_1341,
+        )
+
+    def test_GH_1341_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := nvl ( Me_v , "XX" ) ,
+                                        Me_3 := if Me_1 > 1 then Me_s else Me_v ,
+                                        Me_4 := case when Me_1 > 1 then Me_s else Me_v ,
+                                        Me_5 := nvl ( Me_v , Me_v ) ];
+        Description: Me_v is on VD_CTY and Me_s and "XX" are Strings, so nvl, if-then-else and
+                     case give a String and keep XX, which is not a value of VD_CTY. Me_v with
+                     itself keeps VD_CTY.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1341
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1341_3",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1341,
+        )
+
+    def test_GH_1341_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 + DS_2;
+        Description: The Identifier Id_1 is on VD_CTY in DS_1 and a String in DS_2, so it is a
+                     String in the result.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1341
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1341_4",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1341,
         )
 
     def test_GH_1236_1(self):

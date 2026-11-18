@@ -1,6 +1,6 @@
 import re
 from copy import copy
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 import pandas as pd
 
@@ -73,23 +73,14 @@ def _part_of(operand: Any, component: Any) -> Any:
     return operand if component.role == Role.MEASURE else None
 
 
-def _on_domain(part: Any) -> bool:
-    return getattr(part, "value_domain", None) is not None
-
-
 def shared_value_domain(parts: Iterable[Any]) -> Optional[ValueDomain]:
     """The value domain a component keeps when an operator puts the values of several
-    operands into it: the one they share, the operands of its basic type being downcast
-    into it. Two value domains, or a value domain and another basic type, give the
-    promotion of the basic types."""
-    parts = [part for part in parts if part is not None]
-    domains = {part.value_domain.name: part.value_domain for part in parts if _on_domain(part)}
-    if len(domains) != 1:
-        return None
-    (value_domain,) = domains.values()
-    if all(_on_domain(part) or part.data_type in (value_domain.type, Null) for part in parts):
-        return value_domain
-    return None
+    operands into it: the one they are all defined on, nulls aside. Two value domains, or a
+    value domain and a basic type, even its own, give the promotion of the basic types, as a
+    value domain is always upcast to its basic type."""
+    parts = [part for part in parts if part is not None and part.data_type is not Null]
+    domains = {getattr(part.value_domain, "name", None) for part in parts}
+    return parts[0].value_domain if len(domains) == 1 else None
 
 
 def share_value_domains(
@@ -101,36 +92,6 @@ def share_value_domains(
         component.value_domain = shared_value_domain(
             _part_of(operand, component) for operand in operands
         )
-
-
-def downcasts(result: Any, operands: List[Any]) -> Dict[Optional[str], ValueDomain]:
-    """The components of a result, a Data Set or a component or scalar (None), that take
-    values of their basic type from an operand, which must then be values of their value domain
-    (downcast)."""
-    parts: List[Tuple[Optional[str], Any, List[Any]]] = [(None, result, operands)]
-    if isinstance(result, Dataset):
-        parts = [
-            (name, comp, [_part_of(operand, comp) for operand in operands])
-            for name, comp in result.components.items()
-        ]
-    return {
-        name: comp.value_domain
-        for name, comp, comp_parts in parts
-        if comp.value_domain is not None
-        and not all(
-            _on_domain(part) or part.data_type is Null for part in comp_parts if part is not None
-        )
-    }
-
-
-def check_downcasts(result: Any, operands: List[Any], op: str) -> None:
-    """Checks the values downcast into the value domain of a component of the result, or
-    into the value domain of a scalar result."""
-    data = pd.Series([result.value], dtype=object) if isinstance(result, Scalar) else result.data
-    if data is None:
-        return
-    for name, value_domain in downcasts(result, operands).items():
-        check_values(data if name is None else data[name], value_domain, op)
 
 
 def check_values(values: Any, value_domain: ValueDomain, op: str) -> None:
