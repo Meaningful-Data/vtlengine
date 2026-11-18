@@ -28,6 +28,7 @@ from vtlengine.DataTypes import (
     Date,
     Duration,
     Integer,
+    Number,
     ScalarType,
     String,
     TimeInterval,
@@ -284,11 +285,17 @@ class Unary(Time):
         if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         operand.data = cls.sort_by_time(operand)
+        return Dataset(name=dataset_name, components=cls.components(operand), data=None)
+
+    @staticmethod
+    def components(operand: Dataset) -> Dict[str, Component]:
+        """The Components of the result, copied: only the number Measures accumulate, so
+        only they leave their value domain, and the other Measures keep it (issue #1348)."""
         components = {name: copy(comp) for name, comp in operand.components.items()}
         for comp in components.values():
-            if comp.role == Role.MEASURE:
+            if comp.role == Role.MEASURE and comp.data_type in (Integer, Number):
                 comp.value_domain = None
-        return Dataset(name=dataset_name, components=components, data=None)
+        return components
 
     @classmethod
     def evaluate(cls, operand: Any) -> Any:

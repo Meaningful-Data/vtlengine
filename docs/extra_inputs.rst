@@ -273,23 +273,26 @@ is a ``String``, and ``Me_1 + 1`` on a value domain of integers
 is an ``Integer``. The Components that an operator keeps as they
 are keep their value domain: the Identifiers (except the ones
 below), the Components that ``filter``, ``keep``, ``drop``,
-``rename``, ``sub`` and the joins keep, and a Component written
-alone in ``calc`` (``calc Me_3 := Id_2``). ``run()`` and
-``semantic_analysis()`` write ``"type": "VD_FLOW"`` for them.
-A join ``apply`` gives each Measure the type and the value domain
-its expression gives, as ``calc`` does: ``apply nvl(a, b)`` follows
-the rules of ``nvl`` below, and ``apply a + b`` gives the basic
-type.
+``rename``, ``sub`` and the joins keep, the Measures that
+``flow_to_stock`` and ``stock_to_flow`` pass through (all but the
+``Integer`` and ``Number`` ones, which they accumulate), and a
+Component written alone in ``calc`` (``calc Me_3 := Id_2``).
+``run()`` and ``semantic_analysis()`` write ``"type": "VD_FLOW"``
+for them. A join ``apply`` gives each Measure the type and the value
+domain its expression gives, as ``calc`` does: ``apply nvl(a, b)``
+follows the rules of ``nvl`` below, and ``apply a + b`` gives the
+basic type.
 
 A Component into which an operator writes new values has its basic
 type, as those values are not values of the value domain: the time
 Identifier of ``timeshift``, ``fill_time_series`` and an aggregation
 grouped with ``time_agg``, the time Measure of ``time_agg`` on a
 Data Set, the Components that ``dateadd`` shifts, the rule
-Identifier and the Measures of ``hierarchy``, and the rule
+Identifier and the Measures of ``hierarchy``, the rule
 Identifier of ``check_hierarchy``, with its Measures in
 ``non_zero``, ``partial_zero`` and ``always_zero``, which write a
-``0`` for a missing code item.
+``0`` for a missing code item, and the ``Integer`` and ``Number``
+Measures of ``flow_to_stock`` and ``stock_to_flow``.
 
 The operators that put the values of several operands into one
 Component (the set operators, the Identifiers that a join

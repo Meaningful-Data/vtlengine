@@ -1,0 +1,3 @@
+Id_1,Id_2,ruleid,bool_var,errorcode,errorlevel
+1,2024Q1,r1,True,,
+1,2024Q3,r1,False,E1,

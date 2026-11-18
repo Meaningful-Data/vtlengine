@@ -9548,3 +9548,55 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1348,
         )
+
+    def test_GH_1348_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- flow_to_stock ( DS_1 );
+        Description: flow_to_stock only accumulates the number Measures, so the String Measures
+                     Me_1 and Me_2 keep VD_STR, and Me_3, on VD_INT, holds the sums with the
+                     basic type Integer. Me_1 and Me_2 had the basic type String.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_14",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- stock_to_flow ( DS_1 );
+        Description: stock_to_flow only takes the differences of the number Measures, so the
+                     String Measures Me_1 and Me_2 keep VD_STR, and Me_3, on VD_INT, has the
+                     basic type Integer. Me_1 and Me_2 had the basic type String.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_15",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_14b(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_STR as X ) is
+                        r1 : X = "A" errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( flow_to_stock ( DS_1 ) , DPR_1 components Me_1 all );
+        Description: Me_1 keeps VD_STR through flow_to_stock (case 14), so the ruleset on VD_STR
+                     applies to it; it raised 1-1-10-12, while it works on the input.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_14b",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )

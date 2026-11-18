@@ -29,6 +29,7 @@ from vtlengine.Model import Component, Dataset, Role, ValueDomain
 from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Clause import Pivot
 from vtlengine.Operators.Join import Apply, merged_viral_attribute_names
+from vtlengine.Operators.Time import Unary as TimeUnary
 from vtlengine.Operators.Validation import error_domains, error_level_type
 from vtlengine.Utils import ANALYTIC_MAPPING, BINARY_MAPPING
 
@@ -749,7 +750,8 @@ class StructureVisitor(ASTTemplate):
             comps["duration_var"] = self._make_comp("duration_var", Duration)
             return Dataset(name=ds.name, components=comps, data=None)
         if node.op in (tokens.FLOW_TO_STOCK, tokens.STOCK_TO_FLOW):
-            return ds
+            # As the semantic analysis builds it (issue #1348)
+            return Dataset(name=ds.name, components=TimeUnary.components(ds), data=None)
         return self._without_attributes(ds)
 
     def _resolve_mulop_structure(self, node: AST.MulOp) -> Optional[Dataset]:
