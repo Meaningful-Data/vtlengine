@@ -271,11 +271,21 @@ The operators handle the Component as one of its basic type:
 the same type checks and the same result types. ``Id_2 || "_X"``
 is a ``String``, and ``Me_1 + 1`` on a value domain of integers
 is an ``Integer``. The Components that an operator keeps as they
-are keep their value domain: the Identifiers, the Components that
-``filter``, ``keep``, ``drop``, ``rename``, ``sub`` and the joins
-keep, and a Component written alone in ``calc``
-(``calc Me_3 := Id_2``). ``run()`` and ``semantic_analysis()``
-write ``"type": "VD_FLOW"`` for them.
+are keep their value domain: the Identifiers (except the ones
+below), the Components that ``filter``, ``keep``, ``drop``,
+``rename``, ``sub`` and the joins keep, and a Component written
+alone in ``calc`` (``calc Me_3 := Id_2``). ``run()`` and
+``semantic_analysis()`` write ``"type": "VD_FLOW"`` for them.
+
+A Component into which an operator writes new values has its basic
+type, as those values are not values of the value domain: the time
+Identifier of ``timeshift``, ``fill_time_series`` and an aggregation
+grouped with ``time_agg``, the time Measure of ``time_agg`` on a
+Data Set, the Components that ``dateadd`` shifts, the rule
+Identifier and the Measures of ``hierarchy``, and the rule
+Identifier of ``check_hierarchy``, with its Measures in
+``always_zero`` and ``partial_zero``, which write a ``0`` for a
+missing code item.
 
 The operators that put the values of several operands into one
 Component (the set operators, the Identifiers that a join

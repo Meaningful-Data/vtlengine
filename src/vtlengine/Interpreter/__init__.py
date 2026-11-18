@@ -2138,6 +2138,8 @@ class InterpreterAnalyzer(ASTTemplate):
                     viral_components=hr_viral_components,
                     viral_values=hr_viral_values,
                     value_domains=self.value_domains,
+                    rule_component=component,
+                    mode=mode,
                 )
                 del rule_output_values
             else:
