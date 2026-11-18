@@ -7,6 +7,7 @@ from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
+from vtlengine.AST.UDOTypes import udo_dataset_components, udo_result_on_value_domains
 from vtlengine.DataTypes import (
     _DUCKDB_TYPE_TO_VTL,
     BASIC_TYPES,
@@ -866,9 +867,16 @@ class StructureVisitor(ASTTemplate):
         udo_def = self._udos[node.op]
         self._push_udo_params(self._build_udo_bindings(udo_def, node.params))
         try:
-            return self._get_dataset_structure(udo_def["expression"])
+            structure = self._get_dataset_structure(udo_def["expression"])
         finally:
             self._pop_udo_params()
+        declared, constraints = udo_def.get("return_type"), udo_def.get("return_constraints")
+        if structure is None or not isinstance(declared, Dataset) or constraints is None:
+            return structure
+        # The components that the dataset type of the result names on a value domain are on
+        # it, as the pandas engine gives them (issue #1351)
+        taken = udo_dataset_components(node.op, "the output", declared, constraints, structure)
+        return udo_result_on_value_domains(structure, constraints, taken)
 
     def _ruleset_error_levels(self, ruleset_name: str) -> List[Any]:
         """The error levels of the rules of a ruleset, which the transpiler records."""
@@ -1129,6 +1137,11 @@ class StructureVisitor(ASTTemplate):
             if isinstance(target, AST.Collection):
                 return self.value_domains.get(target.name)
             return None
+        if isinstance(node, AST.UDOCall) and node.op in self._udos:
+            # The value domain that the returns of the operator names (issue #1351)
+            constraints = self._udos[node.op].get("return_constraints")
+            constraint = constraints.value if constraints is not None else None
+            return constraint.value_domain if constraint is not None else None
         if isinstance(node, AST.BinOp) and node.op == tokens.NVL:
             operands = [node.left, node.right]
         elif isinstance(node, AST.If):

@@ -11111,3 +11111,26 @@ class ValueDomainBugs(BugHelper):
             ),
             vd_names=self.vd_1351,
         )
+
+    def test_GH_1351_28(self):
+        """
+        Status: OK
+        Expression: define operator f ( ds dataset ) returns dataset { identifier < VD_1 > Id_1 ,
+                        measure < integer > Me_1 } is ds end operator;
+                    define operator g ( x integer ) returns VD_1 is x end operator;
+                    DS_r <- f ( DS_2 ) [ pivot Id_1 , Me_1 ];
+                    DS_r2 <- DS_1 [ calc identifier Id_3 := g ( 1 ) ] [ keep Me_1 ]
+                        [ sub Id_1 = 1 , Id_2 = 1 ] [ pivot Id_3 , Me_1 ];
+        Description: Beyond the cases of the issue: pivot reads the value domain that the
+                     returns of an operator puts an Identifier on, in a dataset returns and in a
+                     calc. The DuckDB engine kept the basic type in its own structures of the
+                     call, so its pivot failed with an internal error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_28",
+            number_inputs=2,
+            references_names=["1", "2"],
+            vd_names=self.vd_1351,
+        )
