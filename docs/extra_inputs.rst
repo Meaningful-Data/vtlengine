@@ -205,7 +205,9 @@ domain and the parameters of a user defined operator typed by one.
 The elements of a literal set are compared in the same way, as values
 of their type: ``Me_1 in {cast("2024-Q2", time_period)}`` is true for
 the ``Time_Period`` ``2024Q2``, as ``Me_1 = cast("2024-Q2",
-time_period)`` is.
+time_period)`` is, and two elements that are one value written in two
+forms (``cast("2024Q1", time_period)`` and ``cast("2024-Q1",
+time_period)``) are a repeated value, which raises ``1-2-27``.
 
 
 Example

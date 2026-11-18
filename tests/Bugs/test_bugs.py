@@ -10324,3 +10324,37 @@ class ValueDomainBugs(BugHelper):
             references_names=["1", "2"],
             scalars={"SC_1": "2024-1-5"},
         )
+
+    def test_GH_1349_55(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := Me_1 in { cast ( "2024Q1" , time_period ) ,
+                                                         cast ( "2024-Q1" , time_period ) } ];
+        Description: 2024Q1 and 2024-Q1 are one Time_Period, so the set holds a repeated
+                     value and raises 1-2-27, as { 1 , 1 } does, on both engines and in the
+                     semantic analysis. The set was accepted.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_55",
+            number_inputs=1,
+            exception_code="1-2-27",
+            exception_message="A set must not contain duplicates",
+        )
+
+    def test_GH_1349_55b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := Me_2 in { cast ( "2024-01-05" , date ) ,
+                                                         cast ( "2024-01-05T00:00:00" , date ) } ];
+        Description: As case 55 for two forms of one Date.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_55b",
+            number_inputs=1,
+            exception_code="1-2-27",
+            exception_message="A set must not contain duplicates",
+        )

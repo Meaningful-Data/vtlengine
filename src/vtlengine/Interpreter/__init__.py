@@ -242,6 +242,7 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_hr_agg: bool = False
     is_hr_rule_left: bool = False
     compute_partial_data: bool = False
+    is_from_set: bool = False
     # Handlers for simplicity
     condition_stack: Optional[List[Dataset]] = None
     regular_aggregation_dataset: Optional[Dataset] = None
@@ -1460,7 +1461,11 @@ class InterpreterAnalyzer(ASTTemplate):
                 ref_element = child.children[1] if isinstance(child, AST.ParamOp) else child
                 if ref_element in elements:
                     duplicates.append(ref_element)
-                scalar = self.visit(child)
+                self.is_from_set = True
+                try:
+                    scalar = self.visit(child)
+                finally:
+                    self.is_from_set = False
                 elements.append(scalar.value)
                 if scalar_data_type is None:
                     scalar_data_type = scalar.data_type
@@ -1471,8 +1476,13 @@ class InterpreterAnalyzer(ASTTemplate):
                     raise SemanticError("1-2-25")
             if len(elements) == 0:
                 raise SemanticError("1-2-26")
-            if not any(e is None for e in elements) and len(elements) != len(set(elements)):
-                repeated = sorted({e for e in elements if elements.count(e) > 1}, key=str)
+            # Two elements are one value when they are equal as values of their type, written
+            # in any form: 2024Q1 and 2024-Q1 are one Time_Period (issue #1349)
+            values = [value_of(scalar_data_type, e) for e in elements]
+            if not any(e is None for e in elements) and len(values) != len(set(values)):
+                repeated = sorted(
+                    {e for e, v in zip(elements, values) if values.count(v) > 1}, key=str
+                )
                 raise SemanticError("1-2-27", duplicates=repeated)
             set_type = scalar_data_type or BASIC_TYPES[type(elements[0])]
             return ScalarSet(data_type=set_type, values=elements)
@@ -1935,6 +1945,10 @@ class InterpreterAnalyzer(ASTTemplate):
             mask = None
             if len(node.params) > 0:
                 mask = self.visit(node.params[0])
+            if self.is_from_set and isinstance(operand, Scalar) and operand.literal:
+                # The semantic analysis also casts a literal of a set, whose values are checked
+                # for repeated ones (issue #1349)
+                return Cast.evaluate(operand, cast(Any, scalar_type), mask)
             return Cast.analyze(operand, scalar_type, mask)
 
         raise SemanticError("1-3-5", op_type="ParamOp", node_op=node.op)
