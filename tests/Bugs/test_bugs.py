@@ -8841,6 +8841,172 @@ class ValueDomainBugs(BugHelper):
             vd_names=self.vd_1350,
         )
 
+    def test_GH_1350_3h(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : period_indicator ( Me_1 ) = cast ( "Q" , duration ) ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: period_indicator of the Time_Period Me_1, in a ruleset on variables.
+                     DuckDB wrote it as a plain function, which does not exist
+                     (CatalogException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3h",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3i(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : getyear ( Me_1 ) > 2020 ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: getyear of the Time_Period Me_1. DuckDB applied year to its text
+                     (BinderException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3i",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3j(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : time_agg ( "A" , _ , Me_1 ) = cast ( "2020A" , time_period ) ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: time_agg of the Time_Period Me_1 (BinderException on DuckDB).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3j",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3k(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : random ( Me_2 , 1 ) >= 0 ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: random of the Integer Me_2: no data point is invalid. DuckDB wrote it as
+                     its own random function (BinderException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3k",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3l(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : cast ( Me_1 , string ) = "2020Q1" ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: cast of the Time_Period Me_1 to string gives 2020Q1, as in calc. DuckDB
+                     gave its internal text 2020-Q1, so both data points were invalid.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3l",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3m(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : when cast ( Me_1 , string ) = "2020Q1" then Me_2 > 5 ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: The same cast in the when condition. DuckDB gave no invalid data point.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3m",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3n(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component ) returns component is x > 5 end operator;
+                    define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 as X ) is
+                        r1 : f ( X ) ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: A user defined operator called on X, the alias of Me_2. DuckDB wrote X
+                     into the SQL (BinderException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3n",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3o(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component ) returns component is x > 5 end operator;
+                    define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : f ( Me_2 ) ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: A user defined operator called on the variable Me_2, which has no alias.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3o",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3p(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : getmonth ( Me_1 ) < 6 ...;
+                        r2 : dayofmonth ( Me_1 ) <> 31 ...;
+                        r3 : dayofyear ( Me_1 ) < 100 ...
+                    end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: getmonth, dayofmonth and dayofyear of the Time_Period Me_1 read the end of
+                     the period, 2020-03-31 and 2021-12-31, as in calc. DuckDB applied its own
+                     functions to the text of Me_1 (BinderException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3p",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
     def test_GH_1350_4a(self):
         """
         Status: OK
