@@ -258,9 +258,9 @@ def check_time_period(value: str) -> str:
     value = value.strip()
     try:
         return _check_time_period_cached(value)
-    except RunTimeError:
-        # A period written in one of the formats that is no period, such as 2020M13, 2021D366
-        # or the year 0001: a value that cannot be read as a Time_Period (issue #1352)
+    except (RunTimeError, ValueError):
+        # A period written in one of the formats that is no period, such as 2020M13, 2021D366,
+        # 2020-13-1 or the year 0001: a value that cannot be read as a Time_Period (issue #1352)
         raise InputValidationException(
             code="0-1-1-35", value=value, type_1="String", type_2="Time_Period"
         ) from None
