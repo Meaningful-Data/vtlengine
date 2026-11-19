@@ -1805,6 +1805,9 @@ class InterpreterAnalyzer(ASTTemplate):
             else:
                 if node.old_name in self.udo_params[-1]:
                     node.old_name = self.udo_params[-1][node.old_name]
+            # A component parameter as the new name stands for its argument (issue #1355)
+            if isinstance(self.udo_params[-1].get(node.new_name), str):
+                node.new_name = self.udo_params[-1][node.new_name]
 
         if (
             self.is_from_join

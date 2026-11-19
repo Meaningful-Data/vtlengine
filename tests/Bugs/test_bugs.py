@@ -11318,3 +11318,24 @@ class ValueDomainBugs(BugHelper):
         self.BaseTest(
             code="GH_1351_43", number_inputs=1, references_names=["1"], only_semantic=True
         )
+
+
+class NameResolutionBugs(BugHelper):
+    """Names inside user defined operators resolved to what they name (issue #1355)."""
+
+    vd_1355 = ["GH_1355-VD_1"]
+
+    def test_GH_1355_1(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , c component ) returns dataset is
+                        d [ rename Me_1 to c ] end operator;
+                    DS_r <- f ( DS_1 , Me_9 );
+        Description: The component parameter c, as the new name of rename, stands for its
+                     argument Me_9, on both engines and in the semantic analysis. The result
+                     component was named c, and the DuckDB engine lost its column.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_1", number_inputs=1, references_names=["1"])
+        self.BaseTest(code="GH_1355_1", number_inputs=1, references_names=["1"], only_semantic=True)
