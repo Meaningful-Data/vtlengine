@@ -12310,7 +12310,12 @@ class NameResolutionBugs(BugHelper):
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(
-            code="GH_1355_19b", number_inputs=2, exception_code="1-1-13-7"
+            code="GH_1355_19b",
+            number_inputs=2,
+            exception_code="1-1-13-7",
+            exception_message="At op inner_join: Invalid subcase B2, the using component 'Id_2' "
+            "must be an Identifier of the Dataset 'B', as of every operand except the "
+            "left-most one.",
         )
 
     def test_GH_1355_19c(self):
@@ -12325,5 +12330,10 @@ class NameResolutionBugs(BugHelper):
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(
-            code="GH_1355_19c", number_inputs=2, exception_code="1-1-13-7"
+            code="GH_1355_19c",
+            number_inputs=2,
+            exception_code="1-1-13-7",
+            exception_message="At op left_join: Invalid subcase B2, the using component 'Id_2' "
+            "must be an Identifier of the Dataset 'B', as of every operand except the "
+            "left-most one.",
         )

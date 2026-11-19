@@ -926,10 +926,12 @@ centralised_messages = {
         "reference Dataset in subcase B2.",
     },
     "1-1-13-7": {
-        "message": "At op {op}: Invalid subcase B2, All the non reference Datasets must "
-        "share as Identifiers the using ones.",
-        "description": "Raised when non-reference Datasets in subcase B2 do not share "
-        "the declared 'using' Identifiers.",
+        "message": "At op {op}: Invalid subcase B2, the using component '{using_component}' "
+        "must be an Identifier of the Dataset '{dataset}', as of every operand except the "
+        "left-most one.",
+        "description": "Raised when a using component of an inner_join or a left_join is not "
+        "an Identifier of an operand other than the left-most one, which alone may have it as "
+        "a Measure or an Attribute.",
     },
     "1-1-13-8": {
         "message": "At op {op}: No available using clause.",
