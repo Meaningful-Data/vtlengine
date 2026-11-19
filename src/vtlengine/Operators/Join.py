@@ -11,6 +11,7 @@ from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
     Integer,
+    TimeInterval,
     binary_implicit_promotion,
     check_unary_implicit_promotion,
 )
@@ -19,6 +20,7 @@ from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Operators import (
     Operator,
     _id_type_promotion_join_keys,
+    _is_cast_to_time,
     share_value_domains,
     time_names,
     to_time,
@@ -194,13 +196,14 @@ class Join(Operator):
                         merged_components[new_name] = component
                         merged_components[new_name].name = new_name
                     else:
-                        if component_name in merged_components:
-                            # A join key takes the common type of the operands, as with using,
-                            # whatever their order (issue #1352)
-                            component.data_type = binary_implicit_promotion(
-                                merged_components[component_name].data_type,
-                                component.data_type,
-                            )
+                        key = merged_components.get(component_name)
+                        if key is not None and (
+                            _is_cast_to_time(key.data_type, component.data_type)
+                            or _is_cast_to_time(component.data_type, key.data_type)
+                        ):
+                            # A Date or a Time_Period key matched with a Time one is a Time,
+                            # whatever the order of the operands (issue #1352)
+                            component.data_type = TimeInterval
                         merged_components[component_name] = component
                 else:
                     if component_name in using and component_name in merged_components:
