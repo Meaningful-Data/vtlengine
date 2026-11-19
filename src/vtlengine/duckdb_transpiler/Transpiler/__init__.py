@@ -3621,11 +3621,9 @@ FROM (
         if op == tokens.RANK:
             return "RANK()"
         if op in (tokens.LAG, tokens.LEAD) and node.params:
-            # An offset given by a Scalar is read as any Scalar: an input one, one a statement
-            # computes or the argument of a scalar parameter, an expression included (issue #1355)
-            offset = node.params[0]
+            offset: Any = node.params[0]
             if isinstance(offset, AST.VarID):
-                offset = self.visit(offset)
+                offset = self._lag_offset_sql(op, offset)
             default_val = node.params[1] if len(node.params) > 1 else None
             func_sql = f"{op.upper()}({operand_sql}, {offset}"
             if default_val is not None:
@@ -6025,6 +6023,17 @@ FROM (
         period_from = "NULL" if node.period_from is None else f"'{node.period_from}'"
         sql = self.visit(node.period_to_ref)
         return f"vtl_time_agg_period({sql}, {period_from}, '{name}')"
+
+    def _lag_offset_sql(self, op: str, offset: AST.VarID) -> str:
+        """The offset of lag or lead that a Scalar gives, read as any Scalar: an input one, one
+        a statement computes or the argument of a scalar parameter, an expression included. A
+        null offset raises 2-1-18-1, as on the pandas engine: here when its value is known, else
+        where the query runs, once, also where the operand has no data points (issue #1355)."""
+        known, value = self._known_scalar_value(offset.value)
+        if known and value is None:
+            raise RunTimeError("2-1-18-1", op=op, param_type="Offset", correct_type="Integer")
+        sql = self.visit(offset)
+        return sql if known else f"(SELECT vtl_lag_offset({sql}, '{op}'))"
 
     def _resolve_scalar_varid(self, value: Any) -> Any:
         """Non-VarID values pass through unchanged."""

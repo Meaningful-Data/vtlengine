@@ -384,6 +384,15 @@ CREATE OR REPLACE MACRO vtl_param_min(x, min_value, op_name, param_name) AS (
     END
 );
 
+-- The offset of lag or lead that a Scalar gives when only the query knows it. A
+-- null offset is no Integer (mirrors VTL error 2-1-18-1, issue #1355).
+CREATE OR REPLACE MACRO vtl_lag_offset(x, op_name) AS (
+    CASE WHEN x IS NULL
+         THEN error('VTL 2-1-18-1 ' || op_name || ' Offset Integer')
+         ELSE x
+    END
+);
+
 -- A scalar argument of an integer parameter of a user defined operator. A whole
 -- Number is the Integer, one with decimals is no Integer (mirrors VTL error
 -- 1-2-18, which the pandas engine raises where the call is computed). where is

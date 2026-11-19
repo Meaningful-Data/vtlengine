@@ -11589,6 +11589,25 @@ class NameResolutionBugs(BugHelper):
         """
         self.BaseTest(code="GH_1355_23d", number_inputs=1, references_names=["1", "2"])
 
+    def test_GH_1355_23e(self):
+        """
+        Status: OK
+        Expression: SC_1 <- cast ( null , integer );
+                    DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , SC_1 over ( order by Id_1 ) ) ];
+        Description: Extra of test_GH_1355_23: SC_1, a Scalar that an earlier statement
+                     computes, gives lag a null offset, which raises 2-1-18-1 on both engines.
+                     The pandas engine raised an internal BinderException and the DuckDB engine
+                     gave null data points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_23e",
+            number_inputs=1,
+            exception_code="2-1-18-1",
+            exception_message="At op lag: Offset parameter should be Integer.",
+        )
+
     def test_GH_1355_24(self):
         """
         Status: OK
@@ -11601,6 +11620,27 @@ class NameResolutionBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1355_24", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_24b(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , x integer ) returns dataset is
+                        d [ calc Me_3 := lead ( Me_2 , x over ( order by Id_1 ) ) ] end operator;
+                    SC_1 <- cast ( null , integer );
+                    DS_r <- f ( DS_3 , SC_1 );
+        Description: Extra of test_GH_1355_24: the parameter x, given the null Scalar SC_1, is
+                     a null offset of lead, which raises 2-1-18-1 on both engines. The pandas
+                     engine raised an internal BinderException and the DuckDB engine gave null
+                     data points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_24b",
+            number_inputs=1,
+            exception_code="2-1-18-1",
+            exception_message="At op lead: Offset parameter should be Integer.",
+        )
 
     def test_GH_1355_25(self):
         """

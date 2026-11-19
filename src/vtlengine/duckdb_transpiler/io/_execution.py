@@ -197,10 +197,12 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
         return RunTimeError("2-1-19-25", op="datediff", comp_type="Date or Time_Period value")
 
     # substr / instr: an integer parameter read from the data below its minimum
+    # lag / lead: a null offset read from a Scalar (macro vtl_lag_offset, issue #1355)
     if "vtl 2-1-18-1" in msg_lower:
-        match = re.search(r"VTL 2-1-18-1 (\S+) (\S+) (-?\d+)", msg)
-        op, param, minimum = match.groups() if match else ("", "", "")
-        return RunTimeError("2-1-18-1", op=op, param_type=param, correct_type=f">= {minimum}")
+        match = re.search(r"VTL 2-1-18-1 (\S+) (\S+) (\S+)", msg)
+        op, param, expected = match.groups() if match else ("", "", "")
+        correct_type = expected if expected == "Integer" else f">= {expected}"
+        return RunTimeError("2-1-18-1", op=op, param_type=param, correct_type=correct_type)
 
     # hierarchy: two rules compute different values for one data point (issues #1142, #1193)
     if "vtl 2-1-10-1" in msg_lower:

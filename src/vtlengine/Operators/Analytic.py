@@ -395,6 +395,9 @@ class Analytic(Operator.Unary):
         component_name: Optional[str] = None,
     ) -> Dataset:
         result = cls.validate(operand, partitioning, ordering, window, params, component_name)
+        if cls.op in (LAG, LEAD) and params and pd.isnull(params[0]):
+            # A null offset, read from a Scalar, is data (issue #1355)
+            raise RunTimeError("2-1-18-1", op=cls.op, param_type="Offset", correct_type="Integer")
         df = operand.data.copy() if operand.data is not None else pd.DataFrame()
         df = cls.normalize_dates(df, operand.components)
         identifier_names = operand.get_identifiers_names()
