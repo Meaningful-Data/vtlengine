@@ -12472,8 +12472,8 @@ class TimeValueBugs(BugHelper):
         Status: OK
         Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "0001" , time_period ) ];
         Description: Extra of case 36: the literal 0001 is no Time_Period, whose year is written
-                     with four digits from 1000, so the cast raises 1-1-5-6. Both engines
-                     raised 0-1-2-7.
+                     with four digits from 1000, so the cast raises 1-1-5-6. The pandas
+                     engine gave the period 1 and the DuckDB engine raised a raw ValueError.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
         Goal: Check Exception.
         """
