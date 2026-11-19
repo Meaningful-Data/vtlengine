@@ -52,6 +52,8 @@ from vtlengine.Model import (
     Role,
     Scalar,
     ValueDomain,
+    component_name_error,
+    component_name_pattern,
     named_type,
     value_of,
 )
@@ -702,7 +704,11 @@ def _validate_json(
                 if isinstance(element, dict):
                     name = element.get("name")
         identifier = f"{kind} '{name}'" if name else f"the provided {kind}"
-        raise InputValidationException(code="0-2-1-1", element=identifier, error=e.message)
+        error = e.message
+        if e.validator == "pattern" and e.validator_value == component_name_pattern().pattern:
+            # The characters a Component name cannot contain, not the pattern (issue #1355)
+            error = component_name_error(e.instance)
+        raise InputValidationException(code="0-2-1-1", element=identifier, error=error)
 
 
 def _load_json_file(input: Path) -> Any:

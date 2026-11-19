@@ -2,6 +2,7 @@ import csv
 import json
 import sys
 from pathlib import Path
+from typing import Any, Dict
 
 import pandas as pd
 import pytest
@@ -3447,4 +3448,68 @@ def test_GH_1355_14e(use_duckdb):
         with pytest.raises(InputValidationException) as error:
             call()
         assert error.value.args[1] == "0-2-1-1"
-        assert "'Id#1' does not match" in error.value.args[0]
+        assert (
+            "'Id#1' is not a valid Component name: a Component name cannot be empty or contain "
+            "', \", #, NUL or carriage return, except quotes around the whole name"
+        ) in error.value.args[0]
+
+
+def _structures_1355() -> Dict[str, Any]:
+    """DS_1 and DS_2, with the Identifiers Id_1 and Id_2 and the Measure Me_1."""
+    components = [
+        {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False},
+        {"name": "Id_2", "role": "Identifier", "type": "String", "nullable": False},
+        {"name": "Me_1", "role": "Measure", "type": "Number", "nullable": True},
+    ]
+    return {
+        "datasets": [
+            {"name": "DS_1", "DataStructure": components},
+            {"name": "DS_2", "DataStructure": components},
+        ]
+    }
+
+
+def _datapoints_1355() -> Dict[str, pd.DataFrame]:
+    data = {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [1.0, 2.0]}
+    return {"DS_1": pd.DataFrame(data), "DS_2": pd.DataFrame(data)}
+
+
+def _check_semantic_error_1355(script: str, use_duckdb: bool, code: str, message: str) -> None:
+    """The script raises the SemanticError code with the message, on the engine and in the
+    semantic analysis."""
+    calls = [
+        lambda: run(script, _structures_1355(), _datapoints_1355(), use_duckdb=use_duckdb),
+        lambda: semantic_analysis(script, _structures_1355()),
+    ]
+    for call in calls:
+        with pytest.raises(SemanticError) as error:
+            call()
+        assert error.value.args[1] == code
+        assert error.value.args[0].startswith(message)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_11t(use_duckdb):
+    """Extra of test_GH_1355_11: a new Component name cannot contain a NUL, which the names of
+    the input structures cannot contain either. The pandas engine and the semantic analysis
+    created the Component and the DuckDB engine raised a raw ParserException."""
+    _check_semantic_error_1355(
+        "DS_r <- DS_1 [ calc 'a\x00b' := Me_1 ];",
+        use_duckdb,
+        "1-1-6-19",
+        "At op calc: Invalid Component name a\\x00b, a Component name cannot contain "
+        "', \", #, NUL or carriage return.",
+    )
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_11u(use_duckdb):
+    """Extra of test_GH_1355_11: as test_GH_1355_11t, for a carriage return. Both engines
+    created the Component."""
+    _check_semantic_error_1355(
+        "DS_r <- DS_1 [ rename Me_1 to 'a\rb' ];",
+        use_duckdb,
+        "1-1-6-19",
+        "At op rename: Invalid Component name a\\rb, a Component name cannot contain "
+        "', \", #, NUL or carriage return.",
+    )

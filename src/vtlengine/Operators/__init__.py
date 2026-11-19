@@ -42,6 +42,9 @@ from vtlengine.Model import (
     Scalar,
     ScalarSet,
     ValueDomain,
+    component_name_characters,
+    component_name_characters_text,
+    printable_name,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
@@ -74,10 +77,16 @@ def _part_of(operand: Any, component: Any) -> Any:
 
 
 def check_component_name(op: str, name: str) -> None:
-    """A Component a script names cannot hold # or a double quote: # only separates the alias
-    of a join operand from the name of its Component (issue #1355)."""
-    if "#" in name or '"' in name:
-        raise SemanticError("1-1-6-19", op=op, name=name)
+    """A Component a script names cannot hold the characters that the names of the Components
+    of the input structures cannot hold: # only separates the alias of a join operand from
+    the name of its Component (issue #1355)."""
+    if any(char in name for char in component_name_characters()):
+        raise SemanticError(
+            "1-1-6-19",
+            op=op,
+            name=printable_name(name),
+            characters=component_name_characters_text(),
+        )
 
 
 def shared_value_domain(parts: Iterable[Any]) -> Optional[ValueDomain]:
