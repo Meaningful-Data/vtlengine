@@ -11242,3 +11242,17 @@ class ValueDomainBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1351_39", number_inputs=1, references_names=["1"])
+
+    def test_GH_1351_40(self):
+        """
+        Status: OK
+        Expression: define operator f ( x number ) returns number is x * -1 end operator;
+                    SC_r <- f ( 0 );
+                    DS_r <- DS_2 [ calc Me_2 := cast ( SC_r , string ) ,
+                        Me_3 := cast ( f ( 0 ) , string ) ];
+        Description: The Number result 0 * -1 is 0.0, which cast to String gives 0.0. The
+                     DuckDB engine gave the negative zero -0.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1351_40", number_inputs=1, references_names=["1", "2"])

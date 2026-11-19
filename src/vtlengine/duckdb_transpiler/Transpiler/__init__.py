@@ -1892,6 +1892,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return Number
         if self._is_operand_type(node, Number):
             return Number
+        if isinstance(node, AST.VarID) and self._get_udo_param(f"__type__{node.value}") is Number:
+            # A number parameter of a user defined operator, read as a Number, so its
+            # arithmetic is rounded as any Number's: 0 * -1 is 0.0, not -0.0 (issue #1351)
+            return Number
         # Recurse into nested numeric expressions so chained arithmetic keeps the
         # per-op rounding wrap (issue #985). Only Number propagates upward; any
         # other inner type keeps the previous None (no dispatch change).
