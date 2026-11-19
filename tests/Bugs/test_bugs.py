@@ -11688,6 +11688,17 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_19", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_20(self):
+        """
+        Status: OK
+        Expression: DS_r <- exists_in ( DS_1 > 0 , DS_2 );
+        Description: The first operand already has a Measure bool_var, which the bool_var of
+                     exists_in replaces: false, true, true. The pandas engine raised KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_20", number_inputs=2, references_names=["1"])
+
     def test_GH_1354_25(self):
         """
         Status: OK

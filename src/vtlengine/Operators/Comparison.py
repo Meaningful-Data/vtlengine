@@ -601,7 +601,7 @@ class ExistIn(Operator.Operator):
         if dataset_1.data is None:
             dataset_1.data = pd.DataFrame(columns=reference_identifiers_names)
         final_result = merge_frames(
-            dataset_1.data,
+            dataset_1.data[reference_identifiers_names],
             true_results,
             how="left",
             left_on=reference_identifiers_names,
