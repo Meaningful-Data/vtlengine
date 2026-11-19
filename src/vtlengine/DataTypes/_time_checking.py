@@ -266,20 +266,12 @@ def check_time_period(value: str) -> str:
         ) from None
 
 
-def _period_text(period: str) -> str:
-    """The internal text of a period, whose year is written with four digits: a year below
-    1000 has no such text (issue #1352)."""
-    result = TimePeriodHandler(period)
-    if result.year < 1000:
-        raise RunTimeError("2-1-19-10", year=result.year)
-    return str(result)
-
-
 @lru_cache(maxsize=4096)
 def _check_time_period_cached(value: str) -> str:
     # Try vtl formats first
     if _vtl_period_re.fullmatch(value) is not None:
-        return _period_text(f"{value}A" if len(value) == 4 else value)
+        result = TimePeriodHandler(f"{value}A") if len(value) == 4 else TimePeriodHandler(value)
+        return str(result)
 
     # Normalize YYYY-M-D, YYYY-M-DD, YYYY-MM-D to zero-padded YYYY-MM-DD
     match_iso_date = _iso_date_re.fullmatch(value)
@@ -294,7 +286,8 @@ def _check_time_period_cached(value: str) -> str:
 
     # Try sdmx formats
     if _sdmx_period_re.fullmatch(value) is not None:
-        return _period_text(value)
+        result = TimePeriodHandler(value)
+        return str(result)
 
     raise InputValidationException(
         code="0-1-1-31",

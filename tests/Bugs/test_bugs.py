@@ -12662,3 +12662,76 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_13d", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_36d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ];
+        Description: Extra of case 36: the start/end text of a year below 1000,
+                     0001-01-01/0001-12-31, is no Time_Period, whose year is written with four
+                     digits from 1000, so the cast raises 2-1-5-1. The pandas engine raised a raw
+                     ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36d",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message=(
+                "Impossible to cast 0001-01-01/0001-12-31 from type String to Time_Period."
+            ),
+        )
+
+    def test_GH_1352_36f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "0001" , time_period ) ];
+        Description: Extra of case 36: the literal 0001 is no Time_Period, whose year is written
+                     with four digits from 1000, so the cast raises 1-1-5-6. Both engines
+                     raised 0-1-2-7.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36f",
+            number_inputs=1,
+            exception_code="1-1-5-6",
+            exception_message="Impossible to cast 0001 from type String to Time_Period.",
+        )
+
+    def test_GH_1352_36g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "2020M13" , time_period ) ];
+        Description: Control of case 36: the literal 2020M13 is no Time_Period, so the cast
+                     raises 1-1-5-6 on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36g",
+            number_inputs=1,
+            exception_code="1-1-5-6",
+            exception_message="Impossible to cast 2020M13 from type String to Time_Period.",
+        )
+
+    def test_GH_1352_36h(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "0001-01-01/0001-12-31" ,
+                        time_period ) ];
+        Description: Extra of case 36: the literal start/end text of a year below 1000 is no
+                     Time_Period, so the cast raises 1-1-5-6. Both engines and the semantic
+                     analysis raised a raw ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36h",
+            number_inputs=1,
+            exception_code="1-1-5-6",
+            exception_message=(
+                "Impossible to cast 0001-01-01/0001-12-31 from type String to Time_Period."
+            ),
+        )

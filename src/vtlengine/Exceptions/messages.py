@@ -170,7 +170,8 @@ centralised_messages = {
     },
     "0-1-1-35": {
         "message": "Impossible to cast {value} from type {type_1} to {type_2}.",
-        "description": "Raised when a value given as Duration is not a duration code.",
+        "description": "Raised when a value given as Duration is not a duration code, or a "
+        "value given as Time_Period is no period of its format, such as 2020M13.",
     },
     "0-1-1-36": {
         "message": "Value {value} is not one of the values of Value Domain {value_domain}.",
@@ -1621,7 +1622,7 @@ centralised_messages = {
         "description": "Occurs when the day value is invalid for the given year.",
     },
     "2-1-19-10": {
-        "message": "Invalid year {year}, must be between 1900 and 9999.",
+        "message": "Invalid year {year}, must be between 1000 and 9999.",
         "description": "Raised when the year is outside the allowed range.",
     },
     "2-1-19-11": {

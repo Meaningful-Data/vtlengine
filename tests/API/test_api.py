@@ -3428,3 +3428,13 @@ def test_GH_1352_13c(use_duckdb):
         use_duckdb=use_duckdb,
     )
     assert result["DS_r"].data["Me_2"].tolist() == ["2020Q2", "2020Q2"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_39c(use_duckdb):
+    """Extra of case 39: a Time_Period Scalar value has a year of four digits from 1000, so the
+    value 0001 is refused with 0-1-2-7 on both engines (issue #1352)."""
+    structures = {"datasets": [], "scalars": [{"name": "SC_1", "type": "Time_Period"}]}
+    with pytest.raises(InputValidationException) as context:
+        run("SC_r <- SC_1;", structures, {}, scalar_values={"SC_1": "0001"}, use_duckdb=use_duckdb)
+    assert context.value.args[1] == "0-1-2-7"
