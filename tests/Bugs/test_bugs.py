@@ -11698,6 +11698,21 @@ class StructureDataBugs(BugHelper):
             "support < and > Comparison operations, unable to get the max",
         )
 
+    def test_GH_1354_13i(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := max ( Me_1 ) , Me_3 := min ( Me_1 )
+                        group by Id_1 ];
+                    DS_r2 <- DS_2 [ aggr Me_2 := max ( Me_1 ) , Me_3 := min ( Me_1 )
+                        group by Id_1 ];
+        Description: Extra of case 13: max and min order the Time_Periods by their value, not
+                     by their text: 2020M10 and 2020M2, 2021M1 and 2020M12 for the months,
+                     2020W10 and 2020W9, 2021W1 and 2020W52 for the weeks.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13i", number_inputs=2, references_names=["1", "2"])
+
     def test_GH_1354_14(self):
         """
         Status: OK
@@ -11828,7 +11843,8 @@ class StructureDataBugs(BugHelper):
                     DS_r <- sum ( DS_1 over ( partition by Id_2 ) );
         Description: Extra of case 21: an analytic function on a Data Set with the Date viral
                      Attribute At_1 combines it over each partition with VP_1: 2021-01-01,
-                     2022-01-01, 2021-01-01. The pandas engine raised KeyError.
+                     2022-01-01, 2021-01-01. The pandas engine raised KeyError, and the DuckDB
+                     engine raised BinderException.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
         Goal: Check Result.
         """
