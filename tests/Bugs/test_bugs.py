@@ -11680,6 +11680,24 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_13f", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_13g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := max ( Me_4 over ( order by Id_1 ) ) ];
+        Description: Extra of case 13: the analytic max of Time_Periods of different period
+                     indicators raises 2-1-19-20, as the aggregate max does. The DuckDB engine
+                     compared them and returned 2020M1, 2020Q1, 2020M3.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_13g",
+            number_inputs=1,
+            exception_code="2-1-19-20",
+            exception_message="Time Period operands with different period indicators do not "
+            "support < and > Comparison operations, unable to get the max",
+        )
+
     def test_GH_1354_14(self):
         """
         Status: OK

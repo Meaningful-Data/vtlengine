@@ -218,17 +218,22 @@ def _datediff_to_date(ref: str, dt: Optional[type]) -> str:
     return f"vtl_datediff_date({ref})"
 
 
+def _tp_indicator_error(agg_op: str) -> str:
+    """The SQL text of the error 2-1-19-20 of a max or a min of Time_Periods."""
+    return (
+        f"'VTL Error 2-1-19-20: Time Period operands with "
+        f"different period indicators do not support < and > "
+        f"Comparison operations, unable to get the {agg_op}'"
+    )
+
+
 def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, str]]) -> str:
     """Add a TimePeriod indicator consistency check to an aggregate query."""
     checks: List[str] = []
     for col_name, agg_op in tp_cols:
         qc = quote_name(col_name)
         indicator = f"vtl_period_parse({qc}).period_indicator"
-        err = (
-            f"'VTL Error 2-1-19-20: Time Period operands with "
-            f"different period indicators do not support < and > "
-            f"Comparison operations, unable to get the {agg_op}'"
-        )
+        err = _tp_indicator_error(agg_op)
         checks.append(
             f"CASE WHEN COUNT(DISTINCT {indicator}) "
             f"FILTER (WHERE {qc} IS NOT NULL) > 1 "
@@ -3663,6 +3668,18 @@ FROM (
         if op != tokens.RATIO_TO_REPORT:
             over_clause = self._build_over_clause(node)
             func_sql = f"{func_sql} OVER ({over_clause})"
+        if (
+            op in (tokens.MIN, tokens.MAX)
+            and node.operand is not None
+            and self._is_operand_type(node.operand, TimePeriod)
+        ):
+            # Time_Periods of different period indicators cannot be compared, in the whole
+            # operand as on the Data Set level (issue #1354)
+            indicator = f"vtl_period_parse({operand_sql}).period_indicator"
+            func_sql = (
+                f"CASE WHEN MIN({indicator}) OVER () <> MAX({indicator}) OVER () "
+                f"THEN error({_tp_indicator_error(op)}) ELSE {func_sql} END"
+            )
         # An analytic inside another analytic's operand cannot be emitted inline
         # (SQL forbids nesting window functions): hand it to the enclosing clause
         # as a pending column and reference it by alias (#1026)
