@@ -446,7 +446,8 @@ def _time_interval_out_of_order(col_name: str) -> str:
 
 
 def _time_period_day_out_of_range(col_name: str) -> str:
-    """Whether the day of year a Time_Period carries passes the days its year holds.
+    """Whether the day a Time_Period carries is no day: a day of year past the days its year
+    holds, or a date the calendar has not.
 
     Only the year tells 366 apart from an invalid day, so the regex cannot bound this
     one: 2024D366 is a day of a leap year and 2023D366 is no day at all.
@@ -454,9 +455,15 @@ def _time_period_day_out_of_range(col_name: str) -> str:
     value = sql_trim(f'"{col_name}"')
     day = f"TRY_CAST(regexp_extract({value}, 'D0*(\\d+)$', 1) AS INTEGER)"
     year = f"TRY_CAST(SUBSTR({value}, 1, 4) AS INTEGER)"
+    # A date the calendar has no day for, such as 2020-02-30, is no day either; refused here, it
+    # is told with the message of the pandas loader (issue #1352)
+    no_date = (
+        f"(regexp_matches({value}, '^[0-9]{{4}}-[0-9]{{1,2}}-[0-9]{{1,2}}$') "
+        f"AND try_strptime({value}, '%Y-%m-%d') IS NULL)"
+    )
     return (
-        f"({day} IS NOT NULL AND {year} IS NOT NULL "
-        f"AND {day} > DAYOFYEAR(MAKE_DATE({year}, 12, 31)))"
+        f"(({day} IS NOT NULL AND {year} IS NOT NULL "
+        f"AND {day} > DAYOFYEAR(MAKE_DATE({year}, 12, 31))) OR {no_date})"
     )
 
 
