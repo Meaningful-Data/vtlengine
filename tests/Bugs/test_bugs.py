@@ -11476,6 +11476,30 @@ class TimeValueBugs(BugHelper):
             exception_message="Invalid implicit cast from Date to Time_Period.",
         )
 
+    def test_GH_1352_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 = DS_2;
+        Description: A Date is implicitly cast to a Time with its start and end equal to it,
+                     so the Date 2020-01-15 equals the Time 2020-01-15/2020-01-15. The pandas
+                     engine raised a raw TypeError on the Date text.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_10b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 = cast ( "2020-01-15" , date );
+        Description: Extra case: the Date Scalar is cast to the Time 2020-01-15/2020-01-15,
+                     which the second Time of DS_1 equals. The pandas engine compared the
+                     Date text with the Time and gave false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10b", number_inputs=1, references_names=["1"])
+
     def test_GH_1352_11(self):
         """
         Status: OK
@@ -11548,3 +11572,53 @@ class TimeValueBugs(BugHelper):
             exception_code="1-1-1-1",
             exception_message="Invalid implicit cast from Time_Period to Date.",
         )
+
+    def test_GH_1352_42(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := nvl ( Me_3 , Me_2 ) ];
+        Description: A Time_Period is implicitly cast to a Time with its start and end, so the
+                     Time_Period 2021M12 that fills the null Time is 2021-12-01/2021-12-31.
+                     Both engines copied the Time_Period text into the Time Component.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_42", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_42b(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: Extra case: the Time_Period 2020Q2 of DS_2 that fills the null Time of
+                     DS_1 is the Time 2020-04-01/2020-06-30. Both engines copied the
+                     Time_Period text 2020-Q2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_42b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_43(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := nvl ( Me_1 , Me_3 ) ];
+        Description: A Date is implicitly cast to a Time with its start and end equal to it,
+                     so the Date 2020-01-15 is the Time 2020-01-15/2020-01-15. The pandas
+                     engine copied the Date text into the Time Component and the DuckDB engine
+                     raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_43", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_43b(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: Extra case: the Date Measure of DS_1 is cast to Time, so 2020-01-15 is
+                     2020-01-15/2020-01-15, and its nulls take the Time of DS_2. The pandas
+                     engine kept the Date text and the DuckDB engine raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_43b", number_inputs=2, references_names=["1"])
