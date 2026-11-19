@@ -1682,7 +1682,11 @@ def _check_1352_load_error(
     with pytest.raises(VTLEngineException) as context:
         _load_1352(use_duckdb, role, source, value, tmp_path)
     column = "Me_1" if role == "Measure" else "Id_1"
-    error = f"Impossible to cast {value} from type String to Time_Period."
+    # A text in none of the formats, such as one with fullwidth digits, is told by the formats
+    if value.isascii():
+        error = f"Impossible to cast {value} from type String to Time_Period."
+    else:
+        error = f"Time period '{value}' is not in a valid format"
     assert context.value.args[1] == "0-3-1-6"
     assert context.value.args[0].startswith(
         f"On Dataset DS_1 loading: not possible to cast column {column} to Time_Period. Error "
@@ -1706,13 +1710,14 @@ def test_GH_1352_37c(use_duckdb: bool, role: str, source: str, tmp_path: Path) -
 @pytest.mark.parametrize("source", ["dataframe", "csv"])
 @pytest.mark.parametrize(
     "value",
-    ["2020M13", "2020W54", "2020W00", "2020D367", "2020D0", "2021D366", "2020-13-1"],
+    ["2020M13", "2020W54", "2020W00", "2020D367", "2020D0", "2021D366", "2020-13-1", "２０２０Q1"],
 )
 def test_GH_1352_37d(use_duckdb: bool, role: str, source: str, value: str, tmp_path: Path) -> None:
     """Extra of case 37: a period written in one of the formats that is no period cannot be read
     as a Time_Period, so it is refused with 0-3-1-6, with the same message on both engines.
     The pandas engine raised 2-1-19-7 or 2-1-19-9, and wrote the Python error of a date that is
-    no date, such as 2020-13-1 (issue #1352)."""
+    no date, such as 2020-13-1. Only the ASCII digits write a period: the pandas engine loaded
+    2020Q1 written with fullwidth digits (issue #1352)."""
     _check_1352_load_error(use_duckdb, role, source, value, tmp_path)
 
 

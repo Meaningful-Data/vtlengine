@@ -232,7 +232,9 @@ _vtl_period_re = re.compile(
     r"|^\d{4}Q[1-4]$"  # YYYYQN (quarter)
     r"|^\d{4}M[0-1]?\d$"  # YYYYM[M] (month, 1 or 2 digits)
     r"|^\d{4}W[0-5]?\d$"  # YYYYW[W] (week, 1 or 2 digits)
-    r"|^\d{4}D[0-3]?\d{1,2}$"  # YYYYD[DD] (day of year, 1 to 3 digits)
+    r"|^\d{4}D[0-3]?\d{1,2}$",  # YYYYD[DD] (day of year, 1 to 3 digits)
+    # Only the ASCII digits write a period: \d matches other digits too (issue #1352)
+    re.ASCII,
 )
 
 # Hyphenated formats: YYYY-MM, YYYY-M, YYYY-MM-DD, YYYY-MXX, YYYY-QX, YYYY-SX, YYYY-WXX,
@@ -245,11 +247,12 @@ _sdmx_period_re = re.compile(
     r"|^\d{4}-S[1-2]$"  # YYYY-SX (hyphenated semester)
     r"|^\d{4}-W([0-4]\d|5[0-3]|[1-9])$"  # YYYY-WXX (hyphenated week)
     r"|^\d{4}-D[0-3]?\d{1,2}$"  # YYYY-D[XX]X (hyphenated day)
-    r"|^\d{4}-A1$"  # YYYY-A1 (SDMX reporting annual)
+    r"|^\d{4}-A1$",  # YYYY-A1 (SDMX reporting annual)
+    re.ASCII,
 )
 
-_iso_date_re = re.compile(r"^(\d{4})-(\d{1,2})-(\d{1,2})$")
-_iso_month_re = re.compile(r"^(\d{4})-(\d{1,2})$")
+_iso_date_re = re.compile(r"^(\d{4})-(\d{1,2})-(\d{1,2})$", re.ASCII)
+_iso_month_re = re.compile(r"^(\d{4})-(\d{1,2})$", re.ASCII)
 
 
 def check_time_period(value: str) -> str:
