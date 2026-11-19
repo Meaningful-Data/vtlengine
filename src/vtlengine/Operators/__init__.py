@@ -124,6 +124,14 @@ def may_be_null(scalar: Scalar) -> bool:
     return scalar.nullable and scalar.value is None
 
 
+def param_may_be_null(param: Any) -> bool:
+    """Whether a parameter of an operator can hold a null: a nullable Component, or a Scalar
+    that may be null (issue #1354)."""
+    if isinstance(param, DataComponent):
+        return param.nullable
+    return isinstance(param, Scalar) and may_be_null(param)
+
+
 class Operator:
     """Superclass for all operators"""
 

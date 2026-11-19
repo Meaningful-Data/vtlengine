@@ -11865,6 +11865,30 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_22d", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_22e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := instr ( Me_2 , cast ( null , string ) ) ];
+        Description: Extra of case 22: instr with a null pattern is nullable, also over a
+                     Measure that is not: null, null, null. The pandas engine raised 2-1-1-16,
+                     and the DuckDB engine returned nulls in a Measure declared non-nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := replace ( Me_2 , cast ( null , string ) , "a" ) ];
+        Description: Extra of case 22: replace with a null pattern is nullable, also over a
+                     Measure that is not: null, null, null. The pandas engine raised 2-1-1-16,
+                     and the DuckDB engine returned nulls in a Measure declared non-nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22f", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_23(self):
         """
         Status: OK

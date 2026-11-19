@@ -1,6 +1,6 @@
 import operator
 import re
-from typing import Any, ClassVar, Optional, Union
+from typing import Any, ClassVar, Optional, Tuple, Union
 
 import pandas as pd
 
@@ -145,6 +145,9 @@ class Concatenate(Binary):
 
 
 class Parameterized(Unary):
+    # The positions of the parameters whose null gives a null result
+    null_params: ClassVar[Tuple[int, ...]] = ()
+
     # Implemented by each operator
     @classmethod
     def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None:
@@ -161,7 +164,19 @@ class Parameterized(Unary):
             cls.check_param(param1, 1)
         if param2 is not None:
             cls.check_param(param2, 2)
-        return super().validate(operand)
+        return cls.declare_null_params(super().validate(operand), (param1, param2))
+
+    @classmethod
+    def declare_null_params(cls, result: Any, params: Tuple[Any, ...]) -> Any:
+        """A parameter that gives a null result for a null and can hold one makes the result
+        nullable, the Measures of a Data Set (issue #1354)."""
+        if any(Operator.param_may_be_null(params[i - 1]) for i in cls.null_params):
+            if isinstance(result, Dataset):
+                for measure in result.get_measures():
+                    measure.nullable = True
+            else:
+                result.nullable = True
+        return result
 
     @classmethod
     def op_func(cls, *args: Any) -> Any:
@@ -348,6 +363,7 @@ class Substr(Parameterized):
 class Replace(Parameterized):
     op = REPLACE
     return_type = String
+    null_params = (1, 2)
 
     @classmethod
     def py_op(cls, x: str, param1: Optional[Any], param2: Optional[Any]) -> Any:
@@ -528,6 +544,7 @@ DISTANCE_DISPATCH: dict[str, type[StringDistance]] = {
 class Instr(Parameterized):
     op = INSTR
     return_type = Integer
+    null_params = (1,)
 
     @classmethod
     def validate(
@@ -550,7 +567,7 @@ class Instr(Parameterized):
         if param3 is not None:
             cls.check_param(param3, 3)
 
-        return super().validate(operand)
+        return cls.declare_null_params(super().validate(operand), (param1, param2, param3))
 
     @classmethod
     def validate_params(cls, params: Any) -> None:
