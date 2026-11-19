@@ -921,6 +921,9 @@ class StructureVisitor(ASTTemplate):
             with_ruleid=False,
             with_bool_var=True,
         )
+        # The viral attributes are copied to the check result (issue #1354)
+        for comp in inner_ds.get_viral_attributes():
+            val_comps[comp.name] = comp
         return Dataset(name="", components=val_comps, data=None)
 
     # =========================================================================

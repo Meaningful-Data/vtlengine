@@ -11318,3 +11318,67 @@ class ValueDomainBugs(BugHelper):
         self.BaseTest(
             code="GH_1351_43", number_inputs=1, references_names=["1"], only_semantic=True
         )
+
+
+class StructureDataBugs(BugHelper):
+    """Results whose data do not match their declared structure (issue #1354)."""
+
+    def test_GH_1354_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 0 all );
+        Description: check combines no data points, so the viral Attribute At_1 of DS_1 is
+                     copied to the result: H, null, null. Both engines declared it and gave
+                     no data column for it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_1", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 0 all );
+        Description: The Date viral Attribute At_2 of DS_1 is copied to the result:
+                     2020-01-01, null, null. Both engines raised KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_2", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 , DPR_1 all );
+        Description: Control: check_datapoint copies the viral Attribute At_1 of DS_1 to each
+                     rule of a data point.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_3", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 0 imbalance DS_2 # Me_1 all );
+        Description: The imbalance is matched with the data points of DS_1 by the Identifiers,
+                     and all keeps the data point (1, A), which has none in DS_2, with a null
+                     imbalance: null, 20, 30. The pandas engine paired them by position, and
+                     the DuckDB engine dropped (1, A).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_4", number_inputs=2, references_names=["1"])
+
+    def test_GH_1354_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 errorcode "E1" all );
+        Description: The result Measure of check is always bool_var, also when DS_1 has one
+                     Boolean Measure Me_1. Both engines and the semantic analysis declared
+                     Me_1, which the DuckDB engine wrote as bool_var.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_5", number_inputs=1, references_names=["1"])
+

@@ -196,19 +196,20 @@ class Check(Operator):
             if imbalance_measure.data_type not in (Number, Integer):
                 raise SemanticError("1-1-10-1", op=cls.op, op_type="imbalance", me_type="Numeric")
 
-        # Generating the result dataset components
-        result_components = {
-            comp.name: comp
-            for comp in validation_element.components.values()
-            if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
-        }
+        # The result has the Identifiers of op, its Measure as bool_var and its viral
+        # Attributes, which are copied unchanged as no data points are combined (issue #1354)
+        result_components = {comp.name: comp for comp in validation_element.get_identifiers()}
+        result_components["bool_var"] = copy(measure)
+        result_components["bool_var"].name = "bool_var"
         if imbalance_measure is None:
             result_components["imbalance"] = Component(
                 name="imbalance", data_type=Number, role=Role.MEASURE, nullable=True
             )
         else:
+            # A data point of op without one in imbalance has a null imbalance
             result_components["imbalance"] = copy(imbalance_measure)
             result_components["imbalance"].name = "imbalance"
+            result_components["imbalance"].nullable = True
 
         result_components["errorcode"] = Component(
             name="errorcode", data_type=String, role=Role.MEASURE, nullable=True
@@ -221,6 +222,8 @@ class Check(Operator):
             nullable=True,
         )
         _set_error_types(result_components, value_domains)
+        for viral_comp in validation_element.get_viral_attributes():
+            result_components[viral_comp.name] = copy(viral_comp)
 
         return Dataset(name=dataset_name, components=result_components, data=None)
 
@@ -239,20 +242,26 @@ class Check(Operator):
         )
         if validation_element.data is None:
             validation_element.data = pd.DataFrame()
-        columns_to_keep = (
-            validation_element.get_identifiers_names() + validation_element.get_measures_names()
-        )
-        result.data = validation_element.data.loc[:, columns_to_keep]
+        identifiers = validation_element.get_identifiers_names()
+        validation_measure_name = validation_element.get_measures_names()[0]
+        result.data = validation_element.data[
+            identifiers
+            + [validation_measure_name]
+            + validation_element.get_viral_attributes_names()
+        ].rename(columns={validation_measure_name: "bool_var"})
         if imbalance_element is not None and imbalance_element.data is not None:
+            # Matched on the Identifiers, as all keeps every data point of op (issue #1354)
             imbalance_measure_name = imbalance_element.get_measures_names()[0]
-            result.data["imbalance"] = imbalance_element.data[imbalance_measure_name]
+            imbalance_data = imbalance_element.data[identifiers + [imbalance_measure_name]].rename(
+                columns={imbalance_measure_name: "imbalance"}
+            )
+            result.data = merge_frames(result.data, imbalance_data, on=identifiers, how="left")
         else:
             result.data["imbalance"] = None
 
         # Set errorcode/errorlevel ONLY when validation explicitly fails (bool_var is False)
         # NULL bool_var means indeterminate - should NOT have errorcode/errorlevel
-        validation_measure_name = validation_element.get_measures_names()[0]
-        bool_col = result.data[validation_measure_name]
+        bool_col = result.data["bool_var"]
         is_false = bool_col.fillna(True) == False  # noqa: E712
         errorcode_type = result.components["errorcode"].data_type
         result.data["errorcode"] = pd.Series(
@@ -266,8 +275,9 @@ class Check(Operator):
             result.data.loc[is_false, "errorlevel"] = error_level
 
         if invalid:
-            result.data = result.data[result.data[validation_measure_name] == False]
+            result.data = result.data[result.data["bool_var"] == False]
             result.data.reset_index(drop=True, inplace=True)
+        result.data = result.data[result.get_components_names()]
         return result
 
 

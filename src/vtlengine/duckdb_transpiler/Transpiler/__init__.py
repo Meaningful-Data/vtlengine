@@ -5695,10 +5695,13 @@ FROM (
 
         for val, col in ((error_code, "errorcode"), (error_level, "errorlevel")):
             cols.append(f'CASE WHEN {bool_ref} IS FALSE THEN {val} ELSE NULL END AS "{col}"')
+        # check combines no data points: the viral attributes are copied (issue #1354)
+        cols.extend(f"t.{quote_name(n)}" for n in ds.get_viral_attributes_names())
 
         sql = f"SELECT {', '.join(cols)} FROM ({validation_sql}) AS t"
         if imbalance_sql is not None and join_cond is not None:
-            sql += f" JOIN ({imbalance_sql}) AS i ON {join_cond}"
+            # all keeps every data point of op, with a null imbalance where it has none
+            sql += f" LEFT JOIN ({imbalance_sql}) AS i ON {join_cond}"
         if node.invalid:
             sql += f" WHERE {bool_ref} IS FALSE"
         return sql
