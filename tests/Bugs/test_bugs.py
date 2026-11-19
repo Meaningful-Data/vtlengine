@@ -11390,3 +11390,33 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1351,
         )
+
+    def test_GH_1351_35(self):
+        """
+        Status: OK
+        Expression: define operator f ( s component < string > , k number )
+                        returns component < string > is substr ( s , 1 , k ) end operator;
+                    define operator g ( s component < string > , k number )
+                        returns component < integer > is instr ( s , "c" , k ) end operator;
+                    DS_r <- DS_1 [ calc Me_2 := f ( Me_1 , 3 ) , Me_3 := g ( Me_1 , 2 ) ];
+        Description: A number parameter is the length of substr and the start of instr. The
+                     DuckDB engine read the Number parameter as a DOUBLE, which substr and
+                     instr do not take, and failed with an internal error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1351_35", number_inputs=1, references_names=["1"])
+
+    def test_GH_1351_36(self):
+        """
+        Status: OK
+        Expression: define operator f ( x number ) returns number is x end operator;
+                    DS_r <- DS_1 [ calc Me_2 := substr ( Me_1 , f ( 2 ) , f ( 3 ) ) ,
+                        Me_3 := substr ( Me_1 , f ( 1 ) , f ( 2.5 ) ) ];
+        Description: The Number results of f are the start and the length of substr, and a
+                     length with decimals is truncated, 2.5 to 2, as for any Number. The
+                     DuckDB engine failed with an internal error on the DOUBLE results.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1351_36", number_inputs=1, references_names=["1"])
