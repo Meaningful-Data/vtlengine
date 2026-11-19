@@ -1,7 +1,10 @@
 import inspect
 import json
+import re
 from dataclasses import dataclass, field
 from enum import Enum
+from functools import lru_cache
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import pandas as pd
@@ -23,6 +26,26 @@ _TIME_VALUE_CHECKS: Dict[Any, Any] = {
     DataTypes.TimePeriod: check_time_period,
     DataTypes.TimeInterval: check_time,
 }
+
+
+@lru_cache(maxsize=None)
+def _component_name_pattern() -> "re.Pattern[str]":
+    """The pattern of a Component name in the JSON schema of the data structures."""
+    schema_path = Path(__file__).parents[1] / "API" / "data" / "schema" / "json_schema_2.1.json"
+    with open(schema_path, "r") as file:
+        return re.compile(json.load(file)["$defs"]["component-name"]["pattern"])
+
+
+def check_input_component_name(name: str) -> None:
+    """A Component name of an input structure follows the name pattern of the JSON schema of
+    the data structures: no quotes, no # (issue #1355), no NUL and no carriage return."""
+    pattern = _component_name_pattern()
+    if not pattern.search(name):
+        raise InputValidationException(
+            code="0-2-1-1",
+            element=f"Component '{name}'",
+            error=f"'{name}' does not match '{pattern.pattern}'",
+        )
 
 
 def value_of(data_type: Any, value: Any) -> Any:
@@ -283,6 +306,7 @@ class Component:
     ) -> "Component":
         """The component to_dict writes. Its type can name one of the value domains given, by
         name, on which the component is then defined."""
+        check_input_component_name(json_str["name"])
         # Support both 'type' and 'data_type' for backward compatibility
         data_type, value_domain = named_type(
             json_str.get("type") or json_str.get("data_type"),

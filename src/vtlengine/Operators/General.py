@@ -10,7 +10,7 @@ from vtlengine.AST.Grammar.tokens import AS
 from vtlengine.DataTypes import COMP_NAME_MAPPING, Date
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, ExternalRoutine, Role, Scalar
-from vtlengine.Operators import Binary, Unary
+from vtlengine.Operators import Binary, Unary, check_component_name
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
@@ -195,6 +195,8 @@ class Eval(Unary):
         external_routine: ExternalRoutine,
         output: Dataset,
     ) -> Dataset:
+        for comp_name in output.components:
+            check_component_name("eval", comp_name)
         empty_data_dict = {}
         for ds_name in external_routine.dataset_names:
             if ds_name not in operands:

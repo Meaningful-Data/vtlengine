@@ -73,6 +73,13 @@ def _part_of(operand: Any, component: Any) -> Any:
     return operand if component.role == Role.MEASURE else None
 
 
+def check_component_name(op: str, name: str) -> None:
+    """A Component a script names cannot hold # or a double quote: # only separates the alias
+    of a join operand from the name of its Component (issue #1355)."""
+    if "#" in name or '"' in name:
+        raise SemanticError("1-1-6-19", op=op, name=name)
+
+
 def shared_value_domain(parts: Iterable[Any]) -> Optional[ValueDomain]:
     """The value domain a component keeps when an operator puts the values of several
     operands into it: the one they are all defined on, nulls aside. Two value domains, or a

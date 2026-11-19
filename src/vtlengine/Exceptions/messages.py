@@ -695,6 +695,13 @@ centralised_messages = {
         "a value domain: the Measures it creates are named after the values of the value "
         "domain.",
     },
+    "1-1-6-19": {
+        "message": "At op {op}: Invalid Component name {name}, a Component name cannot contain "
+        '# or ".',
+        "description": "Raised when a script names a new Component (rename, calc, aggr, unpivot, "
+        "the Measures of pivot, the result of eval) with a name that contains # or a double "
+        "quote: # only separates the alias of a join operand from the name of its Component.",
+    },
     # Comparison errors
     "1-1-7-1": {
         "message": "At op {op}: Value in {left_name} of type {left_type} is not comparable "
