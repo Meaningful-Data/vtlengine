@@ -702,7 +702,7 @@ CREATE OR REPLACE MACRO vtl_damerau_levenshtein(s1 VARCHAR, s2 VARCHAR) AS (
     END
 );
 
--- Hamming distance: count of differing positions. Strings must be equal length;
+-- Hamming distance: count of differing positions. Strings must be equal length,
 -- otherwise raise via error() with the structured VTL prefix matched by the
 -- Python error mapper (see duckdb_transpiler/io/_execution.py:_map_query_error).
 CREATE OR REPLACE MACRO vtl_hamming(s1 VARCHAR, s2 VARCHAR) AS (

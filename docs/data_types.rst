@@ -658,7 +658,8 @@ Conversion details:
   ``start/end`` text is the period of its interval when that
   interval is a whole year, semester, quarter, month, week or day
   (``"2020-01-01/2020-03-31"`` is ``2020Q1``), as the VTL 2.2
-  reference manual defines it. Any other text raises ``2-1-5-1``.
+  reference manual defines it. Any other text raises ``1-1-5-6``
+  for a literal and ``2-1-5-1`` for data.
 - **Date to Time_Period**: Converts to daily period
   (e.g. ``"2020-01-15"`` becomes ``"2020D15"``
   with the default ``vtl`` output format).
