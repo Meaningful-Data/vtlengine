@@ -68,6 +68,7 @@ from vtlengine.AST.UDOTypes import (
 )
 from vtlengine.DataTypes import (
     BASIC_TYPES,
+    COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Integer,
@@ -1246,8 +1247,11 @@ class InterpreterAnalyzer(ASTTemplate):
         )
 
         # # Extracting the component we need (only measure)
-        if analytic_component_name is None or node.op == COUNT:
+        if analytic_component_name is None:
             measure_name = result.get_measures_names()[0]
+        elif node.op == COUNT:
+            # The Measure that count gives, not a Measure carried for the order by (issue #1355)
+            measure_name = COMP_NAME_MAPPING[Integer]
         else:
             measure_name = analytic_component_name
         output_name = (

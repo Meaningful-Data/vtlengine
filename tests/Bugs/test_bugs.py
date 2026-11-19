@@ -12023,3 +12023,16 @@ class NameResolutionBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1355_13", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_14d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_8 [ calc Me_9 := count ( Me_1 over ( partition by Id_1
+                        order by Me_2 ) ) ];
+        Description: Extra of test_GH_1355_14: count of a Component ordered by a Measure gives
+                     the count, not the Measure of the order by. The pandas engine raised an
+                     internal KeyError, where the DuckDB engine gave the result.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_14d", number_inputs=1, references_names=["1"])
