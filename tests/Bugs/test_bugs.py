@@ -11663,6 +11663,19 @@ class TimeValueBugs(BugHelper):
         """
         self.BaseTest(code="GH_1352_10h", number_inputs=1, references_names=["1"])
 
+    def test_GH_1352_10i(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := Me_1 in { true } ] [ keep Me_2 ];
+        Description: Extra of case 10: in with no time type among the operand and the set is
+                     unchanged by the cast to Time, so the String Me_1 is not in the Boolean set,
+                     as before. The DuckDB engine dropped the conversion of the set to text and
+                     raised a raw ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10i", number_inputs=1, references_names=["1"])
+
     def test_GH_1352_11(self):
         """
         Status: OK
