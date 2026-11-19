@@ -1325,7 +1325,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Build the viral-attribute SELECT columns for a two-dataset binary op.
 
         Operators that combine data points run the propagation rule (``vp_pair_sql``);
-        ``nvl`` is single-operand and copies the primary operand (COALESCE-filled) (#906).
+        ``nvl`` is single-operand and copies the primary operand (#906).
         A viral attribute present in only one operand is copied from that operand.
         """
         left_viral = {n for n, c in left_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
@@ -1342,11 +1342,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             in_left = name in left_viral
             in_right = name in right_viral
             if op == tokens.NVL:
-                # nvl copies the primary operand's viral value, filling nulls from the
-                # secondary operand; no rule is run (issue #906).
-                if in_left and in_right:
-                    result.append(f"COALESCE({alias_a}.{qn}, {alias_b}.{qn}) AS {qn}")
-                elif in_left:
+                # nvl copies the primary operand's viral value, also a null, and runs no
+                # rule (issues #906 and #1354).
+                if in_left:
                     result.append(f"{alias_a}.{qn} AS {qn}")
                 elif in_right:
                     result.append(f"{alias_b}.{qn} AS {qn}")

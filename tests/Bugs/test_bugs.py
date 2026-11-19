@@ -11699,6 +11699,18 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_20", number_inputs=2, references_names=["1"])
 
+    def test_GH_1354_21(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: nvl copies the viral Attribute At_1 of the first operand and runs no
+                     propagation rule: H, null, null. The DuckDB engine filled the nulls from
+                     DS_2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_21", number_inputs=2, references_names=["1"])
+
     def test_GH_1354_25(self):
         """
         Status: OK
