@@ -1883,9 +1883,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def _is_operand_type(self, node: AST.AST, target_type: type) -> bool:
         """Check if an operand resolves to *target_type*: a Component of the clause, a Scalar
-        (also inside a clause), a parameter of a user defined operator, a Component of a join by
-        its qualified name, a cast, and an nvl, an if, a case or parentheses around them (issue
-        #1352)."""
+        (also inside a clause), a parameter or a call of a user defined operator, a Component of
+        a join by its qualified name, a cast, and an nvl, an if, a case or parentheses around
+        them (issue #1352)."""
         if isinstance(node, AST.ParFunction):
             return self._is_operand_type(node.operand, target_type)
         if isinstance(node, (AST.If, AST.Case)) or getattr(node, "op", None) == tokens.NVL:
@@ -1900,7 +1900,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if comp is not None:
                 return comp.data_type == target_type
             type_name = self._get_source_vtl_type(node)
-        elif isinstance(node, AST.BinOp) and node.op == tokens.MEMBERSHIP and self._in_clause:
+        elif isinstance(node, AST.UDOCall) or (
+            isinstance(node, AST.BinOp) and node.op == tokens.MEMBERSHIP and self._in_clause
+        ):
             type_name = self._get_source_vtl_type(node)
         else:
             return False
@@ -2693,6 +2695,11 @@ FROM (
             return self._get_node_value(self._cast_type(type_node))
         if isinstance(node, AST.TimeAggregation):
             return "TimePeriod"
+        if isinstance(node, AST.UDOCall):
+            # The type of the result of a user defined operator, as the semantic analysis gives
+            # it (issue #1352)
+            data_type = getattr(self._udo_result(node), "data_type", None)
+            return None if data_type is None else data_type.__name__
         if isinstance(node, AST.VarID):
             # A name is read as visit_VarID reads it: a parameter of a user defined
             # operator has the type of its argument, then a scalar its own (issue #1254)

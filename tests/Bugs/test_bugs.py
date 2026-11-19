@@ -12206,3 +12206,39 @@ class TimeValueBugs(BugHelper):
         self.BaseTest(
             code="GH_1352_40", number_inputs=1, references_names=["1"], scalars={"SC_1": "2020Q2"}
         )
+
+    def test_GH_1352_13b(self):
+        """
+        Status: OK
+        Expression: define operator f ( x time_period ) returns time_period is x end operator;
+                    define operator g ( x component < time_period > )
+                        returns component < time_period > is x end operator;
+                    DS_r <- DS_1 [ calc Me_2 := time_agg ( "A" , _ , f ( SC_1 ) ) ,
+                        Me_3 := time_agg ( "A" , _ , g ( Me_1 ) ) ,
+                        Me_4 := getmonth ( g ( Me_1 ) ) ];
+        Description: Extra of case 13: the result of a user defined operator that returns a
+                     Time_Period is a Time_Period, so time_agg gives 2020 and 2021 and getmonth
+                     gives 1 and 12. The DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1352_13b", number_inputs=1, references_names=["1"], scalars={"SC_1": "2020Q2"}
+        )
+
+    def test_GH_1352_40f(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component < time_period > )
+                        returns component < time_period > is x end operator;
+                    define operator g ( x component < date > ) returns component < date > is x
+                        end operator;
+                    DS_r <- DS_1 [ calc Me_3 := cast ( f ( Me_1 ) , string ) ,
+                        Me_4 := cast ( g ( Me_2 ) , string ) ];
+        Description: Extra of case 40: cast to string of the Time_Period and the Date that user
+                     defined operators return writes 2020Q1 and 2020-01-15, as cast of the
+                     Components does. The DuckDB engine wrote 2020-Q1 and 2020-01-15 00:00:00.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40f", number_inputs=1, references_names=["1"])
