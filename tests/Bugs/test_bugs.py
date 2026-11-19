@@ -11791,6 +11791,19 @@ class NameResolutionBugs(BugHelper):
             ),
         )
 
+    def test_GH_1355_25f(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_7 as a , DS_4 as b
+                        calc Me_9 := time_agg ( "A" , _ , a#Tp ) drop b#Me_2 );
+        Description: Extra of test_GH_1355_25: time_agg of the Time_Period a#Tp in the calc
+                     of a join. The DuckDB engine took a#Tp as a Date and raised an internal
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_25f", number_inputs=2, references_names=["1"])
+
     def test_GH_1355_26(self):
         """
         Status: OK

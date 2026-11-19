@@ -1876,6 +1876,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 return comp is not None and comp.data_type == target_type
             return name in self.scalars and self.scalars[name].data_type == target_type
 
+        elif isinstance(node, AST.BinOp) and node.op == tokens.MEMBERSHIP and self._in_clause:
+            # A Component of a join by its qualified name, as a#Tp (issue #1355)
+            comp = self._clause_component(node)
+            return comp is not None and comp.data_type == target_type
+
         elif isinstance(node, AST.ParamOp) and node.op == tokens.CAST:
             type_node = node.children[1]
             return bool(self._cast_type(type_node) == target_type)
