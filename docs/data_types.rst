@@ -478,10 +478,15 @@ Key rules:
 - **Time_Period to Time**: A Time_Period is implicitly
   converted to a Time interval
   (``"2020-Q1"`` becomes ``"2020-01-01/2020-03-31"``).
-  So a Date or a Time_Period compared with a Time, or
-  given with a Time to ``nvl``, ``if`` or ``case``, is a
-  Time value, and so is a Date or a Time_Period
-  Identifier that a join matches with a Time one.
+  So wherever an operator combines a Date or a Time_Period
+  with a Time, the Date or the Time_Period is converted to
+  a Time value: comparisons compare Time values;
+  ``nvl``, ``if``, ``case``, the set
+  operators and ``unpivot`` give a Time; and the common
+  Identifiers that the joins (whatever the order of their
+  operands), the binary operators, ``exists_in`` and
+  ``nvl`` match are matched as Time values and are Time in
+  the result.
 - **Date with Time_Period**: Neither is implicitly
   converted to the other, so they have no common type,
   although both are converted to Time. An operator that

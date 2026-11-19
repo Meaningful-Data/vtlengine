@@ -239,13 +239,23 @@ def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, s
     return sql.replace(from_pattern, f"FROM {table_src}, {subquery} WHERE {where_conds}", 1)
 
 
+def _is_time_name(type_name: Optional[str]) -> bool:
+    """Whether the name of a type is the one of Time."""
+    return (type_name or "").lower() in ("time", "timeinterval")
+
+
+def _time_text(value: str, type_name: Optional[str]) -> str:
+    """A Date or a Time_Period value cast to Time, the text of its start and end dates, as
+    cast to time gives it (issue #1352). Another value is returned as it is."""
+    return _CASTS_TO_TEXT.get(((type_name or "").lower(), "time"), "{0}").format(value)
+
+
 def _as_time(values: List[str], types: List[Optional[str]]) -> List[str]:
-    """The values of operands with a Time among them: a Date or a Time_Period is cast to Time,
-    the text of its start and end dates, as cast to time gives it (issue #1352)."""
-    names = [(t or "").lower() for t in types]
-    if not {"time", "timeinterval"} & set(names):
+    """The values of operands with a Time among them, each Date or Time_Period cast to Time
+    (issue #1352)."""
+    if not any(map(_is_time_name, types)):
         return values
-    return [_CASTS_TO_TEXT.get((n, "time"), "{0}").format(v) for v, n in zip(values, names)]
+    return [_time_text(v, t) for v, t in zip(values, types)]
 
 
 def _bool_to_str(col_ref: str) -> str:
@@ -1365,8 +1375,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         with self._stash_assignment():
             left_ds = self._get_dataset_structure(left_node)
             right_ds = self._get_dataset_structure(right_node)
-        left_src = self._get_dataset_sql(left_node)
-        right_src = self._get_dataset_sql(right_node)
+        names = self._time_key_names([left_ds, right_ds])
+        left_src = self._time_source(self._get_dataset_sql(left_node), left_ds, names)
+        right_src = self._time_source(self._get_dataset_sql(right_node), right_ds, names)
 
         alias_a = "a"
         alias_b = "b"
@@ -1552,10 +1563,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             else quote_name(m)
             for m in measures
         ]
+        names = self._time_key_names(structures)
         branches = [
             f"SELECT {', '.join(branch_cols)}, {k} AS {position} "
-            f"FROM {self._get_dataset_sql(operand)} AS t"
-            for k, operand in enumerate(operands)
+            f"FROM {self._time_source(self._get_dataset_sql(operand), ds, names)} AS t"
+            for k, (operand, ds) in enumerate(zip(operands, structures))
         ]
 
         ops = [link.op for link in links]
@@ -1825,8 +1837,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Build SQL for exists_in operation."""
         left_ds = self._get_dataset_structure(left_node)
         right_ds = self._get_dataset_structure(right_node)
-        left_src = self._get_dataset_sql(left_node)
-        right_src = self._get_dataset_sql(right_node)
+        names = self._time_key_names([left_ds, right_ds])
+        left_src = self._time_source(self._get_dataset_sql(left_node), left_ds, names)
+        right_src = self._time_source(self._get_dataset_sql(right_node), right_ds, names)
 
         left_ids = left_ds.get_identifiers_names()
         right_ids = right_ds.get_identifiers_names()
@@ -3333,6 +3346,9 @@ FROM (
         # is executed on this row-preserving reshape (issue #906).
         if not measure_names:
             return f"SELECT * FROM {table_src}"
+        # In a Time Measure, the Date and Time_Period values are Time values (issue #1352)
+        if self._time_names([ds]) & set(measure_names):
+            table_src = self._time_source(table_src, ds, set(measure_names))
 
         parts: List[str] = []
         for measure in measure_names:
@@ -3825,7 +3841,13 @@ FROM (
         the measure values from the first (or relevant) dataset.  This differs
         from SQL INTERSECT/EXCEPT which compare all columns.
         """
-        sources = [self._get_dataset_sql(child) for child in node.children]
+        structures = [self._get_dataset_structure(child) for child in node.children]
+        # The Components that are Time in one operand are Time values in all (issue #1352)
+        names = self._time_names(structures)
+        sources = [
+            self._time_source(self._get_dataset_sql(child), ds, names)
+            for child, ds in zip(node.children, structures)
+        ]
         child_sqls = [f"SELECT * FROM {source}" for source in sources]
 
         if op == tokens.UNION:
@@ -3980,7 +4002,7 @@ FROM (
         return {
             comp.name: self._dataset_value_types(operands, comp.name)
             for comp in result.get_measures()
-            if comp.data_type in (String, TimeInterval)
+            if comp.data_type is String
         }
 
     def _resolve_conditional_structure(self, node: Union[AST.If, AST.Case]) -> Optional[Dataset]:
@@ -4008,9 +4030,7 @@ FROM (
     def _as_text(values: List[str], types: List[Optional[str]]) -> List[str]:
         """The values of the operands of an if or a case whose result is a String: the Boolean
         ones take the text that cast to string gives, as Boolean is promoted to String. DuckDB
-        cast the strings to BOOLEAN instead (issue #1314). Where it is a Time, a Date or a
-        Time_Period is cast to Time (issue #1352)."""
-        values = _as_time(values, types)
+        cast the strings to BOOLEAN instead (issue #1314)."""
         return [_bool_to_str(v) if t == "Boolean" else v for v, t in zip(values, types)]
 
     def _promoted_to_text(
@@ -4125,6 +4145,10 @@ FROM (
                 f"e.{quote_name(col_name)}"
                 if e_type == _DATASET
                 else self._scalar_operand_sql(node.elseOp, comp)
+            )
+            # Next to a Time, a Date or a Time_Period is cast to Time (issue #1352)
+            t_ref, e_ref = _as_time(
+                [t_ref, e_ref], self._dataset_value_types([node.thenOp, node.elseOp], col_name)
             )
             if col_name in texts:
                 t_ref, e_ref = self._as_text([t_ref, e_ref], texts[col_name])
@@ -4332,6 +4356,9 @@ FROM (
             ]
             if final:
                 refs.append(f"e.{m}" if e_alias else self._scalar_operand_sql(node.elseOp, comp))
+            # Next to a Time, a Date or a Time_Period is cast to Time (issue #1352)
+            types = self._dataset_value_types(operands, comp.name)
+            refs = _as_time(refs, [types[i] for i in branches] + types[-1:] * final)
             if comp.name in texts:
                 types = texts[comp.name]
                 refs = self._as_text(refs, [types[i] for i in branches] + types[-1:] * final)
@@ -5797,30 +5824,54 @@ FROM (
             return f"COALESCE({', '.join(refs)})"
         return f"{comp_to_alias.get(key, joined[0]['sql_alias'])}.{quote_name(key)}"
 
+    @staticmethod
+    def _time_names(structures: List[Optional[Dataset]]) -> Set[str]:
+        """The names of the Components that are Time in one of the Data Sets: the operands that
+        hold them as a Date or a Time_Period are cast to Time (issue #1352)."""
+        return {
+            name
+            for ds in structures
+            if ds is not None
+            for name, comp in ds.components.items()
+            if comp.data_type is TimeInterval
+        }
+
+    def _time_source(self, source: str, ds: Optional[Dataset], names: Set[str]) -> str:
+        """The SQL source of a Data Set operand with its Date or Time_Period Components
+        ``names`` cast to Time, the text of their start and end dates (issue #1352)."""
+        casts = [
+            _CASTS_TO_TEXT[comp.data_type.__name__.lower(), "time"].format(quote_name(name))
+            + f" AS {quote_name(name)}"
+            for name, comp in (ds.components.items() if ds is not None else [])
+            if name in names and comp.data_type in (Date, TimePeriod)
+        ]
+        if not casts:
+            return source
+        return f"(SELECT * REPLACE ({', '.join(casts)}) FROM {self._as_subquery(source)})"
+
+    def _time_key_names(self, structures: List[Optional[Dataset]]) -> Set[str]:
+        """The Identifiers that are Time in one of the Data Sets and Identifiers in all those
+        that have them: the keys that the operands holding them as a Date or a Time_Period
+        cast to Time, so that they match as Time values (issue #1352)."""
+        return {
+            name
+            for name in self._time_names(structures)
+            if all(
+                ds.components[name].role == Role.IDENTIFIER
+                for ds in structures
+                if ds is not None and name in ds.components
+            )
+        }
+
     def _time_join_keys(self, op: str, clause_info: List[Dict[str, Any]]) -> None:
         """A Date or a Time_Period Identifier of a join operand that another operand has as a
         Time is cast to Time in the operand, so that the keys match as Time values (issue
         #1352). A cross join matches no keys."""
         if op == tokens.CROSS_JOIN:
             return
-        time_ids = {
-            name
-            for info in clause_info
-            for name, comp in info["ds"].components.items()
-            if comp.role == Role.IDENTIFIER and comp.data_type is TimeInterval
-        }
+        names = self._time_key_names([info["ds"] for info in clause_info])
         for info in clause_info:
-            casts = [
-                _CASTS_TO_TEXT[comp.data_type.__name__.lower(), "time"].format(quote_name(name))
-                + f" AS {quote_name(name)}"
-                for name, comp in info["ds"].components.items()
-                if name in time_ids and comp.data_type in (Date, TimePeriod)
-            ]
-            if casts:
-                info["table_src"] = (
-                    f"(SELECT * REPLACE ({', '.join(casts)}) "
-                    f"FROM {self._as_subquery(info['table_src'])})"
-                )
+            info["table_src"] = self._time_source(info["table_src"], info["ds"], names)
 
     def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]
         """Visit a join operation."""
