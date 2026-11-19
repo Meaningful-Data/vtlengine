@@ -581,14 +581,15 @@ class ExistIn(Operator.Operator):
 
         # Check if the common identifiers are equal between the two datasets
         if dataset_1.data is not None and dataset_2.data is not None:
+            # Only the Identifiers are matched, and a data point of dataset_1 once, however
+            # many of dataset_2 match it (issue #1354)
             true_results = merge_frames(
-                dataset_1.data,
-                dataset_2.data,
+                dataset_1.data[reference_identifiers_names],
+                dataset_2.data[common_columns].drop_duplicates(),
                 how="inner",
                 left_on=common_columns,
                 right_on=common_columns,
             )
-            true_results = true_results[reference_identifiers_names]
         else:
             true_results = pd.DataFrame(columns=reference_identifiers_names)
 
