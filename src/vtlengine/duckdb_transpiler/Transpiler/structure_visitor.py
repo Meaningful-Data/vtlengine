@@ -31,7 +31,7 @@ from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.duckdb_transpiler.sql import references_raising_macro
 from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS, get_duckdb_type
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
-from vtlengine.Model import Component, Dataset, Role, ValueDomain, value_of
+from vtlengine.Model import Component, Dataset, Role, ValueDomain, join_homonyms, value_of
 from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Clause import Pivot, Unpivot
 from vtlengine.Operators.Join import Apply, merged_viral_attribute_names
@@ -1099,6 +1099,10 @@ class StructureVisitor(ASTTemplate):
                 col = self._resolve_udo_name(self._resolve_name(assignment.left))
                 if getattr(child, "is_implicit_role", False):
                     calc_role = self._omitted_role(node, input_ds.components.get(col))
+                # In a join, the Component replaces the alias#col of the operands that all
+                # have it (Inner Join page of the VTL 2.2 manual, issue #1355)
+                for homonym in join_homonyms(input_ds.components, col):
+                    del comps[homonym]
                 if col in comps:
                     # An overwritten Component takes the type and the value domain of its
                     # expression, as a new one does, with its role or another (issue #1350)

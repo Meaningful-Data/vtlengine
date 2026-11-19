@@ -12434,6 +12434,41 @@ class NameResolutionBugs(BugHelper):
             code="GH_1355_13e", number_inputs=2, exception_code="1-1-13-17"
         )
 
+    def test_GH_1355_13f(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B using Id_1 , Id_2
+                        calc Me_1 := 1 keep A#Me_1 );
+        Description: Extra of test_GH_1355_12: as test_GH_1355_13b, after a calc whose new
+                     Measure Me_1 replaces the Measures Me_1 of A and B (Inner Join page of the
+                     VTL 2.2 manual: the input Components homonymous to a Component that calc
+                     generates are removed). Both engines kept the Me_1 of A and dropped the one
+                     of calc.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_13f",
+            number_inputs=2,
+            exception_code="1-1-13-17",
+            exception_message="At op keep: A#Me_1 not present in the Dataset(result from join "
+            "VDS) at the time it is called",
+        )
+
+    def test_GH_1355_13g(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B using Id_1 , Id_2
+                        calc Me_1 := 1 );
+        Description: Extra of test_GH_1355_13f: the Measure Me_1 that calc generates replaces
+                     the Measures Me_1 of A and B, so the result has one Me_1 (Inner Join page
+                     of the VTL 2.2 manual). Both engines and the semantic analysis kept A#Me_1
+                     and B#Me_1 next to it and raised 1-1-13-9 when the join removed the prefixes.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_13g", number_inputs=2, references_names=["1"])
+
     def test_GH_1355_14(self):
         """
         Status: OK

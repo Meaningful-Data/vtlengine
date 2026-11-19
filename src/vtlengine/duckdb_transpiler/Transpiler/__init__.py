@@ -81,7 +81,15 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _try_normalize_time_period,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
-from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+from vtlengine.Model import (
+    Component,
+    Dataset,
+    ExternalRoutine,
+    Role,
+    Scalar,
+    ValueDomain,
+    join_homonyms,
+)
 from vtlengine.Operators.Clause import Pivot
 from vtlengine.Operators.HROperators import fills_with_zero
 from vtlengine.Operators.Join import merged_viral_attribute_names
@@ -3068,7 +3076,11 @@ FROM (
             # structure, and listing them here asked the binder for columns the
             # subquery never selected (issue #978).
             replaced = [name for name in calc_exprs if name in ds.components]
-            hidden = replaced + [alias for alias, _ in nested_cols + hoisted_cols]
+            # In a join, a computed Component replaces the alias#name of the operands that all
+            # have it (Inner Join page of the VTL 2.2 manual, issue #1355)
+            homonyms = [q for name in calc_exprs for q in join_homonyms(ds.components, name)]
+            self._consumed_join_aliases.update(homonyms)
+            hidden = replaced + homonyms + [alias for alias, _ in nested_cols + hoisted_cols]
             passthrough = "t.*"
             if hidden:
                 excluded = ", ".join(quote_name(name) for name in hidden)

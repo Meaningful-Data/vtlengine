@@ -26,7 +26,15 @@ from vtlengine.DataTypes import (
     to_string,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ValueDomain
+from vtlengine.Model import (
+    Component,
+    DataComponent,
+    Dataset,
+    Role,
+    Scalar,
+    ValueDomain,
+    join_homonyms,
+)
 from vtlengine.Operators import Operator, check_component_name, shared_value_domain
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
@@ -57,12 +65,16 @@ class Calc(Operator):
             # Checked also where the name is a Component of the operand, as the join's
             # qualified A#Me_1 (issue #1355)
             check_component_name(cls.op, operand.name)
+            # In a join, the Component replaces the Components alias#name of the operands
+            # that all have it (Inner Join page of the VTL 2.2 manual, issue #1355)
+            replaced = join_homonyms(dataset.components, operand.name)
             if operand.name in result_dataset.components:
-                if result_dataset.components[operand.name].role == Role.IDENTIFIER:
-                    raise SemanticError("1-1-6-13", op=cls.op, comp_name=operand.name)
+                replaced.append(operand.name)
+            for name in replaced:
+                if result_dataset.components[name].role == Role.IDENTIFIER:
+                    raise SemanticError("1-1-6-13", op=cls.op, comp_name=name)
                 # Override component with same name
-                # TODO: Check this for version 2.1
-                result_dataset.delete_component(operand.name)
+                result_dataset.delete_component(name)
 
             if isinstance(operand, Scalar):
                 # A scalar written alone keeps the value domain it is defined on, as a
@@ -98,6 +110,8 @@ class Calc(Operator):
                 result_dataset.data[operand.name] = operand.value
             else:
                 result_dataset.data[operand.name] = operand.data
+            replaced = join_homonyms(dataset.components, operand.name)
+            result_dataset.data = result_dataset.data.drop(columns=replaced)
         return result_dataset
 
 

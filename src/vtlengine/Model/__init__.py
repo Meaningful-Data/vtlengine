@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import pandas as pd
 import sqlglot
@@ -53,6 +53,13 @@ def component_name_characters_text() -> str:
     """The characters a Component name cannot contain, as a message lists them."""
     names = [_CHARACTER_NAMES.get(char, char) for char in component_name_characters()]
     return f"{', '.join(names[:-1])} or {names[-1]}"
+
+
+def join_homonyms(names: Iterable[str], name: str) -> List[str]:
+    """The Components alias#name that a join names after the operands that all have name. A
+    calc that computes name replaces them (Inner Join page of the VTL 2.2 manual), and no other
+    Component name holds # (issue #1355)."""
+    return [comp for comp in names if comp.partition("#")[2] == name]
 
 
 def printable_name(name: str) -> str:
