@@ -5896,11 +5896,15 @@ FROM (
                 if not keys_only:
                     all_join_ids |= info["id_names"]
 
+        # The keys the operands are joined on. A Measure or an Attribute named as an Identifier
+        # of another operand is no key: it is its operand's own Component, qualified with the
+        # alias, as on the pandas engine (issue #1355)
+        join_keys: Set[str] = set() if is_cross_join else set().union(*pairwise_keys)
         comp_count: Counter[str] = Counter(
             name
             for info in clause_info
             for name in info["ds"].get_components_names()
-            if name not in all_join_ids
+            if name not in join_keys
         )
         duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
 
@@ -5935,7 +5939,7 @@ FROM (
                     continue
                 is_join_col = (
                     comp.role == Role.IDENTIFIER and not is_cross_join and not keys_only
-                ) or name in all_join_ids
+                ) or name in join_keys
                 if is_join_col:
                     if name in seen_identifiers:
                         continue

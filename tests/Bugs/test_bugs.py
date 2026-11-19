@@ -11974,3 +11974,28 @@ class NameResolutionBugs(BugHelper):
         self.BaseTest(
             code="GH_1355_28", number_inputs=1, references_names=["1"], only_semantic=True
         )
+
+    def test_GH_1355_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B drop B#Id_2 );
+        Description: Id_2 is an Identifier of DS_1 and a Measure of DS_2, so the join keeps
+                     both and B#Id_2 is the Measure of DS_2: dropping it keeps the Identifier
+                     Id_2. The DuckDB engine kept a single Id_2 column and dropped it from the
+                     data.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_10", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_11(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B rename B#Id_2 to Me_3 );
+        Description: As test_GH_1355_10, B#Id_2 is the Measure of DS_2, so Me_3 takes its
+                     values and the Identifier Id_2 stays. The DuckDB engine gave Me_3 the
+                     values of the Identifier.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_11", number_inputs=2, references_names=["1"])

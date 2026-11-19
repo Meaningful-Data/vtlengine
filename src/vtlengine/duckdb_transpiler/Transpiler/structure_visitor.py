@@ -1459,11 +1459,14 @@ class StructureVisitor(ASTTemplate):
         else:
             all_join_ids = set(using_ids)
 
-        # Find non-identifier component names that appear in more than one dataset
+        # Find non-key component names that appear in more than one dataset. A Measure or an
+        # Attribute named as an Identifier of another operand is no key: it is its operand's
+        # own Component, qualified with the alias, as on the pandas engine (issue #1355)
+        join_keys = all_join_ids if using_ids is not None else set()
         comp_count: Dict[str, int] = {}
         for _, ds in clause_datasets:
             for comp_name in ds.components:
-                if comp_name not in all_join_ids:
+                if comp_name not in join_keys:
                     comp_count[comp_name] = comp_count.get(comp_name, 0) + 1
 
         comps: Dict[str, Component] = {}
@@ -1490,7 +1493,7 @@ class StructureVisitor(ASTTemplate):
                     tokens.INNER_JOIN,
                 )
                 is_join_id = (comp.role == Role.IDENTIFIER and not keys_only) or (
-                    comp_name in all_join_ids
+                    comp_name in join_keys
                 )
                 if comp_name in duplicate_comps and (not is_join_id or is_cross):
                     qualified = f"{alias}#{comp_name}"

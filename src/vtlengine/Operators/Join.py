@@ -175,7 +175,11 @@ class Join(Operator):
             operand_name = operand.name
 
             for component_name, component in components.items():
-                component.nullable = nullability[component_name]
+                # An Identifier is never null, also where another operand has a Measure of
+                # the same name (issue #1355)
+                component.nullable = (
+                    component.role != Role.IDENTIFIER and (nullability[component_name])
+                )
                 if component_name in viral_common:
                     if component_name not in merged_components:
                         component.name = component_name
