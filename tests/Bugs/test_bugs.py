@@ -11786,6 +11786,21 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_21", number_inputs=2, references_names=["1"])
 
+    def test_GH_1354_21b(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( variable At_1 ) is
+                        when "2020-01-01" then "2021-01-01" ; else "2022-01-01"
+                    end viral propagation;
+                    DS_r <- sum ( DS_1 group by Id_1 );
+        Description: Extra of case 21: a rule on the Date viral Attribute At_1 written with
+                     String literals combines the values of each group as Dates: 2021-01-01,
+                     2022-01-01. The DuckDB engine raised BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_21b", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_22(self):
         """
         Status: OK
