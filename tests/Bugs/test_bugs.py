@@ -12604,3 +12604,15 @@ class TimeValueBugs(BugHelper):
             exception_code="2-1-5-1",
             exception_message="Impossible to cast abc from type String to Time_Period.",
         )
+
+    def test_GH_1352_34(self):
+        """
+        Status: OK
+        Expression: DS_r <- max ( DS_1 group by Id_1 );
+        Description: max of a Time_Period Measure grouped by an Integer Identifier gives the
+                     latest period of each group, 2020Q2 and 2021Q1. The pandas engine raised a
+                     raw InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_34", number_inputs=1, references_names=["1"])
