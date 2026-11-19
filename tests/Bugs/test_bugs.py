@@ -12096,3 +12096,48 @@ class NameResolutionBugs(BugHelper):
             exception_code="1-1-6-6",
             exception_message="Membership is not allowed inside a clause, found DS_1#Me_1.",
         )
+
+    def test_GH_1355_16(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_3 as B
+                        aggr Me_3 := sum ( B#Me_2 ) group by A#Id_2 );
+        Description: In a join, the qualified Identifier A#Id_2 in group by is Id_2 of the
+                     operand A, as group by Id_2. Both engines and the semantic analysis raised
+                     an internal TypeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_16", number_inputs=2, references_names=["1"])
+        self.BaseTest(
+            code="GH_1355_16", number_inputs=2, references_names=["1"], only_semantic=True
+        )
+
+    def test_GH_1355_16b(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_3 as B
+                        aggr Me_3 := sum ( B#Me_2 ) group except A#Id_2 );
+        Description: Extra of test_GH_1355_16: the same in group except, as group except
+                     Id_2. Both engines raised an internal TypeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_16b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_17(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( DS_1 group by DS_1#Id_2 );
+        Description: Out of a join, DS_1#Id_2 is a membership, not a component name, so the
+                     grouping raises 1-1-6-6. Both engines and the semantic analysis raised an
+                     internal TypeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_17",
+            number_inputs=1,
+            exception_code="1-1-6-6",
+            exception_message="Membership is not allowed inside a clause, found DS_1#Id_2.",
+        )

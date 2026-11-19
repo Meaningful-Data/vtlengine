@@ -1273,9 +1273,7 @@ class StructureVisitor(ASTTemplate):
             agg_node = assignment.right
             if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
                 grouping_op = agg_node.grouping_op or ""
-                for g in agg_node.grouping:
-                    if isinstance(g, (AST.VarID, AST.Identifier)):
-                        group_ids.add(self._resolve_udo_name(g.value))
+                group_ids.update(self._resolve_grouping_names(agg_node.grouping))
             name = self._resolve_udo_name(self._resolve_name(assignment.left))
             computed_roles[name] = getattr(assignment.left, "role", None) or self._omitted_role(
                 node, input_ds.components.get(name)
@@ -1542,9 +1540,9 @@ class StructureVisitor(ASTTemplate):
         return time_id, other_ids
 
     def _resolve_grouping_names(self, grouping: List[AST.AST]) -> List[str]:
-        """Resolve grouping node names with UDO parameter lookup."""
-        grouping_nodes = (AST.VarID, AST.Identifier)
-        return [self._resolve_udo_name(g.value) for g in grouping if isinstance(g, grouping_nodes)]
+        """Resolve grouping node names with UDO parameter lookup, and a Component of a join
+        named by its qualified name (issue #1355)."""
+        return self._extract_component_names(grouping, self._join_alias_map)
 
     def _resolve_group_cols(self, node: AST.Aggregation, all_ids: List[str]) -> List[str]:
         """Resolve group-by columns from an Aggregation node."""

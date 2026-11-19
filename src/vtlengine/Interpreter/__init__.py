@@ -1031,7 +1031,12 @@ class InterpreterAnalyzer(ASTTemplate):
             # For Component handling in operators like time_agg
             self.is_from_grouping = True
             for x in node.grouping:
-                groupings.append(self.visit(x))
+                if isinstance(x, AST.BinOp) and x.op == MEMBERSHIP:
+                    # A grouping takes component names (issue #1355)
+                    left, right = cast(AST.Identifier, x.left), cast(AST.Identifier, x.right)
+                    groupings.append(self._component_name(f"{left.value}#{right.value}"))
+                else:
+                    groupings.append(self.visit(x))
             self.is_from_grouping = False
             if grouping_op == "group all" or has_time_agg:
                 groupings = self._apply_time_agg_grouping(operand, groupings, grouping_op)

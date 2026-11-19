@@ -3223,12 +3223,11 @@ FROM (
                     agg_node = assignment.right
                     if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
                         grouping_op = agg_node.grouping_op or ""
+                        for resolved in self._resolve_grouping_names(agg_node.grouping):
+                            if resolved not in grouping_names:
+                                grouping_names.append(resolved)
                         for g in agg_node.grouping:
-                            if isinstance(g, (AST.VarID, AST.Identifier)):
-                                resolved = self._resolve_udo_name(g.value)
-                                if resolved not in grouping_names:
-                                    grouping_names.append(resolved)
-                            elif isinstance(g, AST.TimeAggregation) and time_agg_expr is None:
+                            if isinstance(g, AST.TimeAggregation) and time_agg_expr is None:
                                 with self._clause_scope(ds):
                                     time_agg_expr = self.visit_TimeAggregation(g)
                                 for comp in ds.components.values():
