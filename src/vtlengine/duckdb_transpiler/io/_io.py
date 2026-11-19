@@ -26,6 +26,7 @@ from vtlengine.duckdb_transpiler.io._validation import (
     get_column_sql_type,
     handle_sdmx_columns,
     map_duckdb_error,
+    sql_trim,
     validate_input_path,
     validate_no_duplicates,
     validate_temporal_columns,
@@ -116,10 +117,11 @@ def _normalize_time_period_columns(
     """
     for comp_name, comp in components.items():
         if comp.data_type == TimePeriod:
+            value = sql_trim(f'"{comp_name}"')
             try:
                 conn.execute(
                     f'UPDATE "{table_name}" SET "{comp_name}" = '
-                    f'vtl_period_normalize(TRIM("{comp_name}")) '
+                    f"vtl_period_normalize({value}) "
                     f'WHERE "{comp_name}" IS NOT NULL AND "{comp_name}" != \'\''
                 )
             except duckdb.Error as e:
@@ -149,7 +151,7 @@ def _normalize_time_interval_columns(
     for comp_name, comp in components.items():
         if comp.data_type != TimeInterval:
             continue
-        value = f'TRIM("{comp_name}")'
+        value = sql_trim(f'"{comp_name}"')
         year = f"CAST(SUBSTR({value}, 1, 4) AS INTEGER)"
         month = f"CAST(SUBSTR({value}, 6) AS INTEGER)"
         first_day = f"MAKE_DATE({year}, {month}, 1)"
