@@ -423,7 +423,10 @@ Value domains also appear in the VTL-DL definitions:
   argument is of the basic type of the value domain, and its values
   must be values of it (``2-1-5-4``). In the body a scalar parameter
   is defined on the value domain, and a component parameter behaves
-  as its basic type.
+  as its basic type. A value of a type promoted to the basic type is
+  compared as the value it is promoted to, here and in the forms
+  below: an ``Integer`` as a ``Number``, a ``Boolean`` as the
+  ``String`` ``true`` or ``false``.
 - A value domain types the values of a ``set`` parameter
   (``s set<VD_FLOW>``): the argument is a value domain of its basic
   type (another one raises ``1-2-18``, as ``set<string>`` does), and

@@ -72,7 +72,9 @@ from vtlengine.DataTypes import (
     Boolean,
     Integer,
     ScalarType,
+    String,
     check_unary_implicit_promotion,
+    to_string,
 )
 from vtlengine.Exceptions import (
     InputValidationException,
@@ -3064,7 +3066,11 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             return
         if constraint.value_domain is not None:
-            Operators.check_values(values, constraint.value_domain, op)
+            checked = values
+            if constraint.value_domain.type is String:
+                # A Boolean is promoted to String as the text true or false (issue #1351)
+                checked = values.map(to_string, na_action="ignore")
+            Operators.check_values(checked, constraint.value_domain, op)
         broken = pd.Series(False, index=values.index)
         if constraint.not_null:
             broken |= values.isna()

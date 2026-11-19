@@ -1,0 +1,9 @@
+define operator f ( x VD_N )
+    returns string is
+        cast ( x , string )
+end operator;
+define operator g ( x component < VD_N > )
+    returns component is
+        x
+end operator;
+DS_r <- DS_I [ calc Me_2 := f ( 2 ) , Me_3 := g ( Me_1 ) ];

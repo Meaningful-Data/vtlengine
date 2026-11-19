@@ -1,0 +1,10 @@
+define operator f ( x VD_SB )
+    returns string is
+        x
+end operator;
+define operator g ( x component < VD_SB > )
+    returns component is
+        x
+end operator;
+SC_r <- f ( true );
+DS_r <- DS_B [ calc Me_2 := g ( Me_1 ) , Me_3 := SC_r , Me_4 := f ( false ) ];
