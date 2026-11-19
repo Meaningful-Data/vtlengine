@@ -464,8 +464,8 @@ class Fill_time_series(Binary):
         result.data = operand.data.copy()
         result.data[cls.time_id] = result.data[cls.time_id].astype("string[pyarrow]")
         if result.data.empty:
-            # A single Data Point is filled as well: in all mode, to the whole of its year
-            # (issue #1352)
+            # A single Data Point is filled as well: a Time_Period in all mode to the whole of
+            # its year, while a Date or a Time shows no period and stays (issue #1352)
             return result
         if not cls.other_ids:
             # The operand holds a single series, so both limits span the same range.
