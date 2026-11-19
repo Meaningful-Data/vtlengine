@@ -410,7 +410,9 @@ class StructureVisitor(ASTTemplate):
         with the operation that holds it when its statistics show that a join needs no row
         of that operation, as an if or a case operand of another one (issue #1314). The
         operands already materialized inside it are read from their own CTE, so they are
-        not checked again.
+        not checked again. Its rows are read as a whole, which no row is not, as DuckDB leaves
+        out of the CTE a column the statement does not read, as a calc Measure that a later
+        keep or drop removes (issue #1352).
         """
         if not references_raising_macro(sql) and not any(
             f"{function}(" in sql for function in RAISING_FUNCTIONS
@@ -418,7 +420,7 @@ class StructureVisitor(ASTTemplate):
             return sql
         cte = quote_name(f"_vtl_checked_{len(self._materialized_operands)}")
         self._materialized_operands.append((cte, sql))
-        return f"(SELECT * FROM {cte})"
+        return f"(SELECT * FROM {cte} WHERE {cte} IS NOT NULL)"
 
     def _with_checked_operands(self, sql: str) -> str:
         """The query ``sql`` of a statement after the MATERIALIZED CTEs of the operands that
