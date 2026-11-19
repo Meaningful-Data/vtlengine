@@ -13011,3 +13011,37 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_32b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_31(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single );
+        Description: fill_time_series only adds Data Points, so 2020-01-02, whose Measure is
+                     null, stays and 2020-01-03 is added. The pandas engine removed 2020-01-02.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_31", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_32(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , all );
+        Description: fill_time_series in all mode fills a single Data Point, 2020Q2, to the
+                     whole of its year, 2020Q1 to 2020Q4, as it fills two. The pandas engine
+                     returned the Data Point alone.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_32", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_33(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , all );
+        Description: Control of case 32: fill_time_series in all mode fills 2020Q1 and 2020Q3
+                     to the whole of their year, 2020Q1 to 2020Q4, on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_33", number_inputs=1, references_names=["1"])
