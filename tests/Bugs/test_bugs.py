@@ -12014,6 +12014,23 @@ class TimeValueBugs(BugHelper):
             "Time_Period.",
         )
 
+    def test_GH_1352_11h(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: Extra of case 11: the Integer Id_1 of DS_1 and the String Id_1 of DS_2 have no
+                     common type, so nvl raises 1-1-13-18, as + and exists_in do. The engines
+                     matched the Identifiers by their text.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_11h",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="Incompatible types for common identifier Id_1: Integer and String.",
+        )
+
     def test_GH_1352_12(self):
         """
         Status: OK
