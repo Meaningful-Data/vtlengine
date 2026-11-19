@@ -431,3 +431,63 @@ def test_GH_1352_36k(use_duckdb: bool, period: str) -> None:
     period gives the year 10000, which no Time_Period has, so it raises 2-1-19-10, checked for
     each period indicator on its own. The DuckDB engine wrote a null Identifier (issue #1352)."""
     _check_shift_out_of_range(use_duckdb, period, 1, 10000)
+
+
+def _check_dateadd_out_of_range(
+    use_duckdb: bool, script: str, value: str, year: int, data_type: str = "Date"
+) -> None:
+    """Check that dateadd of the Measure Me_1 holding value raises 2-1-19-10 for the year."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": data_type, "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    with pytest.raises(RT) as context:
+        run(
+            script=script,
+            data_structures=structures,
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [value]})},
+            use_duckdb=use_duckdb,
+        )
+    assert context.value.args[1] == "2-1-19-10"
+    assert context.value.args[0].startswith(f"Invalid year {year}, must be between 1800 and 9999.")
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("period", ["A", "S", "Q", "M", "W", "D"])
+def test_GH_1352_26b(use_duckdb: bool, period: str) -> None:
+    """Extra of case 26: dateadd of the Date 9999-12-31 forward by one period gives the year
+    10000, which no Date has, so it raises 2-1-19-10, checked for each period indicator on its
+    own. The pandas engine raised a raw ValueError or OverflowError and the DuckDB engine wrote
+    a Date of the year 10000 (issue #1352)."""
+    script = f'DS_r <- DS_1 [ calc Me_2 := dateadd ( Me_1 , 1 , "{period}" ) ];'
+    _check_dateadd_out_of_range(use_duckdb, script, "9999-12-31", 10000)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize(
+    "value, period, year",
+    [
+        ("1800-01-01", "A", 1799),
+        ("1800-01-01", "S", 1799),
+        ("1800-01-01", "Q", 1799),
+        ("1800-01-01", "M", 1799),
+        ("1800-01-01", "W", 1799),
+        ("1800-01-01", "D", 1799),
+        ("1500Q1", "D", 1500),
+    ],
+)
+def test_GH_1352_26c(use_duckdb: bool, value: str, period: str, year: int) -> None:
+    """Extra of case 26: dateadd back by one period of the Date 1800-01-01, or from the
+    Time_Period 1500Q1, gives a year below 1800, which no Date has, so it raises 2-1-19-10,
+    checked for each period indicator on its own. Both engines wrote the Date, 999-12-31 on the
+    pandas engine and 0999-12-31 on the DuckDB engine for the years below 1000 (issue #1352)."""
+    shift, data_type = (0, "Time_Period") if value == "1500Q1" else (-1, "Date")
+    script = f'DS_r <- DS_1 [ calc Me_2 := dateadd ( Me_1 , {shift} , "{period}" ) ];'
+    _check_dateadd_out_of_range(use_duckdb, script, value, year, data_type)
