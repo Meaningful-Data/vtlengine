@@ -194,9 +194,9 @@ class TimePeriodHandler:
 
     @staticmethod
     def _check_year(year: int) -> None:
-        if year < 0 or year > 9999:
+        # A period has a year of four digits, the only ones its texts write (issue #1352)
+        if year < 1000 or year > 9999:
             raise RunTimeError("2-1-19-10", year=year)
-            # raise ValueError(f'Invalid year {year}, must be between 1900 and 9999.')
 
     @property
     def year(self) -> int:
@@ -659,6 +659,9 @@ def interval_to_period_str(interval_value: str) -> Optional[str]:
     except ValueError:
         return None
 
+    if start.year < 1000:
+        # A period has a year of four digits (issue #1352)
+        return None
     # Try each period indicator from largest to smallest
     for indicator in ["A", "S", "Q", "M", "W", "D"]:
         period_handler = date_to_period(start, indicator)

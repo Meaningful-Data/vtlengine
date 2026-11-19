@@ -1637,44 +1637,80 @@ def test_GH_1352_39(use_duckdb: bool) -> None:
     )
 
 
+def _load_1352(use_duckdb: bool, role: str, source: str, value: str, tmp_path: Path) -> Any:
+    """Load a Time_Period Measure or Identifier holding value, from a DataFrame or a CSV file."""
+    is_measure = role == "Measure"
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {
+                        "name": "Id_1",
+                        "type": "Integer" if is_measure else "Time_Period",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {
+                        "name": "Me_1",
+                        "type": "Time_Period" if is_measure else "Integer",
+                        "role": "Measure",
+                        "nullable": True,
+                    },
+                ],
+            }
+        ]
+    }
+    data = pd.DataFrame(
+        {"Id_1": [1], "Me_1": [value]} if is_measure else {"Id_1": [value], "Me_1": [1]}
+    )
+    datapoints: Any = data
+    if source == "csv":
+        datapoints = tmp_path / "DS_1.csv"
+        data.to_csv(datapoints, index=False)
+    return run(
+        script="DS_r <- DS_1;",
+        data_structures=structures,
+        datapoints={"DS_1": datapoints},
+        use_duckdb=use_duckdb,
+    )
+
+
+def _check_1352_load_error(
+    use_duckdb: bool, role: str, source: str, value: str, tmp_path: Path
+) -> None:
+    with pytest.raises(VTLEngineException) as context:
+        _load_1352(use_duckdb, role, source, value, tmp_path)
+    column = "Me_1" if role == "Measure" else "Id_1"
+    error = f"Impossible to cast {value} from type String to Time_Period."
+    assert context.value.args[1] == "0-3-1-6"
+    assert context.value.args[0].startswith(
+        f"On Dataset DS_1 loading: not possible to cast column {column} to Time_Period. Error "
+        f'found: "{error}'
+    )
+
+
 @pytest.mark.parametrize("use_duckdb", engine_params())
-def test_GH_1352_37c(use_duckdb: bool) -> None:
+@pytest.mark.parametrize("role", ["Measure", "Identifier"])
+@pytest.mark.parametrize("source", ["dataframe", "csv"])
+def test_GH_1352_37c(use_duckdb: bool, role: str, source: str, tmp_path: Path) -> None:
     """Extra of case 37: the year of a Time_Period is written with four digits, from 1000, so
     0001 is refused with 0-3-1-6, with the same message on both engines, as a Date out of its
     years is. The pandas engine raised a raw ValueError and the DuckDB engine loaded 1
     (issue #1352)."""
-    with pytest.raises(VTLEngineException) as context:
-        run(
-            script="DS_r <- DS_1;",
-            data_structures=_dataframe_structures("Time_Period"),
-            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": ["0001"]})},
-            use_duckdb=use_duckdb,
-        )
-    assert context.value.args[1] == "0-3-1-6"
-    assert context.value.args[0] == (
-        "On Dataset DS_1 loading: not possible to cast column Me_1 to Time_Period. Error found: "
-        '"Impossible to cast 0001 from type String to Time_Period." Please check loaded file'
-    )
+    _check_1352_load_error(use_duckdb, role, source, "0001", tmp_path)
 
 
 @pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("role", ["Measure", "Identifier"])
+@pytest.mark.parametrize("source", ["dataframe", "csv"])
 @pytest.mark.parametrize(
-    "value", ["2020M13", "2020W54", "2020W00", "2020D367", "2020D0", "2021D366", "2020-13-1"]
+    "value",
+    ["2020M13", "2020W54", "2020W00", "2020D367", "2020D0", "2021D366", "2020-13-1"],
 )
-def test_GH_1352_37d(use_duckdb: bool, value: str) -> None:
+def test_GH_1352_37d(use_duckdb: bool, role: str, source: str, value: str, tmp_path: Path) -> None:
     """Extra of case 37: a period written in one of the formats that is no period cannot be read
     as a Time_Period, so it is refused with 0-3-1-6, with the same message on both engines.
     The pandas engine raised 2-1-19-7 or 2-1-19-9, and wrote the Python error of a date that is
     no date, such as 2020-13-1 (issue #1352)."""
-    with pytest.raises(VTLEngineException) as context:
-        run(
-            script="DS_r <- DS_1;",
-            data_structures=_dataframe_structures("Time_Period"),
-            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [value]})},
-            use_duckdb=use_duckdb,
-        )
-    assert context.value.args[1] == "0-3-1-6"
-    assert context.value.args[0] == (
-        "On Dataset DS_1 loading: not possible to cast column Me_1 to Time_Period. Error found: "
-        f'"Impossible to cast {value} from type String to Time_Period." Please check loaded file'
-    )
+    _check_1352_load_error(use_duckdb, role, source, value, tmp_path)
