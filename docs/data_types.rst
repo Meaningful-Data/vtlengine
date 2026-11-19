@@ -259,8 +259,7 @@ every type (the same types are accepted, and the values are ordered
 as those two operators order them), except that it always compares
 the operand with both bounds: it raises ``2-1-19-19`` for a bound of
 another period indicator even when the other comparison is already
-false or the other bound is null, where the pair stops at a false
-first comparison. A null bound gives ``false`` where the other
+false, where the pair stops at a false first comparison. A null bound gives ``false`` where the other
 comparison is false and null elsewhere.
 
 **Output formats** (controlled by ``time_period_output_format``
