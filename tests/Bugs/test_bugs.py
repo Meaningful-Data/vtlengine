@@ -11999,3 +11999,27 @@ class NameResolutionBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1355_11", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_12(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_3 as A , DS_4 as B apply A + B
+                        rename Me_2 to Me_9 );
+        Description: rename in the join body after apply renames the Measure that apply
+                     computes. The DuckDB engine read the column A#Me_2, which apply no longer
+                     has.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_12", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_13(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_3 as A , DS_4 as B apply A + B )
+                        [ rename Me_2 to Me_9 ];
+        Description: Control: the same rename as a clause after the join.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_13", number_inputs=2, references_names=["1"])
