@@ -364,9 +364,10 @@ class Analytic(Operator.Unary):
                     f'as "{denominator_prefix}{measure}"'
                 )
 
-        measures_sql = ", ".join(measure_queries)
-        identifiers_sql = ", ".join(f'"{name}"' for name in identifier_names)
-        query = f"SELECT {identifiers_sql} , {measures_sql} FROM df"
+        # A Data Set without Identifiers, such as the result of an aggr without grouping, has
+        # Measures only (issue #1354)
+        columns_sql = ", ".join([*(f'"{name}"' for name in identifier_names), *measure_queries])
+        query = f"SELECT {columns_sql} FROM df"
 
         try:
             with query_connection() as conn:

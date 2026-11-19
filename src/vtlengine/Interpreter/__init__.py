@@ -1289,7 +1289,10 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.only_semantic:
             column = None
         else:
-            if (
+            if result.data is not None and id_columns == []:
+                # A Data Set without Identifiers has a single Data Point (issue #1354)
+                column = result.data[measure_name]
+            elif (
                 self.regular_aggregation_dataset is not None
                 and self.regular_aggregation_dataset.data is not None
             ):

@@ -11725,6 +11725,19 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_13i", number_inputs=2, references_names=["1", "2"])
 
+    def test_GH_1354_13j(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_5 := max ( Me_1 ) ]
+                        [ calc Me_6 := sum ( Me_5 over ( ) ) ];
+        Description: Extra of case 13: an analytic function over the result of an aggr without
+                     grouping, which has no Identifiers: Me_5 3.0, Me_6 3.0. The pandas engine
+                     raised ParserException, and the DuckDB engine gave three Data Points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13j", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_14(self):
         """
         Status: OK
