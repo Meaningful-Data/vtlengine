@@ -569,8 +569,7 @@ def save_datapoints_duckdb(
             valid_options="csv, parquet",
         )
 
-    output_path = Path(output_path) if isinstance(output_path, str) else output_path
-    output_file = output_path / f"{dataset_name}.{output_format}"
+    output_file = output_target(output_path, f"{dataset_name}.{output_format}")
 
     source = f"({select_sql})" if select_sql else f'"{dataset_name}"'
 
@@ -579,34 +578,65 @@ def save_datapoints_duckdb(
     else:
         copy_options = "WITH (HEADER true, DELIMITER ',')"
 
-    conn.execute(f"COPY {source} TO '{output_file}' {copy_options}")
+    _copy_to(conn, f"COPY {source} TO '{output_file}' {copy_options}", output_file)
 
     if delete_after_save:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
 
 
+def is_s3_uri(output_path: Union[Path, str]) -> bool:
+    return isinstance(output_path, str) and output_path.startswith("s3://")
+
+
+def output_target(output_path: Union[Path, str], file_name: str) -> str:
+    """Where a result file is written: in an S3 URI as written, which DuckDB writes through
+    httpfs, or in a local folder."""
+    if is_s3_uri(output_path):
+        return f"{str(output_path).rstrip('/')}/{file_name}"
+    return str(Path(output_path) / file_name)
+
+
+def _copy_to(conn: duckdb.DuckDBPyConnection, statement: str, target: str) -> None:
+    try:
+        conn.execute(statement)
+    except duckdb.IOException as error:
+        raise DataLoadError("0-3-1-19", file=target, error=str(error).splitlines()[0]) from error
+
+
 def save_scalars_duckdb(
+    conn: duckdb.DuckDBPyConnection,
     scalars: Dict[str, Scalar],
     output_path: Union[Path, str],
 ) -> None:
-    """Save scalar results to a _scalars.csv file.
+    """Save scalar results to a _scalars.csv file, through DuckDB in an S3 URI.
 
     Args:
+        conn: DuckDB connection
         scalars: Dict mapping scalar names to Scalar objects
-        output_path: Directory path where _scalars.csv will be saved
+        output_path: Directory path or S3 URI where _scalars.csv will be saved
     """
     if not scalars:
         return
-    output_path = Path(output_path) if isinstance(output_path, str) else output_path
-    file_path = output_path / "_scalars.csv"
+    rows = [
+        (name, None if scalar.value is None else format_scalar_value_for_csv(scalar.value))
+        for name, scalar in sorted(scalars.items(), key=lambda item: item[0])
+    ]
+    file_path = output_target(output_path, "_scalars.csv")
+    if is_s3_uri(output_path):
+        conn.register("_vtl_scalars", pd.DataFrame(rows, columns=["name", "value"], dtype=object))
+        try:
+            _copy_to(
+                conn,
+                f"COPY _vtl_scalars TO '{file_path}' WITH (HEADER true, DELIMITER ',')",
+                file_path,
+            )
+        finally:
+            conn.unregister("_vtl_scalars")
+        return
     with open(file_path, "w", newline="", encoding="utf-8") as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(["name", "value"])
-        for name, scalar in sorted(scalars.items(), key=lambda item: item[0]):
-            if scalar.value is None:
-                writer.writerow([name, ""])
-            else:
-                writer.writerow([name, format_scalar_value_for_csv(scalar.value)])
+        writer.writerows((name, "" if value is None else value) for name, value in rows)
 
 
 # The files a directory of datapoints is read from: what the pandas engine reads,
