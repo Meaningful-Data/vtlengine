@@ -16,3 +16,9 @@ DS_t <-
 			B#Me_2 over(partition by A#Id_2 order by A#'Me#1')
 		)
 	);
+DS_u <-
+	inner_join(
+		DS_1 as A,
+		DS_2 as B
+		 rename A#Me_1 to Me_9, 'Me#2' to Me_8
+	);

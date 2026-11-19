@@ -12059,6 +12059,31 @@ class NameResolutionBugs(BugHelper):
         """
         self.BaseTest(code="GH_1355_11d", number_inputs=2, references_names=["1"])
 
+    def test_GH_1355_11e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ rename 'Id#1' to Id_9 ];
+        Description: Extra of test_GH_1355_11: out of a join a name that holds # is one
+                     Component name, so only Id#1 is renamed and Me#1 keeps its name and its
+                     values. The DuckDB engine read 'Id#1' as a qualified name and lost the
+                     values of Me#1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_11e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_11f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ rename 'Me#1' to Me_9 ];
+        Description: Extra of test_GH_1355_11: the same renaming the Measure Me#1, so the
+                     Identifier Id#1 keeps its name and its values. The DuckDB engine lost the
+                     values of Id#1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_11f", number_inputs=1, references_names=["1"])
+
     def test_GH_1355_12(self):
         """
         Status: OK

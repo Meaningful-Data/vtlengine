@@ -431,9 +431,12 @@ class RegularAggregation(AST):
 class RenameNode(AST):
     """
     RenameNode: (old_name, new_name)
+
+    old_name: the name of a Component, or the membership alias#comp that names a Component of
+        a join by its qualified name (issue #1355).
     """
 
-    old_name: str
+    old_name: Union[str, AST]
     new_name: str
 
     __eq__ = AST.ast_equality

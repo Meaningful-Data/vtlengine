@@ -3131,14 +3131,10 @@ FROM (
         renames: Dict[str, str] = {}
         for child in node.children:
             if isinstance(child, AST.RenameNode):
-                old = self._resolve_membership_name(child.old_name)
-                new = self._resolve_udo_name(child.new_name)
-                if "#" in old:
-                    if old in self._join_alias_map:
-                        self._consumed_join_aliases.add(old)
-                    else:
-                        old = old.split("#", 1)[1]
-                renames[old] = new
+                old = self._rename_old_name(child.old_name, self._join_alias_map)
+                if old in self._join_alias_map:
+                    self._consumed_join_aliases.add(old)
+                renames[old] = self._resolve_udo_name(child.new_name)
 
         cols: List[str] = []
         for name in ds.components:

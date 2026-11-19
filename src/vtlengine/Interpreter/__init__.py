@@ -1859,25 +1859,31 @@ class InterpreterAnalyzer(ASTTemplate):
             Operators.only_semantic, self.only_semantic = only_semantic
 
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
-        if self.udo_params is not None:
-            if "#" in node.old_name:
-                if node.old_name.split("#")[1] in self.udo_params[-1]:
-                    comp_name = self.udo_params[-1][node.old_name.split("#")[1]]
-                    node.old_name = f"{node.old_name.split('#')[0]}#{comp_name}"
-            else:
-                if node.old_name in self.udo_params[-1]:
-                    node.old_name = self.udo_params[-1][node.old_name]
-            # A component parameter as the new name stands for its argument (issue #1355)
-            if isinstance(self.udo_params[-1].get(node.new_name), str):
-                node.new_name = self.udo_params[-1][node.new_name]
+        # The names are resolved on a copy: the AST is read again by the DuckDB engine and by
+        # every call of a user defined operator. A name is one Component name, # included; the
+        # membership alias#comp names a Component of a join (issue #1355)
+        node = copy(node)
+        params = self.udo_params[-1] if self.udo_params is not None else {}
+        old_name = node.old_name
+        comp_name: Optional[str] = None
+        if isinstance(old_name, str):
+            node.old_name = params.get(old_name, old_name)
+        else:
+            membership = cast(AST.BinOp, old_name)
+            comp_name = cast(AST.Identifier, membership.right).value
+            comp_name = params.get(comp_name, comp_name)
+            node.old_name = f"{cast(AST.Identifier, membership.left).value}#{comp_name}"
+        # A component parameter as the new name stands for its argument (issue #1355)
+        if isinstance(params.get(node.new_name), str):
+            node.new_name = params[node.new_name]
 
         if (
-            self.is_from_join
+            comp_name is not None
+            and self.is_from_join
             and self.regular_aggregation_dataset is not None
             and node.old_name not in self.regular_aggregation_dataset.components
-            and "#" in node.old_name
         ):
-            node.old_name = node.old_name.split("#")[1]
+            node.old_name = comp_name
 
         return node
 

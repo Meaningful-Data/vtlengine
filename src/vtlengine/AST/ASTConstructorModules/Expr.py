@@ -1624,10 +1624,9 @@ class Expr:
         """
         ctx_list = ctx.children
 
+        # The membership alias#comp is kept as a node, apart from a name holding # (issue #1355)
         left_node = Terminals().visitComponentID(ctx_list[0])
-        if isinstance(left_node, BinOp):
-            left_node = f"{left_node.left.value}{left_node.op}{left_node.right.value}"
-        else:
+        if not isinstance(left_node, BinOp):
             left_node = left_node.value
 
         right_node = Terminals().visitVarID(ctx_list[2]).value

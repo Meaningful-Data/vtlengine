@@ -509,12 +509,13 @@ class StructureVisitor(ASTTemplate):
             return udo_val
         return name
 
-    def _resolve_membership_name(self, name: str) -> str:
-        """Resolve a ``alias#component`` name, substituting UDO bindings on each side."""
-        if "#" not in name:
-            return self._resolve_udo_name(name)
-        alias, comp = name.split("#", 1)
-        return f"{self._resolve_udo_name(alias)}#{self._resolve_udo_name(comp)}"
+    def _rename_old_name(self, old_name: Union[str, AST.AST], lookup: Dict[str, Any]) -> str:
+        """The Component that the old name of a rename names: a name, # included, or for the
+        membership alias#comp the qualified Component of a join where ``lookup`` has it and
+        comp otherwise (issue #1355)."""
+        if isinstance(old_name, str):
+            return self._resolve_udo_name(old_name)
+        return self._extract_component_names([old_name], lookup)[0]
 
     def _push_udo_params(self, params: Dict[str, Any]) -> None:
         """Push a new UDO parameter scope onto the stack."""
@@ -1351,12 +1352,8 @@ class StructureVisitor(ASTTemplate):
         renames: Dict[str, str] = {}
         for child in node.children:
             if isinstance(child, AST.RenameNode):
-                old = self._resolve_membership_name(child.old_name)
-                new = self._resolve_udo_name(child.new_name)
-                # Strip alias prefix from membership refs.
-                if "#" in old and old not in input_ds.components:
-                    old = old.split("#", 1)[1]
-                renames[old] = new
+                old = self._rename_old_name(child.old_name, input_ds.components)
+                renames[old] = self._resolve_udo_name(child.new_name)
 
         unqualified_to_qualified: Dict[str, str] = {}
         for comp_name in input_ds.components:
