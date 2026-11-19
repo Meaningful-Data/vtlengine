@@ -1230,7 +1230,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 right_sql = _bool_to_str(right_sql)
         if op in _TEXT_PROMOTING_OPS:
             types = [self._value_type(node.left), self._value_type(node.right)]
-            left_sql, right_sql = self._promoted_to_text([left_sql, right_sql], types)
+            # The values of a set are not cast to Time
+            left_sql, right_sql = self._promoted_to_text(
+                [left_sql, right_sql], types, to_time=op not in (tokens.IN, tokens.NOT_IN)
+            )
         left_dt = self._detect_scalar_type(node.left)
         right_dt = self._detect_scalar_type(node.right)
         return self._make_binary_expr(left_sql, right_sql, op, left_dt, right_dt)
@@ -3999,9 +4002,16 @@ FROM (
         cast the strings to BOOLEAN instead (issue #1314)."""
         return [_bool_to_str(v) if t == "Boolean" else v for v, t in zip(values, types)]
 
-    def _promoted_to_text(self, refs: List[str], types: List[Optional[str]]) -> List[str]:
+    def _promoted_to_text(
+        self, refs: List[str], types: List[Optional[str]], to_time: bool = True
+    ) -> List[str]:
         """The operands of a comparison or an nvl: a Boolean with a String is promoted to String,
-        as cast to string renders it. DuckDB cast the String to BOOLEAN instead (issue #1314)."""
+        as cast to string renders it. DuckDB cast the String to BOOLEAN instead (issue #1314).
+        With ``to_time``, a Date or a Time_Period with a Time is cast to Time, the text of its
+        start and end dates, as cast to time gives it (issue #1352)."""
+        names = [(t or "").lower() for t in types]
+        if to_time and {"time", "timeinterval"} & set(names):
+            return [_CASTS_TO_TEXT.get((n, "time"), "{0}").format(r) for r, n in zip(refs, names)]
         return self._as_text(refs, types) if set(types) == {"Boolean", "String"} else refs
 
     def _component_values(self, operands: List[AST.AST], values: List[str]) -> List[str]:

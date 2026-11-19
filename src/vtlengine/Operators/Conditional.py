@@ -8,6 +8,7 @@ from vtlengine.DataTypes import (
     Boolean,
     Null,
     String,
+    TimeInterval,
     binary_implicit_promotion,
     to_strings,
 )
@@ -17,6 +18,7 @@ from vtlengine.Operators import (
     Binary,
     Operator,
     _id_type_promotion_join_keys,
+    _is_cast_to_time,
     share_value_domains,
     shared_value_domain,
 )
@@ -97,9 +99,12 @@ def _scalar_result(conditions: List[Scalar], then_ops: List[Scalar], else_op: Sc
     )
 
 
-def _as_type(data: Any, data_type: Any) -> Any:
+def _as_type(data: Any, data_type: Any, from_type: Any = None) -> Any:
     """The data in the dtype of ``data_type``. As a String, a Boolean is "true" or "false", as
-    VTL casts it, where astype writes a numpy or Python Boolean as "True" (issue #1314)."""
+    VTL casts it, where astype writes a numpy or Python Boolean as "True" (issue #1314). The
+    values of a Date or a Time_Period ``from_type`` become Time values (issue #1352)."""
+    if _is_cast_to_time(from_type, data_type):
+        data = data.map(lambda x: TimeInterval.implicit_cast(x, from_type), na_action="ignore")
     return to_strings(data) if data_type is String else data.astype(data_type.dtype())
 
 
@@ -409,10 +414,12 @@ class Nvl(Binary):
                     for me in result.get_measures_names():
                         if me in result.data.columns:
                             result.data[me] = _as_type(
-                                result.data[me], result.components[me].data_type
+                                result.data[me],
+                                result.components[me].data_type,
+                                left.components[me].data_type,
                             )
                 else:
-                    result.data = _as_type(left.data, result.data_type)
+                    result.data = _as_type(left.data, result.data_type, left.data_type)
                 if isinstance(right, Scalar):
                     # A null applicable value replaces nothing, so the operand is
                     # returned as it is instead of filling with it (issue #1008).
@@ -448,12 +455,16 @@ class Nvl(Binary):
                     )
                     for me in measures:
                         data_type = result.components[me].data_type
-                        fill = _as_type(result.data[f"{me}_r"], data_type)
+                        fill = _as_type(
+                            result.data[f"{me}_r"], data_type, right.components[me].data_type
+                        )
                         result.data[me] = _as_type(result.data[me].fillna(fill), data_type)
                 else:
                     # nvl is single-operand: the primary operand's viral attributes are
                     # copied through unchanged; no rule is executed (issue #906).
-                    result.data = result.data.fillna(_as_type(right.data, result.data_type))
+                    result.data = result.data.fillna(
+                        _as_type(right.data, result.data_type, right.data_type)
+                    )
                 if isinstance(result, Dataset):
                     result.data = result.data[result.get_components_names()]
         return result

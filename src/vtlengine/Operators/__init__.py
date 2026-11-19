@@ -22,7 +22,10 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
+    Date,
     Null,
+    TimeInterval,
+    TimePeriod,
     binary_implicit_promotion,
     check_binary_implicit_promotion,
     check_unary_implicit_promotion,
@@ -142,9 +145,14 @@ class Operator:
         raise NotImplementedError
 
     @classmethod
-    def cast_time_types(cls, data_type: Any, series: Any) -> Any:
+    def cast_time_types(cls, data_type: Any, series: Any, other_type: Any = None) -> Any:
         if cls.op not in BINARY_COMPARISON_OPERATORS:
             return series
+        if _is_cast_to_time(data_type, other_type):
+            series = series.map(
+                lambda x: TimeInterval.implicit_cast(x, data_type), na_action="ignore"
+            )
+            data_type = TimeInterval
         if data_type.__name__ == "TimeInterval":
             series = series.map(
                 lambda x: TimeIntervalHandler.from_iso_format(x), na_action="ignore"
@@ -156,11 +164,14 @@ class Operator:
         return series
 
     @classmethod
-    def cast_time_types_scalar(cls, data_type: Any, value: str) -> Any:
+    def cast_time_types_scalar(cls, data_type: Any, value: str, other_type: Any = None) -> Any:
         if cls.op not in BINARY_COMPARISON_OPERATORS:
             return value
         if value is None:
             return None
+        if _is_cast_to_time(data_type, other_type):
+            value = TimeInterval.implicit_cast(value, data_type)
+            data_type = TimeInterval
         if data_type.__name__ == "TimeInterval":
             return TimeIntervalHandler.from_iso_format(value)
         elif data_type.__name__ == "TimePeriod":
@@ -210,6 +221,13 @@ class Operator:
             return unary_implicit_promotion(operand, cls.type_to_check, cls.return_type)
         left, right = args
         return binary_implicit_promotion(left, right, cls.type_to_check, cls.return_type)
+
+
+def _is_cast_to_time(data_type: Any, other_type: Any) -> bool:
+    """A Date or a Time_Period with a Time is implicitly cast to Time: a Date to the Time that
+    starts and ends on it, a Time_Period to the Time of its start and end dates (issue
+    #1352)."""
+    return other_type is TimeInterval and data_type in (Date, TimePeriod)
 
 
 def check_common_identifier_types(op: str, left: Dataset, right: Dataset) -> None:
@@ -689,40 +707,16 @@ class Binary(Operator):
 
         # Measures are the same, using left operand measures names
         for measure in left_operand.get_measures():
-            left_type = measure.data_type
-            right_type = right_operand.get_component(measure.name).data_type
-
-            if left_type != right_type:
-                promoted_type = binary_implicit_promotion(left_type, right_type)
-                # Only apply implicit_cast when both types need conversion
-                # (e.g. Date + TimePeriod → TimeInterval)
-                if promoted_type != left_type and promoted_type != right_type:
-                    if use_right_as_base:
-                        x_type, y_type = right_type, left_type
-                    else:
-                        x_type, y_type = left_type, right_type
-
-                    def _cast_x(v: Any, ft: Any = x_type) -> Any:
-                        return promoted_type.implicit_cast(v, ft)
-
-                    def _cast_y(v: Any, ft: Any = y_type) -> Any:
-                        return promoted_type.implicit_cast(v, ft)
-
-                    result_data[measure.name + "_x"] = result_data[measure.name + "_x"].map(
-                        _cast_x, na_action="ignore"
-                    )
-                    result_data[measure.name + "_y"] = result_data[measure.name + "_y"].map(
-                        _cast_y, na_action="ignore"
-                    )
-                cast_type = promoted_type
-            else:
-                cast_type = left_type
-
+            # The _x columns are the ones of the base operand
+            x_type = measure.data_type
+            y_type = right_operand.get_component(measure.name).data_type
+            if use_right_as_base:
+                x_type, y_type = y_type, x_type
             result_data[measure.name + "_x"] = cls.cast_time_types(
-                cast_type, result_data[measure.name + "_x"]
+                x_type, result_data[measure.name + "_x"], y_type
             )
             result_data[measure.name + "_y"] = cls.cast_time_types(
-                cast_type, result_data[measure.name + "_y"]
+                y_type, result_data[measure.name + "_y"], x_type
             )
             if use_right_as_base:
                 result_data[measure.name] = cls.apply_operation_two_series(
@@ -749,8 +743,9 @@ class Binary(Operator):
     @classmethod
     def scalar_evaluation(cls, left_operand: Scalar, right_operand: Scalar) -> Scalar:
         result_scalar = cls.scalar_validation(left_operand, right_operand)
-        left_value = cls.cast_time_types_scalar(left_operand.data_type, left_operand.value)
-        right_value = cls.cast_time_types_scalar(right_operand.data_type, right_operand.value)
+        left_type, right_type = left_operand.data_type, right_operand.data_type
+        left_value = cls.cast_time_types_scalar(left_type, left_operand.value, right_type)
+        right_value = cls.cast_time_types_scalar(right_type, right_operand.value, left_type)
         result_scalar.value = cls.op_func(left_value, right_value)
         return result_scalar
 
@@ -762,10 +757,13 @@ class Binary(Operator):
         result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
         result_dataset.data = result_data
 
-        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
-
         for measure in dataset.get_measures():
-            measure_data = cls.cast_time_types(measure.data_type, result_data[measure.name].copy())
+            scalar_value = cls.cast_time_types_scalar(
+                scalar.data_type, scalar.value, measure.data_type
+            )
+            measure_data = cls.cast_time_types(
+                measure.data_type, result_data[measure.name].copy(), scalar.data_type
+            )
             if (
                 measure.data_type.__name__.__str__() == "Duration"
                 and not isinstance(scalar_value, int)
@@ -804,10 +802,12 @@ class Binary(Operator):
         left_data = cls.cast_time_types(
             left_operand.data_type,
             left_operand.data.copy() if left_operand.data is not None else pd.Series(),
+            right_operand.data_type,
         )
         right_data = cls.cast_time_types(
             right_operand.data_type,
             (right_operand.data.copy() if right_operand.data is not None else pd.Series()),
+            left_operand.data_type,
         )
         result_component.data = cls.apply_operation_two_series(left_data, right_data)
         # Enforce dtype from component declaration
@@ -824,8 +824,11 @@ class Binary(Operator):
         comp_data = cls.cast_time_types(
             component.data_type,
             component.data.copy() if component.data is not None else pd.Series(),
+            scalar.data_type,
         )
-        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
+        scalar_value = cls.cast_time_types_scalar(
+            scalar.data_type, scalar.value, component.data_type
+        )
         if (
             component.data_type.__name__.__str__() == "Duration"
             and not isinstance(scalar_value, int)
