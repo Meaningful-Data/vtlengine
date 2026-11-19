@@ -1,6 +1,6 @@
 import operator
 import re
-from typing import Any, ClassVar, Optional, Tuple, Union
+from typing import Any, ClassVar, Optional, Tuple, Union, cast
 
 import pandas as pd
 
@@ -273,31 +273,19 @@ class Parameterized(Unary):
         return cls.scalar_evaluation(operand, param1, param2)
 
     @classmethod
-    def generate_series_from_param(cls, *args: Any) -> Any:
-        param: Optional[Union[DataComponent, Scalar]] = None
-        length: int
-        if len(args) == 2:
-            param, length = args
-        else:
-            length = args[0]
-
-        if param is None:
-            return pd.Series(index=range(length), dtype="string[pyarrow]")
-        if isinstance(param, Scalar):
-            return pd.Series(data=param.value, index=range(length), dtype="string[pyarrow]")
-        return param.data
-
-    @classmethod
-    def apply_operation_series(cls, *args: Any) -> Any:
-        param1: Optional[Union[DataComponent, Scalar]]
-        param2: Optional[Union[DataComponent, Scalar]]
-        data, param1, param2 = (args + (None, None))[:3]
-
-        param1_data = cls.generate_series_from_param(param1, len(data))
-        param2_data = cls.generate_series_from_param(param2, len(data))
-        df = pd.DataFrame([data, param1_data, param2_data]).T
-        n1, n2, n3 = df.columns
-        return df.apply(lambda x: cls.op_func(x[n1], x[n2], x[n3]), axis=1)
+    def apply_operation_series(cls, data: Any, *params: Any) -> Any:
+        """Apply the operator data point by data point, with the value of each Component
+        parameter in that data point and the value of each Scalar one, of the type they have
+        (issue #1354)."""
+        values = [
+            list(cast(pd.Series, param.data))
+            if isinstance(param, DataComponent)
+            else [getattr(param, "value", None)] * len(data)
+            for param in params
+        ]
+        return pd.Series(
+            [cls.op_func(x, *row) for x, *row in zip(data, *values)], index=data.index, dtype=object
+        )
 
 
 class Substr(Parameterized):
@@ -621,22 +609,6 @@ class Instr(Parameterized):
         cls, series: Any, param1: Any, param2: Any, param3: Any
     ) -> Any:
         return series.map(lambda x: cls.op_func(x, param1, param2, param3))
-
-    @classmethod
-    def apply_operation_series(
-        cls,
-        data: Any,
-        param1: Optional[Union[DataComponent, Scalar]],
-        param2: Optional[Union[DataComponent, Scalar]],
-        param3: Optional[Union[DataComponent, Scalar]],
-    ) -> Any:
-        param1_data = cls.generate_series_from_param(param1, len(data))
-        param2_data = cls.generate_series_from_param(param2, len(data))
-        param3_data = cls.generate_series_from_param(param3, len(data))
-
-        df = pd.DataFrame([data, param1_data, param2_data, param3_data]).T
-        n1, n2, n3, n4 = df.columns
-        return df.apply(lambda x: cls.op_func(x[n1], x[n2], x[n3], x[n4]), axis=1)
 
     @classmethod
     def dataset_evaluation(  # type: ignore[override]

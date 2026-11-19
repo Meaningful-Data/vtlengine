@@ -11999,6 +11999,42 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_22g", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_22h(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := instr ( Me_2 , "a" , 1 , Me_7 ) ];
+        Description: Extra of case 22: instr takes the occurrence from the Component Me_7 in
+                     each Data Point, a null as the default occurrence: 1, 2, 0. The pandas
+                     engine raised 2-1-18-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22h", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22i(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := substr ( Me_2 , Me_7 , Me_7 ) ];
+        Description: Extra of case 22: substr takes the start and the length from the
+                     Component Me_7 in each Data Point, a null as the default: a, ba, d. The
+                     pandas engine raised ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22i", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22j(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := replace ( Me_2 , Me_6 , Me_6 ) ];
+        Description: Extra of case 22: replace takes the pattern and the replacement from the
+                     nullable Component Me_6 in each Data Point, so the result is nullable: ab,
+                     null, cd. The pandas engine raised ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22j", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_23(self):
         """
         Status: OK
