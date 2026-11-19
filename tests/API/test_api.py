@@ -3420,3 +3420,31 @@ def test_GH_1355_9b(use_duckdb, tmp_path):
     result = _run_1355(script, use_duckdb, tmp_path)
     data = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
     assert data.to_dict("list") == {"Id_1": [1, 2], "Me_2": [1003, 2020]}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_14e(use_duckdb):
+    """Extra of test_GH_1355_14: # only separates the alias of a join operand from the name of
+    its Component (Inner Join page of the VTL 2.2 manual), so an input structure with a
+    Component named Id#1 is rejected by the name pattern of the JSON schema, by run,
+    semantic_analysis, validate_dataset and Dataset.from_json. It was accepted."""
+    identifier = {"name": "Id#1", "role": "Identifier", "type": "Integer", "nullable": False}
+    measure = {"name": "Me_1", "role": "Measure", "type": "Number", "nullable": True}
+    structures = {"datasets": [{"name": "DS_1", "DataStructure": [identifier, measure]}]}
+    datapoints = {"DS_1": pd.DataFrame({"Id#1": [1, 2], "Me_1": [1.0, 2.0]})}
+    as_json = {
+        "name": "DS_1",
+        "components": {"Id#1": identifier, "Me_1": measure},
+        "data": datapoints["DS_1"].to_dict("list"),
+    }
+    calls = [
+        lambda: run("DS_r <- DS_1;", structures, datapoints, use_duckdb=use_duckdb),
+        lambda: semantic_analysis("DS_r <- DS_1;", structures),
+        lambda: validate_dataset(structures, datapoints, use_duckdb=use_duckdb),
+        lambda: Dataset.from_json(as_json),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-2-1-1"
+        assert "'Id#1' does not match" in error.value.args[0]

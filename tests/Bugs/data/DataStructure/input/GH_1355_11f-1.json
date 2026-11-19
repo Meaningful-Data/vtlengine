@@ -4,25 +4,13 @@
       "name": "DS_1",
       "DataStructure": [
         {
-          "name": "Id#1",
+          "name": "Id_1",
           "role": "Identifier",
           "type": "Integer",
           "nullable": false
         },
         {
-          "name": "Id_2",
-          "role": "Identifier",
-          "type": "String",
-          "nullable": false
-        },
-        {
-          "name": "Me#1",
-          "role": "Measure",
-          "type": "Number",
-          "nullable": true
-        },
-        {
-          "name": "Me_2",
+          "name": "Me_1",
           "role": "Measure",
           "type": "Number",
           "nullable": true

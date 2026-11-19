@@ -12062,27 +12062,43 @@ class NameResolutionBugs(BugHelper):
     def test_GH_1355_11e(self):
         """
         Status: OK
-        Expression: DS_r <- DS_1 [ rename 'Id#1' to Id_9 ];
-        Description: Extra of test_GH_1355_11: out of a join a name that holds # is one
-                     Component name, so only Id#1 is renamed and Me#1 keeps its name and its
-                     values. The DuckDB engine read 'Id#1' as a qualified name and lost the
-                     values of Me#1.
+        Expression: DS_r <- DS_1 [ calc 'Me#1' := Me_1 ];
+        Description: Extra of test_GH_1355_11: a new Component cannot be named with #, which
+                     only separates the alias of a join operand from the name of its Component
+                     (Inner Join page of the VTL 2.2 manual). Both engines created Me#1.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
-        Goal: Check Result.
+        Goal: Check Exception.
         """
-        self.BaseTest(code="GH_1355_11e", number_inputs=1, references_names=["1"])
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11e", number_inputs=1, exception_code="1-1-6-19"
+        )
 
     def test_GH_1355_11f(self):
         """
         Status: OK
-        Expression: DS_r <- DS_1 [ rename 'Me#1' to Me_9 ];
-        Description: Extra of test_GH_1355_11: the same renaming the Measure Me#1, so the
-                     Identifier Id#1 keeps its name and its values. The DuckDB engine lost the
-                     values of Id#1.
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B rename A#Me_1 to 'x#y' );
+        Description: Extra of test_GH_1355_11: the same for the new name of a rename in a
+                     join. Both engines named the Component y, the part after the #.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
-        Goal: Check Result.
+        Goal: Check Exception.
         """
-        self.BaseTest(code="GH_1355_11f", number_inputs=1, references_names=["1"])
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11f", number_inputs=2, exception_code="1-1-6-19"
+        )
+
+    def test_GH_1355_11g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ rename Me_1 to 'x"y' ];
+        Description: Extra of test_GH_1355_11: a new Component cannot be named with a double
+                     quote either. The pandas engine renamed Me_1 to x"y and the DuckDB engine
+                     raised a raw ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11g", number_inputs=1, exception_code="1-1-6-19"
+        )
 
     def test_GH_1355_12(self):
         """
@@ -12164,27 +12180,19 @@ class NameResolutionBugs(BugHelper):
         """
         self.BaseTest(code="GH_1355_14d", number_inputs=1, references_names=["1"])
 
-    def test_GH_1355_14e(self):
-        """
-        Status: OK
-        Expression: DS_r <- DS_H [ calc Me_9 := sum ( 'Me#1' over ( partition by 'Id#1' ) ) ];
-        Description: Extra of test_GH_1355_14: a Component whose name holds # is no qualified
-                     name in partition by.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
-        Goal: Check Result.
-        """
-        self.BaseTest(code="GH_1355_14e", number_inputs=1, references_names=["1"])
-
     def test_GH_1355_14f(self):
         """
         Status: OK
-        Expression: DS_r <- DS_H [ calc Me_9 := sum ( 'Me#1' over ( partition by Id_2
-                        order by 'Id#1' ) ) ];
-        Description: Extra of test_GH_1355_14: the same in order by.
+        Expression: DS_r <- DS_1 [ rename Me_1 to 'Me#1' ];
+        Description: Extra of test_GH_1355_14: a Component named with # out of a join would
+                     read as the qualified name of a Component of a join, so the new name of a
+                     rename cannot hold it. Both engines renamed Me_1 to Me#1.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
-        Goal: Check Result.
+        Goal: Check Exception.
         """
-        self.BaseTest(code="GH_1355_14f", number_inputs=1, references_names=["1"])
+        self.NewSemanticExceptionTest(
+            code="GH_1355_14f", number_inputs=1, exception_code="1-1-6-19"
+        )
 
     def test_GH_1355_15(self):
         """
