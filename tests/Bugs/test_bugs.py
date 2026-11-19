@@ -12226,6 +12226,82 @@ class NameResolutionBugs(BugHelper):
             "cannot contain ', \", #, NUL or carriage return.",
         )
 
+    def test_GH_1355_11o(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr 'x#y' := sum ( Me_1 ) group by Id_1 ];
+        Description: Extra of test_GH_1355_11: as test_GH_1355_11e, for the new Component of
+                     an aggr.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11o", number_inputs=1, exception_code="1-1-6-19"
+        )
+
+    def test_GH_1355_11p(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ unpivot Id_9 , 'x#y' ];
+        Description: Extra of test_GH_1355_11: as test_GH_1355_11e, for the Measure of an
+                     unpivot.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11p", number_inputs=1, exception_code="1-1-6-19"
+        )
+
+    def test_GH_1355_11q(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+        Description: Extra of test_GH_1355_11: as test_GH_1355_11e, for the Measures of a
+                     pivot, which the values x#y of the value domain VD_3 of Id_2 name.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11q",
+            number_inputs=1,
+            exception_code="1-1-6-19",
+            vd_names=["GH_1355-VD_3"],
+        )
+
+    def test_GH_1355_11r(self):
+        """
+        Status: OK
+        Expression: DS_r <- eval ( GH_1355_11r ( DS_1 ) language "SQL" returns dataset
+                        { identifier < integer > Id_1 , identifier < string > Id_2 ,
+                        measure < number > 'x#y' } );
+        Description: Extra of test_GH_1355_11: as test_GH_1355_11e, for a Component of the
+                     result of eval.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11r",
+            number_inputs=1,
+            exception_code="1-1-6-19",
+            sql_names=["GH_1355_11r"],
+        )
+
+    def test_GH_1355_11s(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B keep B#Me_1 );
+        Description: Extra of test_GH_1355_11: as test_GH_1355_11k, for keep: Me_1 is a
+                     Component of the operand A, not of B.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11s",
+            number_inputs=2,
+            exception_code="1-1-1-10",
+            exception_message="Component Me_1 not found in Dataset B.",
+        )
+
     def test_GH_1355_12(self):
         """
         Status: OK
