@@ -12555,6 +12555,42 @@ class TimeValueBugs(BugHelper):
             ),
         )
 
+    def test_GH_1352_36j(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , -1 );
+        Description: Extra of case 36: timeshift of a Time_Period of the year 1000 back by one
+                     period gives a year below 1000, which no Time_Period has, so it raises
+                     2-1-19-10 for every period indicator. The DuckDB engine wrote a null
+                     Identifier for S and Q and raised a raw ValueError for A.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36j",
+            number_inputs=1,
+            exception_code="2-1-19-10",
+            exception_message="Invalid year 999, must be between 1000 and 9999.",
+        )
+
+    def test_GH_1352_36k(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , 1 );
+        Description: Extra of case 36: timeshift of the last Time_Period of the year 9999 forward
+                     by one period gives the year 10000, which no Time_Period has, so it raises
+                     2-1-19-10 for every period indicator. The DuckDB engine wrote a null
+                     Identifier.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36k",
+            number_inputs=1,
+            exception_code="2-1-19-10",
+            exception_message="Invalid year 10000, must be between 1000 and 9999.",
+        )
+
     def test_GH_1352_36l(self):
         """
         Status: OK
@@ -12573,6 +12609,19 @@ class TimeValueBugs(BugHelper):
                 "Impossible to cast 9999-12-27/9999-12-31 from type Time to Time_Period."
             ),
         )
+
+    def test_GH_1352_36m(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , -2000 );
+        Description: Extra of case 36j: timeshift back by more periods than a year has moves the
+                     year back as many years as they cover, so 2020Q1 back by 2000 quarters is
+                     1520Q1. The pandas engine moved the year back by one and raised a raw
+                     ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_36m", number_inputs=1, references_names=["1"])
 
     def test_GH_1352_36n(self):
         """

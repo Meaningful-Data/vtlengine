@@ -303,13 +303,22 @@ CREATE OR REPLACE MACRO vtl_period_ind_to_interval(period_ind) AS (
 -- OPERATOR: timeshift (TimePeriod shift by N periods)
 -- ============================================================================
 
+-- A period has a year from 1000 to 9999 (mirrors VTL error 2-1-19-10)
+CREATE OR REPLACE MACRO vtl_period_in_range(p vtl_time_period) AS (
+    CASE
+        WHEN p.year < 1000 OR p.year > 9999 THEN
+            error('VTL Error 2-1-19-10: Invalid year ' || CAST(p.year AS VARCHAR))
+        ELSE vtl_period_to_string(p)
+    END
+);
+
 CREATE OR REPLACE MACRO vtl_tp_shift(p vtl_time_period, n INTEGER) AS (
     CASE p.period_indicator
         WHEN 'A' THEN
-            vtl_period_to_string({'year': p.year + n,
+            vtl_period_in_range({'year': p.year + n,
                 'period_indicator': 'A', 'period_number': 1}::vtl_time_period)
         ELSE
-            vtl_period_to_string({
+            vtl_period_in_range({
                 'year': p.year + CASE
                     WHEN p.period_number + n <= 0 THEN
                         (p.period_number + n) // vtl_period_limit(p.period_indicator) - 1

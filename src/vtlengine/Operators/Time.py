@@ -806,12 +806,9 @@ class Time_Shift(Binary):
         )
         period_limit = cls.YEAR_TO_PERIOD[period]
 
-        if value <= 0:
-            year -= 1
-            value += period_limit
-        elif value > period_limit:
-            year += (value - 1) // period_limit
-            value = (value - 1) % period_limit + 1
+        # The year moves by as many years as the periods cover, back or forward (issue #1352)
+        year += (value - 1) // period_limit
+        value = (value - 1) % period_limit + 1
 
         return str(TimePeriodHandler(f"{year}-{period}{value}"))
 
