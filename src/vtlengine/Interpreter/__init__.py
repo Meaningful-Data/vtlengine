@@ -1680,16 +1680,13 @@ class InterpreterAnalyzer(ASTTemplate):
             return result
         if self.is_from_join:
             if node.op in [DROP, KEEP]:
+                # A Component named by its qualified name is given by its name, an Identifier
+                # too, which drop and keep do not take (issue #1355)
                 operands = [
                     (
                         operand.get_measures_names()
                         if isinstance(operand, Dataset)
-                        else (
-                            operand.name
-                            if isinstance(operand, DataComponent)
-                            and operand.role is not Role.IDENTIFIER
-                            else operand
-                        )
+                        else (operand.name if isinstance(operand, DataComponent) else operand)
                     )
                     for operand in operands
                 ]

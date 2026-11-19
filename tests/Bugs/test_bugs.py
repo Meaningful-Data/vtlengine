@@ -12024,19 +12024,6 @@ class NameResolutionBugs(BugHelper):
         """
         self.BaseTest(code="GH_1355_13", number_inputs=2, references_names=["1"])
 
-    def test_GH_1355_14d(self):
-        """
-        Status: OK
-        Expression: DS_r <- DS_8 [ calc Me_9 := count ( Me_1 over ( partition by Id_1
-                        order by Me_2 ) ) ];
-        Description: Extra of test_GH_1355_14: count of a Component ordered by a Measure gives
-                     the count, not the Measure of the order by. The pandas engine raised an
-                     internal KeyError, where the DuckDB engine gave the result.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
-        Goal: Check Result.
-        """
-        self.BaseTest(code="GH_1355_14d", number_inputs=1, references_names=["1"])
-
     def test_GH_1355_14(self):
         """
         Status: OK
@@ -12079,6 +12066,19 @@ class NameResolutionBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1355_14c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_14d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_8 [ calc Me_9 := count ( Me_1 over ( partition by Id_1
+                        order by Me_2 ) ) ];
+        Description: Extra of test_GH_1355_14: count of a Component ordered by a Measure gives
+                     the count, not the Measure of the order by. The pandas engine raised an
+                     internal KeyError, where the DuckDB engine gave the result.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_14d", number_inputs=1, references_names=["1"])
 
     def test_GH_1355_15(self):
         """
@@ -12141,3 +12141,27 @@ class NameResolutionBugs(BugHelper):
             exception_code="1-1-6-6",
             exception_message="Membership is not allowed inside a clause, found DS_1#Id_2.",
         )
+
+    def test_GH_1355_18(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_3 as B drop A#Id_2 );
+        Description: The qualified Identifier A#Id_2 is Id_2, which drop cannot remove, as
+                     drop Id_2. Both engines and the semantic analysis raised an internal
+                     TypeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(code="GH_1355_18", number_inputs=2, exception_code="1-1-6-2")
+
+    def test_GH_1355_19(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_3 as B keep A#Id_2 );
+        Description: As test_GH_1355_18, for keep, as keep Id_2. Both engines and the semantic
+                     analysis raised 1-1-1-10 with the whole Component, data included, in the
+                     message.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(code="GH_1355_19", number_inputs=2, exception_code="1-1-6-2")
