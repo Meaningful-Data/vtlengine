@@ -3,9 +3,12 @@ Integration tests verifying that TimePeriod output representations produce
 matching results between Pandas and DuckDB engines via the run() API.
 """
 
+from typing import List
+
 import pandas as pd
 import pytest
 
+from tests.Helper import engine_params
 from vtlengine import run
 from vtlengine.Exceptions import InputValidationException
 
@@ -95,3 +98,50 @@ def test_invalid_time_period_output_format() -> None:
             time_period_output_format="not_a_valid_format",
         )
     assert ctx.value.args[1] == "0-1-1-15"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize(
+    "representation, expected",
+    [
+        ("vtl", ["2020", "2020S2", "2020Q1", "2020M2", "2020W1", "2020D15"]),
+        ("sdmx_reporting", ["2020-A1", "2020-S2", "2020-Q1", "2020-M02", "2020-W01", "2020-D015"]),
+        ("natural", ["2020", "2020-S2", "2020-Q1", "2020-02", "2020-W01", "2020-01-15"]),
+    ],
+)
+def test_GH_1352_13f(use_duckdb: bool, representation: str, expected: List[str]) -> None:
+    """Extra of case 13: a Time cast to time_period is written as a loaded Time_Period is, in
+    every output format, on both engines. The DuckDB engine held a quarter cast from a Time as
+    2020-Q1.0, so it raised a raw ValueError writing it in sdmx_reporting (issue #1352)."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Time", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    data = pd.DataFrame(
+        {
+            "Id_1": list(range(1, 7)),
+            "Me_1": [
+                "2020-01-01/2020-12-31",
+                "2020-07-01/2020-12-31",
+                "2020-01-01/2020-03-31",
+                "2020-02-01/2020-02-29",
+                "2019-12-30/2020-01-05",
+                "2020-01-15/2020-01-15",
+            ],
+        }
+    )
+    result = run(
+        script="DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ];",
+        data_structures=structures,
+        datapoints={"DS_1": data},
+        use_duckdb=use_duckdb,
+        time_period_output_format=representation,
+    )
+    assert result["DS_r"].data.sort_values("Id_1")["Me_2"].tolist() == expected

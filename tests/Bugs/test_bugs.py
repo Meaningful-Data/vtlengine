@@ -12752,3 +12752,75 @@ class TimeValueBugs(BugHelper):
                 "Impossible to cast 0001-01-01/0001-12-31 from type String to Time_Period."
             ),
         )
+
+    def test_GH_1352_13e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc identifier Id_9 := cast ( Id_T , time_period ) ]
+                        [ filter Id_9 = cast ( "2020Q1" , time_period ) ];
+        Description: Extra of case 13: a Time_Period given by the cast of a Time is held in the
+                     one form the loaded ones and the cast literals are held in, so the filter
+                     keeps the Data Point of 2020Q1. The DuckDB engine held the cast Time in
+                     another form, so the filter kept nothing.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_13e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_36i(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ]
+                        [ filter Id_1 = 3 ];
+        Description: Extra of case 36: a Time of a year below 1000, 0500-01-01/0500-12-31 or
+                     0999-01-01/0999-03-31, is no Time_Period, whose year is written with four
+                     digits from 1000, so the cast raises 2-1-5-1, also for the Data Points that
+                     the filter drops. The DuckDB engine raised a raw ValueError or 2-1-19-10.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36i",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message=(
+                "Impossible to cast 0500-01-01/0500-12-31 from type Time to Time_Period."
+            ),
+        )
+
+    def test_GH_1352_36l(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ];
+        Description: Extra of case 36: the Time 9999-12-27/9999-12-31 is no period, as the week
+                     that starts on 9999-12-27 ends in the year 10000, so the cast raises
+                     2-1-5-1. The pandas engine raised a raw ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36l",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message=(
+                "Impossible to cast 9999-12-27/9999-12-31 from type Time to Time_Period."
+            ),
+        )
+
+    def test_GH_1352_36n(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ]
+                        [ filter Id_1 = 1 ];
+        Description: Extra of case 36: the text abc is no Time_Period, so the cast raises 2-1-5-1,
+                     also for a Data Point that the filter drops. The DuckDB engine cast only the
+                     Data Point the filter keeps.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36n",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message="Impossible to cast abc from type String to Time_Period.",
+        )

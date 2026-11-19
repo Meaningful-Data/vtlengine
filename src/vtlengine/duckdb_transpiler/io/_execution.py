@@ -239,7 +239,8 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
 
     # Custom VTL macro errors: cannot determine period
     if "cannot determine period for interval" in msg_lower:
-        value = msg.split(": ", 1)[-1] if ": " in msg else "unknown"
+        match = re.search(r"Cannot determine period for interval: (.*)", msg)
+        value = match.group(1) if match else "unknown"
         return RunTimeError("2-1-5-1", value=value, type_1="Time", type_2="Time_Period")
 
     # Text cast to a number whose type the SQL generation could not tell (mirrors 2-1-5-1)

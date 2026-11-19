@@ -665,12 +665,17 @@ def interval_to_period_str(interval_value: str) -> Optional[str]:
     # Try each period indicator from largest to smallest
     for indicator in ["A", "S", "Q", "M", "W", "D"]:
         period_handler = date_to_period(start, indicator)
-        expected_start = period_to_date(
-            period_handler.year, indicator, period_handler.period_number, start=True
-        )
-        expected_end = period_to_date(
-            period_handler.year, indicator, period_handler.period_number, start=False
-        )
+        try:
+            expected_start = period_to_date(
+                period_handler.year, indicator, period_handler.period_number, start=True
+            )
+            expected_end = period_to_date(
+                period_handler.year, indicator, period_handler.period_number, start=False
+            )
+        except (ValueError, OverflowError):
+            # The last week of 9999 ends in a year no date has, so it is no such interval
+            # (issue #1352)
+            continue
         if expected_start == start and expected_end == end:
             return str(period_handler)
     return None
