@@ -10876,7 +10876,6 @@ class ValueDomainBugs(BugHelper):
                     SC_r <- f ( 2 );
                     DS_r <- DS_2 [ calc Me_2 := SC_r ];
         Description: A value domain types the returns: the result 2 is on VD_1, which Me_2 keeps.
-                     The value domain raised 1-3-2-6.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Result.
         """
@@ -10925,8 +10924,7 @@ class ValueDomainBugs(BugHelper):
         Status: OK
         Expression: define operator f ( x component ) returns measure < VD_1 > is x end operator;
                     DS_r <- DS_1 [ calc Me_2 := f ( Me_1 ) ];
-        Description: A value domain types a component returns: Me_2 is on VD_1. The value domain
-                     raised 1-3-2-6.
+        Description: A value domain types a component returns: Me_2 is on VD_1.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Result.
         """
@@ -10961,7 +10959,7 @@ class ValueDomainBugs(BugHelper):
                         ...
                     DS_r <- f ( DS_1 );
         Description: A value domain types a component of a dataset returns: Me_1 of the result is on
-                     VD_1. The value domain raised 1-3-2-6.
+                     VD_1.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Result.
         """
@@ -11117,20 +11115,36 @@ class ValueDomainBugs(BugHelper):
         Status: OK
         Expression: define operator f ( ds dataset ) returns dataset { identifier < VD_1 > Id_1 ,
                         measure < integer > Me_1 } is ds end operator;
-                    define operator g ( x integer ) returns VD_1 is x end operator;
                     DS_r <- f ( DS_2 ) [ pivot Id_1 , Me_1 ];
-                    DS_r2 <- DS_1 [ calc identifier Id_3 := g ( 1 ) ] [ keep Me_1 ]
-                        [ sub Id_1 = 1 , Id_2 = 1 ] [ pivot Id_3 , Me_1 ];
-        Description: Beyond the cases of the issue: pivot reads the value domain that the
-                     returns of an operator puts an Identifier on, in a dataset returns and in a
-                     calc. The DuckDB engine kept the basic type in its own structures of the
-                     call, so its pivot failed with an internal error.
+        Description: Beyond the cases of the issue: pivot reads the value domain that a dataset
+                     returns puts an Identifier on. The DuckDB engine kept the basic type in its
+                     own structure of the call, so its pivot failed with an internal error.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Result.
         """
         self.BaseTest(
             code="GH_1351_28",
-            number_inputs=2,
-            references_names=["1", "2"],
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_28b(self):
+        """
+        Status: OK
+        Expression: define operator g ( x integer ) returns VD_1 is x end operator;
+                    DS_r2 <- DS_1 [ calc identifier Id_3 := g ( 1 ) ] [ keep Me_1 ]
+                        [ sub Id_1 = 1 , Id_2 = 1 ] [ pivot Id_3 , Me_1 ];
+        Description: Beyond the cases of the issue: pivot reads the value domain that the returns
+                     of an operator puts an Identifier on in a calc. The DuckDB engine kept the
+                     basic type in its own structure of the calc, so its pivot failed with an
+                     internal error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_28b",
+            number_inputs=1,
+            references_names=["1"],
             vd_names=self.vd_1351,
         )
