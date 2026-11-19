@@ -1279,7 +1279,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             left_sql, right_sql = self._promoted_to_text(
                 [left_sql, right_sql], types, to_time=not is_in
             )
-            if is_in:
+            if is_in and any(map(_is_time_name, types)):
                 left_sql, right_sql = self._time_in(left_sql, node.right, types[0])
         left_dt = self._detect_scalar_type(node.left)
         right_dt = self._detect_scalar_type(node.right)
