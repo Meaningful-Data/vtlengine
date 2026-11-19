@@ -809,6 +809,9 @@ class Time_Shift(Binary):
         # The year moves by as many years as the periods cover, back or forward (issue #1352)
         year += (value - 1) // period_limit
         value = (value - 1) % period_limit + 1
+        # The year is checked before the period is built from its text, which cannot write a
+        # year below 0 (issue #1352)
+        TimePeriodHandler._check_year(year)
 
         return str(TimePeriodHandler(f"{year}-{period}{value}"))
 

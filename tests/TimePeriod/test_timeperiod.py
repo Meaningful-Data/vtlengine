@@ -3,10 +3,11 @@ import os
 import warnings
 from pathlib import Path
 
+import pandas as pd
 import pytest
 from pytest import mark
 
-from tests.Helper import _use_duckdb_backend
+from tests.Helper import _use_duckdb_backend, engine_params
 from vtlengine.API import create_ast, run
 from vtlengine.API._InternalApi import load_datasets_with_data
 from vtlengine.DataTypes import Date, TimePeriod
@@ -365,3 +366,68 @@ def test_out_of_range_time_period_is_rejected(tmp_path, value):
         )
 
     assert not (output_folder / "DS_r.csv").exists()
+
+
+def _check_shift_out_of_range(use_duckdb: bool, period: str, shift: int, year: int) -> None:
+    """Check that timeshift of a Data Point whose Identifier is period raises 2-1-19-10."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {
+                        "name": "Id_1",
+                        "type": "Time_Period",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    with pytest.raises(RT) as context:
+        run(
+            script=f"DS_r <- timeshift(DS_1, {shift});",
+            data_structures=structures,
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [period], "Me_1": [1]})},
+            use_duckdb=use_duckdb,
+        )
+    assert context.value.args[1] == "2-1-19-10"
+    assert context.value.args[0].startswith(f"Invalid year {year}, must be between 1000 and 9999.")
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize(
+    "period, shift, year",
+    [
+        ("1000A", -1, 999),
+        ("1000S1", -1, 999),
+        ("1000Q1", -1, 999),
+        ("1000M1", -1, 999),
+        ("1000W1", -1, 999),
+        ("1000D1", -1, 999),
+        ("2020A", -2100, -80),
+        ("2020S1", -4100, -30),
+        ("2020Q1", -8100, -5),
+        ("2020M1", -24300, -5),
+        ("2020W1", -105300, -5),
+        ("2020D1", -740000, -8),
+    ],
+)
+def test_GH_1352_36j(use_duckdb: bool, period: str, shift: int, year: int) -> None:
+    """Extra of case 36: timeshift of a Time_Period back to a year below 1000, also below 0,
+    gives a year no Time_Period has, so it raises 2-1-19-10, checked for each period indicator
+    on its own. The DuckDB engine wrote a null Identifier for S and Q and raised a raw
+    ValueError for A, and the pandas engine raised a raw ValueError below the year 0 for S, Q, M,
+    W and D (issue #1352)."""
+    _check_shift_out_of_range(use_duckdb, period, shift, year)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("period", ["9999A", "9999S2", "9999Q4", "9999M12", "9999W52", "9999D365"])
+def test_GH_1352_36k(use_duckdb: bool, period: str) -> None:
+    """Extra of case 36: timeshift of the last Time_Period of the year 9999 forward by one
+    period gives the year 10000, which no Time_Period has, so it raises 2-1-19-10, checked for
+    each period indicator on its own. The DuckDB engine wrote a null Identifier (issue #1352)."""
+    _check_shift_out_of_range(use_duckdb, period, 1, 10000)
