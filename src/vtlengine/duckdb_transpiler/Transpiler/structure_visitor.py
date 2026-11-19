@@ -37,7 +37,8 @@ from vtlengine.Operators.Clause import Pivot, Unpivot
 from vtlengine.Operators.Join import Apply, merged_viral_attribute_names
 from vtlengine.Operators.Time import Unary as TimeUnary
 from vtlengine.Operators.Validation import error_domains, error_level_type
-from vtlengine.Utils import ANALYTIC_MAPPING, BINARY_MAPPING
+from vtlengine.Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING
+from vtlengine.ViralPropagation import apply_viral_return_types
 
 
 def _try_normalize_time_period(value: str) -> Optional[str]:
@@ -1264,7 +1265,7 @@ class StructureVisitor(ASTTemplate):
         all_input_ids = {n for n, c in input_ds.components.items() if c.role == Role.IDENTIFIER}
         group_ids: Set[str] = set()
         grouping_op: str = ""
-        computed_roles: Dict[str, Role] = {}
+        computed: Dict[str, Component] = {}
 
         for assignment in self._iter_assignments(node.children):
             agg_node = assignment.right
@@ -1274,9 +1275,11 @@ class StructureVisitor(ASTTemplate):
                     if isinstance(g, (AST.VarID, AST.Identifier)):
                         group_ids.add(self._resolve_udo_name(g.value))
             name = self._resolve_udo_name(self._resolve_name(assignment.left))
-            computed_roles[name] = getattr(assignment.left, "role", None) or self._omitted_role(
+            role = getattr(assignment.left, "role", None) or self._omitted_role(
                 node, input_ds.components.get(name)
             )
+            value_type = self._aggregate_value_type(agg_node, input_ds)
+            computed[name] = self._make_comp(name, value_type, role)
 
         if grouping_op == tokens.GROUP_BY:
             kept_ids = group_ids
@@ -1290,10 +1293,24 @@ class StructureVisitor(ASTTemplate):
             for name, comp in input_ds.components.items()
             if comp.role == Role.IDENTIFIER and name in kept_ids
         }
-        for col_name, role in computed_roles.items():
-            comps[col_name] = self._make_comp(col_name, Number, role)
+        # The viral Attributes that the aggregation propagates (issue #1354)
+        viral_attributes = input_ds.get_viral_attributes()
+        comps.update((comp.name, comp) for comp in viral_attributes)
+        apply_viral_return_types(viral_attributes, comps)
+        comps.update(computed)
 
         return Dataset(name=input_ds.name, components=comps, data=None)
+
+    def _aggregate_value_type(self, node: AST.AST, source: Dataset) -> Any:
+        """Data type of an expression of an aggr clause: the return type of its aggregate
+        function, else the type of the operand, which max, min and sum keep (issue #1354).
+        Number when it is not worked out here."""
+        if not isinstance(node, AST.Aggregation):
+            return Number
+        return_type = AGGREGATION_MAPPING[node.op].return_type
+        if return_type is not None or node.operand is None:
+            return return_type or Number
+        return self._calc_value_type(node.operand, source) or Number
 
     def _build_membership_structure(self, node: AST.BinOp) -> Optional[Dataset]:
         """Build the output structure for a membership (#) operation.

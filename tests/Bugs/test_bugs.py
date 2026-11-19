@@ -11583,6 +11583,29 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_28b", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_12(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := sum ( Me_1 ) group by Id_1 ] [ keep Me_2 ];
+        Description: The viral Attribute At_1 that aggr propagates with VP_1 is kept by keep:
+                     H, X. The DuckDB engine declared it and gave no data column for it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_12", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_13(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := max ( Id_2 ) group by Id_1 ]
+                        [ calc Me_3 := cast ( Me_2 , string ) ];
+        Description: Me_2 is the String that max gives, so cast reads it as a String: B, A.
+                     The DuckDB engine took it as a Number and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_14(self):
         """
         Status: OK
