@@ -1,3 +1,4 @@
+import contextlib
 import re
 from typing import Any, Dict, FrozenSet, Optional, Set, Type, Union
 
@@ -495,50 +496,22 @@ class TimePeriod(TimeInterval):
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
-        if from_type in {Date}:
-            try:
-                period_str = date_to_period_str(value, "D")
-            except ValueError:
-                raise RunTimeError(
-                    "2-1-5-1",
-                    value=value,
-                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-                    type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-                )
-            return period_str
-        if from_type == String:
-            # The space around the text is taken off, as the loaders do (issue #1352)
-            s = str(value).strip()
-            if "/" in s:
-                result = interval_to_period_str(s)
-                if result is not None:
-                    return result
-                raise RunTimeError(
-                    "2-1-5-1",
-                    value=value,
-                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-                    type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-                )
-            if not cls.check(s):
-                # Text that is no time period, such as 2020X1 (issue #1192)
-                raise RunTimeError(
-                    "2-1-5-1",
-                    value=value,
-                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-                    type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-                )
-            return s
-        if from_type == TimeInterval:
-            result = interval_to_period_str(str(value))
-            if result is not None:
-                return result
-            raise RunTimeError(
-                "2-1-5-1",
-                value=value,
-                type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-                type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-            )
-
+        period: Optional[str] = None
+        if from_type == Date:
+            with contextlib.suppress(ValueError):
+                period = date_to_period_str(value, "D")
+        elif from_type in (String, TimeInterval):
+            # The space around a text is taken off, as the loaders do; a start/end text is the
+            # period of its interval (issue #1352)
+            text = str(value).strip()
+            is_interval = from_type == TimeInterval or "/" in text
+            period = interval_to_period_str(text) if is_interval else text
+        if period is not None:
+            # A Time_Period is written in the one form the loaders write it in, whatever gives
+            # it, so that its values are ordered as periods, and a period the loaders refuse,
+            # such as the year 0001, is no Time_Period (issue #1352)
+            with contextlib.suppress(InputValidationException):
+                return check_time_period(period)
         raise RunTimeError(
             "2-1-5-1",
             value=value,
