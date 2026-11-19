@@ -441,9 +441,10 @@ def test_GH_1349_54b(use_duckdb):
 @pytest.mark.parametrize("use_duckdb", engine_params())
 def test_GH_1349_54c(use_duckdb):
     """As case 54 for an ISO week date: a String cast to date reads only the forms the loaders
-    read, so 2024-W01 raises 1-1-5-6 as a literal and 2-1-19-8 as a Component, and a Date
-    loaded from it raises 0-3-1-6, on both engines and on any Python version. pandas read it
-    as 2024-01-01 on Python 3.11 and later, where DuckDB raised."""
+    read, so 2024-W01 raises 1-1-5-6 as a literal and 2-1-19-8 as a Component, a Date loaded
+    from it raises 0-3-1-6 and a Date scalar value raises 0-1-2-7, on both engines and on any
+    Python version. pandas read it as 2024-01-01 on Python 3.11 and later, where DuckDB raised
+    (but for the scalar value, which both engines read)."""
     structures = {
         "datasets": [
             {
@@ -470,3 +471,7 @@ def test_GH_1349_54c(use_duckdb):
     with pytest.raises(DataLoadError) as error:
         _run("DS_r <- DS_1;", "A", "2024-W01")
     assert error.value.args[1] == "0-3-1-6"
+    scalars = {"scalars": [{"name": "SC_D", "type": "Date"}]}
+    with pytest.raises(InputValidationException) as error:
+        run("SC_r <- SC_D;", scalars, {}, scalar_values={"SC_D": "2024-W01"}, use_duckdb=use_duckdb)
+    assert error.value.args[1] == "0-1-2-7"
