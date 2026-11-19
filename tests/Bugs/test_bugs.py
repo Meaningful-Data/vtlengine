@@ -11799,6 +11799,18 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_22c", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_22d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := between ( Me_1 , 1 , null ) ];
+        Description: Extra of case 22: between with a null bound is nullable, also over a
+                     Measure that is not: null, false, null. The pandas engine raised 2-1-1-16,
+                     and the DuckDB engine returned nulls in a Measure declared non-nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22d", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_23(self):
         """
         Status: OK

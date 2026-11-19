@@ -408,6 +408,10 @@ class Between(Operator.Operator):
         to: Union[DataComponent, Scalar],
     ) -> Any:
         result: Union[Dataset, DataComponent, Scalar]
+        # A bound that can be null makes the result null (issue #1354)
+        null_bound = any(
+            isinstance(bound, Scalar) and Operator.may_be_null(bound) for bound in (from_, to)
+        )
         if isinstance(operand, Dataset):
             if len(operand.get_measures()) == 0:
                 raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
@@ -416,6 +420,8 @@ class Between(Operator.Operator):
                 for comp_name, comp in operand.components.items()
                 if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
             }
+            for comp in result_components.values():
+                comp.nullable = comp.nullable or (null_bound and comp.role == Role.MEASURE)
             result = Dataset(name=operand.name, components=result_components, data=None)
         elif isinstance(operand, DataComponent):
             result = DataComponent(
@@ -423,7 +429,7 @@ class Between(Operator.Operator):
                 data=None,
                 data_type=cls.return_type,
                 role=operand.role,
-                nullable=operand.nullable,
+                nullable=operand.nullable or null_bound,
             )
         elif isinstance(from_, Scalar) and isinstance(to, Scalar):
             nullable = operand.nullable or from_.nullable or to.nullable
