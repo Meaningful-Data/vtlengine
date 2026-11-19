@@ -12677,3 +12677,38 @@ class TimeValueBugs(BugHelper):
             exception_code="2-1-19-10",
             exception_message="Invalid year 10020, must be between 1800 and 9999.",
         )
+
+    def test_GH_1352_23(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( dateadd ( Me_1 , 1 , "M" ) , string ) ];
+        Description: The Date that dateadd gives is cast to string as any Date, 2020-02-15. The
+                     DuckDB engine wrote 2020-02-15 00:00:00.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_23", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_24(self):
+        """
+        Status: OK
+        Expression: DS_r <- cast ( dateadd ( DS_1 , -1 , "Q" ) , string );
+        Description: dateadd of a Time_Period Data Set gives a Date Measure, which is cast to
+                     string as a Date: 2019-12-31 and 2020-03-30. The DuckDB engine read it as a
+                     Time_Period and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_24", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_25(self):
+        """
+        Status: OK
+        Expression: DS_r <- dateadd ( dateadd ( DS_1 , -1 , "Q" ) , -1 , "Q" );
+        Description: The outer dateadd reads the Date Measure that the inner one gives:
+                     2019-09-30 and 2019-12-30. The DuckDB engine read it as a Time_Period and
+                     raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_25", number_inputs=1, references_names=["1"])
