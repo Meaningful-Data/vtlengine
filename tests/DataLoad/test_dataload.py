@@ -1659,12 +1659,13 @@ def test_GH_1352_37c(use_duckdb: bool) -> None:
 
 @pytest.mark.parametrize("use_duckdb", engine_params())
 @pytest.mark.parametrize(
-    "value", ["2020M13", "2020W54", "2020W00", "2020D367", "2020D0", "2021D366"]
+    "value", ["2020M13", "2020W54", "2020W00", "2020D367", "2020D0", "2021D366", "2020-13-1"]
 )
 def test_GH_1352_37d(use_duckdb: bool, value: str) -> None:
     """Extra of case 37: a period written in one of the formats that is no period cannot be read
     as a Time_Period, so it is refused with 0-3-1-6, with the same message on both engines.
-    The pandas engine raised 2-1-19-7 or 2-1-19-9 (issue #1352)."""
+    The pandas engine raised 2-1-19-7 or 2-1-19-9, and wrote the Python error of a date that is
+    no date, such as 2020-13-1 (issue #1352)."""
     with pytest.raises(VTLEngineException) as context:
         run(
             script="DS_r <- DS_1;",
