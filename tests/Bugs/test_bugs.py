@@ -12242,3 +12242,31 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_40f", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_18b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := lag ( Me_1 , 1 , "Q" over ( order by Id_1 ) ) ];
+        Description: Extra of case 18: lag ordered by the Duration Id_1 (D, M, A) gives the
+                     default Q to the first Data Point, D. The pandas engine read the default as a
+                     column name and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_18b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_18c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := lag ( Me_1 , 1 , "z" over ( order by Id_1 ) ) ,
+                        Me_4 := lag ( Me_2 , 1 , cast ( "2019-01-01" , date )
+                            over ( order by Id_1 ) ) ,
+                        Me_5 := lead ( Me_1 , 1 , null over ( order by Id_1 ) ) ]
+                        [ keep Me_3 , Me_4 , Me_5 ];
+        Description: Extra of case 18: the default of lag and lead is a value, a String, a Date
+                     given by cast or null. The pandas engine read a text and null as column
+                     names and wrote the cast into its query, raising raw DuckDB errors.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_18c", number_inputs=1, references_names=["1"])

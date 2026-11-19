@@ -1212,7 +1212,9 @@ class InterpreterAnalyzer(ASTTemplate):
             for param in node.params:
                 if isinstance(param, AST.Constant):
                     params.append(param.value)
-                elif isinstance(param, AST.VarID):
+                elif isinstance(param, AST.AST):
+                    # A Scalar or an expression, as cast ( "2020-01-01" , date ) for the
+                    # default of lag (issue #1352)
                     resolved = self.visit(param)
                     params.append(resolved.value if hasattr(resolved, "value") else resolved)
                 else:
