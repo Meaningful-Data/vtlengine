@@ -65,19 +65,40 @@ scalar_result_params = [
     pytest.param(
         'SC_r <- if SC_2 = "x" then SC_1 else "B";',
         {"SC_1": "A", "SC_2": "y"},
-        "VD_1",
+        "String",
         "B",
-        id="if_downcast",
+        id="if_basic_type",
     ),
     pytest.param(
-        "SC_r <- nvl(SC_1, SC_2);", {"SC_1": None, "SC_2": "B"}, "VD_1", "B", id="nvl_downcast"
+        "SC_r <- nvl(SC_1, SC_2);", {"SC_1": None, "SC_2": "B"}, "String", "B", id="nvl_basic_type"
     ),
     pytest.param(
         'SC_r <- case when SC_2 = "x" then SC_1 else "A";',
         {"SC_1": "B", "SC_2": "x"},
-        "VD_1",
+        "String",
         "B",
-        id="case_downcast",
+        id="case_basic_type",
+    ),
+    pytest.param(
+        'SC_r <- if SC_2 = "x" then SC_1 else SC_2;',
+        {"SC_1": "A", "SC_2": "y"},
+        "String",
+        "y",
+        id="if_outside_value_domain",
+    ),
+    pytest.param(
+        "SC_r <- nvl(SC_1, SC_2);",
+        {"SC_1": None, "SC_2": "Q"},
+        "String",
+        "Q",
+        id="nvl_outside_value_domain",
+    ),
+    pytest.param(
+        'SC_r <- case when SC_2 = "x" then SC_1 else SC_2;',
+        {"SC_1": "A", "SC_2": "Q"},
+        "String",
+        "Q",
+        id="case_outside_value_domain",
     ),
     pytest.param(
         'SC_r <- if SC_2 = "x" then SC_1 else SC_3;',
@@ -116,7 +137,7 @@ scalar_result_params = [
 @pytest.mark.parametrize("script, scalar_values, type_, value", scalar_result_params)
 def test_GH_1328_scalar_result(use_duckdb, script, scalar_values, type_, value):
     """A scalar result keeps the value domain that its operands share, and loses it when an
-    operator computes a new value or the operands are on different value domains."""
+    operator computes a new value or the operands are not all on that value domain."""
     result = _run(script, scalar_values, use_duckdb)["SC_r"]
     assert result.to_dict()["type"] == type_
     assert result.value == value
@@ -142,16 +163,6 @@ def test_GH_1328_value_outside_value_domain(use_duckdb):
 
 
 downcast_error_params = [
-    pytest.param(
-        'SC_r <- if SC_2 = "x" then SC_1 else SC_2;', {"SC_1": "A", "SC_2": "y"}, "if", id="if"
-    ),
-    pytest.param("SC_r <- nvl(SC_1, SC_2);", {"SC_1": None, "SC_2": "Q"}, "nvl", id="nvl"),
-    pytest.param(
-        'SC_r <- case when SC_2 = "x" then SC_1 else SC_2;',
-        {"SC_1": "A", "SC_2": "Q"},
-        "case",
-        id="case",
-    ),
     pytest.param("SC_r <- cast(SC_2, VD_1);", {"SC_2": "Q"}, "cast", id="cast"),
     pytest.param(
         "define operator f(x VD_1) returns string is x end operator; SC_r <- f(SC_2);",
@@ -171,8 +182,8 @@ downcast_error_params = [
 @pytest.mark.parametrize("use_duckdb", engine_params())
 @pytest.mark.parametrize("script, scalar_values, op", downcast_error_params)
 def test_GH_1328_downcast_outside_value_domain(use_duckdb, script, scalar_values, op):
-    """A value of the basic type that an operator puts into a scalar on a value domain must be
-    one of its values (downcast)."""
+    """A value of the basic type that a cast or an operator parameter puts into a value domain
+    must be one of its values (downcast)."""
     with pytest.raises(RunTimeError, match=f"At op {op}: Cannot cast .* to Value Domain VD_1"):
         _run(script, scalar_values, use_duckdb)
 

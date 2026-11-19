@@ -1,6 +1,5 @@
 import inspect
 import json
-from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
@@ -24,6 +23,10 @@ _TIME_VALUE_CHECKS: Dict[Any, Any] = {
     DataTypes.TimePeriod: check_time_period,
     DataTypes.TimeInterval: check_time,
 }
+
+BASIC_TYPE_NAMES = frozenset(
+    ("string", "integer", "number", "boolean", "date", "time", "time_period", "duration", "scalar")
+)
 
 
 @dataclass
@@ -541,12 +544,33 @@ class ValueDomain:
     setlist: List[Union[int, float, str, bool]]
 
     def __post_init__(self) -> None:
-        if len(set(self.setlist)) != len(self.setlist):
-            duplicated = [item for item, count in Counter(self.setlist).items() if count > 1]
+        """The name must not be a basic scalar type, and the setlist must hold valid values of
+        the type, each once, also in another form of it."""
+        if self.name in BASIC_TYPE_NAMES:
+            raise InputValidationException(code="0-1-1-39", name=self.name)
+        for value in self.setlist:
+            if not self._is_valid(value):
+                raise InputValidationException(
+                    code="0-1-1-37",
+                    value=value,
+                    name=self.name,
+                    type=DataTypes.SCALAR_TYPES_CLASS_REVERSE[self.type],
+                )
+        self.setlist = [self.type.cast(value) for value in self.setlist]
+        forms: Dict[Any, List[Any]] = {}
+        for item, value in zip(self.setlist, self.values()):
+            forms.setdefault(value, []).append(item)
+        duplicated = [
+            item for items in forms.values() if len(items) > 1 for item in dict.fromkeys(items)
+        ]
+        if duplicated:
             raise InputValidationException(code="0-1-1-21", name=self.name, duplicated=duplicated)
 
-        # Cast values to the correct type
-        self.setlist = [self.type.cast(value) for value in self.setlist]
+    def _is_valid(self, value: Any) -> bool:
+        try:
+            return bool(self.type.check(value))
+        except InputValidationException:
+            return False
 
     @classmethod
     def from_json(cls, json_str: str) -> str:

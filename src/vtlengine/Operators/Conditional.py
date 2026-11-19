@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Optional, Union, cast
 
 import pandas as pd
 
-from vtlengine.AST.Grammar.tokens import CASE, IF, NVL
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
@@ -18,7 +17,6 @@ from vtlengine.Operators import (
     Binary,
     Operator,
     _id_type_promotion_join_keys,
-    check_downcasts,
     share_value_domains,
     shared_value_domain,
 )
@@ -212,7 +210,6 @@ class If(Operator):
                 result.data = to_strings(result.data)
         elif isinstance(result, Dataset):
             cls.dataset_level_evaluation(result, condition, true_branch, false_branch)
-        check_downcasts(result, [true_branch, false_branch], IF)
         return result
 
     @classmethod
@@ -456,7 +453,6 @@ class Nvl(Binary):
                     result.data = result.data.fillna(_as_type(right.data, result.data_type))
                 if isinstance(result, Dataset):
                     result.data = result.data[result.get_components_names()]
-        check_downcasts(result, [left, right], NVL)
         return result
 
     @classmethod
@@ -549,7 +545,6 @@ class Case(Operator):
                 )
             else:
                 cls.dataset_level_evaluation(result, conditions, thenOps, elseOp)
-        check_downcasts(result, [*thenOps, elseOp], CASE)
         return result
 
     @staticmethod

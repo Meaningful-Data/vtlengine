@@ -109,7 +109,21 @@ Supported Types
       - JSON string as ISO 8601 interval
         (e.g. ``"2024-01-01/2024-12-31"``)
     * - ``Duration``
-      - JSON string in duration format (e.g. ``"P1Y"``)
+      - JSON string with a period indicator (``"A"``, ``"S"``,
+        ``"Q"``, ``"M"``, ``"W"`` or ``"D"``)
+
+Each value of the ``setlist`` must be a valid value of the type
+(``0-1-1-37``): ``"2024-13-45"`` is not a ``Date`` and
+``"2024Q9"`` is not a ``Time_Period``. The values must be
+unique, also when written in another form of the type
+(``0-1-1-21``): ``"2024Q1"`` and ``"2024-Q1"`` are the same
+``Time_Period``.
+
+The names of the value domains given must be unique
+(``0-1-1-38``), and cannot be a basic scalar type of VTL:
+``string``, ``integer``, ``number``, ``boolean``, ``date``,
+``time``, ``time_period``, ``duration`` or ``scalar``
+(``0-1-1-39``).
 
 
 Input Options
@@ -268,30 +282,32 @@ Component (the set operators, the Identifiers that a join
 matches, ``nvl``, ``if-then-else`` and ``case``) follow the VTL
 type conversion rules:
 
-- Operands on the same value domain give that value domain.
-- A value domain and its basic type give the value domain: the
-  values of the basic type are converted into it (downcast), and
-  one that is not a value of the value domain raises ``2-1-5-4``.
-- Two different value domains on the same basic type give that
-  basic type, and any other mix follows the promotion of the basic
-  types (a value domain of integers and a ``Number`` give a
-  ``Number``).
+- Operands on the same value domain, nulls aside, give that value
+  domain.
+- Any other mix gives the promotion of the basic types, as a value
+  domain is always converted into its basic type (upcast): a value
+  domain and its basic type, or two value domains on the same
+  basic type, give that basic type, and a value domain of integers
+  and a ``Number`` give a ``Number``.
 
 .. code-block:: text
 
-    /* Id_2 keeps VD_FLOW; the Strings of DS_2 must be values of it */
+    /* Id_2 is on VD_FLOW in DS_1 and DS_2: it keeps VD_FLOW */
     DS_r <- union(DS_1, DS_2);
 
-    /* Me_2 is on the value domain of Me_1, and 0 must be one of its values */
+    /* Me_1 is on a value domain of integers: Me_2 is an Integer */
     DS_r <- DS_1 [calc Me_2 := nvl(Me_1, 0)];
 
-``cast`` converts a value of the basic type, or of another value
-domain on it, into a value domain, with the same check:
+``cast`` converts a value into a value domain in two steps: it
+casts the value to the basic type of the value domain, as a cast
+to that type does, and the result must be one of the values of the
+value domain (``2-1-5-4``):
 
 .. code-block:: text
 
-    /* Me_2 is on VD_1, and every value of Me_1 must be one of its values */
-    DS_r <- DS_1 [calc Me_2 := cast(Me_1, VD_1)];
+    /* Me_1 is a String: Me_2 is on VD_INT, a value domain of integers,
+       and every value of Me_1 cast to integer must be one of its values */
+    DS_r <- DS_1 [calc Me_2 := cast(Me_1, VD_INT)];
 
 ``pivot`` needs the Identifier it pivots defined on a value domain:
 the result has one Measure per value of the value domain, named after
@@ -387,9 +403,8 @@ it:
 - An assignment (``SC_r <- SC_1``) and a scalar written alone in
   ``calc`` (``calc Me_2 := SC_1``) keep the value domain.
 - ``nvl``, ``if-then-else`` and ``case`` follow the type conversion
-  rules above. A value of the basic type put into the value domain
-  must be one of its values (``2-1-5-4``), and two different value
-  domains give the basic type.
+  rules above: a scalar on a value domain and a value of its basic
+  type, or two different value domains, give the basic type.
 - ``cast(SC_2, VD_FLOW)`` gives a scalar on ``VD_FLOW``.
 - An operator that computes a new value gives its basic type:
   ``SC_1 || "_X"`` is a ``String``.
@@ -416,7 +431,11 @@ Validation
 ==========
 
 Use :meth:`vtlengine.validate_value_domain` to validate
-the JSON structure of value domains before execution:
+value domains before execution: their JSON structure, the values
+of their ``setlist`` and their names, as described in
+`Supported Types`_. ``run()`` and ``semantic_analysis()`` check
+the same when they load the value domains, also the ones that the
+script does not use:
 
 .. code-block:: python
 
