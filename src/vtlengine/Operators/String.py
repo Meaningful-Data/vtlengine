@@ -164,7 +164,26 @@ class Parameterized(Unary):
             cls.check_param(param1, 1)
         if param2 is not None:
             cls.check_param(param2, 2)
+        operand = cls.operand_in_data_points(operand, (param1, param2))
         return cls.declare_null_params(super().validate(operand), (param1, param2))
+
+    @staticmethod
+    def operand_in_data_points(operand: Any, params: Tuple[Any, ...]) -> Any:
+        """A Scalar operand with a Component parameter gives a value in each Data Point, so it
+        is taken as a Component that holds its value in each of them (issue #1354)."""
+        component = next((param for param in params if isinstance(param, DataComponent)), None)
+        if not isinstance(operand, Scalar) or component is None:
+            return operand
+        data = None
+        if component.data is not None:
+            data = pd.Series(operand.value, index=component.data.index, dtype=object)
+        return DataComponent(
+            name=operand.name,
+            data=data,
+            data_type=operand.data_type,
+            role=Role.MEASURE,
+            nullable=operand.nullable,
+        )
 
     @classmethod
     def declare_null_params(cls, result: Any, params: Tuple[Any, ...]) -> Any:
@@ -265,6 +284,7 @@ class Parameterized(Unary):
         param1: Optional[Union[DataComponent, Scalar]]
         param2: Optional[Union[DataComponent, Scalar]]
         operand, param1, param2 = (args + (None, None))[:3]
+        operand = cls.operand_in_data_points(operand, (param1, param2))
 
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, param1, param2)
@@ -554,7 +574,7 @@ class Instr(Parameterized):
             cls.check_param(param2, 2)
         if param3 is not None:
             cls.check_param(param3, 3)
-
+        operand = cls.operand_in_data_points(operand, (param1, param2, param3))
         return cls.declare_null_params(super().validate(operand), (param1, param2, param3))
 
     @classmethod
@@ -691,6 +711,7 @@ class Instr(Parameterized):
         param2: Optional[Any] = None,
         param3: Optional[Any] = None,
     ) -> Any:
+        operand = cls.operand_in_data_points(operand, (param1, param2, param3))
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, param1, param2, param3)
         if isinstance(operand, DataComponent):

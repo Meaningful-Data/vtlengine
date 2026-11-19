@@ -12112,3 +12112,60 @@ class StructureDataBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1354_25b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22l(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_8 := substr ( "abc" , Me_7 , 1 ) ,
+                                        Me_9 := substr ( SC_1 , Me_3 , Me_3 ) ];
+        Description: Extra of case 22: substr of a Scalar takes the start and the length from
+                     Components in each Data Point, a null as the default start: Me_8 a, a, b;
+                     with SC_1 = "abcabc", Me_9 a, bc, cab, nullable as the input Scalar SC_1.
+                     The pandas engine raised AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1354_22l",
+            number_inputs=1,
+            references_names=["1"],
+            scalars={"SC_1": "abcabc"},
+        )
+
+    def test_GH_1354_22m(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_8 := instr ( "abc" , Me_6 ) ,
+                                        Me_9 := instr ( SC_1 , Me_5 , Me_3 , Me_3 ) ];
+        Description: Extra of case 22: instr of a Scalar takes the pattern, the start and the
+                     occurrence from Components in each Data Point: Me_8 1, null, 3, nullable
+                     as the pattern Me_6; with SC_1 = "abcabc", Me_9 1, 5, 0. The pandas engine
+                     raised AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1354_22m",
+            number_inputs=1,
+            references_names=["1"],
+            scalars={"SC_1": "abcabc"},
+        )
+
+    def test_GH_1354_22n(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_8 := replace ( "abc" , Me_6 , "z" ) ,
+                                        Me_9 := replace ( SC_1 , Me_5 ) ];
+        Description: Extra of case 22: replace of a Scalar takes the pattern from Components in
+                     each Data Point: Me_8 zbc, null, abz, nullable as the pattern Me_6; with
+                     SC_1 = "abcabc", Me_9 bcbc, acac, abab. The pandas engine raised
+                     AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1354_22n",
+            number_inputs=1,
+            references_names=["1"],
+            scalars={"SC_1": "abcabc"},
+        )
