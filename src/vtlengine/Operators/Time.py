@@ -61,7 +61,7 @@ class Time(Operators.Operator):
     TIME_DATA_TYPES = [Date, TimePeriod, TimeInterval]
 
     FREQUENCY_MAP = {"Y": "years", "M": "months", "D": "days"}
-    YEAR_TO_PERIOD = {"S": 2, "Q": 4, "M": 12, "W": 52, "D": 365}
+    YEAR_TO_PERIOD = {"S": 2, "Q": 4, "M": 12}
     PERIOD_ORDER = {"A": 0, "S": 1, "Q": 2, "M": 3, "W": 4, "D": 5}
     # The parameter that a scalar gives the operator, named when the scalar holds no value
     SCALAR_PARAM = ""
@@ -822,11 +822,22 @@ class Time_Shift(Binary):
             tp_value.period_indicator,
             tp_value.period_number + shift_value,
         )
-        period_limit = cls.YEAR_TO_PERIOD[period]
-
-        # The year moves by as many years as the periods cover, back or forward (issue #1352)
-        year += (value - 1) // period_limit
-        value = (value - 1) % period_limit + 1
+        if period in ("W", "D"):
+            # A year has 52 or 53 weeks and 365 or 366 days, so the period moves on the
+            # calendar (issue #1352)
+            days = shift_value * (7 if period == "W" else 1)
+            start = cast(date, tp_value.start_date(as_date=True))
+            day, years = date_of_ordinal(start.toordinal() + days)
+            if period == "W":
+                year, value = day.isocalendar()[:2]
+            else:
+                year, value = day.year, day.timetuple().tm_yday
+            year += years
+        else:
+            # The year moves by as many years as the periods cover, back or forward (issue #1352)
+            period_limit = cls.YEAR_TO_PERIOD[period]
+            year += (value - 1) // period_limit
+            value = (value - 1) % period_limit + 1
         # The year is checked before the period is built from its text, which cannot write a
         # year below 0 (issue #1352)
         TimePeriodHandler._check_year(year)

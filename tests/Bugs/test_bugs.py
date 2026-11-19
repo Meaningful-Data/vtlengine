@@ -12945,3 +12945,69 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_25", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_26(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , 1 );
+        Description: 2020 has 53 ISO weeks, so 2020W53 moves one week to 2021W1 and 2021W1 to
+                     2021W2. Both engines counted 52 weeks in every year and gave 2021W2 twice.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_26", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_27(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single ) [ filter Id_2 >= cast ( "2020W52" ,
+                        time_period ) and Id_2 <= cast ( "2021W1" , time_period ) ];
+        Description: fill_time_series adds the week 2020W53 between 2020W52 and 2021W1. The
+                     DuckDB engine counted 52 weeks in every year and left it out.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_27", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_28(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := time_agg ( "Q" , _ , Id_2 ) ,
+                        Me_3 := time_agg ( "A" , _ , Id_2 ) ];
+        Description: A week stays in the year it is numbered in, so 2020W53 (2020-12-28 to
+                     2021-01-03) goes to 2020Q4 and 2020. The pandas engine gave 2020Q1 and the
+                     DuckDB engine 2021Q1 and 2021.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_28", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_28b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := time_agg ( "A" , _ , Me_1 ) ,
+                        Me_3 := time_agg ( "S" , _ , Me_1 ) , Me_4 := time_agg ( "Q" , _ , Me_1 ) ,
+                        Me_5 := time_agg ( "M" , _ , Me_1 ) ];
+        Description: Extra of case 28: a week that ends in the next year, 2021W52 or 9999W52,
+                     goes to the last period of its own year, so time_agg of the last week of
+                     9999 stays in the years 1000 to 9999 of a Time_Period. The pandas engine
+                     raised a raw ValueError for 9999W52 and gave the first period of 2021 for
+                     2021W52, and the DuckDB engine wrote a null for 9999W52 and 2022 for
+                     2021W52.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_28b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_32b(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single );
+        Description: Extra of case 32: over the period indicators 2020Q1, 2020-04, 2020W20,
+                     2020-1-5 and 2020, fill_time_series fills each indicator over the year 2020,
+                     which has 53 ISO weeks and 366 days. The DuckDB engine counted 52 weeks and
+                     365 days in every year and left 2020W53 and 2020D366 out.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_32b", number_inputs=1, references_names=["1"])

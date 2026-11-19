@@ -2197,7 +2197,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Shared SQL fragment for the RECURSIVE step that increments a vtl_time_period.
     _TP_NEXT_PERIOD = (
         "CASE"
-        " WHEN ep.tp.period_number + 1 > vtl_period_limit(ep.tp.period_indicator)"
+        " WHEN ep.tp.period_number + 1 > vtl_period_limit(ep.tp.period_indicator, ep.tp.year)"
         " THEN {'year': ep.tp.year + 1, 'period_indicator': ep.tp.period_indicator,"
         " 'period_number': 1}::vtl_time_period"
         " ELSE {'year': ep.tp.year, 'period_indicator': ep.tp.period_indicator,"
@@ -2267,7 +2267,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 "{'year': min_year, 'period_indicator': ind, "
                 "'period_number': 1}::vtl_time_period AS min_tp, "
                 "{'year': max_year, 'period_indicator': ind, "
-                "'period_number': vtl_period_limit(ind)}::vtl_time_period AS max_tp "
+                "'period_number': vtl_period_limit(ind, max_year)}::vtl_time_period AS max_tp "
                 "FROM freq_list, year_range",
             )
             cte.recursive_cte(
