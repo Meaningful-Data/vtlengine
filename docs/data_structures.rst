@@ -82,6 +82,8 @@ a name and a list of components. Each component has the four fields:
 
 If you have many datasets, or you'd rather keep your Python code tidy,
 save the same JSON to a ``.json`` file and pass the ``Path`` instead.
+A ``.json`` file that is not valid JSON raises ``0-1-1-40``, naming
+the file.
 
 Scalar inputs (used with ``run``'s ``scalar_values`` argument) can be
 declared alongside datasets:

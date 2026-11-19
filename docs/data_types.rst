@@ -256,9 +256,12 @@ periods of one period indicator; two periods of different indicators
 raise ``2-1-19-19``. ``between(op, from, to)`` is
 ``op >= from and op <= to``, as the VTL 2.2 manual defines it, for
 every type (the same types are accepted, and the values are ordered
-as those two operators order them): it raises ``2-1-19-19`` also when the other bound is null,
-and a null bound gives ``false`` where the other comparison is false
-and null elsewhere.
+as those two operators order them), except that it always compares
+the operand with both bounds: it raises ``2-1-19-19`` for a bound of
+another period indicator even when the other comparison is already
+false or the other bound is null, where the pair stops at a false
+first comparison. A null bound gives ``false`` where the other
+comparison is false and null elsewhere.
 
 **Output formats** (controlled by ``time_period_output_format``
 parameter):

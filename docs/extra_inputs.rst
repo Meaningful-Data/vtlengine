@@ -648,16 +648,11 @@ The ``external_routines`` parameter accepts the following formats:
   used under its ``name``, whatever the name of the file.
 - **Path to a directory**: A ``Path`` pointing to a directory;
   all ``.json`` files in the directory are loaded.
-- **ValueDomain object**: A ``vtlengine.Model.ValueDomain``, for example one
-  built from an SDMX codelist.
 - **List**: A list mixing any of the above formats.
 
 .. code-block:: python
 
     from pathlib import Path
-
-    from vtlengine.DataTypes import String
-    from vtlengine.Model import ValueDomain
 
     # Single dict
     external_routines = {

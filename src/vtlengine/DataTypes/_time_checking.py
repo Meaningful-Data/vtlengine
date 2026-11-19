@@ -159,6 +159,10 @@ def check_date(value: Any) -> str:
     value = _from_date_value(value)
     value = _pad_date_parts(value.strip())
     has_time = _has_time_component(value)
+    if not has_time and _DATE_PART_RE.fullmatch(value) is None:
+        # date.fromisoformat reads an ISO week date, 2024-W01, from Python 3.11 on, which
+        # the DuckDb loader does not read (issue #1349)
+        raise _build_date_error(value)
     try:
         if has_time:
             iso_result = normalize_datetime(value)
