@@ -4469,10 +4469,15 @@ FROM (
                     sql, structure, [(node.op, "the output", declared, constraints)]
                 )
             elif constraints is not None and constraints.value is not None:
-                # A Component or a scalar output
+                # A Component or a scalar output. value in the constraint is the output, the
+                # body written in the scope of the call, where value is the parameter, if any
+                # (issue #1355)
                 value = deepcopy(udo_def["expression"])
                 sql = self._udo_checked_sql(
-                    sql, value, [(node.op, "the output", constraints.value)]
+                    sql,
+                    value,
+                    [(node.op, "the output", constraints.value)],
+                    len(self._udo_params or []),
                 )
             if isinstance(result, Scalar) and result.data_type in (Integer, Number, String):
                 # A scalar result is a value of its type, as on the pandas engine: 2 returned as

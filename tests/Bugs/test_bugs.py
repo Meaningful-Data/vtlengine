@@ -11339,3 +11339,83 @@ class NameResolutionBugs(BugHelper):
         """
         self.BaseTest(code="GH_1355_1", number_inputs=1, references_names=["1"])
         self.BaseTest(code="GH_1355_1", number_inputs=1, references_names=["1"], only_semantic=True)
+
+    def test_GH_1355_2(self):
+        """
+        Status: OK
+        Expression: define operator f ( value integer ) returns integer [ value > 0 ] is
+                        value + 10 end operator;
+                    SC_r <- f ( 3 );
+                    DS_r <- DS_3 [ calc Me_3 := SC_r ];
+        Description: value in the constraint of the result is the result being checked, and
+                     value in the body is the parameter, so f ( 3 ) is 13. The DuckDB engine
+                     raised a RecursionError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_2", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1355_2b(self):
+        """
+        Status: OK
+        Expression: define operator f ( value integer ) returns VD_2 [ value > 0 ] is
+                        value + 10 end operator;
+                    define operator g ( value component ) returns component < VD_2 [ value > 0 ]
+                        > is value + 10 end operator;
+                    SC_r <- f ( 3 );
+                    DS_r <- DS_3 [ calc Me_3 := SC_r , Me_4 := g ( Me_2 ) ];
+        Description: Extra case: as test_GH_1355_2, for operators that return a value of the
+                     value domain VD_2, a scalar and a Component. The DuckDB engine raised a
+                     RecursionError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_2b",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=["GH_1355-VD_2"],
+        )
+
+    def test_GH_1355_3(self):
+        """
+        Status: OK
+        Expression: define operator f ( value component )
+                        returns component < integer [ value > 0 ] > is value - 10 end operator;
+                    DS_r <- DS_3 [ calc Me_3 := f ( Me_2 ) ];
+        Description: The result 3 - 10 does not meet the constraint of the result, where value
+                     is the result, so the call raises 2-3-9. The DuckDB engine raised a
+                     RecursionError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_3",
+            number_inputs=1,
+            exception_code="2-3-9",
+            exception_message=(
+                "At op f: the output has the value -7, which its type constraint "
+                "[value > 0] does not allow."
+            ),
+        )
+
+    def test_GH_1355_4(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer ) returns integer [ value > 0 ] is x - 10
+                        end operator;
+                    SC_r <- f ( 3 );
+        Description: Control: with the parameter named x, the constraint of the result raises
+                     2-3-9 on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_4",
+            number_inputs=1,
+            exception_code="2-3-9",
+            exception_message=(
+                "At op f: the output has the value -7, which its type constraint "
+                "[value > 0] does not allow."
+            ),
+        )
