@@ -4011,20 +4011,21 @@ FROM (
     # =========================================================================
 
     def _common_value_type(self, operands: List[AST.AST]) -> Optional[str]:
-        """The type of an if, a case or an nvl: a String when one of its ``operands`` is, a
-        Boolean when all are. The Date, Time_Period or Time of its operands when all have one of
-        those types, a Time when one is a Time (issue #1352)."""
+        """The type of an if, a case or an nvl: a String when one of its ``operands`` is, the
+        type of its operands when all have the same one, a Number for Integers and Numbers. The
+        Date, Time_Period or Time of its operands when all have one of those types, a Time when
+        one is a Time (issue #1352)."""
         types = {self._value_type(op) for op in operands} - {"Null"}
-        if types == {"Boolean"}:
-            return "Boolean"
         if "String" in types:
             return "String"
         times = {_TIME_TYPE_NAMES.get((t or "").lower()) for t in types}
-        if None in times:
-            return None
-        if "TimeInterval" in times:
-            return "TimeInterval"
-        return times.pop() if len(times) == 1 else None
+        if None not in times:
+            if "TimeInterval" in times:
+                return "TimeInterval"
+            return times.pop() if len(times) == 1 else None
+        if types == {"Integer", "Number"}:
+            return "Number"
+        return types.pop() if len(types) == 1 else None
 
     def _value_type(self, node: AST.AST) -> Optional[str]:
         """The type of a Component or scalar operand of an if or a case, where it is known."""
