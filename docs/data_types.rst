@@ -665,6 +665,11 @@ Conversion details:
 - **Date to Time_Period**: Converts to daily period
   (e.g. ``"2020-01-15"`` becomes ``"2020D15"``
   with the default ``vtl`` output format).
+- **Time to Time_Period**: A Time is the period of its interval
+  when that interval is a whole year, semester, quarter, month,
+  week or day of a year from 1000 (``2020-01-01/2020-03-31`` is
+  ``2020Q1``), as a ``start/end`` text is. Any other Time raises
+  ``2-1-5-1``.
 
 Supported conversions with mask
 -------------------------------
