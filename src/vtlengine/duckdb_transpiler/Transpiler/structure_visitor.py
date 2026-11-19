@@ -871,8 +871,9 @@ class StructureVisitor(ASTTemplate):
                 bindings[f"{_UDO_CHECKS_PREFIX}{param_name}"] = [*inherited, *own]
         return bindings
 
-    def _udo_call_key(self, node: AST.UDOCall) -> Tuple[Any, ...]:
-        """The key of a call made in the current UDO scope (see udo_call_key)."""
+    def _udo_call_key(self, node: AST.AST) -> Tuple[Any, ...]:
+        """The key of a call, or of an aggr clause, made in the current UDO scope (see
+        udo_call_key)."""
         scopes = reversed(self._udo_params or [])
         return udo_call_key(next((s[_UDO_CALL] for s in scopes if _UDO_CALL in s), ()), node)
 
@@ -1266,6 +1267,9 @@ class StructureVisitor(ASTTemplate):
         group_ids: Set[str] = set()
         grouping_op: str = ""
         computed: Dict[str, Component] = {}
+        # The types the semantic analysis gives the computed Components (issue #1354)
+        analyzed = self.udo_results.get((self._udo_call_key(node), tokens.AGGREGATE)) or []
+        analyzed_types = {comp.name: comp.data_type for comp in analyzed}
 
         for assignment in self._iter_assignments(node.children):
             agg_node = assignment.right
@@ -1278,7 +1282,7 @@ class StructureVisitor(ASTTemplate):
             role = getattr(assignment.left, "role", None) or self._omitted_role(
                 node, input_ds.components.get(name)
             )
-            value_type = self._aggregate_value_type(agg_node, input_ds)
+            value_type = analyzed_types.get(name) or self._aggregate_value_type(agg_node, input_ds)
             computed[name] = self._make_comp(name, value_type, role)
 
         if grouping_op == tokens.GROUP_BY:

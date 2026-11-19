@@ -275,7 +275,9 @@ class InterpreterAnalyzer(ASTTemplate):
     )
     # The key of the call being computed (see udo_call_key), and, in the semantic analysis, the
     # result of each call (None) and each of its dataset arguments (by the parameter), which the
-    # DuckDB engine reads in place of the structures it would work out (issue #1351)
+    # DuckDB engine reads in place of the structures it would work out (issue #1351). The
+    # Components each aggr clause computes are kept as well, under the key of the clause and
+    # aggr (issue #1354)
     udo_call: Tuple[Any, ...] = ()
     udo_results: Dict[Tuple[Tuple[Any, ...], Optional[str]], Any] = field(default_factory=dict)
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
@@ -1618,6 +1620,8 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
                 )
             operands = aux_operands
+            if self.only_semantic:
+                self.udo_results[(udo_call_key(self.udo_call, node), AGGREGATE)] = operands
         self.regular_aggregation_dataset = None
         self.regular_aggregation_op = None
         if node.op == FILTER:

@@ -11618,6 +11618,44 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_13", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_13b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := max ( upper ( Id_2 ) ) group by Id_1 ]
+                        [ calc Me_3 := cast ( Me_2 , string ) ];
+        Description: Extra of case 13: Me_2 is the String that max gives of a String
+                     function, so cast reads it as a String: B, A. The DuckDB engine took it as
+                     a Number and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_13c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := max ( length ( Id_2 ) ) group by Id_1 ]
+                        [ calc Me_3 := cast ( Me_2 , string ) ];
+        Description: Extra of case 13: Me_2 is the Integer that max gives of length, so cast
+                     writes it as 1. The DuckDB engine took it as a Number and wrote 1.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_13d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := max ( Id_2 = "A" ) group by Id_1 ]
+                        [ calc Me_3 := cast ( Me_2 , string ) ];
+        Description: Extra of case 13: Me_2 is the Boolean that max gives of a comparison, so
+                     cast writes it as true. The DuckDB engine took it as a Number and wrote
+                     1.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13d", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_14(self):
         """
         Status: OK
