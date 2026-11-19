@@ -11598,3 +11598,21 @@ class NameResolutionBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1355_27", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_28(self):
+        """
+        Status: OK
+        Expression: define operator w ( d dataset ) returns dataset is
+                        d [ calc Z9 := Me_2 + 1 ] [ calc Z8 := cast ( Z9 , string ) ]
+                        end operator;
+                    DS_r <- w ( DS_3 ) [ calc Z := 1 ];
+        Description: Z9, which the body computes and then reads, is an Integer also where the
+                     call is the operand of a clause, so cast to String it gives 4, as w ( DS_3 )
+                     alone does. The DuckDB engine took Z9 as a Number and gave 4.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_28", number_inputs=1, references_names=["1"])
+        self.BaseTest(
+            code="GH_1355_28", number_inputs=1, references_names=["1"], only_semantic=True
+        )

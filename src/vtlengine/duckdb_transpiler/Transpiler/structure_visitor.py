@@ -1086,7 +1086,7 @@ class StructureVisitor(ASTTemplate):
         if input_ds is None:
             return None
 
-        output_ds = self._get_output_dataset()
+        output_ds = self._calc_result_structure()
         comps = dict(input_ds.components)
         for child in node.children:
             assignment = child
@@ -1124,6 +1124,15 @@ class StructureVisitor(ASTTemplate):
                     )
                     comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
         return Dataset(name=input_ds.name, components=comps, data=None)
+
+    def _calc_result_structure(self) -> Any:
+        """The structure whose Components stand in for the type of a calc expression not typed
+        here: the result of the statement, or in the body of a user defined operator the result
+        of its call as the semantic analysis gives it, also where the call is the operand of a
+        clause, whose operand is built without the result of the statement (issue #1355)."""
+        scope = next((s for s in reversed(self._udo_params or []) if _UDO_CALL in s), None)
+        result = self.udo_results.get((scope[_UDO_CALL], None)) if scope is not None else None
+        return result if isinstance(result, Dataset) else self._get_output_dataset()
 
     @staticmethod
     def _omitted_role(node: AST.RegularAggregation, comp: Optional[Component]) -> Role:
