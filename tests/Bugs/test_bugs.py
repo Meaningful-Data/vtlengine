@@ -12382,3 +12382,22 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_40j", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_36b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ];
+        Description: Extra of case 36: the year of a Time_Period is written with four digits,
+                     from 1000, so the text 0001 is no Time_Period and the cast raises 2-1-5-1,
+                     as for 10000. The pandas engine gave 1 and the DuckDB engine raised a raw
+                     ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36b",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message="Impossible to cast 0001 from type String to Time_Period.",
+        )
+

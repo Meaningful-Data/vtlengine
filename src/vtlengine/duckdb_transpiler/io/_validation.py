@@ -23,6 +23,7 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
+from vtlengine.DataTypes._time_checking import check_time_period
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.Model import Component, Role, component_type_name
 
@@ -32,25 +33,27 @@ from vtlengine.Model import Component, Role, component_type_name
 
 _MONTH = r"(0?[1-9]|1[0-2])"
 _WEEK = r"(0?[1-9]|[1-4]\d|5[0-3])"
+# A year of four digits, from 1000, which the pandas loader reads (issue #1352)
+_YEAR = r"[1-9]\d{3}"
 _DAY_OF_YEAR = r"(0{0,2}[1-9]|0?[1-9]\d|[12]\d\d|3[0-5]\d|36[0-6])"
 
 TIME_PERIOD_PATTERN = (
-    r"^\d{4}$|"  # Year - 2024
-    r"^\d{4}A$|"  # Annual - 2024A
-    r"^\d{4}[S][1-2]$|"  # Semester - 2024S1
-    r"^\d{4}[Q][1-4]$|"  # Quarter - 2024Q1
-    rf"^\d{{4}}[M]{_MONTH}$|"  # Month - 2024M01, 2024M1
-    rf"^\d{{4}}[W]{_WEEK}$|"  # Week - 2024W01, 2024W1
-    rf"^\d{{4}}[D]{_DAY_OF_YEAR}$|"  # Day - 2024D001, 2024D01, 2024D1
+    rf"^{_YEAR}$|"  # Year - 2024
+    rf"^{_YEAR}A$|"  # Annual - 2024A
+    rf"^{_YEAR}[S][1-2]$|"  # Semester - 2024S1
+    rf"^{_YEAR}[Q][1-4]$|"  # Quarter - 2024Q1
+    rf"^{_YEAR}[M]{_MONTH}$|"  # Month - 2024M01, 2024M1
+    rf"^{_YEAR}[W]{_WEEK}$|"  # Week - 2024W01, 2024W1
+    rf"^{_YEAR}[D]{_DAY_OF_YEAR}$|"  # Day - 2024D001, 2024D01, 2024D1
     # SDMX Gregorian formats (hyphen-separated)
-    rf"^\d{{4}}-{_MONTH}$|"  # Month numeric - 2024-01, 2024-1
-    r"^\d{4}-A1$|"  # Annual - 2024-A1
-    r"^\d{4}-S[1-2]$|"  # Semester - 2024-S1
-    r"^\d{4}-Q[1-4]$|"  # Quarter - 2024-Q1
-    rf"^\d{{4}}-M{_MONTH}$|"  # Month - 2024-M01, 2024-M1
-    rf"^\d{{4}}-W{_WEEK}$|"  # Week - 2024-W01, 2024-W1
-    rf"^\d{{4}}-D{_DAY_OF_YEAR}$|"  # Day - 2024-D001, 2024-D01, 2024-D1
-    rf"^\d{{4}}-{_MONTH}-(0?[1-9]|[1-2][0-9]|3[0-1])$"  # Full date - 2024-01-15, 2024-1-5
+    rf"^{_YEAR}-{_MONTH}$|"  # Month numeric - 2024-01, 2024-1
+    rf"^{_YEAR}-A1$|"  # Annual - 2024-A1
+    rf"^{_YEAR}-S[1-2]$|"  # Semester - 2024-S1
+    rf"^{_YEAR}-Q[1-4]$|"  # Quarter - 2024-Q1
+    rf"^{_YEAR}-M{_MONTH}$|"  # Month - 2024-M01, 2024-M1
+    rf"^{_YEAR}-W{_WEEK}$|"  # Week - 2024-W01, 2024-W1
+    rf"^{_YEAR}-D{_DAY_OF_YEAR}$|"  # Day - 2024-D001, 2024-D01, 2024-D1
+    rf"^{_YEAR}-{_MONTH}-(0?[1-9]|[1-2][0-9]|3[0-1])$"  # Full date - 2024-01-15, 2024-1-5
 )
 
 # A Time interval is written as a pair of dates, or as the year or the month it covers,
@@ -511,6 +514,13 @@ def validate_temporal_columns(
             error = InputValidationException(
                 code="0-1-1-35", value=invalid_value, type_1="String", type_2="Duration"
             ).args[0]
+        elif type_name == "Time_Period":
+            # The message of the pandas loader, which reads the value with check_time_period
+            # (issue #1352)
+            try:
+                check_time_period(invalid_value)
+            except InputValidationException as e:
+                error = e.args[0]
         raise DataLoadError(
             "0-3-1-6", name=table_name, column=col_name, type=type_name, error=error
         )
