@@ -12544,3 +12544,74 @@ class TimeValueBugs(BugHelper):
         """
         self.BaseTest(code="GH_1352_17d", number_inputs=2, references_names=["1"])
 
+    def test_GH_1352_17e(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component < duration > )
+                        returns component < duration > is x end operator;
+                    DS_r <- DS_1 [ calc Me_2 := f ( Me_1 ) ]
+                        [ aggr Me_3 := max ( Me_2 ) , Me_4 := min ( Me_2 ) ];
+        Description: Extra of case 17: a Component that a calc computes with a user defined
+                     operator returning a Duration is a Duration, so the max and the min of the
+                     aggr order it by its length and give A and M. The DuckDB engine typed it as
+                     a Number, ordered the letters and gave M and A.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_17e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_40g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "2020Q2" , time_period ) ]
+                        [ calc Me_3 := getyear ( Me_2 ) ] [ keep Me_3 ];
+        Description: Extra of case 40: a Component that a calc computes with a cast to
+                     time_period is a Time_Period, also when a later keep drops it, so getyear
+                     gives 2020. The DuckDB engine typed it as a Number and raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40g", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_40h(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component < time_period > )
+                        returns component < time_period > is x end operator;
+                    DS_r <- DS_1 [ calc Me_2 := f ( Me_1 ) ] [ calc Me_3 := cast ( Me_2 , string ) ]
+                        [ keep Me_3 ];
+        Description: Extra of case 40: a Component that a calc computes with a user defined
+                     operator returning a Time_Period is a Time_Period, also when a later keep
+                     drops it, so cast to string writes 2020Q1 and 2021M12. The DuckDB engine
+                     typed it as a Number and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40h", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_40i(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , string ) ]
+                        [ calc Me_3 := cast ( Me_2 , string ) ] [ keep Me_3 ];
+        Description: Extra of case 40: a Component that a calc computes with a cast to string is
+                     a String, also when a later keep drops it, so a second cast to string keeps
+                     2020-01-15. The DuckDB engine typed it as a Number and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40i", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_40j(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "2020-01-15" , date ) ]
+                        [ calc Me_3 := cast ( Me_2 , string ) ] [ keep Me_3 ];
+        Description: Extra of case 40: a Component that a calc computes with a cast to date is a
+                     Date, also when a later keep drops it, so cast to string writes 2020-01-15.
+                     The DuckDB engine typed it as a Number and raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40j", number_inputs=1, references_names=["1"])
