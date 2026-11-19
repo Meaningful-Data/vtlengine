@@ -13217,3 +13217,14 @@ class TimeValueBugs(BugHelper):
             exception_code="2-1-19-8",
             exception_message="Invalid date format, must be YYYY-MM-DD: notadate",
         )
+
+    def test_GH_1352_27b(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , 1 );
+        Description: Extra of case 27: 2020 has 366 days, so 2020D365 moves one day to 2020D366,
+                     2020D366 to 2021D1 and 2021D1 to 2021D2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_27b", number_inputs=1, references_names=["1"])

@@ -195,8 +195,10 @@ Date
       - ISO 8601 with ``T`` separator, each value on its
         own in both execution engines: ``"YYYY-MM-DD"``,
         or ``"YYYY-MM-DDThh:mm:ss"`` for a value whose
-        time is not midnight. Timezone offsets are not
-        included in the output.
+        time is not midnight, with a fraction of a
+        second in six digits when it has one
+        (``"2020-01-15T10:30:00.123000"``). Timezone
+        offsets are not included in the output.
     * - **Output dtype**
       - ``string[pyarrow]``
 
@@ -285,6 +287,15 @@ year has 52 or 53 ISO weeks and 365 or 366 days, so ``timeshift`` of
 in, also when it ends in the next one: ``time_agg`` gives ``2020Q4``
 and ``2020`` for ``2020W53`` (2020-12-28 to 2021-01-03). A result out
 of the years 1000–9999 raises ``2-1-19-10``.
+
+``fill_time_series`` in ``all`` mode fills the periods of a
+Time_Period to whole years, from the first period of the earliest
+year to the last period of the latest one, also for a single Data
+Point: ``2020Q2`` alone gives ``2020Q1`` to ``2020Q4``. A series of
+Dates or of Time values of a single Data Point stays as it is, in
+both execution engines: its period cannot be read from one value,
+and the limits the manual gives, its earliest and latest values,
+are that value.
 
 **Output formats** (controlled by ``time_period_output_format``
 parameter):
