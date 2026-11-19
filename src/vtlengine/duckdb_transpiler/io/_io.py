@@ -436,7 +436,8 @@ def load_datapoints_duckdb(
             action_filter = 'WHERE "ACTION" != \'D\' OR "ACTION" IS NULL'
 
         # 8. Execute INSERT
-        read_expr = f"""
+        def csv_read(parallel: bool) -> str:
+            return f"""
             FROM read_csv(
                 '{file_path}',
                 header=true,
@@ -444,27 +445,26 @@ def load_datapoints_duckdb(
                 auto_detect=false,
                 {_sniffed_fmt},
                 null_padding=true,
-                parallel=true,
+                parallel={str(parallel).lower()},
                 ignore_errors=false
             )
             {action_filter}
         """
-        insert_sql = f"""
-            INSERT INTO "{dataset_name}"
-            SELECT {", ".join(select_cols)}
-            {read_expr}
-        """
+
+        def insert(read: str) -> None:
+            conn.execute(f'INSERT INTO "{dataset_name}" SELECT {", ".join(select_cols)} {read}')
+
+        read_expr = csv_read(parallel=True)
         try:
-            conn.execute(insert_sql)
+            insert(read_expr)
         except duckdb.Error as e:
             if "quoted new lines" not in str(e):
                 raise
             # A value with a line break between quotes, which the pandas loader reads, is read
             # by the serial reader only, as the parallel one refuses it with null_padding
             # (issue #1352)
-            read_expr = read_expr.replace("parallel=true", "parallel=false")
-            insert_sql = insert_sql.replace("parallel=true", "parallel=false")
-            conn.execute(insert_sql)
+            read_expr = csv_read(parallel=False)
+            insert(read_expr)
 
     except duckdb.Error as e:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')

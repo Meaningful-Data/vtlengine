@@ -1787,3 +1787,45 @@ def test_GH_1352_37f(use_duckdb: bool, source: str, value: str, tmp_path: Path) 
         use_duckdb=use_duckdb,
     )
     assert result["DS_r"].data["Me_1"].tolist() == ["2020-01-15"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("folder", ["data", "parallel=true"])
+def test_GH_1352_37g(use_duckdb: bool, folder: str, tmp_path: Path) -> None:
+    """Extra of case 37: a CSV whose String column holds a line break between quotes loads the
+    same data on both engines, also from a folder whose name is a reader option. The DuckDB
+    engine raised 0-3-1-6 on the first column, and once it read such a file again with its
+    serial reader, it read another path when the folder held the text of the option
+    (issue #1352)."""
+    datapoints = tmp_path / folder / "DS_1.csv"
+    datapoints.parent.mkdir()
+    pd.DataFrame({"Id_1": [1, 2], "Me_1": ["a\nb", "c"]}).to_csv(datapoints, index=False)
+    result = run(
+        script="DS_r <- DS_1;",
+        data_structures=_dataframe_structures("String"),
+        datapoints={"DS_1": datapoints},
+        use_duckdb=use_duckdb,
+    )
+    assert result["DS_r"].data.values.tolist() == [[1, "a\nb"], [2, "c"]]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("text", ["Id_1,Me_1\n1,a,x\n2,c\n", 'Id_1,Me_1\n1,"a\nb",x\n2,c\n'])
+def test_GH_1352_37h(use_duckdb: bool, text: str, tmp_path: Path) -> None:
+    """Extra of case 37, a control: a CSV line with a field more than its header is refused with
+    0-3-1-18 on both engines, with or without a line break between quotes, as it was before
+    the DuckDB engine read a file with such a line break again with its serial reader
+    (issue #1352)."""
+    datapoints = tmp_path / "DS_1.csv"
+    datapoints.write_text(text)
+    with pytest.raises(VTLEngineException) as context:
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("String"),
+            datapoints={"DS_1": datapoints},
+            use_duckdb=use_duckdb,
+        )
+    assert context.value.args[1] == "0-3-1-18"
+    assert context.value.args[0].startswith(
+        "On Dataset DS_1 loading: line 2 of the file does not split into the fields of its header."
+    )
