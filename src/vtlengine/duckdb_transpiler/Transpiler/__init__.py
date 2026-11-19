@@ -678,7 +678,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         )
         basic_type = SCALAR_TYPES_CLASS_REVERSE[value_domain.type]
         info = "\u00a6".join((op, basic_type, value_domain.name, "")).replace("'", "''")
-        return f"vtl_downcast({expr}, [{values}], '{info}')"
+        macro = "vtl_downcast_text" if value_domain.type is String else "vtl_downcast"
+        return f"{macro}({expr}, [{values}], '{info}')"
 
     def _unqualify_join_columns(self, node: AST.RegularAggregation, query: str) -> str:
         """Rename remaining alias#comp columns to plain component names."""
@@ -749,6 +750,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if scope is not None and f"{_UDO_SQL_PREFIX}{name}" in scope:
             return str(scope[f"{_UDO_SQL_PREFIX}{name}"])
         sql = self._resolve_udo_param_sql(name, udo_val)
+        declared = scope.get(f"__type__{name}") if scope is not None else None
+        if declared is Number or declared is String:
+            # A scalar argument is promoted to the type of its parameter, as on the pandas
+            # engine: an Integer to a Number, a Boolean to the String true or false (issue #1351)
+            sql = f"CAST({sql} AS {get_duckdb_type(declared.__name__)})"
         checks = scope.get(f"{_UDO_CHECKS_PREFIX}{name}") if scope is not None else None
         if not checks:
             return sql

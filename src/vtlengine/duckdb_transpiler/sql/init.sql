@@ -499,6 +499,15 @@ CREATE OR REPLACE MACRO vtl_downcast(v, vals, info) AS (
     END
 );
 
+-- vtl_downcast into a value domain of Strings, which a value of another type is compared with
+-- as the text it is promoted to: a Boolean is 'true' or 'false' (issue #1351). The value is
+-- returned as it is.
+CREATE OR REPLACE MACRO vtl_downcast_text(v, vals, info) AS (
+    CASE WHEN v IS NULL OR list_contains(vals, CAST(v AS VARCHAR)) THEN v
+         ELSE error('VTL 2-1-5-4 ' || info || CAST(v AS VARCHAR))
+    END
+);
+
 -- Text cast to Duration: an ISO duration or a code in any case gives the code, as on the
 -- pandas engine, and other text mirrors VTL error 2-1-5-1.
 CREATE OR REPLACE MACRO vtl_text_to_duration(x) AS (

@@ -11209,3 +11209,123 @@ class ValueDomainBugs(BugHelper):
             exception_message="At op f: Cannot cast 2.5 of Integer to Value Domain VD_1",
             vd_names=self.vd_1351,
         )
+
+    def test_GH_1351_32a(self):
+        """
+        Status: OK
+        Expression: define operator f ( x VD_S ) returns string is x end operator;
+                    SC_r <- f ( true );
+        Description: A Boolean argument is promoted to String as the text true, which is not a
+                     value of VD_S. The DuckDB engine failed with an internal error comparing
+                     the Boolean with the Strings of VD_S.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_32a",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op f: Cannot cast true of String to Value Domain VD_S",
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_32b(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component < VD_S > ) returns component is x end operator;
+                    DS_r <- DS_B [ calc Me_2 := f ( Me_1 ) ];
+        Description: The values of a Boolean Component are promoted to String as the text true
+                     or false, which are not values of VD_S. The DuckDB engine failed with an
+                     internal error comparing the Booleans with the Strings of VD_S.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_32b",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op f: Cannot cast true of String to Value Domain VD_S",
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_32c(self):
+        """
+        Status: OK
+        Expression: define operator f ( x VD_SB ) returns string is x end operator;
+                    define operator g ( x component < VD_SB > ) returns component is x
+                        end operator;
+                    SC_r <- f ( true );
+                    DS_r <- DS_B [ calc Me_2 := g ( Me_1 ) , Me_3 := SC_r , Me_4 := f ( false ) ];
+        Description: VD_SB holds the Strings true and false, so a Boolean argument and the
+                     values of a Boolean Component, promoted to String as that text, are values
+                     of it. The pandas engine compared the Booleans themselves and raised
+                     2-1-5-4 for the Component, and the DuckDB engine failed with an internal
+                     error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_32c",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=[*self.vd_1351, "GH_1351-VD_SB"],
+        )
+
+    def test_GH_1351_32d(self):
+        """
+        Status: OK
+        Expression: define operator f ( x VD_N ) returns string is cast ( x , string )
+                        end operator;
+                    define operator g ( x component < VD_N > ) returns component is x
+                        end operator;
+                    DS_r <- DS_I [ calc Me_2 := f ( 2 ) , Me_3 := g ( Me_1 ) ];
+        Description: An Integer argument is promoted to the Number of VD_N, which its body
+                     casts to the String 2.0, and the values of an Integer Component are values
+                     of VD_N. The DuckDB engine kept the argument an Integer and gave 2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_32d",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=[*self.vd_1351, "GH_1351-VD_N"],
+        )
+
+    def test_GH_1351_32e(self):
+        """
+        Status: OK
+        Expression: define operator f ( ds dataset ) returns dataset { measure < VD_SB > Me_1 } is
+                        ds end operator;
+                    DS_r <- f ( DS_B );
+        Description: The Boolean Measure of the result is promoted to String on VD_SB, as the
+                     text true or false. The pandas engine compared the Booleans themselves and
+                     raised 2-1-5-4, and the DuckDB engine failed with an internal error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_32e",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=[*self.vd_1351, "GH_1351-VD_SB"],
+        )
+
+    def test_GH_1351_32f(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component ) returns component < VD_SB > is x
+                        end operator;
+                    DS_r <- DS_B [ calc Me_2 := f ( Me_1 ) ];
+        Description: The Boolean Component result is promoted to String on VD_SB, as the text
+                     true or false. The pandas engine compared the Booleans themselves and raised
+                     2-1-5-4, and the DuckDB engine failed with an internal error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_32f",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=[*self.vd_1351, "GH_1351-VD_SB"],
+        )

@@ -6,9 +6,9 @@ from typing import Any, Dict, Optional, Tuple, cast
 
 from vtlengine.AST import SetType, SignatureConstraints, TypeConstraint, ValueDomainType
 from vtlengine.AST.ASTString import _format_component_type, _format_name, _format_type
-from vtlengine.DataTypes import check_unary_implicit_promotion
+from vtlengine.DataTypes import String, check_unary_implicit_promotion, to_strings
 from vtlengine.Exceptions import InputValidationException, SemanticError
-from vtlengine.Model import Component, Dataset, ValueDomain
+from vtlengine.Model import Component, DataComponent, Dataset, ValueDomain
 
 
 def _value_domain(
@@ -162,6 +162,12 @@ def udo_dataset_components(
     return taken
 
 
+def _to_text(found: Any, domain: ValueDomain) -> bool:
+    """Whether the values of a type found are written as text on a value domain of Strings: a
+    Boolean is promoted to String as the text true or false (issue #1351)."""
+    return domain.type is String and found is not String
+
+
 def udo_result_on_value_domains(
     result: Any,
     constraints: Optional[SignatureConstraints],
@@ -179,15 +185,21 @@ def udo_result_on_value_domains(
         }
         if not domains:
             return result
-        components = dict(result.components)
+        components, data = dict(result.components), result.data
         for name, domain in domains.items():
-            components[name] = copy(components[name])
-            components[name].data_type, components[name].value_domain = domain.type, domain
-        return Dataset(name=result.name, components=components, data=result.data)
+            component = components[name] = copy(components[name])
+            if data is not None and _to_text(component.data_type, domain):
+                data = data.copy() if data is result.data else data
+                data[name] = to_strings(data[name])
+            component.data_type, component.value_domain = domain.type, domain
+        return Dataset(name=result.name, components=components, data=data)
     constraint = constraints.value if constraints is not None else None
     if constraint is None or constraint.value_domain is None:
         return result
     domain = constraint.value_domain
     result = copy(result)
+    is_data = isinstance(result, DataComponent) and result.data is not None
+    if is_data and _to_text(result.data_type, domain):
+        result.data = to_strings(result.data)
     result.data_type, result.value_domain = domain.type, domain
     return result
