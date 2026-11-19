@@ -6022,7 +6022,8 @@ FROM (
             return None if value is None else f"'{value}'"
         period_from = "NULL" if node.period_from is None else f"'{node.period_from}'"
         sql = self.visit(node.period_to_ref)
-        return f"vtl_time_agg_period({sql}, {period_from}, '{name}')"
+        # A scalar subquery, which runs once, also where the operand has no data points
+        return f"(SELECT vtl_time_agg_period({sql}, {period_from}, '{name}'))"
 
     def _lag_offset_sql(self, op: str, offset: AST.VarID) -> str:
         """The offset of lag or lead that a Scalar gives, read as any Scalar: an input one, one

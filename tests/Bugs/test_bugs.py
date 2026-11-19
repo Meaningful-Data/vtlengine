@@ -11706,6 +11706,26 @@ class NameResolutionBugs(BugHelper):
             ),
         )
 
+    def test_GH_1355_25e(self):
+        """
+        Status: OK
+        Expression: SC_2 <- cast ( null , string );
+                    DS_r <- DS_7 [ calc Me_3 := time_agg ( SC_2 , _ , Tp ) ];
+        Description: Extra of test_GH_1355_25: as test_GH_1355_25d, with DS_7 without data
+                     points, the null period raises 2-1-19-24 on both engines. The DuckDB
+                     engine checked the period on each data point, so it raised nothing.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_25e",
+            number_inputs=1,
+            exception_code="2-1-19-24",
+            exception_message=(
+                "At op time_agg: The period indicator SC_2 to aggregate to has no value."
+            ),
+        )
+
     def test_GH_1355_26(self):
         """
         Status: OK
