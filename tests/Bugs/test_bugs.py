@@ -11418,3 +11418,57 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_8", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 [ calc errorcode := "x" , errorlevel := 9 ] ,
+                        DPR_1 all_measures );
+        Description: The operand Measure errorcode collides with the one check_datapoint
+                     computes. The pandas engine gave two errorcode and two errorlevel
+                     columns, and the DuckDB engine replaced the operand's.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_9",
+            number_inputs=1,
+            exception_code="1-1-6-14",
+            exception_message="The component errorcode in Dataset",
+        )
+
+    def test_GH_1354_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_hierarchy ( DS_1 [ rename Me_1 to imbalance ] , HR_1
+                        rule Id_2 all_measures );
+        Description: The operand Measure imbalance collides with the one check_hierarchy
+                     computes. The pandas engine gave two imbalance columns, and the DuckDB
+                     engine the operand's value.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_10",
+            number_inputs=1,
+            exception_code="1-1-6-14",
+            exception_message="The component imbalance in Dataset",
+        )
+
+    def test_GH_1354_11(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 [ rename Me_1 to bool_var ] , DPR_2
+                        invalid );
+        Description: The operand Measure bool_var collides with the one check_datapoint
+                     computes. The pandas engine raised KeyError, and the DuckDB engine
+                     returned the operand's bool_var.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_11",
+            number_inputs=1,
+            exception_code="1-1-6-14",
+            exception_message="The component bool_var in Dataset",
+        )
+
