@@ -173,7 +173,8 @@ Date
         microseconds. A time at midnight is no time:
         ``"2020-01-15T00:00:00"`` loads as
         ``"2020-01-15"``; any other time is kept.
-        Year range: 1800–9999.
+        Year range: 1000–9999, as for a Time_Period
+        and a Time.
     * - **Input (DataFrame)**
       - String values validated against the same
         ISO 8601 formats, or values pandas has already
@@ -202,7 +203,7 @@ Date
     * - **Output dtype**
       - ``string[pyarrow]``
 
-``dateadd`` and ``timeshift`` give a Date of the years 1800–9999
+``dateadd`` and ``timeshift`` give a Date of the years 1000–9999
 only, the years a Date is read in: a result out of them raises
 ``2-1-19-10``, in both execution engines.
 
@@ -357,7 +358,8 @@ Time (TimeInterval)
       - ISO 8601 interval: ``"2020-01-01/2020-12-31"``.
         Also accepts ``"YYYY"`` (expanded to full year
         interval) and ``"YYYY-MM"`` (expanded to full
-        month interval).
+        month interval). Year range: 1000–9999, as for
+        a Date and a Time_Period.
     * - **Internal representation**
       - Python ``str`` in ``"YYYY-MM-DD/YYYY-MM-DD"``
         format, stored as ``string[pyarrow]``.

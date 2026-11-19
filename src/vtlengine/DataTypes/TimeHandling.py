@@ -29,10 +29,16 @@ def date_of_ordinal(ordinal: int) -> tuple[date, int]:
     return date.fromordinal(ordinal - cycles * _DAYS_IN_400_YEARS), cycles * 400
 
 
-def check_date_year(year: int) -> None:
-    """A Date has a year from 1800 to 9999, the years its loaders read (issue #1352)."""
-    if year < 1800 or year > 9999:
-        raise RunTimeError("2-1-19-10", year=year, min_year=1800)
+# The years of a Date, a Time_Period and a Time: those written with four digits, from 1000 to
+# 9999, which every loader, cast and time operator keeps to (issue #1352)
+MIN_YEAR = 1000
+MAX_YEAR = 9999
+
+
+def check_year(year: int) -> None:
+    """A time value has a year from MIN_YEAR to MAX_YEAR (issue #1352)."""
+    if year < MIN_YEAR or year > MAX_YEAR:
+        raise RunTimeError("2-1-19-10", year=year, min_year=MIN_YEAR)
 
 
 class TimePeriodConfig:
@@ -211,19 +217,13 @@ class TimePeriodHandler:
             period_number_str = str(self.period_number)
         return f"{self.year}-{self.period_indicator}{period_number_str}"
 
-    @staticmethod
-    def _check_year(year: int) -> None:
-        # A period has a year of four digits, the only ones its texts write (issue #1352)
-        if year < 1000 or year > 9999:
-            raise RunTimeError("2-1-19-10", year=year, min_year=1000)
-
     @property
     def year(self) -> int:
         return self._year
 
     @year.setter
     def year(self, value: int) -> None:
-        self._check_year(value)
+        check_year(value)
         self._year = value
 
     @property
@@ -686,7 +686,7 @@ def interval_to_period_str(interval_value: str) -> Optional[str]:
     except ValueError:
         return None
 
-    if start.year < 1000:
+    if start.year < MIN_YEAR:
         # A period has a year of four digits (issue #1352)
         return None
     # Try each period indicator from largest to smallest

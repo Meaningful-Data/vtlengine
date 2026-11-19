@@ -23,7 +23,8 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
-from vtlengine.DataTypes._time_checking import check_time_period
+from vtlengine.DataTypes._time_checking import check_time, check_time_period
+from vtlengine.DataTypes.TimeHandling import MAX_YEAR, MIN_YEAR
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.Model import Component, Role, component_type_name
 
@@ -55,7 +56,8 @@ def sql_trim(value_expr: str) -> str:
 
 _MONTH = r"(0?[1-9]|1[0-2])"
 _WEEK = r"(0?[1-9]|[1-4]\d|5[0-3])"
-# A year of four digits, from 1000, which the pandas loader reads (issue #1352)
+# A year of four digits, from 1000, which the pandas loader reads for a Time_Period, a Date and a
+# Time (issue #1352)
 _YEAR = r"[1-9]\d{3}"
 _DAY_OF_YEAR = r"(0{0,2}[1-9]|0?[1-9]\d|[12]\d\d|3[0-5]\d|36[0-6])"
 
@@ -81,10 +83,10 @@ TIME_PERIOD_PATTERN = (
 # A Time interval is written as a pair of dates, or as the year or the month it covers,
 # which the pandas loader expands into that pair (issue #1066).
 TIME_INTERVAL_PATTERN = (
-    r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?/"
-    r"\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?$|"
-    r"^\d{4}$|"  # Year - 2020, covering it whole
-    r"^\d{4}-[0-1]?\d$"  # Month - 2020-05, 2020-5, covering it whole
+    rf"^{_YEAR}-\d{{2}}-\d{{2}}(T\d{{2}}:\d{{2}}:\d{{2}})?/"
+    rf"{_YEAR}-\d{{2}}-\d{{2}}(T\d{{2}}:\d{{2}}:\d{{2}})?$|"
+    rf"^{_YEAR}$|"  # Year - 2020, covering it whole
+    rf"^{_YEAR}-[0-1]?\d$"  # Month - 2020-05, 2020-5, covering it whole
 )
 
 DURATION_PATTERN = r"^(A|S|Q|M|W|D)$"  # Year, Semester, Quarter, Month, Week, Day
@@ -100,9 +102,9 @@ VALID_DATE_REGEX = (
     r"([ T]([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d+)?([+-]\d{2}:\d{2}|Z)?)?$"
 )
 
-# A Date runs from the year 1800 to 9999, which the pandas loader reads it under, and
-# reports apart from a value of the wrong shape (issue #1065).
-VALID_DATE_YEAR_REGEX = r"^(1[89]\d{2}|[2-9]\d{3})(-|\d{4}$)"
+# A Date runs from the year 1000 to 9999, which the pandas loader reads it under, and
+# reports apart from a value of the wrong shape (issues #1065, #1352).
+VALID_DATE_YEAR_REGEX = rf"^{_YEAR}(-|\d{{4}}$)"
 
 
 # =============================================================================
@@ -543,11 +545,11 @@ def validate_temporal_columns(
             error = InputValidationException(
                 code="0-1-1-35", value=invalid_value, type_1="String", type_2="Duration"
             ).args[0]
-        elif type_name == "Time_Period":
-            # The message of the pandas loader, which reads the value with check_time_period
-            # (issue #1352)
+        elif type_name in ("Time_Period", "Time"):
+            # The message of the pandas loader, which reads the value with check_time_period or
+            # check_time (issue #1352)
             try:
-                check_time_period(invalid_value)
+                (check_time_period if type_name == "Time_Period" else check_time)(invalid_value)
             except InputValidationException as e:
                 error = e.args[0]
         raise DataLoadError(
@@ -658,7 +660,9 @@ def _date_cast(value_expr: str, column_name: str, target_type: str) -> str:
         f"'Column {column_name}: Date ' || {text} || ' is not in the correct format. "
         f"Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS.'"
     )
-    year_err = f"'Date ' || {text} || ' is invalid. Year must be between 1800 and 9999.'"
+    year_err = (
+        f"'Date ' || {text} || ' is invalid. Year must be between {MIN_YEAR} and {MAX_YEAR}.'"
+    )
     return _date_sql(value_expr, target_type, format_err, year_err)
 
 

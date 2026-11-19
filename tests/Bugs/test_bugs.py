@@ -12540,18 +12540,19 @@ class TimeValueBugs(BugHelper):
         Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ]
                         [ filter Id_1 = 3 ];
         Description: Extra of case 36: a Time of a year below 1000, 0500-01-01/0500-12-31 or
-                     0999-01-01/0999-03-31, is no Time_Period, whose year is written with four
-                     digits from 1000, so the cast raises 2-1-5-1, also for the Data Points that
-                     the filter drops. The DuckDB engine raised a raw ValueError or 2-1-19-10.
+                     0999-01-01/0999-03-31, is no Time, whose years run from 1000 to 9999 as the
+                     ones of a Date and a Time_Period, so loading it raises 0-3-1-6 before the
+                     cast. The DuckDB engine raised a raw ValueError or 2-1-19-10 for the cast.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
         Goal: Check Exception.
         """
-        self.NewSemanticExceptionTest(
+        self.DataLoadExceptionTest(
             code="GH_1352_36i",
             number_inputs=1,
-            exception_code="2-1-5-1",
+            exception_code="0-3-1-6",
             exception_message=(
-                "Impossible to cast 0500-01-01/0500-12-31 from type Time to Time_Period."
+                "On Dataset DS_1 loading: not possible to cast column Me_1 to Time. Error found: "
+                '"Time 0500-01-01/0500-12-31 is invalid. Year must be between 1000 and 9999."'
             ),
         )
 
@@ -12675,7 +12676,7 @@ class TimeValueBugs(BugHelper):
             code="GH_1352_30",
             number_inputs=1,
             exception_code="2-1-19-10",
-            exception_message="Invalid year 10020, must be between 1800 and 9999.",
+            exception_message="Invalid year 10020, must be between 1000 and 9999.",
         )
 
     def test_GH_1352_23(self):
@@ -12995,3 +12996,35 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_27b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_26e(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , 1 );
+        Description: Extra of case 26: timeshift of the monthly Dates 9999-11-30 and 9999-12-31
+                     by one month gives the year 10000, which no Date has, so it raises
+                     2-1-19-10, as dateadd does.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_26e",
+            number_inputs=1,
+            exception_code="2-1-19-10",
+            exception_message="Invalid year 10000, must be between 1000 and 9999.",
+        )
+
+    def test_GH_1352_26f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , date ) ,
+                        Me_3 := dateadd ( Id_2 , 1 , "M" ) ];
+        Description: Extra of case 26: a Date has the years 1000 to 9999, as a Time_Period, so
+                     the Dates 1500-01-31 and 1000-12-31 load, the texts 1500-06-15 and
+                     1799-12-31 cast to Dates, and dateadd moves the loaded ones one month, to
+                     1500-02-28 (1500 is no leap year) and 1001-01-31. Both engines read the
+                     years 1800 to 9999 only and refused the data.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_26f", number_inputs=1, references_names=["1"])

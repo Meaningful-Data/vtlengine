@@ -4,7 +4,7 @@ from datetime import date, datetime
 from functools import lru_cache
 from typing import Any, Final
 
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
+from vtlengine.DataTypes.TimeHandling import MAX_YEAR, MIN_YEAR, TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException, RunTimeError
 
 _DATE_PART_RE = re.compile(r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})")
@@ -171,11 +171,11 @@ def check_date(value: Any) -> str:
     except (ValueError, InputValidationException):
         raise _build_date_error(value) from None
 
-    # Check date is between 1800 and 9999
+    # A Date has a year from 1000 to 9999, as a Time_Period and a Time (issue #1352)
     year = int(value[:4])
-    if not 1800 <= year <= 9999:
+    if not MIN_YEAR <= year <= MAX_YEAR:
         raise InputValidationException(
-            f"Date {value} is invalid. Year must be between 1800 and 9999."
+            f"Date {value} is invalid. Year must be between {MIN_YEAR} and {MAX_YEAR}."
         )
 
     return iso_result
@@ -203,6 +203,11 @@ def check_time(value: str) -> str:
 
 
 def _check_time(value: str) -> str:
+    # A Time has a year from 1000 to 9999, as a Date and a Time_Period (issue #1352)
+    if any(not MIN_YEAR <= int(year) <= MAX_YEAR for year in re.findall(r"(?:^|/)(\d{4})", value)):
+        raise InputValidationException(
+            f"Time {value} is invalid. Year must be between {MIN_YEAR} and {MAX_YEAR}."
+        )
     year_result = re.fullmatch(year_pattern, value)
     if year_result is not None:
         date1_time = datetime.strptime(value, "%Y")
