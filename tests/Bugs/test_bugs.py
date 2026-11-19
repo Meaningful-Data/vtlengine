@@ -13089,3 +13089,28 @@ class TimeValueBugs(BugHelper):
             exception_code="2-1-19-10",
             exception_message="Invalid year 10020, must be between 1000 and 9999.",
         )
+
+    def test_GH_1352_31b(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single );
+        Description: Extra of case 31: the Measure of a Date Data Set may have any name, also
+                     _added, and fill_time_series keeps it: 1.0, null, null, 2.0. The pandas
+                     engine marked the Data Points it added in a column of that name and removed
+                     the Measure.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_31b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_31c(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single );
+        Description: Extra of case 31: the Measure of a Time_Period Data Set may have any name,
+                     also _freq, and fill_time_series keeps it: 1.0, null, null, 2.0. The pandas
+                     engine grouped the periods by a column of that name and removed the Measure.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_31c", number_inputs=1, references_names=["1"])

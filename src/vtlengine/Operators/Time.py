@@ -512,7 +512,8 @@ class Fill_time_series(Binary):
         data = data.copy()
         tp_parsed = data[cls.time_id].map(lambda x: TimePeriodHandler(x), na_action="ignore")
         data[cls.time_id] = tp_parsed.map(str, na_action="ignore")
-        data = data.assign(_freq=tp_parsed.map(lambda x: x.period_indicator, na_action="ignore"))
+        # The frequency stays out of the frame, where a Component of any name may be (#1352)
+        freq_series = tp_parsed.map(lambda x: x.period_indicator, na_action="ignore")
 
         # Determine global year range (for "all" mode)
         if fill_type == "all":
@@ -521,16 +522,15 @@ class Fill_time_series(Binary):
 
         # Group by other_ids + frequency and fill missing periods
         filled_rows: List[Dict[str, Any]] = []
-        non_id_cols = [
-            c for c in data.columns if c not in cls.other_ids and c != cls.time_id and c != "_freq"
-        ]
+        non_id_cols = [c for c in data.columns if c not in cls.other_ids and c != cls.time_id]
 
-        for group_key, group_df in data.groupby(cls.other_ids + ["_freq"]):
+        groupers = [data[other_id] for other_id in cls.other_ids] + [freq_series]
+        for group_key, group_df in data.groupby(groupers):
             if isinstance(group_key, tuple):
-                freq = group_key[-1]
+                freq = str(group_key[-1])
                 other_id_values = group_key[:-1]
             else:
-                freq = group_key
+                freq = str(group_key)
                 other_id_values = ()
 
             group_tp = tp_parsed.loc[group_df.index]
@@ -567,7 +567,6 @@ class Fill_time_series(Binary):
                     filled_rows.append(row)
 
         # Combine and return
-        data = data.drop(columns=["_freq"])
         if filled_rows:
             fill_df = pd.DataFrame(filled_rows)
             result = pd.concat([data, fill_df], ignore_index=True)
@@ -594,12 +593,7 @@ class Fill_time_series(Binary):
 
     @classmethod
     def fill_dates(cls, data: pd.DataFrame, fill_type: str, min_frequency: str) -> pd.DataFrame:
-        result_data = cls.date_filler(data, fill_type, min_frequency)
-        # The added Data Point of a date the operand has goes, and the operand's own one stays,
-        # also when all its Measures are null (issue #1352)
-        added = result_data["_added"]
-        duplicated = result_data.duplicated(subset=(cls.other_ids + [cls.time_id]), keep=False)
-        return result_data[~(duplicated & added)].drop(columns="_added")
+        return cls.date_filler(data, fill_type, min_frequency)
 
     @classmethod
     def date_filler(cls, data: pd.DataFrame, fill_type: str, min_frequency: str) -> pd.DataFrame:
@@ -626,11 +620,13 @@ class Fill_time_series(Binary):
 
         filled_data = pd.concat(filled_data, ignore_index=True)
         filled_data[cls.time_id] = filled_data[cls.time_id].dt.strftime(date_format)
-        combined_data = pd.concat(
-            [filled_data.assign(_added=True), data.assign(_added=False)], ignore_index=True
-        )
+        combined_data = pd.concat([filled_data, data], ignore_index=True)
         combined_data[cls.time_id] = combined_data[cls.time_id].astype("string[pyarrow]")
-        return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
+        # The added Data Point of a date the operand has goes, and the operand's own one, which
+        # comes last, stays, also when all its Measures are null. No marker column is added to
+        # the frame, where a Component of any name may be (issue #1352)
+        duplicated = combined_data.duplicated(subset=(cls.other_ids + [cls.time_id]), keep="last")
+        return combined_data[~duplicated].sort_values(by=cls.other_ids + [cls.time_id])
 
     @classmethod
     def max_min_from_time(cls, data: pd.DataFrame, fill_type: str = "all") -> Dict[str, Any]:
