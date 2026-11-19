@@ -2,6 +2,7 @@ import json
 import os
 import warnings
 from pathlib import Path
+from typing import Any, Dict
 
 import pandas as pd
 import pytest
@@ -18,7 +19,7 @@ from vtlengine.DataTypes.TimeHandling import (
     generate_period_range,
     period_to_date,
 )
-from vtlengine.Exceptions import DataLoadError, SemanticError
+from vtlengine.Exceptions import DataLoadError, SemanticError, VTLEngineException
 from vtlengine.Exceptions import RunTimeError as RT
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role
@@ -461,7 +462,7 @@ def _check_dateadd_out_of_range(
             use_duckdb=use_duckdb,
         )
     assert context.value.args[1] == "2-1-19-10"
-    assert context.value.args[0].startswith(f"Invalid year {year}, must be between 1800 and 9999.")
+    assert context.value.args[0].startswith(f"Invalid year {year}, must be between 1000 and 9999.")
 
 
 @pytest.mark.parametrize("use_duckdb", engine_params())
@@ -484,24 +485,101 @@ def test_GH_1352_26d(use_duckdb: bool) -> None:
     _check_dateadd_out_of_range(use_duckdb, script, "2020-01-31", 300002020)
 
 
+def _date_structures(scalar: bool = False) -> Dict[str, Any]:
+    """DS_1 with an Integer Identifier and a String Measure Me_1, and a Date Scalar SC_1."""
+    structures: Dict[str, Any] = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    if scalar:
+        structures["scalars"] = [{"name": "SC_1", "type": "Date"}]
+    return structures
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize(
+    "path, script, me_type, scalar, code",
+    [
+        pytest.param("load", "DS_r <- DS_1;", "Date", False, "0-3-1-6", id="load"),
+        pytest.param(
+            "literal cast",
+            'DS_r <- DS_1 [ calc Me_2 := cast ( "0999-12-31" , date ) ];',
+            "String",
+            False,
+            "1-1-5-6",
+            id="literal_cast",
+        ),
+        pytest.param(
+            "data cast",
+            "DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , date ) ];",
+            "String",
+            False,
+            "2-1-19-8",
+            id="data_cast",
+        ),
+        pytest.param(
+            "scalar value",
+            "DS_r <- DS_1 [ calc Me_2 := SC_1 ];",
+            "String",
+            True,
+            "0-1-2-7",
+            id="scalar_value",
+        ),
+        pytest.param(
+            "result",
+            'DS_r <- DS_1 [ calc Me_2 := dateadd ( Me_1 , -1 , "D" ) ];',
+            "Date",
+            False,
+            "2-1-19-10",
+            id="result",
+        ),
+    ],
+)
+def test_GH_1352_26g(
+    use_duckdb: bool, path: str, script: str, me_type: str, scalar: bool, code: str
+) -> None:
+    """Extra of case 26: a Date has the years 1000 to 9999, so the year 999 raises the error of
+    each path: 0999-12-31 loaded, cast from a literal or from data, given as a Scalar value,
+    and the Date that dateadd gives one day before 1000-01-01 (issue #1352)."""
+    structures = _date_structures(scalar)
+    structures["datasets"][0]["DataStructure"][1]["type"] = me_type
+    value = "1000-01-01" if path == "result" else "0999-12-31"
+    with pytest.raises(VTLEngineException) as context:
+        run(
+            script=script,
+            data_structures=structures,
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [value]})},
+            scalar_values={"SC_1": "0999-12-31"} if scalar else None,
+            use_duckdb=use_duckdb,
+        )
+    assert context.value.args[1] == code
+
+
 @pytest.mark.parametrize("use_duckdb", engine_params())
 @pytest.mark.parametrize(
     "value, period, year",
     [
-        ("1800-01-01", "A", 1799),
-        ("1800-01-01", "S", 1799),
-        ("1800-01-01", "Q", 1799),
-        ("1800-01-01", "M", 1799),
-        ("1800-01-01", "W", 1799),
-        ("1800-01-01", "D", 1799),
-        ("1500Q1", "D", 1500),
+        ("1000-01-01", "A", 999),
+        ("1000-01-01", "S", 999),
+        ("1000-01-01", "Q", 999),
+        ("1000-01-01", "M", 999),
+        ("1000-01-01", "W", 999),
+        ("1000-01-01", "D", 999),
+        ("1000Q1", "A", 999),
     ],
 )
 def test_GH_1352_26c(use_duckdb: bool, value: str, period: str, year: int) -> None:
-    """Extra of case 26: dateadd back by one period of the Date 1800-01-01, or from the
-    Time_Period 1500Q1, gives a year below 1800, which no Date has, so it raises 2-1-19-10,
+    """Extra of case 26: dateadd back by one period of the Date 1000-01-01, or of the
+    Time_Period 1000Q1, gives a year below 1000, which no Date has, so it raises 2-1-19-10,
     checked for each period indicator on its own. Both engines wrote the Date, 999-12-31 on the
-    pandas engine and 0999-12-31 on the DuckDB engine for the years below 1000 (issue #1352)."""
-    shift, data_type = (0, "Time_Period") if value == "1500Q1" else (-1, "Date")
-    script = f'DS_r <- DS_1 [ calc Me_2 := dateadd ( Me_1 , {shift} , "{period}" ) ];'
+    pandas engine and 0999-12-31 on the DuckDB engine (issue #1352)."""
+    data_type = "Time_Period" if "Q" in value else "Date"
+    script = f'DS_r <- DS_1 [ calc Me_2 := dateadd ( Me_1 , -1 , "{period}" ) ];'
     _check_dateadd_out_of_range(use_duckdb, script, value, year, data_type)

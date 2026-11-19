@@ -23,13 +23,13 @@ CREATE OR REPLACE MACRO vtl_period_limit(indicator VARCHAR, year INTEGER) AS (
     END
 );
 
--- A year of a Date or of a period, from min_year to 9999 (mirrors VTL error 2-1-19-10). TRUE
--- for a year in the range or a null year
-CREATE OR REPLACE MACRO vtl_year_in_range(y, min_year) AS (
+-- A year of a Date, a period or a Time, from 1000 to 9999 (MIN_YEAR and MAX_YEAR of
+-- TimeHandling.py, mirrors VTL error 2-1-19-10). TRUE for a year in the range or a null year
+CREATE OR REPLACE MACRO vtl_year_in_range(y) AS (
     CASE
-        WHEN y < min_year OR y > 9999 THEN
+        WHEN y < 1000 OR y > 9999 THEN
             error('VTL Error 2-1-19-10: Invalid year ' || CAST(y AS VARCHAR)
-                || ', must be between ' || CAST(min_year AS VARCHAR) || ' and 9999')
+                || ', must be between 1000 and 9999')
         ELSE TRUE
     END
 );
@@ -174,11 +174,11 @@ CREATE OR REPLACE MACRO vtl_dateadd_any(d, shift BIGINT, period_ind VARCHAR) AS 
     END
 );
 
--- A Date has a year from 1800 to 9999: the year is checked before the date is computed, which
+-- A Date has a year from 1000 to 9999: the year is checked before the date is computed, which
 -- a shift that leaves those years by far could not be
 CREATE OR REPLACE MACRO vtl_dateadd(d, shift BIGINT, period_ind VARCHAR) AS (
     CASE
-        WHEN vtl_year_in_range(vtl_dateadd_year(d, shift, period_ind), 1800) THEN
+        WHEN vtl_year_in_range(vtl_dateadd_year(d, shift, period_ind)) THEN
             vtl_dateadd_any(d, shift, period_ind)
     END
 );
@@ -367,7 +367,7 @@ CREATE OR REPLACE MACRO vtl_period_ind_to_interval(period_ind) AS (
 -- before the period is built
 CREATE OR REPLACE MACRO vtl_period_in_range(y, indicator, number) AS (
     CASE
-        WHEN vtl_year_in_range(y, 1000) THEN
+        WHEN vtl_year_in_range(y) THEN
             vtl_period_to_string({'year': CAST(y AS INTEGER),
                 'period_indicator': indicator, 'period_number': number}::vtl_time_period)
     END

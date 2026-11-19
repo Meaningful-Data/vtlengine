@@ -41,7 +41,7 @@ from vtlengine.DataTypes._time_checking import _has_time_component, parse_date_v
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
     TimePeriodHandler,
-    check_date_year,
+    check_year,
     date_of_ordinal,
     date_to_period,
     generate_period_range,
@@ -842,7 +842,7 @@ class Time_Shift(Binary):
             value = (value - 1) % period_limit + 1
         # The year is checked before the period is built from its text, which cannot write a
         # year below 0 (issue #1352)
-        TimePeriodHandler._check_year(year)
+        check_year(year)
 
         return str(TimePeriodHandler(f"{year}-{period}{value}"))
 
@@ -1327,13 +1327,13 @@ class Date_Add(Parametrized):
         if period in ["D", "W"]:
             day, years = date_of_ordinal(ordinal + shift * (7 if period == "W" else 1))
             year, month, day_number = day.year + years, day.month, day.day
-            check_date_year(year)
+            check_year(year)
         else:
             day, years = date_of_ordinal(ordinal)
             months = (day.year + years) * 12 + day.month - 1
             months += {"M": 1, "Q": 3, "S": 6, "A": 12}[period] * shift
             year, month = months // 12, months % 12 + 1
-            check_date_year(year)
+            check_year(year)
             # The day is kept, or the last day of a shorter month taken
             day_number = min(day.day, calendar.monthrange(year, month)[1])
         result = date(year, month, day_number)

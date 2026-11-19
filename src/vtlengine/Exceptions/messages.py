@@ -1623,8 +1623,8 @@ centralised_messages = {
     },
     "2-1-19-10": {
         "message": "Invalid year {year}, must be between {min_year} and 9999.",
-        "description": "Raised when a time operator gives a Time_Period out of the years 1000 to "
-        "9999 or a Date out of the years 1800 to 9999, the years each type holds.",
+        "description": "Raised when a time operator gives a Time_Period or a Date out of the "
+        "years 1000 to 9999, the years each type holds.",
     },
     "2-1-19-11": {
         "message": "{op} operator is not compatible with time values",
