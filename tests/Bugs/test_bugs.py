@@ -11711,6 +11711,18 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_21", number_inputs=2, references_names=["1"])
 
+    def test_GH_1354_22(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := Id_1 + null ];
+        Description: A Component combined with null is nullable: Me_2 null, null, null. Both
+                     engines and the semantic analysis declared it non-nullable, so the pandas
+                     engine raised 2-1-1-16.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_25(self):
         """
         Status: OK

@@ -479,7 +479,7 @@ class Binary(Operator):
             data_type=cls.type_validation(component.data_type, scalar.data_type),
             data=None,
             role=component.role,
-            nullable=component.nullable or scalar is None,
+            nullable=component.nullable or scalar.nullable,
         )
         return result
 
