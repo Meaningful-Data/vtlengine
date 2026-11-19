@@ -39,6 +39,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.DataTypes._time_checking import _has_time_component, parse_date_value
 from vtlengine.DataTypes.TimeHandling import (
+    MAX_YEAR,
     PERIOD_IND_MAPPING,
     TimePeriodHandler,
     check_year,
@@ -46,6 +47,7 @@ from vtlengine.DataTypes.TimeHandling import (
     date_to_period,
     generate_period_range,
     max_periods_in_year,
+    shifted_year,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
@@ -194,6 +196,9 @@ class Time(Operators.Operator):
     @classmethod
     def _classify_interval_period(cls, interval: str) -> str:
         start, end = cls._interval_endpoints(interval)
+        if end.year == MAX_YEAR:
+            # The day after an end in 9999 has no date: the calendar repeats every 400 years
+            start, end = start.replace(year=start.year - 400), end.replace(year=end.year - 400)
         candidates = [relativedelta(endpoint, start) for endpoint in (end, end + timedelta(days=1))]
         candidates = [
             rd
@@ -273,12 +278,17 @@ class Time(Operators.Operator):
         offset = cls._period_offset(code)
         start_ts = pd.Timestamp(start)
         limit = pd.Timestamp(end)
-        if start_ts + offset <= start_ts:  # guard against a zero-length period
+        if start_ts - offset >= start_ts:  # guard against a zero-length period
             return [start_ts] if start_ts <= limit else []
         dates: List[pd.Timestamp] = []
         step = 0
         while True:
-            current = start_ts + step * offset if step else start_ts
+            try:
+                current = start_ts + step * offset if step else start_ts
+            except (ValueError, OverflowError):
+                # A date past the year 9999, which no Timestamp holds, is past the limit too
+                # (issue #1352)
+                return dates
             if current > limit:
                 return dates
             dates.append(current)
@@ -780,6 +790,17 @@ class Time_Shift(Binary):
         return Dataset(name=dataset_name, components=components, data=None)
 
     @classmethod
+    def _interval_step(cls, frequency: str) -> tuple[int, int]:
+        """The months and the days of one step of the frequency of a Time series."""
+        steps = {"Y": (12, 0), "S": (6, 0), "Q": (3, 0), "M": (1, 0), "W": (0, 7), "D": (0, 1)}
+        if frequency in steps:
+            return steps[frequency]
+        m = cls._PERIOD_DURATION_RE.match(frequency)
+        if m is None:
+            raise RunTimeError("2-1-19-2", period=frequency)
+        return int(m.group(1) or 0) * 12 + int(m.group(2) or 0), int(m.group(3) or 0)
+
+    @classmethod
     def shift_dates(cls, dates: Any, shift_value: int, frequency: str) -> Any:
         dates = pd.to_datetime(dates)
         if frequency == "D":
@@ -849,6 +870,12 @@ class Time_Shift(Binary):
     @classmethod
     def shift_interval(cls, interval: str, shift_value: Any, frequency: str) -> str:
         start_date, end_date = interval.split("/")
+        # A Time has the years 1000 to 9999: the year of each shifted end is checked before the
+        # end is computed, which a shift that leaves those years by far could not be (#1352)
+        months, days = cls._interval_step(frequency)
+        for end in (start_date, end_date):
+            day = date.fromisoformat(end[:10])
+            check_year(shifted_year(day, months * shift_value, days * shift_value))
         fmt = "%Y-%m-%dT%H:%M:%S" if _has_time_component(start_date) else "%Y-%m-%d"
         start_shifted = cls.shift_dates(start_date, shift_value, frequency)
         end_shifted = cls.shift_dates(end_date, shift_value, frequency)

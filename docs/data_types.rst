@@ -359,7 +359,9 @@ Time (TimeInterval)
         Also accepts ``"YYYY"`` (expanded to full year
         interval) and ``"YYYY-MM"`` (expanded to full
         month interval). Year range: 1000–9999, as for
-        a Date and a Time_Period.
+        a Date and a Time_Period: ``timeshift`` of a
+        Time out of those years raises ``2-1-19-10``,
+        in both execution engines.
     * - **Internal representation**
       - Python ``str`` in ``"YYYY-MM-DD/YYYY-MM-DD"``
         format, stored as ``string[pyarrow]``.

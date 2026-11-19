@@ -142,21 +142,31 @@ CREATE OR REPLACE MACRO vtl_tp_datediff(a vtl_time_period, b vtl_time_period) AS
 -- OPERATOR: dateadd (Date/TimePeriod + shift + period → Date)
 -- ============================================================================
 
--- The year of the date that dateadd gives, worked out also for a shift that leaves the years
--- a date holds
-CREATE OR REPLACE MACRO vtl_dateadd_year(d, shift BIGINT, period_ind VARCHAR) AS (
-    CASE period_ind
-        WHEN 'D' THEN YEAR(vtl_day_in_cycle(d, shift)) + 400 * vtl_day_cycles(shift)
-        WHEN 'W' THEN YEAR(vtl_day_in_cycle(d, shift * 7)) + 400 * vtl_day_cycles(shift * 7)
-        ELSE (
-            -- The months from the start of the year 0, rounded down to whole years
-            (YEAR(d) * 12 + MONTH(d) - 1 + shift * CASE period_ind
-                WHEN 'M' THEN 1 WHEN 'Q' THEN 3 WHEN 'S' THEN 6 WHEN 'A' THEN 12 END)
-            - (((YEAR(d) * 12 + MONTH(d) - 1 + shift * CASE period_ind
-                WHEN 'M' THEN 1 WHEN 'Q' THEN 3 WHEN 'S' THEN 6 WHEN 'A' THEN 12 END)
-                % 12) + 12) % 12
-        ) // 12
+-- The year of d moved by months and then by days, worked out also for a shift that leaves the
+-- years a date holds: the days move further in the direction of the months. A date of the year
+-- 10000, the end of the week 9999W52, moved by days only, is read by its days
+CREATE OR REPLACE MACRO vtl_months_year(d, months) AS (
+    (YEAR(d) * 12 + MONTH(d) - 1 + months
+        - (((YEAR(d) * 12 + MONTH(d) - 1 + months) % 12) + 12) % 12) // 12
+);
+
+CREATE OR REPLACE MACRO vtl_shifted_year(d, months, days) AS (
+    CASE
+        WHEN months <> 0 AND NOT vtl_months_year(d, months) BETWEEN 1000 AND 9999 THEN
+            vtl_months_year(d, months)
+        ELSE YEAR(vtl_day_in_cycle(CAST(d AS DATE) + INTERVAL (months) MONTH, days))
+            + 400 * vtl_day_cycles(days)
     END
+);
+
+-- The year of the date that dateadd gives
+CREATE OR REPLACE MACRO vtl_dateadd_year(d, shift BIGINT, period_ind VARCHAR) AS (
+    vtl_shifted_year(
+        d,
+        shift * CASE period_ind WHEN 'M' THEN 1 WHEN 'Q' THEN 3 WHEN 'S' THEN 6 WHEN 'A' THEN 12
+            ELSE 0 END,
+        shift * CASE period_ind WHEN 'D' THEN 1 WHEN 'W' THEN 7 ELSE 0 END
+    )
 );
 
 CREATE OR REPLACE MACRO vtl_dateadd_any(d, shift BIGINT, period_ind VARCHAR) AS (
@@ -505,10 +515,18 @@ CREATE OR REPLACE MACRO vtl_interval_build(a, b, sample) AS (
 
 -- Shift both endpoints by n periods, mirroring Time_Shift.shift_interval: plain
 -- calendar addition, since pd.DateOffset clamps but never snaps to a month end.
+-- A Time has the years 1000 to 9999: the year of each shifted end is checked before the end
+-- is computed
 CREATE OR REPLACE MACRO vtl_interval_shift(s, n, step) AS (
     CASE
         WHEN s IS NULL THEN NULL
-        ELSE vtl_interval_build(
+        WHEN vtl_year_in_range(vtl_shifted_year(vtl_interval_start_ts(s),
+                (date_part('year', step) * 12 + date_part('month', step)) * n,
+                date_part('day', step) * n))
+            AND vtl_year_in_range(vtl_shifted_year(vtl_interval_end_ts(s),
+                (date_part('year', step) * 12 + date_part('month', step)) * n,
+                date_part('day', step) * n))
+        THEN vtl_interval_build(
             vtl_interval_start_ts(s) + step * n, vtl_interval_end_ts(s) + step * n, s
         )
     END
