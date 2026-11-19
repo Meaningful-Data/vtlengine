@@ -232,8 +232,11 @@ def test_virtual_counter_with_run():
         "vtlengine.Utils.__Virtual_Assets.VirtualCounter._new_dc_name", side_effect=mock_new_dc_name
     ):
         run(script=script, data_structures=data_structures, datapoints=datapoints)
-    assert len(call_vds) == 6
-    assert len(call_vdc) == 1
+    # The structure of each calc and filter is analysed before its data is computed, which
+    # names a virtual Data Set for each calc and a virtual Component for daytomonth once more
+    # (issue #1352)
+    assert len(call_vds) == 9
+    assert len(call_vdc) == 2
     assert VirtualCounter.dataset_count == 0
     assert VirtualCounter.component_count == 0
 

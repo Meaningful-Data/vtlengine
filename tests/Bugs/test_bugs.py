@@ -13261,3 +13261,94 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_26f", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_36q(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc identifier Id_9 := cast ( Me_1 , time_period ) ]
+                        [ sub Id_9 = cast ( "2020Q1" , time_period ) ];
+        Description: Extra of case 36: an Identifier cannot be calculated from the cast of the
+                     nullable Me_1, which the structures alone tell, so the calc raises 1-1-1-16
+                     before the text abc is cast. The pandas engine computed the cast first and
+                     raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36q",
+            number_inputs=1,
+            exception_code="1-1-1-16",
+            exception_message="Identifier Id_9 cannot be calculated from an expression that is "
+            "declared nullable.",
+        )
+
+    def test_GH_1352_36r(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ keep Me_1 ] [ calc Me_2 := max ( Me_1 over ( order by Id_1 ) )
+                        + 1 ];
+        Description: Extra of case 36: a Time_Period plus an Integer has no type, which the
+                     structures alone tell, so the calc raises 1-1-1-2 before max compares
+                     2020Q1 with 2020M1. The pandas engine computed max first and raised
+                     2-1-19-20.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36r",
+            number_inputs=1,
+            exception_code="1-1-1-2",
+            exception_message="Invalid implicit cast from Time_Period and Integer to Number.",
+        )
+
+    def test_GH_1352_36s(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ filter cast ( Me_1 , integer ) > 0 and Me_1 ];
+        Description: Extra of case 36: and takes no String, which the structures alone tell, so
+                     the filter raises 1-1-1-2 before the text abc is cast. The pandas engine
+                     computed the cast first and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36s",
+            number_inputs=1,
+            exception_code="1-1-1-2",
+            exception_message="Invalid implicit cast from Boolean and String to Boolean.",
+        )
+
+    def test_GH_1352_36t(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := sum ( cast ( Me_1 , integer ) ) ,
+                        Me_3 := sum ( Me_1 ) group by Id_1 ];
+        Description: Extra of case 36: sum takes no String, which the structures alone tell, so
+                     the aggr raises 1-1-1-1 before the text abc is cast. The pandas engine
+                     computed the cast first and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36t",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from String to Number.",
+        )
+
+    def test_GH_1352_36u(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , integer ) , Id_1 := 1 ];
+        Description: Extra of case 36: a calc cannot overwrite the Identifier Id_1, which the
+                     structures alone tell, so it raises 1-1-6-13 before the text abc is cast.
+                     The pandas engine computed the cast first and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36u",
+            number_inputs=1,
+            exception_code="1-1-6-13",
+            exception_message="At op calc: Not allowed to overwrite an Identifier: Id_1",
+        )
