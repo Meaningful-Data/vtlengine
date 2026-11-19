@@ -30,7 +30,7 @@ from vtlengine._input_types import (
 )
 from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentAssignment, Start
 from vtlengine.AST.ASTString import ASTString
-from vtlengine.DataTypes import Date
+from vtlengine.DataTypes import Date, TimePeriod
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.files.parser import (
     _check_value_domain,
@@ -509,10 +509,11 @@ def _handle_scalars_values(
                 name=name,
             )
         scalars[name].value = scalars[name].data_type.cast(value)
-        if scalars[name].data_type is Date:
-            # A Date is written in the one form the loaders and DuckDB write it in, as a
-            # Time_Period is: 2024-1-5 is 2024-01-05 (issue #1349)
-            scalars[name].value = value_of(Date, scalars[name].value)
+        if scalars[name].data_type in (Date, TimePeriod):
+            # A Date and a Time_Period are written in the one form the loaders and DuckDB write
+            # them in: 2024-1-5 is 2024-01-05 (issue #1349), and " 2020Q1" is 2020Q1, without the
+            # space around it (issue #1352)
+            scalars[name].value = value_of(scalars[name].data_type, scalars[name].value)
         _check_value_domain(scalars[name], pd.Series([scalars[name].value], dtype=object))
 
 

@@ -507,7 +507,8 @@ class TimePeriod(TimeInterval):
                 )
             return period_str
         if from_type == String:
-            s = str(value)
+            # The space around the text is taken off, as the loaders do (issue #1352)
+            s = str(value).strip()
             if "/" in s:
                 result = interval_to_period_str(s)
                 if result is not None:
@@ -518,7 +519,7 @@ class TimePeriod(TimeInterval):
                     type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
                     type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
                 )
-            if not cls.check(value):
+            if not cls.check(s):
                 # Text that is no time period, such as 2020X1 (issue #1192)
                 raise RunTimeError(
                     "2-1-5-1",
@@ -526,7 +527,7 @@ class TimePeriod(TimeInterval):
                     type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
                     type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
                 )
-            return value
+            return s
         if from_type == TimeInterval:
             result = interval_to_period_str(str(value))
             if result is not None:

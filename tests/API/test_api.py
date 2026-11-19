@@ -3372,3 +3372,27 @@ def test_GH_1349_57b(use_duckdb, name):
         run("DS_r <- DS_1;", structures, {"DS_1": data}, use_duckdb=use_duckdb)
     with pytest.raises(InputValidationException, match="0-2-1-1"):
         semantic_analysis("DS_r <- DS_1;", structures)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_39b(use_duckdb):
+    """Extra of case 39: a Time_Period Scalar value is read without the space around it, as a
+    loaded Time_Period and a Date Scalar value are, so "2020-01-15 " is the day 2020D15 and
+    " 2020Q1" is 2020Q1. The pandas engine raised a raw ValueError and 2-1-19-2, and the DuckDB
+    engine a raw ConversionException for " 2020Q1" (issue #1352)."""
+    structures = {
+        "datasets": [],
+        "scalars": [
+            {"name": "SC_1", "type": "Time_Period"},
+            {"name": "SC_2", "type": "Time_Period"},
+        ],
+    }
+    result = run(
+        "SC_r1 <- SC_1; SC_r2 <- SC_2;",
+        structures,
+        {},
+        scalar_values={"SC_1": "2020-01-15 ", "SC_2": " 2020Q1"},
+        use_duckdb=use_duckdb,
+    )
+    assert result["SC_r1"].value == "2020D15"
+    assert result["SC_r2"].value == "2020Q1"
