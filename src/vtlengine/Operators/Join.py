@@ -160,8 +160,10 @@ class Join(Operator):
                 if comp.name not in nullability:
                     nullability[comp.name] = copy(comp.nullable)
                 if comp.role == Role.IDENTIFIER:
-                    nullability[comp.name] = False
-                elif comp.name in totally_common:
+                    # Never null, and a Measure of the same name in another operand keeps its
+                    # own nullability (issue #1355)
+                    continue
+                if comp.name in totally_common:
                     nullability[comp.name] |= copy(comp.nullable)
                 elif cls.how == "outer" or (
                     cls.how == "left"

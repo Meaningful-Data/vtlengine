@@ -11988,6 +11988,30 @@ class NameResolutionBugs(BugHelper):
         """
         self.BaseTest(code="GH_1355_10", number_inputs=2, references_names=["1"])
 
+    def test_GH_1355_10b(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_2 as B , DS_1 as A drop B#Id_2 );
+        Description: Extra of test_GH_1355_10: the same with the operand that has Id_2 as a
+                     Measure first.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_10b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_10c(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_2 as X , DS_1 as Y , DS_5 as Z drop X#Id_2 );
+        Description: Extra of test_GH_1355_10: three operands, the first with Id_2 as a
+                     Measure and the others with Id_2 as an Identifier, are joined on the
+                     Identifier Id_2 of DS_1 and DS_5. The DuckDB engine joined on the Measure
+                     Id_2 of DS_2 and gave no data point.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_10c", number_inputs=3, references_names=["1"])
+
     def test_GH_1355_11(self):
         """
         Status: OK
@@ -11999,6 +12023,29 @@ class NameResolutionBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1355_11", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_11b(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_2 as B , DS_1 as A rename B#Id_2 to Me_3 );
+        Description: Extra of test_GH_1355_11: the same with the operand that has Id_2 as a
+                     Measure first.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_11b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_11c(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_2 as B , DS_1 as A rename A#Id_2 to Me_3 );
+        Description: Extra of test_GH_1355_11: A#Id_2 is the Identifier of DS_1, so Me_3 takes
+                     its values, and the Measure Id_2 of DS_2 keeps its own. The DuckDB engine
+                     renamed both to Me_3 and lost the Measure.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_11c", number_inputs=2, references_names=["1"])
 
     def test_GH_1355_12(self):
         """
@@ -12080,6 +12127,28 @@ class NameResolutionBugs(BugHelper):
         """
         self.BaseTest(code="GH_1355_14d", number_inputs=1, references_names=["1"])
 
+    def test_GH_1355_14e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_H [ calc Me_9 := sum ( 'Me#1' over ( partition by 'Id#1' ) ) ];
+        Description: Extra of test_GH_1355_14: a Component whose name holds # is no qualified
+                     name in partition by.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_14e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_14f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_H [ calc Me_9 := sum ( 'Me#1' over ( partition by Id_2
+                        order by 'Id#1' ) ) ];
+        Description: Extra of test_GH_1355_14: the same in order by.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_14f", number_inputs=1, references_names=["1"])
+
     def test_GH_1355_15(self):
         """
         Status: OK
@@ -12125,6 +12194,31 @@ class NameResolutionBugs(BugHelper):
         """
         self.BaseTest(code="GH_1355_16b", number_inputs=2, references_names=["1"])
 
+    def test_GH_1355_16c(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_2 as B , DS_1 as A using Id_1
+                        aggr Me_3 := max ( A#Me_1 ) group by A#Id_2 );
+        Description: Extra of test_GH_1355_16: with using and the operand that has Id_2 as a
+                     Measure first, the result keeps the Identifier Id_2 of DS_1. The DuckDB
+                     data had no Id_2 column.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_16c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_16d(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_2 as B , DS_1 as A using Id_1
+                        aggr Me_3 := max ( A#Me_1 ) group except Id_1 );
+        Description: Extra of test_GH_1355_16: the same with group except. The DuckDB data had
+                     no Id_2 column.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_16d", number_inputs=2, references_names=["1"])
+
     def test_GH_1355_17(self):
         """
         Status: OK
@@ -12165,25 +12259,3 @@ class NameResolutionBugs(BugHelper):
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(code="GH_1355_19", number_inputs=2, exception_code="1-1-6-2")
-
-    def test_GH_1355_14e(self):
-        """
-        Status: OK
-        Expression: DS_r <- DS_H [ calc Me_9 := sum ( 'Me#1' over ( partition by 'Id#1' ) ) ];
-        Description: Extra of test_GH_1355_14: a Component whose name holds # is no qualified
-                     name in partition by.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
-        Goal: Check Result.
-        """
-        self.BaseTest(code="GH_1355_14e", number_inputs=1, references_names=["1"])
-
-    def test_GH_1355_14f(self):
-        """
-        Status: OK
-        Expression: DS_r <- DS_H [ calc Me_9 := sum ( 'Me#1' over ( partition by Id_2
-                        order by 'Id#1' ) ) ];
-        Description: Extra of test_GH_1355_14: the same in order by.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
-        Goal: Check Result.
-        """
-        self.BaseTest(code="GH_1355_14f", number_inputs=1, references_names=["1"])

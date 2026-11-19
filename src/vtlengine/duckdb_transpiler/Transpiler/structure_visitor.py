@@ -1349,6 +1349,9 @@ class StructureVisitor(ASTTemplate):
             return None
 
         renames: Dict[str, str] = {}
+        # Names written alias#comp of a Component the join does not qualify: they name that
+        # Component only, not a qualified one of another operand (issue #1355)
+        unqualified: Set[str] = set()
         for child in node.children:
             if isinstance(child, AST.RenameNode):
                 old = self._resolve_membership_name(child.old_name)
@@ -1356,6 +1359,7 @@ class StructureVisitor(ASTTemplate):
                 # Strip alias prefix from membership refs.
                 if "#" in old and old not in input_ds.components:
                     old = old.split("#", 1)[1]
+                    unqualified.add(old)
                 renames[old] = new
 
         unqualified_to_qualified: Dict[str, str] = {}
@@ -1368,9 +1372,8 @@ class StructureVisitor(ASTTemplate):
         for name, comp in input_ds.components.items():
             # Check direct match first, then try matching via qualified name
             matched_new = renames.get(name)
-            if matched_new is None and "#" in name:
-                unqual = name.split("#", 1)[1]
-                matched_new = renames.get(unqual)
+            if matched_new is None and "#" in name and name.split("#", 1)[1] not in unqualified:
+                matched_new = renames.get(name.split("#", 1)[1])
             if matched_new is not None:
                 comps[matched_new] = self._renamed(comp, matched_new)
             else:

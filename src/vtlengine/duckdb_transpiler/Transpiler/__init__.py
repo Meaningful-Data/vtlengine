@@ -3129,6 +3129,9 @@ FROM (
         ds, table_src = resolved
 
         renames: Dict[str, str] = {}
+        # Names written alias#comp of a Component the join does not qualify: they name that
+        # Component only, not a qualified one of another operand (issue #1355)
+        unqualified: Set[str] = set()
         for child in node.children:
             if isinstance(child, AST.RenameNode):
                 old = self._resolve_membership_name(child.old_name)
@@ -3138,12 +3141,13 @@ FROM (
                         self._consumed_join_aliases.add(old)
                     else:
                         old = old.split("#", 1)[1]
+                        unqualified.add(old)
                 renames[old] = new
 
         cols: List[str] = []
         for name in ds.components:
             matched_new = renames.get(name)
-            if matched_new is None and "#" in name:
+            if matched_new is None and "#" in name and name.split("#", 1)[1] not in unqualified:
                 unqual = name.split("#", 1)[1]
                 matched_new = renames.get(unqual)
             if matched_new is not None:
@@ -3251,6 +3255,12 @@ FROM (
 
         if time_agg_id and time_agg_id not in group_ids and grouping_op != "group except":
             group_ids.append(time_agg_id)
+        # A qualified Component of a join that the aggr does not give is no column of the
+        # result, so the end of the join does not take it for the one of the same name it gives
+        # (issue #1355)
+        for qualified in self._join_alias_map:
+            if qualified not in group_ids and qualified not in calc_exprs:
+                self._consumed_join_aliases.add(qualified)
 
         def _id_select_sql(name: str) -> str:
             if name == time_agg_id and time_agg_expr is not None:
@@ -5852,6 +5862,21 @@ FROM (
             return f"COALESCE({', '.join(refs)})"
         return f"{comp_to_alias.get(key, joined[0]['sql_alias'])}.{quote_name(key)}"
 
+    @staticmethod
+    def _join_key_aliases(
+        clause_info: List[Dict[str, Any]], using_keys: Set[str]
+    ) -> Dict[str, str]:
+        """First alias that exposes each key — used to pick the left side of ON clauses. A
+        USING key may be a measure in one dataset and an identifier in another; without USING,
+        a Measure or an Attribute named as an Identifier of another operand is no key
+        (issue #1355)."""
+        comp_to_alias: Dict[str, str] = {}
+        for info in clause_info:
+            for name, comp in info["ds"].components.items():
+                if comp.role == Role.IDENTIFIER or name in using_keys:
+                    comp_to_alias.setdefault(name, info["sql_alias"])
+        return comp_to_alias
+
     def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]
         """Visit a join operation."""
         clause_info: List[Dict[str, Any]] = []
@@ -5905,15 +5930,13 @@ FROM (
                 if not keys_only:
                     all_join_ids |= info["id_names"]
 
-        # The keys the operands are joined on. A Measure or an Attribute named as an Identifier
-        # of another operand is no key: it is its operand's own Component, qualified with the
-        # alias, as on the pandas engine (issue #1355)
-        join_keys: Set[str] = set() if is_cross_join else set().union(*pairwise_keys)
+        # The operands are joined on their Identifiers, or on the using list. A Measure or an
+        # Attribute named as an Identifier of another operand is no key: it is its operand's
+        # own Component, qualified with the alias when another operand has the name, as on the
+        # pandas engine, whatever the order of the operands (issue #1355)
+        using_keys: Set[str] = set(explicit_using or [])
         comp_count: Counter[str] = Counter(
-            name
-            for info in clause_info
-            for name in info["ds"].get_components_names()
-            if name not in join_keys
+            name for info in clause_info for name in info["ds"].get_components_names()
         )
         duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
 
@@ -5925,13 +5948,7 @@ FROM (
             [info["ds"].components for info in clause_info], all_join_ids
         )
 
-        # First alias that exposes each component — used to pick the left side of ON
-        # clauses. A USING key may be a measure in one dataset and an identifier in
-        # another, so we track components (not just identifiers).
-        comp_to_alias: Dict[str, str] = {}
-        for info in clause_info:
-            for name in info["ds"].components:
-                comp_to_alias.setdefault(name, info["sql_alias"])
+        comp_to_alias = self._join_key_aliases(clause_info, using_keys)
 
         first_sql_alias = clause_info[0]["sql_alias"]
         vp_registry = get_current_registry()
@@ -5948,7 +5965,7 @@ FROM (
                     continue
                 is_join_col = (
                     comp.role == Role.IDENTIFIER and not is_cross_join and not keys_only
-                ) or name in join_keys
+                ) or name in using_keys
                 if is_join_col:
                     if name in seen_identifiers:
                         continue
