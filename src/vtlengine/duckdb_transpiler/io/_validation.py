@@ -27,6 +27,21 @@ from vtlengine.DataTypes._time_checking import check_time_period
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.Model import Component, Role, component_type_name
 
+# The characters around a value that the pandas loaders take off a Time_Period, a Time
+# and a Date, the ones str.strip takes off: spaces, tabs and line breaks (issue #1352).
+# DuckDB's TRIM takes off spaces only.
+_WHITESPACE = (
+    "\t\n\x0b\x0c\r\x1c\x1d\x1e\x1f \x85\xa0\u1680"
+    + "".join(chr(c) for c in range(0x2000, 0x200B))
+    + "\u2028\u2029\u202f\u205f\u3000"
+)
+
+
+def sql_trim(value_expr: str) -> str:
+    """SQL of a text without the whitespace around it, as str.strip takes it off."""
+    return f"TRIM({value_expr}, '{_WHITESPACE}')"
+
+
 # =============================================================================
 # Regex patterns for VTL temporal types (only these need explicit validation)
 # =============================================================================
@@ -426,7 +441,7 @@ def _time_interval_out_of_order(col_name: str) -> str:
 
     The two dates are read as text, as the pandas loader compares them.
     """
-    value = f'TRIM("{col_name}")'
+    value = sql_trim(f'"{col_name}"')
     return f"(CONTAINS({value}, '/') AND SPLIT_PART({value}, '/', 1) > SPLIT_PART({value}, '/', 2))"
 
 
@@ -436,7 +451,7 @@ def _time_period_day_out_of_range(col_name: str) -> str:
     Only the year tells 366 apart from an invalid day, so the regex cannot bound this
     one: 2024D366 is a day of a leap year and 2023D366 is no day at all.
     """
-    value = f'TRIM("{col_name}")'
+    value = sql_trim(f'"{col_name}"')
     day = f"TRY_CAST(regexp_extract({value}, 'D0*(\\d+)$', 1) AS INTEGER)"
     year = f"TRY_CAST(SUBSTR({value}, 1, 4) AS INTEGER)"
     return (
@@ -481,7 +496,7 @@ def validate_temporal_columns(
         # A Time_Period and a Time interval are read with the space around them taken
         # off, and stored that way; a Duration is read as it was written, which is how
         # the pandas loader reads each of them (issue #1067).
-        checked = f'"{col_name}"' if type_name == "Duration" else f'TRIM("{col_name}")'
+        checked = f'"{col_name}"' if type_name == "Duration" else sql_trim(f'"{col_name}"')
         invalid = f"NOT regexp_matches({checked}, '{pattern}')"
         if type_name == "Time":
             invalid = f"({invalid} OR {_time_interval_out_of_order(col_name)})"
@@ -611,7 +626,7 @@ def _number_cast(value_expr: str) -> str:
 def text_to_date(value_expr: str, target_type: str) -> str:
     """SQL of a String cast to Date, which reads the text as the loader reads a Date and
     raises VTL 2-1-19-8 for a text that is not one (issue #1349)."""
-    error = f"'VTL 2-1-19-8 ' || TRIM(CAST({value_expr} AS VARCHAR))"
+    error = f"'VTL 2-1-19-8 ' || {sql_trim(f'CAST({value_expr} AS VARCHAR)')}"
     return _date_sql(value_expr, target_type, error, error)
 
 
@@ -624,7 +639,7 @@ def _date_cast(value_expr: str, column_name: str, target_type: str) -> str:
     (issue #1284). Anything else is refused here with a clear message, where the cast
     truncated a partial time ("...T12:30") or failed with an out-of-range error.
     """
-    text = f"TRIM(CAST({value_expr} AS VARCHAR))"
+    text = sql_trim(f"CAST({value_expr} AS VARCHAR)")
     format_err = (
         f"'Column {column_name}: Date ' || {text} || ' is not in the correct format. "
         f"Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS.'"
@@ -636,7 +651,7 @@ def _date_cast(value_expr: str, column_name: str, target_type: str) -> str:
 def _date_sql(value_expr: str, target_type: str, format_err: str, year_err: str) -> str:
     """SQL reading a Date written as text on the rules of the pandas loader, raising the
     errors given for a text of another shape or a year out of range."""
-    text = f"TRIM(CAST({value_expr} AS VARCHAR))"
+    text = sql_trim(f"CAST({value_expr} AS VARCHAR)")
     # DuckDB casts a date written in full only, and rewriting the value of the length of
     # a compact date alone keeps the regex off the others
     date = (

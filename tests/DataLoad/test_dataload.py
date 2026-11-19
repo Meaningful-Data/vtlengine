@@ -1714,3 +1714,55 @@ def test_GH_1352_37d(use_duckdb: bool, role: str, source: str, value: str, tmp_p
     The pandas engine raised 2-1-19-7 or 2-1-19-9, and wrote the Python error of a date that is
     no date, such as 2020-13-1 (issue #1352)."""
     _check_1352_load_error(use_duckdb, role, source, value, tmp_path)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("role", ["Measure", "Identifier"])
+@pytest.mark.parametrize(
+    "source, value, expected",
+    [
+        ("dataframe", "\t2020Q1", "2020Q1"),
+        ("dataframe", "2020Q1\n", "2020Q1"),
+        ("dataframe", "\r\n2020-01-15\r\n", "2020D15"),
+        ("csv", "\t2020Q1", "2020Q1"),
+        ("csv", "2020-01-15\t", "2020D15"),
+    ],
+)
+def test_GH_1352_37e(
+    use_duckdb: bool, role: str, source: str, value: str, expected: str, tmp_path: Path
+) -> None:
+    """Extra of case 37: a Time_Period is loaded without the whitespace around it, tabs and line
+    breaks too, as the pandas engine loads it. The DuckDB engine took off the spaces only and
+    raised 0-3-1-6 (issue #1352)."""
+    result = _load_1352(use_duckdb, role, source, value, tmp_path)
+    column = "Me_1" if role == "Measure" else "Id_1"
+    assert result["DS_r"].data[column].tolist() == [expected]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize(
+    "source, value",
+    [
+        ("dataframe", "\t2020-01-15"),
+        ("dataframe", "2020-01-15\n"),
+        ("dataframe", "\r\n2020-01-15\r\n"),
+        ("csv", "\t2020-01-15"),
+        ("csv", "2020-01-15\t"),
+    ],
+)
+def test_GH_1352_37f(use_duckdb: bool, source: str, value: str, tmp_path: Path) -> None:
+    """Extra of case 37: a Date is loaded without the whitespace around it, tabs and line
+    breaks too, as the pandas engine loads it. The DuckDB engine took off the spaces only and
+    raised 0-3-1-6 (issue #1352)."""
+    data = pd.DataFrame({"Id_1": [1], "Me_1": [value]})
+    datapoints: Any = data
+    if source == "csv":
+        datapoints = tmp_path / "DS_1.csv"
+        data.to_csv(datapoints, index=False)
+    result = run(
+        script="DS_r <- DS_1;",
+        data_structures=_dataframe_structures("Date"),
+        datapoints={"DS_1": datapoints},
+        use_duckdb=use_duckdb,
+    )
+    assert result["DS_r"].data["Me_1"].tolist() == ["2020-01-15"]
