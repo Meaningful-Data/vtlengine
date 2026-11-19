@@ -85,6 +85,7 @@ from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, V
 from vtlengine.Operators.Clause import Pivot
 from vtlengine.Operators.HROperators import fills_with_zero
 from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.Operators.Numeric import Round
 from vtlengine.Operators.Time import Period_indicator
 from vtlengine.Operators.Validation import (
     bind_value_domains,
@@ -3755,12 +3756,14 @@ FROM (
 
         def scalar_bound(value: Any, mode: str) -> str:
             # A bound that a Scalar gives is read as any Scalar, the argument of a scalar
-            # parameter included. A value only the query knows is checked there, once (issue
-            # #1355)
+            # parameter included, and a Number is rounded half away from zero, as on the pandas
+            # engine. A value only the query knows is checked there, once (issue #1355)
             if not isinstance(value, AST.VarID):
                 return bound_str(value, mode)
             known, scalar_value = self._known_scalar_value(value.value)
             if known:
+                if isinstance(scalar_value, float) and scalar_value >= 0:
+                    scalar_value = Round.py_op(scalar_value, None)
                 return bound_str(scalar_value, mode)
             sql = f"(SELECT vtl_window_bound({self.visit(value)}))"
             if is_range_date:

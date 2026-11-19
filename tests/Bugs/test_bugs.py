@@ -11883,6 +11883,70 @@ class NameResolutionBugs(BugHelper):
             scalars={"SP_1": "A"},
         )
 
+    def test_GH_1355_26f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SI_0 preceding and current data point ) ) ];
+                    (SI_0 an input Integer Scalar, 0)
+        Description: Extra of test_GH_1355_26: the bound 0 that a Scalar gives is the bound 0
+                     preceding written in the window, the current data point. The pandas engine
+                     raised an internal ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_26f", number_inputs=1, references_names=["1"], scalars={"SI_0": 0}
+        )
+
+    def test_GH_1355_26g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SF_2 preceding and current data point ) ) ];
+                    (SF_2 an input Number Scalar, 2.5)
+        Description: Extra of test_GH_1355_26: a Number bound is rounded half away from zero,
+                     as the offset of lag, so 2.5 is the bound 3. The pandas engine raised an
+                     internal ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_26g", number_inputs=1, references_names=["1"], scalars={"SF_2": 2.5}
+        )
+
+    def test_GH_1355_26h(self):
+        """
+        Status: OK
+        Expression: SC_1 <- 2.5;
+                    DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SC_1 preceding and current data point ) ) ];
+        Description: Extra of test_GH_1355_26: the bound 2.5 that a statement computes is
+                     rounded half away from zero, to 3, as in test_GH_1355_26g. The pandas
+                     engine raised an internal ParserException and the DuckDB engine rounded
+                     it half to even, to 2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_26h", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1355_26i(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_D [ calc Me_3 := sum ( Me_2 over ( order by Id_1 range
+                        between SF_2 preceding and current data point ) ) ];
+                    (SF_2 an input Number Scalar, 2.5, Id_1 a Date)
+        Description: Extra of test_GH_1355_26: the Number bound 2.5 of a range window ordered
+                     by a Date is rounded half away from zero, to 3 days. The pandas engine
+                     raised an internal ParserException and the DuckDB engine an internal
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_26i", number_inputs=1, references_names=["1"], scalars={"SF_2": 2.5}
+        )
+
     def test_GH_1355_27(self):
         """
         Status: OK

@@ -1223,9 +1223,9 @@ class InterpreterAnalyzer(ASTTemplate):
         ):
             window = copy(window)
             if isinstance(window.start, AST.VarID):
-                window.start = self._integer_scalar(node.op, window.start, "Window bound").value
+                window.start = self._window_bound(node.op, window.start)
             if isinstance(window.stop, AST.VarID):
-                window.stop = self._integer_scalar(node.op, window.stop, "Window bound").value
+                window.stop = self._window_bound(node.op, window.stop)
 
         result = ANALYTIC_MAPPING[node.op].analyze(
             operand=operand,
@@ -1293,6 +1293,16 @@ class InterpreterAnalyzer(ASTTemplate):
                 "1-1-18-4", op=op, param_type=param_type, correct_type="an Integer Scalar"
             )
         return resolved
+
+    def _window_bound(self, op: str, node: AST.VarID) -> Any:
+        """The bound of a window that a Scalar gives, as the bound written in the window: 0 is
+        the current data point and a Number is rounded half away from zero, as the offset of
+        lag or lead. A null or a negative value is passed on as it is (issue #1355)."""
+        value = self._integer_scalar(op, node, "Window bound").value
+        if pd.isnull(value) or value < 0:
+            return value
+        value = Round.py_op(value, None)
+        return "current row" if value == 0 else value
 
     def visit_MulOp(self, node: AST.MulOp) -> None:
         """
