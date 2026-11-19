@@ -278,6 +278,14 @@ another period indicator even when the other comparison is already
 false, where the pair stops at a false first comparison. A null bound gives ``false`` where the other
 comparison is false and null elsewhere.
 
+The time operators count the periods of each year on its calendar: a
+year has 52 or 53 ISO weeks and 365 or 366 days, so ``timeshift`` of
+``2020W53`` by one period is ``2021W1``, and ``fill_time_series`` adds
+``2020W53`` and ``2020D366``. A week stays in the year it is numbered
+in, also when it ends in the next one: ``time_agg`` gives ``2020Q4``
+and ``2020`` for ``2020W53`` (2020-12-28 to 2021-01-03). A result out
+of the years 1000–9999 raises ``2-1-19-10``.
+
 **Output formats** (controlled by ``time_period_output_format``
 parameter):
 

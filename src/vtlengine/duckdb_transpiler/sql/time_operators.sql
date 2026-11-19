@@ -13,11 +13,13 @@
 -- SHARED HELPERS
 -- ============================================================================
 
--- Period limit per indicator (max periods per year)
-CREATE OR REPLACE MACRO vtl_period_limit(indicator VARCHAR) AS (
+-- Periods of an indicator in a year: 52 or 53 ISO weeks (the week of 28 December is the
+-- last one) and 365 or 366 days
+CREATE OR REPLACE MACRO vtl_period_limit(indicator VARCHAR, year INTEGER) AS (
     CASE indicator
-        WHEN 'A' THEN 1 WHEN 'S' THEN 2 WHEN 'Q' THEN 4
-        WHEN 'M' THEN 12 WHEN 'W' THEN 52 WHEN 'D' THEN 365
+        WHEN 'A' THEN 1 WHEN 'S' THEN 2 WHEN 'Q' THEN 4 WHEN 'M' THEN 12
+        WHEN 'W' THEN WEEK(MAKE_DATE(year, 12, 28))
+        WHEN 'D' THEN DAYOFYEAR(MAKE_DATE(year, 12, 31))
     END
 );
 
@@ -253,14 +255,15 @@ CREATE OR REPLACE MACRO vtl_period_rank(ind VARCHAR) AS (
     END
 );
 
--- TimePeriod → TimePeriod (convert via end_date)
+-- TimePeriod → TimePeriod (convert via end_date). A week keeps the year it is numbered in,
+-- so a week that ends in the next year goes to the last period of its own year
 CREATE OR REPLACE MACRO vtl_time_agg_tp(p vtl_time_period, target VARCHAR) AS (
     CASE
         WHEN vtl_period_rank(p.period_indicator) > vtl_period_rank(target)
             THEN error('VTL Error 2-1-19-1: Cannot aggregate period indicator '
                 || p.period_indicator || ' to finer target ' || target)
         WHEN p.period_indicator = target THEN vtl_period_to_string(p)
-        ELSE vtl_time_agg_date(vtl_tp_end_date(p), target)
+        ELSE vtl_time_agg_date(LEAST(vtl_tp_end_date(p), MAKE_DATE(p.year, 12, 31)), target)
     END
 );
 
@@ -327,25 +330,38 @@ CREATE OR REPLACE MACRO vtl_period_in_range(p vtl_time_period) AS (
     END
 );
 
+-- A year has 52 or 53 weeks and 365 or 366 days, so a week or a day moves on the calendar
 CREATE OR REPLACE MACRO vtl_tp_shift(p vtl_time_period, n INTEGER) AS (
     CASE p.period_indicator
         WHEN 'A' THEN
             vtl_period_in_range({'year': p.year + n,
                 'period_indicator': 'A', 'period_number': 1}::vtl_time_period)
+        WHEN 'W' THEN
+            vtl_period_in_range({
+                'year': ISOYEAR(vtl_tp_start_date(p) + INTERVAL (n * 7) DAY),
+                'period_indicator': 'W',
+                'period_number': WEEK(vtl_tp_start_date(p) + INTERVAL (n * 7) DAY)
+            }::vtl_time_period)
+        WHEN 'D' THEN
+            vtl_period_in_range({
+                'year': YEAR(vtl_tp_start_date(p) + INTERVAL (n) DAY),
+                'period_indicator': 'D',
+                'period_number': DAYOFYEAR(vtl_tp_start_date(p) + INTERVAL (n) DAY)
+            }::vtl_time_period)
         ELSE
             vtl_period_in_range({
                 'year': p.year + CASE
                     WHEN p.period_number + n <= 0 THEN
-                        (p.period_number + n) // vtl_period_limit(p.period_indicator) - 1
+                        (p.period_number + n) // vtl_period_limit(p.period_indicator, p.year) - 1
                     ELSE
-                        (p.period_number + n - 1) // vtl_period_limit(p.period_indicator)
+                        (p.period_number + n - 1) // vtl_period_limit(p.period_indicator, p.year)
                 END,
                 'period_indicator': p.period_indicator,
                 'period_number':
                     ((p.period_number + n - 1)
-                        % vtl_period_limit(p.period_indicator)
-                        + vtl_period_limit(p.period_indicator))
-                    % vtl_period_limit(p.period_indicator) + 1
+                        % vtl_period_limit(p.period_indicator, p.year)
+                        + vtl_period_limit(p.period_indicator, p.year))
+                    % vtl_period_limit(p.period_indicator, p.year) + 1
             }::vtl_time_period)
     END
 );

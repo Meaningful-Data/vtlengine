@@ -411,8 +411,8 @@ def _check_shift_out_of_range(use_duckdb: bool, period: str, shift: int, year: i
         ("2020S1", -4100, -30),
         ("2020Q1", -8100, -5),
         ("2020M1", -24300, -5),
-        ("2020W1", -105300, -5),
-        ("2020D1", -740000, -8),
+        ("2020W1", -105650, -5),
+        ("2020D1", -740000, -7),
     ],
 )
 def test_GH_1352_36j(use_duckdb: bool, period: str, shift: int, year: int) -> None:

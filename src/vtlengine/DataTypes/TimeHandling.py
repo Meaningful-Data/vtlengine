@@ -1,7 +1,7 @@
 import calendar
 import copy
 import operator
-from datetime import date
+from datetime import date, timedelta
 from datetime import datetime as dt
 from typing import Any, Dict, Optional, Union
 
@@ -350,6 +350,14 @@ class TimePeriodHandler:
     def __ge__(self, other: Any) -> Optional[bool]:
         return self._meta_comparison(other, operator.ge)
 
+    def _last_day_in_year(self) -> date:
+        """The last day of the period in its own year: a week keeps the year it is numbered in,
+        so a week that ends in the next year ends on the last day of its own (issue #1352)."""
+        if self.period_indicator != "W":
+            return period_to_date(self.year, self.period_indicator, self.period_number)
+        start = period_to_date(self.year, "W", self.period_number, start=True)
+        return min(start, date(self.year, 12, 25)) + timedelta(days=6)
+
     def change_indicator(self, new_indicator: str) -> None:
         if self.period_indicator == new_indicator:
             return
@@ -359,7 +367,7 @@ class TimePeriodHandler:
                 value=self.period_indicator,
                 new_indicator=new_indicator,
             )
-        date_value = period_to_date(self.year, self.period_indicator, self.period_number)
+        date_value = self._last_day_in_year()
         self.period_indicator = new_indicator
         self.period_number = date_to_period(
             date_value, period_indicator=new_indicator
