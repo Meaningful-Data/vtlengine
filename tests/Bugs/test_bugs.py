@@ -11420,3 +11420,58 @@ class ValueDomainBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1351_36", number_inputs=1, references_names=["1"])
+
+    def test_GH_1351_37(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer ) returns integer is x end operator;
+                    SC_r <- f ( 7 / 2 );
+        Description: The Number 3.5 is not an Integer, which the parameter x declares: the
+                     call raises 1-2-18 where it is computed, as the semantic analysis does
+                     not know the value and gives the structure. The DuckDB engine rounded
+                     3.5 to the Integer 4.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        with pytest.raises(SemanticError) as context:
+            self.BaseTest(code="GH_1351_37", number_inputs=1, references_names=["1"])
+        self._check_error(
+            context.value,
+            "1-2-18",
+            "Expected Integer, got Number on UDO f, parameter x.",
+        )
+        self.BaseTest(
+            code="GH_1351_37", number_inputs=1, references_names=["1"], only_semantic=True
+        )
+
+    def test_GH_1351_38(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer ) returns integer is x end operator;
+                    define operator g ( x integer ) returns string is cast ( x , string )
+                        end operator;
+                    SC_r <- f ( 4 / 2 );
+                    DS_r <- DS_2 [ calc Me_2 := cast ( SC_r , string ) ,
+                        Me_3 := cast ( f ( 2.0 ) , string ) , Me_4 := g ( 4 / 2 ) ,
+                        Me_5 := f ( 4 / 2 ) ];
+        Description: A whole Number given to an integer parameter is the Integer 2, also
+                     where the body reads it, so cast to String it gives 2. The DuckDB engine
+                     kept the Number 2.0 inside the body.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1351_38", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1351_39(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component < integer > )
+                        returns component < integer > is x end operator;
+                    DS_r <- DS_1 [ calc Me_2 := f ( Me_1 ) ];
+        Description: A Number Component is accepted by a component < integer > parameter and
+                     returned as it is, with its decimals, as a Number Component, on both
+                     engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1351_39", number_inputs=1, references_names=["1"])

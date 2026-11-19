@@ -76,6 +76,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _UDO_CALL,
     _UDO_CHECKS_PREFIX,
     _UDO_DEPTH_PREFIX,
+    _UDO_OP,
     StructureVisitor,
     _try_normalize_time_period,
 )
@@ -751,7 +752,12 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return str(scope[f"{_UDO_SQL_PREFIX}{name}"])
         sql = self._resolve_udo_param_sql(name, udo_val)
         declared = scope.get(f"__type__{name}") if scope is not None else None
-        if declared is Number or declared is String:
+        if declared is Integer and scope is not None:
+            # A whole Number is the Integer, one with decimals raises 1-2-18, as on the pandas
+            # engine, instead of being rounded (issue #1351)
+            where = f"{scope[_UDO_OP]}\u00a6{name}".replace("'", "''")
+            sql = f"vtl_udo_integer({sql}, '{where}')"
+        elif declared is Number or declared is String:
             # A scalar argument is promoted to the type of its parameter, as on the pandas
             # engine: an Integer to a Number, a Boolean to the String true or false (issue #1351)
             sql = f"CAST({sql} AS {get_duckdb_type(declared.__name__)})"
@@ -884,6 +890,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             )
             # The arguments are checked in the order of the parameters
             holds = check if holds == "TRUE" else f"CASE WHEN {check} THEN {holds} END"
+        # A Number with decimals given to an integer parameter raises 1-2-18 before any
+        # constraint is checked, also where the body does not read it, as on the pandas engine
+        # (issue #1351)
+        for param in reversed(params):
+            argument = self._get_udo_param(param["name"])
+            if param["type"] is Integer and argument is not None:
+                value = self._resolve_udo_param(param["name"], argument)
+                check = f"CASE WHEN {value} IS NULL THEN TRUE ELSE TRUE END"
+                holds = check if holds == "TRUE" else f"CASE WHEN {check} THEN {holds} END"
         if holds == "TRUE":
             return sql
         if is_dataset:
@@ -2654,6 +2669,10 @@ FROM (
             # operator has the type of its argument, then a scalar its own (issue #1254)
             argument = self._get_udo_param(node.value)
             if isinstance(argument, AST.AST) and argument is not node:
+                declared = self._get_udo_param(f"__type__{node.value}")
+                if declared is Integer or declared is Number or declared is String:
+                    # visit_VarID casts the argument to its parameter's type (issue #1351)
+                    return declared.__name__
                 with self._udo_arg_scope(node.value):
                     return self._get_source_vtl_type(argument)
             if node.value in self.scalars:
