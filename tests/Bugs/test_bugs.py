@@ -12166,6 +12166,25 @@ class NameResolutionBugs(BugHelper):
             exception_message="Component Me_1 not found in Dataset B.",
         )
 
+    def test_GH_1355_11n(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B using Id_1 , Id_2
+                        calc 'A#Me_1' := 1 drop B#Me_1 );
+        Description: Extra of test_GH_1355_11: a calc target written as a quoted name holding
+                     # is refused as a new name, also where the join has a Component A#Me_1.
+                     Both engines and the semantic analysis gave Me_1 the value 1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11n",
+            number_inputs=2,
+            exception_code="1-1-6-19",
+            exception_message="At op calc: Invalid Component name A#Me_1, a Component name "
+            "cannot contain ', \", #, NUL or carriage return.",
+        )
+
     def test_GH_1355_12(self):
         """
         Status: OK

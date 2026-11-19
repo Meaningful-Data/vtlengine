@@ -54,8 +54,9 @@ class Calc(Operator):
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
 
         for operand in operands:
-            if operand.name not in dataset.components:
-                check_component_name(cls.op, operand.name)
+            # Checked also where the name is a Component of the operand, as the join's
+            # qualified A#Me_1 (issue #1355)
+            check_component_name(cls.op, operand.name)
             if operand.name in result_dataset.components:
                 if result_dataset.components[operand.name].role == Role.IDENTIFIER:
                     raise SemanticError("1-1-6-13", op=cls.op, comp_name=operand.name)
@@ -109,8 +110,7 @@ class Aggregate(Operator):
         result_dataset = Dataset(name=dataset_name, components=dataset.components, data=None)
 
         for operand in operands:
-            if operand.name not in dataset.components:
-                check_component_name(cls.op, operand.name)
+            check_component_name(cls.op, operand.name)
             if operand.name in dataset.get_identifiers_names() or (
                 isinstance(operand, DataComponent) and operand.role == Role.IDENTIFIER
             ):
@@ -258,9 +258,8 @@ class Rename(Operator):
 
         from_names_set = set(from_names)
         for operand in operands:
-            if operand.new_name not in dataset.components:
-                # A name: the semantic analysis refused a membership (issue #1355)
-                check_component_name(cls.op, cast(str, operand.new_name))
+            # A name: the semantic analysis refused a membership (issue #1355)
+            check_component_name(cls.op, cast(str, operand.new_name))
             if operand.old_name not in dataset.components:
                 raise SemanticError(
                     "1-1-1-10",
