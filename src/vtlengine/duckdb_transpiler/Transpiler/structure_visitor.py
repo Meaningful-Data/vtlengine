@@ -67,6 +67,7 @@ _CALC_ROLE_BY_TOKEN: Dict[str, Role] = {
     tokens.IDENTIFIER: Role.IDENTIFIER,
     tokens.ATTRIBUTE: Role.ATTRIBUTE,
     tokens.MEASURE: Role.MEASURE,
+    tokens.VIRAL_ATTRIBUTE: Role.VIRAL_ATTRIBUTE,
 }
 
 
@@ -1111,10 +1112,12 @@ class StructureVisitor(ASTTemplate):
                     comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
                 elif output_ds and col in output_ds.components:
                     # The result holds the Component as the last calc computes it, so its
-                    # type only stands in for an expression not typed here (issue #1309)
+                    # type only stands in for an expression not typed here (issue #1309). Its
+                    # role is the one the calc gives it, which a later operator of the
+                    # statement can change (issue #1354)
                     comp = output_ds.components[col]
                     value_type = self._calc_value_type(assignment.right, input_ds) or comp.data_type
-                    comps[col] = self._make_comp(col, value_type, comp.role, comp.nullable)
+                    comps[col] = self._make_comp(col, value_type, calc_role, comp.nullable)
                     comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
                 else:
                     # calc_role comes from the clause itself, so a new component keeps

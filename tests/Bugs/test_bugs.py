@@ -11582,3 +11582,27 @@ class StructureDataBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1354_28b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc viral attribute At_9 := "v" ] [ keep Me_1 ];
+        Description: At_9 is a viral Attribute, which keep does not drop: v, v, v. The DuckDB
+                     engine took it as a Measure and gave no data column for it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_14", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_14b(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 [ calc viral attribute errorcode := "x" ] > 0 );
+        Description: Extra of case 14: the comparison reads the Measure Me_1 only, not the
+                     viral Attribute errorcode, and the computed Measure errorcode of check
+                     keeps the name. The DuckDB engine compared errorcode as a Measure and
+                     raised BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_14b", number_inputs=1, references_names=["1"])
