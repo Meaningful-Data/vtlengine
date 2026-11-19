@@ -1542,6 +1542,17 @@ class InterpreterAnalyzer(ASTTemplate):
         # The conditions of an if or a case around the clause hold Data Points of another
         # Data Set, so its Components are not split by them (issue #1276)
         condition_stack, self.condition_stack = self.condition_stack, None
+        if node.op in (CALC, FILTER, AGGREGATE) and not self.only_semantic:
+            # The structure of the expressions of the clause, and of a calc itself, is checked
+            # before their data is computed, as the semantic analysis checks it, so a
+            # structural error comes before a data error, as on the DuckDB engine (#1352)
+            structures = []
+            for child in node.children:
+                self.is_from_regular_aggregation = True
+                structures.append(self._visit_structure(deepcopy(child)))
+                self.is_from_regular_aggregation = False
+            if node.op == CALC and not any(isinstance(item, Dataset) for item in structures):
+                REGULAR_AGGREGATION_MAPPING[CALC].validate(structures, dataset)
         for child in node.children:
             self.is_from_regular_aggregation = True
             operands.append(self.visit(child))
