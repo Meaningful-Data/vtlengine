@@ -1233,9 +1233,9 @@ class StructureVisitor(ASTTemplate):
     def _calc_value_type(self, node: AST.AST, source: Dataset) -> Any:
         """Data type of a calc expression, or ``None`` when unknown.
 
-        Only literals, plain component and scalar references (also in parentheses), a cast
-        into a value domain, a time_agg of a typed operand, period_indicator and an nvl, an if
-        or a case of typed operands are resolved. Callers must treat the result as a best
+        Only literals, plain component and scalar references (also in parentheses), a cast, the
+        call of a user defined operator, a time_agg of a typed operand, period_indicator and an
+        nvl, an if or a case of typed operands are resolved. Callers must treat the result as a best
         effort, not as a guarantee of the column type.
         """
         value_domain = self._calc_value_domain(node, source)
@@ -1255,6 +1255,13 @@ class StructureVisitor(ASTTemplate):
             return self._calc_value_type(node.operand, source)
         if isinstance(node, AST.UnaryOp) and node.op == tokens.PERIOD_INDICATOR:
             return Duration
+        if isinstance(node, AST.ParamOp) and node.op == tokens.CAST and len(node.children) > 1:
+            # The type a cast converts to (issue #1352)
+            target = node.children[1]
+            return target if isinstance(target, type) else None
+        if isinstance(node, AST.UDOCall) and node.op in self._udos:
+            # The type of the result the semantic analysis gives (issue #1352)
+            return getattr(self._udo_result(node), "data_type", None)
         types = [self._calc_value_type(op, source) for op in self._choice_operands(node) or []]
         if not types or None in types:
             return None
