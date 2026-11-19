@@ -1289,8 +1289,11 @@ class StructureVisitor(ASTTemplate):
             kept_ids = group_ids
         elif grouping_op == tokens.GROUP_EXCEPT:
             kept_ids = all_input_ids - group_ids
-        else:
+        elif grouping_op == tokens.GROUP_ALL:
             kept_ids = all_input_ids
+        else:
+            # Without grouping, the aggregation gives a single Data Point (issue #1354)
+            kept_ids = set()
 
         comps: Dict[str, Component] = {
             name: comp

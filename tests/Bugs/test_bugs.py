@@ -11698,6 +11698,18 @@ class StructureDataBugs(BugHelper):
             "support < and > Comparison operations, unable to get the max",
         )
 
+    def test_GH_1354_13h(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_5 := max ( Me_1 ) ] [ calc Me_6 := Me_5 + 1 ];
+        Description: Extra of case 13: an aggr without grouping gives a single Data Point, also
+                     when another clause follows it: Me_5 3.0, Me_6 4.0. The DuckDB engine
+                     grouped it by the Identifiers of DS_1 and gave three Data Points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13h", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_13i(self):
         """
         Status: OK

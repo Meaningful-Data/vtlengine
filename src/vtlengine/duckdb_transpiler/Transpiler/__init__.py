@@ -3246,7 +3246,9 @@ FROM (
             except_set = set(grouping_names)
             group_ids = [n for n in all_input_ids if n not in except_set]
         elif not grouping_names:
-            output_ds = self._get_output_dataset()
+            # The structure of the clause, also when it is the operand of another clause, where
+            # the output of the assignment is not its result (issue #1354)
+            output_ds = self._get_output_dataset() or self._get_dataset_structure(node)
             group_ids = list(output_ds.get_identifiers_names() if output_ds else all_input_ids)
 
         if time_agg_id and time_agg_id not in group_ids and grouping_op != "group except":
