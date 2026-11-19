@@ -1219,11 +1219,21 @@ class Date_Add(Parametrized):
         ]:
             unary_implicit_promotion(operand.data_type, Date)
 
+        # A null shift or period gives null, so a result shifted by one is nullable (issue #1354)
+        null_param = any(Operators.may_be_null(param) for param in param_list)
         if isinstance(operand, Scalar):
-            return Scalar(name=operand.name, data_type=Date, value=None, nullable=operand.nullable)
+            return Scalar(
+                name=operand.name,
+                data_type=Date,
+                value=None,
+                nullable=operand.nullable or null_param,
+            )
         if isinstance(operand, DataComponent):
             return DataComponent(
-                name=operand.name, data_type=Date, data=None, nullable=operand.nullable
+                name=operand.name,
+                data_type=Date,
+                data=None,
+                nullable=operand.nullable or null_param,
             )
 
         if all(comp.data_type not in [Date, TimePeriod] for comp in operand.components.values()):
@@ -1235,6 +1245,8 @@ class Date_Add(Parametrized):
             # The shifted Dates are new values, of the basic type Date (issue #1348)
             result_components[target.name].data_type = Date
             result_components[target.name].value_domain = None
+            if target.role == Role.MEASURE:
+                result_components[target.name].nullable = target.nullable or null_param
         return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod
