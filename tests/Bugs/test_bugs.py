@@ -12365,3 +12365,63 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_18", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_35(self):
+        """
+        Status: OK
+        Expression: SC_r <- cast ( "2020-01-01/2020-03-31" , time_period );
+                    DS_r <- DS_1 [ calc Me_2 := SC_r ];
+        Description: A start/end text is the Time_Period of its interval when that is a year, a
+                     half, a quarter or a month, so it casts to 2020Q1. The DuckDB engine read its
+                     leading 2020-01 as the month 2020M1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_35", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1352_36(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ];
+        Description: A String Component holding start/end texts casts to the Time_Periods of
+                     their intervals, 2020Q1 and 2020. The DuckDB engine raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_36", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_37(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ];
+        Description: A String Component holding the date 2020-1-1, written without zeros, casts
+                     to 2020D1, as the literal does. The DuckDB engine raised a raw
+                     ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_37", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_37b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1;
+        Description: Extra of case 37: a Time_Period Identifier loaded as a date written without
+                     zeros, 2020-1-5, is the day 2020D5, as the pandas engine reads it. The DuckDB
+                     engine raised 0-3-1-6.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_37b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_38(self):
+        """
+        Status: OK
+        Expression: SC_r <- cast ( "2020-1-1" , time_period );
+                    DS_r <- DS_1 [ calc Me_2 := SC_r ];
+        Description: Control: the literal date 2020-1-1, written without zeros, casts to 2020D1
+                     on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_38", number_inputs=1, references_names=["1", "2"])

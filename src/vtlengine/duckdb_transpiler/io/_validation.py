@@ -50,7 +50,7 @@ TIME_PERIOD_PATTERN = (
     rf"^\d{{4}}-M{_MONTH}$|"  # Month - 2024-M01, 2024-M1
     rf"^\d{{4}}-W{_WEEK}$|"  # Week - 2024-W01, 2024-W1
     rf"^\d{{4}}-D{_DAY_OF_YEAR}$|"  # Day - 2024-D001, 2024-D01, 2024-D1
-    r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$"  # Full date - 2024-01-15
+    rf"^\d{{4}}-{_MONTH}-(0?[1-9]|[1-2][0-9]|3[0-1])$"  # Full date - 2024-01-15, 2024-1-5
 )
 
 # A Time interval is written as a pair of dates, or as the year or the month it covers,

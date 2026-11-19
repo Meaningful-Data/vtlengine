@@ -246,10 +246,11 @@ Time_Period
       - ``YYYYWw``, ``YYYYWww``, ``YYYY-Wxx``
       - ``2020W1``, ``2020W01``, ``2020-W01``
     * - Daily
-      - ``YYYYD[dd]d``, ``YYYY-D[xx]x``, ``YYYY-MM-DD``
+      - ``YYYYD[dd]d``, ``YYYY-D[xx]x``, ``YYYY-MM-DD``,
+        ``YYYY-M-D``
       - ``2020D1``, ``2020D01``, ``2020D001``,
         ``2020D-1``, ``2020D-01``, ``2020D-001``,
-        ``2020-01-01``
+        ``2020-01-01``, ``2020-1-1``
 
 The operators ``>``, ``<``, ``>=``, ``<=`` and ``between`` order the
 periods of one period indicator; two periods of different indicators
@@ -640,6 +641,14 @@ Conversion details:
   and a time other than midnight is kept. A text that is not a
   ``Date`` raises ``1-1-5-6`` for a literal and ``2-1-19-8`` for
   data.
+- **String to Time_Period**: The text is read in any of the
+  accepted input formats of a Time_Period (see the Time_Period
+  section above), a date written without zeros too
+  (``"2020-1-5"`` is ``2020D5``). A ``start/end`` text is the
+  period of its interval when that interval is a whole year,
+  semester, quarter, month, week or day
+  (``"2020-01-01/2020-03-31"`` is ``2020Q1``), as the VTL 2.2
+  reference manual defines it. Any other text raises ``2-1-5-1``.
 - **Date to Time_Period**: Converts to daily period
   (e.g. ``"2020-01-15"`` becomes ``"2020D15"``
   with the default ``vtl`` output format).

@@ -84,11 +84,13 @@ CREATE OR REPLACE MACRO vtl_period_normalize(input VARCHAR) AS (
                     SUBSTR(input, 1, 4) || '-D'
                     || LPAD(CAST(TRY_CAST(SUBSTR(input, 7) AS INTEGER) AS VARCHAR), 3, '0')
             END
-        WHEN LENGTH(input) >= 10 AND SUBSTR(input, 5, 1) = '-'
-             AND SUBSTR(input, 8, 1) = '-' THEN
-            -- Full date (2020-01-15) or timestamp (2020-01-15 00:00:00) → daily period
+        WHEN SUBSTR(input, 5, 1) = '-' AND STRPOS(SUBSTR(input, 6), '-') > 0 THEN
+            -- Full date (2020-01-15, also written without zeros as 2020-1-5) or timestamp
+            -- (2020-01-15 00:00:00) → daily period
             SUBSTR(input, 1, 4) || '-D'
-            || LPAD(CAST(DAYOFYEAR(CAST(SUBSTR(input, 1, 10) AS DATE)) AS VARCHAR), 3, '0')
+            || LPAD(CAST(DAYOFYEAR(
+                CAST(SPLIT_PART(SPLIT_PART(input, ' ', 1), 'T', 1) AS DATE)
+            ) AS VARCHAR), 3, '0')
         ELSE
             SUBSTR(input, 1, 4) || '-M'
             || LPAD(CAST(CAST(SUBSTR(input, 6) AS INTEGER) AS VARCHAR), 2, '0')
