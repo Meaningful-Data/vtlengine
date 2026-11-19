@@ -599,6 +599,8 @@ class FullJoin(Join):
                 raise SemanticError("1-1-13-13", op=cls.op)
             if op.get_identifiers_names() != cls.reference_dataset.get_identifiers_names():
                 raise SemanticError("1-1-13-12", op=cls.op)
+        # The operands match on all their Identifiers, which need a common type (issue #1352)
+        cls._validate_join_key_types(operands, cls.reference_dataset.get_identifiers_names())
 
 
 class CrossJoin(Join):
