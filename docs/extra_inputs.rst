@@ -331,6 +331,13 @@ Value domains also appear in the VTL-DL definitions:
   component per value domain (``1-1-10-15``). Each component must be
   defined on the value domain it is bound to (``1-1-10-12``), and the
   value domains must be given (``1-2-22``, ``1-2-8``).
+- A hierarchical ruleset on value domains binds the value domains of
+  its condition, in order, to the components listed in ``condition``
+  (one per value domain, ``1-1-10-16``), and the value domain of its
+  rule to the component in ``rule`` (required, ``1-1-10-4``), in
+  ``check_hierarchy`` and ``hierarchy``. The same checks apply: each
+  component must be defined on its value domain (``1-1-10-12``), and
+  the value domains must be given (``1-2-22``, ``1-2-8``).
 - A viral propagation rule on a value domain applies to the viral
   attributes defined on it, unless a rule on the variable overrides
   it.
@@ -347,6 +354,10 @@ Value domains also appear in the VTL-DL definitions:
         when F = "CREDIT" then A >= 0
     end datapoint ruleset;
 
+    define hierarchical ruleset HR_1 (valuedomain condition VD_YEAR as Y rule VD_CTY) is
+        when Y >= 2020 then EU = ES + FR + DE
+    end hierarchical ruleset;
+
     define viral propagation VP_1 (valuedomain CL_CONF) is
         when "C" then "C";
         else "F"
@@ -358,6 +369,7 @@ Value domains also appear in the VTL-DL definitions:
     end operator;
 
     DS_r <- check_datapoint(DS_1, DPR_1 components Id_2, Me_1 all);
+    DS_h <- check_hierarchy(DS_2, HR_1 condition Id_2 rule Id_1 all);
     DS_s <- DS_1 [calc Me_2 := with_suffix(Id_2)];
 
 The value domains ``errorcode_vd`` and ``errorlevel_vd``, when given,

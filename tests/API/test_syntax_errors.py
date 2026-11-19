@@ -200,7 +200,7 @@ def _hr_datapoints(items: list, values: list) -> dict:
 
 def _check_hierarchy_bool_vars(rule: str, datapoints: dict, use_duckdb: bool) -> list:
     script = f"""
-        define hierarchical ruleset HR_1 (valuedomain rule VD_1) is
+        define hierarchical ruleset HR_1 (variable rule Id_2) is
             {rule}
         end hierarchical ruleset;
 
