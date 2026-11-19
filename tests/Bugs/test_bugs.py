@@ -11642,6 +11642,17 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_15", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_16(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := max ( At_3 over ( partition by Id_2 ) ) ];
+        Description: An analytic function over the Attribute At_3 gives the String Measure
+                     Me_3: p, r, r. Both engines raised KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_16", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_25(self):
         """
         Status: OK

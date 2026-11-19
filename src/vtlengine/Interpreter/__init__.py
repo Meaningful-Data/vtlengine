@@ -1120,12 +1120,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 analytic_component_name = (
                     f"__vtl_op_{operand_comp.name}" if operand_id_collision else operand_comp.name
                 )
-                analytic_role = Role.MEASURE if operand_id_collision else operand_comp.role
 
+                # The analytic computes a Measure, also from an Identifier or an Attribute
+                # (issue #1354)
                 dataset_components[analytic_component_name] = Component(
                     name=analytic_component_name,
                     data_type=operand_comp.data_type,
-                    role=analytic_role,
+                    role=Role.MEASURE,
                     nullable=operand_comp.nullable,
                 )
 
