@@ -2834,9 +2834,12 @@ class InterpreterAnalyzer(ASTTemplate):
                             signature_values[param["name"]] = param_element
 
                 elif issubclass(param["type"], ScalarType):  # Basic types
-                    signature_values[param["name"]] = self._udo_scalar_argument(
-                        node.op, param, self.visit(node.params[i])
-                    )
+                    argument = self._udo_scalar_argument(node.op, param, self.visit(node.params[i]))
+                    if not isinstance(node.params[i], AST.VarID):
+                        # A value that no scalar names is named after the parameter that
+                        # takes it (issue #1352)
+                        argument.name = param["name"]
+                    signature_values[param["name"]] = argument
 
         component_constraints = self._check_udo_arguments(node, operator, signature_values, key)
 
@@ -2846,6 +2849,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
         caller = self.udo_params[-1] if self.udo_params else {}
         for k, v in signature_values.items():
+            if isinstance(v, Scalar):
+                # A scalar argument holds its value already
+                continue
             if hasattr(v, "name"):
                 v = v.name
             # A set parameter is bound to its values, which name nothing

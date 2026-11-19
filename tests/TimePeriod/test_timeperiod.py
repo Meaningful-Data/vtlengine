@@ -413,6 +413,10 @@ def _check_shift_out_of_range(use_duckdb: bool, period: str, shift: int, year: i
         ("2020M1", -24300, -5),
         ("2020W1", -105650, -5),
         ("2020D1", -740000, -7),
+        ("2020A", 300000000, 300002020),
+        ("2020M1", -400000000, -33331314),
+        ("2020W1", 400000000, 7668159),
+        ("2020D1", 2147483648, 5881630),
     ],
 )
 def test_GH_1352_36j(use_duckdb: bool, period: str, shift: int, year: int) -> None:
@@ -420,7 +424,8 @@ def test_GH_1352_36j(use_duckdb: bool, period: str, shift: int, year: int) -> No
     gives a year no Time_Period has, so it raises 2-1-19-10, checked for each period indicator
     on its own. The DuckDB engine wrote a null Identifier for S and Q and raised a raw
     ValueError for A, and the pandas engine raised a raw ValueError below the year 0 for S, Q, M,
-    W and D (issue #1352)."""
+    W and D. A shift of hundreds of millions of periods gives the same error and year: the DuckDB
+    engine raised a raw OutOfRange, Overflow or Conversion exception (issue #1352)."""
     _check_shift_out_of_range(use_duckdb, period, shift, year)
 
 
@@ -468,6 +473,15 @@ def test_GH_1352_26b(use_duckdb: bool, period: str) -> None:
     a Date of the year 10000 (issue #1352)."""
     script = f'DS_r <- DS_1 [ calc Me_2 := dateadd ( Me_1 , 1 , "{period}" ) ];'
     _check_dateadd_out_of_range(use_duckdb, script, "9999-12-31", 10000)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_26d(use_duckdb: bool) -> None:
+    """Extra of case 26: dateadd of the Date 2020-01-31 forward by 300 million years gives the
+    year 300002020, which no Date has, so it raises 2-1-19-10, as for one year past 9999. The
+    DuckDB engine raised a raw OutOfRangeException (issue #1352)."""
+    script = 'DS_r <- DS_1 [ calc Me_2 := dateadd ( Me_1 , 300000000 , "A" ) ];'
+    _check_dateadd_out_of_range(use_duckdb, script, "2020-01-31", 300002020)
 
 
 @pytest.mark.parametrize("use_duckdb", engine_params())

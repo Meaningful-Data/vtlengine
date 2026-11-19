@@ -40,6 +40,7 @@ from vtlengine.duckdb_transpiler.sql import initialize_time_types
 from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Component, Dataset, Scalar
+from vtlengine.Operators.Time import Time_Shift
 from vtlengine.Utils._number_config import get_effective_output_digits
 
 # A query that returns one table as it is: ``SELECT * FROM "name"``
@@ -230,6 +231,11 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
         match = re.search(r"Invalid year (-?\d+), must be between (\d+)", msg)
         year, min_year = match.groups() if match else ("unknown", "1000")
         return RunTimeError("2-1-19-10", year=year, min_year=min_year)
+
+    # timeshift: a shift number of no value (mirrors 2-1-19-24)
+    if "vtl error 2-1-19-24" in msg_lower:
+        match = re.search(r"2-1-19-24 scalar (.*?) \|end", msg, re.S)
+        return Time_Shift.no_value_error(match.group(1) if match else "unknown")
 
     # sdmx_gregorian output format: a period of an indicator it cannot write (mirrors 2-1-19-21)
     if "vtl error 2-1-19-21" in msg_lower:

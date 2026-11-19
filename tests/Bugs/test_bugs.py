@@ -13114,3 +13114,89 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_31c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_19b(self):
+        """
+        Status: OK
+        Expression: SC_n := SC_2 + 1 ; DS_r <- timeshift ( DS_1 , SC_n ) ;
+        Description: Extra of case 19: the Scalar SC_n that the script computes from the null
+                     SC_2 holds null, so timeshift raises 2-1-19-24 as for an input Scalar. The
+                     DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_19b",
+            number_inputs=1,
+            exception_code="2-1-19-24",
+            exception_message="At op timeshift: The scalar SC_n that gives the shift number has "
+            "no value.",
+            scalars={"SC_2": None},
+        )
+
+    def test_GH_1352_19c(self):
+        """
+        Status: OK
+        Expression: define operator f ( x dataset , n integer ) returns dataset is
+                        timeshift ( x , n ) end operator ; DS_r <- f ( DS_1 , SC_2 ) ;
+        Description: Extra of case 19: the null Scalar SC_2 given to the parameter of a user
+                     defined operator that gives timeshift its shift number raises 2-1-19-24,
+                     naming SC_2. The DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_19c",
+            number_inputs=1,
+            exception_code="2-1-19-24",
+            exception_message="At op timeshift: The scalar SC_2 that gives the shift number has "
+            "no value.",
+            scalars={"SC_2": None},
+        )
+
+    def test_GH_1352_19d(self):
+        """
+        Status: OK
+        Expression: define operator f ( x dataset , n integer ) returns dataset is
+                        timeshift ( x , n ) end operator ; DS_r <- f ( DS_1 , 1 ) ;
+        Description: Extra of case 19: the parameter of a user defined operator gives timeshift
+                     its shift number, so 2020Q1 and 2020Q2 move to 2020Q2 and 2020Q3. The DuckDB
+                     engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_19d", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_19e(self):
+        """
+        Status: OK
+        Expression: define operator f ( x dataset , n integer ) returns dataset is
+                        timeshift ( x , n ) end operator ; DS_r <- f ( DS_1 , 1 ) ;
+        Description: Extra of case 19: the parameter of a user defined operator gives timeshift
+                     of a Date Identifier its shift number, so 2020-01-31 and 2020-02-29 move one
+                     month to 2020-02-29 and 2020-03-29. The DuckDB engine raised a raw
+                     ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_19e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_19f(self):
+        """
+        Status: OK
+        Expression: define operator f ( x dataset , n integer ) returns dataset is
+                        timeshift ( x , n ) end operator ; DS_r <- f ( DS_1 , null ) ;
+        Description: Extra of case 19: a null given to the parameter of a user defined operator
+                     that gives timeshift its shift number raises 2-1-19-24, naming the parameter
+                     n. The pandas engine named the scalar None and the DuckDB engine raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_19f",
+            number_inputs=1,
+            exception_code="2-1-19-24",
+            exception_message="At op timeshift: The scalar n that gives the shift number has "
+            "no value.",
+        )
