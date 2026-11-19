@@ -10957,3 +10957,22 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=[*self.vd_1351, "GH_1351-VD_B"],
         )
+
+    def test_GH_1351_31(self):
+        """
+        Status: OK
+        Expression: define operator f ( x number ) returns VD_1 is x end operator;
+                    SC_r <- f ( 2.5 );
+        Description: A Number result may be returned as an Integer, as with returns integer,
+                     but 2.5 is not a value of VD_1. The DuckDB engine and the semantic
+                     analysis cast the result to Integer first and raised 0-1-1-27.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_31",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op f: Cannot cast 2.5 of Integer to Value Domain VD_1",
+            vd_names=self.vd_1351,
+        )

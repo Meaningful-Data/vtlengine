@@ -2837,6 +2837,16 @@ class InterpreterAnalyzer(ASTTemplate):
             node.op, "the output", return_type, return_constraints, result
         )
         result = udo_result_on_value_domains(result, return_constraints, taken)
+        if (
+            isinstance(result, Scalar)
+            and result.value_domain is not None
+            and not self.only_semantic
+        ):
+            # The value, checked to be one of the value domain, is of its type: the semantic
+            # analysis does not check it, so 2.5 returned on an Integer one raises VTL 2-1-5-4
+            # where the call is computed, not an error of the cast (issue #1351)
+            result = copy(result)
+            result.value = result.data_type.cast(result.value)
         if self.only_semantic:
             self.udo_results[(key, None)] = result
 
