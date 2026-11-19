@@ -212,6 +212,22 @@ class Operator:
         return binary_implicit_promotion(left, right, cls.type_to_check, cls.return_type)
 
 
+def check_common_identifier_types(op: str, left: Dataset, right: Dataset) -> None:
+    """The Identifiers that two Data Sets have in common, on which their Data Points match,
+    have a common type (issues #1314 and #1352)."""
+    for id_name in sorted(set(left.get_identifiers_names()) & set(right.get_identifiers_names())):
+        left_type = left.components[id_name].data_type
+        right_type = right.components[id_name].data_type
+        if not check_binary_implicit_promotion(left_type, right_type):
+            raise SemanticError(
+                "1-1-13-18",
+                op=op,
+                id_name=id_name,
+                type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
+            )
+
+
 def _id_type_promotion_join_keys(
     c_left: Component,
     c_right: Component,
@@ -371,17 +387,7 @@ class Binary(Operator):
             )
         # The Data Points match on the values of the common Identifiers, which need a common
         # type, as in a join (issue #1314)
-        for id_name in sorted(left_ids_set & right_ids_set):
-            left_type = left_operand.components[id_name].data_type
-            right_type = right_operand.components[id_name].data_type
-            if not check_binary_implicit_promotion(left_type, right_type):
-                raise SemanticError(
-                    "1-1-13-18",
-                    op=cls.op,
-                    id_name=id_name,
-                    type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
-                    type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
-                )
+        check_common_identifier_types(cls.op, left_operand, right_operand)
 
         # Deleting extra identifiers that we do not need anymore
 

@@ -11728,6 +11728,43 @@ class TimeValueBugs(BugHelper):
             "Time_Period.",
         )
 
+    def test_GH_1352_11b(self):
+        """
+        Status: OK
+        Expression: DS_r <- exists_in ( DS_1 , DS_2 );
+        Description: Extra case: exists_in matches the Data Points on the common Identifiers,
+                     so the Date Id_1 and the Time_Period Id_1 raise 1-1-13-18, as in +. The
+                     pandas engine gave false for both and the DuckDB engine raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_11b",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="Incompatible types for common identifier Id_1: Date and "
+            "Time_Period.",
+        )
+
+    def test_GH_1352_12(self):
+        """
+        Status: OK
+        Expression: DS_r <- full_join ( DS_1 as a , DS_2 as b keep a#Me_1 );
+        Description: The Date Identifier Id_1 of DS_1 and the Time_Period Identifier Id_1 of
+                     DS_2 have no common type, so the join raises 1-1-13-18. The pandas engine
+                     wrote 2020D1 twice as an Identifier and the DuckDB engine raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_12",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="Incompatible types for common identifier Id_1: Date and "
+            "Time_Period.",
+        )
+
     def test_GH_1352_41(self):
         """
         Status: OK

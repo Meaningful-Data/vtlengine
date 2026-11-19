@@ -554,6 +554,7 @@ class ExistIn(Operator.Operator):
                 right_name=dataset_2.name,
                 right=sorted(right_ids_set),
             )
+        Operator.check_common_identifier_types(cls.op, dataset_1, dataset_2)
 
         result_components = {comp.name: copy(comp) for comp in dataset_1.get_identifiers()}
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
