@@ -1710,7 +1710,16 @@ def test_GH_1352_37c(use_duckdb: bool, role: str, source: str, tmp_path: Path) -
 @pytest.mark.parametrize("source", ["dataframe", "csv"])
 @pytest.mark.parametrize(
     "value",
-    ["2020M13", "2020W54", "2020W00", "2020D367", "2020D0", "2021D366", "2020-13-1", "２０２０Q1"],
+    [
+        "2020M13",
+        "2020W54",
+        "2020W00",
+        "2020D367",
+        "2020D0",
+        "2021D366",
+        "2020-13-1",
+        "２０２０Q1",
+    ],
 )
 def test_GH_1352_37d(use_duckdb: bool, role: str, source: str, value: str, tmp_path: Path) -> None:
     """Extra of case 37: a period written in one of the formats that is no period cannot be read
@@ -1731,6 +1740,8 @@ def test_GH_1352_37d(use_duckdb: bool, role: str, source: str, value: str, tmp_p
         ("dataframe", "\r\n2020-01-15\r\n", "2020D15"),
         ("csv", "\t2020Q1", "2020Q1"),
         ("csv", "2020-01-15\t", "2020D15"),
+        ("csv", "2020Q1\n", "2020Q1"),
+        ("csv", "\r\n2020-01-15\r\n", "2020D15"),
     ],
 )
 def test_GH_1352_37e(
@@ -1738,7 +1749,8 @@ def test_GH_1352_37e(
 ) -> None:
     """Extra of case 37: a Time_Period is loaded without the whitespace around it, tabs and line
     breaks too, as the pandas engine loads it. The DuckDB engine took off the spaces only and
-    raised 0-3-1-6 (issue #1352)."""
+    raised 0-3-1-6, and its CSV reader refused a value with a line break between quotes
+    (issue #1352)."""
     result = _load_1352(use_duckdb, role, source, value, tmp_path)
     column = "Me_1" if role == "Measure" else "Id_1"
     assert result["DS_r"].data[column].tolist() == [expected]
@@ -1753,6 +1765,8 @@ def test_GH_1352_37e(
         ("dataframe", "\r\n2020-01-15\r\n"),
         ("csv", "\t2020-01-15"),
         ("csv", "2020-01-15\t"),
+        ("csv", "2020-01-15\n"),
+        ("csv", "\r\n2020-01-15\r\n"),
     ],
 )
 def test_GH_1352_37f(use_duckdb: bool, source: str, value: str, tmp_path: Path) -> None:
