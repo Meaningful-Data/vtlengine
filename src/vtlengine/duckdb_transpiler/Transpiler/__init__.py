@@ -239,42 +239,6 @@ def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, s
     return sql.replace(from_pattern, f"FROM {table_src}, {subquery} WHERE {where_conds}", 1)
 
 
-def _is_date_timeperiod_pair(left_type: Optional[type], right_type: Optional[type]) -> bool:
-    """Return True when types are a Date and a TimePeriod."""
-    return {left_type, right_type} == {Date, TimePeriod}
-
-
-def _date_tp_compare_expr(
-    left_ref: str,
-    right_ref: str,
-    left_type: type,
-    right_type: type,
-    op: str,
-) -> str:
-    """Build SQL for Date vs TimePeriod comparison using TimeInterval promotion."""
-    if left_type == Date:
-        left_interval = (
-            f"{{'date1': CAST({left_ref} AS DATE),"
-            f" 'date2': CAST({left_ref} AS DATE)}}::vtl_time_interval"
-        )
-        parsed = f"vtl_period_parse({right_ref})"
-        right_interval = (
-            f"{{'date1': vtl_tp_start_date({parsed}),"
-            f" 'date2': vtl_tp_end_date({parsed})}}::vtl_time_interval"
-        )
-    else:
-        parsed = f"vtl_period_parse({left_ref})"
-        left_interval = (
-            f"{{'date1': vtl_tp_start_date({parsed}),"
-            f" 'date2': vtl_tp_end_date({parsed})}}::vtl_time_interval"
-        )
-        right_interval = (
-            f"{{'date1': CAST({right_ref} AS DATE),"
-            f" 'date2': CAST({right_ref} AS DATE)}}::vtl_time_interval"
-        )
-    return registry.sql(op, left_interval, right_interval)
-
-
 def _bool_to_str(col_ref: str) -> str:
     """Cast a Boolean expression to String: 'true' or 'false', as the VTL 2.2 reference manual
     casts a Boolean to String (issue #1314)."""
@@ -1289,9 +1253,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             left_ref = _datediff_to_date(left_ref, left_type)
             right_ref = _datediff_to_date(right_ref, right_type)
             return f"ABS(DATE_DIFF('day', {left_ref}, {right_ref}))"
-        # Date↔TimePeriod cross-type promotion
-        if left_type and right_type and _is_date_timeperiod_pair(left_type, right_type):
-            return _date_tp_compare_expr(left_ref, right_ref, left_type, right_type, op)
         # Number equality honours the configured comparison tolerance (issue #919)
         if op in NUMBER_TOLERANCE_OPS and is_number_comparison(left_type, right_type):
             tolerant_sql = number_tolerance_sql(op, left_ref, right_ref)
