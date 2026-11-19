@@ -480,8 +480,8 @@ Key rules:
   (``"2020-Q1"`` becomes ``"2020-01-01/2020-03-31"``).
   So wherever an operator combines a Date or a Time_Period
   with a Time, the Date or the Time_Period is converted to
-  a Time value: comparisons compare Time values;
-  ``nvl``, ``if``, ``case``, the set
+  a Time value: comparisons and ``in`` / ``not_in``
+  compare Time values; ``nvl``, ``if``, ``case``, the set
   operators and ``unpivot`` give a Time; and the common
   Identifiers that the joins (whatever the order of their
   operands), the binary operators, ``exists_in`` and

@@ -11795,6 +11795,41 @@ class TimeValueBugs(BugHelper):
         """
         self.BaseTest(code="GH_1352_10b", number_inputs=1, references_names=["1"])
 
+    def test_GH_1352_10c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 in { cast ( "2020-01-15" , date ) };
+        Description: Extra of case 10: the Date of the set is cast to the Time
+                     2020-01-15/2020-01-15, which the second Time of DS_1 is. The DuckDB engine
+                     raised 2-1-19-8 and the pandas engine compared the texts and gave false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_10d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 in { cast ( "2020-01-15/2020-01-15" , time ) };
+        Description: Extra of case 10: the Date 2020-01-15 of DS_1 is cast to Time, so it is in
+                     the set of the Time 2020-01-15/2020-01-15. The DuckDB engine raised 2-1-19-8
+                     and the pandas engine gave false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10d", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_10e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 in { cast ( "2020-01-01/2020-03-31" , time ) };
+        Description: Extra of case 10: the Time_Period 2020Q1 of DS_1 is cast to the Time
+                     2020-01-01/2020-03-31, so it is in the set. Both engines gave false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10e", number_inputs=1, references_names=["1"])
+
     def test_GH_1352_11(self):
         """
         Status: OK

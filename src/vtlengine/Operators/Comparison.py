@@ -277,8 +277,29 @@ class LessEqual(Ordering):
         return cls.py_op(x, y)
 
 
+def _time_in_operands(operand: Any, values: Any) -> Any:
+    """The operand of in / not_in and its set of values, compared as Time values where a Date
+    or a Time_Period meets a Time: the one of them that is a Date or a Time_Period is cast to
+    Time (issue #1352)."""
+    if not isinstance(values, ScalarSet):
+        return operand, values
+    if isinstance(operand, Dataset):
+        types = {comp.data_type for comp in operand.get_measures()}
+        if values.data_type is TimeInterval:
+            return Operator.to_time(operand, operand.get_measures_names()), values
+    else:
+        types = {operand.data_type}
+        if values.data_type is TimeInterval:
+            return Operator.to_time(operand), values
+    return operand, (Operator.to_time(values) if types == {TimeInterval} else values)
+
+
 class In(Binary):
     op = IN
+
+    @classmethod
+    def evaluate(cls, left_operand: Any, right_operand: Any) -> Any:
+        return super().evaluate(*_time_in_operands(left_operand, right_operand))
 
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: ScalarSet) -> Any:
@@ -302,6 +323,10 @@ class In(Binary):
 
 class NotIn(Binary):
     op = NOT_IN
+
+    @classmethod
+    def evaluate(cls, left_operand: Any, right_operand: Any) -> Any:
+        return super().evaluate(*_time_in_operands(left_operand, right_operand))
 
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
