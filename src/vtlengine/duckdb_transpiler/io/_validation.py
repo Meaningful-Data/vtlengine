@@ -505,12 +505,14 @@ def validate_temporal_columns(
         # Parse "column|type|value" format
         parts = result[0].split("|", 2)
         col_name, type_name, invalid_value = parts[0], parts[1], parts[2]
+        error = f"Invalid format: '{invalid_value}'"
+        if type_name == "Duration":
+            # The message of the pandas loader (issue #1352)
+            error = InputValidationException(
+                code="0-1-1-35", value=invalid_value, type_1="String", type_2="Duration"
+            ).args[0]
         raise DataLoadError(
-            "0-3-1-6",
-            name=table_name,
-            column=col_name,
-            type=type_name,
-            error=f"Invalid format: '{invalid_value}'",
+            "0-3-1-6", name=table_name, column=col_name, type=type_name, error=error
         )
 
 
