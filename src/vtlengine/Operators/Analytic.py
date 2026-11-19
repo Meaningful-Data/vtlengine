@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 import pyarrow as pa
@@ -50,6 +50,16 @@ from vtlengine.ViralPropagation import (
 )
 
 return_integer_operators = [MAX, MIN, SUM]
+
+
+def _sql_literal(value: Any) -> str:
+    """A value of the offset or the default of lag and lead as a SQL literal: a text is quoted
+    and a null is NULL, where they were read as column names (issue #1352)."""
+    if value is None:
+        return "NULL"
+    if isinstance(value, str):
+        return "'{}'".format(value.replace("'", "''"))
+    return str(value)
 
 
 def _range_bound(value: Union[int, str], bound: str, by_days: bool) -> str:
@@ -260,7 +270,7 @@ class Analytic(Operator.Unary):
         measure_names: List[str],
         ordering: List[OrderBy],
         window: Optional[Windowing],
-        params: Optional[List[int]] = None,
+        params: Optional[List[Any]] = None,
     ) -> pd.DataFrame:
         """Annotation class
 
@@ -333,7 +343,7 @@ class Analytic(Operator.Unary):
             elif cls.op == RATIO_TO_REPORT:
                 measure_query = f'CAST("{measure}" AS DOUBLE) / SUM(CAST("{measure}" AS DOUBLE))'
             elif cls.op in [LAG, LEAD]:
-                args = "".join(f", {param}" for param in params or [])
+                args = "".join(f", {_sql_literal(param)}" for param in params or [])
                 measure_query = f'{cls.sql_op}("{measure}"{args})'
             else:
                 measure_query = f'{cls.sql_op}("{measure}")'
@@ -392,7 +402,7 @@ class Analytic(Operator.Unary):
         partitioning: List[str],
         ordering: Optional[List[OrderBy]],
         window: Optional[Windowing],
-        params: Optional[List[int]],
+        params: Optional[List[Any]],
         component_name: Optional[str] = None,
     ) -> Dataset:
         result = cls.validate(operand, partitioning, ordering, window, params, component_name)
@@ -409,6 +419,10 @@ class Analytic(Operator.Unary):
             measure_names = [component_name]
         else:
             measure_names = operand.get_measures_names()
+        durations = all(operand.components[name].data_type is Duration for name in measure_names)
+        if params and len(params) > 1 and cls.op in (LAG, LEAD) and durations:
+            # The default of lag and lead is the rank of a Duration too (issue #1352)
+            params = [params[0], PERIOD_IND_MAPPING.get(params[1], params[1])]
 
         # Validate TimePeriod measures have same period indicator for MAX/MIN
         if cls.op in [MAX, MIN]:
