@@ -12634,3 +12634,16 @@ class TimeValueBugs(BugHelper):
             exception_message="Impossible to cast 0001 from type String to Time_Period.",
         )
 
+    def test_GH_1352_36c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ,
+                        Me_3 := cast ( " 2020Q1" , time_period ) ];
+        Description: Extra of case 36: a text cast to time_period is read without the space
+                     around it, as the loaders read a Time_Period and every path reads a Date,
+                     so " 2020Q1" is 2020Q1 and " 2020-01-15" is 2020D15. The pandas engine
+                     raised 2-1-19-2 and a raw ValueError, the DuckDB engine 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_36c", number_inputs=1, references_names=["1"])
