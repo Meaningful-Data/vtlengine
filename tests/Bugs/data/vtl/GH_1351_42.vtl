@@ -1,0 +1,9 @@
+define operator f ( x integer default 2.0 )
+    returns string is
+        cast ( x , string )
+end operator;
+define operator g ( x integer default 2.0 )
+    returns integer is
+        x
+end operator;
+DS_r <- DS_2 [ calc Me_2 := f ( ) , Me_3 := g ( ) ];

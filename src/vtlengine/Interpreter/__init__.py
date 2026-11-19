@@ -2696,17 +2696,24 @@ class InterpreterAnalyzer(ASTTemplate):
             if i >= len(node.params) or _is_omitted(node.params[i]):
                 if "default" in param:
                     default = self.visit(param["default"])
-                    value = default.value
-                    signature_values[param["name"]] = Scalar(
-                        name=str(value),
-                        value=value,
-                        data_type=BASIC_TYPES[type(value)],
-                        nullable=value is None,
-                        literal=default.literal,
-                        # A default of a parameter typed by a value domain is on it, as an
-                        # argument passed to it is
-                        value_domain=_udo_scalar_value_domain(param, default),
-                    )
+                    if isinstance(param["type"], type) and issubclass(param["type"], ScalarType):
+                        # A default is checked and cast as an argument passed to the
+                        # parameter is: 2.5 is no Integer, 2.0 is the Integer 2 (issue #1351)
+                        signature_values[param["name"]] = self._udo_scalar_argument(
+                            node.op, param, default
+                        )
+                    else:
+                        value = default.value
+                        signature_values[param["name"]] = Scalar(
+                            name=str(value),
+                            value=value,
+                            data_type=BASIC_TYPES[type(value)],
+                            nullable=value is None,
+                            literal=default.literal,
+                            # A default of a parameter typed by a value domain is on it, as an
+                            # argument passed to it is
+                            value_domain=_udo_scalar_value_domain(param, default),
+                        )
                 else:
                     raise SemanticError(
                         "1-2-11",
@@ -2754,40 +2761,8 @@ class InterpreterAnalyzer(ASTTemplate):
                             signature_values[param["name"]] = param_element
 
                 elif issubclass(param["type"], ScalarType):  # Basic types
-                    # For basic Scalar types (Integer, Float, String, Boolean)
-                    # We validate the type is correct and cast the value
-                    param_element = self.visit(node.params[i])
-                    if isinstance(param_element, (Dataset, DataComponent)):
-                        type_2 = "Dataset" if isinstance(param_element, Dataset) else "Component"
-                        raise SemanticError(
-                            "1-3-1-1",
-                            op=node.op,
-                            option=param["name"],
-                            type_1=param["type"],
-                            type_2=type_2,
-                        )
-                    scalar_type = param["type"]
-                    value = param_element.value
-                    if not check_unary_implicit_promotion(param_element.data_type, scalar_type) or (
-                        scalar_type == Integer
-                        and isinstance(value, float)
-                        and not value.is_integer()
-                    ):
-                        raise SemanticError(
-                            "1-2-18",
-                            param_type=scalar_type,
-                            type_name=param_element.data_type,
-                            op=node.op,
-                            param_name=param["name"],
-                        )
-                    signature_values[param["name"]] = Scalar(
-                        name=param_element.name,
-                        value=scalar_type.cast(param_element.value),
-                        data_type=scalar_type,
-                        nullable=param_element.nullable,
-                        # A literal argument stays a literal inside the operator (issue #1192)
-                        literal=param_element.literal,
-                        value_domain=_udo_scalar_value_domain(param, param_element),
+                    signature_values[param["name"]] = self._udo_scalar_argument(
+                        node.op, param, self.visit(node.params[i])
                     )
 
         component_constraints = self._check_udo_arguments(node, operator, signature_values, key)
@@ -2887,6 +2862,37 @@ class InterpreterAnalyzer(ASTTemplate):
         ruleset defined with that name."""
         bound = self.udo_params[-1].get(name) if self.udo_params else None
         return bound if isinstance(bound, str) else name
+
+    def _udo_scalar_argument(self, op: str, param: Dict[str, Any], argument: Any) -> Scalar:
+        """The value a parameter of a basic type takes, given or by default: it must be of the
+        type the parameter declares, or promote to it, and is cast to it. A Number with
+        decimals is no Integer."""
+        if isinstance(argument, (Dataset, DataComponent)):
+            type_2 = "Dataset" if isinstance(argument, Dataset) else "Component"
+            raise SemanticError(
+                "1-3-1-1", op=op, option=param["name"], type_1=param["type"], type_2=type_2
+            )
+        scalar_type = param["type"]
+        value = argument.value
+        if not check_unary_implicit_promotion(argument.data_type, scalar_type) or (
+            scalar_type == Integer and isinstance(value, float) and not value.is_integer()
+        ):
+            raise SemanticError(
+                "1-2-18",
+                param_type=scalar_type,
+                type_name=argument.data_type,
+                op=op,
+                param_name=param["name"],
+            )
+        return Scalar(
+            name=argument.name,
+            value=scalar_type.cast(value),
+            data_type=scalar_type,
+            nullable=argument.nullable,
+            # A literal argument stays a literal inside the operator (issue #1192)
+            literal=argument.literal,
+            value_domain=_udo_scalar_value_domain(param, argument),
+        )
 
     def _udo_ruleset_argument(self, op: str, param: Dict[str, Any], argument: AST.AST) -> str:
         """The ruleset a ruleset parameter takes: the one the argument names, or the one a
