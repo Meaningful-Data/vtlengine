@@ -73,9 +73,11 @@ a name and a list of components. Each component has the four fields:
         (`Inner Join
         <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html>`_
         in the VTL 2.2 manual), so an input name holding it raises ``0-2-1-1``,
-        and a new Component that a script names with any of these characters
+        a new Component that a script names with any of these characters
         (``rename``, ``calc``, ``aggr``, ``pivot``, ``unpivot``, ``eval``)
-        raises ``1-1-6-19``.
+        raises ``1-1-6-19``, and the alias of a join operand, or the name
+        of a Data Set joined without an alias, holding one raises
+        ``1-1-13-28``.
     * - ``type``
       - string
       - VTL data type. See :doc:`data_types` for the full list.

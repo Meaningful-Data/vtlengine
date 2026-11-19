@@ -12166,6 +12166,47 @@ class NameResolutionBugs(BugHelper):
             exception_message="Component Me_1 not found in Dataset B.",
         )
 
+    def test_GH_1355_11l(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as 'A#B' , DS_2 as C using Id_1 , Id_2 );
+        Description: Extra of test_GH_1355_11: the alias of a join operand prefixes the names
+                     of its Components in the join, alias#comp, so it cannot contain #
+                     (Inner Join page of the VTL 2.2 manual). The pandas engine and the
+                     semantic analysis gave a Component B'#Me_1 and the DuckDB engine raised a
+                     raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11l",
+            number_inputs=2,
+            exception_code="1-1-13-28",
+            exception_message="At op inner_join: Invalid name 'A#B' of a join operand, the "
+            "alias of a join operand, or else its Data Set name, cannot contain ', \", #, NUL or "
+            "carriage return.",
+        )
+
+    def test_GH_1355_11m(self):
+        """
+        Status: OK
+        Expression: 'x#y' <- DS_1;
+                    DS_r <- inner_join ( 'x#y' , DS_2 using Id_1 , Id_2 );
+        Description: Extra of test_GH_1355_11: as test_GH_1355_11l, for the name of a Data Set
+                     joined without an alias. The pandas engine and the semantic analysis gave
+                     a Component y#Me_1 and the DuckDB engine raised a raw ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11m",
+            number_inputs=2,
+            exception_code="1-1-13-28",
+            exception_message="At op inner_join: Invalid name x#y of a join operand, the "
+            "alias of a join operand, or else its Data Set name, cannot contain ', \", #, NUL or "
+            "carriage return.",
+        )
+
     def test_GH_1355_11n(self):
         """
         Status: OK

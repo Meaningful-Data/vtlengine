@@ -99,6 +99,9 @@ from vtlengine.Model import (
     Scalar,
     ScalarSet,
     ValueDomain,
+    component_name_characters,
+    component_name_characters_text,
+    printable_name,
     value_of,
 )
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
@@ -734,12 +737,12 @@ class InterpreterAnalyzer(ASTTemplate):
             and hasattr(node.left, "value")
             and hasattr(node.right, "value")
         ):
-            if self.udo_params is not None and node.right.value in self.udo_params[-1]:
-                comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
-            else:
-                comp_name = f"{node.left.value}#{node.right.value}"
+            comp = node.right.value
+            if self.udo_params is not None and comp in self.udo_params[-1]:
+                comp = str(self.udo_params[-1][comp])
+            comp_name = f"{node.left.value}#{comp}"
             if node.op == MEMBERSHIP:
-                self._check_join_member(node.left.value, comp_name.split("#", 1)[1])
+                self._check_join_member(node.left.value, comp)
             ast_var_id = AST.VarID(
                 value=comp_name,
                 line_start=node.right.line_start,
@@ -1966,12 +1969,29 @@ class InterpreterAnalyzer(ASTTemplate):
         if duplicates:
             raise SemanticError("1-1-13-1", op=node.op, duplicates=", ".join(duplicates))
 
+    @staticmethod
+    def _check_join_name(op: str, name: str) -> None:
+        """The name of a join operand, its alias or else its Data Set name, prefixes the names
+        of its Components in the join, alias#comp, so it cannot contain the characters a
+        Component name cannot contain (issue #1355). A quoted alias keeps its quotes."""
+        unquoted = name[1:-1] if len(name) > 1 and name[0] == name[-1] == "'" else name
+        if any(char in unquoted for char in component_name_characters()):
+            raise SemanticError(
+                "1-1-13-28",
+                op=op,
+                name=printable_name(name),
+                characters=component_name_characters_text(),
+            )
+
     def visit_JoinOp(self, node: AST.JoinOp) -> None:
         self._check_join_aliases(node)
         # An alias only names its operand, whose Components the clauses read as alias#comp:
         # it is no Data Set of the script, neither for the other operands nor after the join
         # (issue #1281)
         clause_elements = [self.visit(clause) for clause in node.clauses]
+        for element in clause_elements:
+            if isinstance(element, Dataset):
+                self._check_join_name(node.op, element.name)
         self.join_operands = {
             element.name: set(element.components)
             for element in clause_elements

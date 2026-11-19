@@ -3513,3 +3513,17 @@ def test_GH_1355_11u(use_duckdb):
         "At op rename: Invalid Component name a\\rb, a Component name cannot contain "
         "', \", #, NUL or carriage return.",
     )
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_11v(use_duckdb):
+    """Extra of test_GH_1355_11l: the alias of a join operand cannot contain a carriage return
+    either. The pandas engine and the semantic analysis ran the join and the DuckDB engine
+    raised a raw BinderException."""
+    _check_semantic_error_1355(
+        "DS_r <- inner_join ( DS_1 as 'A\rB' , DS_2 as C using Id_1 , Id_2 drop C#Me_1 );",
+        use_duckdb,
+        "1-1-13-28",
+        "At op inner_join: Invalid name 'A\\rB' of a join operand, the alias of a join "
+        "operand, or else its Data Set name, cannot contain ', \", #, NUL or carriage return.",
+    )
