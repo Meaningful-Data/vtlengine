@@ -1617,3 +1617,21 @@ class TestInputDataFrameIsLeftUntouched:
         assert result["DS_r"].data["Me_1"].isnull().tolist() == [False, True, False]
         assert list(data_df.columns) == list(snapshot.columns)
         pd.testing.assert_frame_equal(data_df, snapshot)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_39(use_duckdb: bool) -> None:
+    """A Duration is one period indicator, so P1Y is refused with 0-3-1-6, with the same
+    message on both engines; the DuckDB engine wrote another one (issue #1352)."""
+    with pytest.raises(VTLEngineException) as context:
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("Duration"),
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": ["P1Y"]})},
+            use_duckdb=use_duckdb,
+        )
+    assert context.value.args[1] == "0-3-1-6"
+    assert context.value.args[0] == (
+        "On Dataset DS_1 loading: not possible to cast column Me_1 to Duration. Error found: "
+        '"Impossible to cast P1Y from type String to Duration." Please check loaded file'
+    )
