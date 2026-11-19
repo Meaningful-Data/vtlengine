@@ -6,13 +6,13 @@
         {
           "name": "Id_1",
           "role": "Identifier",
-          "type": "String",
+          "type": "VD_1",
           "nullable": false
         },
         {
           "name": "Id_2",
           "role": "Identifier",
-          "type": "String",
+          "type": "VD_2",
           "nullable": false
         },
         {
