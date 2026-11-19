@@ -59,6 +59,8 @@ _UDO_DEPTH_PREFIX = "__depth__"
 _UDO_CHECKS_PREFIX = "__checks__"
 # Key of a UDO scope with the key of its call (see udo_call_key)
 _UDO_CALL = "__call__"
+# Key of a UDO scope with the name of its operator
+_UDO_OP = "__op__"
 
 # Role encoded in UnaryOp.op for calc clauses.
 _CALC_ROLE_BY_TOKEN: Dict[str, Role] = {
@@ -828,7 +830,7 @@ class StructureVisitor(ASTTemplate):
         the values are checked where they are read, even inside another operator."""
         call_params: List[Any] = node.params
         op = node.op
-        bindings: Dict[str, Any] = {_UDO_CALL: self._udo_call_key(node)}
+        bindings: Dict[str, Any] = {_UDO_CALL: self._udo_call_key(node), _UDO_OP: op}
         depth = len(self._udo_params or [])  # The arguments are written in the caller's scope
         for i, param_info in enumerate(udo_def["params"]):
             param_name = param_info["name"]
