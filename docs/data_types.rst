@@ -491,8 +491,9 @@ Key rules:
   converted to the other, so they have no common type,
   although both are converted to Time. An operator that
   receives both, such as ``=``, ``<``, ``between``,
-  ``nvl``, ``if``, ``case``, ``union`` or a join on a
-  Date and a Time_Period Identifier, raises a
+  ``nvl``, ``if``, ``case``, ``union``, or a join, a
+  binary operator, ``exists_in`` or ``nvl`` on a Date and
+  a Time_Period Identifier, raises a
   SemanticError, and the script must ``cast`` one of them,
   as the `Type conversion
   <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators

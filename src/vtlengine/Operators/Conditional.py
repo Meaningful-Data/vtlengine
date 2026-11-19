@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Union, cast
 
 import pandas as pd
 
+from vtlengine.AST.Grammar.tokens import NVL
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
@@ -19,6 +20,7 @@ from vtlengine.Operators import (
     Operator,
     _id_type_promotion_join_keys,
     _is_cast_to_time,
+    check_common_identifier_types,
     share_value_domains,
     shared_value_domain,
     time_identifiers,
@@ -546,6 +548,9 @@ class Nvl(Binary):
                         component.data_type, right.data_type
                     )
             if isinstance(right, Dataset):
+                # The Data Points match on the common Identifiers, which need a common type, as
+                # in the other operators on two Data Sets (issue #1352)
+                check_common_identifier_types(NVL, left, right)
                 for component in left.get_measures():
                     promoted[component.name] = cls.type_validation(
                         component.data_type, right.components[component.name].data_type

@@ -11749,6 +11749,25 @@ class TimeValueBugs(BugHelper):
         """
         self.BaseTest(code="GH_1352_11f", number_inputs=2, references_names=["1"])
 
+    def test_GH_1352_11g(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: Extra of case 11: nvl matches the Data Points on the common Identifiers, so
+                     the Date Id_1 and the Time_Period Id_1 raise 1-1-13-18, as in +. The pandas
+                     engine matched no data points, the DuckDB engine raised 2-1-19-8 and the
+                     semantic analysis accepted the script.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_11g",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="Incompatible types for common identifier Id_1: Date and "
+            "Time_Period.",
+        )
+
     def test_GH_1352_12(self):
         """
         Status: OK
