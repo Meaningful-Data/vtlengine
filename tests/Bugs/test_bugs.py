@@ -11472,3 +11472,35 @@ class StructureDataBugs(BugHelper):
             exception_message="The component bool_var in Dataset",
         )
 
+    def test_GH_1354_26(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 [ calc Me_2 := Me_1 ] , DS_1 );
+        Description: The Data Set operands of nvl must have the same Components. Both engines
+                     and the semantic analysis raised KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_26",
+            number_inputs=1,
+            exception_code="1-1-9-20",
+            exception_message="At op nvl",
+        )
+
+    def test_GH_1354_27(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_1 [ calc Me_2 := Me_1 ] );
+        Description: As test_GH_1354_26 with the extra Measure in the second operand, which
+                     both engines dropped.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_27",
+            number_inputs=1,
+            exception_code="1-1-9-20",
+            exception_message="At op nvl",
+        )
+

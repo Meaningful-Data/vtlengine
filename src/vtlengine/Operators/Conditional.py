@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Union, cast
 
 import pandas as pd
 
+from vtlengine.AST.Grammar.tokens import NVL
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
@@ -508,6 +509,9 @@ class Nvl(Binary):
                         component.data_type, right.data_type
                     )
             if isinstance(right, Dataset):
+                # The operands must have the same Components, as in a case (issue #1354)
+                if set(left.get_components_names()) != set(right.get_components_names()):
+                    raise SemanticError("1-1-9-20", op=NVL)
                 for component in left.get_measures():
                     promoted[component.name] = cls.type_validation(
                         component.data_type, right.components[component.name].data_type
