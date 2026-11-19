@@ -212,10 +212,12 @@ Time_Period
 
     * - **Input (CSV/DataFrame)**
       - Multiple formats accepted (see tables below),
-        read without the space around the value.
-        Year range: 1000–9999. A value written in one of
-        the formats that is no period (``"2020M13"``,
-        ``"2021D366"``, ``"0001"``) raises ``0-3-1-6``.
+        read without the whitespace around the value
+        (spaces, tabs and line breaks). The digits are
+        the ASCII ones. Year range: 1000–9999. A value
+        written in one of the formats that is no period
+        (``"2020M13"``, ``"2021D366"``, ``"0001"``) raises
+        ``0-3-1-6``.
     * - **Input (scalar value)**
       - A ``Time_Period`` value given in ``scalar_values``
         is read on the same rule, in both execution
@@ -653,8 +655,8 @@ Conversion details:
 - **String to Time_Period**: The text is read in any of the
   accepted input formats of a Time_Period (see the Time_Period
   section above), a date written without zeros too
-  (``"2020-1-5"`` is ``2020D5``), without the space around it
-  (``" 2020Q1"`` is ``2020Q1``), as the loaders read it. A
+  (``"2020-1-5"`` is ``2020D5``), without the whitespace around
+  it (``" 2020Q1"`` is ``2020Q1``), as the loaders read it. A
   ``start/end`` text is the period of its interval when that
   interval is a whole year, semester, quarter, month, week or day
   (``"2020-01-01/2020-03-31"`` is ``2020Q1``), as the VTL 2.2
