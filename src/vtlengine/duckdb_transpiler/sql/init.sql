@@ -374,12 +374,13 @@ CREATE OR REPLACE MACRO vtl_period_to_natural(input VARCHAR) AS (
 
 -- An integer parameter of substr or instr read from the data, which must be at
 -- least min_value (mirrors VTL error 2-1-18-1). A literal parameter is checked
--- by the semantic analysis before any SQL runs.
+-- by the semantic analysis before any SQL runs. A Number is checked as it is and
+-- then truncated to an integer, as the pandas engine does (issue #1351).
 CREATE OR REPLACE MACRO vtl_param_min(x, min_value, op_name, param_name) AS (
     CASE WHEN x < min_value
          THEN error('VTL 2-1-18-1 ' || op_name || ' ' || param_name || ' '
                     || CAST(min_value AS VARCHAR))
-         ELSE x
+         ELSE CAST(trunc(x) AS BIGINT)
     END
 );
 
