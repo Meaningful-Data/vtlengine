@@ -239,6 +239,19 @@ CREATE OR REPLACE MACRO vtl_period_rank(ind VARCHAR) AS (
     END
 );
 
+-- The period to aggregate to that a Scalar gives when only the query knows it, checked as
+-- the pandas engine checks it: not null (2-1-19-24), a period indicator (2-1-19-2) and
+-- coarser than the period to aggregate from (2-1-19-26)
+CREATE OR REPLACE MACRO vtl_time_agg_period(target VARCHAR, period_from VARCHAR, name VARCHAR) AS (
+    CASE
+        WHEN target IS NULL THEN error('VTL 2-1-19-24 ' || name)
+        WHEN vtl_period_rank(target) = 0 THEN error('VTL 2-1-19-2 invalid period ' || target)
+        WHEN vtl_period_rank(target) <= vtl_period_rank(period_from)
+            THEN error('VTL 2-1-19-26 ' || period_from || ' ' || target)
+        ELSE target
+    END
+);
+
 -- TimePeriod → TimePeriod (convert via end_date)
 CREATE OR REPLACE MACRO vtl_time_agg_tp(p vtl_time_period, target VARCHAR) AS (
     CASE

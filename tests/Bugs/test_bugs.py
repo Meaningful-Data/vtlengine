@@ -11549,6 +11549,46 @@ class NameResolutionBugs(BugHelper):
             code="GH_1355_23", number_inputs=1, references_names=["1"], only_semantic=True
         )
 
+    def test_GH_1355_23b(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , x integer ) returns dataset is
+                        d [ calc Me_3 := lag ( Me_2 , x over ( order by Id_1 ) ) ] end operator;
+                    DS_r <- f ( DS_3 , -1 );
+        Description: Extra of test_GH_1355_23: the negative offset -1 given to x, which lag
+                     takes as lead 1. The DuckDB engine raised a KeyError with the name of the
+                     parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_23b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_23c(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , x integer ) returns dataset is
+                        d [ calc Me_3 := lag ( Me_2 , x over ( order by Id_1 ) ) ] end operator;
+                    DS_r <- f ( DS_3 , 1 + 0 );
+        Description: Extra of test_GH_1355_23: the offset given to x is the expression 1 + 0.
+                     The DuckDB engine raised a KeyError with the name of the parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_23c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_23d(self):
+        """
+        Status: OK
+        Expression: SC_1 <- 1;
+                    DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , SC_1 over ( order by Id_1 ) ) ];
+        Description: Extra of test_GH_1355_23: the offset of lag is SC_1, a Scalar that an
+                     earlier statement computes. The DuckDB engine raised a KeyError with the
+                     name of the Scalar.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_23d", number_inputs=1, references_names=["1", "2"])
+
     def test_GH_1355_24(self):
         """
         Status: OK
@@ -11577,6 +11617,53 @@ class NameResolutionBugs(BugHelper):
         self.BaseTest(code="GH_1355_25", number_inputs=1, references_names=["1"])
         self.BaseTest(
             code="GH_1355_25", number_inputs=1, references_names=["1"], only_semantic=True
+        )
+
+    def test_GH_1355_25b(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , p string ) returns dataset is
+                        d [ calc Me_3 := time_agg ( p , _ , Tp ) ] end operator;
+                    DS_r <- f ( DS_7 , "A" || "" );
+        Description: Extra of test_GH_1355_25: the period given to p is the expression
+                     "A" || "". The DuckDB engine raised a KeyError with the name of the
+                     parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_25b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_25c(self):
+        """
+        Status: OK
+        Expression: SC_2 <- "A";
+                    DS_r <- DS_7 [ calc Me_3 := time_agg ( SC_2 , _ , Tp ) ];
+        Description: Extra of test_GH_1355_25: the period of time_agg is SC_2, a Scalar that
+                     an earlier statement computes. The DuckDB engine raised a KeyError with the
+                     name of the Scalar.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_25c", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1355_25d(self):
+        """
+        Status: OK
+        Expression: SC_2 <- cast ( null , string );
+                    DS_r <- DS_7 [ calc Me_3 := time_agg ( SC_2 , _ , Tp ) ];
+        Description: Extra of test_GH_1355_25: SC_2, a Scalar that an earlier statement
+                     computes, gives time_agg no period, which raises 2-1-19-24 on both engines.
+                     The DuckDB engine raised a KeyError with the name of the Scalar.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_25d",
+            number_inputs=1,
+            exception_code="2-1-19-24",
+            exception_message=(
+                "At op time_agg: The period indicator SC_2 to aggregate to has no value."
+            ),
         )
 
     def test_GH_1355_26(self):

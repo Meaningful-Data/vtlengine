@@ -34,6 +34,7 @@ from vtlengine.AST import (
     PersistentAssignment,
     RegularAggregation,
     Start,
+    TimeAggregation,
     UDOCall,
     VarID,
     ViralPropagationDef,
@@ -44,6 +45,8 @@ from vtlengine.AST.Grammar.tokens import (
     AS,
     DROP,
     KEEP,
+    LAG,
+    LEAD,
     MEMBERSHIP,
     RENAME,
     TO,
@@ -353,6 +356,18 @@ class DAGAnalyzer(ASTTemplate):
     def visit_Analytic(self, node: Analytic) -> None:
         if node.operand is not None:
             self.visit(node.operand)
+        # The offset of lag or lead can name a Scalar (issue #1355)
+        if node.op in (LAG, LEAD):
+            for param in node.params or []:
+                if isinstance(param, VarID):
+                    self.visit(param)
+
+    def visit_TimeAggregation(self, node: TimeAggregation) -> None:
+        if node.operand is not None:
+            self.visit(node.operand)
+        # The period to aggregate to can name a Scalar (issue #1355)
+        if node.period_to_ref is not None:
+            self.visit(node.period_to_ref)
 
     def visit_JoinOp(self, node: JoinOp) -> None:
         for clause in node.clauses:

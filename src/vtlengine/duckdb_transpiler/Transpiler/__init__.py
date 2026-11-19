@@ -3621,7 +3621,11 @@ FROM (
         if op == tokens.RANK:
             return "RANK()"
         if op in (tokens.LAG, tokens.LEAD) and node.params:
-            offset = self._resolve_scalar_varid(node.params[0] if node.params else 1)
+            # An offset given by a Scalar is read as any Scalar: an input one, one a statement
+            # computes or the argument of a scalar parameter, an expression included (issue #1355)
+            offset = node.params[0]
+            if isinstance(offset, AST.VarID):
+                offset = self.visit(offset)
             default_val = node.params[1] if len(node.params) > 1 else None
             func_sql = f"{op.upper()}({operand_sql}, {offset}"
             if default_val is not None:
@@ -5967,9 +5971,9 @@ FROM (
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:  # type: ignore[override]
         """Visit TIME_AGG operation."""
         conf = node.conf
-        target = node.period_to
+        target = None if node.period_to is None else f"'{node.period_to}'"
         if target is None and node.period_to_ref is not None:
-            target = self._resolve_period_to_ref(node.period_to_ref)
+            target = self._resolve_period_to_ref(node)
         if target is None:
             # The reference gave no period indicator: its scalar holds no value (issue #1192)
             raise RunTimeError("2-1-19-24", name=cast(AST.VarID, node.period_to_ref).value)
@@ -5982,9 +5986,9 @@ FROM (
             operand_sql = self.visit(node.operand)
             if self._is_operand_type(node.operand, TimePeriod):
                 parsed = self._hoist(f"vtl_period_parse({operand_sql})")
-                return f"vtl_time_agg_tp({parsed}, '{target}')"
+                return f"vtl_time_agg_tp({parsed}, {target})"
             else:
-                agg_expr = f"vtl_time_agg_date({operand_sql}, '{target}')"
+                agg_expr = f"vtl_time_agg_date({operand_sql}, {target})"
                 return self._apply_time_agg_conf(agg_expr, conf)
         else:
             # Without-operand case: inside group all, applies to time identifier
@@ -5993,13 +5997,13 @@ FROM (
                     if comp.data_type == TimePeriod and comp.role == Role.IDENTIFIER:
                         col = quote_name(comp.name)
                         parsed = self._hoist(f"vtl_period_parse({col})")
-                        return f"vtl_time_agg_tp({parsed}, '{target}')"
+                        return f"vtl_time_agg_tp({parsed}, {target})"
                 for comp in self._current_dataset.components.values():
                     if comp.data_type == Date and comp.role == Role.IDENTIFIER:
                         col = quote_name(comp.name)
-                        agg = f"vtl_time_agg_date({col}, '{target}')"
+                        agg = f"vtl_time_agg_date({col}, {target})"
                         return self._apply_time_agg_conf(agg, conf)
-            return f"vtl_time_agg_date(CURRENT_DATE, '{target}')"
+            return f"vtl_time_agg_date(CURRENT_DATE, {target})"
 
     def _apply_time_agg_conf(self, expr: str, conf: Optional[str]) -> str:
         """Apply time_agg conf (first/last) modifier to a Date aggregation expression."""
@@ -6009,28 +6013,39 @@ FROM (
             return f"vtl_tp_{edge}_date({parsed})"
         return expr
 
-    def _resolve_period_to_ref(self, ref: AST.AST) -> Optional[str]:
-        name = ref.value  # type: ignore[attr-defined]
-        value = self._scalar_value(name)
-        return None if value is None else str(value)
+    def _resolve_period_to_ref(self, node: AST.TimeAggregation) -> Optional[str]:
+        """The period to aggregate to that a Scalar gives, as SQL, None when it is known to be
+        null. A value not known before the queries run, of a Scalar that a statement computes
+        or of an expression given to a scalar parameter, is checked where the query reads it,
+        as the pandas engine checks it (issue #1355)."""
+        name = cast(AST.VarID, node.period_to_ref).value
+        known, value = self._known_scalar_value(name)
+        if known:
+            return None if value is None else f"'{value}'"
+        period_from = "NULL" if node.period_from is None else f"'{node.period_from}'"
+        sql = self.visit(node.period_to_ref)
+        return f"vtl_time_agg_period({sql}, {period_from}, '{name}')"
 
     def _resolve_scalar_varid(self, value: Any) -> Any:
         """Non-VarID values pass through unchanged."""
         if not isinstance(value, AST.VarID):
             return value
-        return self._scalar_value(value.value)
+        known, scalar_value = self._known_scalar_value(value.value)
+        return scalar_value if known else self.input_scalars[value.value].value
 
-    def _scalar_value(self, name: str) -> Any:
-        """The value of the input scalar name, or of the argument that a scalar parameter name
-        of a user defined operator is bound to, through the calls that pass it on (issue
-        #1355)."""
+    def _known_scalar_value(self, name: str) -> Tuple[bool, Any]:
+        """Whether the value of the Scalar name is known before the queries run, and that value:
+        an input Scalar, or a literal given to a scalar parameter name of a user defined
+        operator, through the calls that pass it on (issue #1355)."""
         bound = self._get_udo_param(name)
         if isinstance(bound, AST.Constant):
-            return bound.value
+            return True, bound.value
         if isinstance(bound, AST.VarID):
             with self._udo_arg_scope(name):
-                return self._scalar_value(bound.value)
-        return self.input_scalars[name].value
+                return self._known_scalar_value(bound.value)
+        if bound is None and name in self.input_scalars:
+            return True, self.input_scalars[name].value
+        return False, None
 
     def _visit_time_agg_dataset(
         self, node: AST.TimeAggregation, target: str, conf: Optional[str]
@@ -6048,9 +6063,9 @@ FROM (
                     cols.append(col)
                 elif comp.data_type == TimePeriod:
                     parsed = self._hoist(f"vtl_period_parse({col})")
-                    cols.append(f"vtl_time_agg_tp({parsed}, '{target}') AS {col}")
+                    cols.append(f"vtl_time_agg_tp({parsed}, {target}) AS {col}")
                 elif comp.data_type == Date:
-                    expr = self._apply_time_agg_conf(f"vtl_time_agg_date({col}, '{target}')", conf)
+                    expr = self._apply_time_agg_conf(f"vtl_time_agg_date({col}, {target})", conf)
                     cols.append(f"{expr} AS {col}")
                 else:
                     cols.append(col)

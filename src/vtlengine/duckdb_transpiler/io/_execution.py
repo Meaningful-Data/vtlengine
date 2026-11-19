@@ -86,6 +86,22 @@ def _mixed_frequency_error(msg_lower: str) -> Exception:
     )
 
 
+def _period_error(msg: str) -> Optional[Exception]:
+    """A period indicator that is not one (macros vtl_dateadd and vtl_time_agg_period, mirrors
+    2-1-19-2), and the period that a Scalar gives time_agg, which the query checks (macro
+    vtl_time_agg_period, issue #1355): a null or one not coarser than the period to aggregate
+    from."""
+    if "vtl 2-1-19-2 invalid period" in msg.lower():
+        return RunTimeError("2-1-19-2", period=msg.rsplit(" ", 1)[-1])
+    missing = re.search(r"VTL 2-1-19-24 (\S+)", msg)
+    if missing is not None:
+        return RunTimeError("2-1-19-24", name=missing.group(1))
+    finer = re.search(r"VTL 2-1-19-26 (\S+) (\S+)", msg)
+    if finer is not None:
+        return RunTimeError("2-1-19-26", value_1=finer.group(1), value_2=finer.group(2))
+    return None
+
+
 def _map_udo_constraint_error(msg: str) -> Optional[Exception]:
     """A value that breaks a constraint of a type of a user defined operator, or a Number with
     decimals given to an integer parameter (macro vtl_udo_integer)."""
@@ -172,9 +188,9 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
     if "vtl 2-1-19-8 " in msg_lower:
         return RunTimeError("2-1-19-8", date=msg.split("VTL 2-1-19-8 ", 1)[-1])
 
-    # VTL macro vtl_dateadd: a period indicator that is not one (mirrors 2-1-19-2)
-    if "vtl 2-1-19-2 invalid period" in msg_lower:
-        return RunTimeError("2-1-19-2", period=msg.rsplit(" ", 1)[-1])
+    period = _period_error(msg)
+    if period is not None:
+        return period
 
     # datediff: a Time value, which holds two dates
     if "vtl 2-1-19-25" in msg_lower:
