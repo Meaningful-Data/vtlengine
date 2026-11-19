@@ -121,6 +121,13 @@ def check_values(values: Any, value_domain: ValueDomain, op: str) -> None:
         )
 
 
+def _time_value(value: str) -> Any:
+    """A Time as a comparison reads it: its start/end interval, or its text when it is written
+    as the year or the month it covers, as cast to time keeps it, which is equal to that text
+    alone, as on the DuckDB engine (issue #1352)."""
+    return TimeIntervalHandler.from_iso_format(value) if "/" in value else value
+
+
 class Operator:
     """Superclass for all operators"""
 
@@ -154,9 +161,7 @@ class Operator:
             )
             data_type = TimeInterval
         if data_type.__name__ == "TimeInterval":
-            series = series.map(
-                lambda x: TimeIntervalHandler.from_iso_format(x), na_action="ignore"
-            )
+            series = series.map(_time_value, na_action="ignore")
         elif data_type.__name__ == "TimePeriod":
             series = series.map(lambda x: TimePeriodHandler(x), na_action="ignore")
         elif data_type.__name__ == "Duration":
@@ -173,7 +178,7 @@ class Operator:
             value = TimeInterval.implicit_cast(value, data_type)
             data_type = TimeInterval
         if data_type.__name__ == "TimeInterval":
-            return TimeIntervalHandler.from_iso_format(value)
+            return _time_value(value)
         elif data_type.__name__ == "TimePeriod":
             return TimePeriodHandler(value)
         elif data_type.__name__ == "Duration":

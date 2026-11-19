@@ -12450,6 +12450,23 @@ class TimeValueBugs(BugHelper):
             ),
         )
 
+    def test_GH_1352_36e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "2020" , time ) ,
+                        Me_3 := cast ( "2020-01" , time ) ]
+                        [ filter Me_2 = Me_2 and Me_3 = Me_3 ]
+                        [ calc Me_4 := cast ( Me_2 , string ) , Me_5 := cast ( Me_3 , string ) ]
+                        [ keep Me_4 , Me_5 ];
+        Description: Extra of case 36: a Time written as the year or the month it covers is
+                     equal to itself, so the filter keeps the Data Point with 2020 and 2020-01.
+                     The pandas engine read it as a start/end interval and raised a raw
+                     TypeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_36e", number_inputs=1, references_names=["1"])
+
     def test_GH_1352_36f(self):
         """
         Status: OK
