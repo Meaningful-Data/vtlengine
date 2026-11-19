@@ -11656,6 +11656,30 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_13d", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_13e(self):
+        """
+        Status: OK
+        Expression: DS_r <- max ( DS_1 group by Id_1 );
+        Description: Extra of case 13: max of a Time_Period Measure grouped by an Integer
+                     Identifier: 2020Q2, 2021Q1. The pandas engine raised
+                     InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_13f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := min ( Me_1 ) group by Id_1 ];
+        Description: Extra of case 13: min of a Time_Period Measure in an aggr clause grouped
+                     by an Integer Identifier: 2020Q1, 2021Q1. The pandas engine raised
+                     InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13f", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_14(self):
         """
         Status: OK
