@@ -3210,7 +3210,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if missing_period:
                 # The structures are checked first, as the semantic pass of DuckDB does
                 Time_Aggregation.validate(operand, node.period_from, period_to, node.conf)
-                raise RunTimeError("2-1-19-24", name=cast(AST.VarID, node.period_to_ref).value)
+                raise Time_Aggregation.no_value_error(cast(AST.VarID, node.period_to_ref).value)
             return Time_Aggregation.analyze(
                 operand=operand,
                 period_from=node.period_from,
@@ -3222,7 +3222,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.aggregation_dataset is None:
             raise SemanticError("1-3-2-4")
         if missing_period:
-            raise RunTimeError("2-1-19-24", name=cast(AST.VarID, node.period_to_ref).value)
+            raise Time_Aggregation.no_value_error(cast(AST.VarID, node.period_to_ref).value)
         return Time_Aggregation._execute_without_operand(
             aggregation_dataset=self.aggregation_dataset,
             period_from=node.period_from,

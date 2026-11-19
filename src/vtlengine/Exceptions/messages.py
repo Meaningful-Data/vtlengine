@@ -1672,9 +1672,9 @@ centralised_messages = {
         "description": "Raised when the time values of the operand hold more than one frequency.",
     },
     "2-1-19-24": {
-        "message": "At op time_agg: The period indicator {name} to aggregate to has no value.",
-        "description": "Raised when the scalar that gives time_agg its period indicator holds "
-        "a null.",
+        "message": "At op {op}: The scalar {name} that gives the {param} has no value.",
+        "description": "Raised when the scalar that gives time_agg its period indicator or "
+        "timeshift its shift number holds a null.",
     },
     "2-1-19-25": {
         "message": "At op {op}: {op} can only be applied to a {comp_type}",

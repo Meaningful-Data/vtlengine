@@ -12849,3 +12849,23 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_34", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_19(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , SC_2 );
+        Description: The Integer Scalar SC_2 that gives timeshift its shift number holds null,
+                     so no period can be shifted and timeshift raises 2-1-19-24, as time_agg
+                     does for a null Scalar. The pandas engine raised a raw TypeError and the
+                     DuckDB engine a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_19",
+            number_inputs=1,
+            exception_code="2-1-19-24",
+            exception_message="At op timeshift: The scalar SC_2 that gives the shift number has "
+            "no value.",
+            scalars={"SC_2": None},
+        )
