@@ -3396,3 +3396,35 @@ def test_GH_1352_39b(use_duckdb):
     )
     assert result["SC_r1"].value == "2020D15"
     assert result["SC_r2"].value == "2020Q1"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_13c(use_duckdb):
+    """Extra of case 13: a Time_Period Scalar value and a Time_Period given by cast are held in
+    one form, so the analytic max of an if over them orders the periods and gives 2020Q2. The
+    pandas engine held the cast text as written beside the Scalar value in the loaders' form and
+    ordered the texts, giving 2020Q1 (issue #1352)."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+                ],
+            }
+        ],
+        "scalars": [{"name": "SC_1", "type": "Time_Period"}],
+    }
+    script = (
+        "DS_r <- DS_1[calc Me_2 := max((if Id_1 = 1 then SC_1 "
+        'else cast("2020Q1", time_period)) over ())][keep Me_2];'
+    )
+    result = run(
+        script,
+        structures,
+        {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [1, 2]})},
+        scalar_values={"SC_1": "2020Q2"},
+        use_duckdb=use_duckdb,
+    )
+    assert result["DS_r"].data["Me_2"].tolist() == ["2020Q2", "2020Q2"]

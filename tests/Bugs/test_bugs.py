@@ -12647,3 +12647,18 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_36c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_13d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := max ( ( if Id_1 = 1
+                        then cast ( "2021Q1" , time_period ) else Me_1 ) over ( ) ) ]
+                        [ keep Me_2 ];
+        Description: Extra of case 13: a Time_Period given by cast is held in the one form the
+                     loaded ones are held in, so the analytic max orders the periods and gives
+                     2021Q2. The pandas engine held the cast text as written and ordered the
+                     texts, giving 2021Q1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_13d", number_inputs=1, references_names=["1"])

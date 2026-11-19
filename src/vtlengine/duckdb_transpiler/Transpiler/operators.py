@@ -22,7 +22,6 @@ from vtlengine.DataTypes import (
     TimePeriod,
 )
 from vtlengine.DataTypes.CastMasks import cast_with_mask
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import RunTimeError
 from vtlengine.Utils._number_config import (
     get_effective_comparison_digits,
@@ -607,7 +606,7 @@ def text_to_period(value: str) -> Optional[str]:
     it: also a start/end interval of a whole period and a date written without zeros (issue
     #1352). None when the text is no time period."""
     try:
-        return str(TimePeriodHandler(str(TimePeriod.explicit_cast(value, String))))
+        return str(TimePeriod.explicit_cast(value, String))
     except Exception:
         return None
 
