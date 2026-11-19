@@ -343,9 +343,10 @@ Duration
     * - **Output dtype**
       - ``string[pyarrow]``
 
-The operators ``>``, ``<``, ``>=``, ``<=`` and ``between`` order the
-Durations by their length, not by their text: ``D`` < ``W`` < ``M`` <
-``Q`` < ``S`` < ``A``.
+The operators ``>``, ``<``, ``>=``, ``<=`` and ``between``, ``max`` and
+``min`` (also as analytic functions) and the ``order by`` of an analytic
+function order the Durations by their length, not by their text: ``D`` <
+``W`` < ``M`` < ``Q`` < ``S`` < ``A``.
 
 
 Null Handling

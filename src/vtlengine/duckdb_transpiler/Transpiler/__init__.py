@@ -3585,11 +3585,19 @@ FROM (
             partition_cols = ", ".join(quote_name(p) for p in partition_cols_list)
             over_parts.append(f"PARTITION BY {partition_cols}")
         if node.order_by:
-            order_cols = ", ".join(
-                f"{quote_name(self._resolve_udo_name(o.component))} {o.order}"
-                for o in node.order_by
-            )
-            over_parts.append(f"ORDER BY {order_cols}")
+            ds = self._get_dataset_structure(node.operand) if node.operand is not None else None
+            ds = ds or self._current_dataset
+            comps = ds.components if ds is not None else {}
+            order_cols = []
+            for o in node.order_by:
+                name = self._resolve_udo_name(o.component)
+                comp = comps.get(name)
+                ref = quote_name(name)
+                if comp is not None and comp.data_type == Duration:
+                    # A Duration is ordered by its length, not by its letter (issue #1352)
+                    ref = f"vtl_duration_to_int({ref})"
+                order_cols.append(f"{ref} {o.order}")
+            over_parts.append(f"ORDER BY {', '.join(order_cols)}")
         if node.window:
             order_is_date = False
             if node.order_by and self._current_dataset:
@@ -3676,11 +3684,20 @@ FROM (
                 self._nested_analytic_depth -= 1
         else:
             operand_sql = ""
+        # The max and the min of a Duration are the ones of its length, not of its letter
+        # (issue #1352)
+        is_duration = op in (tokens.MAX, tokens.MIN) and (
+            node.operand is not None and self._detect_scalar_type(node.operand) == Duration
+        )
+        if is_duration:
+            operand_sql = f"vtl_duration_to_int({operand_sql})"
         func_sql = self._build_analytic_expr(op, operand_sql, node)
         # ratio_to_report already includes its own OVER clause
         if op != tokens.RATIO_TO_REPORT:
             over_clause = self._build_over_clause(node)
             func_sql = f"{func_sql} OVER ({over_clause})"
+        if is_duration:
+            func_sql = f"vtl_int_to_duration({func_sql})"
         # An analytic inside another analytic's operand cannot be emitted inline
         # (SQL forbids nesting window functions): hand it to the enclosing clause
         # as a pending column and reference it by alias (#1026)
@@ -3693,6 +3710,7 @@ FROM (
 
     def _visit_analytic_dataset(self, node: AST.Analytic, op: str) -> str:
         """Visit a dataset-level analytic: applies the window function to each measure."""
+        operand_ds = self._get_dataset_structure(node.operand)
         over_clause = self._build_over_clause(node)
 
         def _analytic_expr(col_ref: str) -> str:
@@ -3703,10 +3721,18 @@ FROM (
                 measures = self._get_dataset_structure(node.operand).get_measures_names()
                 any_non_null = " OR ".join(f"{quote_name(m)} IS NOT NULL" for m in measures)
                 col_ref = f"CASE WHEN {any_non_null} THEN 1 END"
+            comp = operand_ds.components.get(col_ref.strip('"')) if operand_ds else None
+            is_duration = (
+                op in (tokens.MAX, tokens.MIN) and getattr(comp, "data_type", None) == Duration
+            )
+            if is_duration:
+                col_ref = f"vtl_duration_to_int({col_ref})"
             func_sql = self._build_analytic_expr(op, col_ref, node)
             if op == tokens.RATIO_TO_REPORT:
                 return func_sql
-            return f"{func_sql} OVER ({over_clause})"
+            func_sql = f"{func_sql} OVER ({over_clause})"
+            # The max and the min of a Duration are the ones of its length (issue #1352)
+            return f"vtl_int_to_duration({func_sql})" if is_duration else func_sql
 
         # Build a partition-only OVER clause for viral attribute aggregation.
         # The full over_clause may include ORDER BY and a windowing frame (e.g.

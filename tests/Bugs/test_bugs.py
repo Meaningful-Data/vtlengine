@@ -12340,3 +12340,28 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_40d", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_17(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := max ( Me_1 over ( ) ) ,
+                        Me_3 := min ( Me_1 over ( ) ) ];
+        Description: The analytic max and min of Durations order them by their length, so max
+                     gives A and min gives M. Both engines took the max and the min of the
+                     letters.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_17", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_18(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := rank ( over ( order by Id_1 ) ) ,
+                        Me_3 := lag ( Id_1 , 1 over ( order by Id_1 ) ) ];
+        Description: An analytic ordered by a Duration orders it by its length, D, M, A, so the
+                     ranks of A, D and M are 3, 1 and 2. Both engines ordered the letters.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_18", number_inputs=1, references_names=["1"])
