@@ -10,7 +10,7 @@ import pytest
 
 from tests.Helper import engine_params
 from vtlengine import run
-from vtlengine.Exceptions import InputValidationException
+from vtlengine.Exceptions import InputValidationException, RunTimeError
 
 SCRIPT = """
     DS_r <- DS_1;
@@ -145,3 +145,27 @@ def test_GH_1352_13f(use_duckdb: bool, representation: str, expected: List[str])
         time_period_output_format=representation,
     )
     assert result["DS_r"].data.sort_values("Id_1")["Me_2"].tolist() == expected
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize(
+    "script", ["DS_r <- DS_1;", "DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , string ) ];"]
+)
+@pytest.mark.parametrize("period", ["2020S1", "2020Q3", "2020W15"])
+def test_GH_1352_13g(use_duckdb: bool, script: str, period: str) -> None:
+    """Extra of case 13: the sdmx_gregorian format writes only a year, a month or a day, so a
+    semester, a quarter or a week raises 2-1-19-21 on both engines, in a written Time_Period
+    and in a cast to string. The DuckDB engine raised a raw InvalidInputException (issue
+    #1352)."""
+    with pytest.raises(RunTimeError) as context:
+        run(
+            script=script,
+            data_structures=DATA_STRUCTURES,
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [period]})},
+            use_duckdb=use_duckdb,
+            time_period_output_format="sdmx_gregorian",
+        )
+    assert context.value.args[1] == "2-1-19-21"
+    assert context.value.args[0].startswith(
+        f"SDMX Gregorian representation is not supported for period indicator '{period[4]}'."
+    )
