@@ -463,7 +463,9 @@ class Fill_time_series(Binary):
             operand.data = pd.DataFrame()
         result.data = operand.data.copy()
         result.data[cls.time_id] = result.data[cls.time_id].astype("string[pyarrow]")
-        if len(result.data) < 2:
+        if result.data.empty:
+            # A single Data Point is filled as well: in all mode, to the whole of its year
+            # (issue #1352)
             return result
         if not cls.other_ids:
             # The operand holds a single series, so both limits span the same range.
@@ -593,9 +595,11 @@ class Fill_time_series(Binary):
     @classmethod
     def fill_dates(cls, data: pd.DataFrame, fill_type: str, min_frequency: str) -> pd.DataFrame:
         result_data = cls.date_filler(data, fill_type, min_frequency)
-        not_na = result_data[cls.measures].notna().any(axis=1)
+        # The added Data Point of a date the operand has goes, and the operand's own one stays,
+        # also when all its Measures are null (issue #1352)
+        added = result_data["_added"]
         duplicated = result_data.duplicated(subset=(cls.other_ids + [cls.time_id]), keep=False)
-        return result_data[~duplicated | not_na]
+        return result_data[~(duplicated & added)].drop(columns="_added")
 
     @classmethod
     def date_filler(cls, data: pd.DataFrame, fill_type: str, min_frequency: str) -> pd.DataFrame:
@@ -622,7 +626,9 @@ class Fill_time_series(Binary):
 
         filled_data = pd.concat(filled_data, ignore_index=True)
         filled_data[cls.time_id] = filled_data[cls.time_id].dt.strftime(date_format)
-        combined_data = pd.concat([filled_data, data], ignore_index=True)
+        combined_data = pd.concat(
+            [filled_data.assign(_added=True), data.assign(_added=False)], ignore_index=True
+        )
         combined_data[cls.time_id] = combined_data[cls.time_id].astype("string[pyarrow]")
         return combined_data.sort_values(by=cls.other_ids + [cls.time_id])
 
