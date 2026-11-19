@@ -258,6 +258,8 @@ class InterpreterAnalyzer(ASTTemplate):
     # Handlers for simplicity
     condition_stack: Optional[List[Dataset]] = None
     regular_aggregation_dataset: Optional[Dataset] = None
+    # The Components of each operand of the join, by its alias or its Data Set name
+    join_operands: Optional[Dict[str, Set[str]]] = None
     regular_aggregation_op: Optional[str] = None
     aggregation_grouping: Optional[List[str]] = None
     aggregation_dataset: Optional[Dataset] = None
@@ -736,6 +738,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
             else:
                 comp_name = f"{node.left.value}#{node.right.value}"
+            if node.op == MEMBERSHIP:
+                self._check_join_member(node.left.value, comp_name.split("#", 1)[1])
             ast_var_id = AST.VarID(
                 value=comp_name,
                 line_start=node.right.line_start,
@@ -1335,6 +1339,20 @@ class InterpreterAnalyzer(ASTTemplate):
                 comp_name=cast(AST.Identifier, node.right).value,
             )
 
+    def _check_join_member(self, alias: str, comp_name: str) -> None:
+        """A qualified name alias#comp in a join names the Component comp of the operand alias:
+        an alias that is no operand of the join, or a Component that this operand does not have,
+        is not found (issue #1355). A Data Set parameter of an operator stands for its
+        argument."""
+        operands = self.join_operands
+        if operands is None:
+            return
+        argument = self.udo_params[-1].get(alias) if self.udo_params is not None else None
+        if isinstance(argument, (Dataset, str)):
+            alias = argument if isinstance(argument, str) else argument.name
+        if comp_name not in operands.get(alias, set()):
+            raise SemanticError("1-1-1-10", comp_name=comp_name, dataset_name=alias)
+
     def _integer_scalar(self, op: str, node: AST.VarID, param_type: str) -> Scalar:
         """The Scalar named as the offset of lag or lead or as a bound of a window: an Integer
         Scalar, not a Component or a Scalar of another type (issue #1355)."""
@@ -1886,6 +1904,8 @@ class InterpreterAnalyzer(ASTTemplate):
             alias = cast(AST.Identifier, membership.left).value
             comp_name = cast(AST.Identifier, membership.right).value
             comp_name = params.get(comp_name, comp_name)
+            if self.is_from_join:
+                self._check_join_member(alias, comp_name)
             node.old_name = f"{alias}#{comp_name}"
         # A component parameter as the new name stands for its argument (issue #1355)
         new_name = cast(str, node.new_name)
@@ -1952,6 +1972,11 @@ class InterpreterAnalyzer(ASTTemplate):
         # it is no Data Set of the script, neither for the other operands nor after the join
         # (issue #1281)
         clause_elements = [self.visit(clause) for clause in node.clauses]
+        self.join_operands = {
+            element.name: set(element.components)
+            for element in clause_elements
+            if isinstance(element, Dataset)
+        }
 
         nvl_defaults: Optional[Dict[str, Any]] = None
         if node.nvl:

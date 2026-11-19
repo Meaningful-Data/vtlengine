@@ -12117,6 +12117,55 @@ class NameResolutionBugs(BugHelper):
             exception_message="Membership is not allowed inside a clause, found A#Me_1.",
         )
 
+    def test_GH_1355_11i(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B rename A#Me_2 to Me_9 );
+        Description: Extra of test_GH_1355_11: A#Me_2 names the Component Me_2 of the operand
+                     A, which has none. Both engines renamed Me_2 of the operand B.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11i",
+            number_inputs=2,
+            exception_code="1-1-1-10",
+            exception_message="Component Me_2 not found in Dataset A.",
+        )
+
+    def test_GH_1355_11j(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B aggr Me_9 := sum ( Me_1 )
+                        group by C#Id_1 );
+        Description: Extra of test_GH_1355_11: C is no operand of the join. Both engines grouped
+                     by the Identifier Id_1 of the join.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11j",
+            number_inputs=2,
+            exception_code="1-1-1-10",
+            exception_message="Component Id_1 not found in Dataset C.",
+        )
+
+    def test_GH_1355_11k(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B calc Me_9 := B#Me_1 );
+        Description: Extra of test_GH_1355_11: Me_1 is a Component of the operand A, not of B.
+                     Both engines gave Me_9 the values of Me_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11k",
+            number_inputs=2,
+            exception_code="1-1-1-10",
+            exception_message="Component Me_1 not found in Dataset B.",
+        )
+
     def test_GH_1355_12(self):
         """
         Status: OK
