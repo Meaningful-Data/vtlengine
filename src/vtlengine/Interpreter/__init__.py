@@ -44,8 +44,6 @@ from vtlengine.AST.Grammar.tokens import (
     HIERARCHY,
     INSTR,
     KEEP,
-    LAG,
-    LEAD,
     MEMBERSHIP,
     MINUS,
     NVL,
@@ -1215,20 +1213,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 if isinstance(param, AST.Constant):
                     params.append(param.value)
                 elif isinstance(param, AST.VarID):
-                    resolved = self.visit(param)
-                    # The offset of lag or lead names an Integer Scalar, not a Component or a
-                    # Scalar of another type (issue #1355)
-                    if node.op in (LAG, LEAD) and not (
-                        isinstance(resolved, Scalar)
-                        and check_unary_implicit_promotion(resolved.data_type, Integer)
-                    ):
-                        raise SemanticError(
-                            "1-1-18-4",
-                            op=node.op,
-                            param_type="Offset",
-                            correct_type="an Integer Scalar",
-                        )
-                    params.append(resolved.value if hasattr(resolved, "value") else resolved)
+                    params.append(self._integer_scalar(node.op, param, "Offset").value)
                 else:
                     params.append(param)
 
@@ -1238,11 +1223,9 @@ class InterpreterAnalyzer(ASTTemplate):
         ):
             window = copy(window)
             if isinstance(window.start, AST.VarID):
-                start = self.visit(window.start)
-                window.start = start.value if hasattr(start, "value") else start
+                window.start = self._integer_scalar(node.op, window.start, "Window bound").value
             if isinstance(window.stop, AST.VarID):
-                stop = self.visit(window.stop)
-                window.stop = stop.value if hasattr(stop, "value") else stop
+                window.stop = self._integer_scalar(node.op, window.stop, "Window bound").value
 
         result = ANALYTIC_MAPPING[node.op].analyze(
             operand=operand,
@@ -1297,6 +1280,19 @@ class InterpreterAnalyzer(ASTTemplate):
             nullable=result.components[measure_name].nullable,
         )
         return self.merge_then_else_datasets(result_comp)
+
+    def _integer_scalar(self, op: str, node: AST.VarID, param_type: str) -> Scalar:
+        """The Scalar named as the offset of lag or lead or as a bound of a window: an Integer
+        Scalar, not a Component or a Scalar of another type (issue #1355)."""
+        resolved = self.visit(node)
+        if not (
+            isinstance(resolved, Scalar)
+            and check_unary_implicit_promotion(resolved.data_type, Integer)
+        ):
+            raise SemanticError(
+                "1-1-18-4", op=op, param_type=param_type, correct_type="an Integer Scalar"
+            )
+        return resolved
 
     def visit_MulOp(self, node: AST.MulOp) -> None:
         """

@@ -11843,6 +11843,46 @@ class NameResolutionBugs(BugHelper):
         """
         self.BaseTest(code="GH_1355_26c", number_inputs=1, references_names=["1"])
 
+    def test_GH_1355_26d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between Me_2 preceding and current data point ) ) ];
+        Description: Extra of test_GH_1355_26: the bound of a window is an Integer Scalar, so
+                     the Component Me_2 raises 1-1-18-4 on both engines and in the semantic
+                     analysis. The pandas engine raised an internal ParserException and the
+                     DuckDB engine read the Me_2 of each data point as its bound.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_26d",
+            number_inputs=1,
+            exception_code="1-1-18-4",
+            exception_message="At op sum: Window bound parameter should be an Integer Scalar.",
+        )
+
+    def test_GH_1355_26e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SP_1 preceding and current data point ) ) ];
+                    (SP_1 an input String Scalar)
+        Description: Extra of test_GH_1355_26: the String Scalar SP_1 is no Integer, which
+                     raises 1-1-18-4 on both engines and in the semantic analysis. The pandas
+                     engine raised an internal ParserException and the DuckDB engine an
+                     internal BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_26e",
+            number_inputs=1,
+            exception_code="1-1-18-4",
+            exception_message="At op sum: Window bound parameter should be an Integer Scalar.",
+            scalars={"SP_1": "A"},
+        )
+
     def test_GH_1355_27(self):
         """
         Status: OK
