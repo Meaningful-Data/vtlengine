@@ -12250,6 +12250,74 @@ class NameResolutionBugs(BugHelper):
         """
         self.BaseTest(code="GH_1355_13", number_inputs=2, references_names=["1"])
 
+    def test_GH_1355_13b(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B apply A + B keep A#Me_1 );
+        Description: Extra of test_GH_1355_12: apply replaces the Measures Me_1 of A and B
+                     with one Measure Me_1, so A#Me_1 is no longer in the join after it (Inner
+                     Join page of the VTL 2.2 manual: the input Measures do not appear in the
+                     result of apply). The pandas engine kept the Me_1 of apply and the DuckDB
+                     engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_13b",
+            number_inputs=2,
+            exception_code="1-1-13-17",
+            exception_message="At op keep: A#Me_1 not present in the Dataset(result from join "
+            "VDS) at the time it is called",
+        )
+
+    def test_GH_1355_13c(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B apply A + B
+                        rename A#Me_1 to Me_9 );
+        Description: Extra of test_GH_1355_12: as test_GH_1355_13b, for rename. The pandas
+                     engine renamed the Me_1 of apply and the DuckDB engine gave data without
+                     the column Me_9 that its structure had.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_13c",
+            number_inputs=2,
+            exception_code="1-1-13-17",
+            exception_message="At op rename: A#Me_1 not present in the Dataset(result from "
+            "join VDS) at the time it is called",
+        )
+
+    def test_GH_1355_13d(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B apply A + B drop A#Me_1 );
+        Description: Extra of test_GH_1355_12: as test_GH_1355_13b, for drop. The pandas
+                     engine dropped the Me_1 of apply and the DuckDB engine raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_13d", number_inputs=2, exception_code="1-1-13-17"
+        )
+
+    def test_GH_1355_13e(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B
+                        aggr Me_1 := sum ( A#Me_1 ) group by Id_1 keep A#Me_1 );
+        Description: Extra of test_GH_1355_12: as test_GH_1355_13b, after an aggr whose new
+                     Measure Me_1 replaces the Measures Me_1 of A and B. The pandas engine
+                     kept the Me_1 of aggr and the DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_13e", number_inputs=2, exception_code="1-1-13-17"
+        )
+
     def test_GH_1355_14(self):
         """
         Status: OK

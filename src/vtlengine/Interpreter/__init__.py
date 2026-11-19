@@ -263,6 +263,8 @@ class InterpreterAnalyzer(ASTTemplate):
     regular_aggregation_dataset: Optional[Dataset] = None
     # The Components of each operand of the join, by its alias or its Data Set name
     join_operands: Optional[Dict[str, Set[str]]] = None
+    # The Components of the virtual Data Set that the clauses of the join start from
+    join_names: Optional[Set[str]] = None
     regular_aggregation_op: Optional[str] = None
     aggregation_grouping: Optional[List[str]] = None
     aggregation_dataset: Optional[Dataset] = None
@@ -1365,6 +1367,19 @@ class InterpreterAnalyzer(ASTTemplate):
             alias = argument if isinstance(argument, str) else argument.name
         if comp_name not in operands.get(alias, set()):
             raise SemanticError("1-1-1-10", comp_name=comp_name, dataset_name=alias)
+        # A Component that the join named alias#comp, as one of several operands has comp,
+        # is no longer there once apply or aggr gave a Component comp in its place
+        # (Inner Join page of the VTL 2.2 manual)
+        qualified = f"{alias}#{comp_name}"
+        current = self.regular_aggregation_dataset
+        if (
+            self.join_names is not None
+            and qualified in self.join_names
+            and current is not None
+            and qualified not in current.components
+            and comp_name in current.components
+        ):
+            raise SemanticError("1-1-13-17", op=self.regular_aggregation_op, comp_name=qualified)
 
     def _integer_scalar(self, op: str, node: AST.VarID, param_type: str) -> Scalar:
         """The Scalar named as the offset of lag or lead or as a bound of a window: an Integer
@@ -2015,6 +2030,7 @@ class InterpreterAnalyzer(ASTTemplate):
         # No need to check using, regular aggregation is executed afterwards
         self.is_from_join = True
         result = JOIN_MAPPING[node.op].analyze(clause_elements, node.using, nvl_defaults)
+        self.join_names = set(result.components)
         if node.isLast:
             self._strip_join_prefixes(result)
             self.is_from_join = False
