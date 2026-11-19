@@ -13062,3 +13062,30 @@ class TimeValueBugs(BugHelper):
             exception_code="2-1-5-1",
             exception_message="Impossible to cast abc from type String to Time_Period.",
         )
+
+    def test_GH_1352_20(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , -5 );
+        Description: timeshift moves 2020Q1 and 2020Q2 back five quarters, more than a year, to
+                     2018Q4 and 2019Q1. The pandas engine raised 2-1-19-7.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_20", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_29(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , 8000 );
+        Description: timeshift of 2020A by 8000 years gives the year 10020, which no Time_Period
+                     has, so it raises 2-1-19-10. The DuckDB engine wrote null Identifiers.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_29",
+            number_inputs=1,
+            exception_code="2-1-19-10",
+            exception_message="Invalid year 10020, must be between 1000 and 9999.",
+        )
