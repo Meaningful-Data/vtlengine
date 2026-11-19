@@ -10915,3 +10915,45 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1351,
         )
+
+    def test_GH_1351_29(self):
+        """
+        Status: OK
+        Expression: define operator flag ( ds dataset ) returns dataset { identifier < integer >
+                        Id_1 , measure < integer > Me_1 , measure < VD_S > Me_2 } is
+                        ds [ calc Me_2 := if Me_1 > 1 then "A" else "B" ] end operator;
+                    DS_r <- flag ( DS_2 ) [ filter Id_1 > 0 ];
+        Description: The String Measure that the body computes is on VD_S, also when the call is
+                     the operand of a clause. The DuckDB engine checked the returns against the
+                     structure it guessed for the call, where Me_2 was a Number, and raised
+                     1-3-1-12.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_29",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_30(self):
+        """
+        Status: OK
+        Expression: define operator flag ( ds dataset ) returns dataset { identifier < integer >
+                        Id_1 , measure < integer > Me_1 , measure < VD_B > Me_2 } is
+                        ds [ calc Me_2 := Me_1 > 1 ] end operator;
+                    DS_r <- union ( flag ( DS_2 [ filter Id_1 = 1 ] ) , flag ( DS_2 ) );
+        Description: The Boolean Measure that the body computes is on VD_B, also when the calls
+                     are the operands of union. The DuckDB engine checked the returns against
+                     the structure it guessed for each call, where Me_2 was a Number, and raised
+                     1-3-1-12.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_30",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=[*self.vd_1351, "GH_1351-VD_B"],
+        )

@@ -81,6 +81,14 @@ def _resolve_dataset_type(
     return replace(declared, components=components), resolved
 
 
+def udo_call_key(caller: Tuple[Any, ...], node: Any) -> Tuple[Any, ...]:
+    """The key of a call of a user defined operator, made inside the call caller (the empty
+    key outside any): the places in the script of the calls that lead to it, outermost first.
+    The semantic analysis keeps the result of each call and its dataset arguments under it, as
+    the DuckDB engine reads them (issue #1351)."""
+    return (*caller, (node.line_start, node.column_start, node.line_stop, node.column_stop))
+
+
 def udo_component_matches(declared: Any, found: Any) -> bool:
     """Whether a component has the role and the type a user defined operator declares."""
     # A component declared without a role or a type is parsed with None and a String instance,

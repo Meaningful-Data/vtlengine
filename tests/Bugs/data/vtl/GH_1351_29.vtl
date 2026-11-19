@@ -1,0 +1,5 @@
+define operator flag ( ds dataset )
+    returns dataset { identifier < integer > Id_1 , measure < integer > Me_1 , measure < VD_S > Me_2 } is
+        ds [ calc Me_2 := if Me_1 > 1 then "A" else "B" ]
+end operator;
+DS_r <- flag ( DS_2 ) [ filter Id_1 > 0 ];
