@@ -12100,6 +12100,23 @@ class NameResolutionBugs(BugHelper):
             code="GH_1355_11g", number_inputs=1, exception_code="1-1-6-19"
         )
 
+    def test_GH_1355_11h(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B calc A#Me_1 := 1 );
+        Description: Extra of test_GH_1355_11: calc names a new Component, never a membership.
+                     Both engines read the qualified target as its alias and created a Measure
+                     named A.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11h",
+            number_inputs=2,
+            exception_code="1-1-6-6",
+            exception_message="Membership is not allowed inside a clause, found A#Me_1.",
+        )
+
     def test_GH_1355_12(self):
         """
         Status: OK

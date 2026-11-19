@@ -850,7 +850,7 @@ class ASTString(ASTTemplate):
                 return f"{dataset}[{node.op} {body}]"
 
     def visit_RenameNode(self, node: AST.RenameNode) -> str:
-        return f"{self._clause_component(node.old_name)} to {_format_name(node.new_name)}"
+        return f"{self._clause_component(node.old_name)} to {self._clause_component(node.new_name)}"
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:
         if node.period_to_ref is not None:

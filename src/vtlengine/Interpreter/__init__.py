@@ -701,6 +701,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
     # Execution Language
     def visit_Assignment(self, node: AST.Assignment) -> Any:
+        # A clause names a new Component, never a membership (issue #1355)
+        self._refuse_membership(node.left)
         if (
             self.is_from_join
             and isinstance(node.left, AST.Identifier)
@@ -1323,6 +1325,16 @@ class InterpreterAnalyzer(ASTTemplate):
             )
         return self.visit(component).name
 
+    @staticmethod
+    def _refuse_membership(node: Any) -> None:
+        """A clause names a new Component, never a membership alias#comp (issue #1355)."""
+        if isinstance(node, AST.BinOp) and node.op == MEMBERSHIP:
+            raise SemanticError(
+                "1-1-6-6",
+                dataset_name=cast(AST.Identifier, node.left).value,
+                comp_name=cast(AST.Identifier, node.right).value,
+            )
+
     def _integer_scalar(self, op: str, node: AST.VarID, param_type: str) -> Scalar:
         """The Scalar named as the offset of lag or lead or as a bound of a window: an Integer
         Scalar, not a Component or a Scalar of another type (issue #1355)."""
@@ -1863,6 +1875,7 @@ class InterpreterAnalyzer(ASTTemplate):
         # every call of a user defined operator. A name is one Component name, # included; the
         # membership alias#comp names a Component of a join (issue #1355)
         node = copy(node)
+        self._refuse_membership(node.new_name)
         params = self.udo_params[-1] if self.udo_params is not None else {}
         old_name = node.old_name
         comp_name: Optional[str] = None
@@ -1870,12 +1883,14 @@ class InterpreterAnalyzer(ASTTemplate):
             node.old_name = params.get(old_name, old_name)
         else:
             membership = cast(AST.BinOp, old_name)
+            alias = cast(AST.Identifier, membership.left).value
             comp_name = cast(AST.Identifier, membership.right).value
             comp_name = params.get(comp_name, comp_name)
-            node.old_name = f"{cast(AST.Identifier, membership.left).value}#{comp_name}"
+            node.old_name = f"{alias}#{comp_name}"
         # A component parameter as the new name stands for its argument (issue #1355)
-        if isinstance(params.get(node.new_name), str):
-            node.new_name = params[node.new_name]
+        new_name = cast(str, node.new_name)
+        if isinstance(params.get(new_name), str):
+            node.new_name = params[new_name]
 
         if (
             comp_name is not None

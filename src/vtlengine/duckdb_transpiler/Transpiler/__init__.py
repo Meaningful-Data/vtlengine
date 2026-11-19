@@ -3134,7 +3134,8 @@ FROM (
                 old = self._rename_old_name(child.old_name, self._join_alias_map)
                 if old in self._join_alias_map:
                     self._consumed_join_aliases.add(old)
-                renames[old] = self._resolve_udo_name(child.new_name)
+                # The semantic analysis refuses a membership as the new name (issue #1355)
+                renames[old] = self._resolve_udo_name(cast(str, child.new_name))
 
         cols: List[str] = []
         for name in ds.components:

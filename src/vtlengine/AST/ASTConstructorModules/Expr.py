@@ -45,6 +45,14 @@ from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Role
 
 
+def _new_component(ctx: Any) -> Any:
+    """The name that a clause gives a new Component, or the membership alias#comp written in its
+    place, kept as a node, which the semantic analysis refuses (issue #1355)."""
+    if len(ctx.children) > 1:
+        return Terminals().visitComponentID(ctx)
+    return Terminals().visitSimpleComponentId(ctx)
+
+
 class Expr:
     """______________________________________________________________________________________
 
@@ -1629,7 +1637,11 @@ class Expr:
         if not isinstance(left_node, BinOp):
             left_node = left_node.value
 
-        right_node = Terminals().visitVarID(ctx_list[2]).value
+        # A membership as the new name is kept as a node, which the semantic analysis refuses
+        # (issue #1355)
+        right_node = _new_component(ctx_list[2])
+        if not isinstance(right_node, BinOp):
+            right_node = right_node.value
 
         return RenameNode(old_name=left_node, new_name=right_node, **extract_token_info(ctx))
 
@@ -1672,7 +1684,7 @@ class Expr:
             base_index = 0
             role = None
 
-        left_node = Terminals().visitSimpleComponentId(ctx_list[base_index])
+        left_node = _new_component(ctx_list[base_index])
         op_node = ":="
         right_node = ExprComp().visitAggregateFunctionsComponents(ctx_list[base_index + 2])
         # Encoding the role information inside the Assignment for easiness and simplicity.
@@ -1939,7 +1951,7 @@ class Expr:
                 return implicit_node
             return UnaryOp(op=role.value.lower(), operand=operand_node, **extract_token_info(c))
         else:
-            left_node = Terminals().visitSimpleComponentId(c)
+            left_node = _new_component(c)
             op_node = ":="
             right_node = ExprComp().visitExprComponent(ctx_list[2])
 

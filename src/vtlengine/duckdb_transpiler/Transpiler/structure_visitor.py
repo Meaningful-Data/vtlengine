@@ -2,7 +2,7 @@
 
 from contextlib import contextmanager
 from copy import copy
-from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union, cast
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -1353,7 +1353,8 @@ class StructureVisitor(ASTTemplate):
         for child in node.children:
             if isinstance(child, AST.RenameNode):
                 old = self._rename_old_name(child.old_name, input_ds.components)
-                renames[old] = self._resolve_udo_name(child.new_name)
+                # The semantic analysis refuses a membership as the new name (issue #1355)
+                renames[old] = self._resolve_udo_name(cast(str, child.new_name))
 
         unqualified_to_qualified: Dict[str, str] = {}
         for comp_name in input_ds.components:

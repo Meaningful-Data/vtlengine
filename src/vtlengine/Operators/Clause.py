@@ -1,6 +1,6 @@
 import re
 from copy import copy
-from typing import List, Type, Union
+from typing import List, Type, Union, cast
 
 import pandas as pd
 
@@ -259,7 +259,8 @@ class Rename(Operator):
         from_names_set = set(from_names)
         for operand in operands:
             if operand.new_name not in dataset.components:
-                check_component_name(cls.op, operand.new_name)
+                # A name: the semantic analysis refused a membership (issue #1355)
+                check_component_name(cls.op, cast(str, operand.new_name))
             if operand.old_name not in dataset.components:
                 raise SemanticError(
                     "1-1-1-10",
@@ -275,7 +276,7 @@ class Rename(Operator):
                     dataset_name=dataset_name,
                 )
 
-        rename_map = {op.old_name: op.new_name for op in operands}
+        rename_map = {op.old_name: cast(str, op.new_name) for op in operands}
         result_components = {}
         for comp in dataset.components.values():
             if comp.name in rename_map:

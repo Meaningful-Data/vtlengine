@@ -434,10 +434,12 @@ class RenameNode(AST):
 
     old_name: the name of a Component, or the membership alias#comp that names a Component of
         a join by its qualified name (issue #1355).
+    new_name: the name of the Component, or a membership alias#comp written in its place, which
+        the semantic analysis refuses (issue #1355).
     """
 
     old_name: Union[str, AST]
-    new_name: str
+    new_name: Union[str, AST]
 
     __eq__ = AST.ast_equality
 
