@@ -1016,10 +1016,29 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     def visit_Collection(self, node: AST.Collection) -> str:  # type: ignore[override]
         """Visit a Collection (Set or ValueDomain reference)."""
+        return f"({', '.join(self._collection_values(node))})"
+
+    def _collection_values(self, node: AST.Collection) -> List[str]:
+        """The SQL of each value of a set or of a value domain."""
         if node.kind == "ValueDomain":
-            return self._visit_value_domain(node)
-        values = [self.visit(child) for child in node.children]
-        return f"({', '.join(values)})"
+            vd = self.value_domains[self._resolve_value_domain_name(node.name)]
+            type_name = vd.type.__name__ if hasattr(vd.type, "__name__") else str(vd.type)
+            return [self._to_sql_literal(v, type_name) for v in vd.setlist]
+        return [self.visit(child) for child in node.children]
+
+    def _time_in(self, operand: str, values: AST.AST, operand_type: Optional[str]) -> List[str]:
+        """The operand of in / not_in and its set of values, compared as Time values where a
+        Date or a Time_Period meets a Time: the one of them that is a Date or a Time_Period is
+        cast to Time (issue #1352)."""
+        if not isinstance(values, AST.Collection):
+            return [operand, self.visit(values)]
+        values_type = self._value_type(values)
+        sqls = self._collection_values(values)
+        if _is_time_name(values_type):
+            operand = _time_text(operand, operand_type)
+        elif _is_time_name(operand_type):
+            sqls = [_time_text(v, values_type) for v in sqls]
+        return [operand, f"({', '.join(sqls)})"]
 
     def _resolve_value_domain_name(self, name: str) -> str:
         """The value domain a set parameter of a user defined operator is bound to, through the
@@ -1032,13 +1051,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             if name in self.value_domains:
                 break
         return name
-
-    def _visit_value_domain(self, node: AST.Collection) -> str:
-        """Resolve a ValueDomain reference to SQL literal list."""
-        vd = self.value_domains[self._resolve_value_domain_name(node.name)]
-        type_name = vd.type.__name__ if hasattr(vd.type, "__name__") else str(vd.type)
-        literals = [self._to_sql_literal(v, type_name) for v in vd.setlist]
-        return f"({', '.join(literals)})"
 
     # Generic dataset-level helpers
 
@@ -1213,10 +1225,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         right_type = self._get_node_type(node.right)
         if left_type == _DATASET or right_type == _DATASET:
             if op in (tokens.IN, tokens.NOT_IN) and left_type == _DATASET:
-                collection = self.visit(node.right)
+                in_ds = self._get_dataset_structure(node.left)
 
                 def _in_expr(col_ref: str) -> str:
-                    return f"({col_ref} {'IN' if op == tokens.IN else 'NOT IN'} {collection})"
+                    comp = in_ds.components.get(col_ref.strip('"')) if in_ds else None
+                    dt = comp.data_type.__name__ if comp is not None else None
+                    ref, collection = self._time_in(col_ref, node.right, dt)
+                    return f"({ref} {'IN' if op == tokens.IN else 'NOT IN'} {collection})"
 
                 # A Boolean Measure is promoted to String in a set of Strings
                 return self._apply_measures(
@@ -1249,10 +1264,13 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 right_sql = _bool_to_str(right_sql)
         if op in _TEXT_PROMOTING_OPS:
             types = [self._value_type(node.left), self._value_type(node.right)]
-            # The values of a set are not cast to Time
+            # The values of a set are cast to Time one by one (issue #1352)
+            is_in = op in (tokens.IN, tokens.NOT_IN)
             left_sql, right_sql = self._promoted_to_text(
-                [left_sql, right_sql], types, to_time=op not in (tokens.IN, tokens.NOT_IN)
+                [left_sql, right_sql], types, to_time=not is_in
             )
+            if is_in:
+                left_sql, right_sql = self._time_in(left_sql, node.right, types[0])
         left_dt = self._detect_scalar_type(node.left)
         right_dt = self._detect_scalar_type(node.right)
         return self._make_binary_expr(left_sql, right_sql, op, left_dt, right_dt)
