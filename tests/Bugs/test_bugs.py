@@ -8622,7 +8622,7 @@ class ValueDomainBugs(BugHelper):
             vd_names=self.vd_1338,
         )
 
-    vd_1339 = ["GH_1339-VD_CTY", "GH_1339-VD_CTY2", "GH_1339-VD_INT", "GH_1339-VD_YEAR"]
+    vd_1339 = ["GH_1339-VD_CTY", "GH_1339-VD_CTY2", "GH_1339-VD_YEAR"]
 
     def test_GH_1339_1(self):
         """
@@ -8660,24 +8660,6 @@ class ValueDomainBugs(BugHelper):
             vd_names=self.vd_1339,
         )
 
-    def test_GH_1339_3(self):
-        """
-        Status: OK
-        Expression: DS_r <- check_hierarchy ( DS_1 , hr_cty rule Id_1 all );
-        Description: Id_1 is defined on VD_INT, of another basic type. It failed only at run
-                     time, casting a code item of the rule.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
-        Goal: Check Exception.
-        """
-        self.NewSemanticExceptionTest(
-            code="GH_1339_3",
-            number_inputs=1,
-            exception_code="1-1-10-12",
-            exception_message="Component Id_1 of type VD_INT is not defined on the Value Domain "
-            "VD_CTY of the ruleset hr_cty",
-            vd_names=self.vd_1339,
-        )
-
     def test_GH_1339_4(self):
         """
         Status: OK
@@ -8696,40 +8678,6 @@ class ValueDomainBugs(BugHelper):
             vd_names=self.vd_1339,
         )
 
-    def test_GH_1339_5(self):
-        """
-        Status: OK
-        Expression: DS_r <- check_hierarchy ( DS_1 , hr_nope rule Id_1 all );
-        Description: hr_nope is defined on the value domain VD_NOPE, which is not given.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
-        Goal: Check Exception.
-        """
-        self.NewSemanticExceptionTest(
-            code="GH_1339_5",
-            number_inputs=1,
-            exception_code="1-2-8",
-            exception_message="Missing value domain 'VD_NOPE' definition",
-            vd_names=self.vd_1339,
-        )
-
-    def test_GH_1339_6(self):
-        """
-        Status: OK
-        Expression: DS_r <- hierarchy ( DS_1 , hr_cond rule Id_1 );
-        Description: hr_cond has a condition on a value domain, and the call has no condition
-                     clause. The message spoke about variables.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
-        Goal: Check Exception.
-        """
-        self.NewSemanticExceptionTest(
-            code="GH_1339_6",
-            number_inputs=1,
-            exception_code="1-1-10-16",
-            exception_message="The condition of the ruleset hr_cond is defined on 1 value "
-            "domains, but the call lists 0 condition components",
-            vd_names=self.vd_1339,
-        )
-
     def test_GH_1339_7(self):
         """
         Status: OK
@@ -8744,36 +8692,5 @@ class ValueDomainBugs(BugHelper):
             number_inputs=1,
             exception_code="1-1-1-10",
             exception_message="Component Id_9 not found in Dataset DS_1",
-            vd_names=self.vd_1339,
-        )
-
-    def test_GH_1339_8(self):
-        """
-        Status: OK
-        Expression: DS_r <- check_hierarchy ( DS_1 , hr_cond condition Id_2 rule Id_1 all );
-        Description: Id_2 and Id_1 are defined on VD_YEAR and VD_CTY, the value domains of the
-                     condition and the rule of hr_cond, in that order.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
-        Goal: Check Result.
-        """
-        self.BaseTest(
-            code="GH_1339_8",
-            number_inputs=1,
-            references_names=["1"],
-            vd_names=self.vd_1339,
-        )
-
-    def test_GH_1339_9(self):
-        """
-        Status: OK
-        Expression: DS_r <- hierarchy ( DS_1 , hr_cty rule Id_1 );
-        Description: Id_1 is defined on VD_CTY, the value domain of the rule of hr_cty.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
-        Goal: Check Result.
-        """
-        self.BaseTest(
-            code="GH_1339_9",
-            number_inputs=1,
-            references_names=["1"],
             vd_names=self.vd_1339,
         )

@@ -3300,6 +3300,8 @@ class HierarchicalRollUpOperatorsTest(HierarchicalHelper):
             code=code,
             number_inputs=number_inputs,
             exception_code=error_code,
+            exception_message="The condition of the ruleset HR_1 is defined on 1 value domains, "
+            "but the call lists 0 condition components",
         )
 
     def test_GH_1149_1(self):
