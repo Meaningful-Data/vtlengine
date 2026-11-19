@@ -38,8 +38,15 @@ _WHITESPACE = (
 
 
 def sql_trim(value_expr: str) -> str:
-    """SQL of a text without the whitespace around it, as str.strip takes it off."""
-    return f"TRIM({value_expr}, '{_WHITESPACE}')"
+    """SQL of a text without the whitespace around it, as str.strip takes it off.
+
+    TRIM with a set of characters is many times slower than without, so it runs only on a
+    text that starts or ends with one of them.
+    """
+    edges = " OR ".join(
+        f"strpos('{_WHITESPACE}', {side}({value_expr}, 1)) > 0" for side in ("left", "right")
+    )
+    return f"CASE WHEN {edges} THEN TRIM({value_expr}, '{_WHITESPACE}') ELSE {value_expr} END"
 
 
 # =============================================================================
