@@ -11776,6 +11776,20 @@ class StructureDataBugs(BugHelper):
             "support < and > Comparison operations, unable to get the max",
         )
 
+    def test_GH_1354_13m(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_5 := max ( Me_1 ) group all ]
+                        [ calc Me_6 := Me_5 + 1 ];
+        Description: Extra of case 13: an aggr grouped by group all with no time_agg gives a
+                     single Data Point, also when another clause follows it: Me_5 3.0, Me_6
+                     4.0. The DuckDB engine grouped it by the Identifiers of DS_1 and gave
+                     three Data Points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13m", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_14(self):
         """
         Status: OK
@@ -12034,6 +12048,18 @@ class StructureDataBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1354_22j", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22k(self):
+        """
+        Status: OK
+        Expression: DS_r <- instr ( DS_1 , null );
+        Description: Extra of case 22: instr of a Data Set with a null pattern has a nullable
+                     Measure, also over a Measure that is not: null, null, null. Both engines
+                     declared it non-nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22k", number_inputs=1, references_names=["1"])
 
     def test_GH_1354_23(self):
         """
