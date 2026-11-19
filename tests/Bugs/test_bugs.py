@@ -12279,3 +12279,64 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_40e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_16(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := period_indicator ( Id_2 ) ]
+                        [ aggr Me_3 := max ( Me_2 ) , Me_4 := min ( Me_2 ) group by Id_1 ];
+        Description: The Duration that a calc computes is ordered by its length, so max gives A
+                     and min gives D. The DuckDB engine typed the Component as a Number and took
+                     the max and the min of the letters, M and A.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_16", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_40b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := nvl ( Me_1 , Me_1 ) ,
+                        Me_3 := if Id_1 = 1 then Me_1 else Me_1 ,
+                        Me_4 := case when Id_1 = 1 then Me_1 else Me_1 ]
+                        [ calc Me_5 := cast ( Me_2 , string ) , Me_6 := cast ( Me_3 , string ) ,
+                        Me_7 := cast ( Me_4 , string ) ] [ keep Me_5 , Me_6 , Me_7 ];
+        Description: Extra of case 40: a Component that a calc computes as the nvl, the if or the
+                     case of the String Me_1 is a String, which cast to string keeps. The DuckDB
+                     engine typed it as a Number and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_40c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := nvl ( Me_1 , Me_1 ) ,
+                        Me_3 := if Id_1 = 1 then Me_1 else Me_1 ,
+                        Me_4 := case when Id_1 = 1 then Me_1 else Me_1 ]
+                        [ calc Me_5 := cast ( Me_2 , string ) , Me_6 := cast ( Me_3 , string ) ,
+                        Me_7 := cast ( Me_4 , string ) ] [ keep Me_5 , Me_6 , Me_7 ];
+        Description: Extra of case 40: a Component that a calc computes as the nvl, the if or the
+                     case of the Integer Me_1 is an Integer, which cast to string writes 1. The
+                     DuckDB engine typed it as a Number and wrote 1.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_40d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := nvl ( Me_1 , Me_1 ) ,
+                        Me_3 := if Id_1 = 1 then Me_1 else Me_1 ,
+                        Me_4 := case when Id_1 = 1 then Me_1 else Me_1 ]
+                        [ calc Me_5 := cast ( Me_2 , string ) , Me_6 := cast ( Me_3 , string ) ,
+                        Me_7 := cast ( Me_4 , string ) ] [ keep Me_5 , Me_6 , Me_7 ];
+        Description: Extra of case 40: a Component that a calc computes as the nvl, the if or the
+                     case of the Boolean Me_1 is a Boolean, which cast to string writes true. The
+                     DuckDB engine typed it as a Number and wrote 1.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40d", number_inputs=1, references_names=["1"])

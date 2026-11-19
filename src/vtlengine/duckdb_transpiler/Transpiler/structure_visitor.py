@@ -2,6 +2,7 @@
 
 from contextlib import contextmanager
 from copy import copy
+from functools import reduce
 from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union
 
 import vtlengine.AST as AST
@@ -24,6 +25,7 @@ from vtlengine.DataTypes import (
     Number,
     TimeInterval,
     TimePeriod,
+    binary_implicit_promotion,
 )
 from vtlengine.DataTypes import String as StringType
 from vtlengine.DataTypes._time_checking import _has_time_component
@@ -31,6 +33,7 @@ from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.duckdb_transpiler.sql import references_raising_macro
 from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS, get_duckdb_type
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role, ValueDomain, value_of
 from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Clause import Pivot, Unpivot
@@ -1230,8 +1233,9 @@ class StructureVisitor(ASTTemplate):
     def _calc_value_type(self, node: AST.AST, source: Dataset) -> Any:
         """Data type of a calc expression, or ``None`` when unknown.
 
-        Only literals, plain component references, a cast into a value domain and a
-        time_agg of a typed operand are resolved. Callers must treat the result as a best
+        Only literals, plain component and scalar references (also in parentheses), a cast
+        into a value domain, a time_agg of a typed operand, period_indicator and an nvl, an if
+        or a case of typed operands are resolved. Callers must treat the result as a best
         effort, not as a guarantee of the column type.
         """
         value_domain = self._calc_value_domain(node, source)
@@ -1239,22 +1243,27 @@ class StructureVisitor(ASTTemplate):
             return value_domain.type
         if isinstance(node, AST.Constant) and node.value is not None:
             return BASIC_TYPES.get(type(node.value), Number)
+        if isinstance(node, AST.ParFunction):
+            return self._calc_value_type(node.operand, source)
         if isinstance(node, AST.VarID):
-            comp = source.components.get(self._resolve_udo_name(node.value))
+            name = self._resolve_udo_name(node.value)
+            comp = source.components.get(name) or self.scalars.get(name)
             if comp is not None:
                 return comp.data_type
         if isinstance(node, AST.TimeAggregation) and node.operand is not None:
             # time_agg keeps the type of its operand, a Time_Period or a Date (issue #1309)
             return self._calc_value_type(node.operand, source)
-        operands = self._choice_operands(node)
-        types = {self._calc_value_type(op, source) for op in operands or []}
-        if types and types <= {Date, TimePeriod, TimeInterval}:
-            # An nvl, an if or a case of Dates, Time_Periods or Times has their type, a Time
-            # when one of them is a Time (issue #1352)
-            if TimeInterval in types:
-                return TimeInterval
-            return types.pop() if len(types) == 1 else None
-        return None
+        if isinstance(node, AST.UnaryOp) and node.op == tokens.PERIOD_INDICATOR:
+            return Duration
+        types = [self._calc_value_type(op, source) for op in self._choice_operands(node) or []]
+        if not types or None in types:
+            return None
+        # An nvl, an if or a case has the common type of its operands, as the semantic analysis
+        # gives it: a Number for Integers and Numbers, a Time for Dates and Times (issue #1352)
+        try:
+            return reduce(binary_implicit_promotion, types)
+        except SemanticError:
+            return None
 
     def _build_ds_ds_binop_structure(self, node: AST.BinOp) -> Optional[Dataset]:
         """Build structure for dataset-dataset binary ops."""
