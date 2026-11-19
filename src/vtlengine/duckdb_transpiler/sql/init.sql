@@ -210,6 +210,40 @@ CREATE OR REPLACE MACRO vtl_interval_to_date(interval_str VARCHAR) AS (
     END
 );
 
+-- TimeInterval (VARCHAR) -> TimePeriod (VARCHAR), in the internal form of the loaders, for
+-- a pair of dates of a whole year, semester, quarter, month, ISO week or day from the year
+-- 1000: the cast of the pandas engine (interval_to_period_str in TimeHandling.py) for the
+-- common Times. NULL for any other text, which the transpiler casts with the Python UDF
+-- vtl_time_to_period, that gives the pandas result and error for every Time.
+CREATE OR REPLACE MACRO vtl_interval_to_period(interval_str VARCHAR) AS (
+    CASE
+        WHEN regexp_full_match(interval_str, '[0-9]{4}-[0-9]{2}-[0-9]{2}/[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        THEN (SELECT CASE
+            WHEN d1 IS NULL OR d2 IS NULL OR YEAR(d1) < 1000 THEN NULL
+            WHEN d1 = d2 THEN
+                CAST(YEAR(d1) AS VARCHAR) || '-D'
+                || LPAD(CAST(DAYOFYEAR(d1) AS VARCHAR), 3, '0')
+            WHEN MONTH(d1) = 1 AND DAY(d1) = 1 AND d2 = MAKE_DATE(YEAR(d1), 12, 31) THEN
+                CAST(YEAR(d1) AS VARCHAR) || 'A'
+            WHEN DAY(d1) = 1 AND MONTH(d1) IN (1, 7)
+                 AND d2 = LAST_DAY(d1 + INTERVAL 5 MONTH) THEN
+                CAST(YEAR(d1) AS VARCHAR) || '-S' || CAST(MONTH(d1) // 6 + 1 AS VARCHAR)
+            WHEN DAY(d1) = 1 AND MONTH(d1) IN (1, 4, 7, 10)
+                 AND d2 = LAST_DAY(d1 + INTERVAL 2 MONTH) THEN
+                CAST(YEAR(d1) AS VARCHAR) || '-Q' || CAST((MONTH(d1) - 1) // 3 + 1 AS VARCHAR)
+            WHEN DAY(d1) = 1 AND d2 = LAST_DAY(d1) THEN
+                CAST(YEAR(d1) AS VARCHAR) || '-M' || LPAD(CAST(MONTH(d1) AS VARCHAR), 2, '0')
+            WHEN ISODOW(d1) = 1 AND d2 = d1 + INTERVAL 6 DAY THEN
+                CAST(ISOYEAR(d1) AS VARCHAR) || '-W'
+                || LPAD(CAST(WEEKOFYEAR(d1) AS VARCHAR), 2, '0')
+            ELSE NULL
+        END
+        FROM (SELECT TRY_CAST(SPLIT_PART(interval_str, '/', 1) AS DATE) AS d1,
+                     TRY_CAST(SPLIT_PART(interval_str, '/', 2) AS DATE) AS d2) AS _iv)
+        ELSE NULL
+    END
+);
+
 
 -- ============================================================================
 -- COMPARISON MACROS: vtl_time_period ordering (equality uses VARCHAR directly)
