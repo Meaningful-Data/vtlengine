@@ -13045,3 +13045,20 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_33", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_36o(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := cast ( Me_1 , time_period ) ] [ keep Me_2 ];
+        Description: Extra of case 36: the text abc is no Time_Period, so the cast raises
+                     2-1-5-1, also when the keep that follows removes the Measure it gives. The
+                     DuckDB engine did not compute the removed Measure and returned the Data Set.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36o",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message="Impossible to cast abc from type String to Time_Period.",
+        )
