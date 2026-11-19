@@ -354,6 +354,12 @@ centralised_messages = {
         "description": "Raised when a row of a CSV file has more fields than its header names, "
         "or a quote that leaves it unterminated.",
     },
+    "0-3-1-19": {
+        "message": "Could not write {file}: {error}",
+        "description": "Raised when the DuckDB engine cannot write a result file to the output "
+        "folder, such as an S3 URI without credentials, or without network access to install "
+        "the httpfs extension.",
+    },
     # Input validation errors for URL datapoints
     "0-1-3-8": {
         "message": "data_structures must be a file path or URL "
