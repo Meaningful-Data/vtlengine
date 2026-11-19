@@ -377,7 +377,10 @@ The engine resolves the common type using the
 `type promotion rules
 <https://sdmx-twg.github.io/vtl/2.2/reference_manual
 /typical_behaviour.html#operators-changing-the-data-type>`_
-defined in VTL 2.2.
+defined in VTL 2.2: the common type of two operands is the
+type of one of them, to which the other one is implicitly
+cast. Two types that are only cast to a third one have no
+common type.
 
 .. list-table::
     :widths: 14 10 10 10 10 10 10 12 10
@@ -475,6 +478,19 @@ Key rules:
 - **Time_Period to Time**: A Time_Period is implicitly
   converted to a Time interval
   (``"2020-Q1"`` becomes ``"2020-01-01/2020-03-31"``).
+- **Date with Time_Period**: Neither is implicitly
+  converted to the other, so they have no common type,
+  although both are converted to Time. An operator that
+  receives both, such as ``=``, ``<``, ``between``,
+  ``nvl``, ``if``, ``case``, ``union`` or a join on a
+  Date and a Time_Period Identifier, raises a
+  SemanticError, and the script must ``cast`` one of them,
+  as the `Type conversion
+  <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators
+  /General%20purpose%20operators/Type%20conversion/index.html>`_
+  page of the VTL 2.2 reference manual asks for every
+  conversion that is not implicit: for instance
+  ``cast(Me_1, time_period) = Me_2``.
 - **Boolean to String**: ``true`` becomes ``"true"``,
   ``false`` becomes ``"false"``, as the VTL 2.2 reference
   manual defines it, in both execution engines.

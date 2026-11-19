@@ -11318,3 +11318,196 @@ class ValueDomainBugs(BugHelper):
         self.BaseTest(
             code="GH_1351_43", number_inputs=1, references_names=["1"], only_semantic=True
         )
+
+
+class TimeValueBugs(BugHelper):
+    """Date, Time_Period, Time and Duration values handled as values of their type (issue
+    #1352)."""
+
+    def test_GH_1352_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := Me_1 = Me_2 ];
+        Description: A Date and a Time_Period have no common type: the comparison raises
+                     1-1-1-1, as for a Date and an Integer, and the script must cast one side.
+                     Both were promoted to Time, so the pandas engine compared them and the
+                     DuckDB engine raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_1",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := Me_1 < Me_2 ];
+        Description: A Date and a Time_Period have no common type: the comparison raises
+                     1-1-1-1. The pandas engine raised 2-1-19-19 and the DuckDB engine a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_2",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := between ( Me_1 , Me_2 , Me_2 ) ];
+        Description: between compares the operand with each bound, so a Date with Time_Period
+                     bounds raises 1-1-1-1, as a comparison does. The pandas engine raised
+                     2-1-19-19 and the DuckDB engine a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_3",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := Me_3 < Me_3 ];
+        Description: Control: a Time value allows only = and <>, so < raises 1-1-19-18.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_4",
+            number_inputs=1,
+            exception_code="1-1-19-18",
+            exception_message="At op <: Time operators comparison are only support = and <>",
+        )
+
+    def test_GH_1352_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := nvl ( Me_1 , Me_2 ) ];
+        Description: The operands of nvl must be of the same type, so a Date and a Time_Period
+                     raise 1-1-1-1. The pandas engine copied the Date and Time_Period texts
+                     into a Time Component and the DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_5",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := if Id_1 = 1 then Me_1 else Me_2 ];
+        Description: The branches of if must be of the same type, so a Date and a Time_Period
+                     raise 1-1-1-1. The pandas engine copied the texts into a Time Component
+                     and the DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_6",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 = DS_2;
+        Description: The Date Measure of DS_1 and the Time_Period Measure of DS_2 have no
+                     common type, so = raises 1-1-1-1. The engines returned values that
+                     differed (DuckDB true for null = null).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_7",
+            number_inputs=2,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 > DS_2;
+        Description: The Date Measure of DS_1 and the Time_Period Measure of DS_2 have no
+                     common type, so > raises 1-1-1-1. The pandas engine raised the
+                     RunTimeError 2-1-19-17 and the DuckDB engine returned values.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_8",
+            number_inputs=2,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: The Date Measure of DS_1 and the Time_Period Measure of DS_2 have no
+                     common type, so nvl raises 1-1-1-1. The pandas engine copied the texts
+                     into a Time Measure and the DuckDB engine wrote Python struct texts.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_9",
+            number_inputs=2,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_11(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 + DS_2;
+        Description: The Date Identifier Id_1 of DS_1 and the Time_Period Identifier Id_1 of
+                     DS_2 have no common type, so + raises 1-1-13-18, as for a Date and an
+                     Integer Identifier. The pandas engine matched no data points and the
+                     DuckDB engine raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_11",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="Incompatible types for common identifier Id_1: Date and "
+            "Time_Period.",
+        )
+
+    def test_GH_1352_41(self):
+        """
+        Status: OK
+        Expression: DS_r <- union ( DS_1 , dateadd ( DS_1 , 1 , "M" ) );
+        Description: dateadd turns the Time_Period Identifier Id_2 into a Date one, and a
+                     Time_Period and a Date have no common type, so union raises 1-1-1-1. Both
+                     engines returned a Time Identifier holding the raw texts.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_41",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Time_Period to Date.",
+        )

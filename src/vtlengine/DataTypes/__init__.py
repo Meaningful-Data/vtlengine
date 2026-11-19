@@ -877,17 +877,9 @@ def binary_implicit_promotion(
     if right_type.is_included(left_implicities):
         return right_type
 
-    # Fallback: check if both types can be promoted to a common type
-    # e.g. Date → TimeInterval and TimePeriod → TimeInterval
-    common = left_implicities.intersection(right_implicities)
-    if common:
-        if return_type:
-            return return_type
-        # Return the common promoted type (exclude Null if present)
-        common.discard(Null)
-        if len(common) == 1:
-            return common.pop()
-
+    # Two types that are each implicitly cast to a third one, such as a Date and a
+    # Time_Period (both cast to Time), have no common type: the script must cast one of them
+    # (issue #1352)
     raise SemanticError(
         code="1-1-1-1",
         type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
@@ -915,11 +907,7 @@ def check_binary_implicit_promotion(
     if type_to_check:
         return type_to_check.is_included(set_=left_implicities.intersection(right_implicities))
 
-    return (
-        left.is_included(right_implicities)
-        or right.is_included(left_implicities)
-        or bool(left_implicities.intersection(right_implicities))
-    )
+    return left.is_included(right_implicities) or right.is_included(left_implicities)
 
 
 def unary_implicit_promotion(
