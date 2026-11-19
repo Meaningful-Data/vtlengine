@@ -744,6 +744,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
         left_operand = self.visit(node.left)
         right_operand = self._visit_right_operand(node.op, left_operand, node.right)
+        if node.op == NVL and self.is_from_having:
+            right_operand = self._as_having_replacement(left_operand, right_operand)
 
         if self.condition_stack:
             left_operand = self.merge_then_else_datasets(left_operand)
@@ -759,6 +761,24 @@ class InterpreterAnalyzer(ASTTemplate):
             elif self.is_from_regular_aggregation:
                 raise SemanticError("1-1-6-6", dataset_name=left_operand, comp_name=right_operand)
         return BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
+
+    @staticmethod
+    def _as_having_replacement(left: Any, right: Any) -> Any:
+        """In a having clause an aggregate is a value of each group, as a Component is of each
+        Data Point: the replacement of an nvl is the value of an aggregate however its Measure
+        is named, as in nvl(min(Me_2), count(Me_2)), so it takes the name of the Measure it
+        replaces (issue #1354)."""
+        if not isinstance(left, Dataset) or not isinstance(right, Dataset):
+            return right
+        left_measures, right_measures = left.get_measures_names(), right.get_measures_names()
+        if len(left_measures) != 1 or len(right_measures) != 1 or left_measures == right_measures:
+            return right
+        old_name, new_name = right_measures[0], left_measures[0]
+        components = {name: comp for name, comp in right.components.items() if name != old_name}
+        components[new_name] = copy(right.components[old_name])
+        components[new_name].name = new_name
+        data = None if right.data is None else right.data.rename(columns={old_name: new_name})
+        return Dataset(name=right.name, components=components, data=data)
 
     def _visit_right_operand(self, op: str, left: Any, node: AST.AST) -> Any:
         """The right operand of a binary operator. The right operand of an and or an or, and

@@ -11504,3 +11504,26 @@ class StructureDataBugs(BugHelper):
             exception_message="At op nvl",
         )
 
+    def test_GH_1354_28(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_9 := sum ( Me_2 ) group by Id_1
+                        having nvl ( min ( Me_2 ) , count ( Me_2 ) ) > 0 ];
+        Description: In having the aggregates are values of the groups, so nvl reads count
+                     however its Measure is named, as in test_GH_1354_28b. Both engines and
+                     the semantic analysis raised KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_28", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_28b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_9 := sum ( Me_2 ) group by Id_1
+                        having nvl ( min ( Me_2 ) , 0 ) > 0 ];
+        Description: Control: nvl of an aggregate and a constant in having.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_28b", number_inputs=1, references_names=["1"])
