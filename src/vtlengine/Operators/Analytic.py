@@ -37,6 +37,7 @@ from vtlengine.DataTypes import (
     unary_implicit_promotion,
 )
 from vtlengine.DataTypes._time_checking import DATE_COMPARISON_DTYPE, _from_date_value
+from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, PERIOD_IND_MAPPING_REVERSE
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -398,6 +399,11 @@ class Analytic(Operator.Unary):
         df = operand.data.copy() if operand.data is not None else pd.DataFrame()
         df = cls.normalize_dates(df, operand.components)
         identifier_names = operand.get_identifiers_names()
+        # A Duration is ordered by its length, not by its letter: the window orders and takes
+        # the max and the min of the rank of each Duration, read back after (issue #1352)
+        for comp in operand.components.values():
+            if comp.data_type is Duration and comp.role in (Role.IDENTIFIER, Role.MEASURE):
+                df[comp.name] = df[comp.name].map(PERIOD_IND_MAPPING, na_action="ignore")
 
         if component_name is not None:
             measure_names = [component_name]
@@ -455,6 +461,8 @@ class Analytic(Operator.Unary):
                 if comp.data_type is Date:
                     # A Date is written back value by value, the bare date at midnight
                     column = column.map(_from_date_value, na_action="ignore")
+                elif comp.data_type is Duration:
+                    column = column.map(PERIOD_IND_MAPPING_REVERSE, na_action="ignore")
                 result.data[comp_name] = column.astype(comp.data_type.dtype())  # type: ignore[call-overload]
 
         return result
