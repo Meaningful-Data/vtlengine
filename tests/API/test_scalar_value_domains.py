@@ -14,7 +14,12 @@ import pytest
 from tests.Helper import engine_params
 from vtlengine import run, semantic_analysis
 from vtlengine.DataTypes import String
-from vtlengine.Exceptions import InputValidationException, RunTimeError
+from vtlengine.Exceptions import (
+    DataLoadError,
+    InputValidationException,
+    RunTimeError,
+    SemanticError,
+)
 from vtlengine.Model import Scalar, ValueDomain
 
 VALUE_DOMAINS = [
@@ -431,3 +436,37 @@ def test_GH_1349_54b(use_duckdb):
     )
     assert result["SC_r"].value == "2024-01-05T10:00:00"
     assert result["SC_r2"].value == "2024-01-05"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_54c(use_duckdb):
+    """As case 54 for an ISO week date: a String cast to date reads only the forms the loaders
+    read, so 2024-W01 raises 1-1-5-6 as a literal and 2-1-19-8 as a Component, and a Date
+    loaded from it raises 0-3-1-6, on both engines and on any Python version. pandas read it
+    as 2024-01-01 on Python 3.11 and later, where DuckDB raised."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
+                    {"name": "Me_2", "type": "Date", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+
+    def _run(script: str, me_1: str, me_2: str) -> None:
+        data = pd.DataFrame({"Id_1": [1], "Me_1": [me_1], "Me_2": [me_2]})
+        run(script, structures, {"DS_1": data}, use_duckdb=use_duckdb)
+
+    with pytest.raises(SemanticError) as error:
+        _run('DS_r <- DS_1[calc Me_3 := cast("2024-W01", date)];', "A", "2024-01-05")
+    assert error.value.args[1] == "1-1-5-6"
+    with pytest.raises(RunTimeError) as error:
+        _run("DS_r <- DS_1[calc Me_3 := cast(Me_1, date)];", "2024-W01", "2024-01-05")
+    assert error.value.args[1] == "2-1-19-8"
+    with pytest.raises(DataLoadError) as error:
+        _run("DS_r <- DS_1;", "A", "2024-W01")
+    assert error.value.args[1] == "0-3-1-6"
