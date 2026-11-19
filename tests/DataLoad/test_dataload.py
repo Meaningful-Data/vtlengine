@@ -1718,6 +1718,7 @@ def test_GH_1352_37c(use_duckdb: bool, role: str, source: str, tmp_path: Path) -
         "2020D0",
         "2021D366",
         "2020-13-1",
+        "2020-02-30",
         "２０２０Q1",
     ],
 )
@@ -1725,7 +1726,8 @@ def test_GH_1352_37d(use_duckdb: bool, role: str, source: str, value: str, tmp_p
     """Extra of case 37: a period written in one of the formats that is no period cannot be read
     as a Time_Period, so it is refused with 0-3-1-6, with the same message on both engines.
     The pandas engine raised 2-1-19-7 or 2-1-19-9, and wrote the Python error of a date that is
-    no date, such as 2020-13-1. Only the ASCII digits write a period: the pandas engine loaded
+    no date, such as 2020-13-1, and the DuckDB engine the DuckDB error of a date the calendar has
+    not, such as 2020-02-30. Only the ASCII digits write a period: the pandas engine loaded
     2020Q1 written with fullwidth digits (issue #1352)."""
     _check_1352_load_error(use_duckdb, role, source, value, tmp_path)
 
