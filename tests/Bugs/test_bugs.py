@@ -12967,3 +12967,20 @@ class TimeValueBugs(BugHelper):
             exception_message="At op timeshift: The scalar n that gives the shift number has "
             "no value.",
         )
+
+    def test_GH_1352_36p(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , date ) ] [ keep Me_3 ];
+        Description: Extra of case 36: the text notadate is no Date, so the cast raises
+                     2-1-19-8, also when the keep that follows removes the Measure it gives. The
+                     DuckDB engine did not compute the removed Measure and returned the Data Set.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36p",
+            number_inputs=1,
+            exception_code="2-1-19-8",
+            exception_message="Invalid date format, must be YYYY-MM-DD: notadate",
+        )

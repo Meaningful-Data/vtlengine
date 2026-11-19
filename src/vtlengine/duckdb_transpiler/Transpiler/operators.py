@@ -600,9 +600,16 @@ def is_re2_incompatible(pattern: str) -> bool:
 TIME_PERIOD_CAST_FUNCTION = "vtl_text_to_period"
 TIME_TO_PERIOD_FUNCTION = "vtl_time_to_period"
 TIME_CHECK_FUNCTION = "vtl_is_time"
-# The time period casts raise a data point error, so an operand that calls them is computed over
-# all its data points, as one that calls a SQL macro that raises (issue #1352)
-RAISING_FUNCTIONS = (TIME_PERIOD_CAST_FUNCTION, TIME_TO_PERIOD_FUNCTION)
+CAST_MASK_FUNCTION = "vtl_cast_mask"
+# The time period casts, the casts with a mask and the error() that the SQL of a cast to date or
+# to time and other checks call raise a data point error, so an operand that calls them is
+# computed over all its data points, as one that calls a SQL macro that raises (issue #1352)
+RAISING_FUNCTIONS = (
+    TIME_PERIOD_CAST_FUNCTION,
+    TIME_TO_PERIOD_FUNCTION,
+    CAST_MASK_FUNCTION,
+    "error",
+)
 
 
 def text_to_period(value: str) -> Optional[str]:
@@ -647,8 +654,6 @@ def register_time_functions(conn: duckdb.DuckDBPyConnection) -> None:
     with contextlib.suppress(duckdb.Error):
         conn.create_function(TIME_CHECK_FUNCTION, TimeInterval.check, [VARCHAR], BOOLEAN)
 
-
-CAST_MASK_FUNCTION = "vtl_cast_mask"
 
 # The scalar types by the names that the transpiler and the pandas engine give them
 _MASK_TYPE_NAMES: Dict[str, Any] = {
