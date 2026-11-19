@@ -21,6 +21,10 @@ from vtlengine.Operators import (
     _is_cast_to_time,
     share_value_domains,
     shared_value_domain,
+    time_identifiers,
+    time_keys,
+    time_names,
+    to_time,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
@@ -118,40 +122,13 @@ def _as_type(data: Any, data_type: Any, from_type: Any = None) -> Any:
 
 def _time_operand(operand: Any, result: Any) -> Any:
     """An operand of an if or a case with its Date or Time_Period values cast to Time where the
-    result is a Time, as the then and else operands take the common type (issue #1352). The
-    operand is copied, never changed: it is the one of the other statements too."""
-    if isinstance(operand, Dataset):
-        names = [
-            name
-            for name, comp in result.components.items()
-            if comp.role == Role.MEASURE
-            and name in operand.components
-            and _is_cast_to_time(operand.components[name].data_type, comp.data_type)
-        ]
-        if not names or operand.data is None:
-            return operand
-        converted = copy(operand)
-        converted.components = {name: comp.copy() for name, comp in operand.components.items()}
-        converted.data = operand.data.copy()
-        for name in names:
-            comp = converted.components[name]
-            converted.data[name] = _time_values(converted.data[name], TimeInterval, comp.data_type)
-            comp.data_type, comp.value_domain = TimeInterval, None
-        return converted
+    result is a Time, as the then and else operands take the common type (issue #1352)."""
     if isinstance(result, Dataset):
+        if isinstance(operand, Dataset):
+            return to_time(operand, time_names(result))
         types = {comp.data_type for comp in result.get_measures()}
-        data_type = types.pop() if len(types) == 1 else None
-    else:
-        data_type = result.data_type
-    if not _is_cast_to_time(operand.data_type, data_type):
-        return operand
-    converted = copy(operand)
-    converted.data_type, converted.value_domain = TimeInterval, None
-    if isinstance(operand, Scalar):
-        converted.value = _selected_value(operand, TimeInterval)
-    elif operand.data is not None:
-        converted.data = _time_values(operand.data, TimeInterval, operand.data_type)
-    return converted
+        return to_time(operand) if types == {TimeInterval} else operand
+    return to_time(operand) if result.data_type is TimeInterval else operand
 
 
 def _identifiers(dataset: Dataset) -> Dict[str, Any]:
@@ -443,6 +420,8 @@ class Nvl(Binary):
     @classmethod
     def evaluate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(left, right)
+        if isinstance(result, Dataset) and isinstance(left, Dataset) and isinstance(right, Dataset):
+            left, right = time_keys(left, result), time_keys(right, result)
 
         if isinstance(left, Scalar) and isinstance(result, Scalar):
             if left.data_type is Null:
@@ -583,6 +562,8 @@ class Nvl(Binary):
                 comp.nullable = replacement_keeps_nulls and comp.nullable
                 if comp.name in promoted:
                     comp.data_type = promoted[comp.name]
+            if isinstance(right, Dataset):
+                time_identifiers(result_components, left, right)
             share_value_domains(result_components, [left, right])
         return Dataset(name=dataset_name, components=result_components, data=None)
 

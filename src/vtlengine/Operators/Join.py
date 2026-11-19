@@ -11,7 +11,6 @@ from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
     Integer,
-    TimeInterval,
     binary_implicit_promotion,
     check_unary_implicit_promotion,
 )
@@ -20,8 +19,9 @@ from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Operators import (
     Operator,
     _id_type_promotion_join_keys,
-    _is_cast_to_time,
     share_value_domains,
+    time_names,
+    to_time,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
@@ -194,6 +194,13 @@ class Join(Operator):
                         merged_components[new_name] = component
                         merged_components[new_name].name = new_name
                     else:
+                        if component_name in merged_components:
+                            # A join key takes the common type of the operands, as with using,
+                            # whatever their order (issue #1352)
+                            component.data_type = binary_implicit_promotion(
+                                merged_components[component_name].data_type,
+                                component.data_type,
+                            )
                         merged_components[component_name] = component
                 else:
                     if component_name in using and component_name in merged_components:
@@ -389,22 +396,11 @@ class Join(Operator):
 
     @classmethod
     def _time_keys(cls, operand: Dataset, result: Dataset) -> None:
-        """The Date or Time_Period Identifiers of a join operand that are Time in the result,
-        as the key of another operand is, are cast to Time, so that the keys match as Time
-        values (issue #1352). The operand is a copy: its data is replaced, not changed."""
-        if operand.data is None or cls.how == "cross":
-            return
-        for comp in operand.get_identifiers():
-            result_comp = result.components.get(comp.name)
-            if result_comp is not None and _is_cast_to_time(comp.data_type, result_comp.data_type):
-                operand.data = operand.data.assign(
-                    **{
-                        comp.name: operand.data[comp.name].map(
-                            lambda x, t=comp.data_type: TimeInterval.implicit_cast(x, t),
-                            na_action="ignore",
-                        )
-                    }
-                )
+        """The Date or Time_Period Identifiers of a join operand that are Time in the result are
+        cast to Time, so that the keys match as Time values (issue #1352). The operand is a
+        copy: its data is replaced, not changed."""
+        if cls.how != "cross":
+            operand.data = to_time(operand, time_names(result)).data
 
     @classmethod
     def _combine_viral_attributes(

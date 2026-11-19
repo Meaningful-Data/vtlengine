@@ -11708,6 +11708,18 @@ class TimeValueBugs(BugHelper):
         """
         self.BaseTest(code="GH_1352_6e", number_inputs=1, references_names=["1", "2"])
 
+    def test_GH_1352_6f(self):
+        """
+        Status: OK
+        Expression: DS_r <- ( if DS_2 = DS_2 then DS_1 else DS_2 ) = DS_2;
+        Description: Extra of case 6: the if of the Date DS_1 and the Time DS_2 is a Time, which
+                     = compares with DS_2 as Time values. The DuckDB engine took the if as a Date
+                     and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_6f", number_inputs=2, references_names=["1"])
+
     def test_GH_1352_7(self):
         """
         Status: OK
@@ -11820,6 +11832,43 @@ class TimeValueBugs(BugHelper):
             "Time_Period.",
         )
 
+    def test_GH_1352_11c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 + DS_2;
+        Description: Extra of case 11: the Date Identifier of DS_1 is cast to the Time of the
+                     Identifier of DS_2, so 2020-01-01 matches 2020-01-01/2020-01-01 and the
+                     result Identifier is a Time. The pandas engine matched nothing and the DuckDB
+                     engine raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_11c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_11d(self):
+        """
+        Status: OK
+        Expression: DS_r <- exists_in ( DS_1 , DS_2 );
+        Description: Extra of case 11: the Date Identifiers of DS_1 are matched as the Time values
+                     of the Identifiers of DS_2, so 2020-01-01 exists. The pandas engine gave
+                     false for both and the DuckDB engine raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_11d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_11e(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: Extra of case 11: nvl matches the Data Points on the Identifiers as Time values,
+                     so the Date 2020-01-01 matches the Time 2020-01-01/2020-01-01. The pandas
+                     engine matched nothing and the DuckDB engine raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_11e", number_inputs=2, references_names=["1"])
+
     def test_GH_1352_12(self):
         """
         Status: OK
@@ -11851,6 +11900,43 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_12b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_12c(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b keep a#Me_1 );
+        Description: Extra of case 12: the join key takes the common type Time of the Time
+                     Identifier of DS_1 and the Date one of DS_2, whatever their order. The result
+                     typed it as the Date of the last operand: the pandas engine matched nothing
+                     and the DuckDB engine wrote a Time value in a Date Identifier.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_12c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_12d(self):
+        """
+        Status: OK
+        Expression: DS_r <- left_join ( DS_1 as a , DS_2 as b keep a#Me_1 );
+        Description: Extra of case 12: the Time_Period keys 2020D1 and 2020Q1 of DS_2 are cast to
+                     Time and match the Time keys of DS_1. The result typed the key as a
+                     Time_Period: pandas wrote 2020M1 twice and DuckDB null twice.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_12d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_12e(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b , DS_3 as c keep a#Me_1 );
+        Description: Extra of case 12: with a Date operand last, the key is still a Time and the
+                     Date keys are cast to it. The pandas engine matched nothing and the DuckDB
+                     engine wrote a Time value in a Date Identifier.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_12e", number_inputs=3, references_names=["1"])
 
     def test_GH_1352_41(self):
         """
@@ -11918,3 +12004,63 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_43b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_43c(self):
+        """
+        Status: OK
+        Expression: DS_r <- union ( DS_1 , DS_2 );
+        Description: Extra of case 43: the Date Measure of DS_1 is cast to the Time of DS_2, so
+                     2020-01-15 is 2020-01-15/2020-01-15. The pandas engine kept the Date text and
+                     DuckDB wrote 2020-01-15 00:00:00.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_43c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_43d(self):
+        """
+        Status: OK
+        Expression: DS_r <- union ( DS_1 , DS_2 );
+        Description: Extra of case 43: the Date Identifiers of DS_1 are cast to Time, so 2020-01-01
+                     is the Data Point 2020-01-01/2020-01-01 that DS_2 repeats. Both engines kept
+                     the Date texts and four Data Points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_43d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_43e(self):
+        """
+        Status: OK
+        Expression: DS_r <- setdiff ( DS_1 , DS_2 );
+        Description: Extra of case 43: the Date 2020-01-01 of DS_2 is the Time
+                     2020-01-01/2020-01-01, which setdiff takes out of DS_1. The pandas engine kept
+                     both Data Points and the DuckDB engine raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_43e", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_43f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ keep Me_2 , Me_3 ] [ unpivot Id_2 , Me_4 ];
+        Description: Extra of case 43: the Time_Period Measure Me_2 unpivoted into the Time Measure
+                     Me_4 holds the Time values 2020-01-01/2020-03-31 and 2021-12-01/2021-12-31.
+                     Both engines kept the Time_Period texts 2020-Q1 and 2021-M12.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_43f", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_43g(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 ) = DS_2;
+        Description: Extra of case 43: the nvl of the Date DS_1 and the Time DS_2 is a Time, which
+                     = compares with DS_2. The DuckDB engine took the nvl as a Date and raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_43g", number_inputs=2, references_names=["1"])

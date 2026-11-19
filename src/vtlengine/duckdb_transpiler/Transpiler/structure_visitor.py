@@ -595,7 +595,10 @@ class StructureVisitor(ASTTemplate):
         """The structure of the first Data Set operand of an if or a case, as in the semantic
         analysis (issue #1304)."""
         operands = self._branch_operands(node)
-        return next(filter(None, map(self._get_dataset_structure, operands)), None)
+        structures = [self._get_dataset_structure(op) for op in operands]
+        first = next(filter(None, structures), None)
+        names = set(first.get_measures_names()) if first is not None else set()
+        return self._with_time(first, structures, names)
 
     def _resolve_varid_structure(self, node: AST.VarID) -> Optional[Dataset]:
         """Resolve a VarID (including UDO bindings) to its dataset structure."""
@@ -780,6 +783,11 @@ class StructureVisitor(ASTTemplate):
             if ds is not None and len(ds.get_measures_names()) == 1:
                 return self._build_boolean_result_structure(ds)
             return self._without_attributes(ds)
+        if node.op in (tokens.UNION, tokens.INTERSECT, tokens.SETDIFF, tokens.SYMDIFF):
+            structures = [self._get_dataset_structure(child) for child in node.children]
+            first = structures[0]
+            names = set(first.components) if first is not None else set()
+            return self._with_time(first, structures, names)
         return self._get_dataset_structure(node.children[0])
 
     def _build_aggregation_structure(self, node: AST.Aggregation) -> Optional[Dataset]:
@@ -946,6 +954,34 @@ class StructureVisitor(ASTTemplate):
         """Build a ``Component`` with the common field ordering."""
         return Component(name=name, data_type=dtype, role=role, nullable=nullable)
 
+    def _with_time(
+        self, ds: Optional[Dataset], structures: List[Optional[Dataset]], names: Set[str]
+    ) -> Optional[Dataset]:
+        """The structure ``ds`` with its Date or Time_Period Components ``names`` that are Time
+        in one of the ``structures`` as Time, as the operators cast them to Time (issue
+        #1352), as in the semantic analysis."""
+        if ds is None:
+            return None
+        time = {
+            name
+            for structure in structures
+            if structure is not None
+            for name, comp in structure.components.items()
+            if comp.data_type is TimeInterval and name in names
+        }
+        changed = [
+            name
+            for name, comp in ds.components.items()
+            if name in time and comp.data_type in (Date, TimePeriod)
+        ]
+        if not changed:
+            return ds
+        comps = dict(ds.components)
+        for name in changed:
+            comp = comps[name]
+            comps[name] = self._make_comp(name, TimeInterval, comp.role, comp.nullable)
+        return Dataset(name=ds.name, components=comps, data=None)
+
     @staticmethod
     def _identifiers_dict(ds: Dataset) -> Dict[str, Component]:
         """Return a new dict containing only the identifier components of ``ds``."""
@@ -1048,7 +1084,9 @@ class StructureVisitor(ASTTemplate):
 
         comps = self._identifiers_dict(left_ds)
         comps["bool_var"] = self._make_comp("bool_var", Boolean)
-        return Dataset(name="", components=comps, data=None)
+        right_ds = self._get_dataset_structure(node.children[1])
+        ds = Dataset(name="", components=comps, data=None)
+        return self._with_time(ds, [right_ds], set(left_ds.get_identifiers_names()))
 
     # =========================================================================
     # Structure builders for clause operations
@@ -1236,7 +1274,10 @@ class StructureVisitor(ASTTemplate):
                 if comp.role == Role.VIRAL_ATTRIBUTE:
                     comps[name] = comp
 
-        return Dataset(name=left_ds.name, components=comps, data=None)
+        # The keys, and the Measures of nvl, are Time where one operand has a Time (#1352)
+        names = all_ids | (right_measures if node.op == tokens.NVL else set())
+        ds = Dataset(name=left_ds.name, components=comps, data=None)
+        return self._with_time(ds, [left_ds, right_ds], names)
 
     @staticmethod
     def _iter_assignments(children: List[AST.AST]) -> List[AST.Assignment]:
@@ -1494,7 +1535,8 @@ class StructureVisitor(ASTTemplate):
                     comps[comp_name] = comp
         if not comps:
             return self._get_output_dataset()
-        return Dataset(name="_join", components=comps, data=None)
+        ds = Dataset(name="_join", components=comps, data=None)
+        return self._with_time(ds, [ds for _, ds in clause_datasets], all_join_ids)
 
     # =========================================================================
     # Component name resolution helpers
