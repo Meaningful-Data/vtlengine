@@ -11351,3 +11351,42 @@ class ValueDomainBugs(BugHelper):
             references_names=["1", "2"],
             vd_names=[*self.vd_1351, "GH_1351-VD_N"],
         )
+
+    def test_GH_1351_34a(self):
+        """
+        Status: OK
+        Expression: define operator f ( x VD_1 ) returns integer is x end operator;
+                    DS_r <- DS_2 [ calc identifier Id_3 := f ( 1 ) ] [ pivot Id_3 , Me_1 ];
+        Description: The result of f is its parameter, on VD_1, which returns integer keeps, so
+                     pivot reads the values of VD_1. The DuckDB engine did not see the value
+                     domain through the call and failed with an internal error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_34a",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )
+
+    def test_GH_1351_34b(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component ) returns component < integer > is x
+                        end operator;
+                    DS_r <- DS_1 [ calc identifier Id_3 := f ( Id_2 ) ] [ keep Me_1 ]
+                        [ sub Id_2 = 1 ] [ pivot Id_3 , Me_1 ];
+        Description: The result of f is the Component Id_2, on VD_1, which returns
+                     component < integer > keeps, so pivot reads the values of VD_1. The DuckDB
+                     engine did not see the value domain through the call and failed with an
+                     internal error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_34b",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1351,
+        )

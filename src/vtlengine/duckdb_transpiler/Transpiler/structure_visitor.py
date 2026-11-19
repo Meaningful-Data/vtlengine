@@ -1160,6 +1160,11 @@ class StructureVisitor(ASTTemplate):
                 return self.value_domains.get(target.name)
             return None
         if isinstance(node, AST.UDOCall) and node.op in self._udos:
+            result = self._udo_result(node)
+            if result is not None:
+                # The one of the result that the semantic analysis gives: also the one of an
+                # argument that a returns of a basic type keeps (issue #1351)
+                return getattr(result, "value_domain", None)
             # The value domain that the returns of the operator names (issue #1351)
             constraints = self._udos[node.op].get("return_constraints")
             constraint = constraints.value if constraints is not None else None
