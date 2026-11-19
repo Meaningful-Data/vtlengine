@@ -35,6 +35,18 @@ MIN_YEAR = 1000
 MAX_YEAR = 9999
 
 
+def shifted_year(day: date, months: int, days: int) -> int:
+    """The year of day moved by months and then by days, also out of the years a date holds
+    (issue #1352)."""
+    year, month = divmod(day.year * 12 + day.month - 1 + months, 12)
+    if months and not MIN_YEAR <= year <= MAX_YEAR:
+        # The days move further in the same direction
+        return year
+    moved = date(year, month + 1, min(day.day, calendar.monthrange(year, month + 1)[1]))
+    shifted, years = date_of_ordinal(moved.toordinal() + days)
+    return shifted.year + years
+
+
 def check_year(year: int) -> None:
     """A time value has a year from MIN_YEAR to MAX_YEAR (issue #1352)."""
     if year < MIN_YEAR or year > MAX_YEAR:

@@ -13352,3 +13352,75 @@ class TimeValueBugs(BugHelper):
             exception_code="1-1-6-13",
             exception_message="At op calc: Not allowed to overwrite an Identifier: Id_1",
         )
+
+    def test_GH_1352_26h(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , 1 );
+        Description: Extra of case 26: timeshift of the Time 9999-01-01/9999-12-31 by one year
+                     gives the year 10000, which no Time has, so it raises 2-1-19-10, as for a
+                     Date. The pandas engine raised a raw OverflowError and the DuckDB engine
+                     wrote 10000-01-01/10000-12-31.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_26h",
+            number_inputs=1,
+            exception_code="2-1-19-10",
+            exception_message="Invalid year 10000, must be between 1000 and 9999.",
+        )
+
+    def test_GH_1352_26i(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , -1 );
+        Description: Extra of case 26: timeshift of the Time 1000-01-01/1000-12-31 back one year
+                     gives the year 999, which no Time has, so it raises 2-1-19-10. Both engines
+                     wrote a Time of the year 999.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_26i",
+            number_inputs=1,
+            exception_code="2-1-19-10",
+            exception_message="Invalid year 999, must be between 1000 and 9999.",
+        )
+
+    def test_GH_1352_32c(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single );
+        Description: Extra of case 32: fill_time_series adds 9999-11-30 between the monthly
+                     Dates 9999-10-31 and 9999-12-31, the last month a Date has. The pandas
+                     engine raised a raw ValueError computing the month after the last one.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_32c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_32d(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single );
+        Description: Extra of case 32: fill_time_series adds 9999-11-01/9999-11-30 between the
+                     monthly Times of October and December 9999, the last month a Time has. The
+                     pandas engine raised a raw OverflowError reading the frequency of the Time
+                     that ends on 9999-12-31.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_32d", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_26j(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := dateadd ( Me_1 , -1 , "W" ) ];
+        Description: Extra of case 26: the week 9999W52 ends on 10000-01-02, so dateadd back one
+                     week gives 9999-12-26, a Date of the years 1000 to 9999, as 2020W1 gives
+                     2019-12-29.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_26j", number_inputs=1, references_names=["1"])
