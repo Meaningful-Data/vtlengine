@@ -12503,3 +12503,44 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_18c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_17b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := max ( nvl ( Me_1 , Me_1 ) over ( ) ) ,
+                        Me_3 := min ( if Id_1 = 1 then Me_1 else Me_1 over ( ) ) ,
+                        Me_4 := max ( case when Id_1 = 1 then Me_1 else Me_1 over ( ) ) ];
+        Description: Extra of case 17: the nvl, the if and the case of a Duration are Durations,
+                     so the analytic max and min order them by their length and give A and M.
+                     The DuckDB engine ordered the letters and gave M and A.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_17b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_17c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( nvl ( Me_1 , Me_1 ) , string ) ];
+        Description: Extra of case 17: the nvl of a Duration is a Duration, which cast to string
+                     writes as P1Y and P1M, as cast ( Me_1 , string ) does. The DuckDB engine
+                     wrote the letters A and M.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_17c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_17d(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b
+                        aggr Me_2 := max ( nvl ( a#Me_1 , b#Me_1 ) ) ,
+                        Me_3 := min ( nvl ( a#Me_1 , b#Me_1 ) ) );
+        Description: Extra of case 17: the max and the min in the aggr of a join of the nvl of
+                     two Durations order them by their length and give A and M. The DuckDB
+                     engine ordered the letters and gave M and A.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_17d", number_inputs=2, references_names=["1"])
+
