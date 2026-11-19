@@ -479,7 +479,8 @@ Key rules:
   converted to a Time interval
   (``"2020-Q1"`` becomes ``"2020-01-01/2020-03-31"``).
   So a Date or a Time_Period compared with a Time, or
-  given with a Time to ``nvl``, is a Time value.
+  given with a Time to ``nvl``, ``if`` or ``case``, is a
+  Time value.
 - **Date with Time_Period**: Neither is implicitly
   converted to the other, so they have no common type,
   although both are converted to Time. An operator that

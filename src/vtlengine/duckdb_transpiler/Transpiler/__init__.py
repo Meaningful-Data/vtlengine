@@ -239,6 +239,15 @@ def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, s
     return sql.replace(from_pattern, f"FROM {table_src}, {subquery} WHERE {where_conds}", 1)
 
 
+def _as_time(values: List[str], types: List[Optional[str]]) -> List[str]:
+    """The values of operands with a Time among them: a Date or a Time_Period is cast to Time,
+    the text of its start and end dates, as cast to time gives it (issue #1352)."""
+    names = [(t or "").lower() for t in types]
+    if not {"time", "timeinterval"} & set(names):
+        return values
+    return [_CASTS_TO_TEXT.get((n, "time"), "{0}").format(v) for v, n in zip(values, names)]
+
+
 def _bool_to_str(col_ref: str) -> str:
     """Cast a Boolean expression to String: 'true' or 'false', as the VTL 2.2 reference manual
     casts a Boolean to String (issue #1314)."""
@@ -3971,7 +3980,7 @@ FROM (
         return {
             comp.name: self._dataset_value_types(operands, comp.name)
             for comp in result.get_measures()
-            if comp.data_type is String
+            if comp.data_type in (String, TimeInterval)
         }
 
     def _resolve_conditional_structure(self, node: Union[AST.If, AST.Case]) -> Optional[Dataset]:
@@ -3999,7 +4008,9 @@ FROM (
     def _as_text(values: List[str], types: List[Optional[str]]) -> List[str]:
         """The values of the operands of an if or a case whose result is a String: the Boolean
         ones take the text that cast to string gives, as Boolean is promoted to String. DuckDB
-        cast the strings to BOOLEAN instead (issue #1314)."""
+        cast the strings to BOOLEAN instead (issue #1314). Where it is a Time, a Date or a
+        Time_Period is cast to Time (issue #1352)."""
+        values = _as_time(values, types)
         return [_bool_to_str(v) if t == "Boolean" else v for v, t in zip(values, types)]
 
     def _promoted_to_text(
@@ -4009,15 +4020,15 @@ FROM (
         as cast to string renders it. DuckDB cast the String to BOOLEAN instead (issue #1314).
         With ``to_time``, a Date or a Time_Period with a Time is cast to Time, the text of its
         start and end dates, as cast to time gives it (issue #1352)."""
-        names = [(t or "").lower() for t in types]
-        if to_time and {"time", "timeinterval"} & set(names):
-            return [_CASTS_TO_TEXT.get((n, "time"), "{0}").format(r) for r, n in zip(refs, names)]
+        if to_time:
+            refs = _as_time(refs, types)
         return self._as_text(refs, types) if set(types) == {"Boolean", "String"} else refs
 
     def _component_values(self, operands: List[AST.AST], values: List[str]) -> List[str]:
         """The values of the operands of a Component or scalar if or case, which has their
-        common type: as text next to a String operand."""
+        common type: as text next to a String operand, as Time next to a Time one."""
         types = [self._value_type(op) for op in operands]
+        values = _as_time(values, types)
         return self._as_text(values, types) if "String" in types else values
 
     def _scalar_if_sql(self, node: AST.If) -> str:
