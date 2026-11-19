@@ -5890,7 +5890,7 @@ FROM (
                     "ds": ds,
                     "table_src": self._get_dataset_sql(actual_node),
                     "alias": alias,
-                    "sql_alias": quote_name(alias) if ("." in alias or " " in alias) else alias,
+                    "sql_alias": quote_name(alias),
                     "id_names": set(ds.get_identifiers_names()),
                 }
             )

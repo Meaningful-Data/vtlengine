@@ -12012,6 +12012,46 @@ class NameResolutionBugs(BugHelper):
         """
         self.BaseTest(code="GH_1355_10c", number_inputs=3, references_names=["1"])
 
+    def test_GH_1355_10d(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as 'A-B' , DS_2 as B using Id_1 , Id_2
+                        calc Me_9 := 'A-B'#Me_1 + B#Me_1 drop 'A-B'#Me_1 , B#Me_1 );
+        Description: Extra of test_GH_1355_10: a quoted alias names its operand without the
+                     quotes, as a quoted Data Set name, and any name a Component name allows
+                     is a valid alias, also one with a character such as - that SQL does not
+                     take without quotes. The DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_10d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_10e(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as '1A' , DS_2 as B using Id_1 , Id_2
+                        rename '1A'#Me_1 to Me_8 , B#Me_1 to Me_9 );
+        Description: Extra of test_GH_1355_10: as test_GH_1355_10d, for an alias that starts
+                     with a digit. The DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_10e", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_10h(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as '' , DS_2 as B using Id_1 , Id_2 );
+        Description: Extra of test_GH_1355_10d: an empty alias names no operand, as an empty
+                     Component name is no name. The pandas engine ran the join and the DuckDB
+                     engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_10h", number_inputs=2, exception_code="1-1-13-28"
+        )
+
     def test_GH_1355_11(self):
         """
         Status: OK
@@ -12182,9 +12222,9 @@ class NameResolutionBugs(BugHelper):
             code="GH_1355_11l",
             number_inputs=2,
             exception_code="1-1-13-28",
-            exception_message="At op inner_join: Invalid name 'A#B' of a join operand, the "
-            "alias of a join operand, or else its Data Set name, cannot contain ', \", #, NUL or "
-            "carriage return.",
+            exception_message="At op inner_join: Invalid name A#B of a join operand, the "
+            "alias of a join operand, or else its Data Set name, cannot be empty or contain ', \", "
+            "#, NUL or carriage return.",
         )
 
     def test_GH_1355_11m(self):
@@ -12203,8 +12243,8 @@ class NameResolutionBugs(BugHelper):
             number_inputs=2,
             exception_code="1-1-13-28",
             exception_message="At op inner_join: Invalid name x#y of a join operand, the "
-            "alias of a join operand, or else its Data Set name, cannot contain ', \", #, NUL or "
-            "carriage return.",
+            "alias of a join operand, or else its Data Set name, cannot be empty or contain ', \", "
+            "#, NUL or carriage return.",
         )
 
     def test_GH_1355_11n(self):

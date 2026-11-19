@@ -76,8 +76,9 @@ a name and a list of components. Each component has the four fields:
         a new Component that a script names with any of these characters
         (``rename``, ``calc``, ``aggr``, ``pivot``, ``unpivot``, ``eval``)
         raises ``1-1-6-19``, and the alias of a join operand, or the name
-        of a Data Set joined without an alias, holding one raises
-        ``1-1-13-28``.
+        of a Data Set joined without an alias, holding one, or an empty
+        alias (``''``), raises ``1-1-13-28``. A quoted alias (``as 'A-B'``)
+        names its operand without the quotes, as a quoted Data Set name.
     * - ``type``
       - string
       - VTL data type. See :doc:`data_types` for the full list.

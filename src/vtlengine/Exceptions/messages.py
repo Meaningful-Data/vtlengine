@@ -978,10 +978,10 @@ centralised_messages = {
     },
     "1-1-13-28": {
         "message": "At op {op}: Invalid name {name} of a join operand, the alias of a join "
-        "operand, or else its Data Set name, cannot contain {characters}.",
+        "operand, or else its Data Set name, cannot be empty or contain {characters}.",
         "description": "Raised when the alias of a join operand, or the name of a Data Set "
-        "joined without an alias, contains a character that a Component name cannot contain: "
-        "the join names the Components of its operands alias#comp.",
+        "joined without an alias, is empty or contains a character that a Component name "
+        "cannot contain: the join names the Components of its operands alias#comp.",
     },
     "1-1-13-9": {
         "message": "Ambiguity for this variable {comp_name} inside a Join clause.",

@@ -3524,6 +3524,87 @@ def test_GH_1355_11v(use_duckdb):
         "DS_r <- inner_join ( DS_1 as 'A\rB' , DS_2 as C using Id_1 , Id_2 drop C#Me_1 );",
         use_duckdb,
         "1-1-13-28",
-        "At op inner_join: Invalid name 'A\\rB' of a join operand, the alias of a join "
-        "operand, or else its Data Set name, cannot contain ', \", #, NUL or carriage return.",
+        "At op inner_join: Invalid name A\\rB of a join operand, the alias of a join "
+        "operand, or else its Data Set name, cannot be empty or contain ', \", #, NUL or "
+        "carriage return.",
+    )
+
+
+def _check_result_1355(script: str, use_duckdb: bool, expected: Dict[str, dict]) -> None:
+    """The script gives the expected data on the engine, from DS_1 (Me_1 1, 2), DS_2 (Me_1 3, 4)
+    and DS_3 (Me_2 3, 4) with the Identifiers Id_1 and Id_2, and the semantic analysis gives
+    the same Components. A Data Set named x-y cannot be written in a reference file, whose
+    Data Set names follow the input rule."""
+    ids = [
+        {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False},
+        {"name": "Id_2", "role": "Identifier", "type": "String", "nullable": False},
+    ]
+
+    def measure(name: str) -> Dict[str, Any]:
+        return {"name": name, "role": "Measure", "type": "Number", "nullable": True}
+
+    structures = {
+        "datasets": [
+            {"name": "DS_1", "DataStructure": [*ids, measure("Me_1")]},
+            {"name": "DS_2", "DataStructure": [*ids, measure("Me_1")]},
+            {"name": "DS_3", "DataStructure": [*ids, measure("Me_2")]},
+        ]
+    }
+    keys = {"Id_1": [1, 2], "Id_2": ["A", "B"]}
+    datapoints = {
+        "DS_1": pd.DataFrame({**keys, "Me_1": [1.0, 2.0]}),
+        "DS_2": pd.DataFrame({**keys, "Me_1": [3.0, 4.0]}),
+        "DS_3": pd.DataFrame({**keys, "Me_2": [3.0, 4.0]}),
+    }
+    result = run(script, structures, datapoints, use_duckdb=use_duckdb)
+    semantic = semantic_analysis(script, structures)
+    assert set(result) == set(semantic) == set(expected)
+    for name, data in expected.items():
+        assert list(result[name].components) == list(semantic[name].components) == list(data)
+        got = result[name].data.sort_values("Id_1").reset_index(drop=True)
+        assert got[list(data)].to_dict("list") == data
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_10f(use_duckdb):
+    """Extra of test_GH_1355_10d: the name of a Data Set joined without an alias may hold any
+    character a Component name allows, also one such as - that SQL does not take without
+    quotes. The DuckDB engine raised a raw ParserException."""
+    _check_result_1355(
+        "'x-y' <- DS_1; DS_r <- inner_join ( 'x-y' , DS_3 using Id_1 , Id_2 );",
+        use_duckdb,
+        {
+            "x-y": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [1.0, 2.0]},
+            "DS_r": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [1.0, 2.0], "Me_2": [3.0, 4.0]},
+        },
+    )
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_10g(use_duckdb):
+    """Extra of test_GH_1355_10d: control, a Data Set named x-y read by a later statement
+    outside a join."""
+    _check_result_1355(
+        "'x-y' <- DS_1 * 2; DS_r <- 'x-y' [ calc Me_2 := Me_1 + 1 ];",
+        use_duckdb,
+        {
+            "x-y": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [2.0, 4.0]},
+            "DS_r": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [2.0, 4.0], "Me_2": [3.0, 5.0]},
+        },
+    )
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_10i(use_duckdb):
+    """Extra of test_GH_1355_10f: the qualified name 'x-y'#Me_1 names the Component Me_1 of
+    the Data Set x-y joined without an alias. Both engines and the semantic analysis raised
+    1-1-1-10, as the name before # kept its quotes."""
+    _check_result_1355(
+        "'x-y' <- DS_1; DS_r <- inner_join ( 'x-y' , DS_2 using Id_1 , Id_2"
+        " calc Me_9 := 'x-y'#Me_1 + DS_2#Me_1 drop 'x-y'#Me_1 , DS_2#Me_1 );",
+        use_duckdb,
+        {
+            "x-y": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [1.0, 2.0]},
+            "DS_r": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_9": [4.0, 6.0]},
+        },
     )

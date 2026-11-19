@@ -1998,9 +1998,8 @@ class InterpreterAnalyzer(ASTTemplate):
     def _check_join_name(op: str, name: str) -> None:
         """The name of a join operand, its alias or else its Data Set name, prefixes the names
         of its Components in the join, alias#comp, so it cannot contain the characters a
-        Component name cannot contain (issue #1355). A quoted alias keeps its quotes."""
-        unquoted = name[1:-1] if len(name) > 1 and name[0] == name[-1] == "'" else name
-        if any(char in unquoted for char in component_name_characters()):
+        Component name cannot contain, and it cannot be empty (issue #1355)."""
+        if not name or any(char in name for char in component_name_characters()):
             raise SemanticError(
                 "1-1-13-28",
                 op=op,

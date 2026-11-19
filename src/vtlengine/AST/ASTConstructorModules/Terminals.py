@@ -131,7 +131,7 @@ class Terminals:
             op_node = ctx_list[1].text
             return BinOp(
                 left=Identifier(
-                    value=ctx_list[0].text,
+                    value=_remove_scaped_characters(ctx_list[0].text),
                     kind="DatasetID",
                     **extract_token_info(ctx_list[0]),
                 ),
@@ -658,7 +658,8 @@ class Terminals:
             return self.visitScalarType(c)
 
     def visitAlias(self, ctx):
-        return ctx.children[0].text
+        # A quoted alias is the name inside the quotes, as a quoted Data Set name (issue #1355)
+        return _remove_scaped_characters(ctx.children[0].text)
 
     def visitSignedInteger(self, ctx):
         # signedInteger: (MINUS|PLUS)? INTEGER_CONSTANT
