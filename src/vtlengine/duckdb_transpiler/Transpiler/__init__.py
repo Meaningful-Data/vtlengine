@@ -88,6 +88,7 @@ from vtlengine.Operators.HROperators import fills_with_zero
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.Operators.Time import Period_indicator
 from vtlengine.Operators.Validation import (
+    VALIDATION_MEASURES,
     bind_value_domains,
     error_domains,
     error_level_text,
@@ -5708,8 +5709,13 @@ FROM (
 
         for val, col in ((error_code, "errorcode"), (error_level, "errorlevel")):
             cols.append(f'CASE WHEN {bool_ref} IS FALSE THEN {val} ELSE NULL END AS "{col}"')
-        # check combines no data points: the viral attributes are copied (issue #1354)
-        cols.extend(f"t.{quote_name(n)}" for n in ds.get_viral_attributes_names())
+        # check combines no data points: the viral attributes are copied (issue #1354), except
+        # one named like a computed Measure, which gives way to it
+        cols.extend(
+            f"t.{quote_name(n)}"
+            for n in ds.get_viral_attributes_names()
+            if n not in VALIDATION_MEASURES
+        )
 
         sql = f"SELECT {', '.join(cols)} FROM ({validation_sql}) AS t"
         if imbalance_sql is not None and join_cond is not None:

@@ -11346,6 +11346,18 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_2", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_2b(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 0 all );
+        Description: Extra of case 2: DS_1 has a viral Attribute named imbalance, like a Measure
+                     check computes. The computed Measure keeps the name, as before the viral
+                     Attributes were copied to the result, and the viral Attribute is not in it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_2b", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_3(self):
         """
         Status: OK

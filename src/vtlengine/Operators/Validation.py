@@ -224,8 +224,9 @@ class Check(Operator):
             nullable=True,
         )
         _set_error_types(result_components, value_domains)
+        # A viral Attribute named like a computed Measure gives way to it
         for viral_comp in validation_element.get_viral_attributes():
-            result_components[viral_comp.name] = copy(viral_comp)
+            result_components.setdefault(viral_comp.name, copy(viral_comp))
 
         return Dataset(name=dataset_name, components=result_components, data=None)
 
@@ -247,9 +248,7 @@ class Check(Operator):
         identifiers = validation_element.get_identifiers_names()
         validation_measure_name = validation_element.get_measures_names()[0]
         result.data = validation_element.data[
-            identifiers
-            + [validation_measure_name]
-            + validation_element.get_viral_attributes_names()
+            identifiers + [validation_measure_name] + result.get_viral_attributes_names()
         ].rename(columns={validation_measure_name: "bool_var"})
         if imbalance_element is not None and imbalance_element.data is not None:
             # Matched on the Identifiers, as all keeps every data point of op (issue #1354)
