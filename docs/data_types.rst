@@ -329,6 +329,9 @@ parameter):
       - ``2020-W15``
       - ``2020-01-15``
 
+Writing a semester, a quarter or a week in ``"sdmx_gregorian"``
+raises ``2-1-19-21``, in both execution engines.
+
 Time_Period is a **subtype of Time** — anywhere a Time value
 is expected, a Time_Period is accepted automatically.
 

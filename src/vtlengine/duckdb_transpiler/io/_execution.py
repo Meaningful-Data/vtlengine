@@ -6,9 +6,10 @@ handling dataset loading/saving with DAG scheduling for memory efficiency.
 """
 
 import re
+from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, List, Literal, Optional, Tuple, Union
 
 import duckdb
 import pandas as pd
@@ -230,6 +231,10 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
         year, min_year = match.groups() if match else ("unknown", "1000")
         return RunTimeError("2-1-19-10", year=year, min_year=min_year)
 
+    # sdmx_gregorian output format: a period of an indicator it cannot write (mirrors 2-1-19-21)
+    if "vtl error 2-1-19-21" in msg_lower:
+        return RunTimeError("2-1-19-21", period=msg.rsplit("got ", 1)[-1].strip()[:1])
+
     # time_agg: period indicator too coarse for target
     if "vtl error 2-1-19-1" in msg_lower:
         return _map_time_agg_error(msg, msg_lower)
@@ -306,6 +311,18 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
 
     # Return original error if no mapping found
     return error
+
+
+@contextmanager
+def _mapped_query_errors(sql_query: str) -> Iterator[None]:
+    """Raise the VTL error that a DuckDB error of the query maps to, or the DuckDB error."""
+    try:
+        yield
+    except duckdb.Error as e:
+        mapped = _map_query_error(e, sql_query)
+        if mapped is not e:
+            raise mapped from e
+        raise
 
 
 def _format_timestamp(ts: Any) -> str:
@@ -625,10 +642,12 @@ def fetch_result(
     Returns:
         Dataset or Scalar with result data
     """
-    # Apply time period representation before saving/fetching
-    apply_time_period_representation(
-        conn, result_name, output_datasets, output_scalars, representation
-    )
+    # Apply time period representation before saving/fetching. A period the format cannot
+    # write raises its VTL error (issue #1352)
+    with _mapped_query_errors(""):
+        apply_time_period_representation(
+            conn, result_name, output_datasets, output_scalars, representation
+        )
 
     # Scalars are always fetched in-memory (never saved to CSV)
     if result_name in output_scalars:
@@ -790,13 +809,8 @@ def execute_queries(
             # Execute query and create table
             copied = copies.get(statement_num)
             source_sql = sql_query if copied is None else f'SELECT * FROM "{copied}"'
-            try:
+            with _mapped_query_errors(sql_query):
                 conn.execute(f'CREATE TABLE "{result_name}" AS {source_sql}')
-            except duckdb.Error as e:
-                mapped = _map_query_error(e, sql_query)
-                if mapped is not e:
-                    raise mapped from e
-                raise
 
         # Clean up datasets scheduled for deletion
         cleanup_scheduled_datasets(
