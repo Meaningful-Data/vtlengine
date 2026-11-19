@@ -11532,3 +11532,69 @@ class NameResolutionBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1355_22", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_23(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , x integer ) returns dataset is
+                        d [ calc Me_3 := lag ( Me_2 , x over ( order by Id_1 ) ) ] end operator;
+                    DS_r <- f ( DS_3 , 1 );
+        Description: The scalar parameter x is the offset 1 of lag, as in test_GH_1355_26.
+                     The DuckDB engine raised a KeyError with the name of the parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_23", number_inputs=1, references_names=["1"])
+        self.BaseTest(
+            code="GH_1355_23", number_inputs=1, references_names=["1"], only_semantic=True
+        )
+
+    def test_GH_1355_24(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , x integer ) returns dataset is
+                        d [ calc Me_3 := lead ( Me_2 , x over ( order by Id_1 ) ) ] end operator;
+                    DS_r <- f ( DS_3 , 1 );
+        Description: The scalar parameter x is the offset 1 of lead. The DuckDB engine raised
+                     a KeyError with the name of the parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_24", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_25(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , p string ) returns dataset is
+                        d [ calc Me_3 := time_agg ( p , _ , Tp ) ] end operator;
+                    DS_r <- f ( DS_7 , "A" );
+        Description: The scalar parameter p is the period "A" of time_agg, as in
+                     test_GH_1355_27. The DuckDB engine raised a KeyError with the name of the
+                     parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_25", number_inputs=1, references_names=["1"])
+        self.BaseTest(
+            code="GH_1355_25", number_inputs=1, references_names=["1"], only_semantic=True
+        )
+
+    def test_GH_1355_26(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , 1 over ( order by Id_1 ) ) ];
+        Description: Control: lag with a literal offset.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_26", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_27(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_3 := time_agg ( "A" , _ , Tp ) ];
+        Description: Control: time_agg with a literal period.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_27", number_inputs=1, references_names=["1"])

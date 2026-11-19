@@ -6011,14 +6011,25 @@ FROM (
 
     def _resolve_period_to_ref(self, ref: AST.AST) -> Optional[str]:
         name = ref.value  # type: ignore[attr-defined]
-        value = self.input_scalars[name].value
+        value = self._scalar_value(name)
         return None if value is None else str(value)
 
     def _resolve_scalar_varid(self, value: Any) -> Any:
         """Non-VarID values pass through unchanged."""
         if not isinstance(value, AST.VarID):
             return value
-        name = value.value
+        return self._scalar_value(value.value)
+
+    def _scalar_value(self, name: str) -> Any:
+        """The value of the input scalar name, or of the argument that a scalar parameter name
+        of a user defined operator is bound to, through the calls that pass it on (issue
+        #1355)."""
+        bound = self._get_udo_param(name)
+        if isinstance(bound, AST.Constant):
+            return bound.value
+        if isinstance(bound, AST.VarID):
+            with self._udo_arg_scope(name):
+                return self._scalar_value(bound.value)
         return self.input_scalars[name].value
 
     def _visit_time_agg_dataset(
