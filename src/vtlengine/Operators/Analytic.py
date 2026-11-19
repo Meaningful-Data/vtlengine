@@ -437,6 +437,9 @@ class Analytic(Operator.Unary):
             registry = get_current_registry()
             result.data = cls.normalize_dates(result.data, result.components)
             viral_src = df[identifier_names + viral_attr_names].copy()
+            # The rules read the values as given, not as the Dates parsed for the analytic
+            # (issue #1354)
+            viral_src[viral_attr_names] = operand.data[viral_attr_names]
             for va_name in viral_attr_names:
                 component = operand.components[va_name]
                 if registry.rule_for(component) is None:
@@ -506,7 +509,8 @@ class Analytic(Operator.Unary):
         elif any(comp.data_type is Date for comp in components.values()):
             data = data.copy()
             for comp_name, comp in components.items():
-                if comp.data_type is Date:
+                # A viral Attribute is not in the data yet (issue #1354)
+                if comp.data_type is Date and comp_name in data.columns:
                     data[comp_name] = data[comp_name].astype(DATE_COMPARISON_DTYPE)
         return data
 
