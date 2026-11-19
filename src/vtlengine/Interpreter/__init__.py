@@ -277,7 +277,8 @@ class InterpreterAnalyzer(ASTTemplate):
     # result of each call (None) and each of its dataset arguments (by the parameter), which the
     # DuckDB engine reads in place of the structures it would work out (issue #1351). The
     # Components each aggr clause computes are kept as well, under the key of the clause and
-    # aggr (issue #1354)
+    # aggr, and the type of the operand of a Component-level analytic function, under the key of
+    # the function and its operator (issue #1354)
     udo_call: Tuple[Any, ...] = ()
     udo_results: Dict[Tuple[Tuple[Any, ...], Optional[str]], Any] = field(default_factory=dict)
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
@@ -1106,6 +1107,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 condition_stack, self.condition_stack = self.condition_stack, None
                 operand_comp = self.visit(node.operand)
                 self.condition_stack = condition_stack
+                if self.only_semantic:
+                    self.udo_results[(udo_call_key(self.udo_call, node), node.op)] = (
+                        operand_comp.data_type
+                    )
                 component_name = operand_comp.name
                 id_names = self.regular_aggregation_dataset.get_identifiers_names()
                 measure_names = self.regular_aggregation_dataset.get_measures_names()

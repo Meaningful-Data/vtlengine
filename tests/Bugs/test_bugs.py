@@ -11738,6 +11738,44 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_13j", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_13k(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 [ keep Me_4 ] as a , DS_1 [ keep Me_1 ] as b
+                        calc Me_10 := max ( a#Me_4 over ( order by Id_1 ) ) );
+        Description: Extra of case 13: the analytic max of the Time_Periods of a join,
+                     named with their alias, raises 2-1-19-20 for different period indicators.
+                     The DuckDB engine compared them and returned 2020M1, 2020Q1, 2020Q1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_13k",
+            number_inputs=1,
+            exception_code="2-1-19-20",
+            exception_message="Time Period operands with different period indicators do not "
+            "support < and > Comparison operations, unable to get the max",
+        )
+
+    def test_GH_1354_13l(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_10 := max ( nvl ( Me_4 , cast ( "2020M1" ,
+                        time_period ) ) over ( order by Id_1 ) ) ];
+        Description: Extra of case 13: the analytic max of a Time_Period expression raises
+                     2-1-19-20 for different period indicators, as of a Time_Period Measure.
+                     The DuckDB engine compared them and returned 2020M1, 2020Q1, 2020Q1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_13l",
+            number_inputs=1,
+            exception_code="2-1-19-20",
+            exception_message="Time Period operands with different period indicators do not "
+            "support < and > Comparison operations, unable to get the max",
+        )
+
     def test_GH_1354_14(self):
         """
         Status: OK

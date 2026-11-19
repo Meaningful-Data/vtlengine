@@ -3670,10 +3670,15 @@ FROM (
         if op != tokens.RATIO_TO_REPORT:
             over_clause = self._build_over_clause(node)
             func_sql = f"{func_sql} OVER ({over_clause})"
+        # The type the semantic analysis gives the operand, of any expression (issue #1354)
+        operand_type = self.udo_results.get((self._udo_call_key(node), op))
         if (
             op in (tokens.MIN, tokens.MAX)
             and node.operand is not None
-            and self._is_operand_type(node.operand, TimePeriod)
+            and (
+                operand_type is TimePeriod
+                or (operand_type is None and self._is_operand_type(node.operand, TimePeriod))
+            )
         ):
             # Time_Periods of different period indicators cannot be compared, in the whole
             # operand as on the Data Set level (issue #1354)
