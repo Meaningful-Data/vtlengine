@@ -12296,3 +12296,34 @@ class NameResolutionBugs(BugHelper):
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(code="GH_1355_19", number_inputs=2, exception_code="1-1-6-2")
+
+    def test_GH_1355_19b(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B using Id_1 , Id_2 );
+        Description: Extra of test_GH_1355_19: the using key Id_2 is an Attribute of DS_2,
+                     an operand other than the left-most one, where it must be an Identifier
+                     (the Join operators page of the VTL 2.2 manual: the using clause names
+                     identifiers, and the keys are matched as in an SQL inner join). Both
+                     engines accepted it and gave different data points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_19b", number_inputs=2, exception_code="1-1-13-7"
+        )
+
+    def test_GH_1355_19c(self):
+        """
+        Status: OK
+        Expression: DS_r <- left_join ( DS_1 as A , DS_2 as B using Id_1 , Id_2 );
+        Description: Extra of test_GH_1355_19: as test_GH_1355_19b for left_join, whose using
+                     clause names for each operand but the left-most one identifiers in
+                     common with the left-most operand (the Join operators page of the VTL
+                     2.2 manual).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_19c", number_inputs=2, exception_code="1-1-13-7"
+        )

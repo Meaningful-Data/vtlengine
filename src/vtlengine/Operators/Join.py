@@ -526,6 +526,11 @@ class Join(Operator):
                                         comp_name=component,
                                         dataset_name=op.name,
                                     )
+            # A using key may be a Measure or an Attribute of the left-most operand only
+            # (sub-case B2), the other operands have it as an Identifier (issue #1355)
+            for op in operands[1:]:
+                if not set(using).issubset(op.get_identifiers_names()):
+                    raise SemanticError("1-1-13-7", op=cls.op)
             cls._validate_join_key_types(operands, using)
 
 
