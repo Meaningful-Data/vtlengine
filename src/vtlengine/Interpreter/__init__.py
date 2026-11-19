@@ -743,6 +743,16 @@ class InterpreterAnalyzer(ASTTemplate):
             comp_name = f"{node.left.value}#{comp}"
             if node.op == MEMBERSHIP:
                 self._check_join_member(node.left.value, comp)
+            # A having or a grouping reads the Data Set it aggregates, where the Component
+            # of the operand has the name it has in the join (issue #1355)
+            aggregated = self.aggregation_dataset
+            if (
+                aggregated is not None
+                and (self.is_from_having or self.is_from_grouping)
+                and comp_name not in aggregated.components
+                and comp in aggregated.components
+            ):
+                comp_name = comp
             ast_var_id = AST.VarID(
                 value=comp_name,
                 line_start=node.right.line_start,

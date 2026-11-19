@@ -12390,6 +12390,19 @@ class NameResolutionBugs(BugHelper):
         """
         self.BaseTest(code="GH_1355_16d", number_inputs=2, references_names=["1"])
 
+    def test_GH_1355_16e(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B aggr Me_9 := sum ( A#Me_1 )
+                        group by Id_1 having sum ( A#Me_1 ) > 0 );
+        Description: Extra of test_GH_1355_16: a qualified name in the having of an aggr in a
+                     join is the Component of that operand, as in the aggr expression. Both
+                     engines and the semantic analysis raised 1-1-1-10 for A#Me_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_16e", number_inputs=2, references_names=["1"])
+
     def test_GH_1355_17(self):
         """
         Status: OK
