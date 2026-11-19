@@ -23,6 +23,37 @@ CREATE OR REPLACE MACRO vtl_period_limit(indicator VARCHAR, year INTEGER) AS (
     END
 );
 
+-- A year of a Date or of a period, from min_year to 9999 (mirrors VTL error 2-1-19-10). TRUE
+-- for a year in the range or a null year
+CREATE OR REPLACE MACRO vtl_year_in_range(y, min_year) AS (
+    CASE
+        WHEN y < min_year OR y > 9999 THEN
+            error('VTL Error 2-1-19-10: Invalid year ' || CAST(y AS VARCHAR)
+                || ', must be between ' || CAST(min_year AS VARCHAR) || ' and 9999')
+        ELSE TRUE
+    END
+);
+
+-- The calendar repeats every 400 years, 146097 days, a whole number of weeks. The day a
+-- number of days after d less the whole cycles in them, and the number of those cycles, give
+-- the year of a day also far beyond the years a date holds
+CREATE OR REPLACE MACRO vtl_day_in_cycle(d, days) AS (
+    CAST(d AS DATE) + CAST(((days % 146097) + 146097) % 146097 AS INTEGER)
+);
+
+CREATE OR REPLACE MACRO vtl_day_cycles(days) AS (
+    (days - ((days % 146097) + 146097) % 146097) // 146097
+);
+
+-- The shift number of timeshift, computed once for a statement: a null raises VTL error
+-- 2-1-19-24, which names the scalar that gives it
+CREATE OR REPLACE MACRO vtl_shift_number(n, name_) AS (
+    CASE
+        WHEN n IS NULL THEN error('VTL Error 2-1-19-24 scalar ' || name_ || ' |end')
+        ELSE CAST(n AS BIGINT)
+    END
+);
+
 -- TimePeriod → end DATE
 CREATE OR REPLACE MACRO vtl_tp_end_date(p vtl_time_period) AS (
     CASE p.period_indicator
@@ -111,17 +142,24 @@ CREATE OR REPLACE MACRO vtl_tp_datediff(a vtl_time_period, b vtl_time_period) AS
 -- OPERATOR: dateadd (Date/TimePeriod + shift + period → Date)
 -- ============================================================================
 
--- A Date has a year from 1800 to 9999 (mirrors VTL error 2-1-19-10)
-CREATE OR REPLACE MACRO vtl_date_in_range(d) AS (
-    CASE
-        WHEN YEAR(d) < 1800 OR YEAR(d) > 9999 THEN
-            error('VTL Error 2-1-19-10: Invalid year ' || CAST(YEAR(d) AS VARCHAR)
-                || ', must be between 1800 and 9999')
-        ELSE d
+-- The year of the date that dateadd gives, worked out also for a shift that leaves the years
+-- a date holds
+CREATE OR REPLACE MACRO vtl_dateadd_year(d, shift BIGINT, period_ind VARCHAR) AS (
+    CASE period_ind
+        WHEN 'D' THEN YEAR(vtl_day_in_cycle(d, shift)) + 400 * vtl_day_cycles(shift)
+        WHEN 'W' THEN YEAR(vtl_day_in_cycle(d, shift * 7)) + 400 * vtl_day_cycles(shift * 7)
+        ELSE (
+            -- The months from the start of the year 0, rounded down to whole years
+            (YEAR(d) * 12 + MONTH(d) - 1 + shift * CASE period_ind
+                WHEN 'M' THEN 1 WHEN 'Q' THEN 3 WHEN 'S' THEN 6 WHEN 'A' THEN 12 END)
+            - (((YEAR(d) * 12 + MONTH(d) - 1 + shift * CASE period_ind
+                WHEN 'M' THEN 1 WHEN 'Q' THEN 3 WHEN 'S' THEN 6 WHEN 'A' THEN 12 END)
+                % 12) + 12) % 12
+        ) // 12
     END
 );
 
-CREATE OR REPLACE MACRO vtl_dateadd_any(d, shift INTEGER, period_ind VARCHAR) AS (
+CREATE OR REPLACE MACRO vtl_dateadd_any(d, shift BIGINT, period_ind VARCHAR) AS (
     CASE period_ind
         WHEN 'D' THEN CAST(d AS TIMESTAMP) + INTERVAL (shift) DAY
         WHEN 'W' THEN CAST(d AS TIMESTAMP) + INTERVAL (shift * 7) DAY
@@ -136,12 +174,17 @@ CREATE OR REPLACE MACRO vtl_dateadd_any(d, shift INTEGER, period_ind VARCHAR) AS
     END
 );
 
-CREATE OR REPLACE MACRO vtl_dateadd(d, shift INTEGER, period_ind VARCHAR) AS (
-    vtl_date_in_range(vtl_dateadd_any(d, shift, period_ind))
+-- A Date has a year from 1800 to 9999: the year is checked before the date is computed, which
+-- a shift that leaves those years by far could not be
+CREATE OR REPLACE MACRO vtl_dateadd(d, shift BIGINT, period_ind VARCHAR) AS (
+    CASE
+        WHEN vtl_year_in_range(vtl_dateadd_year(d, shift, period_ind), 1800) THEN
+            vtl_dateadd_any(d, shift, period_ind)
+    END
 );
 
 CREATE OR REPLACE MACRO vtl_tp_dateadd(
-    p vtl_time_period, shift INTEGER, period_ind VARCHAR
+    p vtl_time_period, shift BIGINT, period_ind VARCHAR
 ) AS (
     vtl_dateadd(vtl_tp_end_date(p), shift, period_ind)
 );
@@ -320,49 +363,47 @@ CREATE OR REPLACE MACRO vtl_period_ind_to_interval(period_ind) AS (
 -- OPERATOR: timeshift (TimePeriod shift by N periods)
 -- ============================================================================
 
--- A period has a year from 1000 to 9999 (mirrors VTL error 2-1-19-10)
-CREATE OR REPLACE MACRO vtl_period_in_range(p vtl_time_period) AS (
+-- A period has a year from 1000 to 9999 (mirrors VTL error 2-1-19-10): the year is checked
+-- before the period is built
+CREATE OR REPLACE MACRO vtl_period_in_range(y, indicator, number) AS (
     CASE
-        WHEN p.year < 1000 OR p.year > 9999 THEN
-            error('VTL Error 2-1-19-10: Invalid year ' || CAST(p.year AS VARCHAR)
-                || ', must be between 1000 and 9999')
-        ELSE vtl_period_to_string(p)
+        WHEN vtl_year_in_range(y, 1000) THEN
+            vtl_period_to_string({'year': CAST(y AS INTEGER),
+                'period_indicator': indicator, 'period_number': number}::vtl_time_period)
     END
 );
 
 -- A year has 52 or 53 weeks and 365 or 366 days, so a week or a day moves on the calendar
-CREATE OR REPLACE MACRO vtl_tp_shift(p vtl_time_period, n INTEGER) AS (
+CREATE OR REPLACE MACRO vtl_tp_shift(p vtl_time_period, n BIGINT) AS (
     CASE p.period_indicator
-        WHEN 'A' THEN
-            vtl_period_in_range({'year': p.year + n,
-                'period_indicator': 'A', 'period_number': 1}::vtl_time_period)
+        WHEN 'A' THEN vtl_period_in_range(p.year + n, 'A', 1)
         WHEN 'W' THEN
-            vtl_period_in_range({
-                'year': ISOYEAR(vtl_tp_start_date(p) + INTERVAL (n * 7) DAY),
-                'period_indicator': 'W',
-                'period_number': WEEK(vtl_tp_start_date(p) + INTERVAL (n * 7) DAY)
-            }::vtl_time_period)
+            vtl_period_in_range(
+                ISOYEAR(vtl_day_in_cycle(vtl_tp_start_date(p), n * 7))
+                    + 400 * vtl_day_cycles(n * 7),
+                'W',
+                WEEK(vtl_day_in_cycle(vtl_tp_start_date(p), n * 7))
+            )
         WHEN 'D' THEN
-            vtl_period_in_range({
-                'year': YEAR(vtl_tp_start_date(p) + INTERVAL (n) DAY),
-                'period_indicator': 'D',
-                'period_number': DAYOFYEAR(vtl_tp_start_date(p) + INTERVAL (n) DAY)
-            }::vtl_time_period)
+            vtl_period_in_range(
+                YEAR(vtl_day_in_cycle(vtl_tp_start_date(p), n)) + 400 * vtl_day_cycles(n),
+                'D',
+                DAYOFYEAR(vtl_day_in_cycle(vtl_tp_start_date(p), n))
+            )
         ELSE
-            vtl_period_in_range({
-                'year': p.year + CASE
+            vtl_period_in_range(
+                p.year + CASE
                     WHEN p.period_number + n <= 0 THEN
                         (p.period_number + n) // vtl_period_limit(p.period_indicator, p.year) - 1
                     ELSE
                         (p.period_number + n - 1) // vtl_period_limit(p.period_indicator, p.year)
                 END,
-                'period_indicator': p.period_indicator,
-                'period_number':
-                    ((p.period_number + n - 1)
-                        % vtl_period_limit(p.period_indicator, p.year)
-                        + vtl_period_limit(p.period_indicator, p.year))
-                    % vtl_period_limit(p.period_indicator, p.year) + 1
-            }::vtl_time_period)
+                p.period_indicator,
+                ((p.period_number + n - 1)
+                    % vtl_period_limit(p.period_indicator, p.year)
+                    + vtl_period_limit(p.period_indicator, p.year))
+                % vtl_period_limit(p.period_indicator, p.year) + 1
+            )
     END
 );
 

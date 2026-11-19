@@ -78,6 +78,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _UDO_CALL,
     _UDO_CHECKS_PREFIX,
     _UDO_DEPTH_PREFIX,
+    _UDO_NAME_PREFIX,
     _UDO_OP,
     StructureVisitor,
 )
@@ -86,7 +87,7 @@ from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, V
 from vtlengine.Operators.Clause import Pivot
 from vtlengine.Operators.HROperators import fills_with_zero
 from vtlengine.Operators.Join import merged_viral_attribute_names
-from vtlengine.Operators.Time import Period_indicator, Time_Aggregation, Time_Shift
+from vtlengine.Operators.Time import Period_indicator, Time_Aggregation
 from vtlengine.Operators.Validation import (
     bind_value_domains,
     error_domains,
@@ -730,7 +731,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         stripped = src.strip().upper()
         if stripped.startswith("("):
             return src
-        if stripped.startswith("SELECT"):
+        if stripped.startswith(("SELECT", "WITH")):
             return f"({src})"
         return f"(SELECT * FROM {src})"
 
@@ -2494,14 +2495,26 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
         return SQLBuilder().select(*cols).from_table(src).build()
 
+    def _scalar_argument_name(self, node: AST.AST) -> str:
+        """The name of the scalar that node gives an operator: the scalar it names, through
+        the parameters of the user defined operators that pass it on, or the parameter that
+        took a value no scalar names, as on the pandas engine (issue #1352)."""
+        if not isinstance(node, AST.VarID):
+            return ""
+        scope = self._find_udo_scope(node.value)
+        if scope is None:
+            return node.value
+        return str(scope.get(f"{_UDO_NAME_PREFIX}{node.value}", node.value))
+
     def visit_BinOp_timeshift(self, node: AST.BinOp) -> str:
         """Visit TIMESHIFT: shift time identifier by N periods."""
         ds_node = node.left
-        shift = self.input_scalars.get(str(getattr(node.right, "value", "")))
-        if isinstance(node.right, AST.VarID) and shift is not None and shift.value is None:
-            # A shift of no periods has no result: the time Identifier cannot be null (#1352)
-            raise Time_Shift.no_value_error(node.right.value)
-        shift_sql = self.visit(node.right)
+        # The shift is computed once for the statement, also for an operand without Data
+        # Points: a shift of no periods has no result, as the time Identifier cannot be null,
+        # so a null raises 2-1-19-24 wherever it comes from (issue #1352)
+        name = self._scalar_argument_name(node.right).replace("'", "''")
+        shift_from = f"(SELECT vtl_shift_number({self.visit(node.right)}, '{name}') AS n) AS shift"
+        shift_sql = "shift.n"
 
         ds = self._get_dataset_structure(ds_node)
         src = self._get_dataset_sql(ds_node)
@@ -2509,22 +2522,24 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         time_id, time_type = self._resolve_time_identifier(ds, "timeshift")
         time_col = quote_name(time_id)
         if time_type == TimePeriod:
-            shifted = f"vtl_tp_shift(vtl_period_parse({time_col}), {shift_sql}) AS {time_col}"
-            cols = []
-            for comp in ds.components.values():
-                col = quote_name(comp.name)
-                cols.append(shifted if comp.name == time_id else col)
-            return SQLBuilder().select(*cols).from_table(src).build()
+            cols = [
+                f"vtl_tp_shift(vtl_period_parse(s.{col}), {shift_sql}) AS {col}"
+                if comp.name == time_id
+                else f"s.{col}"
+                for comp in ds.components.values()
+                for col in [quote_name(comp.name)]
+            ]
+            return f"SELECT {', '.join(cols)} FROM {self._as_subquery(src)} AS s, {shift_from}"
         elif time_type == TimeInterval:
             # The reference time Identifier has to be periodical, so every interval must
             # carry the same duration, as Time_Shift.evaluate requires.
             cols = [
                 (
-                    f"vtl_interval_shift({quote_name(comp.name)}, {shift_sql}, freq.step) "
+                    f"vtl_interval_shift(s.{quote_name(comp.name)}, {shift_sql}, freq.step) "
                     f"AS {quote_name(comp.name)}"
                 )
                 if comp.name == time_id
-                else quote_name(comp.name)
+                else f"s.{quote_name(comp.name)}"
                 for comp in ds.components.values()
             ]
             freq_sql = (
@@ -2534,7 +2549,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 f"FROM (SELECT {time_col} AS iv FROM {src} WHERE {time_col} IS NOT NULL)"
             )
             return f"""SELECT {", ".join(cols)}
-FROM {src}, (
+FROM {self._as_subquery(src)} AS s, {shift_from}, (
     {freq_sql}
 ) AS freq"""
         else:
@@ -2566,7 +2581,7 @@ FROM {src}, (
                 "'VTL 2-1-19-23: timeshift needs a single time series frequency') "
                 "ELSE COALESCE(MIN(period_ind), 'A') END AS period_ind FROM freq_series",
             )
-            return cte.select(f"SELECT {', '.join(cols)} FROM source s, freq")
+            return cte.select(f"SELECT {', '.join(cols)} FROM source s, {shift_from}, freq")
 
     @staticmethod
     def _build_timeshift_date_frequency_subquery(
@@ -2634,7 +2649,7 @@ FROM (
         operand_type = self._get_node_type(operand_node)
 
         # Typed, so that a null scalar still binds the macro (issue #1192)
-        shift_sql = f"CAST({self.visit(node.params[0])} AS INTEGER)" if node.params else "0"
+        shift_sql = f"CAST({self.visit(node.params[0])} AS BIGINT)" if node.params else "0"
         period_sql = (
             f"CAST({self.visit(node.params[1])} AS VARCHAR)" if len(node.params) > 1 else "'D'"
         )

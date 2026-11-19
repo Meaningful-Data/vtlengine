@@ -60,6 +60,9 @@ _UDO_CHECKS_PREFIX = "__checks__"
 _UDO_CALL = "__call__"
 # Key of a UDO scope with the name of its operator
 _UDO_OP = "__op__"
+# Key of a UDO scope with the name of the scalar a parameter takes: the scalar the argument
+# names, or the parameter that took a value no scalar names
+_UDO_NAME_PREFIX = "__name__"
 
 # Role encoded in UnaryOp.op for calc clauses.
 _CALC_ROLE_BY_TOKEN: Dict[str, Role] = {
@@ -868,10 +871,16 @@ class StructureVisitor(ASTTemplate):
                 if scope is None:
                     bindings[param_name] = argument
                     bindings[f"{_UDO_DEPTH_PREFIX}{param_name}"] = depth
+                    bindings[f"{_UDO_NAME_PREFIX}{param_name}"] = (
+                        argument.value if isinstance(argument, AST.VarID) else param_name
+                    )
                 else:
                     bindings[param_name] = scope[argument.value]
                     bindings[f"{_UDO_DEPTH_PREFIX}{param_name}"] = scope.get(
                         f"{_UDO_DEPTH_PREFIX}{argument.value}"
+                    )
+                    bindings[f"{_UDO_NAME_PREFIX}{param_name}"] = scope.get(
+                        f"{_UDO_NAME_PREFIX}{argument.value}", argument.value
                     )
                     inherited = scope.get(f"{_UDO_CHECKS_PREFIX}{argument.value}", [])
             elif param_info.get("default") is not None:
