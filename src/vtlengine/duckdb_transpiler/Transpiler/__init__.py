@@ -4667,7 +4667,8 @@ FROM (
         table_src = self._get_dataset_sql(node.dataset)
 
         if hr_info["signature_type"] == "valuedomain" and node.rule_component is not None:
-            component = self._get_node_value(node.rule_component)
+            # A component parameter stands for its argument (issue #1355)
+            component = self._resolve_udo_name(self._get_node_value(node.rule_component))
         else:
             component = hr_info["signature"]
 

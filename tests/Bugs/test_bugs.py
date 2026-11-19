@@ -11419,3 +11419,46 @@ class NameResolutionBugs(BugHelper):
                 "[value > 0] does not allow."
             ),
         )
+
+    def test_GH_1355_5(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , r component ) returns dataset is
+                        hierarchy ( d , HR_1 rule r all ) end operator;
+                    DS_r <- f ( DS_5 , Id_2 );
+        Description: The component parameter r, as the rule component of a value domain
+                     hierarchical ruleset, stands for its argument Id_2. The DuckDB engine
+                     read the column r, which does not exist.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_5", number_inputs=1, references_names=["1"], vd_names=self.vd_1355
+        )
+
+    def test_GH_1355_6(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , r component ) returns dataset is
+                        check_hierarchy ( d , HR_1 rule r all ) end operator;
+                    DS_r <- f ( DS_5 , Id_2 );
+        Description: As test_GH_1355_5, for check_hierarchy: the result is the one of
+                     test_GH_1355_7. The DuckDB engine read the column r, which does not exist.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_6", number_inputs=1, references_names=["1"], vd_names=self.vd_1355
+        )
+
+    def test_GH_1355_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_hierarchy ( DS_5 , HR_1 rule Id_2 all );
+        Description: Control: the same check_hierarchy outside an operator.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_7", number_inputs=1, references_names=["1"], vd_names=self.vd_1355
+        )
