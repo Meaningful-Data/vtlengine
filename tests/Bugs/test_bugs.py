@@ -12192,3 +12192,17 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_38", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1352_40(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( nvl ( Me_1 , SC_1 ) , string ) ];
+        Description: The nvl of the Time_Period Me_1 and the Time_Period Scalar SC_1 is a
+                     Time_Period, whose text is 2020Q1, as for cast ( Me_1 , string ). The DuckDB
+                     engine wrote the internal text 2020-Q1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1352_40", number_inputs=1, references_names=["1"], scalars={"SC_1": "2020Q2"}
+        )
