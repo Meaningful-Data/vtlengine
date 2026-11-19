@@ -8,7 +8,7 @@ from vtlengine.AST import SetType, SignatureConstraints, TypeConstraint, ValueDo
 from vtlengine.AST.ASTString import _format_component_type, _format_name, _format_type
 from vtlengine.DataTypes import check_unary_implicit_promotion
 from vtlengine.Exceptions import InputValidationException, SemanticError
-from vtlengine.Model import Component, Dataset, Scalar, ValueDomain
+from vtlengine.Model import Component, Dataset, ValueDomain
 
 
 def _value_domain(
@@ -169,7 +169,8 @@ def udo_result_on_value_domains(
 ) -> Any:
     """The result of a user defined operator, whose values are values of the value domains its
     returns names, defined on them: the scalar or Component result, or the components that the
-    dataset type names on one, which take the basic type of the value domain (issue #1351)."""
+    dataset type names on one, which take the basic type of the value domain (issue #1351). The
+    value of a scalar is cast to that type where the call is computed."""
     if isinstance(result, Dataset):
         domains = {
             name: constraint.value_domain
@@ -189,6 +190,4 @@ def udo_result_on_value_domains(
     domain = constraint.value_domain
     result = copy(result)
     result.data_type, result.value_domain = domain.type, domain
-    if isinstance(result, Scalar):
-        result.value = domain.type.cast(result.value)
     return result
