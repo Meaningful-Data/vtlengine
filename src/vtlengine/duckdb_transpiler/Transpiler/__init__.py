@@ -3129,9 +3129,6 @@ FROM (
         ds, table_src = resolved
 
         renames: Dict[str, str] = {}
-        # Names written alias#comp of a Component the join does not qualify: they name that
-        # Component only, not a qualified one of another operand (issue #1355)
-        unqualified: Set[str] = set()
         for child in node.children:
             if isinstance(child, AST.RenameNode):
                 old = self._resolve_membership_name(child.old_name)
@@ -3141,14 +3138,15 @@ FROM (
                         self._consumed_join_aliases.add(old)
                     else:
                         old = old.split("#", 1)[1]
-                        unqualified.add(old)
                 renames[old] = new
 
         cols: List[str] = []
         for name in ds.components:
             matched_new = renames.get(name)
-            if matched_new is None and "#" in name and name.split("#", 1)[1] not in unqualified:
-                unqual = name.split("#", 1)[1]
+            # A name that a Component of the join has names that Component only, not a
+            # qualified one of another operand (issue #1355)
+            unqual = name.split("#", 1)[1] if "#" in name else name
+            if matched_new is None and unqual != name and unqual not in ds.components:
                 matched_new = renames.get(unqual)
             if matched_new is not None:
                 cols.append(f"{quote_name(name)} AS {quote_name(matched_new)}")

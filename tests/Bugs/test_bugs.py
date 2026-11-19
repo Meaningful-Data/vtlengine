@@ -12047,6 +12047,18 @@ class NameResolutionBugs(BugHelper):
         """
         self.BaseTest(code="GH_1355_11c", number_inputs=2, references_names=["1"])
 
+    def test_GH_1355_11d(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B rename Id_2 to Me_3 );
+        Description: Extra of test_GH_1355_11: Id_2 written alone is the Identifier Id_2 of
+                     the join, so only it is renamed, and the Measure Id_2 of DS_2 keeps its
+                     own name. The DuckDB engine renamed both to Me_3 and lost the Measure.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_11d", number_inputs=2, references_names=["1"])
+
     def test_GH_1355_12(self):
         """
         Status: OK
