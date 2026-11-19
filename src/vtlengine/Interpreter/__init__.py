@@ -1070,6 +1070,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Analytic(self, node: AST.Analytic) -> Any:  # noqa: C901
         if self.is_from_having:
             raise SemanticError("1-1-3-1", op=node.op)
+        node = self._resolve_window_names(node)
         component_name = None
         analytic_component_name: Optional[str] = None
         operand_id_collision = False
@@ -1284,6 +1285,40 @@ class InterpreterAnalyzer(ASTTemplate):
             nullable=result.components[measure_name].nullable,
         )
         return self.merge_then_else_datasets(result_comp)
+
+    def _resolve_window_names(self, node: AST.Analytic) -> AST.Analytic:
+        """The analytic, with the Components of its partition by and order by named by their
+        qualified name, alias#comp, given as the names of the Components they refer to
+        (issue #1355)."""
+        names = (node.partition_by or []) + [o.component for o in node.order_by or []]
+        if not any("#" in name for name in names):
+            return node
+        node = copy(node)
+        if node.partition_by is not None:
+            node.partition_by = [self._component_name(name) for name in node.partition_by]
+        if node.order_by is not None:
+            node.order_by = [copy(o) for o in node.order_by]
+            for order_by in node.order_by:
+                order_by.component = self._component_name(order_by.component)
+        return node
+
+    def _component_name(self, name: str) -> str:
+        """The name of the Component that a name in a clause refers to. In a join, alias#comp
+        is the Component comp of the operand alias, as in an expression of the join; out of a
+        join it is a membership, which a clause does not allow (issue #1355)."""
+        if "#" not in name:
+            return name
+        dataset_name, comp_name = name.split("#", 1)
+        if not self.is_from_join or self.regular_aggregation_dataset is None:
+            raise SemanticError("1-1-6-6", dataset_name=dataset_name, comp_name=comp_name)
+        position = {"line_start": 0, "column_start": 0, "line_stop": 0, "column_stop": 0}
+        membership = AST.BinOp(
+            left=AST.VarID(value=dataset_name, **position),
+            op=MEMBERSHIP,
+            right=AST.VarID(value=comp_name, **position),
+            **position,
+        )
+        return self.visit(membership).name
 
     def _integer_scalar(self, op: str, node: AST.VarID, param_type: str) -> Scalar:
         """The Scalar named as the offset of lag or lead or as a bound of a window: an Integer

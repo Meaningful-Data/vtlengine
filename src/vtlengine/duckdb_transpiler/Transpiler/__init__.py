@@ -3566,7 +3566,7 @@ FROM (
             over_parts.append(f"PARTITION BY {partition_cols}")
         if node.order_by:
             order_cols = ", ".join(
-                f"{quote_name(self._resolve_udo_name(o.component))} {o.order}"
+                f"{quote_name(self._clause_component_name(o.component))} {o.order}"
                 for o in node.order_by
             )
             over_parts.append(f"ORDER BY {order_cols}")
@@ -3574,7 +3574,7 @@ FROM (
             order_is_date = False
             if node.order_by and self._current_dataset:
                 comp = self._current_dataset.components.get(
-                    self._resolve_udo_name(node.order_by[0].component)
+                    self._clause_component_name(node.order_by[0].component)
                 )
                 order_is_date = comp is not None and comp.data_type == Date
             window_sql = self.visit_Windowing(node.window, order_is_date=order_is_date)
@@ -3585,7 +3585,9 @@ FROM (
 
     def _resolve_partition_cols(self, node: AST.Analytic) -> List[str]:
         """Resolve the partition column list applying VTL 2.2 EXCEPT semantics."""
-        listed = [self._resolve_udo_name(p) for p in node.partition_by] if node.partition_by else []
+        listed = (
+            [self._clause_component_name(p) for p in node.partition_by] if node.partition_by else []
+        )
         if node.partition_op == "except all":
             return []
         if node.partition_op == "except":
@@ -3593,9 +3595,20 @@ FROM (
             excluded = set(listed)
             return [i for i in id_names if i not in excluded]
         if node.partition_by is None and node.order_by:
-            ordered = {self._resolve_udo_name(o.component) for o in node.order_by}
+            ordered = {self._clause_component_name(o.component) for o in node.order_by}
             return [i for i in self._operand_identifier_names(node) if i not in ordered]
         return listed
+
+    def _clause_component_name(self, name: str) -> str:
+        """The column of the clause Data Set that a name of partition by or order by refers
+        to. A Component of a join named by its qualified name, alias#comp, is comp, unless the
+        joined Data Sets share it and the column keeps the qualified name (issue #1355)."""
+        resolved = self._resolve_membership_name(name)
+        if "#" not in resolved or (
+            self._current_dataset is not None and resolved in self._current_dataset.components
+        ):
+            return resolved
+        return resolved.split("#", 1)[1]
 
     def _operand_identifier_names(self, node: AST.Analytic) -> List[str]:
         """Best-effort identifier list for the analytic operand."""

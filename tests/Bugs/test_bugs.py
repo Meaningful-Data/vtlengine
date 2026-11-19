@@ -12036,3 +12036,63 @@ class NameResolutionBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1355_14d", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_3 as B
+                        calc Me_3 := sum ( B#Me_2 over ( partition by A#Id_2 ) ) );
+        Description: In a join, the qualified Identifier A#Id_2 in partition by is Id_2 of
+                     the operand A, as partition by Id_2. Both engines and the semantic
+                     analysis raised an internal AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_14", number_inputs=2, references_names=["1"])
+        self.BaseTest(
+            code="GH_1355_14", number_inputs=2, references_names=["1"], only_semantic=True
+        )
+
+    def test_GH_1355_14b(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_8 as a , DS_9 as b
+                        calc Me_9 := rank ( over ( order by a#Dt ) ) );
+        Description: Extra of test_GH_1355_14: in a join, the qualified Identifier a#Dt in
+                     order by is the Date Dt of the operand a, as order by Dt. Both engines
+                     raised an internal AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_14b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_14c(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_8 as a , DS_9 as b
+                        calc Me_9 := count ( a#Me_1 over ( partition by a#Id_1
+                            order by a#Me_2 ) ) );
+        Description: Extra of test_GH_1355_14: in a join, a qualified Measure is the operand
+                     of an analytic and the component of its order by. Both engines raised an
+                     internal AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_14c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := rank ( over ( order by DS_1#Me_1 ) ) ];
+        Description: Out of a join, DS_1#Me_1 is a membership, which a clause does not allow
+                     in order by, as in DS_1 [ calc Me_2 := DS_1#Me_1 ]. Both engines and the
+                     semantic analysis raised an internal AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_15",
+            number_inputs=1,
+            exception_code="1-1-6-6",
+            exception_message="Membership is not allowed inside a clause, found DS_1#Me_1.",
+        )
