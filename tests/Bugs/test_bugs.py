@@ -11488,3 +11488,47 @@ class NameResolutionBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1355_9", number_inputs=2, references_names=["1", "2"])
+
+    def test_GH_1355_20(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , x number ) returns dataset is
+                        d [ aggr Me_2 := sum ( Me_1 * x ) group by Id_1 ] end operator;
+                    DS_r <- f ( DS_1 , 2.5 );
+        Description: The scalar parameter x of an operator whose body has an aggr clause is
+                     2.5 in the aggregation, as in DS_1 [ aggr Me_2 := sum ( Me_1 * 2.5 ) group
+                     by Id_1 ]. Both engines and the semantic analysis raised an internal
+                     AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_20", number_inputs=1, references_names=["1"])
+        self.BaseTest(
+            code="GH_1355_20", number_inputs=1, references_names=["1"], only_semantic=True
+        )
+
+    def test_GH_1355_21(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , x integer ) returns dataset is
+                        d [ aggr Me_2 := sum ( Me_1 ) group by Id_1 ] end operator;
+                    DS_r <- f ( DS_1 , 2 );
+        Description: The aggr clause gives the result of test_GH_1355_22 also when the
+                     operator has a scalar parameter that it does not read. Both engines raised
+                     an internal AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_21", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_22(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset ) returns dataset is
+                        d [ aggr Me_2 := sum ( Me_1 ) group by Id_1 ] end operator;
+                    DS_r <- f ( DS_1 );
+        Description: Control: the aggr clause in an operator without a scalar parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_22", number_inputs=1, references_names=["1"])

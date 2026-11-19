@@ -1572,7 +1572,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 data = operand.data[measure.name] if operand.data is not None else None
                 # Getting role from encoded information
                 # (handling also UDO params as it is present in the value of the mapping)
-                if self.udo_params is not None and operand.name in self.udo_params[-1].values():
+                # (a scalar parameter is bound to a Scalar, not to a component name: issue #1355)
+                if self.udo_params is not None and any(
+                    isinstance(v, str) and v == operand.name for v in self.udo_params[-1].values()
+                ):
                     role = None
                     for k, v in self.udo_params[-1].items():
                         if isinstance(v, str) and v == operand.name:
