@@ -5797,6 +5797,31 @@ FROM (
             return f"COALESCE({', '.join(refs)})"
         return f"{comp_to_alias.get(key, joined[0]['sql_alias'])}.{quote_name(key)}"
 
+    def _time_join_keys(self, op: str, clause_info: List[Dict[str, Any]]) -> None:
+        """A Date or a Time_Period Identifier of a join operand that another operand has as a
+        Time is cast to Time in the operand, so that the keys match as Time values (issue
+        #1352). A cross join matches no keys."""
+        if op == tokens.CROSS_JOIN:
+            return
+        time_ids = {
+            name
+            for info in clause_info
+            for name, comp in info["ds"].components.items()
+            if comp.role == Role.IDENTIFIER and comp.data_type is TimeInterval
+        }
+        for info in clause_info:
+            casts = [
+                _CASTS_TO_TEXT[comp.data_type.__name__.lower(), "time"].format(quote_name(name))
+                + f" AS {quote_name(name)}"
+                for name, comp in info["ds"].components.items()
+                if name in time_ids and comp.data_type in (Date, TimePeriod)
+            ]
+            if casts:
+                info["table_src"] = (
+                    f"(SELECT * REPLACE ({', '.join(casts)}) "
+                    f"FROM {self._as_subquery(info['table_src'])})"
+                )
+
     def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]
         """Visit a join operation."""
         clause_info: List[Dict[str, Any]] = []
@@ -5821,6 +5846,7 @@ FROM (
             )
 
         is_cross_join = node.op == tokens.CROSS_JOIN
+        self._time_join_keys(node.op, clause_info)
         explicit_using = list(node.using) if node.using else None
         keys_only = explicit_using is not None and node.op in (
             tokens.LEFT_JOIN,
