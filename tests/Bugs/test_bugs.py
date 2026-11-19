@@ -11629,3 +11629,15 @@ class StructureDataBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1354_14b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ drop Me_1 ] [ unpivot Id_3 , Me_9 ];
+        Description: unpivot of a Data Set without Measures gives no data points, with the
+                     new Identifier Id_3 and Measure Me_9. The DuckDB engine returned the data
+                     points of the operand without Id_3 and Me_9.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_15", number_inputs=1, references_names=["1"])

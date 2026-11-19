@@ -3361,7 +3361,15 @@ FROM (
         # Viral attributes are copied (replicated) across the unpivoted rows below; no rule
         # is executed on this row-preserving reshape (issue #906).
         if not measure_names:
-            return f"SELECT * FROM {table_src}"
+            # No Measure to unpivot: no data points, with the new Identifier and the new
+            # Measure, a String as the semantic analysis gives it (issue #1354)
+            empty = [
+                *map(quote_name, id_names),
+                f"CAST(NULL AS VARCHAR) AS {quote_name(new_id_name)}",
+                f"CAST(NULL AS VARCHAR) AS {quote_name(new_measure_name)}",
+                *map(quote_name, viral_names),
+            ]
+            return f"SELECT {', '.join(empty)} FROM {table_src} WHERE FALSE"
 
         parts: List[str] = []
         for measure in measure_names:
