@@ -55,13 +55,14 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     NUMBER_TOLERANCE_OPS,
     ROUNDED_NUMERIC_OPS,
     TIME_CHECK_FUNCTION,
-    TIME_PERIOD_CHECK_FUNCTION,
+    TIME_PERIOD_CAST_FUNCTION,
     get_duckdb_type,
     is_number_comparison,
     is_re2_incompatible,
     number_tolerance_sql,
     numeric_rounding_sql,
     registry,
+    text_to_period,
 )
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import (
     CTEBuilder,
@@ -78,7 +79,6 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _UDO_DEPTH_PREFIX,
     _UDO_OP,
     StructureVisitor,
-    _try_normalize_time_period,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
@@ -2874,16 +2874,14 @@ FROM (
             # the input is a compile-time constant (e.g. cast("2022Q1", time_period)).
             literal = _match_plain_sql_string_literal(expr)
             if literal is not None:
-                canonical = _try_normalize_time_period(literal)
+                canonical = text_to_period(literal)
                 if canonical is not None:
                     return f"'{canonical.replace(chr(39), chr(39) * 2)}'"
             text = f"CAST({expr} AS VARCHAR)"
             if source_lower == "string":
-                # Text that is no time period raises 2-1-5-1, as on the pandas engine
-                text = (
-                    f"CASE WHEN NOT {TIME_PERIOD_CHECK_FUNCTION}({text}) "
-                    f"THEN error('VTL 2-1-5-1 Time_Period ' || {text}) ELSE {text} END"
-                )
+                # The text is read as the pandas engine casts it, a start/end interval too, and
+                # text that is no time period raises 2-1-5-1 (issues #1192 and #1352)
+                return f"{TIME_PERIOD_CAST_FUNCTION}({text})"
             return f"vtl_period_normalize({text})"
 
         if target_type_str == "Date":
