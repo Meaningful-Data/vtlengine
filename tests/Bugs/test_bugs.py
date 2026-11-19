@@ -12869,3 +12869,44 @@ class TimeValueBugs(BugHelper):
             "no value.",
             scalars={"SC_2": None},
         )
+
+    def test_GH_1352_21(self):
+        """
+        Status: OK
+        Expression: DS_r <- union ( DS_1 , timeshift ( DS_1 , 10 ) );
+        Description: timeshift of a Date Identifier gives Dates, written as the bare date, so
+                     union writes 2020-11-30 and 2020-12-29. The pandas engine wrote
+                     2020-11-30T00:00:00 and 2020-12-29T00:00:00.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_21", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_22(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( timeshift ( DS_1 , 1 ) , 1 );
+        Description: timeshift reads the Dates that another timeshift gives, so 2020-01-31 and
+                     2020-02-29 move two months to 2020-03-29 and 2020-04-29. The pandas engine
+                     raised a raw TypeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_22", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_30(self):
+        """
+        Status: OK
+        Expression: SC_r <- dateadd ( cast ( "2020-02-29" , date ) , 8000 , "A" );
+        Description: dateadd of 2020-02-29 by 8000 years gives the year 10020, which no Date
+                     has, so it raises 2-1-19-10. The pandas engine raised a raw ValueError and
+                     the DuckDB engine a raw NotImplementedError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_30",
+            number_inputs=1,
+            exception_code="2-1-19-10",
+            exception_message="Invalid year 10020, must be between 1800 and 9999.",
+        )

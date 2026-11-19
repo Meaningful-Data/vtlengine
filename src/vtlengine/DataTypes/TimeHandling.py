@@ -16,6 +16,25 @@ PERIOD_IND_MAPPING_REVERSE = {6: "A", 5: "S", 4: "Q", 3: "M", 2: "W", 1: "D"}
 PERIOD_INDICATORS = ["A", "S", "Q", "M", "W", "D"]
 
 
+# The proleptic Gregorian calendar, and its ISO weeks, repeat every 400 years of 146097 days
+_DAYS_IN_400_YEARS = 146097
+_ORDINAL_2000 = date(2000, 1, 1).toordinal()
+
+
+def date_of_ordinal(ordinal: int) -> tuple[date, int]:
+    """The day ``ordinal`` of the proleptic Gregorian calendar, also out of the years 1 to 9999
+    that a date holds: the date on the same day of the calendar 400 times k years apart, and
+    the 400 times k years to add to its year or to its ISO year (issue #1352)."""
+    cycles = (ordinal - _ORDINAL_2000) // _DAYS_IN_400_YEARS
+    return date.fromordinal(ordinal - cycles * _DAYS_IN_400_YEARS), cycles * 400
+
+
+def check_date_year(year: int) -> None:
+    """A Date has a year from 1800 to 9999, the years its loaders read (issue #1352)."""
+    if year < 1800 or year > 9999:
+        raise RunTimeError("2-1-19-10", year=year, min_year=1800)
+
+
 class TimePeriodConfig:
     _representation = "vtl"  # Default representation
 
@@ -196,7 +215,7 @@ class TimePeriodHandler:
     def _check_year(year: int) -> None:
         # A period has a year of four digits, the only ones its texts write (issue #1352)
         if year < 1000 or year > 9999:
-            raise RunTimeError("2-1-19-10", year=year)
+            raise RunTimeError("2-1-19-10", year=year, min_year=1000)
 
     @property
     def year(self) -> int:

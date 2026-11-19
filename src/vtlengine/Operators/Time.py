@@ -1,7 +1,8 @@
+import calendar
 import re
 from copy import copy
 from datetime import date, datetime, timedelta
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union, cast
 
 import pandas as pd
 from dateutil.relativedelta import relativedelta  # type: ignore[import-untyped]
@@ -40,10 +41,11 @@ from vtlengine.DataTypes._time_checking import _has_time_component, parse_date_v
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
     TimePeriodHandler,
+    check_date_year,
+    date_of_ordinal,
     date_to_period,
     generate_period_range,
     max_periods_in_year,
-    period_to_date,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
@@ -703,7 +705,12 @@ class Time_Shift(Binary):
         if data_type == Date:
             parsed = result.data[cls.time_id].map(cls.parse_date, na_action="ignore")
             freq = cls._series_frequency(parsed, result.data)
-            result.data[cls.time_id] = cls.shift_dates(result.data[cls.time_id], shift_value, freq)
+            # The Dates move as dateadd moves them, which writes a Date as the loaders do and
+            # keeps it in the years a Date has (issue #1352)
+            period = "A" if freq == "Y" else freq
+            result.data[cls.time_id] = result.data[cls.time_id].map(
+                lambda x: Date_Add.py_op(x, shift_value, period), na_action="ignore"
+            )
         elif data_type == TimeInterval:
             # An empty operand carries no interval to read a frequency from and
             # nothing to shift (issue #1034).
@@ -1289,28 +1296,37 @@ class Date_Add(Parametrized):
         if shift is None or period is None:
             # A null shift or period gives null, as any null operand (issue #1192)
             return None
-        has_time = _has_time_component(date_str)
+        clock = None
         if is_tp:
             tp_value = TimePeriodHandler(date_str)
-            dt_val = period_to_date(
-                tp_value.year, tp_value.period_indicator, tp_value.period_number
-            )
+            if tp_value.period_indicator == "W":
+                # The last day of a week of 9999 may be in the year 10000, which no date holds
+                ordinal = cast(date, tp_value.start_date(as_date=True)).toordinal() + 6
+            else:
+                ordinal = cast(date, tp_value.end_date(as_date=True)).toordinal()
         else:
             dt_val = datetime.fromisoformat(date_str)
+            ordinal = dt_val.toordinal()
+            clock = dt_val.timetz() if _has_time_component(date_str) else None
 
+        # The result is worked out on the calendar, also out of the years a date holds, and is
+        # a Date only in the years a Date has (issue #1352)
         if period in ["D", "W"]:
-            days_shift = shift * (7 if period == "W" else 1)
-            result = dt_val + timedelta(days=days_shift)
+            day, years = date_of_ordinal(ordinal + shift * (7 if period == "W" else 1))
+            year, month, day_number = day.year + years, day.month, day.day
+            check_date_year(year)
         else:
-            month_shift = {"M": 1, "Q": 3, "S": 6, "A": 12}[period] * shift
-            new_year = dt_val.year + (dt_val.month - 1 + month_shift) // 12
-            new_month = (dt_val.month - 1 + month_shift) % 12 + 1
-            last_day = (datetime(new_year, new_month % 12 + 1, 1) - timedelta(days=1)).day
-            result = dt_val.replace(year=new_year, month=new_month, day=min(dt_val.day, last_day))
-
-        if has_time and isinstance(result, datetime):
-            return result.isoformat(sep=" ")
-        return result.strftime("%Y-%m-%d")
+            day, years = date_of_ordinal(ordinal)
+            months = (day.year + years) * 12 + day.month - 1
+            months += {"M": 1, "Q": 3, "S": 6, "A": 12}[period] * shift
+            year, month = months // 12, months % 12 + 1
+            check_date_year(year)
+            # The day is kept, or the last day of a shorter month taken
+            day_number = min(day.day, calendar.monthrange(year, month)[1])
+        result = date(year, month, day_number)
+        if clock is not None:
+            return datetime.combine(result, clock).isoformat(sep=" ")
+        return result.isoformat()
 
 
 class SimpleUnaryTime(Operators.Unary):

@@ -223,10 +223,12 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     if macro_error is not None:
         return macro_error
 
-    # timeshift: a period of a year out of 1000-9999 (check before 2-1-19-1 prefix match)
+    # timeshift, dateadd: a period or a date of a year it cannot have (check before the
+    # 2-1-19-1 prefix match)
     if "vtl error 2-1-19-10" in msg_lower:
-        match = re.search(r"Invalid year (-?\d+)", msg)
-        return RunTimeError("2-1-19-10", year=match.group(1) if match else "unknown")
+        match = re.search(r"Invalid year (-?\d+), must be between (\d+)", msg)
+        year, min_year = match.groups() if match else ("unknown", "1000")
+        return RunTimeError("2-1-19-10", year=year, min_year=min_year)
 
     # time_agg: period indicator too coarse for target
     if "vtl error 2-1-19-1" in msg_lower:

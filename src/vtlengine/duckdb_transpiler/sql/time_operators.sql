@@ -109,7 +109,17 @@ CREATE OR REPLACE MACRO vtl_tp_datediff(a vtl_time_period, b vtl_time_period) AS
 -- OPERATOR: dateadd (Date/TimePeriod + shift + period → Date)
 -- ============================================================================
 
-CREATE OR REPLACE MACRO vtl_dateadd(d, shift INTEGER, period_ind VARCHAR) AS (
+-- A Date has a year from 1800 to 9999 (mirrors VTL error 2-1-19-10)
+CREATE OR REPLACE MACRO vtl_date_in_range(d) AS (
+    CASE
+        WHEN YEAR(d) < 1800 OR YEAR(d) > 9999 THEN
+            error('VTL Error 2-1-19-10: Invalid year ' || CAST(YEAR(d) AS VARCHAR)
+                || ', must be between 1800 and 9999')
+        ELSE d
+    END
+);
+
+CREATE OR REPLACE MACRO vtl_dateadd_any(d, shift INTEGER, period_ind VARCHAR) AS (
     CASE period_ind
         WHEN 'D' THEN CAST(d AS TIMESTAMP) + INTERVAL (shift) DAY
         WHEN 'W' THEN CAST(d AS TIMESTAMP) + INTERVAL (shift * 7) DAY
@@ -122,6 +132,10 @@ CREATE OR REPLACE MACRO vtl_dateadd(d, shift INTEGER, period_ind VARCHAR) AS (
                   ELSE error('VTL 2-1-19-2 invalid period ' || period_ind)
              END
     END
+);
+
+CREATE OR REPLACE MACRO vtl_dateadd(d, shift INTEGER, period_ind VARCHAR) AS (
+    vtl_date_in_range(vtl_dateadd_any(d, shift, period_ind))
 );
 
 CREATE OR REPLACE MACRO vtl_tp_dateadd(
@@ -307,7 +321,8 @@ CREATE OR REPLACE MACRO vtl_period_ind_to_interval(period_ind) AS (
 CREATE OR REPLACE MACRO vtl_period_in_range(p vtl_time_period) AS (
     CASE
         WHEN p.year < 1000 OR p.year > 9999 THEN
-            error('VTL Error 2-1-19-10: Invalid year ' || CAST(p.year AS VARCHAR))
+            error('VTL Error 2-1-19-10: Invalid year ' || CAST(p.year AS VARCHAR)
+                || ', must be between 1000 and 9999')
         ELSE vtl_period_to_string(p)
     END
 );

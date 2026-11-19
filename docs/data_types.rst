@@ -200,6 +200,10 @@ Date
     * - **Output dtype**
       - ``string[pyarrow]``
 
+``dateadd`` and ``timeshift`` give a Date of the years 1800–9999
+only, the years a Date is read in: a result out of them raises
+``2-1-19-10``, in both execution engines.
+
 Date is a **subtype of Time** — anywhere a Time value is
 expected, a Date is accepted automatically.
 
