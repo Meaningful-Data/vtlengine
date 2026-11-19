@@ -12072,3 +12072,17 @@ class StructureDataBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1354_25", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_25b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ filter Id_1 = 3 ]
+                        [ calc Me_6 := stddev_samp ( Me_1 over ( partition by Id_1 ) ) ];
+        Description: Extra of case 25: a window of a single Data Point has no sample standard
+                     deviation, so the result is nullable, also over a Measure that is not:
+                     null. The pandas engine raised 2-1-1-16, and the DuckDB engine returned a
+                     null in a Measure declared non-nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_25b", number_inputs=1, references_names=["1"])

@@ -177,6 +177,8 @@ class Aggregation(Operator.Unary):
                 comp.value_domain = None
                 if cls.return_type is not None:
                     comp.data_type = cls.return_type
+                # A single Data Point has no sample statistic (issue #1354)
+                comp.nullable = comp.nullable or cls.op in (STDDEV_SAMP, VAR_SAMP)
         if cls.op == COUNT:
             # count reports the number of Data Points, so whatever the Measures of the
             # operand, the result holds the single Integer Measure int_var (issue #1049).

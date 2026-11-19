@@ -243,7 +243,10 @@ class Analytic(Operator.Unary):
             if name in result_components and result_components[name].value_domain is not None:
                 result_components[name] = copy(result_components[name])
                 result_components[name].value_domain = None
-            if name in result_components and cls.op != COUNT and cls._may_be_empty(window):
+            # A window of a single Data Point has no sample statistic (issue #1354)
+            if name in result_components and (
+                cls.op in (STDDEV_SAMP, VAR_SAMP) or (cls.op != COUNT and cls._may_be_empty(window))
+            ):
                 result_components[name] = cls._as_nullable(result_components[name])
         dataset_name = VirtualCounter._new_ds_name()
         # Analytic combines the data points within each partition, so the surviving viral
