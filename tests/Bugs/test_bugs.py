@@ -11839,6 +11839,19 @@ class TimeValueBugs(BugHelper):
             "Time_Period.",
         )
 
+    def test_GH_1352_12b(self):
+        """
+        Status: OK
+        Expression: DS_r <- full_join ( DS_1 as a , DS_2 as b keep a#Me_1 );
+        Description: Extra of case 12: the Date Identifier Id_1 of DS_1 is cast to the Time
+                     of the Identifier of DS_2, so 2020-01-01 matches 2020-01-01/2020-01-01.
+                     The DuckDB engine raised a raw BinderException and the pandas engine
+                     matched nothing, writing the Date and the Time texts as four Identifiers.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_12b", number_inputs=2, references_names=["1"])
+
     def test_GH_1352_41(self):
         """
         Status: OK

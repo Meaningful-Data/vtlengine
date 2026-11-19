@@ -11,6 +11,7 @@ from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
     Integer,
+    TimeInterval,
     binary_implicit_promotion,
     check_unary_implicit_promotion,
 )
@@ -19,6 +20,7 @@ from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Operators import (
     Operator,
     _id_type_promotion_join_keys,
+    _is_cast_to_time,
     share_value_domains,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -343,6 +345,7 @@ class Join(Operator):
                     comp.role != Role.IDENTIFIER or cls.how == "cross" or keys_only
                 ):
                     op.data = op.data.rename(columns={column: op.name + "#" + column})
+            cls._time_keys(op, result)
         result.data = copy(cls.reference_dataset.data)
 
         join_keys = using if using else result.get_identifiers_names()
@@ -383,6 +386,25 @@ class Join(Operator):
         if result.data is not None:
             result.data.reset_index(drop=True, inplace=True)
         return result
+
+    @classmethod
+    def _time_keys(cls, operand: Dataset, result: Dataset) -> None:
+        """The Date or Time_Period Identifiers of a join operand that are Time in the result,
+        as the key of another operand is, are cast to Time, so that the keys match as Time
+        values (issue #1352). The operand is a copy: its data is replaced, not changed."""
+        if operand.data is None or cls.how == "cross":
+            return
+        for comp in operand.get_identifiers():
+            result_comp = result.components.get(comp.name)
+            if result_comp is not None and _is_cast_to_time(comp.data_type, result_comp.data_type):
+                operand.data = operand.data.assign(
+                    **{
+                        comp.name: operand.data[comp.name].map(
+                            lambda x, t=comp.data_type: TimeInterval.implicit_cast(x, t),
+                            na_action="ignore",
+                        )
+                    }
+                )
 
     @classmethod
     def _combine_viral_attributes(
