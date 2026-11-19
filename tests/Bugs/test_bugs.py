@@ -11691,14 +11691,15 @@ class StructureDataBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- exists_in ( DS_1 [ sub Id_2 = "A" ] , DS_1 , all );
+                    DS_r2 <- count ( exists_in ( DS_1 [ sub Id_2 = "A" ] , DS_1 , all ) );
         Description: The result has one data point for each data point of the first operand,
                      also when the second operand has more Identifiers: Id_1 1, 2, bool_var
-                     true, true. The pandas engine repeated Id_1 1 for each data point of DS_1
-                     that matches it.
+                     true, true, so count gives 2. The pandas engine repeated Id_1 1 for each
+                     data point of DS_1 that matches it, and count gave 3.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
         Goal: Check Result.
         """
-        self.BaseTest(code="GH_1354_19", number_inputs=1, references_names=["1"])
+        self.BaseTest(code="GH_1354_19", number_inputs=1, references_names=["1", "2"])
 
     def test_GH_1354_20(self):
         """
