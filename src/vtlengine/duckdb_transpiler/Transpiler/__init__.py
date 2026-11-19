@@ -4063,6 +4063,8 @@ FROM (
             return "Boolean"
         if getattr(node, "op", None) in _STRING_RESULT_OPS:
             return "String"
+        if isinstance(node, AST.ParamOp) and node.op == tokens.DATE_ADD:
+            return "Date"
         return self._get_source_vtl_type(node)
 
     def _dataset_value_types(self, operands: List[AST.AST], name: str) -> List[Optional[str]]:

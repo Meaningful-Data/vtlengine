@@ -42,6 +42,7 @@ from vtlengine.Model import Component, Dataset, Role, ValueDomain, value_of
 from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Clause import Pivot, Unpivot
 from vtlengine.Operators.Join import Apply, merged_viral_attribute_names
+from vtlengine.Operators.Time import Date_Add
 from vtlengine.Operators.Time import Unary as TimeUnary
 from vtlengine.Operators.Validation import error_domains, error_level_type
 from vtlengine.Utils import ANALYTIC_MAPPING, BINARY_MAPPING
@@ -729,8 +730,15 @@ class StructureVisitor(ASTTemplate):
     def _resolve_paramop_structure(self, node: AST.ParamOp) -> Optional[Dataset]:
         """Resolve a ParamOp to its dataset structure."""
         ds = self._get_dataset_structure(node.children[0]) if node.children else None
-        if ds is None or node.op in (tokens.FILL_TIME_SERIES, tokens.DATE_ADD):
+        if ds is None or node.op == tokens.FILL_TIME_SERIES:
             return ds
+        if node.op == tokens.DATE_ADD:
+            # The shifted Components are Dates, as in the semantic analysis (issue #1352)
+            comps = {name: copy(comp) for name, comp in ds.components.items()}
+            for shifted in Date_Add._dateadd_targets(ds):
+                comps[shifted.name].data_type = Date
+                comps[shifted.name].value_domain = None
+            return Dataset(name=ds.name, components=comps, data=None)
         measures = ds.get_measures()
         if len(measures) == 1 and node.op == tokens.INSTR:
             return self._build_integer_result_structure(ds)
