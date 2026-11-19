@@ -1,0 +1,5 @@
+define operator f ( x component )
+    returns component < integer > is
+        x
+end operator;
+DS_r <- DS_1 [ calc identifier Id_3 := f ( Id_2 ) ] [ keep Me_1 ] [ sub Id_2 = 1 ] [ pivot Id_3 , Me_1 ];
