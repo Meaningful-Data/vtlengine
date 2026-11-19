@@ -3372,3 +3372,51 @@ def test_GH_1349_57b(use_duckdb, name):
         run("DS_r <- DS_1;", structures, {"DS_1": data}, use_duckdb=use_duckdb)
     with pytest.raises(InputValidationException, match="0-2-1-1"):
         semantic_analysis("DS_r <- DS_1;", structures)
+
+
+def _run_1355(script: str, use_duckdb: bool, tmp_path: Path) -> dict:
+    """Run with DS_3 (Me_2 3, 20) and DS_4 (Me_2 100, 200) given as CSV files, which both
+    engines load at the statements that read them."""
+
+    def structure(name):
+        return {
+            "name": name,
+            "DataStructure": [
+                {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False},
+                {"name": "Me_2", "role": "Measure", "type": "Integer", "nullable": True},
+            ],
+        }
+
+    ds_3 = tmp_path / "DS_3.csv"
+    ds_3.write_text("Id_1,Me_2\n1,3\n2,20\n")
+    ds_4 = tmp_path / "DS_4.csv"
+    ds_4.write_text("Id_1,Me_2\n1,100\n2,200\n")
+    structures = {"datasets": [structure("DS_3"), structure("DS_4")]}
+    datapoints = {"DS_3": ds_3, "DS_4": ds_4}
+    return run(script, structures, datapoints, use_duckdb=use_duckdb)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_8b(use_duckdb, tmp_path):
+    """Extra of test_GH_1355_8, with the datapoints given as files: the body of f reads the
+    input DS_4, which it does not receive as a parameter, so the statement loads it. The
+    pandas engine gave DS_r without data points, and the DuckDB engine never loaded DS_4."""
+    script = "define operator f (x dataset) returns dataset is x + DS_4 end operator;"
+    result = _run_1355(script + " DS_r <- f(DS_3);", use_duckdb, tmp_path)
+    data = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+    assert data.to_dict("list") == {"Id_1": [1, 2], "Me_2": [103, 220]}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_9b(use_duckdb, tmp_path):
+    """Extra of test_GH_1355_9, with the datapoints given as files: the body of f reads DS_9,
+    which an earlier statement computes, so the statement that calls f depends on it. The
+    DuckDB engine dropped DS_9 before that statement."""
+    script = (
+        "DS_9 <- DS_4 * 10;"
+        " define operator f (x dataset) returns dataset is x + DS_9 end operator;"
+        " DS_r <- f(DS_3);"
+    )
+    result = _run_1355(script, use_duckdb, tmp_path)
+    data = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+    assert data.to_dict("list") == {"Id_1": [1, 2], "Me_2": [1003, 2020]}
