@@ -2876,7 +2876,10 @@ FROM (
             if source_lower == "date":
                 return f"vtl_date_to_period({expr})"
             if source_lower in ("time", "timeinterval"):
-                return f"{TIME_TO_PERIOD_FUNCTION}({expr})"
+                # The common Times in SQL, the others as the pandas engine casts them
+                return (
+                    f"COALESCE(vtl_interval_to_period({expr}), {TIME_TO_PERIOD_FUNCTION}({expr}))"
+                )
             # Pre-normalize string literals at transpile time to avoid invoking
             # the expensive ``vtl_period_normalize`` macro for every row when
             # the input is a compile-time constant (e.g. cast("2022Q1", time_period)).
