@@ -11489,3 +11489,41 @@ class ValueDomainBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1351_40", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1351_41(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer default 2.5 ) returns number is x * 2
+                        end operator;
+                    SC_r <- f ( );
+        Description: Extra case: the default 2.5 of an integer parameter is checked as an
+                     argument passed to it is: a Number with decimals is not an Integer and
+                     raises 1-2-18, on both engines and in the semantic analysis. The pandas
+                     engine and the semantic analysis took the default as it was written, so
+                     pandas gave 5.0, while the DuckDB engine raised 1-2-18.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1351_41",
+            number_inputs=1,
+            exception_code="1-2-18",
+            exception_message="Expected Integer, got Number on UDO f, parameter x.",
+        )
+
+    def test_GH_1351_42(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer default 2.0 ) returns string is
+                        cast ( x , string ) end operator;
+                    define operator g ( x integer default 2.0 ) returns integer is x
+                        end operator;
+                    DS_r <- DS_2 [ calc Me_2 := f ( ) , Me_3 := g ( ) ];
+        Description: Extra case: the whole Number default 2.0 of an integer parameter is the
+                     Integer 2, as an argument 2.0 passed to it is, so cast to String it gives
+                     2 and g returns the Integer 2. The pandas engine kept the Number 2.0 and
+                     gave 2.0 as the String, and both engines typed Me_3 as a Number.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1351_42", number_inputs=1, references_names=["1"])
