@@ -3748,10 +3748,22 @@ FROM (
                 return f"INTERVAL '{value}' DAY {mode_up}"
             return f"{value} {mode_up}"
 
-        start_val = self._resolve_scalar_varid(node.start)
-        stop_val = self._resolve_scalar_varid(node.stop)
-        start = bound_str(start_val, node.start_mode)
-        stop = bound_str(stop_val, node.stop_mode)
+        def scalar_bound(value: Any, mode: str) -> str:
+            # A bound that a Scalar gives is read as any Scalar, the argument of a scalar
+            # parameter included. A value only the query knows is checked there, once (issue
+            # #1355)
+            if not isinstance(value, AST.VarID):
+                return bound_str(value, mode)
+            known, scalar_value = self._known_scalar_value(value.value)
+            if known:
+                return bound_str(scalar_value, mode)
+            sql = f"(SELECT vtl_window_bound({self.visit(value)}))"
+            if is_range_date:
+                sql = f"to_days(CAST({sql} AS INTEGER))"
+            return f"{sql} {mode.upper()}"
+
+        start = scalar_bound(node.start, node.start_mode)
+        stop = scalar_bound(node.stop, node.stop_mode)
 
         return f"{type_str} BETWEEN {start} AND {stop}"
 
@@ -6038,13 +6050,6 @@ FROM (
         if known:
             return str(value)
         return f"(SELECT vtl_lag_offset({self.visit(offset)}, '{op}'))"
-
-    def _resolve_scalar_varid(self, value: Any) -> Any:
-        """Non-VarID values pass through unchanged."""
-        if not isinstance(value, AST.VarID):
-            return value
-        known, scalar_value = self._known_scalar_value(value.value)
-        return scalar_value if known else self.input_scalars[value.value].value
 
     def _known_scalar_value(self, name: str) -> Tuple[bool, Any]:
         """Whether the value of the Scalar name is known before the queries run, and that value:

@@ -356,11 +356,15 @@ class DAGAnalyzer(ASTTemplate):
     def visit_Analytic(self, node: Analytic) -> None:
         if node.operand is not None:
             self.visit(node.operand)
-        # The offset of lag or lead can name a Scalar (issue #1355)
+        # The offset of lag or lead and the bounds of a window can name a Scalar (issue #1355)
         if node.op in (LAG, LEAD):
             for param in node.params or []:
                 if isinstance(param, VarID):
                     self.visit(param)
+        if node.window is not None:
+            for bound in (node.window.start, node.window.stop):
+                if isinstance(bound, VarID):
+                    self.visit(bound)
 
     def visit_TimeAggregation(self, node: TimeAggregation) -> None:
         if node.operand is not None:

@@ -394,6 +394,16 @@ CREATE OR REPLACE MACRO vtl_lag_offset(x, op_name) AS (
     END
 );
 
+-- A bound of an analytic window that a Scalar gives when only the query knows it.
+-- A null or negative one is not taken as a bound (issue #1355).
+CREATE OR REPLACE MACRO vtl_window_bound(x) AS (
+    CASE WHEN x IS NULL OR x < 0
+         THEN error('VTL window bound ' || COALESCE(CAST(x AS VARCHAR), 'null')
+                    || ' is not a number of data points or a range')
+         ELSE x
+    END
+);
+
 -- A scalar argument of an integer parameter of a user defined operator. A whole
 -- Number is the Integer, one with decimals is no Integer (mirrors VTL error
 -- 1-2-18, which the pandas engine raises where the call is computed). where is

@@ -11801,6 +11801,35 @@ class NameResolutionBugs(BugHelper):
         """
         self.BaseTest(code="GH_1355_26", number_inputs=1, references_names=["1"])
 
+    def test_GH_1355_26b(self):
+        """
+        Status: OK
+        Expression: SC_1 <- 2;
+                    DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SC_1 preceding and current data point ) ) ];
+        Description: Extra of test_GH_1355_26: SC_1, a Scalar that an earlier statement
+                     computes, is the bound of the window. The DuckDB engine raised a KeyError
+                     with the name of the Scalar.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_26b", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1355_26c(self):
+        """
+        Status: OK
+        Expression: define operator w ( d dataset , n integer ) returns dataset is
+                        d [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between n preceding and current data point ) ) ] end operator;
+                    DS_r <- w ( DS_3 , 1 + 0 );
+        Description: Extra of test_GH_1355_26: the expression 1 + 0 given to the parameter n
+                     is the bound of the window. The DuckDB engine raised a KeyError with the
+                     name of the parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_26c", number_inputs=1, references_names=["1"])
+
     def test_GH_1355_27(self):
         """
         Status: OK
