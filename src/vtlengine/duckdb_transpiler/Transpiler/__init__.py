@@ -6029,12 +6029,15 @@ FROM (
         """The offset of lag or lead that a Scalar gives, read as any Scalar: an input one, one
         a statement computes or the argument of a scalar parameter, an expression included. A
         null offset raises 2-1-18-1, as on the pandas engine: here when its value is known, else
-        where the query runs, once, also where the operand has no data points (issue #1355)."""
+        where the query runs, once, also where the operand has no data points (issue #1355). A
+        known value is written as it is, and a Number is rounded half away from zero, as on the
+        pandas engine."""
         known, value = self._known_scalar_value(offset.value)
         if known and value is None:
             raise RunTimeError("2-1-18-1", op=op, param_type="Offset", correct_type="Integer")
-        sql = self.visit(offset)
-        return sql if known else f"(SELECT vtl_lag_offset({sql}, '{op}'))"
+        if known:
+            return str(value)
+        return f"(SELECT vtl_lag_offset({self.visit(offset)}, '{op}'))"
 
     def _resolve_scalar_varid(self, value: Any) -> Any:
         """Non-VarID values pass through unchanged."""

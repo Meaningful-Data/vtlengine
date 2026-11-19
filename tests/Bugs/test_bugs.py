@@ -11608,6 +11608,34 @@ class NameResolutionBugs(BugHelper):
             exception_message="At op lag: Offset parameter should be Integer.",
         )
 
+    def test_GH_1355_23f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , SF_1 over ( order by Id_1 ) ) ];
+                    (SF_1 an input Number Scalar, 0.5)
+        Description: Extra of test_GH_1355_23: a Number offset is rounded half away from
+                     zero, so 0.5 is the offset 1, on both engines. The DuckDB engine rounded it
+                     half to even, to 0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_23f", number_inputs=1, references_names=["1"], scalars={"SF_1": 0.5}
+        )
+
+    def test_GH_1355_23g(self):
+        """
+        Status: OK
+        Expression: SC_1 <- 2.5;
+                    DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , SC_1 over ( order by Id_1 ) ) ];
+        Description: Extra of test_GH_1355_23: the offset 2.5 that a statement computes is
+                     rounded half away from zero, to 3, on both engines. The DuckDB engine
+                     rounded it half to even, to 2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_23g", number_inputs=1, references_names=["1", "2"])
+
     def test_GH_1355_24(self):
         """
         Status: OK
