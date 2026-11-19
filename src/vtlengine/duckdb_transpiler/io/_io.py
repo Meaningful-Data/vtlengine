@@ -454,7 +454,17 @@ def load_datapoints_duckdb(
             SELECT {", ".join(select_cols)}
             {read_expr}
         """
-        conn.execute(insert_sql)
+        try:
+            conn.execute(insert_sql)
+        except duckdb.Error as e:
+            if "quoted new lines" not in str(e):
+                raise
+            # A value with a line break between quotes, which the pandas loader reads, is read
+            # by the serial reader only, as the parallel one refuses it with null_padding
+            # (issue #1352)
+            read_expr = read_expr.replace("parallel=true", "parallel=false")
+            insert_sql = insert_sql.replace("parallel=true", "parallel=false")
+            conn.execute(insert_sql)
 
     except duckdb.Error as e:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
