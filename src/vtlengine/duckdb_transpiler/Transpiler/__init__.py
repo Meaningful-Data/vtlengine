@@ -81,12 +81,12 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _UDO_OP,
     StructureVisitor,
 )
-from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
+from vtlengine.Exceptions import SemanticError, transformation_output
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Operators.Clause import Pivot
 from vtlengine.Operators.HROperators import fills_with_zero
 from vtlengine.Operators.Join import merged_viral_attribute_names
-from vtlengine.Operators.Time import Period_indicator
+from vtlengine.Operators.Time import Period_indicator, Time_Aggregation, Time_Shift
 from vtlengine.Operators.Validation import (
     bind_value_domains,
     error_domains,
@@ -2497,6 +2497,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     def visit_BinOp_timeshift(self, node: AST.BinOp) -> str:
         """Visit TIMESHIFT: shift time identifier by N periods."""
         ds_node = node.left
+        shift = self.input_scalars.get(str(getattr(node.right, "value", "")))
+        if isinstance(node.right, AST.VarID) and shift is not None and shift.value is None:
+            # A shift of no periods has no result: the time Identifier cannot be null (#1352)
+            raise Time_Shift.no_value_error(node.right.value)
         shift_sql = self.visit(node.right)
 
         ds = self._get_dataset_structure(ds_node)
@@ -6106,7 +6110,7 @@ FROM (
             target = self._resolve_period_to_ref(node.period_to_ref)
         if target is None:
             # The reference gave no period indicator: its scalar holds no value (issue #1192)
-            raise RunTimeError("2-1-19-24", name=cast(AST.VarID, node.period_to_ref).value)
+            raise Time_Aggregation.no_value_error(cast(AST.VarID, node.period_to_ref).value)
 
         if node.operand is not None:
             operand_type = self._get_node_type(node.operand)

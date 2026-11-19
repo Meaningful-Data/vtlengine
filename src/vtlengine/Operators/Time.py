@@ -61,8 +61,15 @@ class Time(Operators.Operator):
     FREQUENCY_MAP = {"Y": "years", "M": "months", "D": "days"}
     YEAR_TO_PERIOD = {"S": 2, "Q": 4, "M": 12, "W": 52, "D": 365}
     PERIOD_ORDER = {"A": 0, "S": 1, "Q": 2, "M": 3, "W": 4, "D": 5}
+    # The parameter that a scalar gives the operator, named when the scalar holds no value
+    SCALAR_PARAM = ""
 
     op = FLOW_TO_STOCK
+
+    @classmethod
+    def no_value_error(cls, name: str) -> RunTimeError:
+        """The error of a scalar that gives the operator a parameter and holds no value."""
+        return RunTimeError("2-1-19-24", op=cls.op, name=name, param=cls.SCALAR_PARAM)
 
     @classmethod
     def _get_time_id(cls, operand: Dataset) -> str:
@@ -678,10 +685,14 @@ class Fill_time_series(Binary):
 
 class Time_Shift(Binary):
     op = TIMESHIFT
+    SCALAR_PARAM = "shift number"
 
     @classmethod
     def evaluate(cls, operand: Dataset, shift_value: Any) -> Dataset:
         result = cls.validate(operand, shift_value)
+        if shift_value.value is None:
+            # A shift of no periods has no result: the time Identifier cannot be null (#1352)
+            raise cls.no_value_error(shift_value.name)
         result.data = operand.data.copy() if operand.data is not None else pd.DataFrame()
         shift_value = int(shift_value.value)
         cls.time_id = cls._get_time_id(result)
@@ -826,6 +837,7 @@ class Time_Shift(Binary):
 
 class Time_Aggregation(Time):
     op = TIME_AGG
+    SCALAR_PARAM = "period indicator to aggregate to"
 
     @classmethod
     def _execute_without_operand(
