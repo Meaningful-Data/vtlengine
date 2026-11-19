@@ -11653,6 +11653,28 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_16", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_17(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := count ( Me_1 over ( order by Me_2 ) ) ];
+        Description: count ordered by another Measure gives an Integer, as ordered by the
+                     counted one (test_GH_1354_18): 1, 1, 1. The pandas engine raised
+                     KeyError, and the DuckDB engine and the semantic analysis gave a Number.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_17", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_18(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := count ( Me_1 over ( order by Me_1 ) ) ];
+        Description: Control: count ordered by the counted Measure gives an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_18", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_25(self):
         """
         Status: OK

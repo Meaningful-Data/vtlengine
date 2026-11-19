@@ -68,6 +68,7 @@ from vtlengine.AST.UDOTypes import (
 )
 from vtlengine.DataTypes import (
     BASIC_TYPES,
+    COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Integer,
@@ -1270,7 +1271,11 @@ class InterpreterAnalyzer(ASTTemplate):
         )
 
         # # Extracting the component we need (only measure)
-        if analytic_component_name is None or node.op == COUNT:
+        measure_name: str
+        if node.op == COUNT:
+            # count gives int_var, whatever Measures the ordering carries (issue #1354)
+            measure_name = COMP_NAME_MAPPING[Integer]
+        elif analytic_component_name is None:
             measure_name = result.get_measures_names()[0]
         else:
             measure_name = analytic_component_name
@@ -1280,7 +1285,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # Joining the result with the original dataset
         if self.only_semantic:
-            data = None
+            column = None
         else:
             if (
                 self.regular_aggregation_dataset is not None
@@ -1292,13 +1297,13 @@ class InterpreterAnalyzer(ASTTemplate):
                     on=id_columns,
                     how="inner",
                 )
-                data = joined_result[measure_name]
+                column = joined_result[measure_name]
             else:
-                data = None
+                column = None
 
         result_comp = DataComponent(
             name=output_name,
-            data=data,
+            data=column,
             data_type=result.components[measure_name].data_type,
             role=result.components[measure_name].role,
             nullable=result.components[measure_name].nullable,
