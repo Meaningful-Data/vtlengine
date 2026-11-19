@@ -32,6 +32,7 @@ from vtlengine.DataTypes._time_checking import _has_time_component
 from vtlengine.duckdb_transpiler.sql import references_raising_macro
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     COMPARISON_OPS,
+    RAISING_FUNCTIONS,
     get_duckdb_type,
     text_to_period,
 )
@@ -410,7 +411,9 @@ class StructureVisitor(ASTTemplate):
         operands already materialized inside it are read from their own CTE, so they are
         not checked again.
         """
-        if not references_raising_macro(sql):
+        if not references_raising_macro(sql) and not any(
+            f"{function}(" in sql for function in RAISING_FUNCTIONS
+        ):
             return sql
         cte = quote_name(f"_vtl_checked_{len(self._materialized_operands)}")
         self._materialized_operands.append((cte, sql))

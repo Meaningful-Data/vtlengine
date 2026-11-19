@@ -56,6 +56,7 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
     ROUNDED_NUMERIC_OPS,
     TIME_CHECK_FUNCTION,
     TIME_PERIOD_CAST_FUNCTION,
+    TIME_TO_PERIOD_FUNCTION,
     get_duckdb_type,
     is_number_comparison,
     is_re2_incompatible,
@@ -2875,7 +2876,7 @@ FROM (
             if source_lower == "date":
                 return f"vtl_date_to_period({expr})"
             if source_lower in ("time", "timeinterval"):
-                return f"vtl_interval_to_period({expr})"
+                return f"{TIME_TO_PERIOD_FUNCTION}({expr})"
             # Pre-normalize string literals at transpile time to avoid invoking
             # the expensive ``vtl_period_normalize`` macro for every row when
             # the input is a compile-time constant (e.g. cast("2022Q1", time_period)).

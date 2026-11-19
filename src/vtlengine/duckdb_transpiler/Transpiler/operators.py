@@ -595,10 +595,14 @@ def is_re2_incompatible(pattern: str) -> bool:
     return _has_numeric_backreference(pattern)
 
 
-# Python UDFs casting a text to a time period and telling whether a text is a time, as the
-# pandas engine reads them
+# Python UDFs casting a text and a time to a time period and telling whether a text is a time,
+# as the pandas engine reads them
 TIME_PERIOD_CAST_FUNCTION = "vtl_text_to_period"
+TIME_TO_PERIOD_FUNCTION = "vtl_time_to_period"
 TIME_CHECK_FUNCTION = "vtl_is_time"
+# The time period casts raise a data point error, so an operand that calls them is computed over
+# all its data points, as one that calls a SQL macro that raises (issue #1352)
+RAISING_FUNCTIONS = (TIME_PERIOD_CAST_FUNCTION, TIME_TO_PERIOD_FUNCTION)
 
 
 def text_to_period(value: str) -> Optional[str]:
@@ -620,6 +624,16 @@ def _cast_text_to_period(value: str) -> str:
     return period
 
 
+def _cast_time_to_period(value: str) -> str:
+    """The Time_Period that a time casts to, as the pandas engine casts it, in the form the
+    loaders give it, and only with a year from 1000 (issue #1352). A time that is no period
+    raises the error of _map_vtl_macro_error that gives the RunTimeError 2-1-5-1."""
+    try:
+        return str(TimePeriod.explicit_cast(value, TimeInterval))
+    except Exception:
+        raise CastMaskError(f"Cannot determine period for interval: {value}") from None
+
+
 def register_time_functions(conn: duckdb.DuckDBPyConnection) -> None:
     """Register the time period cast and time check UDFs on a DuckDB connection (issue #1192).
 
@@ -628,6 +642,8 @@ def register_time_functions(conn: duckdb.DuckDBPyConnection) -> None:
     """
     with contextlib.suppress(duckdb.Error):
         conn.create_function(TIME_PERIOD_CAST_FUNCTION, _cast_text_to_period, [VARCHAR], VARCHAR)
+    with contextlib.suppress(duckdb.Error):
+        conn.create_function(TIME_TO_PERIOD_FUNCTION, _cast_time_to_period, [VARCHAR], VARCHAR)
     with contextlib.suppress(duckdb.Error):
         conn.create_function(TIME_CHECK_FUNCTION, TimeInterval.check, [VARCHAR], BOOLEAN)
 

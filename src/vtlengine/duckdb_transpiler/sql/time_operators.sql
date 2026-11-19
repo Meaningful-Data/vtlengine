@@ -331,7 +331,8 @@ CREATE OR REPLACE MACRO vtl_tp_shift(p vtl_time_period, n INTEGER) AS (
 -- TIMEINTERVAL FREQUENCY AND SHIFT
 -- ============================================================================
 -- The frequency of a TimeInterval series is the DURATION of a single interval,
--- not a calendar anchor, so vtl_interval_to_period is not an equivalent here.
+-- not a calendar anchor, so the cast of a TimeInterval to a TimePeriod is not an
+-- equivalent here.
 -- Reference: Time._classify_interval_period in Operators/Time.py.
 
 -- The endpoints. vtl_interval_parse cannot be reused: it assumes the date part
