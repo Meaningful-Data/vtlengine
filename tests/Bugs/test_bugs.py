@@ -11583,6 +11583,18 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_28b", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_11c(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 , DPR all );
+        Description: Extra of case 11: DS_1 has a viral Attribute named imbalance, which
+                     check_datapoint does not compute, so it is copied to the result as any
+                     viral Attribute. The pandas engine raised KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_11c", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_12(self):
         """
         Status: OK

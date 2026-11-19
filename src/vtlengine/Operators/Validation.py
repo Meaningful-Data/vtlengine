@@ -399,8 +399,8 @@ class Validation(Operator):
             subset=result.get_identifiers_names() + ["ruleid"]
         ).reset_index(drop=True)
         validation_measures = ["bool_var", "errorcode", "errorlevel"]
-        # Only for check hierarchy
-        if "imbalance" in result.components:
+        # Only for check hierarchy, not a viral Attribute named imbalance (issue #1354)
+        if "imbalance" in result.get_measures_names():
             validation_measures.append("imbalance")
         if output == "invalid":
             result.data = result.data[result.data["bool_var"] == False]
