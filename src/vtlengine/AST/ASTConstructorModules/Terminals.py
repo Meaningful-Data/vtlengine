@@ -768,7 +768,7 @@ class Terminals:
         # partitionListed: PARTITION (BY|EXCEPT) componentID (COMMA componentID)*
         op = ctx_list[1].text.lower()
         components = [
-            self._component_name(compID)
+            self._window_component(compID)
             for compID in ctx_list
             if not compID.is_terminal and compID.ctx_id == RC.COMPONENT_ID
         ]
@@ -834,21 +834,19 @@ class Terminals:
         token_info = extract_token_info(ctx)
 
         if len(ctx_list) == 1:
-            return OrderBy(component=self._component_name(ctx_list[0]), order="asc", **token_info)
+            return OrderBy(component=self._window_component(ctx_list[0]), order="asc", **token_info)
 
         return OrderBy(
-            component=self._component_name(ctx_list[0]),
+            component=self._window_component(ctx_list[0]),
             order=ctx_list[1].text,
             **token_info,
         )
 
-    def _component_name(self, ctx):
-        """The name of a componentID as written: alias#comp for a Component named by its
-        qualified name, which a join resolves (issue #1355)."""
+    def _window_component(self, ctx):
+        """The name of a component of partition by or order by, or the membership alias#comp
+        that names a Component of a join by its qualified name (issue #1355)."""
         node = self.visitComponentID(ctx)
-        if isinstance(node, BinOp):
-            return f"{node.left.value}{node.op}{node.right.value}"
-        return node.value
+        return node if isinstance(node, BinOp) else node.value
 
     def visitLimitClauseItem(self, ctx):
         # VTL 2.2 (sdmx-twg/vtl#390):

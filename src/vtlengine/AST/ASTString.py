@@ -110,12 +110,6 @@ def _format_name(value: str) -> str:
     return _format_reserved_word(value)
 
 
-def _format_component_name(value: str) -> str:
-    """A component name of partition by or order by, alias#comp for a Component of a join
-    named by its qualified name (issue #1355)."""
-    return "#".join(_format_name(part) for part in value.split("#", 1))
-
-
 def _format_constraint(constraint: Optional[AST.TypeConstraint]) -> str:
     """The constraints of a scalar type, written as declared."""
     if constraint is None:
@@ -701,7 +695,7 @@ class ASTString(ASTTemplate):
             partition = "partition except all"
         elif node.partition_by:
             keyword = "except" if node.partition_op == "except" else "by"
-            partition_values = [_format_component_name(x) for x in node.partition_by]
+            partition_values = [self._window_component(x) for x in node.partition_by]
             partition = f"partition {keyword} {', '.join(partition_values)}"
         order = ""
         if node.order_by:
@@ -947,8 +941,13 @@ class ASTString(ASTTemplate):
 
     def visit_OrderBy(self, node: AST.OrderBy) -> str:
         if node.order == "asc":
-            return f"{_format_component_name(node.component)}"
-        return f"{_format_component_name(node.component)} {node.order}"
+            return f"{self._window_component(node.component)}"
+        return f"{self._window_component(node.component)} {node.order}"
+
+    def _window_component(self, component: Union[str, AST.AST]) -> str:
+        """A component of partition by or order by: a name, or the membership alias#comp of
+        a Component of a join (issue #1355)."""
+        return _format_name(component) if isinstance(component, str) else self.visit(component)
 
     def visit_Comment(self, node: AST.Comment) -> None:
         self.vtl_script += self._comment_text(node)

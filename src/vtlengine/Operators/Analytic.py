@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, cast
 
 import pandas as pd
 import pyarrow as pa
@@ -86,7 +86,8 @@ class Analytic(Operator.Unary):
         params: Optional[List[int]],
         component_name: Optional[str] = None,
     ) -> Dataset:
-        order_components = [] if ordering is None else [o.component for o in ordering]
+        # Names: the interpreter gives a Component named alias#comp in a join by its name
+        order_components = [] if ordering is None else [cast(str, o.component) for o in ordering]
         identifier_names = operand.get_identifiers_names()
         result_components = {
             comp_name: comp

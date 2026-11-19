@@ -51,6 +51,7 @@ params = [
     "GH_1241.vtl",
     "GH_1236.vtl",
     "GH_1351.vtl",
+    "GH_1355.vtl",
 ]
 
 params_prettier = [
@@ -92,6 +93,8 @@ params_prettier = [
     ("GH_1334.vtl", "reference_GH_1334.vtl"),
     # An error code is written as the literal it is, a number with no quotes (issue #1349)
     ("GH_1349.vtl", "reference_GH_1349.vtl"),
+    # A Component named 'Id#1' is written quoted, a qualified alias#comp is not (issue #1355)
+    ("GH_1355.vtl", "reference_GH_1355.vtl"),
 ]
 
 POSITION_FIELDS = {"line_start", "column_start", "line_stop", "column_stop"}

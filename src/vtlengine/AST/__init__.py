@@ -369,7 +369,14 @@ class Windowing(AST):
 
 @dataclass
 class OrderBy(AST):
-    component: str
+    """
+    OrderBy: (component, order)
+
+    component: the name of a Component, or the membership alias#comp that names a Component
+        of a join by its qualified name (issue #1355).
+    """
+
+    component: Union[str, AST]
     order: str
 
     __eq__ = AST.ast_equality
@@ -383,7 +390,8 @@ class Analytic(AST):
     op: SUM, AVG, COUNT, MEDIAN, MIN, MAX, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP,
         FIRST_VALUE, LAST_VALUE, LAG, LEAD, RATIO_TO_REPORT
 
-    partition_by: List of components (as written in the clause).
+    partition_by: List of components (as written in the clause): names, or memberships
+        alias#comp that name a Component of a join by its qualified name (issue #1355).
     partition_op: "by", "except", or "except all" — VTL 2.2 (sdmx-twg/vtl#699,
         #391). For "except" the listed components are excluded from the operand's
         identifiers; for "except all" the partition is empty (single global
@@ -396,7 +404,7 @@ class Analytic(AST):
     operand: Optional[AST]
     window: Optional[Windowing] = None
     params: Optional[List[int]] = None
-    partition_by: Optional[List[str]] = None
+    partition_by: Optional[List[Union[str, AST]]] = None
     partition_op: Optional[str] = None
     order_by: Optional[List[OrderBy]] = None
 

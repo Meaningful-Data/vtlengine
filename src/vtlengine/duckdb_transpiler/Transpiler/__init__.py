@@ -3598,16 +3598,13 @@ FROM (
             return [i for i in self._operand_identifier_names(node) if i not in ordered]
         return listed
 
-    def _clause_component_name(self, name: str) -> str:
-        """The column of the clause Data Set that a name of partition by or order by refers
-        to. A Component of a join named by its qualified name, alias#comp, is comp, unless the
-        joined Data Sets share it and the column keeps the qualified name (issue #1355)."""
-        resolved = self._resolve_membership_name(name)
-        if "#" not in resolved or (
-            self._current_dataset is not None and resolved in self._current_dataset.components
-        ):
-            return resolved
-        return resolved.split("#", 1)[1]
+    def _clause_component_name(self, component: Union[str, AST.AST]) -> str:
+        """The column of the clause Data Set that a component of partition by or order by
+        refers to: a name, or the membership alias#comp of a Component of a join (issue
+        #1355)."""
+        if isinstance(component, str):
+            return self._resolve_udo_name(component)
+        return self._extract_component_names([component], self._join_alias_map)[0]
 
     def _operand_identifier_names(self, node: AST.Analytic) -> List[str]:
         """Best-effort identifier list for the analytic operand."""

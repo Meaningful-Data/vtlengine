@@ -1033,8 +1033,7 @@ class InterpreterAnalyzer(ASTTemplate):
             for x in node.grouping:
                 if isinstance(x, AST.BinOp) and x.op == MEMBERSHIP:
                     # A grouping takes component names (issue #1355)
-                    left, right = cast(AST.Identifier, x.left), cast(AST.Identifier, x.right)
-                    groupings.append(self._component_name(f"{left.value}#{right.value}"))
+                    groupings.append(self._component_name(x))
                 else:
                     groupings.append(self.visit(x))
             self.is_from_grouping = False
@@ -1122,7 +1121,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 carried_names = []
                 if node.order_by is not None:
                     for order_by in node.order_by:
-                        order_name = order_by.component
+                        # A name: _resolve_window_names gave the qualified ones by name
+                        order_name = cast(str, order_by.component)
                         if (
                             order_name not in dataset_components
                             and order_name in self.regular_aggregation_dataset.components
@@ -1150,7 +1150,7 @@ class InterpreterAnalyzer(ASTTemplate):
         ordering = []
         if self.udo_params is not None:
             if node.partition_by is not None:
-                for comp_name in node.partition_by:
+                for comp_name in cast(List[str], node.partition_by):
                     if comp_name in self.udo_params[-1]:
                         partitioning.append(self.udo_params[-1][comp_name])
                     elif comp_name in operand.get_identifiers_names():
@@ -1165,7 +1165,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if node.order_by is not None:
                 for o in node.order_by:
                     if o.component in self.udo_params[-1]:
-                        o.component = self.udo_params[-1][o.component]
+                        o.component = self.udo_params[-1][cast(str, o.component)]
                     elif o.component not in operand.get_identifiers_names():
                         raise SemanticError(
                             "1-2-21",
@@ -1296,7 +1296,7 @@ class InterpreterAnalyzer(ASTTemplate):
         qualified name, alias#comp, given as the names of the Components they refer to
         (issue #1355)."""
         names = (node.partition_by or []) + [o.component for o in node.order_by or []]
-        if not any("#" in name for name in names):
+        if all(isinstance(name, str) for name in names):
             return node
         node = copy(node)
         if node.partition_by is not None:
@@ -1307,23 +1307,21 @@ class InterpreterAnalyzer(ASTTemplate):
                 order_by.component = self._component_name(order_by.component)
         return node
 
-    def _component_name(self, name: str) -> str:
-        """The name of the Component that a name in a clause refers to. In a join, alias#comp
-        is the Component comp of the operand alias, as in an expression of the join; out of a
-        join it is a membership, which a clause does not allow (issue #1355)."""
-        if "#" not in name:
-            return name
-        dataset_name, comp_name = name.split("#", 1)
+    def _component_name(self, component: Union[str, AST.AST]) -> str:
+        """The name of the Component that a component of a clause names. In a join, the
+        membership alias#comp is the Component comp of the operand alias, as in an expression
+        of the join; out of a join it is a membership, which a clause does not allow
+        (issue #1355)."""
+        if isinstance(component, str):
+            return component
         if not self.is_from_join or self.regular_aggregation_dataset is None:
-            raise SemanticError("1-1-6-6", dataset_name=dataset_name, comp_name=comp_name)
-        position = {"line_start": 0, "column_start": 0, "line_stop": 0, "column_stop": 0}
-        membership = AST.BinOp(
-            left=AST.VarID(value=dataset_name, **position),
-            op=MEMBERSHIP,
-            right=AST.VarID(value=comp_name, **position),
-            **position,
-        )
-        return self.visit(membership).name
+            membership = cast(AST.BinOp, component)
+            raise SemanticError(
+                "1-1-6-6",
+                dataset_name=cast(AST.Identifier, membership.left).value,
+                comp_name=cast(AST.Identifier, membership.right).value,
+            )
+        return self.visit(component).name
 
     def _integer_scalar(self, op: str, node: AST.VarID, param_type: str) -> Scalar:
         """The Scalar named as the offset of lag or lead or as a bound of a window: an Integer

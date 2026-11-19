@@ -12165,3 +12165,25 @@ class NameResolutionBugs(BugHelper):
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(code="GH_1355_19", number_inputs=2, exception_code="1-1-6-2")
+
+    def test_GH_1355_14e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_H [ calc Me_9 := sum ( 'Me#1' over ( partition by 'Id#1' ) ) ];
+        Description: Extra of test_GH_1355_14: a Component whose name holds # is no qualified
+                     name in partition by.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_14e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_14f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_H [ calc Me_9 := sum ( 'Me#1' over ( partition by Id_2
+                        order by 'Id#1' ) ) ];
+        Description: Extra of test_GH_1355_14: the same in order by.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_14f", number_inputs=1, references_names=["1"])
