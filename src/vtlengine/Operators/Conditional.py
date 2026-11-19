@@ -18,6 +18,7 @@ from vtlengine.Operators import (
     Binary,
     Operator,
     _id_type_promotion_join_keys,
+    may_be_null,
     share_value_domains,
     shared_value_domain,
 )
@@ -467,9 +468,7 @@ class Nvl(Binary):
         # A scalar replacement that cannot be null, such as a cast of a literal, replaces the
         # nulls also in the semantic analysis, which does not know the values it computes
         # (issue #1354)
-        keeps_nulls = isinstance(right, Scalar) and (
-            right.data_type is Null or (right.nullable and right.value is None)
-        )
+        keeps_nulls = isinstance(right, Scalar) and (right.data_type is Null or may_be_null(right))
         if isinstance(right, DataComponent):
             keeps_nulls = right.nullable
         if isinstance(left, Scalar):

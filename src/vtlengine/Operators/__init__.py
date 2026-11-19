@@ -118,6 +118,12 @@ def check_values(values: Any, value_domain: ValueDomain, op: str) -> None:
         )
 
 
+def may_be_null(scalar: Scalar) -> bool:
+    """Whether a Scalar operand can hold a null: it is declared nullable and its value is not
+    known to be one that is not null, as in the semantic analysis (issue #1354)."""
+    return scalar.nullable and scalar.value is None
+
+
 class Operator:
     """Superclass for all operators"""
 
@@ -429,6 +435,9 @@ class Binary(Operator):
             for comp_name, comp in dataset.components.items()
             if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
+        if may_be_null(scalar):
+            for comp in result_components.values():
+                comp.nullable = comp.nullable or comp.role == Role.MEASURE
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, dataset, scalar)
         return result_dataset
@@ -479,7 +488,7 @@ class Binary(Operator):
             data_type=cls.type_validation(component.data_type, scalar.data_type),
             data=None,
             role=component.role,
-            nullable=component.nullable or scalar.nullable,
+            nullable=component.nullable or may_be_null(scalar),
         )
         return result
 

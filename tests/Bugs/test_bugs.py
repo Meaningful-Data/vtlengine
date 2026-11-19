@@ -11774,6 +11774,31 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_22", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_22b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc identifier Id_3 := Id_1 + SC_1 ];
+        Description: Extra of case 22: the input Scalar SC_1 is given the value 5, so Id_1 + SC_1
+                     is not null and calc identifier accepts it: 6, 6, 7.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1354_22b", number_inputs=1, references_names=["1"], scalars={"SC_1": 5}
+        )
+
+    def test_GH_1354_22c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 + null;
+        Description: Extra of case 22: a Data Set combined with null has nullable Measures, also
+                     where the Measure of DS_1 is not nullable: null, null, null. Both engines and
+                     the semantic analysis declared it non-nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22c", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_23(self):
         """
         Status: OK
