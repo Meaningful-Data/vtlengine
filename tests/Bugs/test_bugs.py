@@ -11462,3 +11462,29 @@ class NameResolutionBugs(BugHelper):
         self.BaseTest(
             code="GH_1355_7", number_inputs=1, references_names=["1"], vd_names=self.vd_1355
         )
+
+    def test_GH_1355_8(self):
+        """
+        Status: OK
+        Expression: define operator f ( x dataset ) returns dataset is x + DS_4 end operator;
+                    DS_r <- f ( DS_3 );
+        Description: The body of f reads the input DS_4, which it does not receive as a
+                     parameter, so the statement reads DS_4. The DuckDB engine never loaded it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_8", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_9(self):
+        """
+        Status: OK
+        Expression: DS_9 <- DS_4 * 10;
+                    define operator f ( x dataset ) returns dataset is x + DS_9 end operator;
+                    DS_r <- f ( DS_3 );
+        Description: The body of f reads DS_9, which an earlier statement computes, so the
+                     statement that calls f depends on it. The DuckDB engine dropped DS_9
+                     before the call.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_9", number_inputs=2, references_names=["1", "2"])
