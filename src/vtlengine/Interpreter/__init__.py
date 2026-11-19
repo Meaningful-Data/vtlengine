@@ -71,6 +71,7 @@ from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Integer,
+    Number,
     ScalarType,
     String,
     check_unary_implicit_promotion,
@@ -2839,16 +2840,8 @@ class InterpreterAnalyzer(ASTTemplate):
             node.op, "the output", return_type, return_constraints, result
         )
         result = udo_result_on_value_domains(result, return_constraints, taken)
-        if (
-            isinstance(result, Scalar)
-            and result.value_domain is not None
-            and not self.only_semantic
-        ):
-            # The value, checked to be one of the value domain, is of its type: the semantic
-            # analysis does not check it, so 2.5 returned on an Integer one raises VTL 2-1-5-4
-            # where the call is computed, not an error of the cast (issue #1351)
-            result = copy(result)
-            result.value = result.data_type.cast(result.value)
+        if isinstance(result, Scalar) and result.data_type in (Integer, Number, String):
+            result = self._udo_scalar_result(result)
         if self.only_semantic:
             self.udo_results[(key, None)] = result
 
@@ -2859,6 +2852,18 @@ class InterpreterAnalyzer(ASTTemplate):
         # We set to None if empty to ensure we do not use these params anymore
         if len(self.udo_params) == 0:
             self.udo_params = None
+        return result
+
+    def _udo_scalar_result(self, result: Scalar) -> Scalar:
+        """A scalar result of a user defined operator, whose value is of its type, as the DuckDB
+        engine gives it: 2 returned as a Number is 2.0, and the whole Number 1.0 stays one
+        (issue #1351). The semantic analysis knows no computed value and does not check the
+        values: 2.5 returned on an Integer value domain raises VTL 2-1-5-4 where the call is
+        computed, not an error of the cast."""
+        if self.only_semantic:
+            return result
+        result = copy(result)
+        result.value = result.data_type.cast(result.value)
         return result
 
     def _ruleset_type(self, name: str) -> Optional[AST.RulesetType]:

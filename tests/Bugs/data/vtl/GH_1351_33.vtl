@@ -1,0 +1,10 @@
+define operator f ( x integer )
+    returns VD_N is
+        x
+end operator;
+define operator g ( x integer )
+    returns number is
+        x / 2
+end operator;
+SC_r <- f ( 2 );
+DS_r <- DS_2 [ calc Me_2 := cast ( SC_r , string ) , Me_3 := cast ( f ( 2 ) , string ) , Me_4 := cast ( g ( 2 ) , string ) ];

@@ -11096,3 +11096,25 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=[*self.vd_1351, "GH_1351-VD_SB"],
         )
+
+    def test_GH_1351_33(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer ) returns VD_N is x end operator;
+                    define operator g ( x integer ) returns number is x / 2 end operator;
+                    SC_r <- f ( 2 );
+                    DS_r <- DS_2 [ calc Me_2 := cast ( SC_r , string ) ,
+                        Me_3 := cast ( f ( 2 ) , string ) , Me_4 := cast ( g ( 2 ) , string ) ];
+        Description: A scalar result is a value of its type: the Integer 2 returned on VD_N is
+                     the Number 2.0, and 2 / 2 is the Number 1.0, which cast to String give 2.0
+                     and 1.0. The DuckDB engine kept the Integer 2 and the pandas engine gave
+                     the whole Number 1 as an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1351_33",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=[*self.vd_1351, "GH_1351-VD_N"],
+        )
