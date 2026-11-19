@@ -1882,19 +1882,30 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         return f'SELECT {id_cols}, {exists_subq} AS "bool_var" FROM {left_subq} AS l'
 
     def _is_operand_type(self, node: AST.AST, target_type: type) -> bool:
-        """Check if an operand resolves to *target_type*."""
-        if isinstance(node, AST.VarID):
-            name = self._resolve_udo_name(node.value)
-            if self._in_clause and self._current_dataset:
-                comp = self._current_dataset.components.get(name)
-                return comp is not None and comp.data_type == target_type
-            return name in self.scalars and self.scalars[name].data_type == target_type
-
+        """Check if an operand resolves to *target_type*: a Component of the clause, a Scalar
+        (also inside a clause), a parameter of a user defined operator, a Component of a join by
+        its qualified name, a cast, and an nvl, an if, a case or parentheses around them (issue
+        #1352)."""
+        if isinstance(node, AST.ParFunction):
+            return self._is_operand_type(node.operand, target_type)
+        if isinstance(node, (AST.If, AST.Case)) or getattr(node, "op", None) == tokens.NVL:
+            type_name = self._value_type(node)
         elif isinstance(node, AST.ParamOp) and node.op == tokens.CAST:
             type_node = node.children[1]
             return bool(self._cast_type(type_node) == target_type)
-
-        return False
+        elif isinstance(node, AST.VarID):
+            comp = None
+            if self._in_clause and self._current_dataset:
+                comp = self._current_dataset.components.get(self._resolve_udo_name(node.value))
+            if comp is not None:
+                return comp.data_type == target_type
+            type_name = self._get_source_vtl_type(node)
+        elif isinstance(node, AST.BinOp) and node.op == tokens.MEMBERSHIP and self._in_clause:
+            type_name = self._get_source_vtl_type(node)
+        else:
+            return False
+        name = (type_name or "").lower()
+        return _TIME_TYPE_NAMES.get(name, name).lower() == target_type.__name__.lower()
 
     def _detect_scalar_type(self, node: AST.AST) -> Optional[type]:
         """Detect the data type of a scalar operand for typed dispatch."""
@@ -3470,13 +3481,11 @@ FROM (
             operand_type = self._get_node_type(node.operand)
             if operand_type in (_COMPONENT, _SCALAR):
                 operand_sql = self.visit(node.operand)
-                # Type-aware MIN/MAX for Duration/TimePeriod
-                if self._current_dataset and hasattr(node.operand, "value"):
-                    comp = self._current_dataset.components.get(node.operand.value)
-                    dt = comp.data_type if comp else None
-                    agg = self._build_agg_expr(op, operand_sql, dt)
-                    if agg is not None:
-                        return agg
+                # Type-aware MIN/MAX for Duration/TimePeriod, of any operand of that type, as
+                # a#Me_1 in a join (issue #1352)
+                agg = self._build_agg_expr(op, operand_sql, self._detect_scalar_type(node.operand))
+                if agg is not None:
+                    return agg
                 return registry.sql(op, operand_sql)
 
         # count() without operand
