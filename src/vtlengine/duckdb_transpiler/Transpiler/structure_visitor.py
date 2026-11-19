@@ -1209,21 +1209,23 @@ class StructureVisitor(ASTTemplate):
             constraints = self._udos[node.op].get("return_constraints")
             constraint = constraints.value if constraints is not None else None
             return constraint.value_domain if constraint is not None else None
-        if isinstance(node, AST.BinOp) and node.op == tokens.NVL:
-            operands = [node.left, node.right]
-        elif isinstance(node, AST.If):
-            operands = [node.thenOp, node.elseOp]
-        elif isinstance(node, AST.Case):
-            operands = [case.thenOp for case in node.cases] + [node.elseOp]
-        else:
+        operands = self._choice_operands(node)
+        if operands is None:
             return None
-        domains = [
-            self._calc_value_domain(operand, source)
-            for operand in operands
-            if not (isinstance(operand, AST.Constant) and operand.value is None)
-        ]
+        domains = [self._calc_value_domain(operand, source) for operand in operands]
         names = {None if domain is None else domain.name for domain in domains}
         return domains[0] if len(names) == 1 else None
+
+    def _choice_operands(self, node: AST.AST) -> Optional[List[AST.AST]]:
+        """The operands an nvl, an if-then-else or a case can return, nulls aside, or ``None``
+        for any other expression."""
+        if isinstance(node, AST.BinOp) and node.op == tokens.NVL:
+            operands = [node.left, node.right]
+        elif isinstance(node, (AST.If, AST.Case)):
+            operands = self._branch_operands(node)
+        else:
+            return None
+        return [op for op in operands if not (isinstance(op, AST.Constant) and op.value is None)]
 
     def _calc_value_type(self, node: AST.AST, source: Dataset) -> Any:
         """Data type of a calc expression, or ``None`` when unknown.
@@ -1244,6 +1246,14 @@ class StructureVisitor(ASTTemplate):
         if isinstance(node, AST.TimeAggregation) and node.operand is not None:
             # time_agg keeps the type of its operand, a Time_Period or a Date (issue #1309)
             return self._calc_value_type(node.operand, source)
+        operands = self._choice_operands(node)
+        types = {self._calc_value_type(op, source) for op in operands or []}
+        if types and types <= {Date, TimePeriod, TimeInterval}:
+            # An nvl, an if or a case of Dates, Time_Periods or Times has their type, a Time
+            # when one of them is a Time (issue #1352)
+            if TimeInterval in types:
+                return TimeInterval
+            return types.pop() if len(types) == 1 else None
         return None
 
     def _build_ds_ds_binop_structure(self, node: AST.BinOp) -> Optional[Dataset]:

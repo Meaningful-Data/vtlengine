@@ -239,6 +239,16 @@ def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, s
     return sql.replace(from_pattern, f"FROM {table_src}, {subquery} WHERE {where_conds}", 1)
 
 
+# The class name of a Date, a Time_Period or a Time by the names their types take
+_TIME_TYPE_NAMES = {
+    "date": "Date",
+    "timeperiod": "TimePeriod",
+    "time_period": "TimePeriod",
+    "time": "TimeInterval",
+    "timeinterval": "TimeInterval",
+}
+
+
 def _is_time_name(type_name: Optional[str]) -> bool:
     """Whether the name of a type is the one of Time."""
     return (type_name or "").lower() in ("time", "timeinterval")
@@ -3962,11 +3972,19 @@ FROM (
 
     def _common_value_type(self, operands: List[AST.AST]) -> Optional[str]:
         """The type of an if, a case or an nvl: a String when one of its ``operands`` is, a
-        Boolean when all are."""
+        Boolean when all are. The Date, Time_Period or Time of its operands when all have one of
+        those types, a Time when one is a Time (issue #1352)."""
         types = {self._value_type(op) for op in operands} - {"Null"}
         if types == {"Boolean"}:
             return "Boolean"
-        return "String" if "String" in types else None
+        if "String" in types:
+            return "String"
+        times = {_TIME_TYPE_NAMES.get((t or "").lower()) for t in types}
+        if None in times:
+            return None
+        if "TimeInterval" in times:
+            return "TimeInterval"
+        return times.pop() if len(times) == 1 else None
 
     def _value_type(self, node: AST.AST) -> Optional[str]:
         """The type of a Component or scalar operand of an if or a case, where it is known."""

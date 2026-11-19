@@ -11575,6 +11575,19 @@ class TimeValueBugs(BugHelper):
             exception_message="Invalid implicit cast from Date to Time_Period.",
         )
 
+    def test_GH_1352_1b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := nvl ( Me_2 , Me_2 ) = Me_3 ] [ keep Me_4 ];
+        Description: Extra of case 1: the nvl of the Time_Period Me_2 is a Time_Period, which =
+                     casts to Time to compare it with the Time Me_3, so 2020Q1 equals
+                     2020-01-01/2020-03-31. The DuckDB engine did not know the type of the nvl and
+                     compared the texts, giving false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_1b", number_inputs=1, references_names=["1"])
+
     def test_GH_1352_2(self):
         """
         Status: OK
@@ -11720,6 +11733,20 @@ class TimeValueBugs(BugHelper):
         """
         self.BaseTest(code="GH_1352_6f", number_inputs=2, references_names=["1"])
 
+    def test_GH_1352_6g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := ( if Id_1 = 2 then Me_2
+                        else cast ( "2020Q1" , time_period ) ) = Me_3 ] [ keep Me_4 ];
+        Description: Extra of case 6: the if of two Time_Periods is a Time_Period, which = casts to
+                     Time to compare it with the Time Me_3, so 2020Q1 equals
+                     2020-01-01/2020-03-31. The DuckDB engine did not know the type of the if and
+                     compared the texts, giving false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_6g", number_inputs=1, references_names=["1"])
+
     def test_GH_1352_7(self):
         """
         Status: OK
@@ -11829,6 +11856,45 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_10e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_10f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := nvl ( Me_3 , Me_1 )
+                        in { cast ( "2020-01-15" , date ) } ] [ keep Me_4 ];
+        Description: Extra of case 10: the nvl of the Time Me_3 and the Date Me_1 is a Time, so the
+                     Date of the set is cast to the Time 2020-01-15/2020-01-15. The DuckDB engine
+                     did not know the type of the nvl and raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10f", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_10g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := nvl ( Me_2 , Me_2 )
+                        in { cast ( "2020-01-01/2020-03-31" , time ) } ] [ keep Me_4 ];
+        Description: Extra of case 10: the nvl of the Time_Period Me_2 is a Time_Period, cast to
+                     Time to look for it in a set of Times, so 2020Q1 is in the set. The DuckDB
+                     engine did not know the type of the nvl and compared the texts, giving false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10g", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_10h(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_5 := nvl ( Me_3 , Me_1 ) ]
+                        [ calc Me_4 := Me_5 in { cast ( "2020-01-15" , date ) } ] [ keep Me_4 ];
+        Description: Extra of case 10: Me_5, computed by the first calc as the nvl of the Time Me_3
+                     and the Date Me_1, is a Time, so the Date of the set is cast to Time. The
+                     DuckDB engine took Me_5 as a Number and raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10h", number_inputs=1, references_names=["1"])
 
     def test_GH_1352_11(self):
         """
