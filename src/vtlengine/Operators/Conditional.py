@@ -99,13 +99,59 @@ def _scalar_result(conditions: List[Scalar], then_ops: List[Scalar], else_op: Sc
     )
 
 
+def _time_values(data: Any, data_type: Any, from_type: Any) -> Any:
+    """The data of a Date or a Time_Period ``from_type`` as Time values when ``data_type`` is
+    Time: the Time that starts and ends on a Date, the start and end of a Time_Period (issue
+    #1352). Other data is returned as it is."""
+    if not _is_cast_to_time(from_type, data_type):
+        return data
+    return data.map(lambda x: TimeInterval.implicit_cast(x, from_type), na_action="ignore")
+
+
 def _as_type(data: Any, data_type: Any, from_type: Any = None) -> Any:
     """The data in the dtype of ``data_type``. As a String, a Boolean is "true" or "false", as
     VTL casts it, where astype writes a numpy or Python Boolean as "True" (issue #1314). The
     values of a Date or a Time_Period ``from_type`` become Time values (issue #1352)."""
-    if _is_cast_to_time(from_type, data_type):
-        data = data.map(lambda x: TimeInterval.implicit_cast(x, from_type), na_action="ignore")
+    data = _time_values(data, data_type, from_type)
     return to_strings(data) if data_type is String else data.astype(data_type.dtype())
+
+
+def _time_operand(operand: Any, result: Any) -> Any:
+    """An operand of an if or a case with its Date or Time_Period values cast to Time where the
+    result is a Time, as the then and else operands take the common type (issue #1352). The
+    operand is copied, never changed: it is the one of the other statements too."""
+    if isinstance(operand, Dataset):
+        names = [
+            name
+            for name, comp in result.components.items()
+            if comp.role == Role.MEASURE
+            and name in operand.components
+            and _is_cast_to_time(operand.components[name].data_type, comp.data_type)
+        ]
+        if not names or operand.data is None:
+            return operand
+        converted = copy(operand)
+        converted.components = {name: comp.copy() for name, comp in operand.components.items()}
+        converted.data = operand.data.copy()
+        for name in names:
+            comp = converted.components[name]
+            converted.data[name] = _time_values(converted.data[name], TimeInterval, comp.data_type)
+            comp.data_type, comp.value_domain = TimeInterval, None
+        return converted
+    if isinstance(result, Dataset):
+        types = {comp.data_type for comp in result.get_measures()}
+        data_type = types.pop() if len(types) == 1 else None
+    else:
+        data_type = result.data_type
+    if not _is_cast_to_time(operand.data_type, data_type):
+        return operand
+    converted = copy(operand)
+    converted.data_type, converted.value_domain = TimeInterval, None
+    if isinstance(operand, Scalar):
+        converted.value = _selected_value(operand, TimeInterval)
+    elif operand.data is not None:
+        converted.data = _time_values(operand.data, TimeInterval, operand.data_type)
+    return converted
 
 
 def _identifiers(dataset: Dataset) -> Dict[str, Any]:
@@ -206,6 +252,8 @@ class If(Operator):
         cls, condition: Any, true_branch: Any, false_branch: Any, is_from_having: bool = False
     ) -> Any:
         result = cls.validate(condition, true_branch, false_branch, is_from_having)
+        true_branch = _time_operand(true_branch, result)
+        false_branch = _time_operand(false_branch, result)
         if isinstance(result, Scalar):
             # The value of the operand that the condition selects, in the type of the result
             selected = true_branch if condition.value else false_branch
@@ -545,6 +593,8 @@ class Case(Operator):
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any, is_from_having: bool = False
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(conditions, thenOps, elseOp, is_from_having)
+        thenOps = [_time_operand(op, result) for op in thenOps]
+        elseOp = _time_operand(elseOp, result)
         if isinstance(result, Scalar):
             # The value of the then operand of the first true condition (issues #1008 and
             # #1251), in the common type of the operands (issue #1314)

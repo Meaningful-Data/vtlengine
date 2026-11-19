@@ -11425,6 +11425,56 @@ class TimeValueBugs(BugHelper):
             exception_message="Invalid implicit cast from Date to Time_Period.",
         )
 
+    def test_GH_1352_6b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := if Id_1 = 1 then Me_1 else Me_3 ];
+        Description: Extra of case 6: the Date and the Time branches have the common type
+                     Time, so the Date 2020-01-15 is the Time 2020-01-15/2020-01-15. The
+                     DuckDB engine raised a raw BinderException and the pandas engine copied
+                     the Date text.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_6b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_6c(self):
+        """
+        Status: OK
+        Expression: DS_r <- if DS_1 = DS_1 then DS_1 else DS_2;
+        Description: Extra of case 6: the Time Measure of DS_1 and the Date Measure of DS_2
+                     have the common type Time. The DuckDB engine raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_6c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_6d(self):
+        """
+        Status: OK
+        Expression: DS_r <- case when DS_1 = DS_1 then DS_2 else DS_1;
+        Description: Extra of case 6: the Date Measure of DS_2 that case takes is cast to
+                     Time, so 2020-01-15 is 2020-01-15/2020-01-15. The DuckDB engine raised a
+                     raw BinderException and the pandas engine copied the Date text.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_6d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_6e(self):
+        """
+        Status: OK
+        Expression: SC_r <- if true then cast ( "2020-01-15" , date )
+                        else cast ( "2020-01-01/2020-03-31" , time );
+                    DS_r <- DS_1 [ calc Me_2 := SC_r ];
+        Description: Extra of case 6: the scalar if of a Date and a Time is the Time
+                     2020-01-15/2020-01-15. The DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_6e", number_inputs=1, references_names=["1", "2"])
+
     def test_GH_1352_7(self):
         """
         Status: OK
