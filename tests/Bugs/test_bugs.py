@@ -11636,6 +11636,43 @@ class NameResolutionBugs(BugHelper):
         """
         self.BaseTest(code="GH_1355_23g", number_inputs=1, references_names=["1", "2"])
 
+    def test_GH_1355_23h(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , Me_2 over ( order by Id_1 ) ) ];
+        Description: Extra of test_GH_1355_23: the offset of lag is an Integer Scalar, so the
+                     Component Me_2 raises 1-1-18-4 on both engines and in the semantic
+                     analysis. The pandas engine raised an internal ParserException and the
+                     DuckDB engine gave null data points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_23h",
+            number_inputs=1,
+            exception_code="1-1-18-4",
+            exception_message="At op lag: Offset parameter should be an Integer Scalar.",
+        )
+
+    def test_GH_1355_23i(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , SP_1 over ( order by Id_1 ) ) ];
+                    (SP_1 an input String Scalar)
+        Description: Extra of test_GH_1355_23: the String Scalar SP_1 is no Integer, which
+                     raises 1-1-18-4 on both engines and in the semantic analysis. The pandas
+                     engine raised an internal BinderException and the DuckDB engine 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_23i",
+            number_inputs=1,
+            exception_code="1-1-18-4",
+            exception_message="At op lag: Offset parameter should be an Integer Scalar.",
+            scalars={"SP_1": "A"},
+        )
+
     def test_GH_1355_24(self):
         """
         Status: OK

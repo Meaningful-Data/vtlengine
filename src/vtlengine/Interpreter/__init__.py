@@ -44,6 +44,8 @@ from vtlengine.AST.Grammar.tokens import (
     HIERARCHY,
     INSTR,
     KEEP,
+    LAG,
+    LEAD,
     MEMBERSHIP,
     MINUS,
     NVL,
@@ -1214,6 +1216,18 @@ class InterpreterAnalyzer(ASTTemplate):
                     params.append(param.value)
                 elif isinstance(param, AST.VarID):
                     resolved = self.visit(param)
+                    # The offset of lag or lead names an Integer Scalar, not a Component or a
+                    # Scalar of another type (issue #1355)
+                    if node.op in (LAG, LEAD) and not (
+                        isinstance(resolved, Scalar)
+                        and check_unary_implicit_promotion(resolved.data_type, Integer)
+                    ):
+                        raise SemanticError(
+                            "1-1-18-4",
+                            op=node.op,
+                            param_type="Offset",
+                            correct_type="an Integer Scalar",
+                        )
                     params.append(resolved.value if hasattr(resolved, "value") else resolved)
                 else:
                     params.append(param)
