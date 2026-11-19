@@ -12052,6 +12052,21 @@ class NameResolutionBugs(BugHelper):
             code="GH_1355_10h", number_inputs=2, exception_code="1-1-13-28"
         )
 
+    def test_GH_1355_10j(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset dpr1 ( variable Me_1 as 'X' ) is
+                        r1 : X > 1 errorcode "e"
+                    end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , dpr1 all );
+        Description: Extra of test_GH_1355_10d: a quoted alias of a datapoint ruleset signature
+                     names the variable without the quotes too, so the rule reads it as X. Both
+                     engines and the semantic analysis raised 1-1-10-7 for X.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_10j", number_inputs=1, references_names=["1"])
+
     def test_GH_1355_11(self):
         """
         Status: OK

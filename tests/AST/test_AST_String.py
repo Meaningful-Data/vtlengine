@@ -93,7 +93,8 @@ params_prettier = [
     ("GH_1334.vtl", "reference_GH_1334.vtl"),
     # An error code is written as the literal it is, a number with no quotes (issue #1349)
     ("GH_1349.vtl", "reference_GH_1349.vtl"),
-    # A qualified alias#comp of partition by, order by or rename is written unquoted (issue #1355)
+    # A qualified alias#comp of partition by, order by or rename is written unquoted, and a quoted
+    # join alias keeps one pair of quotes, in the alias and in alias#comp (issue #1355)
     ("GH_1355.vtl", "reference_GH_1355.vtl"),
 ]
 
