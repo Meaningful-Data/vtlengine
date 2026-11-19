@@ -464,7 +464,12 @@ class Nvl(Binary):
         dataset_name = VirtualCounter._new_ds_name()
         comp_name = VirtualCounter._new_dc_name()
         result_components = {}
-        keeps_nulls = isinstance(right, Scalar) and (right.data_type is Null or right.value is None)
+        # A scalar replacement that cannot be null, such as a cast of a literal, replaces the
+        # nulls also in the semantic analysis, which does not know the values it computes
+        # (issue #1354)
+        keeps_nulls = isinstance(right, Scalar) and (
+            right.data_type is Null or (right.nullable and right.value is None)
+        )
         if isinstance(right, DataComponent):
             keeps_nulls = right.nullable
         if isinstance(left, Scalar):

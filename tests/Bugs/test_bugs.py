@@ -11723,6 +11723,31 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_22", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_23(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := nvl ( Me_1 , cast ( "2020-01-01" , date ) ) ];
+        Description: A cast of a literal is a constant that is not null, so the nvl that it
+                     replaces nulls with is non-nullable. The DuckDB engine and the semantic
+                     analysis declared it nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_23", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_24(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc identifier Id_3 := nvl ( Me_1 ,
+                        cast ( "2020-01-01" , date ) ) ];
+        Description: As test_GH_1354_23, calc identifier accepts the nvl: 2020-05-01,
+                     2020-01-01, 2020-06-01. The DuckDB engine and the semantic analysis
+                     raised 1-1-1-16.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_24", number_inputs=1, references_names=["1"])
+
     def test_GH_1354_25(self):
         """
         Status: OK
