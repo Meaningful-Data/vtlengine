@@ -29,9 +29,12 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.DataTypes import String as StringType
 from vtlengine.DataTypes._time_checking import _has_time_component
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.duckdb_transpiler.sql import references_raising_macro
-from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS, get_duckdb_type
+from vtlengine.duckdb_transpiler.Transpiler.operators import (
+    COMPARISON_OPS,
+    get_duckdb_type,
+    text_to_period,
+)
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role, ValueDomain, value_of
@@ -41,15 +44,6 @@ from vtlengine.Operators.Join import Apply, merged_viral_attribute_names
 from vtlengine.Operators.Time import Unary as TimeUnary
 from vtlengine.Operators.Validation import error_domains, error_level_type
 from vtlengine.Utils import ANALYTIC_MAPPING, BINARY_MAPPING
-
-
-def _try_normalize_time_period(value: str) -> Optional[str]:
-    """Return the canonical TimePeriod string, or None if the handler rejects it."""
-    try:
-        return str(TimePeriodHandler(value))
-    except Exception:
-        return None
-
 
 # Operand type tags
 _DATASET = "Dataset"
@@ -366,7 +360,7 @@ class StructureVisitor(ASTTemplate):
                 return f"{sql_type} '{value}'"
             escaped = value.replace("'", "''")
             if type_name == "TimePeriod":
-                canonical = _try_normalize_time_period(value)
+                canonical = text_to_period(value)
                 if canonical is not None:
                     return f"'{canonical.replace(chr(39), chr(39) * 2)}'"
                 return f"vtl_period_normalize('{escaped}')"
