@@ -11993,3 +11993,56 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_43g", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_13(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := time_agg ( "A" , _ , SC_1 ) ];
+        Description: The input Scalar SC_1 is a Time_Period inside the clause too, so time_agg
+                     gives 2020 for 2020Q2. The DuckDB engine typed only the Components of the
+                     clause and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1352_13", number_inputs=1, references_names=["1"], scalars={"SC_1": "2020Q2"}
+        )
+
+    def test_GH_1352_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b
+                        calc Me_2 := a#Me_1 > b#Me_1 keep Me_2 );
+        Description: Durations named by their qualified name are ordered by their length, A > M,
+                     as plain Components are. The DuckDB engine compared their letters.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_14", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b
+                        calc Me_2 := getmonth ( a#Me_1 ) keep Me_2 );
+        Description: A Time_Period named by its qualified name keeps its type, so getmonth gives
+                     1 for 2020Q1 and 12 for 2021M12. The DuckDB engine raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_15", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_40e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := time_agg ( "A" , _ , nvl ( Me_1 , Me_1 ) ) ,
+                        Me_3 := time_agg ( "A" , _ , if Id_1 = 1 then Me_1 else Me_1 ) ,
+                        Me_4 := time_agg ( "A" , _ , case when Id_1 = 1 then Me_1 else Me_1 ) ];
+        Description: Extra of case 40: the nvl, the if and the case of the Time_Period Me_1 are
+                     Time_Periods, which time_agg aggregates to 2020 and 2021. The DuckDB engine
+                     read them as Dates and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40e", number_inputs=1, references_names=["1"])
