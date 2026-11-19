@@ -73,8 +73,10 @@ class Aggregation(Operator.Unary):
                         )
                         if indicators.nunique() > 1:
                             raise RunTimeError("2-1-19-20", op=cls.op)
+                    # Compared as their text, which orders the periods of one indicator, as
+                    # an object column cannot be read next to the Arrow Identifiers (issue #1354)
                     data[measure.name] = data[measure.name].map(
-                        lambda x: TimePeriodHandler(str(x)), na_action="ignore"
+                        lambda x: str(TimePeriodHandler(str(x))), na_action="ignore"
                     )
                 else:
                     data[measure.name] = data[measure.name].map(
