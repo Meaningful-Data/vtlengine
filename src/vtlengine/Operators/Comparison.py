@@ -628,8 +628,9 @@ class ExistIn(Operator.Operator):
             true_results["bool_var"] = True
         if dataset_1.data is None:
             dataset_1.data = pd.DataFrame(columns=reference_identifiers_names)
+        # Only the Identifiers of dataset_1: a bool_var Measure of it is replaced, not merged
         final_result = merge_frames(
-            dataset_1.data,
+            dataset_1.data[reference_identifiers_names],
             true_results,
             how="left",
             left_on=reference_identifiers_names,

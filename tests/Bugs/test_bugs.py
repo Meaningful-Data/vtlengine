@@ -11671,6 +11671,18 @@ class TimeValueBugs(BugHelper):
         """
         self.BaseTest(code="GH_1352_11e", number_inputs=2, references_names=["1"])
 
+    def test_GH_1352_11f(self):
+        """
+        Status: OK
+        Expression: DS_r <- exists_in ( exists_in ( DS_1 , DS_2 ) , DS_1 );
+        Description: Extra of case 11: exists_in of a Data Set that has a bool_var Measure, the
+                     result of the inner exists_in, gives a new bool_var. The pandas engine
+                     merged both bool_var columns and raised a raw KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_11f", number_inputs=2, references_names=["1"])
+
     def test_GH_1352_12(self):
         """
         Status: OK
