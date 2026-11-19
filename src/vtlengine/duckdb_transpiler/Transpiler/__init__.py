@@ -9,6 +9,7 @@ from itertools import groupby
 from typing import (
     Any,
     Callable,
+    Collection,
     Dict,
     FrozenSet,
     Generator,
@@ -5590,22 +5591,34 @@ FROM (
     def _error_level_sql(self, rule: Any) -> str:
         """The errorlevel of a rule, written as text when the levels of its ruleset mix types
         and errorlevel_vd is not given."""
+        levels = next(
+            (
+                [r.erLevel for r in info["rules"]]
+                for info in (*self._dprs.values(), *self._hrs.values())
+                if any(r is rule for r in info["rules"])
+            ),
+            [rule.erLevel],
+        )
         level = rule.erLevel
-        if level is not None and error_domains(self.value_domains)["errorlevel"] is None:
-            for info in (*self._dprs.values(), *self._hrs.values()):
-                if any(r is rule for r in info["rules"]):
-                    if error_level_type([r.erLevel for r in info["rules"]]) is String:
-                        level = error_level_text(level)
-                    break
-        return self._error_code_sql(level, "errorlevel")
+        if (
+            level is not None
+            and error_domains(self.value_domains)["errorlevel"] is None
+            and error_level_type(levels) is String
+        ):
+            level = error_level_text(level)
+        return self._error_code_sql(level, "errorlevel", levels)
 
-    def _error_code_sql(self, value: Any, element: str = "errorcode") -> str:
+    def _error_code_sql(
+        self, value: Any, element: str = "errorcode", levels: Collection[Any] = ()
+    ) -> str:
         """Convert an errorcode or errorlevel value (element) to a SQL literal, of the basic type
-        of errorcode_vd or errorlevel_vd when it is given."""
+        of errorcode_vd or errorlevel_vd when it is given. An omitted errorlevel is a null of the
+        type of the errorlevel of the levels of its ruleset (issue #1354)."""
         value_domain = error_domains(self.value_domains)[element]
         if value_domain is None:
             if value is None:
-                return "CAST(NULL AS VARCHAR)"
+                null_type = error_level_type(levels) if element == "errorlevel" else String
+                return f"CAST(NULL AS {get_duckdb_type(null_type.__name__)})"
             return self._to_sql_literal(value=error_value(element, value, None, ""))
         type_name = value_domain.type.__name__
         if value is None:

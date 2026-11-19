@@ -11382,3 +11382,39 @@ class StructureDataBugs(BugHelper):
         """
         self.BaseTest(code="GH_1354_5", number_inputs=1, references_names=["1"])
 
+    def test_GH_1354_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( check_datapoint ( DS_1 , DPR_1 invalid ) [ keep errorlevel ]
+                        group by Id_1 );
+        Description: The errorlevel of R2, which gives none, is a null Integer, as the
+                     structure declares, so sum reads it. The DuckDB engine wrote it as text
+                     and raised BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_6", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( check_hierarchy ( DS_1 , HR_1 rule Id_2 all )
+                        [ keep errorlevel ] group by Id_1 );
+        Description: As test_GH_1354_6 for a hierarchical ruleset.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_7", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 0 errorcode "E1" invalid )
+                        [ calc Me_9 := errorlevel + 1 ];
+        Description: The errorlevel of a check that gives none is a null Integer, so
+                     Me_9 is a null Integer. The DuckDB engine raised BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_8", number_inputs=1, references_names=["1"])
+
