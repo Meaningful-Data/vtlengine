@@ -4431,8 +4431,10 @@ FROM (
         is_dataset = self._get_node_type(node) == _DATASET
         declared, constraints = udo_def["return_type"], udo_def["return_constraints"]
         checked_dataset = constraints is not None and isinstance(declared, Dataset)
-        # The structure of the result, worked out in the scope of the caller
+        # The structure of the result, worked out in the scope of the caller, and the result as
+        # the semantic analysis gives it
         structure = self._get_dataset_structure(node) if checked_dataset else None
+        result = self._udo_result(node)
         bindings = self._build_udo_bindings(udo_def, node, include_types=True)
         expression = deepcopy(udo_def["expression"])
 
@@ -4449,6 +4451,10 @@ FROM (
                 sql = self._udo_checked_sql(
                     sql, value, [(node.op, "the output", constraints.value)]
                 )
+            if isinstance(result, Scalar) and result.data_type in (Integer, Number, String):
+                # A scalar result is a value of its type, as on the pandas engine: 2 returned as
+                # a Number is 2.0 (issue #1351)
+                sql = f"CAST({sql} AS {get_duckdb_type(result.data_type.__name__)})"
             return self._udo_checked_arguments(sql, node.op, udo_def["params"], is_dataset)
         finally:
             self._pop_udo_params()
