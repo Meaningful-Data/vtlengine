@@ -11527,3 +11527,27 @@ class ValueDomainBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1351_42", number_inputs=1, references_names=["1"])
+
+    def test_GH_1351_43(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer , y integer ) returns integer is y
+                        end operator;
+                    SC_r <- f ( 7 / 2 , 1 );
+        Description: Extra case: the Number 3.5 given to the integer parameter x raises
+                     1-2-18 where the call is computed, on both engines, also when the body
+                     never reads x (test_GH_1351_37 reads it). The semantic analysis does not
+                     know the value and gives the structure.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
+        Goal: Check Exception.
+        """
+        with pytest.raises(SemanticError) as context:
+            self.BaseTest(code="GH_1351_43", number_inputs=1, references_names=["1"])
+        self._check_error(
+            context.value,
+            "1-2-18",
+            "Expected Integer, got Number on UDO f, parameter x.",
+        )
+        self.BaseTest(
+            code="GH_1351_43", number_inputs=1, references_names=["1"], only_semantic=True
+        )
