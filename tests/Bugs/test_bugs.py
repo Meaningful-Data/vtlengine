@@ -11436,6 +11436,36 @@ class StructureDataBugs(BugHelper):
             exception_message="The component errorcode in Dataset",
         )
 
+    def test_GH_1354_9b(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 [ rename Me_1 to bool_var ] , DPR_2 all );
+        Description: Extra of case 9: with all the result does not keep the Measures of the
+                     operand, so its Measure bool_var collides with nothing and the result is
+                     given.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_9b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_9c(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 [ calc imbalance := Me_1 ] , DPR_1
+                        all_measures );
+        Description: Extra of case 9: the operand Measure imbalance collides with the name of
+                     a validation Measure. The pandas engine gave two imbalance columns, the
+                     DuckDB engine one.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_9c",
+            number_inputs=1,
+            exception_code="1-1-6-14",
+            exception_message="The component imbalance in Dataset",
+        )
+
     def test_GH_1354_10(self):
         """
         Status: OK
@@ -11471,6 +11501,19 @@ class StructureDataBugs(BugHelper):
             exception_code="1-1-6-14",
             exception_message="The component bool_var in Dataset",
         )
+
+    def test_GH_1354_11b(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_hierarchy ( DS_1 [ rename Me_1 to imbalance ] , HR_1
+                        rule Id_2 all );
+        Description: Extra of case 10: with all the result does not keep the Measure of the
+                     operand, so its name imbalance collides with nothing and the computed
+                     imbalance is given.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_11b", number_inputs=1, references_names=["1"])
 
     def test_GH_1354_26(self):
         """

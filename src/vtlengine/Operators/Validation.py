@@ -26,6 +26,8 @@ from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 
 ERROR_VALUE_DOMAINS = {"errorcode": "errorcode_vd", "errorlevel": "errorlevel_vd"}
+# The Measures a validation computes
+VALIDATION_MEASURES = ("bool_var", "imbalance", "errorcode", "errorlevel")
 
 
 def error_domains(
@@ -283,9 +285,6 @@ class Check(Operator):
 
 # noinspection PyTypeChecker
 class Validation(Operator):
-    # The Measures the operator computes: an operand Measure must not have their names
-    computed_measures: Tuple[str, ...] = ("bool_var", "errorcode", "errorlevel")
-
     @classmethod
     def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
         rule_list_df = []
@@ -313,10 +312,10 @@ class Validation(Operator):
         viral_values: Optional[pd.DataFrame] = None,
         value_domains: Optional[Dict[str, ValueDomain]] = None,
     ) -> Dataset:
-        # A Measure of the operand named like a computed one would collide with it in the result,
-        # as in an unpivot (issue #1354)
-        for name in dataset_element.get_measures_names():
-            if name in cls.computed_measures:
+        # A Measure of the operand that the result keeps (invalid, all_measures) and that is named
+        # like a computed one would collide with it, as in an unpivot (issue #1354)
+        for name in dataset_element.get_measures_names() if output != "all" else []:
+            if name in VALIDATION_MEASURES:
                 raise SemanticError("1-1-6-14", op=cls.op, name=name, dataset=dataset_element.name)
         error_levels = [rule_data.get("errorlevel") for rule_data in rule_info.values()]
         dataset_name = VirtualCounter._new_ds_name()
@@ -455,7 +454,6 @@ class Check_Datapoint(Validation):
 
 class Check_Hierarchy(Validation):
     op = CHECK_HIERARCHY
-    computed_measures = (*Validation.computed_measures, "imbalance")
 
     @classmethod
     def _generate_result_data(cls, rule_info: Dict[str, Any]) -> pd.DataFrame:
