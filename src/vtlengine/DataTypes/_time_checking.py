@@ -5,7 +5,7 @@ from functools import lru_cache
 from typing import Any, Final
 
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
-from vtlengine.Exceptions import InputValidationException
+from vtlengine.Exceptions import InputValidationException, RunTimeError
 
 _DATE_PART_RE = re.compile(r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})")
 
@@ -256,15 +256,30 @@ def check_time_period(value: str) -> str:
     if isinstance(value, int):
         value = str(value)
     value = value.strip()
-    return _check_time_period_cached(value)
+    try:
+        return _check_time_period_cached(value)
+    except RunTimeError:
+        # A period written in one of the formats that is no period, such as 2020M13, 2021D366
+        # or the year 0001: a value that cannot be read as a Time_Period (issue #1352)
+        raise InputValidationException(
+            code="0-1-1-35", value=value, type_1="String", type_2="Time_Period"
+        ) from None
+
+
+def _period_text(period: str) -> str:
+    """The internal text of a period, whose year is written with four digits: a year below
+    1000 has no such text (issue #1352)."""
+    result = TimePeriodHandler(period)
+    if result.year < 1000:
+        raise RunTimeError("2-1-19-10", year=result.year)
+    return str(result)
 
 
 @lru_cache(maxsize=4096)
 def _check_time_period_cached(value: str) -> str:
     # Try vtl formats first
     if _vtl_period_re.fullmatch(value) is not None:
-        result = TimePeriodHandler(f"{value}A") if len(value) == 4 else TimePeriodHandler(value)
-        return str(result)
+        return _period_text(f"{value}A" if len(value) == 4 else value)
 
     # Normalize YYYY-M-D, YYYY-M-DD, YYYY-MM-D to zero-padded YYYY-MM-DD
     match_iso_date = _iso_date_re.fullmatch(value)
@@ -279,8 +294,7 @@ def _check_time_period_cached(value: str) -> str:
 
     # Try sdmx formats
     if _sdmx_period_re.fullmatch(value) is not None:
-        result = TimePeriodHandler(value)
-        return str(result)
+        return _period_text(value)
 
     raise InputValidationException(
         code="0-1-1-31",

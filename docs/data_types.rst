@@ -212,6 +212,9 @@ Time_Period
 
     * - **Input (CSV/DataFrame)**
       - Multiple formats accepted (see tables below).
+        Year range: 1000–9999. A value written in one of
+        the formats that is no period (``"2020M13"``,
+        ``"2021D366"``, ``"0001"``) raises ``0-3-1-6``.
     * - **Internal representation**
       - Hyphenated string (e.g. ``"2020-M01"``,
         ``"2020-Q1"``), stored as ``string[pyarrow]``.
