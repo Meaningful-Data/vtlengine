@@ -61,6 +61,7 @@ from vtlengine.AST.Grammar.tokens import (
 )
 from vtlengine.AST.UDOTypes import (
     resolve_value_domain_type,
+    udo_call_key,
     udo_component_matches,
     udo_dataset_components,
     udo_result_on_value_domains,
@@ -269,6 +270,11 @@ class InterpreterAnalyzer(ASTTemplate):
     udo_constraints: List[Dict[str, List[Tuple[str, str, AST.TypeConstraint]]]] = field(
         default_factory=list
     )
+    # The key of the call being computed (see udo_call_key), and, in the semantic analysis, the
+    # result of each call (None) and each of its dataset arguments (by the parameter), which the
+    # DuckDB engine reads in place of the structures it would work out (issue #1351)
+    udo_call: Tuple[Any, ...] = ()
+    udo_results: Dict[Tuple[Tuple[Any, ...], Optional[str]], Any] = field(default_factory=dict)
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
     # Names of the rules that computed each code item, in evaluation order
     hr_agg_item_rules: Optional[Dict[str, List[str]]] = None
@@ -2740,6 +2746,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         operator = self.udos[node.op]
         signature_values: Dict[str, Any] = {}
+        key = udo_call_key(self.udo_call, node)
 
         if operator is None:
             raise SemanticError("1-2-3", node_op=node.op, op_type="User Defined Operator")
@@ -2851,7 +2858,7 @@ class InterpreterAnalyzer(ASTTemplate):
                         value_domain=_udo_scalar_value_domain(param, param_element),
                     )
 
-        component_constraints = self._check_udo_arguments(node, operator, signature_values)
+        component_constraints = self._check_udo_arguments(node, operator, signature_values, key)
 
         # We set it here to a list to start the stack of UDO params
         if self.udo_params is None:
@@ -2874,8 +2881,11 @@ class InterpreterAnalyzer(ASTTemplate):
         self.udo_constraints.append(component_constraints)
 
         # Calling the UDO AST, we use deepcopy to avoid changing the original UDO AST
-        if operator is not None:
+        outer_call, self.udo_call = self.udo_call, key
+        try:
             result = self.visit(deepcopy(operator["expression"]))
+        finally:
+            self.udo_call = outer_call
         self.udo_calls.pop()
         self.udo_constraints.pop()
 
@@ -2898,6 +2908,8 @@ class InterpreterAnalyzer(ASTTemplate):
             node.op, "the output", return_type, return_constraints, result
         )
         result = udo_result_on_value_domains(result, return_constraints, taken)
+        if self.only_semantic:
+            self.udo_results[(key, None)] = result
 
         # We pop the last element of the stack (current UDO params)
         # to avoid using them in the next UDO call
@@ -2991,7 +3003,11 @@ class InterpreterAnalyzer(ASTTemplate):
         return value
 
     def _check_udo_arguments(
-        self, node: AST.UDOCall, operator: Dict[str, Any], signature_values: Dict[str, Any]
+        self,
+        node: AST.UDOCall,
+        operator: Dict[str, Any],
+        signature_values: Dict[str, Any],
+        key: Tuple[Any, ...],
     ) -> Dict[str, List[Tuple[str, str, AST.TypeConstraint]]]:
         """Check the scalar and dataset arguments of a call against what the types of their
         parameters declare, and give the constraints of the component parameters, whose values
@@ -3016,12 +3032,19 @@ class InterpreterAnalyzer(ASTTemplate):
                 if checks:
                     component_constraints[param["name"]] = checks
                 continue
-            if constraints is None and not (isinstance(declared, Dataset) and declared.components):
-                continue
             value = signature_values[param["name"]]
-            if isinstance(value, str):
+            checked = constraints is not None or (
+                isinstance(declared, Dataset) and bool(declared.components)
+            )
+            if isinstance(declared, Dataset) and isinstance(value, str):
+                if not (checked or self.only_semantic):
+                    continue
                 # A dataset given by its name
                 value = self.visit(node.params[i])
+            if isinstance(declared, Dataset) and self.only_semantic:
+                self.udo_results[(key, param["name"])] = value
+            if not checked:
+                continue
             self._check_udo_signature(
                 node.op, f"parameter {param['name']}", declared, constraints, value
             )

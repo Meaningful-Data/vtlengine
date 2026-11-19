@@ -412,6 +412,7 @@ def _run_with_duckdb(
         value_domains=loaded_vds or {},
         external_routines=loaded_routines or {},
         dag=dag,
+        udo_results=interpreter.udo_results,
         time_period_output_format=time_period_output_format,
     )
     queries = transpiler.transpile(ast)

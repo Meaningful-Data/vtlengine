@@ -7,7 +7,11 @@ from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
-from vtlengine.AST.UDOTypes import udo_dataset_components, udo_result_on_value_domains
+from vtlengine.AST.UDOTypes import (
+    udo_call_key,
+    udo_dataset_components,
+    udo_result_on_value_domains,
+)
 from vtlengine.DataTypes import (
     _DUCKDB_TYPE_TO_VTL,
     BASIC_TYPES,
@@ -53,6 +57,8 @@ _UDO_DEPTH_PREFIX = "__depth__"
 # Key of a UDO scope with the type constraints that the value of a parameter must meet:
 # (operator, parameter, declared type, constraints), outermost first
 _UDO_CHECKS_PREFIX = "__checks__"
+# Key of a UDO scope with the key of its call (see udo_call_key)
+_UDO_CALL = "__call__"
 
 # Role encoded in UnaryOp.op for calc clauses.
 _CALC_ROLE_BY_TOKEN: Dict[str, Role] = {
@@ -87,6 +93,9 @@ class StructureVisitor(ASTTemplate):
         self._structure_memo: Optional[Dict[Tuple[int, str], Tuple[AST.AST, Any]]] = None
         self._node_type_memo: Optional[Dict[int, Tuple[AST.AST, str]]] = None
         self._materialized_operands: List[Tuple[str, str]] = []
+        # The results and dataset arguments of the calls of user defined operators, as the
+        # semantic analysis gives them (see InterpreterAnalyzer.udo_results)
+        self.udo_results: Dict[Tuple[Tuple[Any, ...], Optional[str]], Any] = {}
 
     # Dispatcher: two-level visit — first ``visit_{Class}_{op}``, then ``visit_{Class}``
 
@@ -301,7 +310,7 @@ class StructureVisitor(ASTTemplate):
         elif isinstance(node, AST.UDOCall) and node.op in self._udos:
             # The body is typed with the arguments of the call bound (issue #1276)
             udo_def = self._udos[node.op]
-            self._push_udo_params(self._build_udo_bindings(udo_def, node.params))
+            self._push_udo_params(self._build_udo_bindings(udo_def, node))
             try:
                 return self._get_node_type(udo_def["expression"])
             finally:
@@ -810,18 +819,16 @@ class StructureVisitor(ASTTemplate):
         return Dataset(name=ds.name, components=comps, data=None)
 
     def _build_udo_bindings(
-        self,
-        udo_def: Dict[str, Any],
-        call_params: List[Any],
-        include_types: bool = False,
-        op: Optional[str] = None,
+        self, udo_def: Dict[str, Any], node: AST.UDOCall, include_types: bool = False
     ) -> Dict[str, Any]:
         """Bind a UDO call's arguments (positional + defaults) to parameter names.
 
-        With include_types, the constraints of the type of each parameter of the operator op
+        With include_types, the constraints of the type of each parameter of the operator
         are kept under __checks__, with the ones of the parameter passed on to it, if any:
         the values are checked where they are read, even inside another operator."""
-        bindings: Dict[str, Any] = {}
+        call_params: List[Any] = node.params
+        op = node.op
+        bindings: Dict[str, Any] = {_UDO_CALL: self._udo_call_key(node)}
         depth = len(self._udo_params or [])  # The arguments are written in the caller's scope
         for i, param_info in enumerate(udo_def["params"]):
             param_name = param_info["name"]
@@ -860,12 +867,27 @@ class StructureVisitor(ASTTemplate):
                 bindings[f"{_UDO_CHECKS_PREFIX}{param_name}"] = [*inherited, *own]
         return bindings
 
+    def _udo_call_key(self, node: AST.UDOCall) -> Tuple[Any, ...]:
+        """The key of a call made in the current UDO scope (see udo_call_key)."""
+        scopes = reversed(self._udo_params or [])
+        return udo_call_key(next((s[_UDO_CALL] for s in scopes if _UDO_CALL in s), ()), node)
+
+    def _udo_result(self, node: AST.UDOCall) -> Any:
+        """The result of a UDO call as the semantic analysis gives it, None when unknown."""
+        return self.udo_results.get((self._udo_call_key(node), None))
+
     def _resolve_udocall_structure(self, node: AST.UDOCall) -> Optional[Dataset]:
-        """Resolve a UDO call by binding its parameters and visiting the body."""
+        """Resolve a UDO call: the structure the semantic analysis gives its result, or the one
+        of its body with its parameters bound."""
         if node.op not in self._udos:
             return self._get_output_dataset()
+        result = self._udo_result(node)
+        if isinstance(result, Dataset):
+            # As the pandas engine computes it, with the types of the components the body
+            # computes, which the structures worked out here only guess (issue #1351)
+            return result
         udo_def = self._udos[node.op]
-        self._push_udo_params(self._build_udo_bindings(udo_def, node.params))
+        self._push_udo_params(self._build_udo_bindings(udo_def, node))
         try:
             structure = self._get_dataset_structure(udo_def["expression"])
         finally:

@@ -73,6 +73,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _COMPONENT,
     _DATASET,
     _SCALAR,
+    _UDO_CALL,
     _UDO_CHECKS_PREFIX,
     _UDO_DEPTH_PREFIX,
     StructureVisitor,
@@ -413,6 +414,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     value_domains: Dict[str, ValueDomain] = field(default_factory=dict)
     external_routines: Dict[str, ExternalRoutine] = field(default_factory=dict)
+
+    # The results and dataset arguments of the calls of user defined operators, as the
+    # semantic analysis gives them (see InterpreterAnalyzer.udo_results)
+    udo_results: Dict[Tuple[Tuple[Any, ...], Optional[str]], Any] = field(default_factory=dict)
 
     # Dependency graph
     dag: Any = field(default=None)
@@ -763,8 +768,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         ]
         if not dataset_checks:
             return sql
-        with self._udo_arg_scope(name):
-            structure = self._get_dataset_structure(udo_val)
+        # The structure of the argument as the semantic analysis gives it (issue #1351)
+        structure = self.udo_results.get((scope.get(_UDO_CALL, ()), name)) if scope else None
+        if structure is None:
+            with self._udo_arg_scope(name):
+                structure = self._get_dataset_structure(udo_val)
         return self._udo_checked_dataset_sql(sql, structure, dataset_checks)
 
     def _udo_checked_sql(
@@ -4415,18 +4423,19 @@ FROM (
         """Visit a UDO call by expanding its definition with parameter bindings."""
         udo_def = self._udos[node.op]
         is_dataset = self._get_node_type(node) == _DATASET
-        bindings = self._build_udo_bindings(udo_def, node.params, include_types=True, op=node.op)
+        declared, constraints = udo_def["return_type"], udo_def["return_constraints"]
+        checked_dataset = constraints is not None and isinstance(declared, Dataset)
+        # The structure of the result, worked out in the scope of the caller
+        structure = self._get_dataset_structure(node) if checked_dataset else None
+        bindings = self._build_udo_bindings(udo_def, node, include_types=True)
         expression = deepcopy(udo_def["expression"])
 
         self._push_udo_params(bindings)
         try:
             sql = self.visit(expression)
-            declared, constraints = udo_def["return_type"], udo_def["return_constraints"]
-            if constraints is not None and isinstance(declared, Dataset):
+            if checked_dataset:
                 sql = self._udo_checked_dataset_sql(
-                    sql,
-                    self._get_dataset_structure(node),
-                    [(node.op, "the output", declared, constraints)],
+                    sql, structure, [(node.op, "the output", declared, constraints)]
                 )
             elif constraints is not None and constraints.value is not None:
                 # A Component or a scalar output

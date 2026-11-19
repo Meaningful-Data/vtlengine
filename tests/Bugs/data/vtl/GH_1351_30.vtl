@@ -1,0 +1,5 @@
+define operator flag ( ds dataset )
+    returns dataset { identifier < integer > Id_1 , measure < integer > Me_1 , measure < VD_B > Me_2 } is
+        ds [ calc Me_2 := Me_1 > 1 ]
+end operator;
+DS_r <- union ( flag ( DS_2 [ filter Id_1 = 1 ] ) , flag ( DS_2 ) );
