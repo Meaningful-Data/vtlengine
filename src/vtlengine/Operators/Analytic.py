@@ -1,4 +1,5 @@
 from copy import copy
+from math import inf
 from typing import Dict, List, Optional, Union
 
 import pandas as pd
@@ -242,6 +243,8 @@ class Analytic(Operator.Unary):
             if name in result_components and result_components[name].value_domain is not None:
                 result_components[name] = copy(result_components[name])
                 result_components[name].value_domain = None
+            if name in result_components and cls.op != COUNT and cls._may_be_empty(window):
+                result_components[name] = cls._as_nullable(result_components[name])
         dataset_name = VirtualCounter._new_ds_name()
         # Analytic combines the data points within each partition, so the surviving viral
         # attributes are combined and require a propagation rule (issue #906).
@@ -471,6 +474,28 @@ class Analytic(Operator.Unary):
         nullable_component = copy(component)
         nullable_component.nullable = True
         return nullable_component
+
+    @staticmethod
+    def _may_be_empty(window: Optional[Windowing]) -> bool:
+        """Whether the window can hold no data point: it does when it does not reach the
+        current data point, so the function gives null there (issue #1354)."""
+        if window is None:
+            return False
+
+        def offset(limit: Union[int, str], mode: str) -> Optional[float]:
+            """Position of a limit from the current data point, None when it is not known
+            here (a scalar in the semantic analysis)."""
+            if limit == "current row":
+                return 0
+            if limit == "unbounded":
+                return -inf if mode == "preceding" else inf
+            if not isinstance(limit, int):
+                return None
+            return -limit if mode == "preceding" else limit
+
+        start = offset(window.start, window.start_mode)
+        stop = offset(window.stop, window.stop_mode)
+        return start is None or stop is None or start > 0 or stop < 0
 
     @classmethod
     def normalize_dates(
