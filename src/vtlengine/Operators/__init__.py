@@ -147,6 +147,20 @@ def _time_value(value: str) -> Any:
     return TimeIntervalHandler.from_iso_format(value) if "/" in value else value
 
 
+def may_be_null(scalar: Scalar) -> bool:
+    """Whether a Scalar operand can hold a null: it is declared nullable and its value is not
+    known to be one that is not null, as in the semantic analysis (issue #1354)."""
+    return scalar.nullable and scalar.value is None
+
+
+def param_may_be_null(param: Any) -> bool:
+    """Whether a parameter of an operator can hold a null: a nullable Component, or a Scalar
+    that may be null (issue #1354)."""
+    if isinstance(param, DataComponent):
+        return param.nullable
+    return isinstance(param, Scalar) and may_be_null(param)
+
+
 class Operator:
     """Superclass for all operators"""
 
@@ -581,6 +595,9 @@ class Binary(Operator):
             for comp_name, comp in dataset.components.items()
             if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
+        if may_be_null(scalar):
+            for comp in result_components.values():
+                comp.nullable = comp.nullable or comp.role == Role.MEASURE
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, dataset, scalar)
         return result_dataset
@@ -631,7 +648,7 @@ class Binary(Operator):
             data_type=cls.type_validation(component.data_type, scalar.data_type),
             data=None,
             role=component.role,
-            nullable=component.nullable or scalar is None,
+            nullable=component.nullable or may_be_null(scalar),
         )
         return result
 

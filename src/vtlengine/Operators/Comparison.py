@@ -517,6 +517,10 @@ class Between(Operator.Operator):
         if isinstance(from_, Dataset) or isinstance(to, Dataset):
             # A bound is a Component or a Scalar (issue #1356)
             raise SemanticError("1-1-15-8", op=cls.op, comp_type="Dataset")
+        # A bound that can be null makes the result null (issue #1354)
+        null_bound = any(
+            isinstance(bound, Scalar) and Operator.may_be_null(bound) for bound in (from_, to)
+        )
         if isinstance(operand, Dataset):
             if len(operand.get_measures()) == 0:
                 raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
@@ -525,6 +529,8 @@ class Between(Operator.Operator):
                 for comp_name, comp in operand.components.items()
                 if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
             }
+            for comp in result_components.values():
+                comp.nullable = comp.nullable or (null_bound and comp.role == Role.MEASURE)
             result = Dataset(name=operand.name, components=result_components, data=None)
         elif isinstance(operand, DataComponent):
             result = DataComponent(
@@ -532,7 +538,7 @@ class Between(Operator.Operator):
                 data=None,
                 data_type=cls.return_type,
                 role=operand.role,
-                nullable=operand.nullable,
+                nullable=operand.nullable or null_bound,
             )
         elif isinstance(from_, Scalar) and isinstance(to, Scalar):
             nullable = operand.nullable or from_.nullable or to.nullable
@@ -697,14 +703,15 @@ class ExistIn(Operator.Operator):
 
         # Check if the common identifiers are equal between the two datasets
         if dataset_1.data is not None and dataset_2.data is not None:
+            # Only the Identifiers are matched, and a data point of dataset_1 once, however
+            # many of dataset_2 match it (issue #1354)
             true_results = merge_frames(
-                dataset_1.data,
-                dataset_2.data,
+                dataset_1.data[reference_identifiers_names],
+                dataset_2.data[common_columns].drop_duplicates(),
                 how="inner",
                 left_on=common_columns,
                 right_on=common_columns,
             )
-            true_results = true_results[reference_identifiers_names]
         else:
             true_results = pd.DataFrame(columns=reference_identifiers_names)
 

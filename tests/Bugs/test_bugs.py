@@ -15706,3 +15706,886 @@ class ValueDomainFollowUpBugs(BugHelper):
             vd_names=self.vd_1364,
             scalars={"SC_1": 7},
         )
+
+
+class StructureDataBugs(BugHelper):
+    """Results whose data do not match their declared structure (issue #1354)."""
+
+    def test_GH_1354_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 0 all );
+        Description: check combines no data points, so the viral Attribute At_1 of DS_1 is
+                     copied to the result: H, null, null. Both engines declared it and gave
+                     no data column for it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_1", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 0 all );
+        Description: The Date viral Attribute At_2 of DS_1 is copied to the result:
+                     2020-01-01, null, null. Both engines raised KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_2", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_2b(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 0 all );
+        Description: Extra of case 2: DS_1 has a viral Attribute named imbalance, like a Measure
+                     check computes. The computed Measure keeps the name, as before the viral
+                     Attributes were copied to the result, and the viral Attribute is not in it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_2b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 , DPR_1 all );
+        Description: Control: check_datapoint copies the viral Attribute At_1 of DS_1 to each
+                     rule of a data point.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_3", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 0 imbalance DS_2 # Me_1 all );
+        Description: The imbalance is matched with the data points of DS_1 by the Identifiers,
+                     and all keeps the data point (1, A), which has none in DS_2, with a null
+                     imbalance: null, 20, 30. The pandas engine paired them by position, and
+                     the DuckDB engine dropped (1, A).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_4", number_inputs=2, references_names=["1"])
+
+    def test_GH_1354_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 errorcode "E1" all );
+        Description: The result Measure of check is always bool_var, also when DS_1 has one
+                     Boolean Measure Me_1. Both engines and the semantic analysis declared
+                     Me_1, which the DuckDB engine wrote as bool_var.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_5", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( check_datapoint ( DS_1 , DPR_1 invalid ) [ keep errorlevel ]
+                        group by Id_1 );
+        Description: The errorlevel of R2, which gives none, is a null Integer, as the
+                     structure declares, so sum reads it. The DuckDB engine wrote it as text
+                     and raised BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_6", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( check_hierarchy ( DS_1 , HR_1 rule Id_2 all )
+                        [ keep errorlevel ] group by Id_1 );
+        Description: As test_GH_1354_6 for a hierarchical ruleset.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_7", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 0 errorcode "E1" invalid )
+                        [ calc Me_9 := errorlevel + 1 ];
+        Description: The errorlevel of a check that gives none is a null Integer, so
+                     Me_9 is a null Integer. The DuckDB engine raised BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_8", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 [ calc errorcode := "x" , errorlevel := 9 ] ,
+                        DPR_1 all_measures );
+        Description: The operand Measure errorcode collides with the one check_datapoint
+                     computes. The pandas engine gave two errorcode and two errorlevel
+                     columns, and the DuckDB engine replaced the operand's.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_9",
+            number_inputs=1,
+            exception_code="1-1-6-14",
+            exception_message="The component errorcode in Dataset",
+        )
+
+    def test_GH_1354_9b(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 [ rename Me_1 to bool_var ] , DPR_2 all );
+        Description: Extra of case 9: with all the result does not keep the Measures of the
+                     operand, so its Measure bool_var collides with nothing and the result is
+                     given.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_9b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_9c(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 [ calc imbalance := Me_1 ] , DPR_1
+                        all_measures );
+        Description: Extra of case 9: the operand Measure imbalance collides with the name of
+                     a validation Measure. The pandas engine gave two imbalance columns, the
+                     DuckDB engine one.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_9c",
+            number_inputs=1,
+            exception_code="1-1-6-14",
+            exception_message="The component imbalance in Dataset",
+        )
+
+    def test_GH_1354_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_hierarchy ( DS_1 [ rename Me_1 to imbalance ] , HR_1
+                        rule Id_2 all_measures );
+        Description: The operand Measure imbalance collides with the one check_hierarchy
+                     computes. The pandas engine gave two imbalance columns, and the DuckDB
+                     engine the operand's value.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_10",
+            number_inputs=1,
+            exception_code="1-1-6-14",
+            exception_message="The component imbalance in Dataset",
+        )
+
+    def test_GH_1354_11(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 [ rename Me_1 to bool_var ] , DPR_2
+                        invalid );
+        Description: The operand Measure bool_var collides with the one check_datapoint
+                     computes. The pandas engine raised KeyError, and the DuckDB engine
+                     returned the operand's bool_var.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_11",
+            number_inputs=1,
+            exception_code="1-1-6-14",
+            exception_message="The component bool_var in Dataset",
+        )
+
+    def test_GH_1354_11b(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_hierarchy ( DS_1 [ rename Me_1 to imbalance ] , HR_1
+                        rule Id_2 all );
+        Description: Extra of case 10: with all the result does not keep the Measure of the
+                     operand, so its name imbalance collides with nothing and the computed
+                     imbalance is given.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_11b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_26(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 [ calc Me_2 := Me_1 ] , DS_1 );
+        Description: The Data Set operands of nvl must have the same Components. Both engines
+                     and the semantic analysis raised KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_26",
+            number_inputs=1,
+            exception_code="1-1-9-20",
+            exception_message="At op nvl",
+        )
+
+    def test_GH_1354_27(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_1 [ calc Me_2 := Me_1 ] );
+        Description: As test_GH_1354_26 with the extra Measure in the second operand, which
+                     both engines dropped.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_27",
+            number_inputs=1,
+            exception_code="1-1-9-20",
+            exception_message="At op nvl",
+        )
+
+    def test_GH_1354_28(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_9 := sum ( Me_2 ) group by Id_1
+                        having nvl ( min ( Me_2 ) , count ( Me_2 ) ) > 0 ];
+        Description: In having the aggregates are values of the groups, so nvl reads count
+                     however its Measure is named, as in test_GH_1354_28b. Both engines and
+                     the semantic analysis raised KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_28", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_28b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_9 := sum ( Me_2 ) group by Id_1
+                        having nvl ( min ( Me_2 ) , 0 ) > 0 ];
+        Description: Control: nvl of an aggregate and a constant in having.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_28b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_11c(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 , DPR all );
+        Description: Extra of case 11: DS_1 has a viral Attribute named imbalance, which
+                     check_datapoint does not compute, so it is copied to the result as any
+                     viral Attribute. The pandas engine raised KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_11c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_12(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := sum ( Me_1 ) group by Id_1 ] [ keep Me_2 ];
+        Description: The viral Attribute At_1 that aggr propagates with VP_1 is kept by keep:
+                     H, X. The DuckDB engine declared it and gave no data column for it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_12", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_13(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := max ( Id_2 ) group by Id_1 ]
+                        [ calc Me_3 := cast ( Me_2 , string ) ];
+        Description: Me_2 is the String that max gives, so cast reads it as a String: B, A.
+                     The DuckDB engine took it as a Number and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_13b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := max ( upper ( Id_2 ) ) group by Id_1 ]
+                        [ calc Me_3 := cast ( Me_2 , string ) ];
+        Description: Extra of case 13: Me_2 is the String that max gives of a String
+                     function, so cast reads it as a String: B, A. The DuckDB engine took it as
+                     a Number and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_13c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := max ( length ( Id_2 ) ) group by Id_1 ]
+                        [ calc Me_3 := cast ( Me_2 , string ) ];
+        Description: Extra of case 13: Me_2 is the Integer that max gives of length, so cast
+                     writes it as 1. The DuckDB engine took it as a Number and wrote 1.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_13d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := max ( Id_2 = "A" ) group by Id_1 ]
+                        [ calc Me_3 := cast ( Me_2 , string ) ];
+        Description: Extra of case 13: Me_2 is the Boolean that max gives of a comparison, so
+                     cast writes it as true. The DuckDB engine took it as a Number and wrote
+                     1.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13d", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_13e(self):
+        """
+        Status: OK
+        Expression: DS_r <- max ( DS_1 group by Id_1 );
+        Description: Extra of case 13: max of a Time_Period Measure grouped by an Integer
+                     Identifier: 2020Q2, 2021Q1. The pandas engine raised
+                     InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_13f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := min ( Me_1 ) group by Id_1 ];
+        Description: Extra of case 13: min of a Time_Period Measure in an aggr clause grouped
+                     by an Integer Identifier: 2020Q1, 2021Q1. The pandas engine raised
+                     InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13f", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_13g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := max ( Me_4 over ( order by Id_1 ) ) ];
+        Description: Extra of case 13: the analytic max of Time_Periods of different period
+                     indicators raises 2-1-19-20, as the aggregate max does. The DuckDB engine
+                     compared them and returned 2020M1, 2020Q1, 2020M3.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_13g",
+            number_inputs=1,
+            exception_code="2-1-19-20",
+            exception_message="Time Period operands with different period indicators do not "
+            "support < and > Comparison operations, unable to get the max",
+        )
+
+    def test_GH_1354_13h(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_5 := max ( Me_1 ) ] [ calc Me_6 := Me_5 + 1 ];
+        Description: Extra of case 13: an aggr without grouping gives a single Data Point, also
+                     when another clause follows it: Me_5 3.0, Me_6 4.0. The DuckDB engine
+                     grouped it by the Identifiers of DS_1 and gave three Data Points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13h", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_13i(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := max ( Me_1 ) , Me_3 := min ( Me_1 )
+                        group by Id_1 ];
+                    DS_r2 <- DS_2 [ aggr Me_2 := max ( Me_1 ) , Me_3 := min ( Me_1 )
+                        group by Id_1 ];
+        Description: Extra of case 13: max and min order the Time_Periods by their value, not
+                     by their text: 2020M10 and 2020M2, 2021M1 and 2020M12 for the months,
+                     2020W10 and 2020W9, 2021W1 and 2020W52 for the weeks.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13i", number_inputs=2, references_names=["1", "2"])
+
+    def test_GH_1354_13j(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_5 := max ( Me_1 ) ]
+                        [ calc Me_6 := sum ( Me_5 over ( ) ) ];
+        Description: Extra of case 13: an analytic function over the result of an aggr without
+                     grouping, which has no Identifiers: Me_5 3.0, Me_6 3.0. The pandas engine
+                     raised ParserException, and the DuckDB engine gave three Data Points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13j", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_13k(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 [ keep Me_4 ] as a , DS_1 [ keep Me_1 ] as b
+                        calc Me_10 := max ( a#Me_4 over ( order by Id_1 ) ) );
+        Description: Extra of case 13: the analytic max of the Time_Periods of a join,
+                     named with their alias, raises 2-1-19-20 for different period indicators.
+                     The DuckDB engine compared them and returned 2020M1, 2020Q1, 2020Q1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_13k",
+            number_inputs=1,
+            exception_code="2-1-19-20",
+            exception_message="Time Period operands with different period indicators do not "
+            "support < and > Comparison operations, unable to get the max",
+        )
+
+    def test_GH_1354_13l(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_10 := max ( nvl ( Me_4 , cast ( "2020M1" ,
+                        time_period ) ) over ( order by Id_1 ) ) ];
+        Description: Extra of case 13: the analytic max of a Time_Period expression raises
+                     2-1-19-20 for different period indicators, as of a Time_Period Measure.
+                     The DuckDB engine compared them and returned 2020M1, 2020Q1, 2020Q1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_13l",
+            number_inputs=1,
+            exception_code="2-1-19-20",
+            exception_message="Time Period operands with different period indicators do not "
+            "support < and > Comparison operations, unable to get the max",
+        )
+
+    def test_GH_1354_13m(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_5 := max ( Me_1 ) group all ]
+                        [ calc Me_6 := Me_5 + 1 ];
+        Description: Extra of case 13: an aggr grouped by group all with no time_agg gives a
+                     single Data Point, also when another clause follows it: Me_5 3.0, Me_6
+                     4.0. The DuckDB engine grouped it by the Identifiers of DS_1 and gave
+                     three Data Points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_13m", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc viral attribute At_9 := "v" ] [ keep Me_1 ];
+        Description: At_9 is a viral Attribute, which keep does not drop: v, v, v. The DuckDB
+                     engine took it as a Measure and gave no data column for it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_14", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_14b(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 [ calc viral attribute errorcode := "x" ] > 0 );
+        Description: Extra of case 14: the comparison reads the Measure Me_1 only, not the
+                     viral Attribute errorcode, and the computed Measure errorcode of check
+                     keeps the name. The DuckDB engine compared errorcode as a Measure and
+                     raised BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_14b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ drop Me_1 ] [ unpivot Id_3 , Me_9 ];
+        Description: unpivot of a Data Set without Measures gives no data points, with the
+                     new Identifier Id_3 and Measure Me_9. The DuckDB engine returned the data
+                     points of the operand without Id_3 and Me_9.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_15", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_16(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := max ( At_3 over ( partition by Id_2 ) ) ];
+        Description: An analytic function over the Attribute At_3 gives the String Measure
+                     Me_3: p, r, r. Both engines raised KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_16", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_17(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := count ( Me_1 over ( order by Me_2 ) ) ];
+        Description: count ordered by another Measure gives an Integer, as ordered by the
+                     counted one (test_GH_1354_18): 1, 1, 1. The pandas engine raised
+                     KeyError, and the DuckDB engine and the semantic analysis gave a Number.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_17", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_18(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := count ( Me_1 over ( order by Me_1 ) ) ];
+        Description: Control: count ordered by the counted Measure gives an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_18", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_19(self):
+        """
+        Status: OK
+        Expression: DS_r <- exists_in ( DS_1 [ sub Id_2 = "A" ] , DS_1 , all );
+                    DS_r2 <- count ( exists_in ( DS_1 [ sub Id_2 = "A" ] , DS_1 , all ) );
+        Description: The result has one data point for each data point of the first operand,
+                     also when the second operand has more Identifiers: Id_1 1, 2, bool_var
+                     true, true, so count gives 2. The pandas engine repeated Id_1 1 for each
+                     data point of DS_1 that matches it, and count gave 3.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_19", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1354_20(self):
+        """
+        Status: OK
+        Expression: DS_r <- exists_in ( DS_1 > 0 , DS_2 );
+        Description: The first operand already has a Measure bool_var, which the bool_var of
+                     exists_in replaces: false, true, true. The pandas engine raised KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_20", number_inputs=2, references_names=["1"])
+
+    def test_GH_1354_21(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: nvl copies the viral Attribute At_1 of the first operand and runs no
+                     propagation rule: H, null, null. The DuckDB engine filled the nulls from
+                     DS_2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_21", number_inputs=2, references_names=["1"])
+
+    def test_GH_1354_21b(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( variable At_1 ) is
+                        when "2020-01-01" then "2021-01-01" ; else "2022-01-01"
+                    end viral propagation;
+                    DS_r <- sum ( DS_1 group by Id_1 );
+        Description: Extra of case 21: a rule on the Date viral Attribute At_1 written with
+                     String literals combines the values of each group as Dates: 2021-01-01,
+                     2022-01-01. The DuckDB engine raised BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_21b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_21c(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( variable At_1 ) is
+                        when "2020-01-01" then "2021-01-01" ; else "2022-01-01"
+                    end viral propagation;
+                    DS_r <- sum ( DS_1 over ( partition by Id_2 ) );
+        Description: Extra of case 21: an analytic function on a Data Set with the Date viral
+                     Attribute At_1 combines it over each partition with VP_1: 2021-01-01,
+                     2022-01-01, 2021-01-01. The pandas engine raised KeyError, and the DuckDB
+                     engine raised BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_21c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := Id_1 + null ];
+        Description: A Component combined with null is nullable: Me_2 null, null, null. Both
+                     engines and the semantic analysis declared it non-nullable, so the pandas
+                     engine raised 2-1-1-16.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc identifier Id_3 := Id_1 + SC_1 ];
+        Description: Extra of case 22: the input Scalar SC_1 is given the value 5, so Id_1 + SC_1
+                     is not null and calc identifier accepts it: 6, 6, 7.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1354_22b", number_inputs=1, references_names=["1"], scalars={"SC_1": 5}
+        )
+
+    def test_GH_1354_22c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 + null;
+        Description: Extra of case 22: a Data Set combined with null has nullable Measures, also
+                     where the Measure of DS_1 is not nullable: null, null, null. Both engines and
+                     the semantic analysis declared it non-nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := between ( Me_1 , 1 , null ) ];
+        Description: Extra of case 22: between with a null bound is nullable, also over a
+                     Measure that is not: null, false, null. The pandas engine raised 2-1-1-16,
+                     and the DuckDB engine returned nulls in a Measure declared non-nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22d", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := instr ( Me_2 , cast ( null , string ) ) ];
+        Description: Extra of case 22: instr with a null pattern is nullable, also over a
+                     Measure that is not: null, null, null. The pandas engine raised 2-1-1-16,
+                     and the DuckDB engine returned nulls in a Measure declared non-nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := replace ( Me_2 , cast ( null , string ) , "a" ) ];
+        Description: Extra of case 22: replace with a null pattern is nullable, also over a
+                     Measure that is not: null, null, null. The pandas engine raised 2-1-1-16,
+                     and the DuckDB engine returned nulls in a Measure declared non-nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22f", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := dateadd ( Me_5 , 1 , cast ( null , string ) ) ];
+        Description: Extra of case 22: dateadd with a null period indicator is nullable, also
+                     over a Measure that is not: null, null, null. The pandas engine raised
+                     2-1-1-16, and the DuckDB engine returned nulls in a Measure declared
+                     non-nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22g", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22h(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := instr ( Me_2 , "a" , 1 , Me_7 ) ];
+        Description: Extra of case 22: instr takes the occurrence from the Component Me_7 in
+                     each Data Point, a null as the default occurrence: 1, 2, 0. The pandas
+                     engine raised 2-1-18-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22h", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22i(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := substr ( Me_2 , Me_7 , Me_7 ) ];
+        Description: Extra of case 22: substr takes the start and the length from the
+                     Component Me_7 in each Data Point, a null as the default: a, ba, d. The
+                     pandas engine raised ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22i", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22j(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := replace ( Me_2 , Me_6 , Me_6 ) ];
+        Description: Extra of case 22: replace takes the pattern and the replacement from the
+                     nullable Component Me_6 in each Data Point, so the result is nullable: ab,
+                     null, cd. The pandas engine raised ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22j", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22k(self):
+        """
+        Status: OK
+        Expression: DS_r <- instr ( DS_1 , null );
+        Description: Extra of case 22: instr of a Data Set with a null pattern has a nullable
+                     Measure, also over a Measure that is not: null, null, null. Both engines
+                     declared it non-nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_22k", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_23(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := nvl ( Me_1 , cast ( "2020-01-01" , date ) ) ];
+        Description: A cast of a literal is a constant that is not null, so the nvl that it
+                     replaces nulls with is non-nullable. The DuckDB engine and the semantic
+                     analysis declared it nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_23", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_24(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc identifier Id_3 := nvl ( Me_1 ,
+                        cast ( "2020-01-01" , date ) ) ];
+        Description: As test_GH_1354_23, calc identifier accepts the nvl: 2020-05-01,
+                     2020-01-01, 2020-06-01. The DuckDB engine and the semantic analysis
+                     raised 1-1-1-16.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_24", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_25(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := sum ( Id_1 over ( order by Id_1 , Id_2
+                        data points between 1 preceding and 1 preceding ) ) ];
+        Description: The window of an analytic function can be empty, so its result over an
+                     Identifier is nullable: null, 1, 1. Both engines and the semantic analysis
+                     declared it non-nullable, so the pandas engine raised 2-1-1-16.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_25", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_25b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ filter Id_1 = 3 ]
+                        [ calc Me_6 := stddev_samp ( Me_1 over ( partition by Id_1 ) ) ];
+        Description: Extra of case 25: a window of a single Data Point has no sample standard
+                     deviation, so the result is nullable, also over a Measure that is not:
+                     null. The pandas engine raised 2-1-1-16, and the DuckDB engine returned a
+                     null in a Measure declared non-nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_25b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_22l(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_8 := substr ( "abc" , Me_7 , 1 ) ,
+                                        Me_9 := substr ( SC_1 , Me_3 , Me_3 ) ];
+        Description: Extra of case 22: substr of a Scalar takes the start and the length from
+                     Components in each Data Point, a null as the default start: Me_8 a, a, b;
+                     with SC_1 = "abcabc", Me_9 a, bc, cab, nullable as the input Scalar SC_1.
+                     The pandas engine raised AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1354_22l",
+            number_inputs=1,
+            references_names=["1"],
+            scalars={"SC_1": "abcabc"},
+        )
+
+    def test_GH_1354_22m(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_8 := instr ( "abc" , Me_6 ) ,
+                                        Me_9 := instr ( SC_1 , Me_5 , Me_3 , Me_3 ) ];
+        Description: Extra of case 22: instr of a Scalar takes the pattern, the start and the
+                     occurrence from Components in each Data Point: Me_8 1, null, 3, nullable
+                     as the pattern Me_6; with SC_1 = "abcabc", Me_9 1, 5, 0. The pandas engine
+                     raised AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1354_22m",
+            number_inputs=1,
+            references_names=["1"],
+            scalars={"SC_1": "abcabc"},
+        )
+
+    def test_GH_1354_22n(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_8 := replace ( "abc" , Me_6 , "z" ) ,
+                                        Me_9 := replace ( SC_1 , Me_5 ) ];
+        Description: Extra of case 22: replace of a Scalar takes the pattern from Components in
+                     each Data Point: Me_8 zbc, null, abz, nullable as the pattern Me_6; with
+                     SC_1 = "abcabc", Me_9 bcbc, acac, abab. The pandas engine raised
+                     AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1354_22n",
+            number_inputs=1,
+            references_names=["1"],
+            scalars={"SC_1": "abcabc"},
+        )
+
+    def test_GH_1354_29b(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 [ aggr Me_2 := sum ( Me_1 ) ] > 3
+                        imbalance DS_1 [ aggr Me_2 := sum ( Me_1 ) ] );
+        Description: An operand and an imbalance without Identifiers have one Data Point each,
+                     which match: bool_var true, imbalance 5. The pandas engine raised
+                     IndexError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_29b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_29c(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 0 imbalance DS_2 );
+        Description: The Integer Id_1 of the operand and the String Id_1 of the imbalance have
+                     no common type, so check raises 1-1-13-18, as the binary operators do. The
+                     pandas engine raised ValueError, the DuckDB engine and the semantic
+                     analysis accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_29c",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="At op check: Incompatible types for common identifier Id_1: "
+            "Integer and String.",
+        )
