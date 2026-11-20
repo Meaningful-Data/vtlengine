@@ -901,6 +901,11 @@ def _check_output_folder(
         raise DataLoadError("0-3-1-2", folder=str(output_folder))
     if not output_folder.exists() and output_folder.suffix != "":
         raise DataLoadError("0-3-1-2", folder=str(output_folder))
+    # A missing folder is created inside its nearest existing parent, which must be a folder
+    # too (issue #1356)
+    existing = next(parent for parent in output_folder.absolute().parents if parent.exists())
+    if not existing.is_dir():
+        raise DataLoadError("0-3-1-2", folder=str(output_folder))
     return output_folder
 
 

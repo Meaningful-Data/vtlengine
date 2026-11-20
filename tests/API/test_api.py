@@ -3595,3 +3595,24 @@ def test_GH_1356_42(use_duckdb):
             "DS_r <- DS_1 + SC_4;", use_duckdb, datapoints=datapoints, scalar_values={"SC_4": "x"}
         )
     assert error.value.args[1] == "0-1-2-7"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_68(use_duckdb, tmp_path):
+    """An output_folder whose parent is a file raises 0-3-1-2 on both engines before anything
+    runs; both engines raised a raw NotADirectoryError (issue #1356)."""
+    (tmp_path / "a_file").write_text("x")
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, output_folder=tmp_path / "a_file" / "out")
+    assert error.value.args[1] == "0-3-1-2"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_68b(use_duckdb, tmp_path):
+    """The output_folder of case 68 is checked before the script runs, so a division by zero
+    in the script does not raise first: both engines raise 0-3-1-2. They raised 2-1-15-6
+    (issue #1356)."""
+    (tmp_path / "a_file").write_text("x")
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1 / 0;", use_duckdb, output_folder=tmp_path / "a_file" / "out")
+    assert error.value.args[1] == "0-3-1-2"
