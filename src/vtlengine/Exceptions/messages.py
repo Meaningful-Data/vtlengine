@@ -771,9 +771,10 @@ centralised_messages = {
         "description": "Occurs when a component in a clause has an incorrect role type.",
     },
     "1-1-9-10": {
-        "message": "At op {op}: {clause} Dataset have different number of Identifiers compared "
-        "with condition Dataset.",
-        "description": "Raised when a Dataset in a clause has mismatched Identifier count.",
+        "message": "At op {op}: The Identifiers of {clause} ({ids}) are not the Identifiers of "
+        "the condition ({condition_ids}).",
+        "description": "Raised when a Data Set operand or condition of if-then-else or case does "
+        "not have the Identifiers of the condition, with the same names and basic types.",
     },
     "1-1-9-11": {
         "message": "At op {op}: Condition component {name} must be Boolean, found {type}.",
@@ -1723,5 +1724,11 @@ centralised_messages = {
         "description": "Raised when a value of the data, passed to or returned by a user defined "
         "operator, is null for a not null type, or breaks the condition or the allowed values "
         "of its type.",
+    },
+    "2-3-10": {
+        "message": "At op {op}: The value {value} given to the parameter {param_name} is not an "
+        "Integer.",
+        "description": "Raised when a Number with decimals computed when the script runs is "
+        "given to an integer parameter of a user defined operator.",
     },
 }

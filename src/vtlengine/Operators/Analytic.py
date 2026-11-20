@@ -265,6 +265,11 @@ class Analytic(Operator.Unary):
                             result_components[measure.name], params
                         )
         analyzed = [component_name] if component_name is not None else operand.get_measures_names()
+        # The operators that give one of the values of the operand keep its value domain, but
+        # for lag and lead with a default, a literal of the basic type (issue #1364)
+        has_default = cls.op in (LAG, LEAD) and params is not None and len(params) > 1
+        if cls.op in (MAX, MIN, FIRST_VALUE, LAST_VALUE, LAG, LEAD) and not has_default:
+            analyzed = []
         for name in analyzed:
             if name in result_components and result_components[name].value_domain is not None:
                 result_components[name] = copy(result_components[name])

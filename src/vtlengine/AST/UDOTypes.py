@@ -6,7 +6,14 @@ from typing import Any, Dict, Optional, Tuple, cast
 
 from vtlengine.AST import SetType, SignatureConstraints, TypeConstraint, ValueDomainType
 from vtlengine.AST.ASTString import _format_component_type, _format_name, _format_type
-from vtlengine.DataTypes import String, check_unary_implicit_promotion, to_strings
+from vtlengine.DataTypes import (
+    Boolean,
+    Integer,
+    Number,
+    String,
+    check_unary_implicit_promotion,
+    to_strings,
+)
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, ValueDomain
 
@@ -96,6 +103,14 @@ def udo_component_matches(declared: Any, found: Any) -> bool:
     return (declared.role is None or found.role == declared.role) and (
         not isinstance(declared.data_type, type)
         or check_unary_implicit_promotion(found.data_type, declared.data_type)
+    )
+
+
+def udo_returns(found: Any, declared: Any) -> bool:
+    """Whether a value of the type found is of the basic type a returns declares: of that type,
+    or of one implicitly cast to it. A Number is not cast to an Integer (issue #1364)."""
+    return check_unary_implicit_promotion(found, declared) and not (
+        found is Number and declared is Integer
     )
 
 
@@ -202,4 +217,51 @@ def udo_result_on_value_domains(
     if is_data and _to_text(result.data_type, domain):
         result.data = to_strings(result.data)
     result.data_type, result.value_domain = domain.type, domain
+    return result
+
+
+# The types of a result that a returns of another basic type casts it from (issue #1364)
+_RETURNS_CASTS = {(Integer, Number), (Boolean, String)}
+
+
+def _cast_by_returns(found: Any, declared: Any) -> bool:
+    """Whether a returns of the type declared casts a result of the type found: a type that is
+    not given is parsed as an instance."""
+    return isinstance(declared, type) and (found, declared) in _RETURNS_CASTS
+
+
+def _cast_values(values: Any, target: Any) -> Any:
+    """The values of a Component cast to target: a Boolean as the String true or false."""
+    return to_strings(values) if target is String else values.astype(target.dtype())
+
+
+def udo_result_on_basic_types(result: Any, declared: Any) -> Any:
+    """The result of a user defined operator in the basic types its returns declares, where its
+    values are implicitly cast to them: an Integer to a Number, a Boolean to the String true or
+    false (issue #1364). The scalar or Component result, or the components the dataset type
+    names, which are then no longer on a value domain. The value of a scalar is cast to that
+    type where the call is computed."""
+    if isinstance(result, Dataset):
+        if not isinstance(declared, Dataset):
+            return result
+        components, data = dict(result.components), result.data
+        for name, declared_component in declared.components.items():
+            target = declared_component.data_type
+            if name not in components or not _cast_by_returns(components[name].data_type, target):
+                continue
+            component = components[name] = copy(components[name])
+            component.data_type, component.value_domain = target, None
+            if data is not None:
+                data = data.copy() if data is result.data else data
+                data[name] = _cast_values(data[name], target)
+        if components == result.components:
+            return result
+        return Dataset(name=result.name, components=components, data=data)
+    target = declared.data_type if isinstance(declared, Component) else declared
+    if not _cast_by_returns(result.data_type, target):
+        return result
+    result = copy(result)
+    if isinstance(result, DataComponent) and result.data is not None:
+        result.data = _cast_values(result.data, target)
+    result.data_type, result.value_domain = target, None
     return result

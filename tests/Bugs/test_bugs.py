@@ -11196,17 +11196,18 @@ class ValueDomainBugs(BugHelper):
         Status: OK
         Expression: define operator f ( x number ) returns VD_1 is x end operator;
                     SC_r <- f ( 2.5 );
-        Description: A Number result may be returned as an Integer, as with returns integer,
-                     but 2.5 is not a value of VD_1. The DuckDB engine and the semantic
-                     analysis cast the result to Integer first and raised 0-1-1-27.
+        Description: A Number is not implicitly cast to Integer, so the Number result does not
+                     have the basic type of VD_1, as with returns integer (issue #1364). The
+                     DuckDB engine and the semantic analysis cast the result to Integer first
+                     and raised 0-1-1-27.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(
             code="GH_1351_31",
             number_inputs=1,
-            exception_code="2-1-5-4",
-            exception_message="At op f: Cannot cast 2.5 of Integer to Value Domain VD_1",
+            exception_code="1-3-1-1",
+            exception_message="At op f: User defined output declared as VD_1, found number.",
             vd_names=self.vd_1351,
         )
 
@@ -11427,18 +11428,18 @@ class ValueDomainBugs(BugHelper):
         Expression: define operator f ( x integer ) returns integer is x end operator;
                     SC_r <- f ( 7 / 2 );
         Description: The Number 3.5 is not an Integer, which the parameter x declares: the
-                     call raises 1-2-18 where it is computed, as the semantic analysis does
-                     not know the value and gives the structure. The DuckDB engine rounded
-                     3.5 to the Integer 4.
+                     call raises the RunTimeError 2-3-10 where it is computed (issue #1364), as
+                     the semantic analysis does not know the value and gives the structure. The
+                     DuckDB engine rounded 3.5 to the Integer 4.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Exception.
         """
-        with pytest.raises(SemanticError) as context:
+        with pytest.raises(RunTimeError) as context:
             self.BaseTest(code="GH_1351_37", number_inputs=1, references_names=["1"])
         self._check_error(
             context.value,
-            "1-2-18",
-            "Expected Integer, got Number on UDO f, parameter x.",
+            "2-3-10",
+            "At op f: The value 3.5 given to the parameter x is not an Integer.",
         )
         self.BaseTest(
             code="GH_1351_37", number_inputs=1, references_names=["1"], only_semantic=True
@@ -11468,13 +11469,19 @@ class ValueDomainBugs(BugHelper):
         Expression: define operator f ( x component < integer > )
                         returns component < integer > is x end operator;
                     DS_r <- DS_1 [ calc Me_2 := f ( Me_1 ) ];
-        Description: A Number Component is accepted by a component < integer > parameter and
-                     returned as it is, with its decimals, as a Number Component, on both
-                     engines.
+        Description: A Number Component is accepted by a component < integer > parameter, but
+                     a Number is not implicitly cast to Integer, so the Number result does not
+                     have the type the returns declares (issue #1364).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
-        Goal: Check Result.
+        Goal: Check Exception.
         """
-        self.BaseTest(code="GH_1351_39", number_inputs=1, references_names=["1"])
+        self.NewSemanticExceptionTest(
+            code="GH_1351_39",
+            number_inputs=1,
+            exception_code="1-3-1-1",
+            exception_message="At op f: User defined output declared as component<integer>, "
+            "found measure<number>.",
+        )
 
     def test_GH_1351_40(self):
         """
@@ -11535,19 +11542,19 @@ class ValueDomainBugs(BugHelper):
         Expression: define operator f ( x integer , y integer ) returns integer is y
                         end operator;
                     SC_r <- f ( 7 / 2 , 1 );
-        Description: Extra case: the Number 3.5 given to the integer parameter x raises
-                     1-2-18 where the call is computed, on both engines, also when the body
-                     never reads x (test_GH_1351_37 reads it). The semantic analysis does not
-                     know the value and gives the structure.
+        Description: Extra case: the Number 3.5 given to the integer parameter x raises the
+                     RunTimeError 2-3-10 where the call is computed (issue #1364), on both
+                     engines, also when the body never reads x (test_GH_1351_37 reads it). The
+                     semantic analysis does not know the value and gives the structure.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Exception.
         """
-        with pytest.raises(SemanticError) as context:
+        with pytest.raises(RunTimeError) as context:
             self.BaseTest(code="GH_1351_43", number_inputs=1, references_names=["1"])
         self._check_error(
             context.value,
-            "1-2-18",
-            "Expected Integer, got Number on UDO f, parameter x.",
+            "2-3-10",
+            "At op f: The value 3.5 given to the parameter x is not an Integer.",
         )
         self.BaseTest(
             code="GH_1351_43", number_inputs=1, references_names=["1"], only_semantic=True
@@ -15293,4 +15300,409 @@ class RunTimeErrorMappingBugs(BugHelper):
             number_inputs=1,
             exception_code="1-1-18-4",
             exception_message="At op substr: Start parameter should be >= 1.",
+        )
+
+
+class ValueDomainFollowUpBugs(BugHelper):
+    """Value domains, returns types, viral Attributes and error messages that results and checks
+    keep (issue #1364)."""
+
+    vd_1364 = ["GH_1364-VD_INT", "GH_1364-VD_NUM", "GH_1364-VD_STR", "GH_1364-VD_STR2"]
+
+    def test_GH_1364_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- max ( DS_1 group by Id_1 );
+        Description: The aggregate max of Me_1, on the value domain VD_INT, is one of its values,
+                     so Me_1 keeps VD_INT. It was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_1", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := min ( Me_1 ) group by Id_1 ];
+        Description: The aggregate min of Me_1, on VD_INT, in an aggr gives Me_2 on VD_INT. It was
+                     an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_2", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- max ( DS_1 over ( partition by Id_1 ) );
+        Description: The analytic max of Me_1, on VD_INT, keeps VD_INT. It was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_3", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := min ( Me_1 over ( partition by Id_1 ) ) ];
+        Description: The analytic min of Me_1, on VD_INT, in a calc gives Me_2 on VD_INT. It was
+                     an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_4", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- first_value ( DS_1 over ( partition by Id_1 order by Id_2 ) );
+        Description: first_value of Me_1, on VD_INT, keeps VD_INT. It was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_5", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- last_value ( DS_1 over ( partition by Id_1 order by Id_2 ) );
+        Description: last_value of Me_1, on VD_INT, keeps VD_INT. It was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_6", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- lag ( DS_1 , 1 over ( partition by Id_1 order by Id_2 ) );
+        Description: lag of Me_1, on VD_INT, without a default keeps VD_INT, with nulls at the
+                     edges of the partitions. It was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_7", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- lead ( DS_1 , 1 over ( partition by Id_1 order by Id_2 ) );
+        Description: lead of Me_1, on VD_INT, without a default keeps VD_INT. It was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_8", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- lag ( DS_1 , 1 , 9 over ( partition by Id_1 order by Id_2 ) );
+        Description: Control: the default 9 is a literal of the basic type, so lag of Me_1, on
+                     VD_INT, gives an Integer, as nvl ( DS_1 , 9 ) does.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_9", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( DS_1 group by Id_1 );
+        Description: Control: sum computes a new value, so the sum of Me_1, on VD_INT, is an
+                     Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_10", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_11(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( 2 ); (x integer, returns number)
+                    DS_r <- DS_2 [ calc Me_3 := SC_r ];
+        Description: The Integer result 2 is cast to the Number the returns declares, 2.0. It was
+                     the Integer 2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_11", number_inputs=1, references_names=["1", "2"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_12(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( true ); (x boolean, returns string)
+                    DS_r <- DS_2 [ calc Me_3 := SC_r ];
+        Description: The Boolean result true is cast to the String the returns declares, "true".
+                     It was the Boolean true.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_12", number_inputs=1, references_names=["1", "2"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_13(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( 2.5 ); (x number, returns integer)
+        Description: A Number is not implicitly cast to Integer, so the Number result does not
+                     have the type the returns declares. It was returned as the Number 2.5.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_13",
+            number_inputs=1,
+            exception_code="1-3-1-1",
+            exception_message="At op f: User defined output declared as integer, found number.",
+            vd_names=self.vd_1364,
+        )
+
+    def test_GH_1364_14(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( "1" ); (x string, returns integer)
+        Description: Control: the String result does not have the type the returns declares.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_14",
+            number_inputs=1,
+            exception_code="1-3-1-1",
+            exception_message="At op f: User defined output declared as integer, found string.",
+            vd_names=self.vd_1364,
+        )
+
+    def test_GH_1364_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_2 [ calc Me_3 := f ( Me_1 ) ]; (returns component < number >)
+        Description: The Integer Component result is cast to the Number the returns declares. It
+                     was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_15", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_16(self):
+        """
+        Status: OK
+        Expression: DS_r <- f ( DS_2 ); (returns dataset { measure < number > Me_1 },
+                    is x [ keep Me_1 ])
+        Description: The Integer Measure Me_1 of the result is cast to the Number the dataset type
+                     of the returns declares for it. It was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_16", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_17(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( 2 ); (x integer, returns VD_NUM)
+                    DS_r <- DS_2 [ calc Me_3 := SC_r ];
+        Description: Control: the Integer result 2 is on VD_NUM, a value domain of Numbers, as
+                     2.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_17", number_inputs=1, references_names=["1", "2"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_18(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_3 as a , DS_4 as b apply a + b );
+                    (rules VP_1 on VD_STR, VP_2 on VD_STR2, VP_3 on the variable At_1)
+        Description: The viral Attribute At_1, on VD_STR in DS_3 and on VD_STR2 in DS_4, is
+                     combined with the rule VP_3 of the variable in the join step, as in
+                     DS_3 + DS_4, and kept by apply. The result had no At_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_18", number_inputs=2, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_19(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 + DS_4;
+                    (rules VP_1 on VD_STR, VP_2 on VD_STR2, VP_3 on the variable At_1)
+        Description: Control: the viral Attribute At_1 is combined with the rule VP_3 of the
+                     variable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_19", number_inputs=2, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_20(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_3 as a , DS_3 as b apply a + b ); (rule VP_1 on
+                    VD_STR)
+        Description: The viral Attribute At_1, on VD_STR in both operands, is combined with the
+                     rule VP_1 of its value domain and keeps VD_STR, as in DS_3 + DS_3. The result
+                     had no At_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_20", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_21(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_5 as a , DS_5 as b apply a + b );
+        Description: Control: the viral Attribute At_1 of both operands has no propagation rule.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_21",
+            number_inputs=1,
+            exception_code="1-3-3-6",
+            exception_message="Viral attribute At_1 has no viral propagation rule",
+            vd_names=self.vd_1364,
+        )
+
+    def test_GH_1364_22(self):
+        """
+        Status: OK
+        Expression: DS_r <- if DS_6 then DS_7 else DS_2 [ keep Me_1 ];
+        Description: The Identifier Id_1 is a String in DS_7 and an Integer in the condition: the
+                     message names the operator, the Identifier and both types. It said that
+                     DS_7 had a different number of Identifiers, at op None.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_22",
+            number_inputs=3,
+            exception_code="1-1-9-10",
+            exception_message=(
+                "At op if: The Identifiers of DS_7 (Id_1 String) are not the Identifiers of the "
+                "condition (Id_1 Integer)."
+            ),
+            vd_names=self.vd_1364,
+        )
+
+    def test_GH_1364_23(self):
+        """
+        Status: OK
+        Expression: DS_r <- case when DS_6 then DS_7 else DS_2 [ keep Me_1 ];
+        Description: As 22, for case: the message names case, Id_1 and both types.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_23",
+            number_inputs=3,
+            exception_code="1-1-9-10",
+            exception_message=(
+                "At op case: The Identifiers of DS_7 (Id_1 String) are not the Identifiers of "
+                "the condition (Id_1 Integer)."
+            ),
+            vd_names=self.vd_1364,
+        )
+
+    def test_GH_1364_24(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 + DS_2 [ keep Me_1 ];
+        Description: Control: the String Id_1 of DS_7 and the Integer Id_1 of DS_2 have no common
+                     type.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_24",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="At op +: Incompatible types for common identifier Id_1: String "
+            "and Integer.",
+            vd_names=self.vd_1364,
+        )
+
+    def test_GH_1364_25(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( 3.5 ); (x integer)
+        Description: Control: the literal 3.5 given to the integer parameter x is known from the
+                     script, so the semantic analysis raises too.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_25",
+            number_inputs=1,
+            exception_code="1-2-18",
+            exception_message="Expected Integer, got Number on UDO f, parameter x.",
+            vd_names=self.vd_1364,
+        )
+
+    def test_GH_1364_26(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( 7 / 2 ); (x integer)
+        Description: The value 3.5 given to the integer parameter x is computed when the script
+                     runs, so it is an error of the data, which the semantic analysis accepts. It
+                     raised the SemanticError 1-2-18.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_26",
+            number_inputs=1,
+            exception_code="2-3-10",
+            exception_message="At op f: The value 3.5 given to the parameter x is not an Integer.",
+            vd_names=self.vd_1364,
+        )
+
+    def test_GH_1364_27(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( SC_1 / 2 ); (x integer, SC_1 = 7)
+        Description: As 26, with the value of the input scalar SC_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_27",
+            number_inputs=2,
+            exception_code="2-3-10",
+            exception_message="At op f: The value 3.5 given to the parameter x is not an Integer.",
+            vd_names=self.vd_1364,
+            scalars={"SC_1": 7},
         )
