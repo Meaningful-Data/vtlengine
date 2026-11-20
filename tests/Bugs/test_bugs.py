@@ -18033,3 +18033,20 @@ class NameResolutionBugs(BugHelper):
             exception_code="2-1-5-1",
             scalars={"SF_2": 10000000000000000000.0},
         )
+
+    def test_GH_1355_case35(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_3 as B calc Me_9 := C#Me_2 );
+        Description: Case 35: C is no operand of the join, so C#Me_2 in a calc expression raises
+                     1-1-1-10 on both engines and in the semantic analysis. Both engines and the
+                     semantic analysis read it as the Me_2 of the join.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_case35",
+            number_inputs=2,
+            exception_code="1-1-1-10",
+            exception_message="Component Me_2 not found in Dataset C.",
+        )
