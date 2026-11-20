@@ -13573,7 +13573,8 @@ class TimeValueBugs(BugHelper):
             code="GH_1352_36p4",
             number_inputs=1,
             exception_code="2-1-3-1",
-            exception_message="At op ratio_to_report: Division by zero produced infinite values.",
+            exception_message="At op ratio_to_report: Division by zero or a value beyond the range "
+            "of a Number produced infinite values.",
         )
 
     def test_GH_1352_36p5(self):
@@ -15056,4 +15057,191 @@ class SemanticCheckBugs(BugHelper):
             exception_message='The constant "XYZ" of viral propagation rule VP_1 is not one '
             "of the values of the Value Domain VD_DUR.",
             vd_names=["GH_1356-VD_DUR"],
+        )
+
+
+class RunTimeErrorMappingBugs(BugHelper):
+    """Errors raised while the data is computed are VTL errors, the same on both engines (issue
+    #1356)."""
+
+    def test_GH_1356_31(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := Me_1 * Me_1 ];
+        Description: The product 10^24 of the Integer 10^12 by itself does not fit in an Integer
+                     (64 bits): both engines raise 2-1-5-1. The pandas engine raised a raw
+                     ArrowInvalid and the DuckDB engine a raw OutOfRangeException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_31",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message="Impossible to cast 1000000000000000000000000 from type Number "
+            "to Integer.",
+        )
+
+    def test_GH_1356_32(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := ceil ( Me_2 ) ];
+        Description: ceil of the Number 1e20 does not fit in an Integer: both engines raise
+                     2-1-5-1. The pandas engine raised a raw ArrowInvalid and the DuckDB engine a
+                     raw ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_32",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message="Impossible to cast 1e+20 from type Number to Integer.",
+        )
+
+    def test_GH_1356_33(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := cast ( Me_2 , integer ) ];
+        Description: The Number 1e20 cast to integer does not fit in an Integer: both engines
+                     raise 2-1-5-1. The pandas engine raised a raw OverflowError and the DuckDB
+                     engine a raw ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_33",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message="Impossible to cast 1e+20 from type Number to Integer.",
+        )
+
+    def test_GH_1356_34(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := power ( Me_2 , 20 ) ];
+        Description: 1e20 to the power of 20 is beyond the range of a Number: both engines raise
+                     2-1-3-1, as for the infinite values of a division. The pandas engine raised
+                     a raw OverflowError and the DuckDB engine returned inf.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(code="GH_1356_34", number_inputs=1, exception_code="2-1-3-1")
+
+    def test_GH_1356_34b(self):
+        """
+        Status: OK
+        Expression: SC_r <- exp ( 1000 );
+        Description: exp(1000) is beyond the range of a Number: both engines raise 2-1-3-1. The
+                     pandas engine raised a raw OverflowError and the DuckDB engine returned inf.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(code="GH_1356_34b", number_inputs=1, exception_code="2-1-3-1")
+
+    def test_GH_1356_35(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := round ( Me_2 , -400 ) ];
+        Description: Rounded to the 400th digit before the decimal point, 2.5 and 1e20 are 0.0
+                     on both engines. The pandas engine raised a raw ZeroDivisionError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1356_35", number_inputs=1, references_names=["1"])
+
+    def test_GH_1356_36(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := round ( Me_2 , null ) ];
+        Description: round with a null number of digits rounds to a whole Number on both
+                     engines: 3.0 and 1e20. The pandas engine raised a raw OverflowError for
+                     1e20.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1356_36", number_inputs=1, references_names=["1"])
+
+    def test_GH_1356_37(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := trunc ( Me_2 , 400 ) ];
+        Description: Truncated at the 400th decimal, 2.5 and 1e20 are unchanged on both engines.
+                     The pandas engine raised a raw OverflowError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1356_37", number_inputs=1, references_names=["1"])
+
+    def test_GH_1356_38(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := log ( Me_2 , 1 ) ];
+        Description: A logarithm in base 1 does not exist: both engines raise 2-1-15-3 from the
+                     check of the base. The pandas engine raised a raw ZeroDivisionError and the
+                     DuckDB engine a raw OutOfRangeException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_38",
+            number_inputs=1,
+            exception_code="2-1-15-3",
+            exception_message="At op log: Base value 1",
+        )
+
+    def test_GH_1356_38b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := log ( Me_1 , Me_2 ) ];
+        Description: Case 38 with the base in a Component: the base 1 of the second data point
+                     raises 2-1-15-3 on both engines. The pandas engine raised a raw
+                     ZeroDivisionError and the DuckDB engine a raw OutOfRangeException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_38b",
+            number_inputs=1,
+            exception_code="2-1-15-3",
+            exception_message="At op log: Base value 1",
+        )
+
+    def test_GH_1356_65(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := Me_2 / Me_1 ];
+        Description: A divisor 0 raises 2-1-15-6 on both engines, also when the dividend is
+                     null. The pandas engine returned null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(code="GH_1356_65", number_inputs=1, exception_code="2-1-15-6")
+
+    def test_GH_1356_66(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := log ( Me_2 , Me_1 ) ];
+        Description: A base 0 raises 2-1-15-3 on both engines, also when the operand is null.
+                     The pandas engine returned null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(code="GH_1356_66", number_inputs=1, exception_code="2-1-15-3")
+
+    def test_GH_1356_43(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := sqrt ( -1 ) + length ( substr ( Me_3 , 0 ) ) ];
+        Description: The semantic error of substr (start 0) is raised before the data error of
+                     sqrt(-1), on both engines and in the semantic analysis. The pandas engine
+                     raised 2-1-15-2 for sqrt first.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_43",
+            number_inputs=1,
+            exception_code="1-1-18-4",
+            exception_message="At op substr: Start parameter should be >= 1.",
         )

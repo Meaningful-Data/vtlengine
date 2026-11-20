@@ -177,6 +177,8 @@ def named_type(
     """The data type and the value domain of the type a Component or a scalar is written with,
     the inverse of component_type_name: a basic type, or one of the value domains given, by
     name, on its basic type. Any other name raises 0-2-1-1 for the element."""
+    if value_domains is not None and not isinstance(value_domains, dict):
+        raise InputValidationException(code="0-1-1-2", input=value_domains)
     if type_name in SCALAR_TYPES:
         return SCALAR_TYPES[type_name], None
     value_domain = (value_domains or {}).get(type_name)
@@ -707,7 +709,9 @@ class ExternalRoutine:
 
     @classmethod
     def _extract_dataset_names(cls, query: str) -> List[str]:
+        """The tables the query reads, each once: a name its WITH clause defines is not one
+        (issue #1356)."""
         expression = sqlglot.parse_one(query, dialect="duckdb")
-        tables_info = list(expression.find_all(exp.Table))
-        dataset_names = [t.name for t in tables_info]
-        return dataset_names
+        defined = {cte.alias for cte in expression.find_all(exp.CTE)}
+        tables = [t.name for t in expression.find_all(exp.Table) if t.name not in defined]
+        return list(dict.fromkeys(tables))

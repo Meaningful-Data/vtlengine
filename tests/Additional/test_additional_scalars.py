@@ -149,7 +149,7 @@ numeric_params = [
     ("log(1024, 10)", 3.0102999566398116),
     ("log(2.0, 2)", 1.0),
     ("log(null, null)", None),
-    ("log(null, 1)", None),
+    ("log(null, 2)", None),
     ("log(1, null)", None),
     ("log(0.5, 6)", -0.3868528072345416),
     ("(1 + 2) / 3", 1.0),

@@ -172,6 +172,18 @@ def _reject_subset_key(structures: Dict[str, Any]) -> None:
             )
 
 
+def _unique_components(components: List[VTL_Component]) -> Dict[str, VTL_Component]:
+    """The Components of a Dataset by name: a name given twice raises 0-1-2-3, as the CSV
+    loaders do for a column given twice (issue #1356)."""
+    names = [component.name for component in components]
+    duplicated = sorted({name for name in names if names.count(name) > 1})
+    if duplicated:
+        raise InputValidationException(
+            code="0-1-2-3", element_type="Components", element=", ".join(duplicated)
+        )
+    return {component.name: component for component in components}
+
+
 def _load_dataset_from_structure(
     structures: Dict[str, Any],
     value_domains: Optional[Dict[str, ValueDomain]] = None,
@@ -186,10 +198,12 @@ def _load_dataset_from_structure(
     datasets = {
         dataset_json["name"]: Dataset(
             name=dataset_json["name"],
-            components={
-                _component_name(c): _build_component(c, value_domains)
-                for c in _resolve_components(dataset_json, structures)
-            },
+            components=_unique_components(
+                [
+                    _build_component(c, value_domains)
+                    for c in _resolve_components(dataset_json, structures)
+                ]
+            ),
             data=None,
         )
         for dataset_json in structures.get("datasets", [])
@@ -570,9 +584,7 @@ def _load_inputs(
 
         for dataset_name in dataframes:
             if dataset_name not in datasets:
-                raise InputValidationException(
-                    f"Not found dataset {dataset_name} in datastructures."
-                )
+                raise InputValidationException(code="0-1-2-9", name=dataset_name)
 
         if not paths:
             _handle_scalars_values(scalars, scalar_values)
@@ -607,7 +619,7 @@ def _load_inputs(
     # Validate that all file-based datapoint dataset names exist in structures
     for dataset_name in file_paths:
         if dataset_name not in datasets:
-            raise InputValidationException(f"Not found dataset {dataset_name} in datastructures.")
+            raise InputValidationException(code="0-1-2-9", name=dataset_name)
 
     _handle_scalars_values(scalars, scalar_values)
     return datasets, scalars, file_paths if file_paths else None, dataframes
@@ -909,6 +921,11 @@ def _check_output_folder(
     if output_folder.exists() and not output_folder.is_dir():
         raise DataLoadError("0-3-1-2", folder=str(output_folder))
     if not output_folder.exists() and output_folder.suffix != "":
+        raise DataLoadError("0-3-1-2", folder=str(output_folder))
+    # A missing folder is created inside its nearest existing parent, which must be a folder
+    # too (issue #1356)
+    existing = next(parent for parent in output_folder.absolute().parents if parent.exists())
+    if not existing.is_dir():
         raise DataLoadError("0-3-1-2", folder=str(output_folder))
     return output_folder
 

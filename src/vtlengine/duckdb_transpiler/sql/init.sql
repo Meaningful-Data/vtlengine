@@ -469,6 +469,12 @@ CREATE OR REPLACE MACRO vtl_mod(a, b) AS (
     END
 );
 
+-- A result beyond the range of a DOUBLE is infinite: it raises VTL error 2-1-3-1, as
+-- the pandas engine does (issue #1356).
+CREATE OR REPLACE MACRO vtl_finite(x, op) AS (
+    CASE WHEN isinf(x) THEN error('VTL Error 2-1-3-1: infinite values in ' || op) ELSE x END
+);
+
 -- Power that mirrors VTL error 2-1-15-2: a negative base raised to a
 -- fractional exponent has no real result. Zero raised to a negative exponent
 -- is a division by zero (2-1-15-6), like the pandas engine.
@@ -477,7 +483,7 @@ CREATE OR REPLACE MACRO vtl_power(a, b) AS (
          THEN error('VTL 2-1-15-2 power: negative base ' || CAST(a AS VARCHAR))
          WHEN a = 0 AND b < 0
          THEN error('VTL 2-1-15-6 power: Scalar division by Zero')
-         ELSE POWER(a, b)
+         ELSE vtl_finite(POWER(a, b), 'power')
     END
 );
 
@@ -487,6 +493,19 @@ CREATE OR REPLACE MACRO vtl_text_to_double(x) AS (
     CASE WHEN x IS NOT NULL AND TRY_CAST(x AS DOUBLE) IS NULL
          THEN error('VTL 2-1-5-1 Number ' || CAST(x AS VARCHAR))
          ELSE CAST(x AS DOUBLE)
+    END
+);
+
+-- A value read as an Integer whatever its SQL type, as the pandas engine reads the result of
+-- eval: a value that is no number raises VTL error 2-1-5-1, and a number with decimals
+-- 2-1-5-2 (issue #1356).
+CREATE OR REPLACE MACRO vtl_to_integer(x) AS (
+    CASE WHEN x IS NULL THEN NULL
+         WHEN TRY_CAST(x AS DOUBLE) IS NULL
+         THEN error('VTL 2-1-5-1 Integer ' || CAST(x AS VARCHAR))
+         WHEN TRY_CAST(x AS DOUBLE) != trunc(TRY_CAST(x AS DOUBLE))
+         THEN error('VTL 2-1-5-2 ' || CAST(x AS VARCHAR))
+         ELSE COALESCE(TRY_CAST(x AS BIGINT), CAST(CAST(x AS DOUBLE) AS BIGINT))
     END
 );
 
@@ -622,11 +641,11 @@ CREATE OR REPLACE MACRO vtl_ln(x) AS (
 );
 
 -- Logarithm with the pandas engine's guard order: null base -> NULL,
--- base <= 0 -> 2-1-15-3, null value -> NULL, value <= 0 -> 2-1-15-8.
+-- base <= 0 or base 1 -> 2-1-15-3, null value -> NULL, value <= 0 -> 2-1-15-8.
 CREATE OR REPLACE MACRO vtl_log(x, base) AS (
     CASE WHEN base IS NULL THEN NULL
-         WHEN base <= 0
-         THEN error('VTL 2-1-15-3 log: non-positive base ' || CAST(base AS VARCHAR))
+         WHEN base <= 0 OR base = 1
+         THEN error('VTL 2-1-15-3 log: invalid base ' || CAST(base AS VARCHAR))
          WHEN x IS NULL OR isnan(CAST(x AS DOUBLE)) THEN NULL
          WHEN x <= 0
          THEN error('VTL 2-1-15-8 log: non-positive value ' || CAST(x AS VARCHAR))

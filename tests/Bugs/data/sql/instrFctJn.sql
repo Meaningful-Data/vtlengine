@@ -1,11 +1,11 @@
 SELECT 
   A.CNTRCT_ID, 
   A.DT_RFRNC, 
-  ifnull(B.DBTR_ID, "N/A") as DBTR_ID,
+  ifnull(B.DBTR_ID, 'N/A') as DBTR_ID,
   A.INSTRMNT_ID,
   A.OBSRVD_AGNT_CD,
   A.JNT_LBLTY_AMNT,
-  ifnull(A.CRDTR_ID, "N/A") as CRDTR_ID
+  ifnull(A.CRDTR_ID, 'N/A') as CRDTR_ID
 FROM
   INSTRMNT_FCT_CRDTR as A 
   inner join INSTRMNT_FCT_DBTR as B 

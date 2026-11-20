@@ -2080,8 +2080,8 @@ def test_with_multiple_vd_and_ext_routines():
             },
             data=pd.DataFrame(
                 {
-                    "Id_1": [2012, 2012, 2012],
-                    "Me_1": [0.0, 4.0, 9.0],
+                    "Id_1": [2012],
+                    "Me_1": [9.0],
                 }
             ),
         ),
@@ -3606,3 +3606,99 @@ def test_GH_1353_27(use_duckdb):
             use_duckdb=use_duckdb,
         )
     assert error.value.args[1] == "0-1-2-7"
+
+
+_DS_9 = {"DS_9": pd.DataFrame({"Id_1": [1], "Me_1": [1]})}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_40(use_duckdb):
+    """Datapoints for DS_9, which data_structures does not define, raise the input error
+    0-1-2-9 on both engines when the script reads DS_9. The pandas engine raised an
+    InputValidationException without a code and the DuckDB engine 1-2-19 (issue #1356)."""
+    with pytest.raises(InputValidationException) as error:
+        _run_1349("DS_r <- DS_9;", use_duckdb, datapoints={**_datapoints_1349(), **_DS_9})
+    assert error.value.args[1] == "0-1-2-9"
+    assert "Not found dataset DS_9 in datastructures." in error.value.args[0]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_41(use_duckdb):
+    """The datapoints for DS_9 of case 40 raise 0-1-2-9 also when the script does not read
+    DS_9; both engines raised an InputValidationException without a code (issue #1356)."""
+    with pytest.raises(InputValidationException) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, datapoints={**_datapoints_1349(), **_DS_9})
+    assert error.value.args[1] == "0-1-2-9"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_42(use_duckdb):
+    """The Scalar values are checked before the datapoints: with Id_1 1 twice in DS_1 and the
+    text "x" for the Integer SC_4, both engines raise 0-1-2-7 for SC_4. The pandas engine
+    reported the duplicated Identifiers (0-3-1-7) (issue #1356)."""
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 1], "Me_1": [1, 2]})}
+    with pytest.raises(InputValidationException) as error:
+        _run_1349(
+            "DS_r <- DS_1 + SC_4;", use_duckdb, datapoints=datapoints, scalar_values={"SC_4": "x"}
+        )
+    assert error.value.args[1] == "0-1-2-7"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_68(use_duckdb, tmp_path):
+    """An output_folder whose parent is a file raises 0-3-1-2 on both engines before anything
+    runs; both engines raised a raw NotADirectoryError (issue #1356)."""
+    (tmp_path / "a_file").write_text("x")
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, output_folder=tmp_path / "a_file" / "out")
+    assert error.value.args[1] == "0-3-1-2"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_68b(use_duckdb, tmp_path):
+    """The output_folder of case 68 is checked before the script runs, so a division by zero
+    in the script does not raise first: both engines raise 0-3-1-2. They raised 2-1-15-6
+    (issue #1356)."""
+    (tmp_path / "a_file").write_text("x")
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1 / 0;", use_duckdb, output_folder=tmp_path / "a_file" / "out")
+    assert error.value.args[1] == "0-3-1-2"
+
+
+def _twice_1356(name_1, name_2):
+    identifier = {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False}
+    number = {"name": name_1, "type": "Number", "role": "Measure", "nullable": True}
+    string = {"name": name_2, "type": "String", "role": "Measure", "nullable": True}
+    return {"datasets": [{"name": "DS_2", "DataStructure": [identifier, number, string]}]}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_69(use_duckdb):
+    """A Component given twice in the structure of a Data Set, Me_1 as a Number and as a
+    String, raises 0-1-2-3 on both engines and in semantic_analysis, as the CSV loaders do for
+    a column given twice. The second Component replaced the first (issue #1356)."""
+    structures = _twice_1356("Me_1", "Me_1")
+    datapoints = {"DS_2": pd.DataFrame({"Id_1": [1, 2], "Me_1": [1.5, None]})}
+    for call in (
+        lambda: run("DS_r <- DS_2;", structures, datapoints, use_duckdb=use_duckdb),
+        lambda: semantic_analysis("DS_r <- DS_2;", structures),
+    ):
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-1-2-3"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_70(use_duckdb):
+    """A B and 'A B' name the same Component: given as a Number and as a String in the
+    structure of a Data Set, they raise 0-1-2-3 on both engines and in semantic_analysis, as in
+    case 69. The second Component replaced the first (issue #1356)."""
+    structures = _twice_1356("A B", "'A B'")
+    datapoints = {"DS_2": pd.DataFrame({"Id_1": [1, 2], "A B": [1.5, None]})}
+    for call in (
+        lambda: run("DS_r <- DS_2;", structures, datapoints, use_duckdb=use_duckdb),
+        lambda: semantic_analysis("DS_r <- DS_2;", structures),
+    ):
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-1-2-3"

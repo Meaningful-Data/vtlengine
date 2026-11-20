@@ -5,11 +5,12 @@ This module contains helper functions for executing VTL scripts with DuckDB,
 handling dataset loading/saving with DAG scheduling for memory efficiency.
 """
 
+import operator
 import re
 from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Literal, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, List, Literal, Optional, Tuple, Union
 
 import duckdb
 import pandas as pd
@@ -209,6 +210,41 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
 # The VTL type of the SQL types a text is cast to when it is read as a number
 _NUMERIC_SQL_TYPES = {"DOUBLE": "Number", "INT64": "Integer", "BIGINT": "Integer"}
 
+_INT64_OPERATIONS: Dict[str, Callable[[int, int], int]] = {
+    "+": operator.add,
+    "-": operator.sub,
+    "*": operator.mul,
+}
+
+
+def _integer_out_of_range(msg: str) -> Optional[RunTimeError]:
+    """An Integer result that does not fit in 64 bits: an INT64 overflow in +, - or *, whose
+    exact value the pandas engine gives, or a DOUBLE out of the range of BIGINT (issue #1356)."""
+    overflow = re.search(r"Overflow in \w+ of INT64 \((-?\d+) ([-+*]) (-?\d+)\)", msg)
+    if overflow is not None:
+        left, sign, right = overflow.groups()
+        value: Any = _INT64_OPERATIONS[sign](int(left), int(right))
+        return RunTimeError("2-1-5-1", value=value, type_1="Number", type_2="Integer")
+    double = re.search(
+        r"Type DOUBLE with value (\S+) can't be cast because the value is out of "
+        r"range for the destination type INT64",
+        msg,
+    )
+    if double is not None:
+        return RunTimeError("2-1-5-1", value=double.group(1), type_1="Number", type_2="Integer")
+    return None
+
+
+def _eval_result_error(msg: str) -> Optional[RunTimeError]:
+    """The checks of the result of eval against its returns clause (issue #1356): a number with
+    decimals for an Integer (vtl_to_integer, 2-1-5-2) and duplicated Identifiers (2-1-15-4)."""
+    if "VTL 2-1-5-2 " in msg:
+        return RunTimeError("2-1-5-2", value=re.split(r"VTL 2-1-5-2 |\n", msg)[1])
+    if "VTL 2-1-15-4 " in msg:
+        op, name = re.split(r"VTL 2-1-15-4 |\n", msg)[1].split(" ", 1)
+        return RunTimeError("2-1-15-4", op=op, name=name)
+    return None
+
 
 def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     """Map a DuckDB query execution error to a VTL exception.
@@ -221,7 +257,12 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     msg = str(error)
     msg_lower = msg.lower()
 
-    macro_error = _map_udo_constraint_error(msg) or _map_vtl_macro_error(msg, msg_lower)
+    macro_error = (
+        _map_udo_constraint_error(msg)
+        or _map_vtl_macro_error(msg, msg_lower)
+        or _integer_out_of_range(msg)
+        or _eval_result_error(msg)
+    )
     if macro_error is not None:
         return macro_error
 
