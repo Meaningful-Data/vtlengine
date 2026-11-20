@@ -25,7 +25,7 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ValueDomain
-from vtlengine.Operators import Operator
+from vtlengine.Operators import Operator, shared_value_domain
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
@@ -416,8 +416,16 @@ class Unpivot(Operator):
                 else binary_implicit_promotion(final_type, comp.data_type)
             )
 
+        # The new Measure holds the values of the unpivoted Measures, so it keeps the value
+        # domain they all share, and has the basic type otherwise (issue #1348)
         result_dataset.add_component(
-            Component(name=measure, data_type=final_type, role=Role.MEASURE, nullable=True)
+            Component(
+                name=measure,
+                data_type=final_type,
+                role=Role.MEASURE,
+                nullable=True,
+                value_domain=shared_value_domain(dataset.get_measures()),
+            )
         )
         # Viral attributes propagate to the result, replicated across the unpivoted rows.
         for viral_comp in dataset.get_viral_attributes():

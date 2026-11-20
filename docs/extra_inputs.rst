@@ -271,16 +271,41 @@ The operators handle the Component as one of its basic type:
 the same type checks and the same result types. ``Id_2 || "_X"``
 is a ``String``, and ``Me_1 + 1`` on a value domain of integers
 is an ``Integer``. The Components that an operator keeps as they
-are keep their value domain: the Identifiers, the Components that
-``filter``, ``keep``, ``drop``, ``rename``, ``sub`` and the joins
-keep, and a Component written alone in ``calc``
-(``calc Me_3 := Id_2``). ``run()`` and ``semantic_analysis()``
-write ``"type": "VD_FLOW"`` for them.
+are keep their value domain: the Identifiers (except the ones
+below), the Components that ``filter``, ``keep``, ``drop``,
+``rename``, ``sub`` and the joins keep, the Measures that
+``flow_to_stock`` and ``stock_to_flow`` pass through (all but the
+``Integer`` and ``Number`` ones, which they accumulate), and a
+Component written alone in ``calc`` (``calc Me_3 := Id_2``).
+``run()`` and ``semantic_analysis()`` write ``"type": "VD_FLOW"``
+for them. A join ``apply`` gives each Measure the type and the value
+domain its expression gives, as ``calc`` does: ``apply nvl(a, b)``
+follows the rules of ``nvl`` below, and ``apply a + b`` gives the
+basic type.
+
+A Component into which an operator writes new values has its basic
+type, as those values are not values of the value domain: the time
+Identifier of ``timeshift``, ``fill_time_series`` and an aggregation
+grouped with ``time_agg``, the time Measure of ``time_agg`` on a
+Data Set, the Components that ``dateadd`` shifts, the Measures of
+``hierarchy``, the Measures of ``check_hierarchy`` in
+``non_zero``, ``partial_zero`` and ``always_zero``, which write a
+``0`` for a missing code item, and the ``Integer`` and ``Number``
+Measures of ``flow_to_stock`` and ``stock_to_flow``.
+
+The rule Identifier of ``hierarchy`` and ``check_hierarchy`` keeps
+the value domain a ruleset is defined on (``valuedomain rule VD``).
+For a ruleset on a variable, it keeps the value domain of the
+Component when every code item that the rules compute (for
+``check_hierarchy``, check) is a value of it, and has its basic type
+otherwise: with ``C = A + B`` on a value domain of ``A`` and ``B``,
+the result holds ``C`` and the rule Identifier has its basic type.
 
 The operators that put the values of several operands into one
 Component (the set operators, the Identifiers that a join
-matches, ``nvl``, ``if-then-else`` and ``case``) follow the VTL
-type conversion rules:
+matches, ``nvl``, ``if-then-else`` and ``case``, and the new
+Measure of ``unpivot``, which holds the values of the unpivoted
+Measures) follow the VTL type conversion rules:
 
 - Operands on the same value domain, nulls aside, give that value
   domain.
@@ -297,6 +322,16 @@ type conversion rules:
 
     /* Me_1 is on a value domain of integers: Me_2 is an Integer */
     DS_r <- DS_1 [calc Me_2 := nvl(Me_1, 0)];
+
+    /* Me_1 and Me_2 are on VD_FLOW: Me_3 keeps VD_FLOW (Id_3 is a String) */
+    DS_r <- DS_1 [unpivot Id_3, Me_3];
+
+The Identifiers of the conditions and of the Data Set operands of
+``if-then-else`` and ``case`` match on their names and basic types,
+as in ``nvl`` and the set operators: an Identifier on a value domain
+matches one of its basic type, and the result Identifier follows the
+rules above, the conditions included. Identifiers of different basic
+types raise ``1-1-9-10``.
 
 ``cast`` converts a value into a value domain in two steps: it
 casts the value to the basic type of the value domain, as a cast
@@ -329,23 +364,38 @@ Value domains also appear in the VTL-DL definitions:
   in order to the components listed in ``check_datapoint ...
   components``, which is required (``1-1-10-14``), with one
   component per value domain (``1-1-10-15``). Each component must be
-  defined on the value domain it is bound to (``1-1-10-12``), and the
-  value domains must be given (``1-2-22``, ``1-2-8``).
+  defined on the value domain it is bound to, or be of a basic type
+  that the implicit promotion takes to the type of the value domain
+  (a ``String`` for a ``String`` value domain, an ``Integer`` for a
+  ``Number`` one), and then it keeps its basic type; a component on
+  another value domain, or of a type that does not promote, raises
+  ``1-1-10-12``. The value domains must be given (``1-2-22``,
+  ``1-2-8``).
 - A hierarchical ruleset on value domains binds the value domains of
   its condition, in order, to the components listed in ``condition``
   (one per value domain, ``1-1-10-16``), and the value domain of its
   rule to the component in ``rule`` (required, ``1-1-10-4``), in
   ``check_hierarchy`` and ``hierarchy``. The same checks apply: each
-  component must be defined on its value domain (``1-1-10-12``), and
-  the value domains must be given (``1-2-22``, ``1-2-8``).
+  component must be defined on its value domain or be of a basic type
+  that promotes to its type (``1-1-10-12``), and the value domains
+  must be given (``1-2-22``, ``1-2-8``). Every code
+  item its rules name, on either side, must be a value of the value
+  domain of its rule, compared as a value of its type (``1-1-10-13``),
+  so its results are values of it.
 - A viral propagation rule on a value domain applies to the viral
   attributes defined on it, unless a rule on the variable overrides
   it. Where a viral attribute is combined, the rule on its value
   domain applies only when it is on that value domain in every
-  operand: when an operand gives it on no value domain (as an
-  ``aggregate avg`` rule does) or on another one, only a rule on the
+  operand: when an operand gives it on no value domain or on another
+  one, the mix is promoted to the basic type, only a rule on the
   variable applies, and without one the statement raises
-  ``1-3-3-6``.
+  ``1-3-3-6``, in either operand order (binary operators, joins,
+  ``if-then-else`` and ``case``). A rule on a value domain with
+  ``aggregate sum`` or ``avg`` gives a result of the basic type
+  (``avg`` a ``Number``), which is no longer on the value domain, so
+  a further combination of that result needs a rule on the variable
+  (otherwise ``1-3-3-6``). With ``aggregate max`` or ``min`` the
+  result keeps the value domain, as it is one of the values combined.
 - A value domain types a scalar or a component parameter of a user
   defined operator (``x VD_FLOW``, ``x component<VD_FLOW>``): the
   argument is of the basic type of the value domain, and its values

@@ -82,6 +82,12 @@ def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
     )
 
 
+def fills_with_zero(mode: str) -> bool:
+    """Whether a hierarchical ruleset mode reads a missing code item as 0 (non_zero,
+    partial_zero, always_zero)."""
+    return mode.endswith("zero")
+
+
 class HRBinOp(Operators.Binary):
     @classmethod
     def apply_operation_two_series(cls, left: Any, right: Any, op: Any = None) -> Any:
@@ -91,7 +97,7 @@ class HRBinOp(Operators.Binary):
 
     @classmethod
     def align_series(cls, left: Any, right: Any, mode: str) -> Tuple[Any, Any]:
-        fill_value = 0 if mode.endswith("zero") else None
+        fill_value = 0 if fills_with_zero(mode) else None
         # Convert to object dtype for sentinel-based alignment. A rule whose right code
         # items are all excluded reads them as missing.
         left_obj = left.astype(object).replace(EXCLUDE, REMOVE)
@@ -349,13 +355,16 @@ class Hierarchy(Operators.Operator):
         node_children: Optional[Dict[str, Tuple[str, List[str]]]] = None,
         rule_component: Optional[str] = None,
         ruleset: Optional[str] = None,
+        keep_rule_domain: bool = False,
     ) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {
             comp_name: copy(comp) for comp_name, comp in dataset.components.items()
         }
         for comp in result_components.values():
-            if comp.role == Role.MEASURE:
+            # The Measures hold the computed values, and the rule Identifier the computed code
+            # items: it keeps its value domain when keep_rule_domain says so (issue #1348)
+            if comp.role == Role.MEASURE or (comp.name == rule_component and not keep_rule_domain):
                 comp.value_domain = None
         # Viral attributes propagate to the hierarchy result (issue #877).
         for viral_comp in viral_components or []:
@@ -467,8 +476,16 @@ class Hierarchy(Operators.Operator):
         node_children: Optional[Dict[str, Tuple[str, List[str]]]] = None,
         rule_component: Optional[str] = None,
         ruleset: Optional[str] = None,
+        keep_rule_domain: bool = False,
     ) -> Dataset:
-        result = cls.validate(dataset, computed_dict, output, viral_components=viral_components)
+        result = cls.validate(
+            dataset,
+            computed_dict,
+            output,
+            viral_components=viral_components,
+            rule_component=rule_component,
+            keep_rule_domain=keep_rule_domain,
+        )
         if len(computed_dict) == 0:
             computed_data = pd.DataFrame(columns=result.get_components_names())
         else:

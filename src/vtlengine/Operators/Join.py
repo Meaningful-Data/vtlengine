@@ -694,17 +694,21 @@ class Apply(Operator):
                     data_type=operand.components[measure].data_type,
                     role=Role.MEASURE,
                     nullable=operand.components[measure].nullable,
+                    value_domain=operand.components[measure].value_domain,
                 )
                 for operand in (left, right)
             ]
             result = (
                 operator.evaluate(*operands) if data is not None else operator.validate(*operands)
             )
+            # The Measure has the value domain the operator gives, as in a calc: nvl keeps the
+            # one both operands are on, a computing operator gives the basic type (#1348)
             components[measure] = Component(
                 name=measure,
                 data_type=result.data_type,
                 role=Role.MEASURE,
                 nullable=result.nullable,
+                value_domain=result.value_domain,
             )
             if data is not None:
                 data[measure] = result.data
@@ -726,8 +730,9 @@ class Apply(Operator):
     @classmethod
     def create_dataset(cls, name: str, prefix: str, dataset: Dataset) -> Dataset:
         prefix += "#"
+        # Copies, as they are renamed: the Components of the join stay as they are
         components = {
-            component.name: component
+            component.name: copy(component)
             for component in dataset.components.values()
             if component.name.startswith(prefix) or component.role is Role.IDENTIFIER
         }
