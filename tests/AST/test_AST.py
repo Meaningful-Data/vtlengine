@@ -996,3 +996,32 @@ def test_create_ast_with_comments_syntax_error_raises():
     script = "DS_r := ;"
     with pytest.raises(VTLSyntaxError):
         create_ast_with_comments(text=script)
+
+
+F_INT = "define operator f (x integer) returns integer is x end operator;"
+F_STR = "define operator f (x string) returns string is x end operator;"
+
+
+def test_GH_1364_28():
+    """Two scripts that define f with x integer and with x string are not equal: the statements
+    of a Start node are compared (issue #1364)."""
+    assert create_ast(F_INT) != create_ast(F_STR)
+
+
+def test_GH_1364_29():
+    """Two scripts with different statements are not equal (issue #1364)."""
+    assert create_ast("DS_r <- DS_1 + 1;") != create_ast("DS_r <- union(DS_2, DS_3);")
+
+
+def test_GH_1364_30():
+    """The union nodes of union(DS_1, DS_2) and union(DS_3, DS_4, DS_5) are not equal: the
+    operands of a MulOp node are compared (issue #1364)."""
+    left = create_ast("DS_r <- union(DS_1, DS_2);").children[0].right
+    right = create_ast("DS_r <- union(DS_3, DS_4, DS_5);").children[0].right
+    assert left != right
+
+
+def test_GH_1364_31():
+    """Control: the define operator nodes of f with x integer and with x string are not equal
+    (issue #1364)."""
+    assert create_ast(F_INT).children[0] != create_ast(F_STR).children[0]
