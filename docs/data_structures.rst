@@ -217,9 +217,11 @@ The mapping itself is deliberately simple. **Roles** translate one-to-one:
 everything else is.
 
 **Types** are collapsed from the long SDMX list onto VTL's smaller set,
-following the official SDMX-to-VTL correspondence published in the
+following the SDMX-to-VTL correspondence of the
 `SDMX 3.1 Technical Notes
-<https://sdmx.org/wp-content/uploads/SDMX_3-1-0_SECTION_6_FINAL.pdf>`_:
+<https://sdmx.org/wp-content/uploads/SDMX_3-1-0_SECTION_6_FINAL.pdf>`_
+as reviewed for SDMX 3.2, the same that pysdmx uses to convert the results
+back to SDMX:
 
 .. list-table::
     :widths: 50 50
@@ -228,7 +230,8 @@ following the official SDMX-to-VTL correspondence published in the
     * - SDMX data type
       - VTL type
     * - ``String``, ``Alpha``, ``AlphaNumeric``, ``Numeric``, ``URI``,
-        ``Month``, ``MonthDay``, ``Day``, ``Time``
+        ``Month``, ``MonthDay``, ``Day``, ``Time``,
+        ``GeospatialInformation``
       - ``String``
     * - ``BigInteger``, ``Integer``, ``Long``, ``Short``, ``Count``
       - ``Integer``
@@ -237,18 +240,24 @@ following the official SDMX-to-VTL correspondence published in the
       - ``Number``
     * - ``Boolean``
       - ``Boolean``
-    * - ``BasicTimePeriod``, ``GregorianTimePeriod``, ``GregorianYear``,
-        ``GregorianYearMonth``, ``GregorianMonth``, ``GregorianDay``,
-        ``DateTime``
+    * - ``GregorianDay``, ``DateTime``
       - ``Date``
-    * - ``ObservationalTimePeriod``, ``StandardTimePeriod``,
-        ``ReportingTimePeriod`` and all reporting period variants
-        (Year, Semester, Trimester, Quarter, Month, Week, Day)
+    * - ``BasicTimePeriod``, ``GregorianTimePeriod``, ``GregorianYear``,
+        ``GregorianYearMonth``, ``ObservationalTimePeriod``,
+        ``StandardTimePeriod``, ``ReportingTimePeriod`` and all reporting
+        period variants (Year, Semester, Trimester, Quarter, Month, Week, Day)
       - ``Time_Period``
     * - ``TimeRange``
       - ``Time``
     * - ``Duration``
       - ``Duration``
+
+When ``run_sdmx`` or an SDMX data file gives the values of a
+``Time_Period`` component, a date with a time is read as the period of
+its day and a time zone is dropped, as the SDMX technical notes ask:
+``2025-12-19T10:30:00+01:00`` is ``2025D353``. The same values given
+in a DataFrame or a plain CSV file are not SDMX data, and are read as
+any other ``Time_Period`` value.
 
 See :doc:`data_types` for the VTL type semantics and which casts are
 supported.

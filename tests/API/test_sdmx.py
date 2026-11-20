@@ -16,7 +16,18 @@ import pandas as pd
 import pytest
 from pysdmx.io import get_datasets
 from pysdmx.io.pd import PandasDataset
-from pysdmx.model import DataflowRef, Reference, Ruleset, TransformationScheme, UserDefinedOperator
+from pysdmx.model import (
+    Component,
+    Components,
+    Concept,
+    DataflowRef,
+    DataType,
+    Reference,
+    Ruleset,
+    TransformationScheme,
+    UserDefinedOperator,
+)
+from pysdmx.model import Role as SDMXRole
 from pysdmx.model.dataflow import Dataflow, Schema
 from pysdmx.model.vtl import VtlDataflowMapping
 
@@ -26,6 +37,7 @@ from vtlengine.API._InternalApi import _check_script, to_vtl_json
 from vtlengine.API._sdmx_utils import _build_mapping_dict
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.Model import Dataset
+from vtlengine.Utils import VTL_DTYPES_MAPPING
 
 # Path setup
 base_path = Path(__file__).parent
@@ -684,11 +696,6 @@ def test_plain_csv_still_rejects_columns_outside_the_datastructure(tmp_path, use
 @pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
 def test_run_sdmx_drops_columns_outside_the_schema(tmp_path, use_duckdb):
     """A custom column pysdmx keeps in PandasDataset.data is dropped by run_sdmx."""
-    from pysdmx.model import DataType
-    from pysdmx.model.concept import Concept
-    from pysdmx.model.dataflow import Component, Components
-    from pysdmx.model.dataflow import Role as SDMXRole
-
     csv_path = tmp_path / "data.csv"
     csv_path.write_text(
         "DATAFLOW,Id_1,Me_1,UPDATED\n"
@@ -1992,3 +1999,104 @@ def test_run_sdmx_invalid_type_duckdb():
     script = "DS_r := BIS_DER [calc Me_4 := OBS_VALUE];"
     with pytest.raises(InputValidationException, match="0-1-3-7"):
         run_sdmx(script, "not a dataset", use_duckdb=True)  # type: ignore[arg-type]
+
+
+# =============================================================================
+# The VTL types of the SDMX data types follow the table of pysdmx (GH #1370)
+# =============================================================================
+
+
+def _period_schema(dtype):
+    return Schema(
+        "datastructure",
+        "MD",
+        "TEST",
+        Components(
+            [
+                Component("DIM", True, SDMXRole.DIMENSION, Concept("DIM", dtype=DataType.STRING)),
+                Component("PERIOD", False, SDMXRole.MEASURE, Concept("PERIOD", dtype=dtype)),
+            ]
+        ),
+        "1.0",
+    )
+
+
+sdmx_periods = [
+    pytest.param(DataType.YEAR, "2025", "2025", id="GregorianYear"),
+    pytest.param(DataType.YEAR_MONTH, "2025-01", "2025M1", id="GregorianYearMonth"),
+    pytest.param(DataType.GREGORIAN_TIME_PERIOD, "2025-01", "2025M1", id="GregorianTimePeriod"),
+    pytest.param(DataType.BASIC_TIME_PERIOD, "2025-01-15", "2025D15", id="BasicTimePeriod"),
+]
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+@pytest.mark.parametrize("dtype, value, loaded", sdmx_periods)
+def test_GH_1370_sdmx_periods_are_time_periods(dtype, value, loaded, use_duckdb):
+    """The Gregorian and basic time periods of SDMX are VTL time periods, as pysdmx converts
+    them back to SDMX, so a year is loaded instead of rejected as a Date (GH #1370).
+
+    https://github.com/Meaningful-Data/vtlengine/issues/1370
+    """
+    structure = to_vtl_json(_period_schema(dtype), "DS_1")
+    assert structure["datasets"][0]["DataStructure"][1]["type"] == "Time_Period"
+
+    result = run(
+        script="DS_r <- DS_1;",
+        data_structures=structure,
+        datapoints={"DS_1": pd.DataFrame({"DIM": ["A"], "PERIOD": [value]})},
+        use_duckdb=use_duckdb,
+    )
+
+    assert result["DS_r"].data["PERIOD"].tolist() == [loaded]
+
+
+def test_GH_1370_sdmx_types_of_pysdmx():
+    """GeospatialInformation is a String and GregorianMonth, which is no SDMX data type of
+    pysdmx, is not mapped (GH #1370)."""
+    assert VTL_DTYPES_MAPPING["GeospatialInformation"] == "String"
+    assert "GregorianMonth" not in VTL_DTYPES_MAPPING
+
+
+dates_with_a_time = {
+    "A": ("2025-12-19T10:30:00", "2025D353"),
+    "B": ("2025-12-19T10:30:00.5+01:00", "2025D353"),
+    "C": ("2025-12-19-05:00", "2025D353"),
+    "D": ("2025-Q1", "2025Q1"),
+}
+period_types = [DataType.BASIC_TIME_PERIOD, DataType.STD_TIME_PERIOD, DataType.PERIOD]
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+@pytest.mark.parametrize("dtype", period_types, ids=lambda dtype: dtype.value)
+def test_GH_1370_run_sdmx_reads_a_date_with_a_time_as_its_day(dtype, use_duckdb):
+    """run_sdmx reads a date with a time, or with a time zone, in a time period component as
+    the period of its day, as the SDMX technical notes ask. A BasicTimePeriod one used to load
+    as a Date (GH #1370)."""
+    data = pd.DataFrame(
+        {"DIM": list(dates_with_a_time), "PERIOD": [v for v, _ in dates_with_a_time.values()]}
+    )
+    dataset = PandasDataset(structure=_period_schema(dtype), data=data)
+
+    result = run_sdmx("DS_r <- DS_1;", [dataset], use_duckdb=use_duckdb)
+
+    loaded = result["DS_r"].data.sort_values("DIM")["PERIOD"].tolist()
+    assert loaded == [period for _, period in dates_with_a_time.values()]
+
+
+@pytest.mark.parametrize("use_duckdb", [False, True], ids=["pandas", "duckdb"])
+def test_GH_1370_sdmx_file_reads_a_date_with_a_time_as_its_day(tmp_path, use_duckdb):
+    """An SDMX data file read for a time period component gives a date with a time as the
+    period of its day too, also after pysdmx cuts the value at its first colon. A date with only
+    a time zone is left out: pysdmx cuts -05:00 to -05 (GH #1370)."""
+    in_file = {dim: dates_with_a_time[dim] for dim in ("A", "B", "D")}
+    rows = "".join(
+        f"datastructure,MD:TEST(1.0),I,{dim},{value}\n" for dim, (value, _) in in_file.items()
+    )
+    path = tmp_path / "data.csv"
+    path.write_text(f"STRUCTURE,STRUCTURE_ID,ACTION,DIM,PERIOD\n{rows}")
+    structure = to_vtl_json(_period_schema(DataType.BASIC_TIME_PERIOD), "DS_1")
+
+    result = run("DS_r <- DS_1;", structure, {"DS_1": path}, use_duckdb=use_duckdb)
+
+    loaded = result["DS_r"].data.sort_values("DIM")["PERIOD"].tolist()
+    assert loaded == [period for _, period in in_file.values()]
