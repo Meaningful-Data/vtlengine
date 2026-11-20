@@ -14184,6 +14184,109 @@ class BasicTypeValueBugs(BugHelper):
             code="GH_1353_26", number_inputs=1, references_names=["1"], scalars={"SC_2": -0.0}
         )
 
+    def test_GH_1353_28(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := 1 not_in { null } ];
+        Description: not_in is the negation of in, so 1 not_in { null } is null, as
+                     1 in { null }, and Me_4 is nullable. The pandas engine gave true, and both
+                     engines declared Me_4 non-nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_28", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_29(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := Me_1 in { 0.0 } ];
+        Description: -0.0 is 0.0, so it is in { 0.0 }, as Me_1 = 0.0 gives true. The pandas
+                     engine told -0.0 from 0.0 and gave false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_29", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_30(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := Me_1 = 0.0 ];
+        Description: Control of case 29: -0.0 = 0.0 is true on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_30", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_31(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := replace ( Me_1 , "" , "-" ) ];
+        Description: An empty pattern matches nothing, so replace leaves the value unchanged.
+                     The pandas engine inserted the replacement between the characters.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_31", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_32(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := instr ( Me_1 , "" , 1 , 2 ) ,
+                                         Me_7 := instr ( "" , "" , 1 , 2 ) ];
+        Description: The second occurrence of an empty pattern is at position 2 of "abcb" and
+                     there is none in an empty string, which gives 0. The DuckDB engine gave
+                     the position 2, past the end of the empty string.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_32", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_33(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := match_characters ( Me_1 , "[[:alpha:]]+" ) ];
+        Description: The pattern is a POSIX Extended Regular Expression, so [[:alpha:]] is a
+                     letter on both engines. The pandas engine read it as a set of the
+                     characters [, :, a, l, p and h.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_33", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_35(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := string_distance ( levenshtein , Me_4 , "ab" ) ];
+        Description: The Levenshtein distance counts characters, so "áb" is one edit from "ab".
+                     The DuckDB engine counted UTF-8 bytes and gave 2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_35", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_36(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := string_distance ( hamming , Me_4 , "ab" ) ];
+        Description: The Hamming distance compares characters, so "áb" and "ab" have the same
+                     length and differ in one position. The DuckDB engine counted UTF-8 bytes
+                     and raised a raw InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_36", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_37(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := string_distance ( hamming , "" , "" ) ];
+        Description: The Hamming distance of two empty strings is 0. The DuckDB engine raised a
+                     raw InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_37", number_inputs=1, references_names=["1"])
+
     def test_GH_1353_40(self):
         """
         Status: OK

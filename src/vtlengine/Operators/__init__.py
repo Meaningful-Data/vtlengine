@@ -674,7 +674,8 @@ class Binary(Operator):
             name="result",
             data_type=cls.type_validation(scalar.data_type, scalar_set.data_type),
             value=None,
-            nullable=scalar.nullable,
+            # A set of nulls gives null, as 1 in {null} and 1 not_in {null} (issue #1353)
+            nullable=scalar.nullable or scalar_set.data_type == Null,
         )
 
     # The following class method implements the type promotion
