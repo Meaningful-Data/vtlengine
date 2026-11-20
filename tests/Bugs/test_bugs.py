@@ -14009,3 +14009,37 @@ class BasicTypeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1353_11", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_12(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := instr ( Me_1 , "b" , 1 , Me_3 ) ];
+        Description: The Number occurrence Me_3 (2.0) is implicitly cast to Integer. The pandas
+                     engine raised 2-1-18-1, naming it the start parameter, and the DuckDB engine
+                     raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_12", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_13(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := instr ( "abc" , Me_2 ) ];
+        Description: instr of a String literal with a Component pattern gives a value per data
+                     point. The pandas engine raised a raw AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_13", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := replace ( Me_2 , "b" , Me_2 ) ];
+        Description: The same Component is the operand and the replacement of replace. The
+                     pandas engine raised a raw ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_14", number_inputs=1, references_names=["1"])
