@@ -285,7 +285,7 @@ def _create_default_registry() -> OperatorRegistry:
     ops.register(tokens.CEIL, "CAST(CEIL({0}) AS BIGINT)")
     ops.register(tokens.FLOOR, "CAST(FLOOR({0}) AS BIGINT)")
     ops.register(tokens.ABS, "ABS({0})")
-    ops.register(tokens.EXP, "EXP({0})")
+    ops.register(tokens.EXP, "vtl_finite(EXP({0}), 'exp')")
     ops.register(tokens.LN, "vtl_ln({0})")
     ops.register(tokens.SQRT, "vtl_sqrt({0})")
     # Logical. NOT goes in parentheses: IS NULL, BETWEEN, IN and the comparisons bind tighter

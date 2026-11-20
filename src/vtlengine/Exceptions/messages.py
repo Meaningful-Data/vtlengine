@@ -568,9 +568,10 @@ centralised_messages = {
         "than its operand.",
     },  # RunTimeError.
     "2-1-3-1": {
-        "message": "At op {op}: Division by zero produced infinite values.",
-        "description": "Raised when a division by zero in a DuckDB query produces "
-        "infinite floating-point values in measure columns.",
+        "message": "At op {op}: Division by zero or a value beyond the range of a Number "
+        "produced infinite values.",
+        "description": "Raised when a division by zero, or a result too large for a Number "
+        "(as power or exp can give), produces infinite floating-point values.",
     },
     # Cast errors
     "1-1-5-1": {

@@ -671,7 +671,8 @@ class TestUnaryOperations:
             ("ceil", 'CAST(CEIL("{0}") AS BIGINT)'),
             ("floor", 'CAST(FLOOR("{0}") AS BIGINT)'),
             ("abs", 'ABS("{0}")'),
-            ("exp", 'EXP("{0}")'),
+            # exp beyond the range of a Number raises 2-1-3-1 (#1356).
+            ("exp", "vtl_finite(EXP(\"{0}\"), 'exp')"),
             ("ln", 'vtl_ln("{0}")'),
             ("sqrt", 'vtl_sqrt("{0}")'),
         ],

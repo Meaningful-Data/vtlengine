@@ -108,7 +108,11 @@ class Binary(Operator.Binary):
                 raise RunTimeError("2-1-15-2", op=cls.op, value=x)
             if x == 0 and y < 0:
                 raise RunTimeError("2-1-15-6", op=cls.op, value=x)
-            result = cls.py_op(x, y)
+            try:
+                result = cls.py_op(x, y)
+            except OverflowError:
+                # Beyond the range of a Number, as the DuckDB engine raises (issue #1356)
+                raise RunTimeError("2-1-3-1", op=cls.op) from None
         else:
             result = cls.py_op(x, y)
         if not isinstance(result, float):
@@ -209,9 +213,23 @@ class Exponential(Unary):
     """  # noqa E501
 
     op = EXP
-    py_op = math.exp
     return_type = Number
     pc_func = staticmethod(pc.exp)
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        try:
+            return math.exp(x)
+        except OverflowError:
+            # Beyond the range of a Number, as the DuckDB engine raises (issue #1356)
+            raise RunTimeError("2-1-3-1", op=cls.op) from None
+
+    @classmethod
+    def apply_operation_component(cls, series: Any) -> Any:
+        result = super().apply_operation_component(series)
+        if (result == math.inf).any():
+            raise RunTimeError("2-1-3-1", op=cls.op)
+        return result
 
 
 class NaturalLogarithm(Unary):

@@ -13572,7 +13572,8 @@ class TimeValueBugs(BugHelper):
             code="GH_1352_36p4",
             number_inputs=1,
             exception_code="2-1-3-1",
-            exception_message="At op ratio_to_report: Division by zero produced infinite values.",
+            exception_message="At op ratio_to_report: Division by zero or a value beyond the range "
+            "of a Number produced infinite values.",
         )
 
     def test_GH_1352_36p5(self):
@@ -14131,3 +14132,26 @@ class RunTimeErrorMappingBugs(BugHelper):
             exception_code="2-1-5-1",
             exception_message="Impossible to cast 1e+20 from type Number to Integer.",
         )
+
+    def test_GH_1356_34(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := power ( Me_2 , 20 ) ];
+        Description: 1e20 to the power of 20 is beyond the range of a Number: both engines raise
+                     2-1-3-1, as for the infinite values of a division. The pandas engine raised
+                     a raw OverflowError and the DuckDB engine returned inf.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(code="GH_1356_34", number_inputs=1, exception_code="2-1-3-1")
+
+    def test_GH_1356_34b(self):
+        """
+        Status: OK
+        Expression: SC_r <- exp ( 1000 );
+        Description: exp(1000) is beyond the range of a Number: both engines raise 2-1-3-1. The
+                     pandas engine raised a raw OverflowError and the DuckDB engine returned inf.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(code="GH_1356_34b", number_inputs=1, exception_code="2-1-3-1")

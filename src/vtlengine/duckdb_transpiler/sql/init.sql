@@ -461,6 +461,12 @@ CREATE OR REPLACE MACRO vtl_mod(a, b) AS (
     END
 );
 
+-- A result beyond the range of a DOUBLE is infinite: it raises VTL error 2-1-3-1, as
+-- the pandas engine does (issue #1356).
+CREATE OR REPLACE MACRO vtl_finite(x, op) AS (
+    CASE WHEN isinf(x) THEN error('VTL Error 2-1-3-1: infinite values in ' || op) ELSE x END
+);
+
 -- Power that mirrors VTL error 2-1-15-2: a negative base raised to a
 -- fractional exponent has no real result. Zero raised to a negative exponent
 -- is a division by zero (2-1-15-6), like the pandas engine.
@@ -469,7 +475,7 @@ CREATE OR REPLACE MACRO vtl_power(a, b) AS (
          THEN error('VTL 2-1-15-2 power: negative base ' || CAST(a AS VARCHAR))
          WHEN a = 0 AND b < 0
          THEN error('VTL 2-1-15-6 power: Scalar division by Zero')
-         ELSE POWER(a, b)
+         ELSE vtl_finite(POWER(a, b), 'power')
     END
 );
 
