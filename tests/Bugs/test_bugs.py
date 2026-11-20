@@ -14155,3 +14155,37 @@ class RunTimeErrorMappingBugs(BugHelper):
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(code="GH_1356_34b", number_inputs=1, exception_code="2-1-3-1")
+
+    def test_GH_1356_35(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := round ( Me_2 , -400 ) ];
+        Description: Rounded to the 400th digit before the decimal point, 2.5 and 1e20 are 0.0
+                     on both engines. The pandas engine raised a raw ZeroDivisionError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1356_35", number_inputs=1, references_names=["1"])
+
+    def test_GH_1356_36(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := round ( Me_2 , null ) ];
+        Description: round with a null number of digits rounds to a whole Number on both
+                     engines: 3.0 and 1e20. The pandas engine raised a raw OverflowError for
+                     1e20.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1356_36", number_inputs=1, references_names=["1"])
+
+    def test_GH_1356_37(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := trunc ( Me_2 , 400 ) ];
+        Description: Truncated at the 400th decimal, 2.5 and 1e20 are unchanged on both engines.
+                     The pandas engine raised a raw OverflowError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1356_37", number_inputs=1, references_names=["1"])

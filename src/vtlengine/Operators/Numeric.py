@@ -2,7 +2,8 @@ import math
 import operator
 import struct
 import warnings
-from typing import Any, Optional, Union
+from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
+from typing import Any, Callable, Optional, Union
 
 import pandas as pd
 import pyarrow.compute as pc
@@ -412,6 +413,10 @@ class Power(Binary):
         return x**param
 
 
+def _half_away_from_zero(value: float) -> int:
+    return math.floor(value + 0.5) if value >= 0.0 else math.ceil(value - 0.5)
+
+
 class Parameterized(Unary):
     """Parametrized class
     Inherits from Unary class, to validate the data type and evaluate if it is the correct one to
@@ -447,6 +452,29 @@ class Parameterized(Unary):
     @classmethod
     def op_func(cls, x: Any, param: Optional[Any]) -> Any:
         return None if pd.isnull(x) else cls.py_op(x, param)
+
+    @classmethod
+    def at_digits(cls, x: Any, param: Any, whole: Callable[[float], int], mode: str) -> Any:
+        """Round and trunc: x made whole by whole at its digit 10^-param (10^0 for a null param).
+        A digit past the last one a Number holds leaves x unchanged and a digit above its first
+        one gives 0, as on the DuckDB engine, so no number of digits overflows (issue #1356)."""
+        digits = 0 if pd.isnull(param) else param
+        position = math.floor(math.log10(abs(x))) + digits if x != 0 else 0
+        if position >= 17:
+            value = float(x)
+        elif position < -1:
+            value = 0.0
+        elif abs(digits) > 300:
+            # Only a value near the limits of a Number gets here: its exact decimal value
+            value = float(Decimal(x).quantize(Decimal(1).scaleb(-digits), rounding=mode))
+        else:
+            multiplier = 10**digits
+            value = whole(x * multiplier) / multiplier
+        if cls.return_type is Integer:
+            return Integer.in_range(value, Number)
+        # Number result: normalize like every arithmetic result so both engines agree
+        # bit-for-bit (issue #985)
+        return _round_to_significant(value, get_effective_numeric_digits())
 
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
@@ -537,21 +565,7 @@ class Round(Parameterized):
 
     @classmethod
     def py_op(cls, x: Any, param: Any) -> Any:
-        multiplier = 1.0
-        if not pd.isnull(param):
-            multiplier = 10**param
-
-        if x >= 0.0:
-            rounded_value = math.floor(x * multiplier + 0.5) / multiplier
-        else:
-            rounded_value = math.ceil(x * multiplier - 0.5) / multiplier
-
-        if param is not None:
-            # Number result: normalize like every arithmetic result so both
-            # engines' round() agree bit-for-bit (issue #985)
-            return _round_to_significant(rounded_value, get_effective_numeric_digits())
-
-        return int(rounded_value)
+        return cls.at_digits(x, param, _half_away_from_zero, ROUND_HALF_UP)
 
 
 class Trunc(Parameterized):
@@ -563,17 +577,7 @@ class Trunc(Parameterized):
 
     @classmethod
     def py_op(cls, x: float, param: Optional[float]) -> Any:
-        multiplier = 1.0
-        if not pd.isnull(param) and param is not None:
-            multiplier = 10**param
-
-        truncated_value = int(x * multiplier) / multiplier
-
-        if not pd.isnull(param):
-            # Number result: normalize like every arithmetic result (issue #985)
-            return _round_to_significant(truncated_value, get_effective_numeric_digits())
-
-        return int(truncated_value)
+        return cls.at_digits(x, param, math.trunc, ROUND_DOWN)
 
 
 class Random(Parameterized):
