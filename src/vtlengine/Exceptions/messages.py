@@ -846,9 +846,12 @@ centralised_messages = {
     },
     "1-1-10-12": {
         "message": "At op {op}: Component {comp_name} of type {type} is not defined on the Value "
-        "Domain {value_domain} of the ruleset {ruleset}.",
+        "Domain {value_domain} of the ruleset {ruleset}, nor of a basic type that promotes to "
+        "its type {basic_type}.",
         "description": "Raised when a ruleset defined on value domains is called with a "
-        "component that is not defined on the value domain it is bound to.",
+        "component that is neither defined on the value domain it is bound to nor of a basic "
+        "type that promotes to the type of the value domain, such as a component on another "
+        "value domain or a String component bound to a Number value domain.",
     },
     "1-1-10-14": {
         "message": "At op {op}: The ruleset {ruleset} is defined on value domains, so the call "
