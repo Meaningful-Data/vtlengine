@@ -13633,3 +13633,39 @@ class TimeValueBugs(BugHelper):
             exception_message="Time Period operands with different period indicators do not "
             "support < and > Comparison operations, unable to get the min",
         )
+
+    def test_GH_1352_26k(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "0999-01-15" , date , "YYYY-MM-DD" ) ];
+        Description: Extra of case 26: a Date has the years 1000 to 9999 also when a mask reads
+                     it, so the cast of the literal 0999-01-15 raises 1-1-5-6, as the cast
+                     without a mask does. The pandas engine raised the input error 0-1-2-7 and
+                     the DuckDB engine and the semantic analysis gave the Date.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_26k",
+            number_inputs=1,
+            exception_code="1-1-5-6",
+            exception_message="Impossible to cast 0999-01-15 from type String to Date.",
+        )
+
+    def test_GH_1352_26l(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , date , "YYYY-MM-DD" ) ];
+        Description: Extra of case 26: a Date has the years 1000 to 9999 also when a mask reads
+                     it, so the cast of the text 0999-01-15 raises 2-1-5-3. Both engines gave the
+                     Date 0999-01-15.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_26l",
+            number_inputs=1,
+            exception_code="2-1-5-3",
+            exception_message="Impossible to cast 0999-01-15 from type String to Date using mask "
+            "YYYY-MM-DD.",
+        )
