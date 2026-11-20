@@ -11,6 +11,7 @@ from vtlengine.AST.Grammar.tokens import (
     BETWEEN,
     CHARSET_MATCH,
     EQ,
+    EXISTS_IN,
     GT,
     GTE,
     IN,
@@ -580,6 +581,9 @@ class ExistIn(Operator.Operator):
 
         left_ids_set = set(left_identifiers)
         right_ids_set = set(right_identifiers)
+        if not left_ids_set or not right_ids_set:
+            # The Data Points are matched by their Identifiers, as in a join (issue #1356)
+            raise SemanticError("1-2-10", op=EXISTS_IN)
         if not (left_ids_set.issubset(right_ids_set) or right_ids_set.issubset(left_ids_set)):
             raise SemanticError(
                 "1-2-15",

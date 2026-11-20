@@ -391,9 +391,9 @@ class Analytic(Operator.Unary):
                     f'as "{denominator_prefix}{measure}"'
                 )
 
-        measures_sql = ", ".join(measure_queries)
-        identifiers_sql = ", ".join(f'"{name}"' for name in identifier_names)
-        query = f"SELECT {identifiers_sql} , {measures_sql} FROM df"
+        # A Data Set without Identifiers selects its Measures alone (issue #1356)
+        columns = [f'"{name}"' for name in identifier_names] + measure_queries
+        query = f"SELECT {', '.join(columns)} FROM df"
 
         try:
             with query_connection() as conn:

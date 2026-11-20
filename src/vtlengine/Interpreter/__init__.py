@@ -1277,11 +1277,16 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.regular_aggregation_dataset is not None
                 and self.regular_aggregation_dataset.data is not None
             ):
-                joined_result = merge_frames(
-                    cast(pd.DataFrame, self.regular_aggregation_dataset.data[id_columns]),
-                    result.data,
-                    on=id_columns,
-                    how="inner",
+                joined_result = (
+                    merge_frames(
+                        self.regular_aggregation_dataset.data[id_columns],
+                        result.data,
+                        on=id_columns,
+                        how="inner",
+                    )
+                    if id_columns
+                    # A Data Set without Identifiers holds one Data Point at most (issue #1356)
+                    else result.data.reset_index(drop=True)
                 )
                 data = joined_result[measure_name]
             else:

@@ -14492,3 +14492,78 @@ class SemanticCheckBugs(BugHelper):
             exception_code="1-1-6-9",
             exception_message="At op calc: The following components are repeated: {'Me_9'}.",
         )
+
+    def test_GH_1356_27(self):
+        """
+        Status: OK
+        Expression: DS_r <- union ( sum ( DS_2 ) , sum ( DS_2 * 10 ) );
+        Description: union refuses a Data Set without Identifiers with 1-2-10, as the joins do (case
+                     29b). The pandas engine raised a raw ValueError and the DuckDB engine returned
+                     both data points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_27",
+            number_inputs=1,
+            exception_code="1-2-10",
+            exception_message="Dataset without Identifiers are not allowed in union operator.",
+        )
+
+    def test_GH_1356_28(self):
+        """
+        Status: OK
+        Expression: DS_r <- intersect ( sum ( DS_2 ) , sum ( DS_2 * 10 ) );
+        Description: intersect refuses a Data Set without Identifiers with 1-2-10. The pandas engine
+                     raised a raw IndexError and the DuckDB engine returned a data point.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_28",
+            number_inputs=1,
+            exception_code="1-2-10",
+            exception_message="Dataset without Identifiers are not allowed in intersect operator.",
+        )
+
+    def test_GH_1356_29(self):
+        """
+        Status: OK
+        Expression: DS_r <- exists_in ( sum ( DS_2 ) , sum ( DS_2 * 10 ) );
+        Description: exists_in refuses a Data Set without Identifiers with 1-2-10. The pandas engine
+                     raised a raw IndexError and the DuckDB engine a raw ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_29",
+            number_inputs=1,
+            exception_code="1-2-10",
+            exception_message="Dataset without Identifiers are not allowed in exists_in operator.",
+        )
+
+    def test_GH_1356_29b(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( sum ( DS_2 ) as a , sum ( DS_2 * 10 ) as b );
+        Description: Control of cases 27 to 29: the joins refuse a Data Set without Identifiers.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_29b",
+            number_inputs=1,
+            exception_code="1-2-10",
+            exception_message="Dataset without Identifiers are not allowed in inner_join operator.",
+        )
+
+    def test_GH_1356_30(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( DS_2 ) [ calc Me_2 := rank ( over ( order by Me_1 ) ) ];
+        Description: An analytic function on a Data Set without Identifiers ranks its data point.
+                     The pandas engine raised a raw ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1356_30", number_inputs=1, references_names=["1"])
