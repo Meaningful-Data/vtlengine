@@ -96,6 +96,16 @@ def parse_date_value(value: str) -> date:
     return date.fromisoformat(value[:10])
 
 
+def parse_datetime_value(value: str) -> datetime:
+    """Parse a date or datetime string, a Date or an end of a Time, into a datetime that keeps
+    its time of the day.
+
+    A Python datetime holds the years 1000 to 9999 of a Date on every pandas version, which
+    the nanosecond Timestamp of pandas 2 does not: it ends in the years 1677 and 2262 (#1352).
+    """
+    return datetime.fromisoformat(_normalize_fractional_seconds(value))
+
+
 def _build_date_error(value: str) -> InputValidationException:
     """Build a precise error for a value that failed date parsing.
 

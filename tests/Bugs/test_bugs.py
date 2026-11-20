@@ -13689,3 +13689,16 @@ class TimeValueBugs(BugHelper):
             "shiftNumber, expected Integer.",
             scalars={"SC_N": 2.7},
         )
+
+    def test_GH_1352_26m(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , 1 );
+        Description: Extra of case 26: timeshift of the yearly Times of 1500 and 1501, and of
+                     9997 and 9998, by one year gives the Times of 1501 and 1502, and of 9998 and
+                     9999. The pandas engine raised a raw OutOfBoundsDatetime with pandas 2, whose
+                     nanosecond timestamps hold only the years 1677 to 2262.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_26m", number_inputs=1, references_names=["1"])
