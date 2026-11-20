@@ -227,7 +227,8 @@ hierarchy(DS, HR non\_null rule computed) 🟢 · number, hierarchical ruleset �
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-null-rule-computed-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-non-null-rule-computed-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-2-22</code> · DuckDB 🛡 <code>1-2-22</code></span></summary>
+   <p class="om-detail">SemanticError 1-2-22: No Value Domains have been defined. Please check transformation with output Dataset DS_r</p>
 
 .. include:: ../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/notes.rst
 
@@ -449,7 +450,8 @@ hierarchy(DS, HR non\_zero rule computed) 🟢 · number, hierarchical ruleset �
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-zero-rule-computed-manual-ex-2"><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-non-zero-rule-computed-manual-ex-2"><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-2-22</code> · DuckDB 🛡 <code>1-2-22</code></span></summary>
+   <p class="om-detail">SemanticError 1-2-22: No Value Domains have been defined. Please check transformation with output Dataset DS_r</p>
 
 .. include:: ../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/notes.rst
 
@@ -671,7 +673,8 @@ hierarchy(DS, HR partial\_null rule computed) 🟢 · number, hierarchical rules
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partial-null-rule-computed-manual-ex-3"><summary><span class="om-ex-title">Manual example 3</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-partial-null-rule-computed-manual-ex-3"><summary><span class="om-ex-title">Manual example 3</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-2-22</code> · DuckDB 🛡 <code>1-2-22</code></span></summary>
+   <p class="om-detail">SemanticError 1-2-22: No Value Domains have been defined. Please check transformation with output Dataset DS_r</p>
 
 .. include:: ../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/notes.rst
 

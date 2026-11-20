@@ -244,9 +244,9 @@ The definitions of the VTL-DL. The counts are over the forms of each one. Their 
    * - :doc:`define datapoint ruleset <definitions/define_datapoint_ruleset>`
      - 🟢
      - 5
-     - 5
+     - 4
      - 0
-     - 0
+     - 1
      - 0
      - 0
    * - :doc:`define hierarchical ruleset <definitions/define_hierarchical_ruleset>`
@@ -268,9 +268,9 @@ The definitions of the VTL-DL. The counts are over the forms of each one. Their 
    * - **Total**
      - 🟢
      - 29
-     - 29
+     - 28
      - 0
-     - 0
+     - 1
      - 0
      - 0
 

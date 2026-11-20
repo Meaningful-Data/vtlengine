@@ -2577,18 +2577,18 @@
   },
   "definitions/define_datapoint_ruleset/valuedomain/domain_aliases_in_the_rule": {
     "anchor": "ex-valuedomain-domain-aliases-in-the-rule",
-    "duckdb": "✅",
+    "duckdb": "🛡 1-2-8",
     "operator_page": "definitions/define_datapoint_ruleset.html",
-    "pandas": "✅",
-    "status": "ok",
+    "pandas": "🛡 1-2-8",
+    "status": "refused",
     "title": "Domain aliases in the rule"
   },
   "definitions/define_datapoint_ruleset/valuedomain/domains_bound_to_components": {
     "anchor": "ex-valuedomain-domains-bound-to-components",
-    "duckdb": "✅",
+    "duckdb": "🛡 1-2-8",
     "operator_page": "definitions/define_datapoint_ruleset.html",
-    "pandas": "✅",
-    "status": "ok",
+    "pandas": "🛡 1-2-8",
+    "status": "refused",
     "title": "Domains bound to components"
   },
   "definitions/define_datapoint_ruleset/variable/variable_aliases_in_the_rule": {
@@ -2921,10 +2921,10 @@
   },
   "definitions/define_operator/ruleset/datapoint_on_valuedomains_type": {
     "anchor": "ex-ruleset-datapoint-on-valuedomains-type",
-    "duckdb": "✅",
+    "duckdb": "🛡 1-2-22",
     "operator_page": "definitions/define_operator.html",
-    "pandas": "✅",
-    "status": "ok",
+    "pandas": "🛡 1-2-22",
+    "status": "refused",
     "title": "Datapoint on valuedomains type"
   },
   "definitions/define_operator/ruleset/datapoint_on_variables_type": {
@@ -4073,10 +4073,10 @@
   },
   "hierarchy/hierarchy/non_null_rule_computed/manual_ex_1": {
     "anchor": "ex-non-null-rule-computed-manual-ex-1",
-    "duckdb": "✅",
+    "duckdb": "🛡 1-2-22",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "✅",
-    "status": "ok",
+    "pandas": "🛡 1-2-22",
+    "status": "refused",
     "title": "Manual example 1"
   },
   "hierarchy/hierarchy/non_null_rule_computed/missing_null_and_zero_items": {
@@ -4145,10 +4145,10 @@
   },
   "hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2": {
     "anchor": "ex-non-zero-rule-computed-manual-ex-2",
-    "duckdb": "✅",
+    "duckdb": "🛡 1-2-22",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "✅",
-    "status": "ok",
+    "pandas": "🛡 1-2-22",
+    "status": "refused",
     "title": "Manual example 2"
   },
   "hierarchy/hierarchy/non_zero_rule_computed/missing_null_and_zero_items": {
@@ -4217,10 +4217,10 @@
   },
   "hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3": {
     "anchor": "ex-partial-null-rule-computed-manual-ex-3",
-    "duckdb": "✅",
+    "duckdb": "🛡 1-2-22",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "✅",
-    "status": "ok",
+    "pandas": "🛡 1-2-22",
+    "status": "refused",
     "title": "Manual example 3"
   },
   "hierarchy/hierarchy/partial_null_rule_computed/missing_null_and_zero_items": {
@@ -7281,10 +7281,10 @@
   },
   "validation/check_datapoint/components/value_domains_bound_to_components": {
     "anchor": "ex-components-value-domains-bound-to-components",
-    "duckdb": "✅",
+    "duckdb": "🛡 1-2-8",
     "operator_page": "validation/check_datapoint.html",
-    "pandas": "✅",
-    "status": "ok",
+    "pandas": "🛡 1-2-8",
+    "status": "refused",
     "title": "Value domains bound to components"
   },
   "validation/check_datapoint/errorcode/code_only_on_false_results": {

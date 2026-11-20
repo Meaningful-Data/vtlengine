@@ -5154,35 +5154,35 @@
     },
     "definitions/define_datapoint_ruleset/valuedomain/domain_aliases_in_the_rule": {
       "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-2-8: Missing value domain 'VD_AMOUNT' definition, please provide an structure. Please check transformation with output Dataset DS_r",
+        "error_code": "1-2-8",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-2-8: Missing value domain 'VD_AMOUNT' definition, please provide an structure. Please check transformation with output Dataset DS_r",
+        "error_code": "1-2-8",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
-      "status": "ok"
+      "status": "refused"
     },
     "definitions/define_datapoint_ruleset/valuedomain/domains_bound_to_components": {
       "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-2-8: Missing value domain 'VD_AMOUNT' definition, please provide an structure. Please check transformation with output Dataset DS_r",
+        "error_code": "1-2-8",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-2-8: Missing value domain 'VD_AMOUNT' definition, please provide an structure. Please check transformation with output Dataset DS_r",
+        "error_code": "1-2-8",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
-      "status": "ok"
+      "status": "refused"
     },
     "definitions/define_datapoint_ruleset/variable/variable_aliases_in_the_rule": {
       "duckdb": {
@@ -5842,19 +5842,19 @@
     },
     "definitions/define_operator/ruleset/datapoint_on_valuedomains_type": {
       "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-2-22: No Value Domains have been defined. Please check transformation with output Dataset DS_r",
+        "error_code": "1-2-22",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-2-22: No Value Domains have been defined. Please check transformation with output Dataset DS_r",
+        "error_code": "1-2-22",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
-      "status": "ok"
+      "status": "refused"
     },
     "definitions/define_operator/ruleset/datapoint_on_variables_type": {
       "duckdb": {
@@ -8146,19 +8146,19 @@
     },
     "hierarchy/hierarchy/non_null_rule_computed/manual_ex_1": {
       "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-2-22: No Value Domains have been defined. Please check transformation with output Dataset DS_r",
+        "error_code": "1-2-22",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-2-22: No Value Domains have been defined. Please check transformation with output Dataset DS_r",
+        "error_code": "1-2-22",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
-      "status": "ok"
+      "status": "refused"
     },
     "hierarchy/hierarchy/non_null_rule_computed/missing_null_and_zero_items": {
       "duckdb": {
@@ -8290,19 +8290,19 @@
     },
     "hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2": {
       "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-2-22: No Value Domains have been defined. Please check transformation with output Dataset DS_r",
+        "error_code": "1-2-22",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-2-22: No Value Domains have been defined. Please check transformation with output Dataset DS_r",
+        "error_code": "1-2-22",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
-      "status": "ok"
+      "status": "refused"
     },
     "hierarchy/hierarchy/non_zero_rule_computed/missing_null_and_zero_items": {
       "duckdb": {
@@ -8434,19 +8434,19 @@
     },
     "hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3": {
       "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-2-22: No Value Domains have been defined. Please check transformation with output Dataset DS_r",
+        "error_code": "1-2-22",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-2-22: No Value Domains have been defined. Please check transformation with output Dataset DS_r",
+        "error_code": "1-2-22",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
-      "status": "ok"
+      "status": "refused"
     },
     "hierarchy/hierarchy/partial_null_rule_computed/missing_null_and_zero_items": {
       "duckdb": {
@@ -14562,19 +14562,19 @@
     },
     "validation/check_datapoint/components/value_domains_bound_to_components": {
       "duckdb": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-2-8: Missing value domain 'VD_M' definition, please provide an structure. Please check transformation with output Dataset DS_r",
+        "error_code": "1-2-8",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
       "engines_agree": true,
       "pandas": {
-        "detail": "",
-        "error_code": null,
-        "error_type": null,
-        "outcome": "match"
+        "detail": "SemanticError 1-2-8: Missing value domain 'VD_M' definition, please provide an structure. Please check transformation with output Dataset DS_r",
+        "error_code": "1-2-8",
+        "error_type": "SemanticError",
+        "outcome": "error"
       },
-      "status": "ok"
+      "status": "refused"
     },
     "validation/check_datapoint/errorcode/code_only_on_false_results": {
       "duckdb": {
@@ -15314,11 +15314,11 @@
     }
   },
   "meta": {
-    "date": "2026-11-17",
+    "date": "2026-11-20",
     "duckdb_version": "1.5.5",
     "pandas_version": "3.0.6",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "13998482",
+    "vtlengine_commit": "3ad385eca",
     "vtlengine_version": "1.10.0rc1"
   }
 }
