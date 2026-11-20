@@ -3616,3 +3616,42 @@ def test_GH_1356_68b(use_duckdb, tmp_path):
     with pytest.raises(DataLoadError) as error:
         _run_1349("DS_r <- DS_1 / 0;", use_duckdb, output_folder=tmp_path / "a_file" / "out")
     assert error.value.args[1] == "0-3-1-2"
+
+
+def _twice_1356(name_1, name_2):
+    identifier = {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False}
+    number = {"name": name_1, "type": "Number", "role": "Measure", "nullable": True}
+    string = {"name": name_2, "type": "String", "role": "Measure", "nullable": True}
+    return {"datasets": [{"name": "DS_2", "DataStructure": [identifier, number, string]}]}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_69(use_duckdb):
+    """A Component given twice in the structure of a Data Set, Me_1 as a Number and as a
+    String, raises 0-1-2-3 on both engines and in semantic_analysis, as the CSV loaders do for
+    a column given twice. The second Component replaced the first (issue #1356)."""
+    structures = _twice_1356("Me_1", "Me_1")
+    datapoints = {"DS_2": pd.DataFrame({"Id_1": [1, 2], "Me_1": [1.5, None]})}
+    for call in (
+        lambda: run("DS_r <- DS_2;", structures, datapoints, use_duckdb=use_duckdb),
+        lambda: semantic_analysis("DS_r <- DS_2;", structures),
+    ):
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-1-2-3"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_70(use_duckdb):
+    """A B and 'A B' name the same Component: given as a Number and as a String in the
+    structure of a Data Set, they raise 0-1-2-3 on both engines and in semantic_analysis, as in
+    case 69. The second Component replaced the first (issue #1356)."""
+    structures = _twice_1356("A B", "'A B'")
+    datapoints = {"DS_2": pd.DataFrame({"Id_1": [1, 2], "A B": [1.5, None]})}
+    for call in (
+        lambda: run("DS_r <- DS_2;", structures, datapoints, use_duckdb=use_duckdb),
+        lambda: semantic_analysis("DS_r <- DS_2;", structures),
+    ):
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-1-2-3"

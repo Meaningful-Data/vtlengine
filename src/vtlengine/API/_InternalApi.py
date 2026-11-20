@@ -170,6 +170,18 @@ def _reject_subset_key(structures: Dict[str, Any]) -> None:
             )
 
 
+def _unique_components(components: List[VTL_Component]) -> Dict[str, VTL_Component]:
+    """The Components of a Dataset by name: a name given twice raises 0-1-2-3, as the CSV
+    loaders do for a column given twice (issue #1356)."""
+    names = [component.name for component in components]
+    duplicated = sorted({name for name in names if names.count(name) > 1})
+    if duplicated:
+        raise InputValidationException(
+            code="0-1-2-3", element_type="Components", element=", ".join(duplicated)
+        )
+    return {component.name: component for component in components}
+
+
 def _load_dataset_from_structure(
     structures: Dict[str, Any],
     value_domains: Optional[Dict[str, ValueDomain]] = None,
@@ -184,10 +196,12 @@ def _load_dataset_from_structure(
     datasets = {
         dataset_json["name"]: Dataset(
             name=dataset_json["name"],
-            components={
-                _component_name(c): _build_component(c, value_domains)
-                for c in _resolve_components(dataset_json, structures)
-            },
+            components=_unique_components(
+                [
+                    _build_component(c, value_domains)
+                    for c in _resolve_components(dataset_json, structures)
+                ]
+            ),
             data=None,
         )
         for dataset_json in structures.get("datasets", [])
