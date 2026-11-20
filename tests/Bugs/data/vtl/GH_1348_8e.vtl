@@ -1,0 +1,5 @@
+define hierarchical ruleset HR_1 ( valuedomain condition VD_NUM as Y rule VD_STR ) is
+    r1 : when Y > 2020 then A = B
+end hierarchical ruleset;
+
+DS_r <- hierarchy ( DS_1 , HR_1 condition Id_3 rule Id_2 all );
