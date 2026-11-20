@@ -15066,6 +15066,24 @@ class SemanticCheckBugs(BugHelper):
             vd_names=["GH_1356-VD_DUR"],
         )
 
+    def test_GH_1356_64(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_2 [ rename Me_1 to 'x"y' ];
+        Description: A Component name cannot hold a double quote, as the input structures refuse
+                     it, so the new name x"y raises 1-1-6-19 on both engines and in the semantic
+                     analysis. The pandas engine returned the Component x"y, the DuckDB engine
+                     raised a raw ParserException and the semantic analysis accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_64",
+            number_inputs=1,
+            exception_code="1-1-6-19",
+            exception_message='At op rename: Invalid Component name x"y',
+        )
+
 
 class RunTimeErrorMappingBugs(BugHelper):
     """Errors raised while the data is computed are VTL errors, the same on both engines (issue
@@ -15235,6 +15253,26 @@ class RunTimeErrorMappingBugs(BugHelper):
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(code="GH_1356_66", number_inputs=1, exception_code="2-1-15-3")
+
+    def test_GH_1356_67(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ pivot Id_2 , Me_1 ];
+        Description: The Measures of pivot are the values of VD_X, the value domain of Id_2, and
+                     its value a"b holds a double quote, which a Component name cannot hold, so
+                     pivot raises 1-1-6-19 on both engines and in the semantic analysis, as
+                     test_GH_1356_64. The pandas engine returned the Measure a"b, the DuckDB
+                     engine raised a raw ParserException and the semantic analysis accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_67",
+            number_inputs=1,
+            exception_code="1-1-6-19",
+            exception_message='At op pivot: Invalid Component name a"b',
+            vd_names=["GH_1356-VD_X"],
+        )
 
     def test_GH_1356_43(self):
         """
