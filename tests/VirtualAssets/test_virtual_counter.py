@@ -206,7 +206,7 @@ def test_virtual_counter_with_run():
                     {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
                     {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
                     {"name": "Id_2", "type": "String", "role": "Identifier", "nullable": False},
-                    {"name": "Me_2", "type": "Number", "role": "Measure", "nullable": True},
+                    {"name": "Me_2", "type": "Integer", "role": "Measure", "nullable": True},
                 ],
             }
         ]

@@ -14303,3 +14303,53 @@ class SemanticCheckBugs(BugHelper):
             exception_code="1-1-3-5",
             exception_message="Invalid limit '-2 preceding' (line 1, column 99) of an analytic window: a limit cannot be negative.",
         )
+
+    def test_GH_1356_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := yeartoday ( Me_1 ) ];
+        Description: yeartoday takes the text of a duration PnYnD, a String, so the Integer Me_1
+                     raises 1-1-1-1, as length ( Me_1 ) does. Both engines raised a raw error and
+                     the semantic analysis accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_15",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Integer to String.",
+        )
+
+    def test_GH_1356_16(self):
+        """
+        Status: OK
+        Expression: SC_r <- daytoyear ( 400.5 );
+        Description: daytoyear takes an Integer, so the Number 400.5 raises 1-1-1-1. Each engine
+                     returned a different result.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_16",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Number to Integer.",
+        )
+
+    def test_GH_1356_17(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := getyear ( Me_5 ) ];
+        Description: getyear takes a time value, so the Duration Me_5 raises 1-1-19-10, as getyear (
+                     Me_3 ) does. Both engines raised a raw error and the semantic analysis accepted
+                     it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_17",
+            number_inputs=1,
+            exception_code="1-1-19-10",
+            exception_message="getyear can only be applied to operands with data type as Date or Time Period",
+        )
