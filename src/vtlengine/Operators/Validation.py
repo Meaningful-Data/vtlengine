@@ -6,6 +6,7 @@ import pandas as pd
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_DATAPOINT, CHECK_HIERARCHY
 from vtlengine.DataTypes import (
     BASIC_TYPES,
+    SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Date,
     Duration,
@@ -135,7 +136,7 @@ def bind_value_domains(
     value domains of its signature, or their aliases.
 
     The call must list the components, as many as the value domains, which must be given, and
-    each component must be defined on the value domain it is bound to."""
+    each component must be accepted by check_value_domains."""
     if not called:
         raise SemanticError("1-1-10-14", op=CHECK_DATAPOINT, ruleset=ruleset)
     if len(called) != len(signature):
@@ -160,14 +161,19 @@ def check_value_domains(
     value_domains: Optional[Dict[str, ValueDomain]],
 ) -> None:
     """Each value domain of a ruleset must be given, and the component bound to it must be
-    defined on it."""
+    defined on it, or be of a basic type that promotes to the basic type of the value domain
+    (issue #1348): a component on another value domain is rejected."""
     for name, comp_name in bindings:
         if value_domains is None:
             raise SemanticError("1-2-22", comp_type="Value Domains")
         if name not in value_domains:
             raise SemanticError("1-2-8", name=name)
         component = components[comp_name]
-        if component.value_domain is None or component.value_domain.name != name:
+        if component.value_domain is None:
+            accepted = check_unary_implicit_promotion(component.data_type, value_domains[name].type)
+        else:
+            accepted = component.value_domain.name == name
+        if not accepted:
             raise SemanticError(
                 "1-1-10-12",
                 op=op,
@@ -175,6 +181,7 @@ def check_value_domains(
                 type=component_type_name(component.data_type, component.value_domain),
                 value_domain=name,
                 ruleset=ruleset,
+                basic_type=SCALAR_TYPES_CLASS_REVERSE[value_domains[name].type],
             )
 
 
