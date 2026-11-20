@@ -30,12 +30,8 @@ from vtlengine._input_types import (
 )
 from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentAssignment, Start
 from vtlengine.AST.ASTString import ASTString
-from vtlengine.DataTypes import SCALAR_TYPES
-from vtlengine.Exceptions import (
-    DataLoadError,
-    InputValidationException,
-    check_key,
-)
+from vtlengine.DataTypes import Date
+from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.files.parser import (
     _check_value_domain,
     _fill_dataset_empty_data,
@@ -56,10 +52,9 @@ from vtlengine.Model import (
     Role,
     Scalar,
     ValueDomain,
+    named_type,
+    value_of,
 )
-
-# Cache SCALAR_TYPES keys for performance
-_SCALAR_TYPE_KEYS = SCALAR_TYPES.keys()
 
 base_path = Path(__file__).parent
 schema_path = base_path / "data" / "schema"
@@ -72,32 +67,10 @@ with open(schema_path / "external_routines_schema.json", "r") as file:
     external_routine_schema = json.load(file)
 
 
-def _extract_data_type(component: Dict[str, Any]) -> Tuple[str, Any]:
-    """
-    Extract and validate data type from component dictionary.
-
-    Supports both 'type' (preferred) and 'data_type' (backward compatibility) keys.
-
-    Args:
-        component: Component dictionary with either 'type' or 'data_type' key
-
-    Returns:
-        Tuple of (data_type_key, scalar_type_class)
-
-    Raises:
-        InputValidationException: If the data type key or value is invalid
-    """
-    key = "type" if "type" in component else "data_type"
-    check_key(key, _SCALAR_TYPE_KEYS, component[key])
-    return key, SCALAR_TYPES[component[key]]
-
-
-def _type_value_domain(
-    element: Dict[str, Any], value_domains: Optional[Dict[str, ValueDomain]]
-) -> Optional[ValueDomain]:
-    """The value domain the type of a Component or a scalar names, if it names one."""
-    type_name = element["type" if "type" in element else "data_type"]
-    return None if type_name in SCALAR_TYPES else (value_domains or {}).get(type_name)
+def _type_name(element: Dict[str, Any]) -> Any:
+    """The type a Component or a scalar is written with: its 'type' (preferred) or its
+    'data_type' (backward compatibility)."""
+    return element["type" if "type" in element else "data_type"]
 
 
 def _build_component(
@@ -105,16 +78,20 @@ def _build_component(
 ) -> VTL_Component:
     role = Role("Viral Attribute" if component["role"] == "ViralAttribute" else component["role"])
     nullable = component.get("nullable", role != Role.IDENTIFIER)
-    value_domain = _type_value_domain(component, value_domains)
-    if value_domain is not None:
-        return VTL_Component(component["name"], value_domain.type, role, nullable, value_domain)
-    _, scalar_type = _extract_data_type(component)
-    return VTL_Component(
-        name=component["name"],
-        data_type=scalar_type,
-        role=role,
-        nullable=nullable,
+    data_type, value_domain = named_type(
+        _type_name(component), value_domains, f"Component '{component['name']}'"
     )
+    return VTL_Component(_component_name(component), data_type, role, nullable, value_domain)
+
+
+def _component_name(component: Dict[str, Any]) -> str:
+    """The name of a Component, written as it is or between single quotes, as a script refers
+    to a name that is not a regular one ('2024-01-05', 'A B'): both forms name the same
+    Component (issue #1349)."""
+    name = str(component["name"])
+    if len(name) > 2 and name.startswith("'") and name.endswith("'"):
+        return name[1:-1]
+    return name
 
 
 def _resolve_components(
@@ -161,9 +138,8 @@ def _structure_schema(value_domain_names: Tuple[str, ...]) -> Dict[str, Any]:
 def _build_scalar(
     scalar_json: Dict[str, Any], value_domains: Optional[Dict[str, ValueDomain]]
 ) -> Scalar:
-    value_domain = _type_value_domain(scalar_json, value_domains)
-    data_type = (
-        value_domain.type if value_domain is not None else _extract_data_type(scalar_json)[1]
+    data_type, value_domain = named_type(
+        _type_name(scalar_json), value_domains, f"Scalar '{scalar_json['name']}'"
     )
     return Scalar(
         name=scalar_json["name"],
@@ -172,6 +148,26 @@ def _build_scalar(
         nullable=scalar_json.get("nullable", True),
         value_domain=value_domain,
     )
+
+
+def _reject_subset_key(structures: Dict[str, Any]) -> None:
+    """A Component or a scalar names its value domain in its type: the legacy subset key, which
+    was ignored, is rejected (issue #1349)."""
+    elements = [
+        (f"{_SECTION_KINDS[section]} '{element['name']}'", item)
+        for section, key in (("datasets", "DataStructure"), ("structures", "components"))
+        for element in structures.get(section, [])
+        for item in element.get(key, [])
+    ]
+    elements += [(f"Scalar '{scalar['name']}'", scalar) for scalar in structures.get("scalars", [])]
+    for element, item in elements:
+        if "subset" in item:
+            raise InputValidationException(
+                code="0-2-1-1",
+                element=element,
+                error=f"the key 'subset' of {item['name']} is not accepted; name the value "
+                f'domain in its type instead ("type": "{item["subset"]}")',
+            )
 
 
 def _load_dataset_from_structure(
@@ -183,12 +179,13 @@ def _load_dataset_from_structure(
     """
     structure_schema = _structure_schema(tuple(sorted(value_domains or {})))
     _validate_json(structures, structure_schema, kind="DataStructures")
+    _reject_subset_key(structures)
 
     datasets = {
         dataset_json["name"]: Dataset(
             name=dataset_json["name"],
             components={
-                c["name"]: _build_component(c, value_domains)
+                _component_name(c): _build_component(c, value_domains)
                 for c in _resolve_components(dataset_json, structures)
             },
             data=None,
@@ -452,8 +449,7 @@ def _load_datastructure_single(
             except DataLoadError:
                 # Not SDMX-JSON, try as VTL JSON
                 pass
-            with open(data_structure, "r", encoding="utf-8-sig") as file:
-                structures = json.load(file)
+            structures = _load_json_file(data_structure)
             return _load_dataset_from_structure(structures, value_domains)
         # Unsupported extension
         raise InputValidationException(code="0-1-1-3", expected_ext=".json or .xml", ext=suffix)
@@ -503,8 +499,8 @@ def _handle_scalars_values(
     for name, value in scalar_values.items():
         if name not in scalars:
             raise InputValidationException(code="0-1-2-6", name=name)
-        # Casting value to scalar data type
-        if not scalars[name].data_type.check(value):
+        # Casting value to scalar data type; a list or another collection is no scalar value
+        if not pd.api.types.is_scalar(value) or not scalars[name].data_type.check(value):
             raise InputValidationException(
                 code="0-1-2-7",
                 value=value,
@@ -513,6 +509,10 @@ def _handle_scalars_values(
                 name=name,
             )
         scalars[name].value = scalars[name].data_type.cast(value)
+        if scalars[name].data_type is Date:
+            # A Date is written in the one form the loaders and DuckDB write it in, as a
+            # Time_Period is: 2024-1-5 is 2024-01-05 (issue #1349)
+            scalars[name].value = value_of(Date, scalars[name].value)
         _check_value_domain(scalars[name], pd.Series([scalars[name].value], dtype=object))
 
 
@@ -705,26 +705,37 @@ def _validate_json(
         raise InputValidationException(code="0-2-1-1", element=identifier, error=e.message)
 
 
+def _load_json_file(input: Path) -> Any:
+    """The JSON a file holds. A file that is not valid JSON raises 0-1-1-40 naming it."""
+    with open(input, "r", encoding="utf-8-sig") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError as error:
+            raise InputValidationException(code="0-1-1-40", file=input, error=error) from None
+
+
 def _load_single_value_domain(input: Path) -> Dict[str, ValueDomain]:
+    """The value domains of a JSON file, which holds one value domain or a list of them."""
     if input.suffix != ".json":
         raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
-    with open(input, "r", encoding="utf-8-sig") as f:
-        data = json.load(f)
+    data = _load_json_file(input)
     name = data.get("name") if isinstance(data, dict) else None
     _validate_json(data, vd_schema, kind="Value Domain", name=name or input.stem)
-    vd = ValueDomain.from_dict(data)
-    return {vd.name: vd}
+    return load_value_domains(data)
 
 
-def _merge_value_domains(groups: Iterable[Dict[str, ValueDomain]]) -> Dict[str, ValueDomain]:
-    """The value domains of all the groups, whose names must not repeat."""
-    value_domains: Dict[str, ValueDomain] = {}
+def _merge_by_name(groups: Iterable[Dict[str, Any]], routines: bool = False) -> Dict[str, Any]:
+    """The value domains, or the external routines, of all the groups, whose names must not
+    repeat."""
+    merged: Dict[str, Any] = {}
     for group in groups:
-        for name, value_domain in group.items():
-            if name in value_domains:
+        for name, item in group.items():
+            if name in merged and routines:
+                raise InputValidationException(code="0-1-1-41", name=name)
+            if name in merged:
                 raise InputValidationException(code="0-1-1-38", name=name)
-            value_domains[name] = value_domain
-    return value_domains
+            merged[name] = item
+    return merged
 
 
 def load_value_domains(
@@ -751,7 +762,7 @@ def load_value_domains(
         vd = ValueDomain.from_dict(input)
         return {vd.name: vd}
     if isinstance(input, list):
-        return _merge_value_domains(load_value_domains(item) for item in input)
+        return _merge_by_name(load_value_domains(item) for item in input)
     if not isinstance(input, Path):
         raise InputValidationException(
             code="0-1-1-2", input=input, message="Input is not a Path object"
@@ -759,7 +770,7 @@ def load_value_domains(
     if not input.exists():
         raise DataLoadError(code="0-3-1-1", file=input)
     if input.is_dir():
-        return _merge_value_domains(_load_single_value_domain(f) for f in input.iterdir())
+        return _merge_by_name(_load_single_value_domain(f) for f in input.iterdir())
     if input.suffix != ".json":
         raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
     return _load_single_value_domain(input)
@@ -783,19 +794,16 @@ def load_external_routines(
         Exception: If the JSON file does not exist, the Path is wrong, or the file is not a \
         JSON one.
     """
-    external_routines = {}
     if isinstance(input, dict):
         _validate_json(
             input, external_routine_schema, kind="External Routine", name=input.get("name")
         )
         ext_routine = ExternalRoutine.from_sql_query(input["name"], input["query"])
-        external_routines[ext_routine.name] = ext_routine
-        return external_routines
+        return {ext_routine.name: ext_routine}
+    # Two routines of one name raise 0-1-1-41, as two value domains raise 0-1-1-38, rather
+    # than the one read last being used (issue #1349)
     if isinstance(input, list):
-        ext_routines = {}
-        for item in input:
-            ext_routines.update(load_external_routines(item))
-        return ext_routines
+        return _merge_by_name((load_external_routines(item) for item in input), routines=True)
     if not isinstance(input, Path):
         raise InputValidationException(
             code="0-1-1-2", input=input, message="Input must be a json file."
@@ -803,15 +811,9 @@ def load_external_routines(
     if not input.exists():
         raise DataLoadError(code="0-3-1-1", file=input)
     if input.is_dir():
-        for f in input.iterdir():
-            if f.suffix != ".json":
-                continue
-            ext_rout = _load_single_external_routine_from_file(f)
-            external_routines[ext_rout.name] = ext_rout
-        return external_routines
-    ext_rout = _load_single_external_routine_from_file(input)
-    external_routines[ext_rout.name] = ext_rout
-    return external_routines
+        files = (f for f in input.iterdir() if f.suffix == ".json")
+        return _merge_by_name(map(_load_single_external_routine_from_file, files), routines=True)
+    return _load_single_external_routine_from_file(input)
 
 
 def _return_only_persistent_datasets(
@@ -823,46 +825,54 @@ def _return_only_persistent_datasets(
     return {dataset.name: dataset for dataset in datasets.values() if dataset.persistent}
 
 
-def _load_single_external_routine_from_file(input: Path) -> Any:
+def _load_single_external_routine_from_file(input: Path) -> Dict[str, ExternalRoutine]:
+    """The external routines of a JSON file, which holds one routine or a list of them, each
+    under the name it gives, whatever the name of the file."""
     if not isinstance(input, Path):
         raise InputValidationException(code="0-1-1-2", input=input, message="Input must be a Path.")
     if not input.exists():
         raise DataLoadError(code="0-3-1-1", file=input)
     if input.suffix != ".json":
         raise InputValidationException(code="0-1-1-3", expected_ext=".json", ext=input.suffix)
-    routine_name = input.stem
-    with open(input, "r", encoding="utf-8-sig") as f:
-        data = json.load(f)
+    data = _load_json_file(input)
     name = data.get("name") if isinstance(data, dict) else None
-    _validate_json(
-        data, external_routine_schema, kind="External Routine", name=name or routine_name
-    )
-    ext_rout = ExternalRoutine.from_sql_query(routine_name, data["query"])
-    return ext_rout
+    _validate_json(data, external_routine_schema, kind="External Routine", name=name or input.stem)
+    return cast(Dict[str, ExternalRoutine], load_external_routines(data))
 
 
-def _check_output_folder(output_folder: Union[str, Path]) -> None:
+def _check_output_folder(
+    output_folder: Optional[Union[str, Path]], use_duckdb: bool = False
+) -> Optional[Union[str, Path]]:
     """
-    Check if the output folder exists. If not, it will create it.
+    Check that the output folder is a folder, on both engines: an existing path must be a
+    folder, and a missing one must not have a file suffix (result.csv). A missing folder is
+    created with its parents when the first result is written, so an input that fails to
+    load creates none (issue #1349). S3 URIs are left to the DuckDB engine.
+
+    Returns the folder the results are written to: None when no output folder is given, as
+    None or as an empty string, so that both engines return the results with their data and
+    write nothing (issue #1349).
     """
+    if output_folder is None or output_folder == "":
+        return None
     if isinstance(output_folder, str):
-        if "s3://" in output_folder:
+        if output_folder.startswith("s3://"):  # as is_s3_uri recognises one (issue #1361)
+            if use_duckdb:
+                return output_folder
             raise InputValidationException(
                 code="0-1-1-2",
                 input=output_folder,
                 message="S3 URIs are only supported with use_duckdb=True.",
             )
-        try:
-            output_folder = Path(output_folder)
-        except Exception:
-            raise DataLoadError("0-3-1-2", folder=str(output_folder))
+        output_folder = Path(output_folder)
 
     if not isinstance(output_folder, Path):
         raise DataLoadError("0-3-1-2", folder=str(output_folder))
-    if not output_folder.exists():
-        if output_folder.suffix != "":
-            raise DataLoadError("0-3-1-2", folder=str(output_folder))
-        os.mkdir(output_folder)
+    if output_folder.exists() and not output_folder.is_dir():
+        raise DataLoadError("0-3-1-2", folder=str(output_folder))
+    if not output_folder.exists() and output_folder.suffix != "":
+        raise DataLoadError("0-3-1-2", folder=str(output_folder))
+    return output_folder
 
 
 def __generate_transformation(

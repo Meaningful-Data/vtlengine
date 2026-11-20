@@ -2,7 +2,7 @@ import inspect
 import json
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import pandas as pd
 import sqlglot
@@ -23,6 +23,27 @@ _TIME_VALUE_CHECKS: Dict[Any, Any] = {
     DataTypes.TimePeriod: check_time_period,
     DataTypes.TimeInterval: check_time,
 }
+
+
+def value_of(data_type: Any, value: Any) -> Any:
+    """The value written in the one form the loaders write the values of its type in, so that
+    two forms of a value compare equal. A value that is not one of the type is kept as it is
+    written, equal to no value of it."""
+    check = _TIME_VALUE_CHECKS.get(data_type)
+    if check is None:
+        return value
+    try:
+        return check(str(value))
+    except (InputValidationException, ValueError, TypeError):
+        return value
+
+
+def values_of(data_type: Any, values: Any) -> Any:
+    """The values of the series, each written as value_of writes it."""
+    if data_type not in _TIME_VALUE_CHECKS:
+        return values
+    return values.map(lambda value: value_of(data_type, value), na_action="ignore")
+
 
 BASIC_TYPE_NAMES = frozenset(
     ("string", "integer", "number", "boolean", "date", "time", "time_period", "duration", "scalar")
@@ -80,15 +101,22 @@ class Scalar:
         self._value = new_value
 
     @classmethod
-    def from_json(cls, json_str: str) -> "Scalar":
+    def from_json(
+        cls, json_str: str, value_domains: Optional[Dict[str, "ValueDomain"]] = None
+    ) -> "Scalar":
+        """The scalar to_json writes. Its type can name one of the value domains given, by
+        name, on which the scalar is then defined."""
         data = json.loads(json_str)
         # Support both 'type' and 'data_type' for backward compatibility
-        data_type_value = data.get("type") or data.get("data_type")
+        data_type, value_domain = named_type(
+            data.get("type") or data.get("data_type"), value_domains, f"Scalar '{data['name']}'"
+        )
         return cls(
             data["name"],
-            SCALAR_TYPES[data_type_value],
+            data_type,
             data["value"],
             data.get("nullable", True),
+            value_domain=value_domain,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -143,6 +171,24 @@ def component_type_name(data_type: Any, value_domain: Optional["ValueDomain"]) -
     return DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type]
 
 
+def named_type(
+    type_name: Any, value_domains: Optional[Dict[str, "ValueDomain"]], element: str
+) -> Tuple[Type[ScalarType], Optional["ValueDomain"]]:
+    """The data type and the value domain of the type a Component or a scalar is written with,
+    the inverse of component_type_name: a basic type, or one of the value domains given, by
+    name, on its basic type. Any other name raises 0-2-1-1 for the element."""
+    if type_name in SCALAR_TYPES:
+        return SCALAR_TYPES[type_name], None
+    value_domain = (value_domains or {}).get(type_name)
+    if value_domain is None:
+        raise InputValidationException(
+            code="0-2-1-1",
+            element=element,
+            error=f"'{type_name}' is neither a basic type nor the name of a value domain given",
+        )
+    return value_domain.type, value_domain
+
+
 @dataclass
 class DataComponent:
     """A component of a dataset with data"""
@@ -160,15 +206,24 @@ class DataComponent:
         return self.to_dict() == other.to_dict()
 
     @classmethod
-    def from_json(cls, json_str: Any) -> "DataComponent":
+    def from_json(
+        cls, json_str: Any, value_domains: Optional[Dict[str, "ValueDomain"]] = None
+    ) -> "DataComponent":
+        """The component to_dict writes. Its type can name one of the value domains given, by
+        name, on which the component is then defined."""
         # Support both 'type' and 'data_type' for backward compatibility
-        data_type_value = json_str.get("type") or json_str.get("data_type")
+        data_type, value_domain = named_type(
+            json_str.get("type") or json_str.get("data_type"),
+            value_domains,
+            f"Component '{json_str['name']}'",
+        )
         return cls(
             json_str["name"],
             None,
-            SCALAR_TYPES[data_type_value],
+            data_type,
             Role(json_str["role"]),
             json_str["nullable"],
+            value_domain,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -223,14 +278,19 @@ class Component:
         return Component(self.name, self.data_type, self.role, self.nullable, self.value_domain)
 
     @classmethod
-    def from_json(cls, json_str: Any) -> "Component":
+    def from_json(
+        cls, json_str: Any, value_domains: Optional[Dict[str, "ValueDomain"]] = None
+    ) -> "Component":
+        """The component to_dict writes. Its type can name one of the value domains given, by
+        name, on which the component is then defined."""
         # Support both 'type' and 'data_type' for backward compatibility
-        data_type_value = json_str.get("type") or json_str.get("data_type")
+        data_type, value_domain = named_type(
+            json_str.get("type") or json_str.get("data_type"),
+            value_domains,
+            f"Component '{json_str['name']}'",
+        )
         return cls(
-            json_str["name"],
-            SCALAR_TYPES[data_type_value],
-            Role(json_str["role"]),
-            json_str["nullable"],
+            json_str["name"], data_type, Role(json_str["role"]), json_str["nullable"], value_domain
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -460,8 +520,14 @@ class Dataset:
         return list(self.components.keys())
 
     @classmethod
-    def from_json(cls, json_str: Any) -> "Dataset":
-        components = {k: Component.from_json(v) for k, v in json_str["components"].items()}
+    def from_json(
+        cls, json_str: Any, value_domains: Optional[Dict[str, "ValueDomain"]] = None
+    ) -> "Dataset":
+        """The Data Set to_dict writes. The type of a Component can name one of the value
+        domains given, by name, on which the Component is then defined."""
+        components = {
+            k: Component.from_json(v, value_domains) for k, v in json_str["components"].items()
+        }
         return cls(json_str["name"], components, pd.DataFrame(json_str["data"]))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -530,7 +596,13 @@ class ScalarSet:
         if self.data_type == DataTypes.Null:
             return None
         value = self.data_type.cast(item)
-        return value in self.values
+        return value_of(self.data_type, value) in self.compared_values()
+
+    def compared_values(self) -> List[Any]:
+        """The values of the set, each written as the loaders write the values of its type: a
+        value is compared with them as a value of its type, whatever form it is written in
+        (issue #1349)."""
+        return [value_of(self.data_type, value) for value in self.values]
 
 
 @dataclass
@@ -591,16 +663,22 @@ class ValueDomain:
         return cls(value["name"], SCALAR_TYPES[value["type"]], value["setlist"])
 
     def to_dict(self) -> Dict[str, Any]:
-        return {"name": self.name, "type": self.type.__name__, "setlist": self.setlist}
+        return {
+            "name": self.name,
+            "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[self.type],
+            "setlist": self.setlist,
+        }
 
     def values(self) -> List[Any]:
         """The values of the domain, written as the loaders write the values of its type."""
-        check = _TIME_VALUE_CHECKS.get(self.type)
-        return self.setlist if check is None else [check(value) for value in self.setlist]
+        return [value_of(self.type, value) for value in self.setlist]
 
     def outside(self, values: Any) -> Any:
-        """The values of the series, other than the nulls, that are not values of the domain."""
-        return values[values.notna() & ~values.isin(self.values())]
+        """The values of the series, other than the nulls, that are not values of the domain.
+        A value is compared as a value of the type, whatever form it is written in: 2024Q1
+        and 2024-Q1 are the same Time_Period (issue #1349)."""
+        values = values[values.notna()]
+        return values[~values_of(self.type, values).isin(self.values())]
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)

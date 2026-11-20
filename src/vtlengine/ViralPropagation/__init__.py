@@ -8,9 +8,9 @@ in :mod:`vtlengine.ViralPropagation.sql`.
 """
 
 from copy import copy
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import reduce
-from typing import Any, Dict, Iterable, List, Optional, Type
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type
 
 import pandas as pd
 
@@ -28,6 +28,7 @@ from vtlengine.DataTypes import (
     check_unary_implicit_promotion,
 )
 from vtlengine.Exceptions import SemanticError
+from vtlengine.Model import value_of
 
 
 @dataclass
@@ -48,6 +49,11 @@ class ViralPropagationRegistry:
     def __init__(self) -> None:
         self._variable_rules: Dict[str, ViralPropagationRule] = {}
         self._valuedomain_rules: Dict[str, ViralPropagationRule] = {}
+        # The rule with its constants read as values of a type, by rule and type, so the
+        # pandas engine, which resolves a rule per row, reads them once (rule_for)
+        self._typed_rules: Dict[
+            Tuple[int, Any], Tuple[ViralPropagationRule, ViralPropagationRule]
+        ] = {}
 
     def register(self, rule: ViralPropagationRule) -> None:
         """Register a viral propagation rule."""
@@ -63,14 +69,34 @@ class ViralPropagationRegistry:
 
     def rule_for(self, component: Any) -> Optional["ViralPropagationRule"]:
         """Resolve the rule for a component: a rule on the variable overrides one on the value
-        domain the component is defined on."""
+        domain the component is defined on. The constants of the rule are read as values of
+        the type of the component, whatever form they are written in: "2024Q1" is the
+        Time_Period 2024-Q1 (issue #1349)."""
         rule = self._variable_rules.get(component.name)
-        if rule is not None:
-            return rule
         value_domain = getattr(component, "value_domain", None)
-        if value_domain is not None:
-            return self._valuedomain_rules.get(value_domain.name)
-        return None
+        if rule is None and value_domain is not None:
+            rule = self._valuedomain_rules.get(value_domain.name)
+        if rule is None or not rule.enumerated_clauses:
+            return rule
+        data_type = component.data_type
+        cached = self._typed_rules.get((id(rule), data_type))
+        if cached is not None and cached[0] is rule:
+            return cached[1]
+        clauses = [
+            {
+                "values": [value_of(data_type, value) for value in clause["values"]],
+                "result": value_of(data_type, clause["result"]),
+            }
+            for clause in rule.enumerated_clauses
+        ]
+        typed_rule = replace(
+            rule,
+            enumerated_clauses=clauses,
+            default_value=value_of(data_type, rule.default_value),
+        )
+        # The rule itself is kept next to it, so its id is not reused by another rule
+        self._typed_rules[(id(rule), data_type)] = (rule, typed_rule)
+        return typed_rule
 
     # Pandas resolution methods, on the viral attribute of the operand whose values combine
     def resolve_pair(self, component: Any, value_a: Any, value_b: Any) -> Any:
@@ -192,6 +218,24 @@ def _is_value_of(value: Any, data_type: Type[ScalarType]) -> bool:
     return compatible and data_type.check(value)
 
 
+def is_value_of_domain(value: Any, value_domain: Any) -> bool:
+    """Check that a rule constant is a value of the value domain the rule is defined on: a
+    null, or a value of its basic type that is one of its values (issue #1349)."""
+    values = pd.Series([value], dtype=object)
+    return _is_value_of(value, value_domain.type) and not len(value_domain.outside(values))
+
+
+def check_duplicate_clauses(name: str, clauses: Iterable[List[Any]]) -> None:
+    """Raise SemanticError 1-3-3-4 for two clauses of a rule on the same values, compared as
+    values of their type when the caller has read them so (issue #1349)."""
+    seen: List[Any] = []
+    for values in clauses:
+        key = frozenset(values)
+        if key in seen:
+            raise SemanticError("1-3-3-4", values=values, name=name)
+        seen.append(key)
+
+
 def require_rules(components: Iterable[Any]) -> None:
     """Raise SemanticError 1-3-3-6 for any viral component lacking a propagation rule.
 
@@ -218,6 +262,7 @@ def require_rules(components: Iterable[Any]) -> None:
                 function=rule.aggregate_function,
                 type=comp.data_type.__name__,
             )
+        check_duplicate_clauses(rule.name, (c["values"] for c in rule.enumerated_clauses))
         constants = [v for c in rule.enumerated_clauses for v in (*c["values"], c["result"])]
         for value in [*constants, rule.default_value]:
             if not _is_value_of(value, comp.data_type):

@@ -569,6 +569,11 @@ def save_datapoints_duckdb(
             valid_options="csv, parquet",
         )
 
+    # A local output folder is created with the first result written, so an input that fails
+    # to load creates none, as on the pandas engine (issue #1349); an S3 URI is written through
+    # DuckDB (issue #1361)
+    if not is_s3_uri(output_path):
+        Path(output_path).mkdir(parents=True, exist_ok=True)
     output_file = output_target(output_path, f"{dataset_name}.{output_format}")
 
     source = f"({select_sql})" if select_sql else f'"{dataset_name}"'
@@ -633,6 +638,7 @@ def save_scalars_duckdb(
         finally:
             conn.unregister("_vtl_scalars")
         return
+    Path(output_path).mkdir(parents=True, exist_ok=True)
     with open(file_path, "w", newline="", encoding="utf-8") as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(["name", "value"])
@@ -644,8 +650,11 @@ def save_scalars_duckdb(
 DATAPOINT_SUFFIXES = (".csv", ".xml", ".parquet")
 
 
-def _as_datapoint_path(value: Union[str, Path]) -> Path:
-    """The Path a datapoint input stands for."""
+def _as_datapoint_path(value: Any) -> Path:
+    """The Path a datapoint input stands for. Anything else, such as a DataFrame in a list,
+    is rejected with 0-1-1-2, as the pandas engine rejects it (issue #1349)."""
+    if not isinstance(value, (str, Path)):
+        raise InputValidationException(code="0-1-1-2", input=value, message="Input must be a Path")
     return Path(value) if isinstance(value, str) else value
 
 

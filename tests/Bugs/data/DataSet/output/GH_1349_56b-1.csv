@@ -1,0 +1,9 @@
+Id_1,Me_4,Me_5,Me_6,Me_7,Me_8,Me_9
+1,false,false,,false,false,false
+2,true,true,,,true,false
+3,true,true,,false,true,false
+4,false,false,false,,true,false
+5,false,false,,,false,false
+6,,,,,,false
+7,,,,,true,false
+8,true,true,false,,false,false

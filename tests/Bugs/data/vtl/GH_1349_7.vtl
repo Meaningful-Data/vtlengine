@@ -1,0 +1,8 @@
+define operator in_tp (x time_period, s set<time_period>)
+    returns boolean is x in s end operator;
+DS_r <- DS_1 [ calc Me_4 := Me_1 in VD_TP, Me_5 := Me_2 not_in VD_TP, Me_6 := Me_3 in VD_DATE,
+                    Me_7 := cast ( "2024-Q1" , time_period ) in VD_TP,
+                    Me_8 := in_tp ( cast ( "2024-Q2" , time_period ) , VD_TP ) ]
+              [ keep Me_4, Me_5, Me_6, Me_7, Me_8 ];
+DS_r2 <- DS_1 [ filter Me_2 in VD_TP ] [ keep Me_2 ];
+DS_r3 <- DS_1 [ keep Me_2 ] in VD_TP;

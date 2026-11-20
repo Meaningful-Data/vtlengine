@@ -234,13 +234,15 @@ def semantic_analysis(
         or List of Dicts or Paths with the data structures JSON files.
         value_domains: Dict, Path or ValueDomain, or List of them, with the value domains. \
         (default:None) A Dict or a Path to a JSON file (or folder of JSON files) holds the \
-        value domain definitions; a ValueDomain object is used as it is. \
+        value domain definitions, one or a list of them per file; a ValueDomain object is \
+        used as it is. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
         external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        A JSON file holds one routine or a list of them, each used under its name. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
@@ -361,11 +363,23 @@ def _run_with_duckdb(
     loaded_vds = load_value_domains(value_domains) if value_domains else None
     input_datasets, input_scalars = load_datasets(data_structures, mapping_dict, loaded_vds)
 
+    # The datapoints are checked after the structures and before the scalar values, the
+    # external routines and the output folder, in the order of the pandas engine, so a bad
+    # input is reported first and creates no output folder (issue #1349)
+    _load_url_datapoints(datapoints, data_structures, mapping_dict, input_datasets)
+
+    # Extract paths without pandas validation (DuckDB-optimized)
+    # This avoids the double CSV read that load_datasets_with_data causes
+    path_dict, dataframe_dict = extract_datapoint_paths(datapoints, input_datasets)
+
     # Apply scalar values if provided, casting them to the declared data type
     _handle_scalars_values(input_scalars, scalar_values)
 
     # Run semantic analysis to get output structures
     loaded_routines = load_external_routines(external_routines) if external_routines else None
+
+    # Checking the output path to be a folder before the analysis, as the pandas engine does
+    output_folder = _check_output_folder(output_folder, use_duckdb=True)
 
     interpreter = InterpreterAnalyzer(
         datasets=copy.deepcopy(input_datasets),
@@ -388,12 +402,6 @@ def _run_with_duckdb(
 
     # Get DAG analysis for efficient load/save scheduling
     ds_analysis = DAGAnalyzer.ds_structure(ast)
-
-    _load_url_datapoints(datapoints, data_structures, mapping_dict, input_datasets)
-
-    # Extract paths without pandas validation (DuckDB-optimized)
-    # This avoids the double CSV read that load_datasets_with_data causes
-    path_dict, dataframe_dict = extract_datapoint_paths(datapoints, input_datasets)
 
     # Create transpiler and generate SQL
     transpiler = SQLTranspiler(
@@ -522,13 +530,15 @@ def run(
 
         value_domains: Dict, Path or ValueDomain, or List of them, with the value domains. \
         (default:None) A Dict or a Path to a JSON file (or folder of JSON files) holds the \
-        value domain definitions; a ValueDomain object is used as it is. \
+        value domain definitions, one or a list of them per file; a ValueDomain object is \
+        used as it is. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
         external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        A JSON file holds one routine or a list of them, each used under its name. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
@@ -539,8 +549,10 @@ def run(
         return_only_persistent: If True, run function will only return the results of \
         Persistent Assignments. (default: True)
 
-        output_folder: Path to the output folder. S3 URIs are supported when \
-        ``use_duckdb=True``. (default: None)
+        output_folder: Path to the output folder. A missing folder is created with its \
+        parents when the first result is written; an existing file, or a missing path with \
+        a file suffix (``result.csv``), raises ``0-3-1-2``. An empty string is no output \
+        folder, as None is. S3 URIs are supported when ``use_duckdb=True``. (default: None)
 
         scalar_values: Dict with the scalar values to be used in the VTL script.
 
@@ -620,9 +632,8 @@ def run(
     # VTL Efficient analysis
     ds_analysis = DAGAnalyzer.ds_structure(ast)
 
-    # Checking the output path to be a Path object to a directory
-    if output_folder is not None:
-        _check_output_folder(output_folder)
+    # Checking the output path to be a directory; an empty string is no output folder
+    output_folder = _check_output_folder(output_folder)
 
     # Running the interpreter
     interpreter = InterpreterAnalyzer(
@@ -703,13 +714,15 @@ def run_sdmx(
 
         value_domains: Dict, Path or ValueDomain, or List of them, with the value domains. \
         (default:None) A Dict or a Path to a JSON file (or folder of JSON files) holds the \
-        value domain definitions; a ValueDomain object is used as it is. \
+        value domain definitions, one or a list of them per file; a ValueDomain object is \
+        used as it is. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
         external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        A JSON file holds one routine or a list of them, each used under its name. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
@@ -720,7 +733,7 @@ def run_sdmx(
         return_only_persistent: If True, run function will only return the results of \
         Persistent Assignments. (default: True)
 
-        output_folder: Path to the output folder. (default: None)
+        output_folder: Path to the output folder, checked as in :obj:`run`. (default: None)
 
         use_duckdb: If True, use DuckDB as the execution engine instead of pandas. \
         This transpiles VTL to SQL and executes it using DuckDB, which can be more \

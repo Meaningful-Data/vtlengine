@@ -241,6 +241,8 @@ def _create_default_registry() -> OperatorRegistry:
     # Numeric functions (come through BinOp AST)
     ops.register(tokens.POWER, "vtl_power({0}, {1})")
     ops.register(tokens.LOG, "vtl_log({0}, {1})")  # macro internally calls LOG(base, value)
+    # The index of random read from a Component, as in a join apply, is checked by the query
+    ops.register(tokens.RANDOM, "vtl_random({0}, vtl_random_index({1}))")
     # Conditional (come through BinOp AST)
     ops.register(tokens.NVL, "COALESCE({0}, {1})")
     # Date/Time

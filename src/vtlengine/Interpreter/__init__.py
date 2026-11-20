@@ -93,6 +93,7 @@ from vtlengine.Model import (
     Scalar,
     ScalarSet,
     ValueDomain,
+    value_of,
 )
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
 from vtlengine.Operators.Assignment import Assignment
@@ -124,6 +125,7 @@ from vtlengine.Operators.Validation import (
     bind_value_domains,
     check_value_domains,
     error_values,
+    literal_text,
 )
 from vtlengine.Utils import (
     AGGREGATION_MAPPING,
@@ -144,7 +146,9 @@ from vtlengine.Utils._number_config import format_scalar_value_for_csv
 from vtlengine.ViralPropagation import (
     ViralPropagationRegistry,
     ViralPropagationRule,
+    check_duplicate_clauses,
     get_current_registry,
+    is_value_of_domain,
     set_current_registry,
 )
 
@@ -239,6 +243,7 @@ class InterpreterAnalyzer(ASTTemplate):
     is_from_hr_agg: bool = False
     is_hr_rule_left: bool = False
     compute_partial_data: bool = False
+    is_from_set: bool = False
     # Handlers for simplicity
     condition_stack: Optional[List[Dataset]] = None
     regular_aggregation_dataset: Optional[Dataset] = None
@@ -621,18 +626,45 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.enumerated_clauses and node.aggregate_clause:
             raise SemanticError("1-3-3-3", name=node.name)
 
-        # Validate: no duplicate enumeration combinations
-        seen_values: Set[frozenset[str]] = set()
-        for clause in node.enumerated_clauses:
-            key = frozenset(clause.values)
-            if key in seen_values:
-                raise SemanticError("1-3-3-4", values=clause.values, name=node.name)
-            seen_values.add(key)
+        # Validate: no duplicate enumeration combinations, compared as values of the type of
+        # the value domain of the rule; a rule on a variable is checked again against the
+        # Attribute it applies to (issue #1349)
+        domain_type = (
+            self.value_domains[node.target].type
+            if node.signature_type == "valuedomain"
+            and self.value_domains is not None
+            and node.target in self.value_domains
+            else None
+        )
+        check_duplicate_clauses(
+            node.name,
+            (
+                [value_of(domain_type, v) for v in clause.values]
+                for clause in node.enumerated_clauses
+            ),
+        )
 
         # Validate: no duplicate rules for the same variable
         if registry.get_existing(node.signature_type, node.target) is not None:
             raise SemanticError("1-3-3-1", name=node.target)
 
+        # A rule on a value domain needs it, and its constants must be values of it, also when
+        # no statement uses the rule (issue #1349)
+        if node.signature_type == "valuedomain":
+            domain = self._value_domain(node.target)
+            constants = [v for c in node.enumerated_clauses for v in (*c.values, c.result)]
+            for value in [*constants, node.default_value]:
+                if not is_value_of_domain(value, domain):
+                    raise SemanticError(
+                        "1-1-10-13",
+                        element="constant",
+                        value=literal_text(value),
+                        where=f"viral propagation rule {node.name}",
+                        value_domain=domain.name,
+                    )
+
+        # The constants are read as values of the type of the Attribute the rule applies to
+        # by ViralPropagationRegistry.rule_for (issue #1349)
         enumerated_clauses = [
             {"values": clause.values, "result": clause.result} for clause in node.enumerated_clauses
         ]
@@ -1430,7 +1462,11 @@ class InterpreterAnalyzer(ASTTemplate):
                 ref_element = child.children[1] if isinstance(child, AST.ParamOp) else child
                 if ref_element in elements:
                     duplicates.append(ref_element)
-                scalar = self.visit(child)
+                self.is_from_set = True
+                try:
+                    scalar = self.visit(child)
+                finally:
+                    self.is_from_set = False
                 elements.append(scalar.value)
                 if scalar_data_type is None:
                     scalar_data_type = scalar.data_type
@@ -1441,8 +1477,13 @@ class InterpreterAnalyzer(ASTTemplate):
                     raise SemanticError("1-2-25")
             if len(elements) == 0:
                 raise SemanticError("1-2-26")
-            if not any(e is None for e in elements) and len(elements) != len(set(elements)):
-                repeated = sorted({e for e in elements if elements.count(e) > 1}, key=str)
+            # Two elements are one value when they are equal as values of their type, written
+            # in any form: 2024Q1 and 2024-Q1 are one Time_Period (issue #1349)
+            values = [value_of(scalar_data_type, e) for e in elements]
+            if not any(e is None for e in elements) and len(values) != len(set(values)):
+                repeated = sorted(
+                    {e for e, v in zip(elements, values) if values.count(v) > 1}, key=str
+                )
                 raise SemanticError("1-2-27", duplicates=repeated)
             set_type = scalar_data_type or BASIC_TYPES[type(elements[0])]
             return ScalarSet(data_type=set_type, values=elements)
@@ -1905,6 +1946,10 @@ class InterpreterAnalyzer(ASTTemplate):
             mask = None
             if len(node.params) > 0:
                 mask = self.visit(node.params[0])
+            if self.is_from_set and isinstance(operand, Scalar) and operand.literal:
+                # The semantic analysis also casts a literal of a set, whose values are checked
+                # for repeated ones (issue #1349)
+                return Cast.evaluate(operand, cast(Any, scalar_type), mask)
             return Cast.analyze(operand, scalar_type, mask)
 
         raise SemanticError("1-3-5", op_type="ParamOp", node_op=node.op)

@@ -3268,3 +3268,25 @@ class TestHierarchy:
         )
         expected = expected.sort_values(["Id_1", "Id_2"]).reset_index(drop=True)
         pd.testing.assert_frame_equal(result, expected, check_dtype=False, check_like=True)
+
+
+def test_GH_1349_20():
+    """Transpile loads the structures after the value domains given, so a Data Set and a
+    scalar typed by a value domain transpile as run(use_duckdb=True) executes them; it raised
+    0-2-1-1."""
+    value_domains = [{"name": "VD_TP", "type": "Time_Period", "setlist": ["2024Q1", "2024Q2"]}]
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_2", "type": "VD_TP", "role": "Measure", "nullable": True},
+                ],
+            }
+        ],
+        "scalars": [{"name": "SC_1", "type": "VD_TP"}],
+    }
+    queries = transpile("DS_r <- DS_1; SC_r <- SC_1;", data_structures, value_domains)
+    assert [name for name, _, _ in queries] == ["DS_r", "SC_r"]
+    assert '"DS_1"' in queries[0][1]

@@ -5574,18 +5574,13 @@ class DefinedBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- DS_1[calc Me_2 := cast(Me_1, date)]; (Me_1 = "2022-1-5")
-        Description: A date that is not written YYYY-MM-DD is a runtime error on both engines:
-                     DuckDB read it as 2022-01-05.
+        Description: A date written unpadded is read as the loaders read a Date, the Date
+                     2022-01-05, on both engines (issue #1349). It was a runtime error
+                     (2-1-19-8) on both engines since #1192.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1192
-        Goal: Check Exception.
+        Goal: Check Result.
         """
-        code = "GH_1192_53"
-        number_inputs = 1
-        message = "2-1-19-8"
-
-        self.NewSemanticExceptionTest(
-            code=code, number_inputs=number_inputs, exception_code=message
-        )
+        self.BaseTest(code="GH_1192_53", number_inputs=1, references_names=["1"])
 
     def test_GH_1192_54(self):
         """
@@ -8489,7 +8484,7 @@ class ValueDomainBugs(BugHelper):
             code=code,
             number_inputs=number_inputs,
             exception_code="1-1-10-13",
-            exception_message="The errorcode E1 of check is not one of the values of the Value "
+            exception_message='The errorcode "E1" of check is not one of the values of the Value '
             "Domain errorcode_vd",
             vd_names=self.error_vds,
         )
@@ -10004,3 +9999,648 @@ class ValueDomainBugs(BugHelper):
             references_names=["1", "2"],
             vd_names=self.vd_1348,
         )
+
+    vd_1349 = ["GH_1349-VD_TP", "GH_1349-VD_DATE", "GH_1349-VD_B", "GH_1349-VD_1"]
+
+    def test_GH_1349_7(self):
+        """
+        Status: OK
+        Expression: define operator in_tp ( x time_period , s set < time_period > )
+                        returns boolean is x in s end operator;
+                    DS_r <- DS_1 [ calc Me_4 := Me_1 in VD_TP , Me_5 := Me_2 not_in VD_TP ,
+                                        Me_6 := Me_3 in VD_DATE ,
+                                        Me_7 := cast ( "2024-Q1" , time_period ) in VD_TP ,
+                                        Me_8 := in_tp ( cast ( "2024-Q2" , time_period ) ,
+                                                        VD_TP ) ] [ keep ... ];
+                    DS_r2 <- DS_1 [ filter Me_2 in VD_TP ] [ keep Me_2 ];
+                    DS_r3 <- DS_1 [ keep Me_2 ] in VD_TP;
+        Description: in and not_in compare a Time_Period or a Date as a value of its type with
+                     the values of the value domain, whatever form the setlist (2024Q1,
+                     2024-1-5) or the value (2024-Q2, 2024-1-6) is written in, for a Component,
+                     in filter, at Data Set level, for a scalar and for a value domain passed
+                     to a set parameter. pandas compared their text, so Me_4 was false, false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_7",
+            number_inputs=1,
+            references_names=["1", "2", "3"],
+            vd_names=self.vd_1349,
+        )
+
+    def test_GH_1349_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+                    DS_r2 <- DS_1 [ pivot Id_2 , Me_1 ] [ keep 'true' ];
+        Description: pivot on Id_2, on the Boolean value domain VD_B, names the Measures true
+                     and false, as cast ( Id_2 , string ) writes the values; they were True and
+                     False, so keep 'true' raised 1-1-1-10.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_8",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=self.vd_1349,
+        )
+
+    def test_GH_1349_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := cast ( Id_2 , string ) ];
+        Description: Control of case 8: the String of a Boolean of VD_B is true or false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_9",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1349,
+        )
+
+    def test_GH_1349_10(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_1 ) is
+                        when "A" then "Z"; else "Q" end viral propagation;
+                    DS_r <- DS_1 + DS_1;
+        Description: The constants of a rule on a value domain must be values of it: Z is not
+                     a value of VD_1. At_1 was on VD_1 holding Z and Q.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_10",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message='The constant "Z" of viral propagation rule VP_1 is not one of the '
+            "values of the Value Domain VD_1",
+            vd_names=self.vd_1349,
+        )
+
+    def test_GH_1349_11(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_X ) is
+                        when "A" then "A"; else "B" end viral propagation;
+                    DS_r <- DS_1 + DS_1;
+        Description: The value domain VD_X of the rule is not given, which the definition
+                     reports. It raised a misleading 1-3-3-6 for At_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_11",
+            number_inputs=1,
+            exception_code="1-2-8",
+            exception_message="Missing value domain 'VD_X'",
+            vd_names=self.vd_1349,
+        )
+
+    def test_GH_1349_11b(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_X ) is
+                        when "A" then "A"; else "B" end viral propagation;
+                    DS_r <- DS_1;
+        Description: As case 11 with no statement using the rule: the definition itself
+                     raises. It was accepted.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_11b",
+            number_inputs=1,
+            exception_code="1-2-8",
+            exception_message="Missing value domain 'VD_X'",
+            vd_names=self.vd_1349,
+        )
+
+    def test_GH_1349_12(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_X ) is
+                        R1 : VD_X > 0 end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 );
+        Description: Control of case 11: a datapoint ruleset on a value domain that is not
+                     given raises 1-2-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_12",
+            number_inputs=1,
+            exception_code="1-2-8",
+            exception_message="Missing value domain 'VD_X'",
+            vd_names=self.vd_1349,
+        )
+
+    vd_1349_int = ["GH_1349-errorcode_vd_int", "GH_1349-errorlevel_vd_int"]
+
+    def test_GH_1349_13(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 1 errorcode "100" errorlevel "1" invalid );
+        Description: The String "100" is not a value of the Integer errorcode_vd, which does
+                     not convert it. It gave the errorcode 100 and the errorlevel 1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_13",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message='The errorcode "100" of check is not one of the values of the '
+            "Value Domain errorcode_vd",
+            vd_names=self.vd_1349_int,
+        )
+
+    def test_GH_1349_13b(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 1 errorcode 100 errorlevel "1" invalid );
+        Description: As case 13 for the error level alone: the String "1" is not a value of
+                     the Integer errorlevel_vd, while the errorcode 100 is one of errorcode_vd.
+                     It gave the errorlevel 1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_13b",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message='The errorlevel "1" of check is not one of the values of the '
+            "Value Domain errorlevel_vd",
+            vd_names=self.vd_1349_int,
+        )
+
+    def test_GH_1349_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 1 errorlevel 1 invalid );
+        Description: The Integer 1 is not a value of the String errorlevel_vd, which holds
+                     "1". It gave the errorlevel "1".
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_14",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message="The errorlevel 1 of check is not one of the values of the Value "
+            "Domain errorlevel_vd",
+            vd_names=["GH_1349-errorlevel_vd_str"],
+        )
+
+    def test_GH_1349_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 1 errorcode 100.0 invalid );
+        Description: Control of cases 13 and 14: the Number 100.0 is not a value of the
+                     Integer errorcode_vd.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_15",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message="The errorcode 100.0 of check is not one of the values of the "
+            "Value Domain errorcode_vd",
+            vd_names=self.vd_1349_int,
+        )
+
+    def test_GH_1349_21(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ filter between ( Id_2 , cast ( "2024Q2" , time_period ) ,
+                                                    cast ( "2024Q3" , time_period ) ) ];
+        Description: between orders Time_Period values as periods. pandas compared the text
+                     2024-Q2 with 2024Q2 and kept no data point.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_21", number_inputs=1, references_names=["1"])
+
+    def test_GH_1349_21b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := between ( Me_1 , SC_1 , SC_1 ) ];
+        Description: between stands for >= and <=, which do not compare periods of different
+                     period indicators (2024M01 and 2024Q2): both engines raise 2-1-19-19, as
+                     >= and <= do. DuckDB returned false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_21b",
+            number_inputs=1,
+            exception_code="2-1-19-19",
+            exception_message="Time Period comparison (>, <, >=, <=) with different period "
+            "indicator is not supported",
+            scalars={"SC_1": "2024Q2"},
+        )
+
+    def test_GH_1349_22(self):
+        """
+        Status: OK
+        Expression: DS_r <- between ( DS_1 , SC_2 , SC_2 );
+        Description: At Data Set level the period equal to SC_2 (2024Q1) is between SC_2 and
+                     SC_2; pandas gave false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_22", number_inputs=1, references_names=["1"], scalars={"SC_2": "2024Q1"}
+        )
+
+    def test_GH_1349_23(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := between ( Me_1 , SC_2 , SC_2 ) ];
+        Description: As case 22 on a Component; pandas gave false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_23", number_inputs=1, references_names=["1"], scalars={"SC_2": "2024Q1"}
+        )
+
+    def test_GH_1349_24(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := Me_1 >= SC_2 and Me_1 <= SC_2 ];
+        Description: Control of cases 21 to 23: the same check with >= and <=.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_24", number_inputs=1, references_names=["1"], scalars={"SC_2": "2024Q1"}
+        )
+
+    def test_GH_1349_38(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := Me_1 in { cast ( "2024Q2" , time_period ) } ,
+                                   Me_3 := Me_1 not_in { cast ( "2024Q2" , time_period ) } ];
+                    DS_r2 <- DS_1 [ keep Me_1 ] in { cast ( "2024Q2" , time_period ) };
+                    DS_r3 <- DS_2 in { cast ( "2024-01-05T00:00:00" , date ) ,
+                                       cast ( "2024-01-06 10:00:00" , date ) };
+        Description: The elements of a literal set are values of their type: a Time_Period or
+                     a Date is in the set holding its value in any form, for a Component and
+                     at Data Set level. Both engines compared the text of the elements, so
+                     Me_2 was false for the data point holding 2024Q2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_38", number_inputs=2, references_names=["1", "2", "3"])
+
+    def test_GH_1349_40(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := Me_1 = cast ( "2024Q2" , time_period ) ];
+        Description: Control of case 38: the same value compared with =.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_40", number_inputs=1, references_names=["1"])
+
+    vd_1349_d = ["GH_1349-VD_TP", "GH_1349-VD_D"]
+
+    def test_GH_1349_41(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_TP ) is
+                        when "2024Q1" then "2024Q2"; else "2024Q1" end viral propagation;
+                    define viral propagation VP_2 ( valuedomain VD_D ) is
+                        when "2024-1-5" then "2024-1-6"; else "2024-1-5"
+                    end viral propagation;
+                    DS_r <- DS_1 + DS_1;
+        Description: The constants of a rule on a Time_Period or Date value domain are values
+                     of its type: the when matches the data holding that value in any form, and
+                     the result is written as a value of the type (2024Q2, 2024-01-06). pandas
+                     took the else for both data points and DuckDB gave null for At_1 and
+                     wrote the constants of At_2 as written.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_41", number_inputs=1, references_names=["1"], vd_names=self.vd_1349_d
+        )
+
+    def test_GH_1349_42(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_TP ) is
+                        when "2024-Q1" then "2024-Q2"; else "2024-Q1" end viral propagation;
+                    define viral propagation VP_2 ( valuedomain VD_D ) is
+                        when "2024-01-05" then "2024-01-06"; else "2024-01-05"
+                    end viral propagation;
+                    DS_r <- DS_1 + DS_1;
+        Description: Control of case 41: the constants written in the form the engines store.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_42", number_inputs=1, references_names=["1"], vd_names=self.vd_1349_d
+        )
+
+    def test_GH_1349_43(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := between ( Me_1 , SC_2 , SC_2 ) ];
+        Description: between stands for >= and <=, which do not compare periods of different
+                     period indicators (2024M01, 2025A and 2024Q1): both engines raise
+                     2-1-19-19, as >= and <= do. Both gave false for the other indicators.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_43",
+            number_inputs=1,
+            exception_code="2-1-19-19",
+            exception_message="Time Period comparison (>, <, >=, <=) with different period "
+            "indicator is not supported",
+            scalars={"SC_2": "2024Q1"},
+        )
+
+    def test_GH_1349_44(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := between ( Me_1 , SC_2 , null ) ];
+        Description: between compares the operand with the bound that is not null, as
+                     Me_1 >= SC_2 and Me_1 <= null does, so periods of different indicators
+                     raise 2-1-19-19 (case 45). Both engines gave null without comparing.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_44",
+            number_inputs=1,
+            exception_code="2-1-19-19",
+            exception_message="Time Period comparison (>, <, >=, <=) with different period "
+            "indicator is not supported",
+            scalars={"SC_2": "2024Q1"},
+        )
+
+    def test_GH_1349_44b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := between ( Me_1 , SC_2 , null ) ,
+                                   Me_3 := between ( Me_1 , null , SC_2 ) ];
+        Description: As case 44 with periods of one indicator: as op >= from and op <= to,
+                     a null bound gives false where the other comparison is false (2024Q1 is
+                     not >= 2024Q2, 2024Q3 is not <= 2024Q2) and null elsewhere (case 56).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_44b", number_inputs=1, references_names=["1"], scalars={"SC_2": "2024Q2"}
+        )
+
+    def test_GH_1349_45(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := Me_1 >= SC_2 and Me_1 <= null ];
+        Description: Control of case 44: >= raises 2-1-19-19 for periods of different
+                     indicators also when the other bound is null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_45",
+            number_inputs=1,
+            exception_code="2-1-19-19",
+            exception_message="Time Period comparison (>, <, >=, <=) with different period "
+            "indicator is not supported",
+            scalars={"SC_2": "2024Q1"},
+        )
+
+    def test_GH_1349_46(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+                    DS_r2 <- DS_1 [ calc Me_2 := cast ( Id_2 , string ) ] [ keep Me_2 ];
+        Description: pivot on Id_2, on the Date value domain VD_D whose setlist writes
+                     2024-1-5, names the Measures as cast ( Id_2 , string ) writes the values:
+                     2024-01-05 and 2024-01-06 (the reference structure names them, case 57).
+                     The first one was named 2024-1-5.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_46",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=["GH_1349-VD_D"],
+        )
+
+    def test_GH_1349_47(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+                    DS_r2 <- DS_1 [ calc Me_2 := cast ( Id_2 , string ) ] [ keep Me_2 ];
+        Description: pivot on Id_2, on the Time_Period value domain VD_TP2 whose setlist
+                     writes 2024-Q1, names the Measures as cast ( Id_2 , string ) writes the
+                     values: 2024Q1 and 2024Q2. The first one was named 2024-Q1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_47",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=["GH_1349-VD_TP2"],
+        )
+
+    def test_GH_1349_48(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+                    DS_r2 <- DS_1 [ calc Me_2 := cast ( Id_2 , string ) ] [ keep Me_2 ];
+        Description: pivot on Id_2, on the Duration value domain VD_DUR, keeps the names A and
+                     Q, the form the data and the setlist write the values in, while
+                     cast ( Id_2 , string ) writes P1Y and P3M (not decided: pinned as is).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_48",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=["GH_1349-VD_DUR"],
+        )
+
+    def test_GH_1349_49(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_1 as b apply random ( a , b ) );
+        Description: random in a join apply gives on DuckDB the numbers pandas gives, those
+                     of random ( Me_1 , Me_1 ) in calc (case 50). DuckDB wrote a plain SQL
+                     random ( a , b ) and raised a BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_49", number_inputs=1, references_names=["1"])
+
+    def test_GH_1349_50(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := random ( Me_1 , Me_1 ) ];
+        Description: Control of case 49: random in calc.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_50", number_inputs=1, references_names=["1"])
+
+    def test_GH_1349_53(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( variable At_1 ) is
+                        when "2024Q1" then "2024Q2"; else "2024Q1" end viral propagation;
+                    define viral propagation VP_2 ( variable At_2 ) is
+                        when "2024-1-5" then "2024-1-6"; else "2024-1-5"
+                    end viral propagation;
+                    DS_r <- DS_1 + DS_1;
+                    DS_r2 <- DS_2 + DS_2;
+        Description: As case 41 for rules on a variable: the constants are values of the type
+                     of the Attribute the rule applies to (the Time_Period At_1, the Date
+                     At_2), whatever form they are written in, and the result is written as a
+                     value of that type. pandas took the else, DuckDB gave null for At_1 and
+                     wrote the constants of At_2 as written.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_53", number_inputs=2, references_names=["1", "2"])
+
+    def test_GH_1349_53b(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( variable At_1 ) is
+                        when "2024Q1" then "2024Q2"; when "2024-Q1" then "2024Q1";
+                        else "2024Q1" end viral propagation;
+                    DS_r <- DS_1 + DS_1;
+        Description: "2024Q1" and "2024-Q1" are one Time_Period, so the two when are the same
+                     combination for the Time_Period At_1 and raise 1-3-3-4. Only the text was
+                     compared, so the rule was accepted.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_53b",
+            number_inputs=1,
+            exception_code="1-3-3-4",
+            exception_message="Duplicate enumeration combination",
+        )
+
+    def test_GH_1349_54(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "2024-1-5" , date ) ,
+                                   Me_3 := cast ( Me_1 , date ) ,
+                                   Me_4 := cast ( SC_1 , date ) ];
+                    DS_r2 <- cast ( DS_1 , date );
+        Description: A String cast to date reads the text as the loaders read a Date:
+                     2024-1-5, 20240105, 2024-1-5 00:00:00 and 2024-01-05T00:00:00 are
+                     2024-01-05, for a literal, a Component, a scalar and a Data Set (a time
+                     other than midnight is kept: test_GH_1349_54b). The literal raised
+                     1-1-5-6 and the other forms 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1349_54",
+            number_inputs=1,
+            references_names=["1", "2"],
+            scalars={"SC_1": "2024-1-5"},
+        )
+
+    def test_GH_1349_55(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := Me_1 in { cast ( "2024Q1" , time_period ) ,
+                                                         cast ( "2024-Q1" , time_period ) } ];
+        Description: 2024Q1 and 2024-Q1 are one Time_Period, so the set holds a repeated
+                     value and raises 1-2-27, as { 1 , 1 } does, on both engines and in the
+                     semantic analysis. The set was accepted.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_55",
+            number_inputs=1,
+            exception_code="1-2-27",
+            exception_message="A set must not contain duplicates",
+        )
+
+    def test_GH_1349_55b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := Me_2 in { cast ( "2024-01-05" , date ) ,
+                                                         cast ( "2024-01-05T00:00:00" , date ) } ];
+        Description: As case 55 for two forms of one Date.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1349_55b",
+            number_inputs=1,
+            exception_code="1-2-27",
+            exception_message="A set must not contain duplicates",
+        )
+
+    def test_GH_1349_55c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := Me_2 in { cast ( "05/01/2024" , date ,
+                                                         "DD/MM/YYYY" ) ,
+                                                         cast ( "2024-01-07" , date ) } ];
+        Description: A cast with a mask inside a set reads its mask as a cast outside a set
+                     does, in the semantic analysis and on both engines. The mask of a cast
+                     inside a set was kept as a parser node, so every path failed with an
+                     internal error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_55c", number_inputs=1, references_names=["1"])
+        self.BaseTest(
+            code="GH_1349_55c", number_inputs=1, references_names=["1"], only_semantic=True
+        )
+
+    def test_GH_1349_56(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_5 := between ( Me_1 , 2 , null ) , ... ,
+                                   Me_13 := between ( 3 , null , 2 ) , ... ] [ drop ... ];
+                    DS_r2 <- between ( DS_1 [ keep Me_1 ] , 2 , null );
+                    DS_r3 <- between ( DS_1 [ keep Me_4 ] , null ,
+                                       cast ( "2024Q2" , time_period ) );
+        Description: between is op >= from and op <= to, as the VTL 2.2 manual defines it,
+                     for every type (Integer, String, Date, Time_Period), for a Component, a
+                     scalar and a Data Set: a null bound gives false where the other
+                     comparison is false, null elsewhere, and a null operand gives null. Both
+                     engines gave null whenever a bound was null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_56", number_inputs=1, references_names=["1", "2", "3"])
+
+    def test_GH_1349_56b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := between ( Me_1 , Me_2 , Me_3 ) ,
+                                   Me_5 := Me_1 >= Me_2 and Me_1 <= Me_3 , ... ] [ drop ... ];
+                    DS_r2 <- between ( DS_1 [ keep Me_1 ] , cast ( "D" , duration ) ,
+                                       cast ( "M" , duration ) );
+        Description: between of Duration operands is op >= from and op <= to: the values are
+                     ordered as durations (D < W < M < Q < S < A), as >= and <= order them, for
+                     a Component, a scalar and a Data Set, also with a null bound. Both engines
+                     ordered them as text, so between(A, A, M) was true where the pair is false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1349
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1349_56b", number_inputs=1, references_names=["1", "2"])
