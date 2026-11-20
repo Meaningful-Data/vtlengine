@@ -2593,32 +2593,38 @@ FROM {self._as_subquery(src)} AS s, {shift_from}, (
         the gaps are taken within the non-time Identifiers and the result carries one
         row per series. A series of a single Data Point contributes no gap
         and so no row at all, which the caller reads as the annual default.
+        The gaps are the ones between the days of the points, and two points on one
+        day give the period of a day, the shortest a Date has, as find_min_frequency
+        reads them (issue #1352).
         """
         other_ids = other_ids or []
         keys = "".join(f"{oc}, " for oc in other_ids)
         partition = f"PARTITION BY {', '.join(other_ids)} " if other_ids else ""
         group_by = f"\nGROUP BY {', '.join(other_ids)}" if other_ids else ""
         return f"""
-SELECT {keys}vtl_date_timeshift_period_ind(
+SELECT {keys}CASE WHEN BOOL_OR(d_prev = d_next) THEN 'D' ELSE vtl_date_timeshift_period_ind(
     COUNT(*),
     BOOL_OR(NOT clean_month),
     BOOL_AND(diff_days % 7 = 0),
     BOOL_AND(clean_month AND diff_months % 12 = 0),
     BOOL_AND(clean_month AND diff_months % 6 = 0),
     BOOL_AND(clean_month AND diff_months % 3 = 0)
-) AS period_ind
+) END AS period_ind
 FROM (
-    SELECT {keys}
+    SELECT {keys}d_prev, d_next,
         DATE_DIFF('day', d_prev, d_next) AS diff_days,
         DATE_DIFF('month', d_prev, d_next) AS diff_months,
         vtl_date_gap_clean_month(d_prev, d_next) AS clean_month
     FROM (
-        SELECT {keys}LAG({time_col}) OVER ({partition}ORDER BY {time_col}) AS d_prev,
-               {time_col} AS d_next
-        FROM {src}
-        WHERE {time_col} IS NOT NULL
+        SELECT {keys}CAST(t_prev AS DATE) AS d_prev, CAST(t_next AS DATE) AS d_next
+        FROM (
+            SELECT {keys}LAG({time_col}) OVER ({partition}ORDER BY {time_col}) AS t_prev,
+                   {time_col} AS t_next
+            FROM {src}
+            WHERE {time_col} IS NOT NULL
+        )
+        WHERE t_prev IS NOT NULL AND t_prev <> t_next
     )
-    WHERE d_prev IS NOT NULL AND d_prev <> d_next
 ){group_by}""".strip()
 
     @staticmethod

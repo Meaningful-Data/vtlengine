@@ -50,7 +50,7 @@ from vtlengine.DataTypes.TimeHandling import (
     shifted_year,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
+from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, value_of
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 
 
@@ -143,10 +143,17 @@ class Time(Operators.Operator):
         return start.day == start.days_in_month and end.day == end.days_in_month
 
     @classmethod
-    def find_min_frequency(cls, dates: Any) -> str:
-        """Infer the period of a Date time series from the gaps between its points."""
-        ordered = pd.to_datetime(pd.Series(list(dates))).dropna().sort_values()
-        ordered = ordered.drop_duplicates().reset_index(drop=True)
+    def find_min_frequency(cls, values: Any) -> str:
+        """Infer the period of a Date time series from the gaps between the days of its points.
+
+        The shortest period of a Date is the day, so a series with two points on one day, at
+        different times of it, has the period of a day (issue #1352).
+        """
+        values = pd.Series(list(values)).dropna().drop_duplicates()
+        days = values.map(lambda value: cls.parse_date(str(value)))
+        if days.duplicated().any():
+            return "D"
+        ordered = pd.to_datetime(days).sort_values().reset_index(drop=True)
         if len(ordered) < 2:
             return "Y"
 
@@ -225,11 +232,6 @@ class Time(Operators.Operator):
         if chosen.days:
             parts.append(f"{chosen.days}D")
         return "P" + "".join(parts)
-
-    @classmethod
-    def get_date_format(cls, date_str: Union[str, date]) -> str:
-        date = cls.parse_date(date_str) if isinstance(date_str, str) else date_str
-        return "%Y-%m-%d" if date.day >= 1 else "%Y-%m" if date.month >= 1 else "%Y"
 
     _PERIOD_DURATION_RE = re.compile(r"^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?$")
 
@@ -484,8 +486,8 @@ class Fill_time_series(Binary):
         if data_type == TimePeriod:
             result.data = cls.fill_periods(result.data, fill_type)
         elif data_type == Date:
-            dates = operand.data[cls.time_id].apply(cls.parse_date)
-            result.data = cls.fill_dates(result.data, fill_type, cls.find_min_frequency(dates))
+            frequency = cls.find_min_frequency(operand.data[cls.time_id])
+            result.data = cls.fill_dates(result.data, fill_type, frequency)
         elif data_type == TimeInterval:
             categories = result.data[cls.time_id].apply(cls._classify_interval_period).unique()
             if len(categories) > 1:
@@ -588,10 +590,12 @@ class Fill_time_series(Binary):
     @classmethod
     def max_min_from_date(cls, data: pd.DataFrame, fill_type: str = "all") -> Dict[str, Any]:
         def compute_min_max(group: Any) -> Dict[str, Any]:
-            min_date = cls.parse_date(group.min())
-            max_date = cls.parse_date(group.max())
-            date_format = cls.get_date_format(max_date)
-            return {"min": min_date, "max": max_date, "date_format": date_format}
+            # The limits keep their time of the day, from which each period is counted, as the
+            # manual counts it from the lower limit (issue #1352)
+            return {
+                "min": datetime.fromisoformat(str(group.min())),
+                "max": datetime.fromisoformat(str(group.max())),
+            }
 
         if fill_type == "all":
             return compute_min_max(data[cls.time_id])
@@ -608,12 +612,14 @@ class Fill_time_series(Binary):
     @classmethod
     def date_filler(cls, data: pd.DataFrame, fill_type: str, min_frequency: str) -> pd.DataFrame:
         MAX_MIN = cls.max_min_from_date(data, fill_type)
-        date_format = None
-        filled_data = []
+        filled_data: List[pd.DataFrame] = []
 
-        def create_filled_dates(group: Any, min_max: Dict[str, Any]) -> (pd.DataFrame, str):  # type: ignore[syntax]
+        def create_filled_dates(group: Any, min_max: Dict[str, Any]) -> pd.DataFrame:
             date_range = cls._period_range(min_max["min"], min_max["max"], min_frequency)
-            date_df = pd.DataFrame(date_range, columns=[cls.time_id])
+            # Each Date written as the loaders write it, with its time of the day if it has one
+            date_df = pd.DataFrame(
+                {cls.time_id: [value_of(Date, moment.isoformat()) for moment in date_range]}
+            )
             if cls.other_ids:
                 # One column at a time: a multi-column assignment from the row Series
                 # takes its values positionally, which pandas 3 no longer allows.
@@ -621,16 +627,13 @@ class Fill_time_series(Binary):
                 for other_id in cls.other_ids:
                     date_df[other_id] = first_row[other_id]
             date_df[cls.measures] = None
-            return date_df, min_max["date_format"]
+            return date_df
 
         for name, group in cls._iter_groups(data):
             min_max = MAX_MIN if fill_type == "all" else MAX_MIN[cls._group_key(name)]
-            filled_dates, date_format = create_filled_dates(group, min_max)
-            filled_data.append(filled_dates)
+            filled_data.append(create_filled_dates(group, min_max))
 
-        filled_data = pd.concat(filled_data, ignore_index=True)
-        filled_data[cls.time_id] = filled_data[cls.time_id].dt.strftime(date_format)
-        combined_data = pd.concat([filled_data, data], ignore_index=True)
+        combined_data = pd.concat([*filled_data, data], ignore_index=True)
         combined_data[cls.time_id] = combined_data[cls.time_id].astype("string[pyarrow]")
         # The added Data Point of a date the operand has goes, and the operand's own one, which
         # comes last, stays, also when all its Measures are null. No marker column is added to
@@ -715,8 +718,7 @@ class Time_Shift(Binary):
         cls.other_ids = [i.name for i in result.get_identifiers() if i.name != cls.time_id]
 
         if data_type == Date:
-            parsed = result.data[cls.time_id].map(cls.parse_date, na_action="ignore")
-            freq = cls._series_frequency(parsed, result.data)
+            freq = cls._series_frequency(result.data)
             # The Dates move as dateadd moves them, which writes a Date as the loaders do and
             # keeps it in the years a Date has (issue #1352)
             period = "A" if freq == "Y" else freq
@@ -749,7 +751,7 @@ class Time_Shift(Binary):
         return result
 
     @classmethod
-    def _series_frequency(cls, parsed: Any, data: pd.DataFrame) -> str:
+    def _series_frequency(cls, data: pd.DataFrame) -> str:
         """The period of the reference time Identifier, read from each time series.
 
         The reference time Identifier has to be periodical, so every series that shows
@@ -760,7 +762,8 @@ class Time_Shift(Binary):
         """
         frequencies = set()
         for _, group in cls._iter_groups(data):
-            series = parsed.loc[group.index].dropna()
+            # The values of the group itself, which an index label of the operand may repeat
+            series = group[cls.time_id].dropna()
             if series.nunique() > 1:
                 frequencies.add(cls.find_min_frequency(series))
         if len(frequencies) > 1:
