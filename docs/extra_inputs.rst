@@ -364,15 +364,21 @@ Value domains also appear in the VTL-DL definitions:
   in order to the components listed in ``check_datapoint ...
   components``, which is required (``1-1-10-14``), with one
   component per value domain (``1-1-10-15``). Each component must be
-  defined on the value domain it is bound to (``1-1-10-12``), and the
-  value domains must be given (``1-2-22``, ``1-2-8``).
+  defined on the value domain it is bound to, or be of a basic type
+  that the implicit promotion takes to the type of the value domain
+  (a ``String`` for a ``String`` value domain, an ``Integer`` for a
+  ``Number`` one), and then it keeps its basic type; a component on
+  another value domain, or of a type that does not promote, raises
+  ``1-1-10-12``. The value domains must be given (``1-2-22``,
+  ``1-2-8``).
 - A hierarchical ruleset on value domains binds the value domains of
   its condition, in order, to the components listed in ``condition``
   (one per value domain, ``1-1-10-16``), and the value domain of its
   rule to the component in ``rule`` (required, ``1-1-10-4``), in
   ``check_hierarchy`` and ``hierarchy``. The same checks apply: each
-  component must be defined on its value domain (``1-1-10-12``), and
-  the value domains must be given (``1-2-22``, ``1-2-8``). Every code
+  component must be defined on its value domain or be of a basic type
+  that promotes to its type (``1-1-10-12``), and the value domains
+  must be given (``1-2-22``, ``1-2-8``). Every code
   item its rules name, on either side, must be a value of the value
   domain of its rule, compared as a value of its type (``1-1-10-13``),
   so its results are values of it.
