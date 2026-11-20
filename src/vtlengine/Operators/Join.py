@@ -1,6 +1,7 @@
+import threading
 from copy import copy
 from functools import reduce
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, cast
 
 import pandas as pd
 
@@ -57,9 +58,25 @@ def merged_viral_attribute_names(
     return merged
 
 
-class Join(Operator):
+# The reference Data Set of each join operator, for the thread that runs it: joins of runs in
+# concurrent threads must not read each other's (issue #1352)
+_reference_datasets = threading.local()
+
+
+class _ThreadReference(type):
+    @property
+    def reference_dataset(cls) -> Dataset:
+        return cast(Dataset, getattr(_reference_datasets, "by_class", {}).get(cls))
+
+    @reference_dataset.setter
+    def reference_dataset(cls, value: Dataset) -> None:
+        if not hasattr(_reference_datasets, "by_class"):
+            _reference_datasets.by_class = {}
+        _reference_datasets.by_class[cls] = value
+
+
+class Join(Operator, metaclass=_ThreadReference):
     how: str
-    reference_dataset: Dataset
 
     @classmethod
     def _keys_only(cls, using: Optional[List[str]]) -> bool:
