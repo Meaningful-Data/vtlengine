@@ -1,0 +1,11 @@
+define datapoint ruleset DPR_1 ( valuedomain VD_2 , VD_1 ) is
+    r1 : cast ( VD_2 , string ) <> "3" errorcode "E1";
+    r2 : case when VD_2 = 3 then false else true errorcode "E2";
+    r3 : round ( VD_2 * 1.2 , 0 ) <> 4 errorcode "E3";
+    r4 : trunc ( VD_2 * 1.5 , 0 ) <> 4 errorcode "E4";
+    r5 : replace ( VD_1 , "C" , "Z" ) <> "Z" errorcode "E5";
+    r6 : instr ( VD_1 , "C" ) = 0 errorcode "E6";
+    r7 : ( VD_2 < 3 ) errorcode "E7"
+end datapoint ruleset;
+
+DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 , Me_2 invalid );

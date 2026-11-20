@@ -88,7 +88,11 @@ from vtlengine.Operators.Validation import (
     error_value,
 )
 from vtlengine.Utils._recursion import recursion_headroom
-from vtlengine.ViralPropagation import apply_viral_return_types, get_current_registry
+from vtlengine.ViralPropagation import (
+    apply_viral_return_types,
+    get_current_registry,
+    operands_rule,
+)
 from vtlengine.ViralPropagation.sql import (
     vp_group_sql,
     vp_group_sql_windowed,
@@ -441,9 +445,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     # Datapoint rulesets
     _dprs: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
 
-    # Datapoint ruleset context
-    _dp_signature: Optional[Dict[str, str]] = field(default=None, init=False)
-
     # Hierarchical rulesets
     _hrs: Dict[str, Dict[str, Any]] = field(default_factory=dict, init=False)
 
@@ -552,18 +553,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             yield
         finally:
             self.current_assignment = saved
-
-    @contextmanager
-    def _stash_dp_signature(
-        self, signature: Optional[Dict[str, str]]
-    ) -> Generator[None, None, None]:
-        """Temporarily set ``_dp_signature`` and restore it on exit."""
-        saved = self._dp_signature
-        self._dp_signature = signature
-        try:
-            yield
-        finally:
-            self._dp_signature = saved
 
     @staticmethod
     def _ensure_rule_names(rules: List[Any]) -> None:
@@ -1295,7 +1284,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         ``nvl`` is single-operand and copies the primary operand (COALESCE-filled) (#906).
         A viral attribute present in only one operand is copied from that operand.
         """
-        vp_registry = get_current_registry()
         left_viral = {n for n, c in left_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
         right_viral = {n for n, c in right_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
         if output_ds is not None:
@@ -1320,10 +1308,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                     result.append(f"{alias_b}.{qn} AS {qn}")
                 continue
             if in_left and in_right:
+                rule = operands_rule(name, [left_ds, right_ds])
                 comp = (
                     output_ds.components.get(name) if output_ds else None
                 ) or left_ds.components[name]
-                rule = vp_registry.rule_for(comp)
                 if rule is None:
                     result.append(
                         f"CAST(NULL AS {get_duckdb_type(comp.data_type.__name__)}) AS {qn}"
@@ -4112,12 +4100,12 @@ FROM (
                 f"CASE WHEN {cond_expr} THEN {t_ref} ELSE {e_ref} END AS {quote_name(col_name)}"
             )
 
-        vp_registry = get_current_registry()
+        branch_ds = [self._get_dataset_structure(op) for op in (node.thenOp, node.elseOp)]
         for v_name in output_viral:
             v_qn = quote_name(v_name)
             v_comp = ref_ds.components.get(v_name)
             if t_type == _DATASET and e_type == _DATASET:
-                v_rule = vp_registry.rule_for(v_comp) if v_comp is not None else None
+                v_rule = operands_rule(v_name, [ds for ds in branch_ds if ds is not None])
                 if v_rule is None:
                     v_type = get_duckdb_type(v_comp.data_type.__name__) if v_comp else "VARCHAR"
                     cols.append(f"CAST(NULL AS {v_type}) AS {v_qn}")
@@ -4335,7 +4323,8 @@ FROM (
 
         aliases = [t for _, _, t in whens if t] + ([e_alias] if e_alias else [])
         carried = any(is_ds[: branches.start])
-        cols.extend(self._case_viral_cols(output_ds, combined, aliases, carried, final))
+        operand_ds = [self._get_dataset_structure(op) for op, d in zip(operands, is_ds) if d]
+        cols.extend(self._case_viral_cols(output_ds, operand_ds, combined, aliases, carried, final))
         builder.select(*cols)
         if final and any(is_ds):
             e_match = f"e.{id_col} IS NOT NULL" if e_alias else "TRUE"
@@ -4351,13 +4340,18 @@ FROM (
 
     @staticmethod
     def _case_viral_cols(
-        output_ds: Dataset, combined: List[str], aliases: List[str], carried: bool, final: bool
+        output_ds: Dataset,
+        operand_ds: List[Dataset],
+        combined: List[str],
+        aliases: List[str],
+        carried: bool,
+        final: bool,
     ) -> List[str]:
         """The viral attributes ``combined`` by a stage of a dataset case: the list of the values
         of its dataset operands (``aliases``), null where one lacks the data point, after the
         ones the previous stages listed when they are ``carried``. The last stage combines the
-        whole list by the rule, as pandas does (issue #1304). Without a rule, they give null."""
-        vp_registry = get_current_registry()
+        whole list by the rule of the operands ``operand_ds``, as pandas does (issues #1304,
+        #1350). Without a rule, they give null."""
         cols: List[str] = []
         for v_name in combined:
             v_qn = quote_name(v_name)
@@ -4367,7 +4361,7 @@ FROM (
             elif not aliases:
                 continue
             v_comp = output_ds.components[v_name]
-            v_rule = vp_registry.rule_for(v_comp)
+            v_rule = operands_rule(v_name, operand_ds)
             if not final:
                 cols.append(f"{lst} AS {v_qn}")
             elif v_rule is None:
@@ -4493,7 +4487,7 @@ FROM (
                 measure_cols=ds.get_measures_names(),
                 output_mode=node.output.value if node.output else "invalid",
                 viral_comps=viral_comps,
-                components=ds.components,
+                ds=ds,
             )
             for rule in rules
         ]
@@ -4524,18 +4518,22 @@ FROM (
         measure_cols: List[str],
         output_mode: str,
         viral_comps: Optional[List[Any]] = None,
-        components: Optional[Dict[str, Component]] = None,
+        ds: Optional[Dataset] = None,
     ) -> str:
-        """Build SQL for a single datapoint rule."""
-        rule_node = rule.rule
+        """Build SQL for a single datapoint rule.
+
+        The rule names the components by the parameters of the ruleset, which are replaced by
+        the components they are bound to. Its conditions are then visited as the condition of
+        a filter on the operand, with the SQL and the types of any other expression on its
+        components (issue #1350).
+        """
+        rule_node = cast(AST.HRBinOp, _rename_var_ids(rule.rule, signature))
         has_when = isinstance(rule_node, AST.HRBinOp) and rule_node.op == tokens.WHEN  # type: ignore[redundant-expr]
         then_node = rule_node.right if has_when else rule_node
 
-        with self._stash_dp_signature(signature):
-            then_expr = self._visit_dp_expr(then_node, signature, components)
-            when_cond = (
-                self._visit_dp_expr(rule_node.left, signature, components) if has_when else "TRUE"
-            )
+        with self._clause_scope(ds):
+            then_expr = self.visit(then_node)
+            when_cond = self.visit(rule_node.left) if has_when else "TRUE"
 
         if has_when:
             fail_cond = f"({when_cond}) AND NOT ({then_expr})"
@@ -4573,93 +4571,6 @@ FROM (
             select_parts.append(f"CASE WHEN {fail_cond} THEN {val} ELSE NULL END AS {col}")
         select_parts.extend(viral_parts)
         return f"SELECT {', '.join(select_parts)} FROM {table_src}"
-
-    def _detect_dp_type(
-        self,
-        node: AST.AST,
-        signature: Dict[str, str],
-        components: Optional[Dict[str, Component]],
-    ) -> Optional[type]:
-        """Detect the data type of a datapoint-rule operand, mirroring
-        ``_detect_scalar_type`` so rules get the same tolerance and per-op
-        rounding dispatch as ordinary expressions (issue #985)."""
-        if isinstance(node, (AST.DefIdentifier, AST.VarID)):
-            comp = (components or {}).get(signature.get(node.value, node.value))
-            return comp.data_type if comp else None
-        if isinstance(node, AST.Constant):
-            return Number if isinstance(node.value, float) else None
-        if isinstance(node, (AST.HRBinOp, AST.BinOp)):
-            if node.op in (tokens.DIV, tokens.POWER):
-                return Number
-            if node.op in (tokens.PLUS, tokens.MINUS, tokens.MULT, tokens.MOD) and Number in (
-                self._detect_dp_type(node.left, signature, components),
-                self._detect_dp_type(node.right, signature, components),
-            ):
-                return Number
-        elif isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
-            if node.op in (tokens.SQRT, tokens.EXP, tokens.LN):
-                return Number
-            if node.op in (tokens.PLUS, tokens.MINUS):
-                inner = self._detect_dp_type(node.operand, signature, components)
-                return Number if inner == Number else None
-        elif (
-            isinstance(node, AST.ParamOp)
-            and node.op in (tokens.ROUND, tokens.TRUNC)
-            and node.params
-        ):
-            return Number
-        return None
-
-    def _visit_dp_expr(
-        self,
-        node: AST.AST,
-        signature: Dict[str, str],
-        components: Optional[Dict[str, Component]] = None,
-    ) -> str:
-        """Visit an expression in datapoint-rule context."""
-        if isinstance(node, (AST.HRBinOp, AST.BinOp)):
-            chain_sql = self._build_expression_chain(
-                node,
-                lambda operand: self._visit_dp_expr(operand, signature, components),
-                lambda operand: self._detect_dp_type(operand, signature, components),
-            )
-            if chain_sql is not None:
-                return chain_sql
-            if isinstance(node, AST.BinOp) and node.op in (tokens.AND, tokens.OR):
-                return self._short_circuit_sql(
-                    node, lambda operand: self._visit_dp_expr(operand, signature, components)
-                )
-            left_sql = self._visit_dp_expr(node.left, signature, components)
-            right_sql = self._visit_dp_expr(node.right, signature, components)
-            if isinstance(node, AST.HRBinOp) and node.op == tokens.WHEN:
-                return f"CASE WHEN ({left_sql}) THEN ({right_sql}) ELSE TRUE END"
-            # Route through the shared builder so rule expressions carry the
-            # Number comparison tolerance and per-op rounding (issue #985).
-            return self._make_binary_expr(
-                left_sql,
-                right_sql,
-                node.op,
-                self._detect_dp_type(node.left, signature, components),
-                self._detect_dp_type(node.right, signature, components),
-            )
-        if isinstance(node, (AST.HRUnOp, AST.UnaryOp)):
-            operand_sql = self._visit_dp_expr(node.operand, signature, components)
-            return registry.sql(node.op, operand_sql)
-        if isinstance(node, (AST.DefIdentifier, AST.VarID)):
-            col_name = signature.get(node.value, node.value)
-            return quote_name(col_name)
-        if isinstance(node, AST.Constant):
-            return self._to_sql_literal(node.value)
-        if isinstance(node, AST.If):
-            cond_sql = self._visit_dp_expr(node.condition, signature, components)
-            then_sql = self._visit_dp_expr(node.thenOp, signature, components)
-            else_sql = self._visit_dp_expr(node.elseOp, signature, components)
-            return (
-                f"CASE WHEN ({cond_sql}) THEN CAST(({then_sql}) AS BOOLEAN)"
-                f" ELSE CAST(({else_sql}) AS BOOLEAN) END"
-            )
-        with self._stash_dp_signature(signature):
-            return self.visit(node)
 
     # Hierarchical ruleset
 

@@ -8694,3 +8694,702 @@ class ValueDomainBugs(BugHelper):
             exception_message="Component Id_9 not found in Dataset DS_1",
             vd_names=self.vd_1339,
         )
+
+    vd_1350 = [
+        "GH_1350-VD_1",
+        "GH_1350-VD_2",
+        "GH_1350-VD_TP",
+        "GH_1350-VD_TP1",
+        "GH_1350-VD_TI",
+    ]
+
+    def test_GH_1350_1a(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := cast ( Me_1 , VD_TP ) ];
+        Description: A String cast into VD_TP, a Time_Period value domain of two values, gives
+                     Me_3 on VD_TP. On DuckDB, the commas of the setlist split the argument of
+                     the macro that checks it into several arguments (ParserException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_1a",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_1b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := cast ( Me_2 , VD_TI ) ];
+        Description: A Time_Period cast into VD_TI, a Time value domain of two values, gives Me_3 on
+                     VD_TI. On DuckDB, it raised a ParserException as 1a.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_1b",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_1c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ filter Id_1 = 1 ] [ calc Me_3 := cast ( Me_1 , VD_TP1 ) ];
+        Description: A String cast into VD_TP1, a Time_Period value domain of one value, gives Me_3
+                     on VD_TP1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_1c",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_1d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := cast ( Me_1 , time_period ) ];
+        Description: A String cast into the basic type of VD_TP gives a Time_Period.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_1d",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_2a(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc identifier Id_2 := cast ( Me_2 , VD_1 ) ]
+                                 [ pivot Id_2 , Me_1 ];
+        Description: Id_2, created on VD_1 by the calc of the same statement, is pivoted into a
+                     Measure per value of VD_1. On DuckDB, the calc lost the value domain of Id_2
+                     (AttributeError).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_2a",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_2b(self):
+        """
+        Status: OK
+        Expression: DS_a <- DS_1 [ calc identifier Id_2 := cast ( Me_2 , VD_1 ) ];
+                    DS_r <- DS_a [ pivot Id_2 , Me_1 ];
+        Description: The same pivot as 2a, in two statements.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_2b",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3a(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : between ( X , 1 , 2 ) errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 invalid );
+        Description: between reads the alias X of VD_2, bound to Me_1. On DuckDB, X was written into
+                     the SQL instead of Me_1 (BinderException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3a",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3b(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_1 as X ) is
+                        r1 : substr ( X , 1 , 1 ) <> "C" errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_2 invalid );
+        Description: substr reads the alias X of VD_1, bound to Me_2 (BinderException on DuckDB).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3b",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3c(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : not ( X = 3 ) errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 invalid );
+        Description: not of a parenthesised condition reads the alias X of VD_2, bound to Me_1
+                     (BinderException on DuckDB).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3c",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3d(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 as X ) is
+                        r1 : between ( X , 1 , 2 ) errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: between reads X, the alias of the variable Me_1 (BinderException on DuckDB).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3d",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3e(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 ) is
+                        r1 : between ( Me_1 , 1 , 2 ) errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: between reads the variable Me_1, which has no alias.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3e",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3f(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X >= 1 and X <= 2 errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 invalid );
+        Description: Comparisons and and read the alias X of VD_2, bound to Me_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3f",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3g(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 , VD_1 ) is
+                        r1 : cast ( VD_2 , string ) <> "3" ...;
+                        r2 : case when VD_2 = 3 then false else true ...;
+                        r3 : round ( VD_2 * 1.2 , 0 ) <> 4 ...;
+                        r4 : trunc ( VD_2 * 1.5 , 0 ) <> 4 ...;
+                        r5 : replace ( VD_1 , "C" , "Z" ) <> "Z" ...;
+                        r6 : instr ( VD_1 , "C" ) = 0 ...;
+                        r7 : ( VD_2 < 3 ) ...
+                    end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 , Me_2 invalid );
+        Description: cast, case, round, trunc, replace, instr and a parenthesised condition read
+                     the value domains VD_2 and VD_1, which have no alias, bound to Me_1 and Me_2
+                     (BinderException on DuckDB). Each rule fails on the data point 3 only.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3g",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3h(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : period_indicator ( Me_1 ) = cast ( "Q" , duration ) ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: period_indicator of the Time_Period Me_1, in a ruleset on variables.
+                     DuckDB wrote it as a plain function, which does not exist
+                     (CatalogException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3h",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3i(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : getyear ( Me_1 ) > 2020 ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: getyear of the Time_Period Me_1. DuckDB applied year to its text
+                     (BinderException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3i",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3j(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : time_agg ( "A" , _ , Me_1 ) = cast ( "2020A" , time_period ) ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: time_agg of the Time_Period Me_1 (BinderException on DuckDB).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3j",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3k(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : random ( Me_2 , 1 ) >= 0 ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: random of the Integer Me_2: no data point is invalid. DuckDB wrote it as
+                     its own random function (BinderException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3k",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3l(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : cast ( Me_1 , string ) = "2020Q1" ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: cast of the Time_Period Me_1 to string gives 2020Q1, as in calc. DuckDB
+                     gave its internal text 2020-Q1, so both data points were invalid.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3l",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3m(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : when cast ( Me_1 , string ) = "2020Q1" then Me_2 > 5 ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: The same cast in the when condition. DuckDB gave no invalid data point.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3m",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3n(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component ) returns component is x > 5 end operator;
+                    define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 as X ) is
+                        r1 : f ( X ) ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: A user defined operator called on X, the alias of Me_2. DuckDB wrote X
+                     into the SQL (BinderException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3n",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3o(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component ) returns component is x > 5 end operator;
+                    define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : f ( Me_2 ) ...
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: A user defined operator called on the variable Me_2, which has no alias.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3o",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_3p(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+                        r1 : getmonth ( Me_1 ) < 6 ...;
+                        r2 : dayofmonth ( Me_1 ) <> 31 ...;
+                        r3 : dayofyear ( Me_1 ) < 100 ...
+                    end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );
+        Description: getmonth, dayofmonth and dayofyear of the Time_Period Me_1 read the end of
+                     the period, 2020-03-31 and 2021-12-31, as in calc. DuckDB applied its own
+                     functions to the text of Me_1 (BinderException).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_3p",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4a(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( DS_1 [ calc Me_3 := Me_1 ] ,
+                                              DPR_1 components Me_3 invalid );
+        Description: Me_3, written alone in calc from Me_1, keeps VD_2, the value domain of the
+                     ruleset. DuckDB gave Me_3 the basic type and raised 1-1-10-12.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4a",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4b(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_datapoint ( inner_join ( DS_1 as d calc Me_3 := Me_1 ) ,
+                                                DPR_1 components Me_3 invalid );
+        Description: The same as 4a, with the calc inside a join.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4b",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4c(self):
+        """
+        Status: OK
+        Expression: DS_a <- DS_1 [ calc Me_3 := Me_1 ];
+                    DS_r <- check_datapoint ( DS_a , DPR_1 components Me_3 invalid );
+        Description: The same as 4a, in two statements.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4c",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_5a(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_2 ) is aggregate avg ...;
+                    DS_r <- DS_1 + DS_2;
+        Description: At_1 is on VD_2 in both operands, so the rule on VD_2 averages it into a
+                     Number. DuckDB looked the rule up on the result At_1, without the value
+                     domain, and gave null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_5a",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_5b(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_2 ) is aggregate avg ...;
+                    DS_r <- DS_1 + DS_2 + DS_1;
+        Description: The first + averages At_1 into a Number on no value domain, so the second
+                     + combines it with At_1 on VD_2. The rule on VD_2 does not apply when an
+                     operand is not on VD_2, and there is no rule on the variable At_1. Both
+                     engines gave null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1350_5b",
+            number_inputs=2,
+            exception_code="1-3-3-6",
+            exception_message="Viral attribute At_1 has no viral propagation rule",
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_5c(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( variable At_1 ) is aggregate avg ...;
+                    DS_r <- DS_1 + DS_2;
+        Description: The rule on the variable At_1 averages it into a Number.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_5c",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_5d(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( variable At_1 ) is aggregate avg ...;
+                    DS_r <- DS_1 + DS_2 + DS_1;
+        Description: The rule on the variable At_1 applies to both +: the average of the average.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_5d",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_2c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc identifier Me_2 := Me_2 ] [ pivot Me_2 , Me_4 ];
+        Description: Me_2, a Measure on VD_1, becomes an Identifier on VD_1 in the calc of the same
+                     statement, and is pivoted into a Measure per value of VD_1. On DuckDB, the calc
+                     rebuilt Me_2 without its value domain (AttributeError, as 2a).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_2c",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4d(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X > 1 errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 [ calc attribute Me_4 := Me_1 ] ,
+                                                DPR_1 components Me_4 invalid );
+        Description: Me_4, an Integer Measure, becomes an Attribute written from Me_1 alone, so
+                     it is on VD_2. DuckDB rebuilt it with its old type and no value domain and
+                     raised 1-1-10-12.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4d",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4e(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X > 1 errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 [ calc Me_5 := cast ( Me_5 , VD_2 ) ] ,
+                                                DPR_1 components Me_5 invalid );
+        Description: Me_5, a String Measure, is overwritten by its cast into VD_2. DuckDB kept the
+                     String of the operand and raised 1-1-10-12.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4e",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_5e(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_2 ) is aggregate avg ...;
+                    DS_r <- case when DS_1 > 1 then DS_1 else DS_2;
+        Description: At_1 is on VD_2 in both operands of the case, so the rule on VD_2 averages it
+                     into a Number. DuckDB looked the rule up on the result At_1, without the value
+                     domain, and gave null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_5e",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4f(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X > 1 errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 [ calc Me_5 := nvl ( Me_1 , Me_5 ) ] ,
+                                                DPR_1 components Me_5 invalid );
+        Description: Me_5 is overwritten by nvl of Me_1 and Me_5, both on VD_2, so it keeps VD_2.
+                     DuckDB gave it the basic type and raised 1-1-10-12.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4f",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4g(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X > 1 errorcode "E1" end datapoint ruleset;
+                    DS_r1 <- check_datapoint ( DS_1 [ calc Me_5 := if Me_1 > 1 then Me_5
+                                                                       else Me_1 ] ,
+                                                 DPR_1 components Me_5 invalid );
+                    DS_r2 <- check_datapoint ( DS_1 [ calc Me_5 := case when Me_1 > 1 then Me_5
+                                                                         else Me_1 ] , ... );
+        Description: The same overwrite with if-then-else and with case: their operands Me_5
+                     and Me_1 are on VD_2, so Me_5 keeps VD_2 (1-1-10-12 on DuckDB).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4g",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4h(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X > 1 errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 [ calc Me_6 := nvl ( Me_1 , Me_5 ) ] ,
+                                                DPR_1 components Me_6 invalid );
+        Description: Me_6, a new Component from nvl of Me_1 and Me_5, both on VD_2, is on VD_2
+                     (1-1-10-12 on DuckDB).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4h",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4i(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X > 1 errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( inner_join ( DS_1 as d , DS_2 as e
+                                                             calc Me_5 := d#Me_1
+                                                             drop d#Me_1 , e#Me_1 ) ,
+                                                DPR_1 components Me_5 invalid );
+        Description: Me_5 is overwritten by d#Me_1, a Component on VD_2 written alone in the calc of
+                     a join, so it keeps VD_2 (1-1-10-12 on DuckDB).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4i",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1350,
+        )
+
+    def test_GH_1350_4j(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_2 as X ) is
+                        r1 : X > 1 errorcode "E1" end datapoint ruleset;
+                    DS_r1 <- check_datapoint ( DS_1 [ calc Me_5 := nvl ( Me_1 , SC_1 ) ] ,
+                                               DPR_1 components Me_5 invalid );
+                    DS_r2 <- check_datapoint ( DS_1 [ calc Me_6 := SC_1 ] ,
+                                               DPR_1 components Me_6 invalid );
+        Description: SC_1 is a scalar on VD_2, as are Me_1 and Me_5, so nvl of Me_1 and SC_1
+                     and SC_1 written alone keep VD_2. DuckDB gave Me_5 and Me_6 the basic type
+                     and raised 1-1-10-12.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1350
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1350_4j",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=self.vd_1350,
+            scalars={"SC_1": 1},
+        )
