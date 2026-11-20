@@ -18056,17 +18056,18 @@ class NameResolutionBugs(BugHelper):
                         sum ( DS_3 over ( order by Id_1 data points
                         between current data point and x following ) ) end operator;
                     DS_r <- f ( null );
-        Description: Extra of test_GH_1355_26: the null given to the parameter x is the bound of
-                     the window, which raises 2-1-18-1 on both engines. The DuckDB engine raised
-                     an internal BinderException.
+        Description: Extra of test_GH_1355_26: the null written as the argument of the parameter
+                     x is the bound of the window, which is no Integer Scalar, so it raises
+                     1-1-18-4 on both engines and in the semantic analysis, as the script alone
+                     shows it. The DuckDB engine raised an internal BinderException.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(
             code="GH_1355_26k",
             number_inputs=1,
-            exception_code="2-1-18-1",
-            exception_message="At op sum: Window bound parameter should be a non-negative Integer.",
+            exception_code="1-1-18-4",
+            exception_message="At op sum: Window bound parameter should be an Integer Scalar.",
         )
 
     def test_GH_1355_26l(self):
@@ -18113,6 +18114,28 @@ class NameResolutionBugs(BugHelper):
             number_inputs=1,
             exception_code="2-1-5-1",
             scalars={"SF_2": 10000000000000000000.0},
+        )
+
+    def test_GH_1355_26n(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer ) returns dataset is
+                        sum ( DS_3 over ( order by Id_1 data points
+                        between current data point and x following ) ) end operator;
+                    DS_r <- f ( -1 );
+        Description: Extra of test_GH_1355_26: the negative literal -1 given to the parameter x
+                     is the bound of the window, which raises 1-1-3-5 on both engines and in the
+                     semantic analysis, as the same literal written in the window does. Both
+                     engines and the semantic analysis raised 2-1-18-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_26n",
+            number_inputs=1,
+            exception_code="1-1-3-5",
+            exception_message="Invalid limit x = -1 of an analytic window: a limit cannot be "
+            "negative.",
         )
 
     def test_GH_1355_case35(self):

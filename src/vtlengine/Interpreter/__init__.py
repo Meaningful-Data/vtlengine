@@ -1486,10 +1486,19 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def _window_bound(self, op: str, node: AST.VarID) -> Any:
         """The bound of a window that a Scalar gives, as the bound written in the window
-        (scalar_window_bound): 0 is the current data point. A null value, as the semantic
-        analysis reads every input Scalar, is passed on, and raises 2-1-18-1 where the data
-        is computed (issue #1355)."""
-        value = self._integer_scalar(op, node, "Window bound").value
+        (scalar_window_bound): 0 is the current data point. A literal of the script, given to
+        a parameter of a user defined operator, is checked as a literal bound: a null one is no
+        Integer Scalar (1-1-18-4) and a negative one raises 1-1-3-5. Any other null value, as
+        the semantic analysis reads every input Scalar, is passed on, and raises 2-1-18-1 where
+        the data is computed (issue #1355)."""
+        scalar = self._integer_scalar(op, node, "Window bound")
+        value = scalar.value
+        if scalar.literal and pd.isnull(value):
+            raise SemanticError(
+                "1-1-18-4", op=op, param_type="Window bound", correct_type="an Integer Scalar"
+            )
+        if scalar.literal and value < 0:
+            raise SemanticError("1-1-3-5", limit=f"{node.value} = {value}")
         if pd.isnull(value):
             return value
         value = scalar_window_bound(op, value)
