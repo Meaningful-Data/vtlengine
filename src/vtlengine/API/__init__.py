@@ -45,6 +45,7 @@ from vtlengine.duckdb_transpiler.Config.config import configured_connection
 from vtlengine.duckdb_transpiler.io import (
     execute_queries,
     extract_datapoint_paths,
+    is_s3_uri,
     validate_datapoints,
 )
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
@@ -436,8 +437,10 @@ def _run_with_duckdb(
     )
     queries = transpiler.transpile(ast)
 
-    # Normalize output folder path
-    output_folder_path = Path(output_folder) if output_folder else None
+    # An S3 URI reaches DuckDB as written: as a Path, its "//" would collapse into a local folder
+    output_folder_path: Optional[Union[str, Path]] = None
+    if output_folder:
+        output_folder_path = output_folder if is_s3_uri(output_folder) else Path(output_folder)
 
     # Create DuckDB connection and execute queries with DAG scheduling
     with configured_connection() as conn:

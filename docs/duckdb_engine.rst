@@ -187,6 +187,12 @@ Authentication uses the standard AWS environment variables (``AWS_ACCESS_KEY_ID`
 ``AWS_ENDPOINT_URL`` for S3-compatible services). See the
 :doc:`S3 Configuration <environment_variables>` section for the full list.
 
+An S3 ``output_folder`` is handed to DuckDB as written: the result files, and
+``_scalars.csv`` when there are scalar results, are written under the URI, and no local
+folder is created. DuckDB installs and loads its httpfs extension the first time it writes
+to S3, which needs network access. A result file that cannot be written, for instance
+without credentials, raises ``0-3-1-19``.
+
 Behavioural notes
 *****************
 

@@ -6,7 +6,7 @@
         {
           "name": "EXR_CURRENCY",
           "role": "Identifier",
-          "type": "String",
+          "type": "EXR_CURRENCY",
           "nullable": false
         },
         {

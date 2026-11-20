@@ -1,11 +1,12 @@
 from copy import copy
-from typing import Any, Collection, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Collection, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_DATAPOINT, CHECK_HIERARCHY
 from vtlengine.DataTypes import (
     BASIC_TYPES,
+    SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Date,
     Duration,
@@ -135,7 +136,7 @@ def bind_value_domains(
     value domains of its signature, or their aliases.
 
     The call must list the components, as many as the value domains, which must be given, and
-    each component must be defined on the value domain it is bound to."""
+    each component must be accepted by check_value_domains."""
     if not called:
         raise SemanticError("1-1-10-14", op=CHECK_DATAPOINT, ruleset=ruleset)
     if len(called) != len(signature):
@@ -146,22 +147,42 @@ def bind_value_domains(
             expected=len(signature),
             found=len(called),
         )
-    for name, comp_name in zip(signature.values(), called):
+    check_value_domains(
+        CHECK_DATAPOINT, ruleset, zip(signature.values(), called), components, value_domains
+    )
+    return dict(zip(signature, called))
+
+
+def check_value_domains(
+    op: str,
+    ruleset: str,
+    bindings: Iterable[Tuple[str, str]],
+    components: Dict[str, Component],
+    value_domains: Optional[Dict[str, ValueDomain]],
+) -> None:
+    """Each value domain of a ruleset must be given, and the component bound to it must be
+    defined on it, or be of a basic type that promotes to the basic type of the value domain
+    (issue #1348): a component on another value domain is rejected."""
+    for name, comp_name in bindings:
         if value_domains is None:
             raise SemanticError("1-2-22", comp_type="Value Domains")
         if name not in value_domains:
             raise SemanticError("1-2-8", name=name)
         component = components[comp_name]
-        if component.value_domain is None or component.value_domain.name != name:
+        if component.value_domain is None:
+            accepted = check_unary_implicit_promotion(component.data_type, value_domains[name].type)
+        else:
+            accepted = component.value_domain.name == name
+        if not accepted:
             raise SemanticError(
                 "1-1-10-12",
-                op=CHECK_DATAPOINT,
+                op=op,
                 comp_name=comp_name,
                 type=component_type_name(component.data_type, component.value_domain),
                 value_domain=name,
                 ruleset=ruleset,
+                basic_type=SCALAR_TYPES_CLASS_REVERSE[value_domains[name].type],
             )
-    return dict(zip(signature, called))
 
 
 class Check(Operator):
@@ -467,6 +488,7 @@ class Check_Hierarchy(Validation):
         value_domains: Optional[Dict[str, ValueDomain]] = None,
         rule_component: Optional[str] = None,
         mode: Optional[str] = None,
+        keep_rule_domain: bool = False,
     ) -> Dataset:
         result = super().validate(
             dataset_element,
@@ -476,9 +498,12 @@ class Check_Hierarchy(Validation):
             value_domains=value_domains,
         )
         measures = dataset_element.get_measures()
-        # As in hierarchy, the rule Identifier holds the computed code items, and the Measures
-        # the 0 of a missing one in the modes that read it as 0 (issue #1348)
-        computed = [rule_component] if rule_component in result.components else []
+        # As in hierarchy, the rule Identifier holds the checked code items and keeps its value
+        # domain when keep_rule_domain says so, and the Measures the 0 of a missing one in the
+        # modes that read it as 0 (issue #1348)
+        computed = (
+            [rule_component] if rule_component in result.components and not keep_rule_domain else []
+        )
         if mode is not None and fills_with_zero(mode):
             computed += [m.name for m in measures if m.name in result.components]
         result.components = on_basic_types(result.components, computed)
@@ -503,13 +528,11 @@ class Check_Hierarchy(Validation):
             raise SemanticError(
                 "1-1-10-1", op=Check_Hierarchy.op, op_type="hierarchy", me_type="Number"
             )
-        if component_name not in dataset.components:
-            raise SemanticError(
-                "1-1-1-10",
-                op=Check_Hierarchy.op,
-                comp_name=component_name,
-                dataset_name=dataset.name,
-            )
+        for name in (component_name, *condition_components):
+            if name not in dataset.components:
+                raise SemanticError(
+                    "1-1-1-10", op=Check_Hierarchy.op, comp_name=name, dataset_name=dataset.name
+                )
         if dataset.components[component_name].role != Role.IDENTIFIER:
             raise SemanticError(
                 "1-2-7",

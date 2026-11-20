@@ -887,7 +887,7 @@ def _check_output_folder(
     if output_folder is None or output_folder == "":
         return None
     if isinstance(output_folder, str):
-        if "s3://" in output_folder:
+        if output_folder.startswith("s3://"):  # as is_s3_uri recognises one (issue #1361)
             if use_duckdb:
                 return output_folder
             raise InputValidationException(

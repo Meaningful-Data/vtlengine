@@ -315,12 +315,19 @@ A Component into which an operator writes new values has its basic
 type, as those values are not values of the value domain: the time
 Identifier of ``timeshift``, ``fill_time_series`` and an aggregation
 grouped with ``time_agg``, the time Measure of ``time_agg`` on a
-Data Set, the Components that ``dateadd`` shifts, the rule
-Identifier and the Measures of ``hierarchy``, the rule
-Identifier of ``check_hierarchy``, with its Measures in
+Data Set, the Components that ``dateadd`` shifts, the Measures of
+``hierarchy``, the Measures of ``check_hierarchy`` in
 ``non_zero``, ``partial_zero`` and ``always_zero``, which write a
 ``0`` for a missing code item, and the ``Integer`` and ``Number``
 Measures of ``flow_to_stock`` and ``stock_to_flow``.
+
+The rule Identifier of ``hierarchy`` and ``check_hierarchy`` keeps
+the value domain a ruleset is defined on (``valuedomain rule VD``).
+For a ruleset on a variable, it keeps the value domain of the
+Component when every code item that the rules compute (for
+``check_hierarchy``, check) is a value of it, and has its basic type
+otherwise: with ``C = A + B`` on a value domain of ``A`` and ``B``,
+the result holds ``C`` and the rule Identifier has its basic type.
 
 The operators that put the values of several operands into one
 Component (the set operators, the Identifiers that a join
@@ -391,8 +398,24 @@ Value domains also appear in the VTL-DL definitions:
   in order to the components listed in ``check_datapoint ...
   components``, which is required (``1-1-10-14``), with one
   component per value domain (``1-1-10-15``). Each component must be
-  defined on the value domain it is bound to (``1-1-10-12``), and the
-  value domains must be given (``1-2-22``, ``1-2-8``).
+  defined on the value domain it is bound to, or be of a basic type
+  that the implicit promotion takes to the type of the value domain
+  (a ``String`` for a ``String`` value domain, an ``Integer`` for a
+  ``Number`` one), and then it keeps its basic type; a component on
+  another value domain, or of a type that does not promote, raises
+  ``1-1-10-12``. The value domains must be given (``1-2-22``,
+  ``1-2-8``).
+- A hierarchical ruleset on value domains binds the value domains of
+  its condition, in order, to the components listed in ``condition``
+  (one per value domain, ``1-1-10-16``), and the value domain of its
+  rule to the component in ``rule`` (required, ``1-1-10-4``), in
+  ``check_hierarchy`` and ``hierarchy``. The same checks apply: each
+  component must be defined on its value domain or be of a basic type
+  that promotes to its type (``1-1-10-12``), and the value domains
+  must be given (``1-2-22``, ``1-2-8``). Every code
+  item its rules name, on either side, must be a value of the value
+  domain of its rule, compared as a value of its type (``1-1-10-13``),
+  so its results are values of it.
 - A viral propagation rule on a value domain needs it given
   (``1-2-8``), and the constants of its ``when``, ``then`` and
   ``else`` must be values of it (``1-1-10-13``); the definition
@@ -463,6 +486,10 @@ Value domains also appear in the VTL-DL definitions:
         when F = "CREDIT" then A >= 0
     end datapoint ruleset;
 
+    define hierarchical ruleset HR_1 (valuedomain condition VD_YEAR as Y rule VD_CTY) is
+        when Y >= 2020 then EU = ES + FR + DE
+    end hierarchical ruleset;
+
     define viral propagation VP_1 (valuedomain CL_CONF) is
         when "C" then "C";
         else "F"
@@ -486,6 +513,7 @@ Value domains also appear in the VTL-DL definitions:
     end operator;
 
     DS_r <- check_datapoint(DS_1, DPR_1 components Id_2, Me_1 all);
+    DS_h <- check_hierarchy(DS_2, HR_1 condition Id_2 rule Id_1 all);
     DS_s <- DS_1 [calc Me_2 := with_suffix(Id_2)];
     DS_t <- in_flows(DS_2, VD_FLOW);
     DS_u <- DS_1 [calc Me_2 := as_flow(Me_3)];
