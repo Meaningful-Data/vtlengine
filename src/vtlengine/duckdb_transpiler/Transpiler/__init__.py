@@ -6312,10 +6312,12 @@ FROM (
     def visit_EvalOp(self, node: AST.EvalOp) -> str:
         """Visit EVAL operator (external routine execution)."""
         routine = self.external_routines[node.name]
-        # The query runs as written. Without its closing semicolon it can be the operand of
-        # another (issue #1276), and the line break keeps a closing -- comment from hiding the
-        # parenthesis that follows (issue #1356)
-        query = f"({routine.query.strip().rstrip(';')}\n)"
+        # The query runs as on the pandas engine (query_on). Without its closing semicolon it
+        # can be the operand of another (issue #1276), and the line break keeps a closing --
+        # comment from hiding the parenthesis that follows (issue #1356)
+        operands = [self._get_dataset_structure(operand) for operand in node.operands]
+        query = routine.query_on(operand for operand in operands if operand is not None)
+        query = f"({query.strip().rstrip(';')}\n)"
 
         # A table the query names after an operand of another name (C07.DS_1 read as DS_1) is
         # that operand, through a WITH clause around the query (issue #1356)

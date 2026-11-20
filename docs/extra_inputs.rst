@@ -637,12 +637,15 @@ Each external routine is a JSON object with two required fields:
       - Identifier referenced in the VTL ``eval()`` call.
     * - ``query``
       - string
-      - SQL query to execute, run as written in DuckDB SQL:
-        text is written between single quotes, and double
-        quotes delimit an identifier (``"Me_1"``). Table names
-        in the query must match the dataset names passed as
-        operands; the names a ``WITH`` clause defines are not
-        operands.
+      - SQL query to execute, in DuckDB SQL. A double-quoted
+        name is an identifier when it names a component or an
+        operand, or the query defines it (a column or table
+        alias, a ``WITH`` name or column), ignoring case as
+        DuckDB does: ``"Me_1"`` is the column ``Me_1``. Any
+        other double-quoted token is a text, as between single
+        quotes: ``"N/A"`` is ``'N/A'``. Table names in the query
+        must match the dataset names passed as operands; the
+        names a ``WITH`` clause defines are not operands.
 
 **JSON format**:
 
