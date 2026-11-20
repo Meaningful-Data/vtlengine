@@ -2,7 +2,7 @@ import copy
 import pickle
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Sequence, Union, cast
+from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 
 import pandas as pd
 from pysdmx.io.pd import PandasDataset
@@ -22,9 +22,11 @@ from vtlengine._input_types import (
 from vtlengine.API._InternalApi import (
     _check_output_folder,
     _check_script,
+    _fill_data,
     _handle_scalars_values,
     _handle_url_datapoints,
     _is_url,
+    _load_inputs,
     _return_only_persistent_datasets,
     ast_to_sdmx,
     load_datasets,
@@ -54,7 +56,7 @@ from vtlengine.files.output._time_period_representation import (
 )
 from vtlengine.files.sdmx_handler import to_vtl_json
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Dataset, Scalar
+from vtlengine.Model import Dataset, ExternalRoutine, Scalar, ValueDomain
 from vtlengine.Utils._recursion import recursion_headroom, with_recursion_headroom
 
 pd.options.mode.chained_assignment = None
@@ -302,6 +304,30 @@ def _copy_ast(ast: Start) -> Start:
         return copy.deepcopy(ast)
 
 
+def _analyse_script(
+    ast: Start,
+    datasets: Dict[str, Dataset],
+    value_domains: Optional[Dict[str, ValueDomain]],
+    external_routines: Optional[Dict[str, ExternalRoutine]],
+    scalars: Dict[str, Scalar],
+) -> Tuple[Dict[str, Any], InterpreterAnalyzer]:
+    """The semantic analysis of the whole script, over copies of the inputs, which both engines
+    run before they read or compute any data, so a script with a structural error raises it
+    whatever its data hold (issue #1352). The Scalars carry the values given to the run.
+
+    Returns the structures of the results and the interpreter that analysed the script.
+    """
+    interpreter = InterpreterAnalyzer(
+        datasets=copy.deepcopy(datasets),
+        value_domains=value_domains,
+        external_routines=external_routines,
+        scalars=copy.deepcopy(scalars),
+        only_semantic=True,
+        return_only_persistent=False,
+    )
+    return interpreter.visit(_copy_ast(ast)), interpreter
+
+
 def _load_url_datapoints(
     datapoints: Any,
     data_structures: Any,
@@ -380,15 +406,9 @@ def _run_with_duckdb(
     # Checking the output path to be a folder before the analysis, as the pandas engine does
     output_folder = _check_output_folder(output_folder, use_duckdb=True)
 
-    interpreter = InterpreterAnalyzer(
-        datasets=copy.deepcopy(input_datasets),
-        value_domains=loaded_vds,
-        external_routines=loaded_routines,
-        scalars=copy.deepcopy(input_scalars),
-        only_semantic=True,
-        return_only_persistent=False,
+    semantic_results, interpreter = _analyse_script(
+        ast, input_datasets, loaded_vds, loaded_routines, input_scalars
     )
-    semantic_results = interpreter.visit(_copy_ast(ast))
 
     # Separate output datasets and scalars
     output_datasets: Dict[str, Dataset] = {}
@@ -611,27 +631,31 @@ def run(
     if value_domains is not None:
         vd = load_value_domains(value_domains)
 
-    # Loading datasets and datapoints (handles URLs, file paths, DataFrames)
-    datasets, scalars, path_dict = load_datasets_with_data(
-        data_structures,
-        datapoints,
-        scalar_values,
-        sdmx_mappings=mapping_dict,
-        value_domains=vd,
+    # Loading datasets and the scalar values, and checking where the datapoints are (handles
+    # URLs, file paths, DataFrames), without checking any data yet
+    datasets, scalars, path_dict, dataframes = _load_inputs(
+        data_structures, datapoints, scalar_values, mapping_dict, vd
     )
 
     ext_routines = None
     if external_routines is not None:
         ext_routines = load_external_routines(external_routines)
 
+    # Checking the output path to be a directory; an empty string is no output folder
+    output_folder = _check_output_folder(output_folder)
+
+    # The semantic analysis of the whole script comes before any data is checked or computed,
+    # in the order of the DuckDB engine
+    _analyse_script(ast, datasets, vd, ext_routines, scalars)
+
     # Checking time period output format value
     time_period_representation = TimePeriodRepresentation.check_value(time_period_output_format)
 
+    # Checking the DataFrames given as datapoints
+    _fill_data(datasets, dataframes)
+
     # VTL Efficient analysis
     ds_analysis = DAGAnalyzer.ds_structure(ast)
-
-    # Checking the output path to be a directory; an empty string is no output folder
-    output_folder = _check_output_folder(output_folder)
 
     # Running the interpreter
     interpreter = InterpreterAnalyzer(
@@ -639,7 +663,7 @@ def run(
         value_domains=vd,
         external_routines=ext_routines,
         ds_analysis=ds_analysis,
-        datapoints_paths=path_dict,
+        datapoints_paths=cast(Optional[Dict[str, Path]], path_dict),
         output_path=output_folder,
         time_period_representation=time_period_representation,
         return_only_persistent=return_only_persistent,
