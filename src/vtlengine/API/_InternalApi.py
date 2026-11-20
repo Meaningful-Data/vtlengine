@@ -563,9 +563,7 @@ def _load_inputs(
 
         for dataset_name in dataframes:
             if dataset_name not in datasets:
-                raise InputValidationException(
-                    f"Not found dataset {dataset_name} in datastructures."
-                )
+                raise InputValidationException(code="0-1-2-9", name=dataset_name)
 
         if not paths:
             _handle_scalars_values(scalars, scalar_values)
@@ -600,7 +598,7 @@ def _load_inputs(
     # Validate that all file-based datapoint dataset names exist in structures
     for dataset_name in file_paths:
         if dataset_name not in datasets:
-            raise InputValidationException(f"Not found dataset {dataset_name} in datastructures.")
+            raise InputValidationException(code="0-1-2-9", name=dataset_name)
 
     _handle_scalars_values(scalars, scalar_values)
     return datasets, scalars, file_paths if file_paths else None, dataframes

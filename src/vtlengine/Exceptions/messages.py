@@ -227,6 +227,11 @@ centralised_messages = {
         "in the script, please check: {names}",
         "description": "Raised when an output of a transformation is incorrectly used as an input.",
     },
+    "0-1-2-9": {
+        "message": "Not found dataset {name} in datastructures.",
+        "description": "Raised when datapoints are given for a Dataset that the data structures "
+        "do not define.",
+    },
     # Run SDMX errors
     "0-1-3-1": {
         "message": "Expected exactly one input Dataset in the whole script, "

@@ -3559,3 +3559,39 @@ def test_GH_1352_32e(use_duckdb):
         use_duckdb=use_duckdb,
     )["DS_r"].data
     assert sorted(result["Id_2"].tolist()) == ["2020-01-01T10:00:00", "2020-01-01T10:00:03"]
+
+
+_DS_9 = {"DS_9": pd.DataFrame({"Id_1": [1], "Me_1": [1]})}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_40(use_duckdb):
+    """Datapoints for DS_9, which data_structures does not define, raise the input error
+    0-1-2-9 on both engines when the script reads DS_9. The pandas engine raised an
+    InputValidationException without a code and the DuckDB engine 1-2-19 (issue #1356)."""
+    with pytest.raises(InputValidationException) as error:
+        _run_1349("DS_r <- DS_9;", use_duckdb, datapoints={**_datapoints_1349(), **_DS_9})
+    assert error.value.args[1] == "0-1-2-9"
+    assert "Not found dataset DS_9 in datastructures." in error.value.args[0]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_41(use_duckdb):
+    """The datapoints for DS_9 of case 40 raise 0-1-2-9 also when the script does not read
+    DS_9; both engines raised an InputValidationException without a code (issue #1356)."""
+    with pytest.raises(InputValidationException) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, datapoints={**_datapoints_1349(), **_DS_9})
+    assert error.value.args[1] == "0-1-2-9"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_42(use_duckdb):
+    """The Scalar values are checked before the datapoints: with Id_1 1 twice in DS_1 and the
+    text "x" for the Integer SC_4, both engines raise 0-1-2-7 for SC_4. The pandas engine
+    reported the duplicated Identifiers (0-3-1-7) (issue #1356)."""
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 1], "Me_1": [1, 2]})}
+    with pytest.raises(InputValidationException) as error:
+        _run_1349(
+            "DS_r <- DS_1 + SC_4;", use_duckdb, datapoints=datapoints, scalar_values={"SC_4": "x"}
+        )
+    assert error.value.args[1] == "0-1-2-7"
