@@ -97,6 +97,8 @@ params_prettier = [
     # A qualified alias#comp of partition by, order by or rename is written unquoted, and a quoted
     # join alias keeps one pair of quotes, in the alias and in alias#comp (issue #1355)
     ("GH_1355.vtl", "reference_GH_1355.vtl"),
+    # A qualified alias#comp of group by or group except of a join is written as it is (issue #1355)
+    ("GH_1355_group.vtl", "reference_GH_1355_group.vtl"),
 ]
 
 POSITION_FIELDS = {"line_start", "column_start", "line_stop", "column_stop"}

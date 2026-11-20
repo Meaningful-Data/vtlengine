@@ -1,0 +1,2 @@
+DS_r <- inner_join(DS_1 as a, DS_2 as b aggr x := sum(a#Me_1) group by a#Id_1);
+DS_s <- inner_join(DS_1 as a, DS_2 as b aggr x := sum(a#Me_1) group except a#Id_1);

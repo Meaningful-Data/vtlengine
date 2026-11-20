@@ -670,7 +670,8 @@ class ASTString(ASTTemplate):
                 if isinstance(grouping_value, TimeAggregation):
                     time_aggregations.append(self.visit(grouping_value))
                 else:
-                    names.append(_format_name(grouping_value.value))
+                    # A name, or the membership alias#comp of a Component of a join (issue #1355)
+                    names.append(self.visit(grouping_value))
             # time_agg follows the components without a comma: group by Id_1 time_agg("A")
             grouping_values = [", ".join(names)] if names else []
             grouping = " " + " ".join([node.grouping_op] + grouping_values + time_aggregations)
