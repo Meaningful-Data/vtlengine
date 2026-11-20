@@ -207,6 +207,16 @@ Date
 only, the years a Date is read in: a result out of them raises
 ``2-1-19-10``, in both execution engines.
 
+``timeshift`` and ``fill_time_series`` read the period of a series of
+Dates from the days of its values: the day, the week, the month, the
+quarter, the semester or the year. The shortest is the day, so two
+values on one day, at different times of it, make a daily series, and
+the periods are counted from the lower limit with its time of the
+day: ``timeshift`` by one of ``2020-01-15T10:30:00`` and
+``2020-01-15T10:30:05`` gives ``2020-01-16T10:30:00`` and
+``2020-01-16T10:30:05``, and ``fill_time_series`` adds no Data Point
+to them.
+
 Date is a **subtype of Time** — anywhere a Time value is
 expected, a Date is accepted automatically.
 
