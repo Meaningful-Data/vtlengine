@@ -760,7 +760,11 @@ a day and a month, or a week, writes a daily period. A Time is two Date masks
 separated by ``/``.
 
 A value that its mask does not describe raises RunTimeError ``2-1-5-3``, and
-a mask that does not describe the type raises SemanticError ``1-1-5-4``.
+a mask that does not describe the type raises SemanticError ``1-1-5-4``. A
+Date, a Time or a Time_Period read through a mask has the years 1000–9999, as
+any other: a value of another year raises ``2-1-5-3``, and a literal of the
+script, such as ``cast("0999-01-15", date, "YYYY-MM-DD")``, SemanticError
+``1-1-5-6``.
 vtlengine does not support these parts of the VTL 2.2 masks, which raise
 SemanticError ``1-3-13``:
 
