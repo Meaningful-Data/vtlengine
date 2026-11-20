@@ -14074,3 +14074,71 @@ class BasicTypeValueBugs(BugHelper):
             exception_code="1-1-1-1",
             exception_message="Invalid implicit cast from Number to String.",
         )
+
+    def test_GH_1353_17(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( SC_1 * 2 , string ) ];
+        Description: The whole Number 3.0 computed from the Number Scalar SC_1 (1.5) is a float,
+                     so its cast to string is "3.0" on both engines. The pandas engine held a
+                     Python int and wrote "3".
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1353_17", number_inputs=1, references_names=["1"], scalars={"SC_1": 1.5}
+        )
+
+    def test_GH_1353_18(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 * 2 , string ) ];
+        Description: Control of case 17: the whole Number 3.0 computed from a Component is
+                     written "3.0" on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_18", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_41(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := cast ( f ( 0.1 ) + f ( 0.2 ) , string ) ];
+        Description: The sum of the Number results of the user defined operator f, which
+                     returns its parameter, is rounded to 15 significant digits, as 0.1 + 0.2,
+                     so it is "0.3" on both engines. The DuckDB engine gave
+                     0.30000000000000004; both engines already give "0.3" on the code of this
+                     fix.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_41", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_42(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := ln ( 0 - SC_1 ) ];
+        Description: The Number 0 - SC_1 (SC_1 2.0) is -2.0, so both engines raise 2-1-15-8
+                     with the value -2.0 in the message. The pandas engine wrote -2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1353_42",
+            number_inputs=1,
+            exception_code="2-1-15-8",
+            exception_message="Value -2.0 must be greater than 0",
+            scalars={"SC_1": 2.0},
+        )
+
+    def test_GH_1353_43(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := cast ( g ( 0 ) * -1 , string ) ];
+        Description: The Number result 0 of the user defined operator g times -1 is 0.0, written
+                     "0.0" on both engines. The pandas engine held a Python int and wrote "0",
+                     and the DuckDB engine wrote "-0.0".
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_43", number_inputs=1, references_names=["1"])
