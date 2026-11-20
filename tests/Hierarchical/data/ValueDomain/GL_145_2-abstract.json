@@ -1,9 +1,12 @@
 {
   "name": "abstract",
-  "type": "Number",
+  "type": "String",
   "setlist": [
-    1,
-    2,
-    3
+    "A",
+    "B",
+    "C",
+    "D",
+    "L",
+    "N"
   ]
 }

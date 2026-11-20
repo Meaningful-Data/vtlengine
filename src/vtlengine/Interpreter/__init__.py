@@ -1988,18 +1988,30 @@ class InterpreterAnalyzer(ASTTemplate):
         ]
 
     @staticmethod
-    def _hr_items_on_domain(rules: List[AST.HRule], value_domain: Optional[ValueDomain]) -> bool:
+    def _hr_items_outside(items: List[str], value_domain: ValueDomain) -> List[str]:
+        """The code items that are not values of the value domain, as values of its type."""
+        outside = []
+        for item in dict.fromkeys(items):
+            try:
+                value = value_domain.type.cast(item)
+            except (ValueError, TypeError, InputValidationException):
+                value = None
+            if value is None or len(value_domain.outside(pd.Series([value], dtype=object))):
+                outside.append(item)
+        return outside
+
+    @classmethod
+    def _hr_items_on_domain(
+        cls, rules: List[AST.HRule], value_domain: Optional[ValueDomain]
+    ) -> bool:
         """Whether the code items on the left of the rules are values of the value domain."""
         if value_domain is None:
             return False
-        items = []
-        for rule in rules:
-            comparison = rule.rule if rule.rule.op != WHEN else cast(AST.HRBinOp, rule.rule.right)
-            try:
-                items.append(value_domain.type.cast(comparison.left.value))
-            except (ValueError, TypeError, InputValidationException):
-                return False
-        return len(value_domain.outside(pd.Series(items, dtype=object))) == 0
+        items = [
+            (rule.rule if rule.rule.op != WHEN else cast(AST.HRBinOp, rule.rule.right)).left.value
+            for rule in rules
+        ]
+        return not cls._hr_items_outside(items, value_domain)
 
     @staticmethod
     def _sort_hr_rules(
@@ -2144,6 +2156,18 @@ class InterpreterAnalyzer(ASTTemplate):
                     dataset.components,
                     self.value_domains,
                 )
+                # The code items of a ruleset on a value domain are values of it (issue #1348)
+                rule_domain = cast(Dict[str, ValueDomain], self.value_domains)[hr_info["signature"]]
+                items = [i for r in hr_info["rules"] for i in self._collect_hr_code_items(r.rule)]
+                outside = self._hr_items_outside(items, rule_domain)
+                if outside:
+                    raise SemanticError(
+                        "1-1-10-13",
+                        element="code item",
+                        value=outside[0],
+                        where=f"the hierarchical ruleset {hr_name}",
+                        value_domain=rule_domain.name,
+                    )
 
             # Set up interpreter state for rule processing
             self.ruleset_dataset = dataset

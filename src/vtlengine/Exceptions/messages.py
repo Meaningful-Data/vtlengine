@@ -874,8 +874,9 @@ centralised_messages = {
         "Domain {value_domain}.",
         "description": "Raised when an error code or an error level is not a value of "
         "errorcode_vd or errorlevel_vd, given as value domains, also when it is a literal of "
-        "another type, which is not converted, or when a constant of a viral propagation rule "
-        "on a value domain is not one of its values.",
+        "another type, which is not converted, when a constant of a viral propagation rule "
+        "on a value domain is not one of its values, or when a code item of a hierarchical "
+        "ruleset on a value domain is not one of its values.",
     },
     "1-1-10-11": {
         "message": "At op {op}: The validation and imbalance operands must have the same "

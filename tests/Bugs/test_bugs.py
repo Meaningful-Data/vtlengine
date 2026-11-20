@@ -9528,6 +9528,47 @@ class ValueDomainBugs(BugHelper):
             vd_names=self.vd_1348,
         )
 
+    def test_GH_1348_8b(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( valuedomain rule VD_STR ) is
+                        r1 : C = A + B end hierarchical ruleset;
+                    DS_r <- hierarchy ( DS_1 , HR_1 rule Id_2 non_null all );
+        Description: The ruleset is defined on VD_STR, whose values are A and B, and its rule
+                     computes the code item C, which is not one of them, so the ruleset gives
+                     values outside its value domain. hierarchy computed C on Id_2, on VD_STR.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_8b",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message="The code item C of the hierarchical ruleset HR_1 is not one of "
+            "the values of the Value Domain VD_STR",
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_8c(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( valuedomain rule VD_STR ) is
+                        r1 : A = B + C end hierarchical ruleset;
+                    DS_r <- check_hierarchy ( DS_1 , HR_1 rule Id_2 always_zero all );
+        Description: Case 8b for check_hierarchy, with the code item C, not a value of
+                     VD_STR, on the right of the rule: it was read as a missing 0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_8c",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message="The code item C of the hierarchical ruleset HR_1 is not one of "
+            "the values of the Value Domain VD_STR",
+            vd_names=self.vd_1348,
+        )
+
     def test_GH_1348_9(self):
         """
         Status: OK
