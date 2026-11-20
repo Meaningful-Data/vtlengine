@@ -79,6 +79,7 @@ def transpile(
         value_domains=loaded_vds or {},
         external_routines=loaded_routines or {},
         dag=dag,
+        udo_results=interpreter.udo_results,
     )
 
     return transpiler.transpile(ast)

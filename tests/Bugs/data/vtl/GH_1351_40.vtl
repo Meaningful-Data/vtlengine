@@ -1,0 +1,6 @@
+define operator f ( x number )
+    returns number is
+        x * -1
+end operator;
+SC_r <- f ( 0 );
+DS_r <- DS_2 [ calc Me_2 := cast ( SC_r , string ) , Me_3 := cast ( f ( 0 ) , string ) ];

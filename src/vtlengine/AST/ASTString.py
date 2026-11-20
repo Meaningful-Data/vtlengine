@@ -128,11 +128,9 @@ def _format_component_type(
     component: Component, constraint: Optional[AST.TypeConstraint] = None
 ) -> str:
     role = "component" if component.role is None else component.role.value.lower()
-    if isinstance(component.data_type, AST.ValueDomainType):
-        return f"{role}<{component.data_type.name}{_format_constraint(constraint)}>"
     # A component declared without a type is parsed with a String instance, not the class
-    if isinstance(component.data_type, type):
-        return f"{role}<{_format_type(component.data_type)}{_format_constraint(constraint)}>"
+    if isinstance(component.data_type, (AST.ValueDomainType, type)):
+        return f"{role}<{_format_type(component.data_type, AST.SignatureConstraints(constraint))}>"
     return role
 
 
@@ -169,7 +167,7 @@ def _format_type(type_: Any, constraints: Optional[AST.SignatureConstraints] = N
     if isinstance(type_, AST.SetType):
         if type_.data_type is None:
             return "set"
-        return f"set<{SCALAR_TYPES_CLASS_REVERSE[type_.data_type].lower()}>"
+        return f"set<{_format_type(type_.data_type, constraints)}>"
     constraint = constraints.value if constraints is not None else None
     if isinstance(type_, Component):
         return _format_component_type(type_, constraint)
@@ -177,6 +175,9 @@ def _format_type(type_: Any, constraints: Optional[AST.SignatureConstraints] = N
         return f"scalar{_format_constraint(constraint)}"
     if isinstance(type_, AST.ValueDomainType):
         return f"{type_.name}{_format_constraint(constraint)}"
+    if constraint is not None and constraint.value_domain is not None:
+        # A basic type that a value domain gave, written as the value domain (issue #1351)
+        return f"{constraint.value_domain.name}{_format_constraint(constraint)}"
     return f"{SCALAR_TYPES_CLASS_REVERSE[type_].lower()}{_format_constraint(constraint)}"
 
 
