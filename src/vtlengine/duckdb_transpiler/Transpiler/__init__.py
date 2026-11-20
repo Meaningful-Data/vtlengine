@@ -3722,7 +3722,15 @@ FROM (
                     operand_sql = _bool_to_str(operand_sql)
             func_sql = f"{op.upper()}({operand_sql}, {offset}"
             if default_val is not None:
-                if isinstance(default_val, AST.AST):
+                if (
+                    operand_type is TimePeriod
+                    and isinstance(default_val, AST.Constant)
+                    and isinstance(default_val.value, str)
+                ):
+                    # A String default on a Time_Period is the period in the form the
+                    # values are kept in, as on the pandas engine (issue #1353)
+                    default_sql = self._to_sql_literal(default_val.value, "TimePeriod")
+                elif isinstance(default_val, AST.AST):
                     default_sql = self.visit(default_val)
                 else:
                     default_sql = str(default_val)
@@ -3754,9 +3762,13 @@ FROM (
         )
         if is_duration:
             operand_sql = f"vtl_duration_to_int({operand_sql})"
-        operand_type = (
-            Boolean if node.operand is not None and self._is_boolean_expr(node.operand) else None
-        )
+        operand_type: Optional[type] = None
+        if node.operand is not None:
+            operand_type = (
+                Boolean
+                if self._is_boolean_expr(node.operand)
+                else self._detect_scalar_type(node.operand)
+            )
         func_sql = self._build_analytic_expr(op, operand_sql, node, operand_type)
         # ratio_to_report already includes its own OVER clause
         if op != tokens.RATIO_TO_REPORT:

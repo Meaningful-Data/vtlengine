@@ -14354,3 +14354,15 @@ class BasicTypeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1353_43", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_15b(self):
+        """
+        Status: OK
+        Expression: DS_r <- lag ( DS_1 [ keep T ] , 1 , "2023Q4" over ( order by Id_1 ) );
+        Description: The String default "2023Q4" of lag on the Time_Period T is the period
+                     2023Q4, given to the first Data Point on both engines. The DuckDB engine
+                     gave it a null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_15b", number_inputs=1, references_names=["1"])
