@@ -351,6 +351,69 @@ def _eval_error_1356(use_duckdb, query, returns):
 
 
 @pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_44(use_duckdb):
+    """A text returned for a measure<number> raises 2-1-5-1 on both engines, as a text that
+    does not convert to a number does. The pandas engine raised a raw ArrowInvalid and the
+    DuckDB engine a raw ConversionException (issue #1356)."""
+    error = _eval_error_1356(
+        use_duckdb, "SELECT Id_1, 'x' AS Me_2 FROM DS_2", "measure<number> Me_2"
+    )
+    assert error.args[1] == "2-1-5-1"
+    assert error.args[0].startswith("Impossible to cast x from type String to Number.")
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_45(use_duckdb):
+    """1.5 returned for a measure<integer> raises 2-1-5-2 on both engines, as loading 1.5
+    into an Integer does. The pandas engine raised a raw ArrowInvalid and the DuckDB engine
+    rounded it to 2 (issue #1356)."""
+    error = _eval_error_1356(
+        use_duckdb, "SELECT Id_1, Me_1 AS Me_2 FROM DS_2", "measure<integer> Me_2"
+    )
+    assert error.args[1] == "2-1-5-2"
+    assert error.args[0].startswith("Value 1.5 has decimals, cannot cast to integer")
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_46(use_duckdb):
+    """The Identifier Id_1 returned as 7 twice raises 2-1-15-4 on both engines: duplicated
+    Identifiers are invalid values. Both engines returned the two data points (issue #1356)."""
+    error = _eval_error_1356(use_duckdb, "SELECT 7 AS Id_1, Me_1 FROM DS_2", "measure<number> Me_1")
+    assert error.args[1] == "2-1-15-4"
+    assert error.args[0].startswith("At op eval: Invalid values in Component Id_1.")
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_47(use_duckdb):
+    """A null Identifier returned by the query raises 2-1-1-16 on both engines. Both engines
+    returned the null Identifiers (issue #1356)."""
+    error = _eval_error_1356(
+        use_duckdb, "SELECT NULL AS Id_1, Me_1 FROM DS_2", "measure<number> Me_1"
+    )
+    assert error.args[1] == "2-1-1-16"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_48(use_duckdb):
+    """The period 2020Q1 returned for a measure<time_period> is read as on the pandas engine.
+    The DuckDB engine returned null (issue #1356)."""
+    result = _eval_1356(
+        use_duckdb, "SELECT Id_1, '2020Q1' AS Me_2 FROM DS_2", "measure<time_period> Me_2"
+    )
+    assert result["Me_2"].tolist() == ["2020Q1", "2020Q1"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_48b(use_duckdb):
+    """The period 2020M01 returned for a measure<time_period> is read as on the pandas engine,
+    2020M1. The DuckDB engine raised 2-1-19-2 (issue #1356)."""
+    result = _eval_1356(
+        use_duckdb, "SELECT Id_1, '2020M01' AS Me_2 FROM DS_2", "measure<time_period> Me_2"
+    )
+    assert result["Me_2"].tolist() == ["2020M1", "2020M1"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
 def test_GH_1356_49(use_duckdb):
     """A query that reads DS_2 twice (a self join) runs as written on both engines. The DuckDB
     engine quoted the second DS_2 twice and raised a raw ParserException (issue #1356)."""

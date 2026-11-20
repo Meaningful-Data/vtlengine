@@ -2080,8 +2080,8 @@ def test_with_multiple_vd_and_ext_routines():
             },
             data=pd.DataFrame(
                 {
-                    "Id_1": [2012, 2012, 2012],
-                    "Me_1": [0.0, 4.0, 9.0],
+                    "Id_1": [2012],
+                    "Me_1": [9.0],
                 }
             ),
         ),

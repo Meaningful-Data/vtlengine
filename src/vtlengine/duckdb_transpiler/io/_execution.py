@@ -235,6 +235,17 @@ def _integer_out_of_range(msg: str) -> Optional[RunTimeError]:
     return None
 
 
+def _eval_result_error(msg: str) -> Optional[RunTimeError]:
+    """The checks of the result of eval against its returns clause (issue #1356): a number with
+    decimals for an Integer (vtl_to_integer, 2-1-5-2) and duplicated Identifiers (2-1-15-4)."""
+    if "VTL 2-1-5-2 " in msg:
+        return RunTimeError("2-1-5-2", value=re.split(r"VTL 2-1-5-2 |\n", msg)[1])
+    if "VTL 2-1-15-4 " in msg:
+        op, name = re.split(r"VTL 2-1-15-4 |\n", msg)[1].split(" ", 1)
+        return RunTimeError("2-1-15-4", op=op, name=name)
+    return None
+
+
 def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     """Map a DuckDB query execution error to a VTL exception.
 
@@ -250,6 +261,7 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
         _map_udo_constraint_error(msg)
         or _map_vtl_macro_error(msg, msg_lower)
         or _integer_out_of_range(msg)
+        or _eval_result_error(msg)
     )
     if macro_error is not None:
         return macro_error

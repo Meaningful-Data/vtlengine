@@ -7,7 +7,13 @@ import pyarrow as pa
 import pyarrow.compute as pc
 
 from vtlengine.AST.Grammar.tokens import AS
-from vtlengine.DataTypes import COMP_NAME_MAPPING, Date
+from vtlengine.DataTypes import (
+    COMP_NAME_MAPPING,
+    SCALAR_TYPES_CLASS_REVERSE,
+    Date,
+    Integer,
+    Number,
+)
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, ExternalRoutine, Role, Scalar
 from vtlengine.Operators import Binary, Unary
@@ -243,12 +249,52 @@ class Eval(Unary):
                 operands[ds_name].data, operands[ds_name].components
             )
 
-        result.data = cls._execute_query(
-            external_routine.query,
-            external_routine.dataset_names,
-            operands_data,
+        result.data = cls._checked_result(
+            cls._execute_query(
+                external_routine.query,
+                external_routine.dataset_names,
+                operands_data,
+            ),
+            result,
         )
         return result
+
+    @staticmethod
+    def _number(value: Any, data_type: Any) -> Any:
+        """A value of the result read as a Number or an Integer: a value that is no number
+        raises 2-1-5-1, and a number with decimals for an Integer 2-1-5-2 (issue #1356)."""
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            raise RunTimeError(
+                "2-1-5-1",
+                value=value,
+                type_1="String",
+                type_2=SCALAR_TYPES_CLASS_REVERSE[data_type],
+            ) from None
+        if data_type is Number:
+            return number
+        if not number.is_integer():
+            raise RunTimeError("2-1-5-2", value=value)
+        return Integer.in_range(value if isinstance(value, int) else number, Number)
+
+    @classmethod
+    def _checked_result(cls, data: pd.DataFrame, output: Dataset) -> pd.DataFrame:
+        """The result of the query holds values of the Components returns declares, as the
+        DuckDB engine checks: a value of another type raises 2-1-5-1 or 2-1-5-2, a null
+        Identifier 2-1-1-16 and duplicated Identifiers 2-1-15-4 (issue #1356)."""
+        for name, comp in output.components.items():
+            if comp.data_type in (Integer, Number):
+                data[name] = data[name].map(
+                    lambda value, data_type=comp.data_type: cls._number(value, data_type),
+                    na_action="ignore",
+                )
+        ids = output.get_identifiers_names()
+        if ids and data[ids].isnull().any().any():
+            raise RunTimeError("2-1-1-16")
+        if ids and data.duplicated(subset=ids).any():
+            raise RunTimeError("2-1-15-4", op="eval", name=", ".join(ids))
+        return data
 
     @classmethod
     def normalize_dates(

@@ -409,6 +409,29 @@ class _PairwiseJoin:
         return builder.build()
 
 
+# What eval reads a value of the result as, by the type returns declares: a value of another
+# type raises 2-1-5-1, or 2-1-5-2 for a number with decimals for an Integer, and a Time_Period
+# is read in any of its accepted forms, as on the pandas engine (issue #1356)
+_EVAL_RESULT_TYPES = {
+    Integer: "vtl_to_integer({0})",
+    Number: "vtl_text_to_double({0})",
+    TimePeriod: "vtl_period_normalize(CAST({0} AS VARCHAR))",
+}
+
+
+def _eval_column(name: str, component: Component) -> str:
+    """A column of the result of eval as a value of its Component: a null Identifier raises
+    2-1-1-16, as on the pandas engine (issue #1356)."""
+    quoted = quote_name(name)
+    value = _EVAL_RESULT_TYPES.get(component.data_type, "{0}").format(quoted)
+    if component.role == Role.IDENTIFIER:
+        value = (
+            f"CASE WHEN {value} IS NULL THEN error('VTL 2-1-1-16: null value on an Identifier') "
+            f"ELSE {value} END"
+        )
+    return f"{value} AS {quoted}"
+
+
 @dataclass
 class SQLTranspiler(StructureVisitor, ASTTemplate):
     """Transpiler that converts VTL AST nodes to SQL queries."""
@@ -6297,21 +6320,29 @@ FROM (
         if renamed:
             query = f"(WITH {', '.join(renamed)} SELECT * FROM {query} AS eval_query)"
 
-        # An infinite value in the result raises 2-1-3-1, as on the pandas engine
-        numeric = (
-            [
-                quote_name(name)
-                for name, comp in node.output.components.items()
-                if comp.data_type in (Number, Integer)
-            ]
-            if node.output is not None
-            else []
-        )
-        if not numeric:
+        output = node.output
+        if output is None:
             return f"SELECT * FROM {query} AS eval_result"
-        infinite = " OR ".join(f"isinf(TRY_CAST({name} AS DOUBLE))" for name in numeric)
-        error = "'VTL Error 2-1-3-1: Division by zero produced infinite values in eval'"
+        # An infinite value in the result raises 2-1-3-1, as on the pandas engine
+        numeric = [
+            quote_name(name)
+            for name, comp in output.components.items()
+            if comp.data_type in (Number, Integer)
+        ]
+        where = ""
+        if numeric:
+            infinite = " OR ".join(f"isinf(TRY_CAST({name} AS DOUBLE))" for name in numeric)
+            error = "'VTL Error 2-1-3-1: Division by zero produced infinite values in eval'"
+            where = f" WHERE CASE WHEN {infinite} THEN error({error}) ELSE TRUE END"
+        columns = ", ".join(_eval_column(name, comp) for name, comp in output.components.items())
+        checked = f"SELECT {columns} FROM {query} AS eval_result{where}"
+        ids = [name for name, comp in output.components.items() if comp.role == Role.IDENTIFIER]
+        if not ids:
+            return checked
+        # Duplicated Identifiers are invalid values (2-1-15-4), as on the pandas engine
+        message = f"VTL 2-1-15-4 eval {', '.join(ids)}".replace("'", "''")
         return (
-            f"SELECT * FROM {query} AS eval_result "
-            f"WHERE CASE WHEN {infinite} THEN error({error}) ELSE TRUE END"
+            f"WITH eval_checked AS ({checked}) SELECT * FROM eval_checked WHERE CASE WHEN EXISTS "
+            f"(SELECT 1 FROM eval_checked GROUP BY {', '.join(quote_name(n) for n in ids)} "
+            f"HAVING COUNT(*) > 1) THEN error('{message}') ELSE TRUE END"
         )

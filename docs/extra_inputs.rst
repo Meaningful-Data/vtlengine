@@ -741,6 +741,13 @@ The ``eval()`` operator invokes an external routine:
     The column names in the SQL query result must match the
     component names declared in the ``returns dataset`` clause.
 
+The values of the result are read as values of the types the
+``returns dataset`` clause declares, as datapoints are: a value
+that is not one raises ``2-1-5-1`` (``2-1-5-2`` for a number with
+decimals given to an ``integer``), a null Identifier raises
+``2-1-1-16``, and Identifiers repeated in the result raise
+``2-1-15-4``.
+
 
 Security
 ========

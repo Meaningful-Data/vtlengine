@@ -488,6 +488,19 @@ CREATE OR REPLACE MACRO vtl_text_to_double(x) AS (
     END
 );
 
+-- A value read as an Integer whatever its SQL type, as the pandas engine reads the result of
+-- eval: a value that is no number raises VTL error 2-1-5-1, and a number with decimals
+-- 2-1-5-2 (issue #1356).
+CREATE OR REPLACE MACRO vtl_to_integer(x) AS (
+    CASE WHEN x IS NULL THEN NULL
+         WHEN TRY_CAST(x AS DOUBLE) IS NULL
+         THEN error('VTL 2-1-5-1 Integer ' || CAST(x AS VARCHAR))
+         WHEN TRY_CAST(x AS DOUBLE) != trunc(TRY_CAST(x AS DOUBLE))
+         THEN error('VTL 2-1-5-2 ' || CAST(x AS VARCHAR))
+         ELSE COALESCE(TRY_CAST(x AS BIGINT), CAST(CAST(x AS DOUBLE) AS BIGINT))
+    END
+);
+
 CREATE OR REPLACE MACRO vtl_text_to_integer(x) AS (
     CASE WHEN x IS NULL THEN NULL
          WHEN NOT regexp_full_match(trim(x), '[+-]?[0-9]+(_[0-9]+)*')
