@@ -4,7 +4,7 @@ import math
 from contextlib import contextmanager
 from copy import copy
 from functools import reduce
-from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union, cast
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -39,7 +39,7 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import (
 )
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, Dataset, Role, ValueDomain, value_of
+from vtlengine.Model import Component, Dataset, Role, ValueDomain, join_homonyms, value_of
 from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Clause import Pivot, Unpivot
 from vtlengine.Operators.Join import Apply, merged_viral_attribute_names
@@ -520,12 +520,13 @@ class StructureVisitor(ASTTemplate):
             return udo_val
         return name
 
-    def _resolve_membership_name(self, name: str) -> str:
-        """Resolve a ``alias#component`` name, substituting UDO bindings on each side."""
-        if "#" not in name:
-            return self._resolve_udo_name(name)
-        alias, comp = name.split("#", 1)
-        return f"{self._resolve_udo_name(alias)}#{self._resolve_udo_name(comp)}"
+    def _rename_old_name(self, old_name: Union[str, AST.AST], lookup: Dict[str, Any]) -> str:
+        """The Component that the old name of a rename names: a name, # included, or for the
+        membership alias#comp the qualified Component of a join where ``lookup`` has it and
+        comp otherwise (issue #1355)."""
+        if isinstance(old_name, str):
+            return self._resolve_udo_name(old_name)
+        return self._extract_component_names([old_name], lookup)[0]
 
     def _push_udo_params(self, params: Dict[str, Any]) -> None:
         """Push a new UDO parameter scope onto the stack."""
@@ -1152,7 +1153,7 @@ class StructureVisitor(ASTTemplate):
         if input_ds is None:
             return None
 
-        output_ds = self._get_output_dataset()
+        output_ds = self._calc_result_structure()
         comps = dict(input_ds.components)
         for child in node.children:
             assignment = child
@@ -1164,6 +1165,10 @@ class StructureVisitor(ASTTemplate):
                 col = self._resolve_udo_name(self._resolve_name(assignment.left))
                 if getattr(child, "is_implicit_role", False):
                     calc_role = self._omitted_role(node, input_ds.components.get(col))
+                # In a join, the Component replaces the alias#col of the operands that all
+                # have it (Inner Join page of the VTL 2.2 manual, issue #1355)
+                for homonym in join_homonyms(input_ds.components, col):
+                    del comps[homonym]
                 if col in comps:
                     # An overwritten Component takes the type and the value domain of its
                     # expression, as a new one does, with its role or another (issue #1350)
@@ -1192,6 +1197,15 @@ class StructureVisitor(ASTTemplate):
                     )
                     comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
         return Dataset(name=input_ds.name, components=comps, data=None)
+
+    def _calc_result_structure(self) -> Any:
+        """The structure whose Components stand in for the type of a calc expression not typed
+        here: the result of the statement, or in the body of a user defined operator the result
+        of its call as the semantic analysis gives it, also where the call is the operand of a
+        clause, whose operand is built without the result of the statement (issue #1355)."""
+        scope = next((s for s in reversed(self._udo_params or []) if _UDO_CALL in s), None)
+        result = self.udo_results.get((scope[_UDO_CALL], None)) if scope is not None else None
+        return result if isinstance(result, Dataset) else self._get_output_dataset()
 
     @staticmethod
     def _omitted_role(node: AST.RegularAggregation, comp: Optional[Component]) -> Role:
@@ -1361,9 +1375,7 @@ class StructureVisitor(ASTTemplate):
             agg_node = assignment.right
             if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
                 grouping_op = agg_node.grouping_op or ""
-                for g in agg_node.grouping:
-                    if isinstance(g, (AST.VarID, AST.Identifier)):
-                        group_ids.add(self._resolve_udo_name(g.value))
+                group_ids.update(self._resolve_grouping_names(agg_node.grouping))
             name = self._resolve_udo_name(self._resolve_name(assignment.left))
             role = getattr(assignment.left, "role", None) or self._omitted_role(
                 node, input_ds.components.get(name)
@@ -1460,12 +1472,9 @@ class StructureVisitor(ASTTemplate):
         renames: Dict[str, str] = {}
         for child in node.children:
             if isinstance(child, AST.RenameNode):
-                old = self._resolve_membership_name(child.old_name)
-                new = self._resolve_udo_name(child.new_name)
-                # Strip alias prefix from membership refs.
-                if "#" in old and old not in input_ds.components:
-                    old = old.split("#", 1)[1]
-                renames[old] = new
+                old = self._rename_old_name(child.old_name, input_ds.components)
+                # The semantic analysis refuses a membership as the new name (issue #1355)
+                renames[old] = self._resolve_udo_name(cast(str, child.new_name))
 
         unqualified_to_qualified: Dict[str, str] = {}
         for comp_name in input_ds.components:
@@ -1477,8 +1486,10 @@ class StructureVisitor(ASTTemplate):
         for name, comp in input_ds.components.items():
             # Check direct match first, then try matching via qualified name
             matched_new = renames.get(name)
-            if matched_new is None and "#" in name:
-                unqual = name.split("#", 1)[1]
+            # A name that a Component of the join has names that Component only, not a
+            # qualified one of another operand (issue #1355)
+            unqual = name.split("#", 1)[1] if "#" in name else name
+            if matched_new is None and unqual != name and unqual not in input_ds.components:
                 matched_new = renames.get(unqual)
             if matched_new is not None:
                 comps[matched_new] = self._renamed(comp, matched_new)
@@ -1566,11 +1577,14 @@ class StructureVisitor(ASTTemplate):
         else:
             all_join_ids = set(using_ids)
 
-        # Find non-identifier component names that appear in more than one dataset
+        # Find non-key component names that appear in more than one dataset. A Measure or an
+        # Attribute named as an Identifier of another operand is no key: it is its operand's
+        # own Component, qualified with the alias, as on the pandas engine (issue #1355)
+        join_keys = all_join_ids if using_ids is not None else set()
         comp_count: Dict[str, int] = {}
         for _, ds in clause_datasets:
             for comp_name in ds.components:
-                if comp_name not in all_join_ids:
+                if comp_name not in join_keys:
                     comp_count[comp_name] = comp_count.get(comp_name, 0) + 1
 
         comps: Dict[str, Component] = {}
@@ -1597,7 +1611,7 @@ class StructureVisitor(ASTTemplate):
                     tokens.INNER_JOIN,
                 )
                 is_join_id = (comp.role == Role.IDENTIFIER and not keys_only) or (
-                    comp_name in all_join_ids
+                    comp_name in join_keys
                 )
                 if comp_name in duplicate_comps and (not is_join_id or is_cross):
                     qualified = f"{alias}#{comp_name}"
@@ -1647,9 +1661,9 @@ class StructureVisitor(ASTTemplate):
         return time_id, other_ids
 
     def _resolve_grouping_names(self, grouping: List[AST.AST]) -> List[str]:
-        """Resolve grouping node names with UDO parameter lookup."""
-        grouping_nodes = (AST.VarID, AST.Identifier)
-        return [self._resolve_udo_name(g.value) for g in grouping if isinstance(g, grouping_nodes)]
+        """Resolve grouping node names with UDO parameter lookup, and a Component of a join
+        named by its qualified name (issue #1355)."""
+        return self._extract_component_names(grouping, self._join_alias_map)
 
     def _resolve_group_cols(self, node: AST.Aggregation, all_ids: List[str]) -> List[str]:
         """Resolve group-by columns from an Aggregation node."""

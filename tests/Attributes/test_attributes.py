@@ -1732,16 +1732,18 @@ class JoinOperatorsTest(TestAttributesHelper):
         JOIN: full_join
         Dataset --> Dataset
         Status: OK
-        Expression: DS_r := full_join (DS_1 as d1, DS_2 as d2 rename d1#Id_1 to Id11,
-                            d1#Id_2 to Id12, d2#Id_1 to Id21, d2#Id_2 to Id22,
-                            d1#Me_1 to Me11, d1#Me_2 to Me12, d1#Me_3 to Me13,
-                            d2#Me_1 to Me21, d2#Me_2 to Me22, d1#At_1 to At11,
-                            d1#At_2 to At12);
+        Expression: DS_r := full_join (DS_1 as d1, DS_2 as d2 rename d1#Me_1 to Me11,
+                            d1#Me_2 to Me12, d2#Me_1 to Me21, d2#Me_2 to Me22,
+                            d1#At_1 to At11, d1#At_2 to At12, d2#At_1 to At_21,
+                            d2#At_2 to At_22);
                     DS_1 Measure Dataset
                     DS_2 Measure Dataset
 
         Description: Join operators serve to combine data points from two or
-        more datasets, based on related components between them.
+        more datasets, based on related components between them. A qualified name
+        must name a Component of its alias, and DS_2 has no Me_1, Me_2, At_1 or At_2,
+        so d2#Me_1 raises 1-1-1-10 (issue #1355). It raised 1-1-6-9, as d1#Me_1 and
+        d2#Me_1 both fell back to the Me_1 of d1, which was then renamed twice.
 
         Git Branch: #180 Join operators attributes tests.
         Goal: Combine data points from two or more datasets, based on related
@@ -1749,7 +1751,7 @@ class JoinOperatorsTest(TestAttributesHelper):
         """
         code = "2-4-1-60"
         number_inputs = 2
-        message = "1-1-6-9"
+        message = "1-1-1-10"
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message
         )

@@ -1,0 +1,5 @@
+define operator f ( x integer )
+    returns dataset is
+        sum ( DS_3 over ( order by Id_1 data points between current data point and x following ) )
+end operator;
+DS_r <- f ( -1 );

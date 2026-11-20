@@ -1,0 +1,6 @@
+define operator f ( value integer )
+    returns integer [ value > 0 ] is
+        value + 10
+end operator;
+SC_r <- f ( 3 );
+DS_r <- DS_3 [ calc Me_3 := SC_r ];

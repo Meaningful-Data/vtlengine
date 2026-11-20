@@ -69,15 +69,16 @@ class Time(Operators.Operator):
     FREQUENCY_MAP = {"Y": "years", "M": "months", "D": "days"}
     YEAR_TO_PERIOD = {"S": 2, "Q": 4, "M": 12}
     PERIOD_ORDER = {"A": 0, "S": 1, "Q": 2, "M": 3, "W": 4, "D": 5}
-    # The parameter that a scalar gives the operator, named when the scalar holds no value
-    SCALAR_PARAM = ""
+    # The scalar that gives the operator a parameter, as 2-1-19-24 names it when the scalar
+    # holds no value
+    SCALAR_PARAM = "scalar {name}"
 
     op = FLOW_TO_STOCK
 
     @classmethod
     def no_value_error(cls, name: str) -> RunTimeError:
         """The error of a scalar that gives the operator a parameter and holds no value."""
-        return RunTimeError("2-1-19-24", op=cls.op, name=name, param=cls.SCALAR_PARAM)
+        return RunTimeError("2-1-19-24", op=cls.op, scalar=cls.SCALAR_PARAM.format(name=name))
 
     @classmethod
     def _get_time_id(cls, operand: Dataset) -> str:
@@ -708,7 +709,7 @@ class Fill_time_series(Binary):
 
 class Time_Shift(Binary):
     op = TIMESHIFT
-    SCALAR_PARAM = "shift number"
+    SCALAR_PARAM = "scalar {name} that gives the shift number"
 
     @classmethod
     def evaluate(cls, operand: Dataset, shift_value: Any) -> Dataset:
@@ -881,7 +882,7 @@ class Time_Shift(Binary):
 
 class Time_Aggregation(Time):
     op = TIME_AGG
-    SCALAR_PARAM = "period indicator to aggregate to"
+    SCALAR_PARAM = "period indicator {name} to aggregate to"
 
     @classmethod
     def _execute_without_operand(

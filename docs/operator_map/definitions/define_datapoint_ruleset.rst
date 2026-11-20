@@ -4,7 +4,7 @@ define datapoint ruleset
 
 .. raw:: html
 
-   <div class="om-head"><span class="om-chip ok">🟢 5 of 5 forms all ok</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/datapoint_rulesets.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
+   <div class="om-head"><span class="om-chip ok">🟢 4 of 5 forms all ok, 1 refused</span> · <a href="https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/datapoint_rulesets.html">VTL 2.2 Reference Manual ↗</a> · <span class="om-gen">
 
 .. raw:: html
    :file: ../run.html
@@ -32,10 +32,10 @@ define datapoint ruleset
        classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
        classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
        classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
-       O["define datapoint ruleset<br/>🟢5"]:::ok
+       O["define datapoint ruleset<br/>🟢4 🛡️1"]:::ok
        subgraph G_b1["Signature"]
            direction LR
-           v_valuedomain["(valuedomain VD #91;as alias#93;, …)"]:::ok
+           v_valuedomain["(valuedomain VD #91;as alias#93;, …)"]:::refused
            v_variable["(variable V #91;as alias#93;, …)"]:::ok
        end
        subgraph G_b2["Body"]
@@ -77,12 +77,13 @@ Forms
 
    <span class="om-anchor" id="form-valuedomain"></span>
 
-\ (valuedomain VD [as alias], …) 🟢 · boolean, value domain → datapoint ruleset
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+\ (valuedomain VD [as alias], …) 🛡️ · boolean, value domain → datapoint ruleset
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
-   <details class="om-example" id="ex-valuedomain-domains-bound-to-components"><summary><span class="om-ex-title">Domains bound to components</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-valuedomain-domains-bound-to-components"><summary><span class="om-ex-title">Domains bound to components</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-2-8</code> · DuckDB 🛡 <code>1-2-8</code></span></summary>
+   <p class="om-detail">SemanticError 1-2-8: Missing value domain &#x27;VD_AMOUNT&#x27; definition, please provide an structure. Please check transformation with output Dataset DS_r</p>
 
 .. include:: ../examples/definitions/define_datapoint_ruleset/valuedomain/domains_bound_to_components/notes.rst
 
@@ -102,7 +103,8 @@ Forms
 
 .. raw:: html
 
-   <details class="om-example" id="ex-valuedomain-domain-aliases-in-the-rule"><summary><span class="om-ex-title">Domain aliases in the rule</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-valuedomain-domain-aliases-in-the-rule"><summary><span class="om-ex-title">Domain aliases in the rule</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-2-8</code> · DuckDB 🛡 <code>1-2-8</code></span></summary>
+   <p class="om-detail">SemanticError 1-2-8: Missing value domain &#x27;VD_AMOUNT&#x27; definition, please provide an structure. Please check transformation with output Dataset DS_r</p>
 
 .. include:: ../examples/definitions/define_datapoint_ruleset/valuedomain/domain_aliases_in_the_rule/notes.rst
 

@@ -833,7 +833,8 @@ r <ruleset type> 🟢 · datapoint ruleset, hierarchical ruleset → operator
 
 .. raw:: html
 
-   <details class="om-example" id="ex-ruleset-datapoint-on-valuedomains-type"><summary><span class="om-ex-title">Datapoint on valuedomains type</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-ruleset-datapoint-on-valuedomains-type"><summary><span class="om-ex-title">Datapoint on valuedomains type</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-2-22</code> · DuckDB 🛡 <code>1-2-22</code></span></summary>
+   <p class="om-detail">SemanticError 1-2-22: No Value Domains have been defined. Please check transformation with output Dataset DS_r</p>
 
 .. include:: ../examples/definitions/define_operator/ruleset/datapoint_on_valuedomains_type/notes.rst
 

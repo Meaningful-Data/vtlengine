@@ -207,7 +207,8 @@ check\_datapoint(DS, DPR components C1, C2) 🟢 · any scalar, datapoint rulese
 
 .. raw:: html
 
-   <details class="om-example" id="ex-components-value-domains-bound-to-components"><summary><span class="om-ex-title">Value domains bound to components</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
+   <details class="om-example" id="ex-components-value-domains-bound-to-components"><summary><span class="om-ex-title">Value domains bound to components</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-2-8</code> · DuckDB 🛡 <code>1-2-8</code></span></summary>
+   <p class="om-detail">SemanticError 1-2-8: Missing value domain &#x27;VD_M&#x27; definition, please provide an structure. Please check transformation with output Dataset DS_r</p>
 
 .. include:: ../examples/validation/check_datapoint/components/value_domains_bound_to_components/notes.rst
 

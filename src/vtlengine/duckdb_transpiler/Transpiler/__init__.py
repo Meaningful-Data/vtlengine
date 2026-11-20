@@ -86,8 +86,17 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     StructureVisitor,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
-from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+from vtlengine.Model import (
+    Component,
+    Dataset,
+    ExternalRoutine,
+    Role,
+    Scalar,
+    ValueDomain,
+    join_homonyms,
+)
 from vtlengine.Operators import _promotes
+from vtlengine.Operators.Analytic import scalar_window_bound
 from vtlengine.Operators.Clause import Pivot
 from vtlengine.Operators.HROperators import fills_with_zero
 from vtlengine.Operators.Join import merged_viral_attribute_names
@@ -3166,7 +3175,11 @@ FROM (
             # structure, and listing them here asked the binder for columns the
             # subquery never selected (issue #978).
             replaced = [name for name in calc_exprs if name in ds.components]
-            hidden = replaced + [alias for alias, _ in nested_cols + hoisted_cols]
+            # In a join, a computed Component replaces the alias#name of the operands that all
+            # have it (Inner Join page of the VTL 2.2 manual, issue #1355)
+            homonyms = [q for name in calc_exprs for q in join_homonyms(ds.components, name)]
+            self._consumed_join_aliases.update(homonyms)
+            hidden = replaced + homonyms + [alias for alias, _ in nested_cols + hoisted_cols]
             passthrough = "t.*"
             if hidden:
                 excluded = ", ".join(quote_name(name) for name in hidden)
@@ -3229,20 +3242,19 @@ FROM (
         renames: Dict[str, str] = {}
         for child in node.children:
             if isinstance(child, AST.RenameNode):
-                old = self._resolve_membership_name(child.old_name)
-                new = self._resolve_udo_name(child.new_name)
-                if "#" in old:
-                    if old in self._join_alias_map:
-                        self._consumed_join_aliases.add(old)
-                    else:
-                        old = old.split("#", 1)[1]
-                renames[old] = new
+                old = self._rename_old_name(child.old_name, self._join_alias_map)
+                if old in self._join_alias_map:
+                    self._consumed_join_aliases.add(old)
+                # The semantic analysis refuses a membership as the new name (issue #1355)
+                renames[old] = self._resolve_udo_name(cast(str, child.new_name))
 
         cols: List[str] = []
         for name in ds.components:
             matched_new = renames.get(name)
-            if matched_new is None and "#" in name:
-                unqual = name.split("#", 1)[1]
+            # A name that a Component of the join has names that Component only, not a
+            # qualified one of another operand (issue #1355)
+            unqual = name.split("#", 1)[1] if "#" in name else name
+            if matched_new is None and unqual != name and unqual not in ds.components:
                 matched_new = renames.get(unqual)
             if matched_new is not None:
                 cols.append(f"{quote_name(name)} AS {quote_name(matched_new)}")
@@ -3321,12 +3333,11 @@ FROM (
                     agg_node = assignment.right
                     if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
                         grouping_op = agg_node.grouping_op or ""
+                        for resolved in self._resolve_grouping_names(agg_node.grouping):
+                            if resolved not in grouping_names:
+                                grouping_names.append(resolved)
                         for g in agg_node.grouping:
-                            if isinstance(g, (AST.VarID, AST.Identifier)):
-                                resolved = self._resolve_udo_name(g.value)
-                                if resolved not in grouping_names:
-                                    grouping_names.append(resolved)
-                            elif isinstance(g, AST.TimeAggregation) and time_agg_expr is None:
+                            if isinstance(g, AST.TimeAggregation) and time_agg_expr is None:
                                 with self._clause_scope(ds):
                                     time_agg_expr = self.visit_TimeAggregation(g)
                                 for comp in ds.components.values():
@@ -3352,6 +3363,12 @@ FROM (
 
         if time_agg_id and time_agg_id not in group_ids and grouping_op != "group except":
             group_ids.append(time_agg_id)
+        # A qualified Component of a join that the aggr does not give is no column of the
+        # result, so the end of the join does not take it for the one of the same name it gives
+        # (issue #1355)
+        for qualified in self._join_alias_map:
+            if qualified not in group_ids and qualified not in calc_exprs:
+                self._consumed_join_aliases.add(qualified)
 
         def _id_select_sql(name: str) -> str:
             if name == time_agg_id and time_agg_expr is not None:
@@ -3683,7 +3700,7 @@ FROM (
             comps = ds.components if ds is not None else {}
             order_cols = []
             for o in node.order_by:
-                name = self._resolve_udo_name(o.component)
+                name = self._clause_component_name(o.component)
                 comp = comps.get(name)
                 ref = quote_name(name)
                 if comp is not None and comp.data_type == Duration:
@@ -3695,19 +3712,10 @@ FROM (
             order_is_date = False
             if node.order_by and self._current_dataset:
                 comp = self._current_dataset.components.get(
-                    self._resolve_udo_name(node.order_by[0].component)
+                    self._clause_component_name(node.order_by[0].component)
                 )
                 order_is_date = comp is not None and comp.data_type == Date
-            for limit in (node.window.start, node.window.stop):
-                scalar = (
-                    self.input_scalars.get(limit.value) if isinstance(limit, AST.VarID) else None
-                )
-                if scalar is not None and pd.isnull(scalar.value):
-                    # A limit read from a null Scalar (issue #1356)
-                    raise RunTimeError(
-                        "2-1-18-1", op=node.op, param_type="Window bound", correct_type="Integer"
-                    )
-            window_sql = self.visit_Windowing(node.window, order_is_date=order_is_date)
+            window_sql = self.visit_Windowing(node.window, op=node.op, order_is_date=order_is_date)
             over_parts.append(window_sql)
         # With no window clause, the default frame of SQL is the default window of VTL 2.2
         # (issue #1249)
@@ -3715,7 +3723,9 @@ FROM (
 
     def _resolve_partition_cols(self, node: AST.Analytic) -> List[str]:
         """Resolve the partition column list applying VTL 2.2 EXCEPT semantics."""
-        listed = [self._resolve_udo_name(p) for p in node.partition_by] if node.partition_by else []
+        listed = (
+            [self._clause_component_name(p) for p in node.partition_by] if node.partition_by else []
+        )
         if node.partition_op == "except all":
             return []
         if node.partition_op == "except":
@@ -3723,9 +3733,17 @@ FROM (
             excluded = set(listed)
             return [i for i in id_names if i not in excluded]
         if node.partition_by is None and node.order_by:
-            ordered = {self._resolve_udo_name(o.component) for o in node.order_by}
+            ordered = {self._clause_component_name(o.component) for o in node.order_by}
             return [i for i in self._operand_identifier_names(node) if i not in ordered]
         return listed
+
+    def _clause_component_name(self, component: Union[str, AST.AST]) -> str:
+        """The column of the clause Data Set that a component of partition by or order by
+        refers to: a name, or the membership alias#comp of a Component of a join (issue
+        #1355)."""
+        if isinstance(component, str):
+            return self._resolve_udo_name(component)
+        return self._extract_component_names([component], self._join_alias_map)[0]
 
     def _operand_identifier_names(self, node: AST.Analytic) -> List[str]:
         """Best-effort identifier list for the analytic operand."""
@@ -3759,7 +3777,9 @@ FROM (
         if op == tokens.RANK:
             return "RANK()"
         if op in (tokens.LAG, tokens.LEAD) and node.params:
-            offset = self._resolve_scalar_varid(node.params[0] if node.params else 1)
+            offset: Any = node.params[0]
+            if isinstance(offset, AST.VarID):
+                offset = self._lag_offset_sql(op, offset)
             default_val = node.params[1] if len(node.params) > 1 else None
             if isinstance(default_val, AST.AST):
                 # The values are shifted in the common type of the operand and the default, as
@@ -3928,9 +3948,9 @@ FROM (
         return result
 
     def visit_Windowing(  # type: ignore[override]
-        self, node: AST.Windowing, *, order_is_date: bool = False
+        self, node: AST.Windowing, *, op: str, order_is_date: bool = False
     ) -> str:
-        """Visit a windowing specification."""
+        """Visit a windowing specification of the analytic operator op."""
         type_str = str(node.type_).upper() if node.type_ else "ROWS"
         # Map VTL types to SQL: DATA POINTS → ROWS
         if "DATA" in type_str:
@@ -3951,10 +3971,23 @@ FROM (
                 return f"INTERVAL '{value}' DAY {mode_up}"
             return f"{value} {mode_up}"
 
-        start_val = self._resolve_scalar_varid(node.start)
-        stop_val = self._resolve_scalar_varid(node.stop)
-        start = bound_str(start_val, node.start_mode)
-        stop = bound_str(stop_val, node.stop_mode)
+        def scalar_bound(value: Any, mode: str) -> str:
+            # A bound that a Scalar gives is read as any Scalar, the argument of a scalar
+            # parameter included, and checked and rounded as on the pandas engine
+            # (scalar_window_bound): here when its value is known, else where the query runs,
+            # once (issue #1355)
+            if not isinstance(value, AST.VarID):
+                return bound_str(value, mode)
+            known, scalar_value = self._known_scalar_value(value.value)
+            if known:
+                return bound_str(scalar_window_bound(op, scalar_value), mode)
+            sql = f"(SELECT vtl_window_bound({self.visit(value)}, '{op}'))"
+            if is_range_date:
+                sql = f"to_days(CAST({sql} AS INTEGER))"
+            return f"{sql} {mode.upper()}"
+
+        start = scalar_bound(node.start, node.start_mode)
+        stop = scalar_bound(node.stop, node.stop_mode)
 
         return f"{type_str} BETWEEN {start} AND {stop}"
 
@@ -4707,10 +4740,15 @@ FROM (
                     sql, structure, [(node.op, "the output", declared, constraints)]
                 )
             elif constraints is not None and constraints.value is not None:
-                # A Component or a scalar output
+                # A Component or a scalar output. value in the constraint is the output, the
+                # body written in the scope of the call, where value is the parameter, if any
+                # (issue #1355)
                 value = deepcopy(udo_def["expression"])
                 sql = self._udo_checked_sql(
-                    sql, value, [(node.op, "the output", constraints.value)]
+                    sql,
+                    value,
+                    [(node.op, "the output", constraints.value)],
+                    len(self._udo_params or []),
                 )
             if isinstance(result, Scalar) and result.data_type in (Integer, Number, String):
                 # A scalar result is a value of its type, as on the pandas engine: 2 returned as
@@ -4900,7 +4938,8 @@ FROM (
         table_src = self._get_dataset_sql(node.dataset)
 
         if hr_info["signature_type"] == "valuedomain" and node.rule_component is not None:
-            component = self._get_node_value(node.rule_component)
+            # A component parameter stands for its argument (issue #1355)
+            component = self._resolve_udo_name(self._get_node_value(node.rule_component))
         else:
             component = hr_info["signature"]
 
@@ -6139,6 +6178,21 @@ FROM (
         for info in clause_info:
             info["table_src"] = self._promoted_source(info["table_src"], info["ds"], types)
 
+    @staticmethod
+    def _join_key_aliases(
+        clause_info: List[Dict[str, Any]], using_keys: Set[str]
+    ) -> Dict[str, str]:
+        """First alias that exposes each key — used to pick the left side of ON clauses. A
+        USING key may be a measure in one dataset and an identifier in another; without USING,
+        a Measure or an Attribute named as an Identifier of another operand is no key
+        (issue #1355)."""
+        comp_to_alias: Dict[str, str] = {}
+        for info in clause_info:
+            for name, comp in info["ds"].components.items():
+                if comp.role == Role.IDENTIFIER or name in using_keys:
+                    comp_to_alias.setdefault(name, info["sql_alias"])
+        return comp_to_alias
+
     def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]
         """Visit a join operation."""
         clause_info: List[Dict[str, Any]] = []
@@ -6157,7 +6211,7 @@ FROM (
                     "ds": ds,
                     "table_src": self._get_dataset_sql(actual_node),
                     "alias": alias,
-                    "sql_alias": quote_name(alias) if ("." in alias or " " in alias) else alias,
+                    "sql_alias": quote_name(alias),
                     "id_names": set(ds.get_identifiers_names()),
                 }
             )
@@ -6193,11 +6247,13 @@ FROM (
                 if not keys_only:
                     all_join_ids |= info["id_names"]
 
+        # The operands are joined on their Identifiers, or on the using list. A Measure or an
+        # Attribute named as an Identifier of another operand is no key: it is its operand's
+        # own Component, qualified with the alias when another operand has the name, as on the
+        # pandas engine, whatever the order of the operands (issue #1355)
+        using_keys: Set[str] = set(explicit_using or [])
         comp_count: Counter[str] = Counter(
-            name
-            for info in clause_info
-            for name in info["ds"].get_components_names()
-            if name not in all_join_ids
+            name for info in clause_info for name in info["ds"].get_components_names()
         )
         duplicate_comps = {name for name, cnt in comp_count.items() if cnt >= 2}
 
@@ -6209,13 +6265,7 @@ FROM (
             [info["ds"].components for info in clause_info], all_join_ids
         )
 
-        # First alias that exposes each component — used to pick the left side of ON
-        # clauses. A USING key may be a measure in one dataset and an identifier in
-        # another, so we track components (not just identifiers).
-        comp_to_alias: Dict[str, str] = {}
-        for info in clause_info:
-            for name in info["ds"].components:
-                comp_to_alias.setdefault(name, info["sql_alias"])
+        comp_to_alias = self._join_key_aliases(clause_info, using_keys)
 
         first_sql_alias = clause_info[0]["sql_alias"]
         vp_registry = get_current_registry()
@@ -6232,7 +6282,7 @@ FROM (
                     continue
                 is_join_col = (
                     comp.role == Role.IDENTIFIER and not is_cross_join and not keys_only
-                ) or name in all_join_ids
+                ) or name in using_keys
                 if is_join_col:
                     if name in seen_identifiers:
                         continue
@@ -6286,9 +6336,9 @@ FROM (
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:  # type: ignore[override]
         """Visit TIME_AGG operation."""
         conf = node.conf
-        target = node.period_to
+        target = None if node.period_to is None else f"'{node.period_to}'"
         if target is None and node.period_to_ref is not None:
-            target = self._resolve_period_to_ref(node.period_to_ref)
+            target = self._resolve_period_to_ref(node)
         if target is None:
             # The reference gave no period indicator: its scalar holds no value (issue #1192)
             raise Time_Aggregation.no_value_error(cast(AST.VarID, node.period_to_ref).value)
@@ -6301,9 +6351,9 @@ FROM (
             operand_sql = self.visit(node.operand)
             if self._is_operand_type(node.operand, TimePeriod):
                 parsed = self._hoist(f"vtl_period_parse({operand_sql})")
-                return f"vtl_time_agg_tp({parsed}, '{target}')"
+                return f"vtl_time_agg_tp({parsed}, {target})"
             else:
-                agg_expr = f"vtl_time_agg_date({operand_sql}, '{target}')"
+                agg_expr = f"vtl_time_agg_date({operand_sql}, {target})"
                 return self._apply_time_agg_conf(agg_expr, conf)
         else:
             # Without-operand case: inside group all, applies to time identifier
@@ -6312,13 +6362,13 @@ FROM (
                     if comp.data_type == TimePeriod and comp.role == Role.IDENTIFIER:
                         col = quote_name(comp.name)
                         parsed = self._hoist(f"vtl_period_parse({col})")
-                        return f"vtl_time_agg_tp({parsed}, '{target}')"
+                        return f"vtl_time_agg_tp({parsed}, {target})"
                 for comp in self._current_dataset.components.values():
                     if comp.data_type == Date and comp.role == Role.IDENTIFIER:
                         col = quote_name(comp.name)
-                        agg = f"vtl_time_agg_date({col}, '{target}')"
+                        agg = f"vtl_time_agg_date({col}, {target})"
                         return self._apply_time_agg_conf(agg, conf)
-            return f"vtl_time_agg_date(CURRENT_DATE, '{target}')"
+            return f"vtl_time_agg_date(CURRENT_DATE, {target})"
 
     def _apply_time_agg_conf(self, expr: str, conf: Optional[str]) -> str:
         """Apply time_agg conf (first/last) modifier to a Date aggregation expression."""
@@ -6328,17 +6378,47 @@ FROM (
             return f"vtl_tp_{edge}_date({parsed})"
         return expr
 
-    def _resolve_period_to_ref(self, ref: AST.AST) -> Optional[str]:
-        name = ref.value  # type: ignore[attr-defined]
-        value = self.input_scalars[name].value
-        return None if value is None else str(value)
+    def _resolve_period_to_ref(self, node: AST.TimeAggregation) -> Optional[str]:
+        """The period to aggregate to that a Scalar gives, as SQL, None when it is known to be
+        null. A value not known before the queries run, of a Scalar that a statement computes
+        or of an expression given to a scalar parameter, is checked where the query reads it,
+        as the pandas engine checks it (issue #1355)."""
+        name = cast(AST.VarID, node.period_to_ref).value
+        known, value = self._known_scalar_value(name)
+        if known:
+            return None if value is None else f"'{value}'"
+        period_from = "NULL" if node.period_from is None else f"'{node.period_from}'"
+        sql = self.visit(node.period_to_ref)
+        # A scalar subquery, which runs once, also where the operand has no data points
+        return f"(SELECT vtl_time_agg_period({sql}, {period_from}, '{name}'))"
 
-    def _resolve_scalar_varid(self, value: Any) -> Any:
-        """Non-VarID values pass through unchanged."""
-        if not isinstance(value, AST.VarID):
-            return value
-        name = value.value
-        return self.input_scalars[name].value
+    def _lag_offset_sql(self, op: str, offset: AST.VarID) -> str:
+        """The offset of lag or lead that a Scalar gives, read as any Scalar: an input one, one
+        a statement computes or the argument of a scalar parameter, an expression included. A
+        null offset raises 2-1-18-1, as on the pandas engine: here when its value is known, else
+        where the query runs, once, also where the operand has no data points (issue #1355). A
+        known value is written as it is, and a Number is rounded half away from zero, as on the
+        pandas engine."""
+        known, value = self._known_scalar_value(offset.value)
+        if known and value is None:
+            raise RunTimeError("2-1-18-1", op=op, param_type="Offset", correct_type="Integer")
+        if known:
+            return str(value)
+        return f"(SELECT vtl_lag_offset({self.visit(offset)}, '{op}'))"
+
+    def _known_scalar_value(self, name: str) -> Tuple[bool, Any]:
+        """Whether the value of the Scalar name is known before the queries run, and that value:
+        an input Scalar, or a literal given to a scalar parameter name of a user defined
+        operator, through the calls that pass it on (issue #1355)."""
+        bound = self._get_udo_param(name)
+        if isinstance(bound, AST.Constant):
+            return True, bound.value
+        if isinstance(bound, AST.VarID):
+            with self._udo_arg_scope(name):
+                return self._known_scalar_value(bound.value)
+        if bound is None and name in self.input_scalars:
+            return True, self.input_scalars[name].value
+        return False, None
 
     def _visit_time_agg_dataset(
         self, node: AST.TimeAggregation, target: str, conf: Optional[str]
@@ -6356,9 +6436,9 @@ FROM (
                     cols.append(col)
                 elif comp.data_type == TimePeriod:
                     parsed = self._hoist(f"vtl_period_parse({col})")
-                    cols.append(f"vtl_time_agg_tp({parsed}, '{target}') AS {col}")
+                    cols.append(f"vtl_time_agg_tp({parsed}, {target}) AS {col}")
                 elif comp.data_type == Date:
-                    expr = self._apply_time_agg_conf(f"vtl_time_agg_date({col}, '{target}')", conf)
+                    expr = self._apply_time_agg_conf(f"vtl_time_agg_date({col}, {target})", conf)
                     cols.append(f"{expr} AS {col}")
                 else:
                     cols.append(col)
