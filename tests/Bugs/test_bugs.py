@@ -14875,6 +14875,43 @@ class SemanticCheckBugs(BugHelper):
             "regexp: [,  in position 0.",
         )
 
+    def test_GH_1356_55b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := match_characters ( Me_3 , "[[:alpha:]" ) ];
+        Description: The pattern "[[:alpha:]" is checked as it is evaluated, with its POSIX class
+                     read: its bracket expression is not closed, 1-1-18-8. The semantic analysis
+                     accepted it, the pandas engine raised a raw re.error and the DuckDB engine a
+                     raw InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_55b",
+            number_inputs=1,
+            exception_code="1-1-18-8",
+            exception_message="At op match_characters: unterminated character set in "
+            "regexp: [[:alpha:],  in position 0.",
+        )
+
+    def test_GH_1356_55c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := match_characters ( Me_3 , "[[:foo:]]" ) ];
+        Description: [:foo:] is not a POSIX character class: 1-1-18-8. The semantic analysis
+                     accepted it, the pandas engine gave false for every data point and the DuckDB
+                     engine raised a raw InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_55c",
+            number_inputs=1,
+            exception_code="1-1-18-8",
+            exception_message="At op match_characters: unknown POSIX character class [:foo:] "
+            "in regexp: [[:foo:]],  in position 1.",
+        )
+
     def test_GH_1356_56(self):
         """
         Status: OK
