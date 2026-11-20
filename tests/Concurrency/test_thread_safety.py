@@ -7,13 +7,18 @@ when called from multiple threads in the same process.
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, Optional
+from unittest.mock import patch
 
 import duckdb
 import pandas as pd
 import pytest
 
 from tests.Helper import _use_duckdb_backend
-from vtlengine import run
+from vtlengine import run, semantic_analysis
+from vtlengine.DataTypes import Number
+from vtlengine.Exceptions import SemanticError
+from vtlengine.Model import Scalar
+from vtlengine.Operators.Numeric import AbsoluteValue
 from vtlengine.Utils import _duckdb
 from vtlengine.Utils._duckdb import query_connection
 
@@ -134,6 +139,38 @@ class TestConcurrentAnalysis:
                         future.result()
         finally:
             sys.setswitchinterval(previous_interval)
+
+    def test_failed_run_leaves_computation_on(self) -> None:
+        """A run that raises in its analysis gives back to its thread the mode it had: the
+        operators that the thread calls after it compute their data (issue #1352)."""
+        with pytest.raises(SemanticError, match="1-1-1-10"):
+            run(
+                script="DS_r <- DS_1 [ calc Me_2 := Me_9 ];",
+                data_structures=DATA_STRUCTURES,
+                datapoints=DATAPOINTS,
+            )
+        assert AbsoluteValue.analyze(Scalar(name="SC_1", data_type=Number, value=-2.0)).value == 2.0
+        results = run(
+            script="DS_r <- DS_1 + 1;", data_structures=DATA_STRUCTURES, datapoints=DATAPOINTS
+        )
+        assert list(results["DS_r"].data["Me_1"]) == [11.0, 21.0, 31.0, 41.0, 51.0]
+
+    def test_semantic_analysis_inside_run(self) -> None:
+        """A semantic analysis called while a run computes a statement (from an operator, as an
+        external routine or a callback could) does not stop the computation of the statements
+        that follow (issue #1352)."""
+        evaluate = AbsoluteValue.evaluate
+
+        def evaluate_with_analysis(cls: Any, *args: Any, **kwargs: Any) -> Any:
+            semantic_analysis(script="DS_r <- DS_1 * 2;", data_structures=DATA_STRUCTURES)
+            return evaluate(*args, **kwargs)
+
+        script = "DS_r1 <- abs(DS_1);\nDS_r2 <- DS_1 + 1;"
+        with patch.object(AbsoluteValue, "evaluate", classmethod(evaluate_with_analysis)):
+            results = run(script=script, data_structures=DATA_STRUCTURES, datapoints=DATAPOINTS)
+        assert list(results["DS_r1"].data["Me_1"]) == [10.0, 20.0, 30.0, 40.0, 50.0]
+        assert results["DS_r2"].data is not None
+        assert list(results["DS_r2"].data["Me_1"]) == [11.0, 21.0, 31.0, 41.0, 51.0]
 
 
 class TestConcurrentAnalytic:

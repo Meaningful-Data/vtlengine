@@ -377,11 +377,21 @@ class InterpreterAnalyzer(ASTTemplate):
     # **********************************
 
     def visit_Start(self, node: AST.Start) -> Any:
+        # The operators validate or compute as this interpreter says while it runs, and as before
+        # once it ends, also on an error: a semantic analysis called during a run must not stop
+        # its computation (issue #1352)
+        only_semantic = Operators.is_only_semantic()
+        Operators.set_only_semantic(self.only_semantic)
+        try:
+            return self._visit_statements(node)
+        finally:
+            Operators.set_only_semantic(only_semantic)
+
+    def _visit_statements(self, node: AST.Start) -> Any:
         # Initialize fresh viral propagation registry for this run
         set_current_registry(ViralPropagationRegistry())
 
         statement_num = 1
-        Operators.set_only_semantic(self.only_semantic)
         results = {}
         scalars_to_save = set()
         invalid_dataset_outputs = []
