@@ -26,6 +26,7 @@ from vtlengine.AST.Grammar.tokens import (
     BETWEEN,
     CALC,
     CAST,
+    CHARSET_MATCH,
     CHECK,
     CHECK_DATAPOINT,
     CHECK_HIERARCHY,
@@ -105,7 +106,7 @@ from vtlengine.Model import (
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
 from vtlengine.Operators.Assignment import Assignment
 from vtlengine.Operators.CastOperator import Cast
-from vtlengine.Operators.Comparison import Between, ExistIn
+from vtlengine.Operators.Comparison import Between, ExistIn, Match
 from vtlengine.Operators.Conditional import Case, If
 from vtlengine.Operators.General import Eval
 from vtlengine.Operators.HROperators import (
@@ -752,6 +753,13 @@ class InterpreterAnalyzer(ASTTemplate):
             )
             return self.visit(ast_var_id)
 
+        if (
+            node.op == CHARSET_MATCH
+            and isinstance(node.right, AST.Constant)
+            and isinstance(node.right.value, str)
+        ):
+            # A pattern written in the script is a regular expression (issue #1356)
+            Match.check_pattern(node.right.value)
         left_operand = self.visit(node.left)
         right_operand = self._visit_right_operand(node.op, left_operand, node.right)
 

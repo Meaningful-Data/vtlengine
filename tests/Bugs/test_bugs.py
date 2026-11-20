@@ -14567,3 +14567,20 @@ class SemanticCheckBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1356_30", number_inputs=1, references_names=["1"])
+
+    def test_GH_1356_55(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := match_characters ( Me_3 , "[" ) ];
+        Description: The pattern "[" is not a regular expression: 1-1-18-8. The pandas engine raised
+                     a raw re.error, the DuckDB engine a raw InvalidInputException and the semantic
+                     analysis accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_55",
+            number_inputs=1,
+            exception_code="1-1-18-8",
+            exception_message="At op match_characters: unterminated character set in regexp: [,  in position 0.",
+        )

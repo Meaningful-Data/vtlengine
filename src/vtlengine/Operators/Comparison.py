@@ -350,6 +350,16 @@ class Match(Binary):
     type_to_check = String
 
     @classmethod
+    def check_pattern(cls, pattern: str) -> None:
+        """A pattern that is not a regular expression (issue #1356)."""
+        try:
+            re.compile(pattern)
+        except re.error as error:
+            raise SemanticError(
+                "1-1-18-8", op=cls.op, msg=error.msg, regexp=pattern, pos=error.pos
+            ) from None
+
+    @classmethod
     def op_func(cls, x: Optional[str], y: Optional[str]) -> Optional[bool]:
         if pd.isnull(x) or pd.isnull(y):
             return None
