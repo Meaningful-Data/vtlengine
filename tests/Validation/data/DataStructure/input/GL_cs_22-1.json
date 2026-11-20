@@ -11,7 +11,7 @@
           },
           {
             "name": "EXR_CURRENCY",
-            "type": "String",
+            "type": "EXR_CURRENCY",
             "nullable": false,
             "role": "Identifier"
           },

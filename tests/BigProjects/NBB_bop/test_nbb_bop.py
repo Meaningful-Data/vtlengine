@@ -47,4 +47,9 @@ class BOP(BOPHelper):
             "21",
         ]
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.BaseTest(
+            code=code,
+            vd_names=["VALIDATIONS-COUNTERPART_SECTOR"],
+            number_inputs=number_inputs,
+            references_names=references_names,
+        )

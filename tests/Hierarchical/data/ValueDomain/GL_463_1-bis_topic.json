@@ -1,0 +1,17 @@
+{
+  "name": "bis_topic",
+  "type": "String",
+  "setlist": [
+    "KOFA",
+    "SBNB",
+    "UBBA",
+    "VBNA",
+    "VCNA",
+    "VEBA",
+    "VEBC",
+    "VEFA",
+    "VHDA",
+    "VHJA",
+    "VHXA"
+  ]
+}

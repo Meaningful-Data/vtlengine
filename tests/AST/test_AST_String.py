@@ -91,6 +91,7 @@ params_prettier = [
     ("GH_1334.vtl", "reference_GH_1334.vtl"),
     # An error code is written as the literal it is, a number with no quotes (issue #1349)
     ("GH_1349.vtl", "reference_GH_1349.vtl"),
+    ("GH_1358.vtl", "reference_GH_1358.vtl"),
 ]
 
 POSITION_FIELDS = {"line_start", "column_start", "line_stop", "column_stop"}
@@ -255,6 +256,23 @@ def test_prettier_joined_modules():
     result_script = ASTString(pretty=True).render(Start(0, 0, 0, 0, children))
 
     with open(prettier_path / "reference_GH_1334.vtl", "r") as file:
+        expected_script = file.read()
+    assert normalize_lines_in_text(result_script) == normalize_lines_in_text(expected_script)
+
+
+def test_prettier_joined_scripts():
+    """Scripts parsed one by one and joined into one Start render like the whole script (GH_1358).
+
+    Each script numbers its lines from 1, so the comments of a script fall within the lines of
+    the last statement of the script before it, a ruleset among them.
+    """
+    with open(prettier_path / "GH_1358.vtl", "r") as file:
+        scripts = re.split(r"^(?=/\* Module)", file.read(), flags=re.MULTILINE)[1:]
+    children = [child for script in scripts for child in create_ast_with_comments(script).children]
+
+    result_script = ASTString(pretty=True).render(Start(0, 0, 0, 0, children))
+
+    with open(prettier_path / "reference_GH_1358.vtl", "r") as file:
         expected_script = file.read()
     assert normalize_lines_in_text(result_script) == normalize_lines_in_text(expected_script)
 
