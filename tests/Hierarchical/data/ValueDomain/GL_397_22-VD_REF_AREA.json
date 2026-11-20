@@ -1,0 +1,10 @@
+{
+  "name": "VD_REF_AREA",
+  "type": "String",
+  "setlist": [
+    "AT",
+    "FR",
+    "IT",
+    "PT"
+  ]
+}

@@ -132,6 +132,7 @@ from vtlengine.Operators.Validation import (
     Check_Datapoint,
     Check_Hierarchy,
     bind_value_domains,
+    check_value_domains,
     error_values,
     literal_text,
 )
@@ -2162,6 +2163,32 @@ class InterpreterAnalyzer(ASTTemplate):
         ]
 
     @staticmethod
+    def _hr_items_outside(items: List[str], value_domain: ValueDomain) -> List[str]:
+        """The code items that are not values of the value domain, as values of its type."""
+        outside = []
+        for item in dict.fromkeys(items):
+            try:
+                value = value_domain.type.cast(item)
+            except (ValueError, TypeError, InputValidationException):
+                value = None
+            if value is None or len(value_domain.outside(pd.Series([value], dtype=object))):
+                outside.append(item)
+        return outside
+
+    @classmethod
+    def _hr_items_on_domain(
+        cls, rules: List[AST.HRule], value_domain: Optional[ValueDomain]
+    ) -> bool:
+        """Whether the code items on the left of the rules are values of the value domain."""
+        if value_domain is None:
+            return False
+        items = [
+            (rule.rule if rule.rule.op != WHEN else cast(AST.HRBinOp, rule.rule.right)).left.value
+            for rule in rules
+        ]
+        return not cls._hr_items_outside(items, value_domain)
+
+    @staticmethod
     def _sort_hr_rules(
         node: AST.HROperation, hr_info: Dict[str, Any], rules: List[AST.HRule]
     ) -> List[AST.HRule]:
@@ -2205,7 +2232,16 @@ class InterpreterAnalyzer(ASTTemplate):
         hr_info = self.hrs[hr_name]
 
         if hr_info is not None:
+            on_value_domains = hr_info["node"].signature_type == "valuedomain"
             if len(cond_components) != len(hr_info["condition"]):
+                if on_value_domains:
+                    raise SemanticError(
+                        "1-1-10-16",
+                        op=node.op,
+                        ruleset=hr_name,
+                        expected=len(hr_info["condition"]),
+                        found=len(cond_components),
+                    )
                 raise SemanticError("1-1-10-2", op=node.op)
 
             if hr_info["node"].signature_type == "variable" and hr_info["signature"] != component:
@@ -2215,7 +2251,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     found=component,
                     expected=hr_info["signature"],
                 )
-            elif hr_info["node"].signature_type == "valuedomain" and component is None:
+            elif on_value_domains and component is None:
                 raise SemanticError("1-1-10-4", op=node.op)
 
             cond_info = {}
@@ -2284,6 +2320,29 @@ class InterpreterAnalyzer(ASTTemplate):
             # A ruleset with a signature or a rule clause gives the component
             component = cast(str, component)
             Check_Hierarchy.validate_hr_dataset(dataset, component, cond_info.values())
+            if on_value_domains:
+                check_value_domains(
+                    node.op,
+                    hr_name,
+                    zip(
+                        [*hr_info["condition_variables"], hr_info["signature"]],
+                        [*cond_info.values(), component],
+                    ),
+                    dataset.components,
+                    self.value_domains,
+                )
+                # The code items of a ruleset on a value domain are values of it (issue #1348)
+                rule_domain = cast(Dict[str, ValueDomain], self.value_domains)[hr_info["signature"]]
+                items = [i for r in hr_info["rules"] for i in self._collect_hr_code_items(r.rule)]
+                outside = self._hr_items_outside(items, rule_domain)
+                if outside:
+                    raise SemanticError(
+                        "1-1-10-13",
+                        element="code item",
+                        value=outside[0],
+                        where=f"the hierarchical ruleset {hr_name}",
+                        value_domain=rule_domain.name,
+                    )
 
             # Set up interpreter state for rule processing
             self.ruleset_dataset = dataset
@@ -2328,6 +2387,16 @@ class InterpreterAnalyzer(ASTTemplate):
             # Only the conditions read the attributes (issue #1223)
             Check_Hierarchy.remove_attributes(dataset)
 
+            # The rule Identifier keeps the value domain a ruleset is defined on, and for a
+            # ruleset on a variable the one of the Component when the code items that the rules
+            # compute, or check, are values of it (issue #1348)
+            keep_rule_domain = on_value_domains or self._hr_items_on_domain(
+                hr_info["rules"]
+                if node.op == CHECK_HIERARCHY
+                else self._hr_eq_rules(hr_info["rules"]),
+                dataset.components[component].value_domain,
+            )
+
             # Final evaluation
             if node.op == CHECK_HIERARCHY:
                 result = Check_Hierarchy.analyze(
@@ -2339,6 +2408,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     value_domains=self.value_domains,
                     rule_component=component,
                     mode=mode,
+                    keep_rule_domain=keep_rule_domain,
                 )
                 del rule_output_values
             else:
@@ -2351,6 +2421,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     node_children=node_children,
                     rule_component=component,
                     ruleset=hr_name,
+                    keep_rule_domain=keep_rule_domain,
                 )
                 self.hr_agg_rules_computed = None
             return result

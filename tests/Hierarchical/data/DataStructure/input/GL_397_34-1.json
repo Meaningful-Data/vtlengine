@@ -6,13 +6,13 @@
         {
           "name": "REF_AREA",
           "role": "Identifier",
-          "type": "String",
+          "type": "GeoArea",
           "nullable": false
         },
         {
           "name": "DATE",
           "role": "Identifier",
-          "type": "Date",
+          "type": "ReferenceTime",
           "nullable": false
         },
         {

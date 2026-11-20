@@ -121,10 +121,13 @@ class AST:
 @dataclass
 class Comment(AST):
     """
-    Comment: (value)
+    Comment: (value, inner)
+
+    inner: the comment is written inside the statement before it in its script.
     """
 
     value: str
+    inner: bool = False
     __eq__ = AST.ast_equality
 
 

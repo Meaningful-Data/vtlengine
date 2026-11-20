@@ -1,7 +1,7 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from vtlengine.API import create_ast
-from vtlengine.AST import Comment, Start
+from vtlengine.AST import AST, Comment, Start
 from vtlengine.AST.Grammar._cpp_parser import parser_lock, vtl_cpp_parser
 
 
@@ -65,5 +65,22 @@ def create_ast_with_comments(text: str) -> Start:
 
         ast.children.extend(comments)
         ast.children.sort(key=lambda x: (x.line_start, x.column_start))
+        _mark_inner_comments(ast.children)
 
     return ast
+
+
+def _mark_inner_comments(children: List[AST]) -> None:
+    """Marks the comments written inside a statement, which follow it and start within its
+    span. The positions of one script tell it, unlike those of several scripts joined in one
+    Start, each numbering its lines from 1."""
+    statement: Optional[AST] = None
+    for child in children:
+        if not isinstance(child, Comment):
+            statement = child
+        elif statement is not None:
+            child.inner = (
+                (statement.line_start, statement.column_start)
+                < (child.line_start, child.column_start)
+                < (statement.line_stop, statement.column_stop)
+            )

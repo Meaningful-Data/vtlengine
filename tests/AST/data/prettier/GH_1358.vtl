@@ -1,0 +1,19 @@
+/* Module A */
+DS_A := DS_1
+    [calc Me_2 := Me_1 * 2]
+    [calc Me_3 := Me_1 * 3]
+    [filter Me_1 > 0];
+/* Module B */
+
+// Uses DS_A
+DS_B := DS_A[keep Me_2];
+/* Module C */
+define datapoint ruleset DPR_1 (variable Me_1) is
+    // Positive
+    R1: Me_1 > 0;
+    R2: Me_1 < 10
+end datapoint ruleset;
+/* Module D */
+
+// Uses DPR_1
+DS_C := check_datapoint(DS_1, DPR_1);
