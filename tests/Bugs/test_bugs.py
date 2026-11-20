@@ -14461,3 +14461,34 @@ class SemanticCheckBugs(BugHelper):
             exception_code="1-2-22",
             exception_message="No User Defined Operators have been defined.",
         )
+
+    def test_GH_1356_25(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_9 := sum ( Me_1 ) , Me_9 := max ( Me_1 ) group by Id_1 ];
+        Description: aggr computes Me_9 twice: 1-1-6-9, as keep Me_1 , Me_1 raises. The pandas
+                     engine raised a raw KeyError and the DuckDB engine kept the last one.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_25",
+            number_inputs=1,
+            exception_code="1-1-6-9",
+            exception_message="At op aggr: The following components are repeated: {'Me_9'}.",
+        )
+
+    def test_GH_1356_26(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := Me_1 , Me_9 := Me_1 * 10 ];
+        Description: calc computes Me_9 twice: 1-1-6-9. Both engines kept the last one.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_26",
+            number_inputs=1,
+            exception_code="1-1-6-9",
+            exception_message="At op calc: The following components are repeated: {'Me_9'}.",
+        )
