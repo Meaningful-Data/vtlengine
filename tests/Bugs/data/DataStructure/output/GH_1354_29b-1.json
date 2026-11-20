@@ -1,0 +1,33 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r",
+      "DataStructure": [
+        {
+          "name": "bool_var",
+          "role": "Measure",
+          "type": "Boolean",
+          "nullable": true
+        },
+        {
+          "name": "imbalance",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        },
+        {
+          "name": "errorcode",
+          "role": "Measure",
+          "type": "String",
+          "nullable": true
+        },
+        {
+          "name": "errorlevel",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

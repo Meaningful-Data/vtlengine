@@ -16508,3 +16508,35 @@ class StructureDataBugs(BugHelper):
             references_names=["1"],
             scalars={"SC_1": "abcabc"},
         )
+
+    def test_GH_1354_29b(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 [ aggr Me_2 := sum ( Me_1 ) ] > 3
+                        imbalance DS_1 [ aggr Me_2 := sum ( Me_1 ) ] );
+        Description: An operand and an imbalance without Identifiers have one Data Point each,
+                     which match: bool_var true, imbalance 5. The pandas engine raised
+                     IndexError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_29b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_29c(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 0 imbalance DS_2 );
+        Description: The Integer Id_1 of the operand and the String Id_1 of the imbalance have
+                     no common type, so check raises 1-1-13-18, as the binary operators do. The
+                     pandas engine raised ValueError, the DuckDB engine and the semantic
+                     analysis accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_29c",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="At op check: Incompatible types for common identifier Id_1: "
+            "Integer and String.",
+        )
