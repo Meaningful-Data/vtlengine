@@ -14245,3 +14245,20 @@ class RunTimeErrorMappingBugs(BugHelper):
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(code="GH_1356_66", number_inputs=1, exception_code="2-1-15-3")
+
+    def test_GH_1356_43(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := sqrt ( -1 ) + length ( substr ( Me_3 , 0 ) ) ];
+        Description: The semantic error of substr (start 0) is raised before the data error of
+                     sqrt(-1), on both engines and in the semantic analysis. The pandas engine
+                     raised 2-1-15-2 for sqrt first.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_43",
+            number_inputs=1,
+            exception_code="1-1-18-4",
+            exception_message="At op substr: Start parameter should be >= 1.",
+        )
