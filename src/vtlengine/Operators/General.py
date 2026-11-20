@@ -213,7 +213,7 @@ class Eval(Unary):
             empty_data_dict[ds_name] = cls.normalize_dates(empty_data, components)
 
         df = cls._execute_query(
-            external_routine.query,
+            external_routine.query_on(operands.values()),
             external_routine.dataset_names,
             empty_data_dict,
             on_structures=True,
@@ -251,7 +251,7 @@ class Eval(Unary):
 
         result.data = cls._checked_result(
             cls._execute_query(
-                external_routine.query,
+                external_routine.query_on(operands.values()),
                 external_routine.dataset_names,
                 operands_data,
             ),

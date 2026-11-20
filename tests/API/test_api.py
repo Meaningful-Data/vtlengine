@@ -3665,6 +3665,16 @@ def test_GH_1356_68b(use_duckdb, tmp_path):
     assert error.value.args[1] == "0-3-1-2"
 
 
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_68c(use_duckdb):
+    """An output_folder that is a filesystem root is an existing folder, accepted by the check
+    of case 68 on both engines (the script has no persistent result, so nothing is written).
+    Both engines raised a raw StopIteration (issue #1356)."""
+    root = Path(Path.cwd().anchor)
+    result = _run_1349("DS_r := DS_1;", use_duckdb, output_folder=root)
+    assert result == {}
+
+
 def _twice_1356(name_1, name_2):
     identifier = {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False}
     number = {"name": name_1, "type": "Number", "role": "Measure", "nullable": True}
