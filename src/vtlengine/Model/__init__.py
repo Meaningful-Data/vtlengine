@@ -177,6 +177,8 @@ def named_type(
     """The data type and the value domain of the type a Component or a scalar is written with,
     the inverse of component_type_name: a basic type, or one of the value domains given, by
     name, on its basic type. Any other name raises 0-2-1-1 for the element."""
+    if value_domains is not None and not isinstance(value_domains, dict):
+        raise InputValidationException(code="0-1-1-2", input=value_domains)
     if type_name in SCALAR_TYPES:
         return SCALAR_TYPES[type_name], None
     value_domain = (value_domains or {}).get(type_name)
