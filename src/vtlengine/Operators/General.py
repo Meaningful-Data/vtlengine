@@ -198,10 +198,13 @@ class Eval(Unary):
         for ds_name in external_routine.dataset_names:
             if ds_name not in operands:
                 raise SemanticError("1-1-1-24", op="eval", ds_name=ds_name)
+            # The columns have the types of the Components, as at run time, so that the query
+            # is checked on what it will read (issue #1356)
+            components = operands[ds_name].components
             empty_data = pd.DataFrame(
-                columns=[comp.name for comp in operands[ds_name].components.values()]
+                {name: pd.Series(dtype=comp.data_type.dtype()) for name, comp in components.items()}
             )
-            empty_data_dict[ds_name] = empty_data
+            empty_data_dict[ds_name] = cls.normalize_dates(empty_data, components)
 
         df = cls._execute_query(
             external_routine.query,

@@ -403,3 +403,18 @@ def test_GH_1356_53(use_duckdb):
     result = _eval_1356(use_duckdb, 'SELECT Id_1, "Me_1" AS Me_2 FROM DS_2', "measure<number> Me_2")
     assert result["Me_2"].tolist()[0] == 1.5
     assert pd.isna(result["Me_2"].tolist()[1])
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_54(use_duckdb):
+    """The query is checked on the declared types of its operands, so a date function on the
+    Date Me_1 runs on both engines and in semantic_analysis, which raised 1-1-1-23 (issue
+    #1356)."""
+    result = _eval_1356(
+        use_duckdb,
+        "SELECT Id_1, Me_1 - INTERVAL 1 DAY AS Me_3 FROM DS_4",
+        "measure<date> Me_3",
+        operand="DS_4",
+    )
+    assert result["Me_3"].tolist()[0] == "2020-01-30"
+    assert pd.isna(result["Me_3"].tolist()[1])
