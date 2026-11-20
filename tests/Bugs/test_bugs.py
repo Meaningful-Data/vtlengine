@@ -14329,3 +14329,63 @@ class ValueDomainFollowUpBugs(BugHelper):
         self.BaseTest(
             code="GH_1364_17", number_inputs=1, references_names=["1", "2"], vd_names=self.vd_1364
         )
+
+    def test_GH_1364_18(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_3 as a , DS_4 as b apply a + b );
+                    (rules VP_1 on VD_STR, VP_2 on VD_STR2, VP_3 on the variable At_1)
+        Description: The viral Attribute At_1, on VD_STR in DS_3 and on VD_STR2 in DS_4, is
+                     combined with the rule VP_3 of the variable in the join step, as in
+                     DS_3 + DS_4, and kept by apply. The result had no At_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_18", number_inputs=2, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_19(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 + DS_4;
+                    (rules VP_1 on VD_STR, VP_2 on VD_STR2, VP_3 on the variable At_1)
+        Description: Control: the viral Attribute At_1 is combined with the rule VP_3 of the
+                     variable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_19", number_inputs=2, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_20(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_3 as a , DS_3 as b apply a + b ); (rule VP_1 on
+                    VD_STR)
+        Description: The viral Attribute At_1, on VD_STR in both operands, is combined with the
+                     rule VP_1 of its value domain and keeps VD_STR, as in DS_3 + DS_3. The result
+                     had no At_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_20", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_21(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_5 as a , DS_5 as b apply a + b );
+        Description: Control: the viral Attribute At_1 of both operands has no propagation rule.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_21",
+            number_inputs=1,
+            exception_code="1-3-3-6",
+            exception_message="Viral attribute At_1 has no viral propagation rule",
+            vd_names=self.vd_1364,
+        )

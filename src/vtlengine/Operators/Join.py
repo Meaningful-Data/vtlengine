@@ -753,6 +753,13 @@ class Apply(Operator):
             )
             if data is not None:
                 data[measure] = result.data
+        # The viral Attributes were combined by their propagation rules in the join step, and
+        # apply works on the Measures only, so they are kept (issue #1364)
+        for comp in dataset.components.values():
+            if comp.role == Role.VIRAL_ATTRIBUTE and "#" not in comp.name:
+                components[comp.name] = comp
+                if data is not None and dataset.data is not None:
+                    data[comp.name] = dataset.data[comp.name]
         return Dataset(name=VirtualCounter._new_ds_name(), components=components, data=data)
 
     @staticmethod

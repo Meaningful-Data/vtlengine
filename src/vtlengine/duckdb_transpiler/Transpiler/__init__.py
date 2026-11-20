@@ -3418,6 +3418,8 @@ FROM (
         else:
             for measure, expr in computed.items():
                 cols.append(f"{expr} AS {quote_name(measure)}")
+        # The viral Attributes combined in the join step are kept (issue #1364)
+        cols.extend(quote_name(name) for name in ds.get_viral_attributes_names() if "#" not in name)
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 
