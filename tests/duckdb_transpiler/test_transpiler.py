@@ -1152,12 +1152,12 @@ class TestEvalOperator:
         )
 
         result = transpiler.visit_EvalOp(eval_op)
-        # Table name is mapped to the actual DuckDB table name
-        expected_sql = 'SELECT Id_1, Me_1 * 2 AS Me_1 FROM "DS_1"'
+        # The query runs as written: the operand DS_1 is the table DS_1 (#1356)
+        expected_sql = "SELECT * FROM (SELECT Id_1, Me_1 * 2 AS Me_1 FROM DS_1\n) AS eval_result"
         assert_sql_equal(result, expected_sql)
 
     def test_eval_op_with_subquery_replacement(self):
-        """Test EVAL operator replaces table references and converts double-quoted strings."""
+        """Test EVAL operator runs the query as written: double quotes delimit identifiers."""
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
         external_routine = ExternalRoutine(
             dataset_names=["DS_1"],
@@ -1185,10 +1185,10 @@ class TestEvalOperator:
         )
 
         result = transpiler.visit_EvalOp(eval_op)
-        # Double-quoted strings are converted to single quotes (matching pandas backend)
-        # and table names are mapped to the actual DuckDB table names
+        # The query runs as written, as on the pandas engine: "N/A" is an identifier (#1356)
         expected_sql = (
-            "SELECT Id_1, SUM(Me_1) AS total, ifnull(Me_1, 'N/A') FROM \"DS_1\" GROUP BY Id_1"
+            'SELECT * FROM (SELECT Id_1, SUM(Me_1) AS total, ifnull(Me_1, "N/A") FROM DS_1 '
+            "GROUP BY Id_1\n) AS eval_result"
         )
         assert_sql_equal(result, expected_sql)
 

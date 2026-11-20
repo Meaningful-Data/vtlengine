@@ -709,7 +709,9 @@ class ExternalRoutine:
 
     @classmethod
     def _extract_dataset_names(cls, query: str) -> List[str]:
+        """The tables the query reads, each once: a name its WITH clause defines is not one
+        (issue #1356)."""
         expression = sqlglot.parse_one(query, dialect="duckdb")
-        tables_info = list(expression.find_all(exp.Table))
-        dataset_names = [t.name for t in tables_info]
-        return dataset_names
+        defined = {cte.alias for cte in expression.find_all(exp.CTE)}
+        tables = [t.name for t in expression.find_all(exp.Table) if t.name not in defined]
+        return list(dict.fromkeys(tables))

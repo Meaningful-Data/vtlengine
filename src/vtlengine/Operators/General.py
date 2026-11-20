@@ -153,7 +153,6 @@ class Eval(Unary):
                 return SemanticError("1-1-1-23", op="eval", error=error)
             return RunTimeError("2-1-1-1", op="eval", error=error)
 
-        query = re.sub(r'"([^"]*)"', r"'\1'", query)
         for forbidden in ["INSTALL", "LOAD"]:
             if re.search(rf"\b{forbidden}\b", query, re.IGNORECASE):
                 raise SemanticError("1-1-1-21", command=forbidden)

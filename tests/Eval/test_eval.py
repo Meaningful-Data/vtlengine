@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from tests.Helper import TestHelper, _use_duckdb_backend
+from tests.Helper import TestHelper, _use_duckdb_backend, engine_params
 from vtlengine import run, semantic_analysis
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Operators.General import Eval
@@ -298,3 +298,108 @@ def test_eval_inside_a_clause_is_not_supported(script: str) -> None:
             use_duckdb=_use_duckdb_backend(),
         )
     assert context.value.args[1] == "1-3-2-5"
+
+
+_STRUCTURES_1356 = {
+    "datasets": [
+        {
+            "name": "DS_2",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        },
+        {
+            "name": "DS_4",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Date", "role": "Measure", "nullable": True},
+            ],
+        },
+    ]
+}
+
+
+def _eval_1356(use_duckdb, query, returns, operand="DS_2"):
+    """Runs eval of the query on the operand, DS_2 (Id_1 1, 2 and the Number Me_1 1.5, null)
+    or DS_4 (the Date Me_1 2020-01-31, null), after checking it in semantic_analysis, and
+    returns the result sorted by Id_1."""
+    script = (
+        f'DS_r <- eval(SQL_1({operand}) language "SQL" returns dataset'
+        f" {{ identifier<integer> Id_1, {returns} }});"
+    )
+    routine = {"name": "SQL_1", "query": query}
+    semantic_analysis(script, _STRUCTURES_1356, external_routines=routine)
+    datapoints = {
+        "DS_2": pd.DataFrame({"Id_1": [1, 2], "Me_1": [1.5, None]}),
+        "DS_4": pd.DataFrame({"Id_1": [1, 2], "Me_1": ["2020-01-31", None]}),
+    }
+    result = run(
+        script,
+        _STRUCTURES_1356,
+        datapoints,
+        external_routines=routine,
+        use_duckdb=use_duckdb,
+    )["DS_r"]
+    return result.data.sort_values("Id_1").reset_index(drop=True)
+
+
+def _eval_error_1356(use_duckdb, query, returns):
+    with pytest.raises(RunTimeError) as context:
+        _eval_1356(use_duckdb, query, returns)
+    return context.value
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_49(use_duckdb):
+    """A query that reads DS_2 twice (a self join) runs as written on both engines. The DuckDB
+    engine quoted the second DS_2 twice and raised a raw ParserException (issue #1356)."""
+    result = _eval_1356(
+        use_duckdb,
+        "SELECT a.Id_1, a.Me_1 FROM DS_2 a JOIN DS_2 b ON a.Id_1 = b.Id_1",
+        "measure<number> Me_1",
+    )
+    assert result["Me_1"].tolist()[0] == 1.5
+    assert pd.isna(result["Me_1"].tolist()[1])
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_50(use_duckdb):
+    """The string literal 'DS_2' is not a table: it is returned as written on both engines.
+    The DuckDB engine returned '"DS_2"' (issue #1356)."""
+    result = _eval_1356(use_duckdb, "SELECT Id_1, 'DS_2' AS Me_2 FROM DS_2", "measure<string> Me_2")
+    assert result["Me_2"].tolist() == ["DS_2", "DS_2"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_51(use_duckdb):
+    """A query that ends with a -- comment runs on both engines. On the DuckDB engine the
+    comment swallowed the parenthesis around the query: raw ParserException (issue #1356)."""
+    result = _eval_1356(
+        use_duckdb, "SELECT Id_1, Me_1 FROM DS_2 -- DS_2 comment", "measure<number> Me_1"
+    )
+    assert result["Me_1"].tolist()[0] == 1.5
+    assert pd.isna(result["Me_1"].tolist()[1])
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_52(use_duckdb):
+    """The name t of a WITH clause is defined by the query, it is not an operand: the query
+    runs on both engines and in semantic_analysis, which raised 1-1-1-24 (issue #1356)."""
+    result = _eval_1356(
+        use_duckdb,
+        "WITH t AS (SELECT Id_1, Me_1 FROM DS_2) SELECT Id_1, Me_1 FROM t",
+        "measure<number> Me_1",
+    )
+    assert result["Me_1"].tolist()[0] == 1.5
+    assert pd.isna(result["Me_1"].tolist()[1])
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_53(use_duckdb):
+    """Double quotes delimit an identifier, as in DuckDB SQL: "Me_1" is the Measure Me_1 on
+    both engines. They turned it into the text Me_1 and raised a raw ArrowInvalid (pandas) or
+    ConversionException (DuckDB) (issue #1356)."""
+    result = _eval_1356(use_duckdb, 'SELECT Id_1, "Me_1" AS Me_2 FROM DS_2', "measure<number> Me_2")
+    assert result["Me_2"].tolist()[0] == 1.5
+    assert pd.isna(result["Me_2"].tolist()[1])

@@ -637,8 +637,12 @@ Each external routine is a JSON object with two required fields:
       - Identifier referenced in the VTL ``eval()`` call.
     * - ``query``
       - string
-      - SQL query to execute. Table names in the query must
-        match the dataset names passed as operands.
+      - SQL query to execute, run as written in DuckDB SQL:
+        text is written between single quotes, and double
+        quotes delimit an identifier (``"Me_1"``). Table names
+        in the query must match the dataset names passed as
+        operands; the names a ``WITH`` clause defines are not
+        operands.
 
 **JSON format**:
 
