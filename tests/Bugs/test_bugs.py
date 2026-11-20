@@ -14043,3 +14043,34 @@ class BasicTypeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1353_14", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := lag ( Me_3 , 1 , 0.5 over ( order by Id_1 ) ) ];
+        Description: The Number default 0.5 of lag on the Integer Me_3 gives a Number Me_4, as
+                     nvl ( Me_3 , 0.5 ) does, and the default is not rounded. The pandas engine
+                     rounded it to 1 and the DuckDB engine to 0, and both typed Me_4 as an
+                     Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_15", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_16(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := lag ( Me_1 , 1 , "x" over ( order by Id_1 ) ) ];
+        Description: The String default "x" of lag on the Number Me_1 has no common type with
+                     it, so lag raises 1-1-1-1, as nvl ( Me_1 , "x" ) does. The semantic analysis
+                     accepted it, the pandas engine raised a raw ConversionException and the
+                     DuckDB engine 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1353_16",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Number to String.",
+        )

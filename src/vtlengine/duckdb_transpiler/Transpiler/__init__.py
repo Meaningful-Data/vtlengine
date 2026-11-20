@@ -3688,7 +3688,9 @@ FROM (
             return list(self._current_dataset.get_identifiers_names())
         return []
 
-    def _build_analytic_expr(self, op: str, operand_sql: str, node: AST.Analytic) -> str:
+    def _build_analytic_expr(
+        self, op: str, operand_sql: str, node: AST.Analytic, operand_type: Any = None
+    ) -> str:
         """Build the analytic function expression (without OVER).
 
         For ratio_to_report, returns the complete expression including OVER clause.
@@ -3710,6 +3712,14 @@ FROM (
         if op in (tokens.LAG, tokens.LEAD) and node.params:
             offset = self._resolve_scalar_varid(node.params[0] if node.params else 1)
             default_val = node.params[1] if len(node.params) > 1 else None
+            if isinstance(default_val, AST.AST):
+                # The values are shifted in the common type of the operand and the default, as
+                # in nvl: a Number default makes an Integer operand a Number, a String default a
+                # Boolean one a String (issue #1353)
+                if self._detect_scalar_type(default_val) is Number:
+                    operand_sql = f"CAST({operand_sql} AS DOUBLE)"
+                elif operand_type is Boolean and self._value_type(default_val) == "String":
+                    operand_sql = _bool_to_str(operand_sql)
             func_sql = f"{op.upper()}({operand_sql}, {offset}"
             if default_val is not None:
                 if isinstance(default_val, AST.AST):
@@ -3744,7 +3754,10 @@ FROM (
         )
         if is_duration:
             operand_sql = f"vtl_duration_to_int({operand_sql})"
-        func_sql = self._build_analytic_expr(op, operand_sql, node)
+        operand_type = (
+            Boolean if node.operand is not None and self._is_boolean_expr(node.operand) else None
+        )
+        func_sql = self._build_analytic_expr(op, operand_sql, node, operand_type)
         # ratio_to_report already includes its own OVER clause
         if op != tokens.RATIO_TO_REPORT:
             over_clause = self._build_over_clause(node)
@@ -3792,7 +3805,9 @@ FROM (
             )
             if is_duration:
                 col_ref = f"vtl_duration_to_int({col_ref})"
-            func_sql = self._build_analytic_expr(op, col_ref, node)
+            func_sql = self._build_analytic_expr(
+                op, col_ref, node, getattr(comp, "data_type", None)
+            )
             if op == tokens.RATIO_TO_REPORT:
                 return func_sql
             func_sql = f"{func_sql} OVER ({over_clause})"

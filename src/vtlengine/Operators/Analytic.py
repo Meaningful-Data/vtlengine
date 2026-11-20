@@ -26,6 +26,7 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_SAMP,
 )
 from vtlengine.DataTypes import (
+    BASIC_TYPES,
     COMP_NAME_MAPPING,
     Date,
     Duration,
@@ -34,6 +35,7 @@ from vtlengine.DataTypes import (
     String,
     TimeInterval,
     TimePeriod,
+    binary_implicit_promotion,
     unary_implicit_promotion,
 )
 from vtlengine.DataTypes._time_checking import DATE_COMPARISON_DTYPE, _from_date_value
@@ -194,8 +196,8 @@ class Analytic(Operator.Unary):
                 if component_name in result_components:
                     del result_components[component_name]
             if cls.op in (LAG, LEAD) and component_name in result_components:
-                result_components[component_name] = cls._as_nullable(
-                    result_components[component_name]
+                result_components[component_name] = cls._shifted(
+                    result_components[component_name], params
                 )
         else:
             measures = operand.get_measures()
@@ -245,8 +247,8 @@ class Analytic(Operator.Unary):
             if cls.op in (LAG, LEAD):
                 for measure in measures:
                     if measure.name in result_components:
-                        result_components[measure.name] = cls._as_nullable(
-                            result_components[measure.name]
+                        result_components[measure.name] = cls._shifted(
+                            result_components[measure.name], params
                         )
         analyzed = [component_name] if component_name is not None else operand.get_measures_names()
         for name in analyzed:
@@ -420,6 +422,8 @@ class Analytic(Operator.Unary):
         else:
             measure_names = operand.get_measures_names()
         durations = all(operand.components[name].data_type is Duration for name in measure_names)
+        if cls.op in (LAG, LEAD):
+            df = cls._in_result_types(df, operand, result, measure_names)
         if params and len(params) > 1 and cls.op in (LAG, LEAD) and durations:
             # The default of lag and lead is the rank of a Duration too (issue #1352)
             params = [params[0], PERIOD_IND_MAPPING.get(params[1], params[1])]
@@ -481,18 +485,41 @@ class Analytic(Operator.Unary):
 
         return result
 
+    @staticmethod
+    def _in_result_types(
+        df: pd.DataFrame, operand: Dataset, result: Dataset, names: List[str]
+    ) -> pd.DataFrame:
+        """The data of lag and lead with the Measures ``names`` cast to their type in the
+        result, the common type of the operand and the default value, in which the values are
+        shifted (issue #1353)."""
+        for name in names:
+            from_type = operand.components[name].data_type
+            to_type = result.components[name].data_type
+            if Operator._promotes(from_type, to_type):
+                df[name] = Operator._as_type(df[name], to_type, from_type)
+        return df
+
     @classmethod
-    def _as_nullable(cls, component: Component) -> Component:
-        """Copy of the Component marked as nullable.
+    def _shifted(cls, component: Component, params: Optional[List[Any]]) -> Component:
+        """The result Component of lag and lead on the Component, a copy where it changes.
 
         lag and lead have no value to shift in at the edges of the partition, so their
-        result holds nulls whatever the operand declared.
+        result holds nulls whatever the operand declared. Their result has the common type of
+        the operand and the default value, as nvl gives it: a Number default makes an Integer
+        operand a Number, and a String default on a Number raises 1-1-1-1 (issue #1353). A
+        time type has no literals, so a String default is a value of it (issue #1352).
         """
-        if component.nullable:
+        data_type = component.data_type
+        default_type = BASIC_TYPES.get(type(params[1])) if params and len(params) > 1 else None
+        if default_type is not None and not (
+            default_type is String and data_type in (Date, TimePeriod, TimeInterval, Duration)
+        ):
+            data_type = binary_implicit_promotion(data_type, default_type)
+        if component.nullable and data_type is component.data_type:
             return component
-        nullable_component = copy(component)
-        nullable_component.nullable = True
-        return nullable_component
+        shifted = copy(component)
+        shifted.nullable, shifted.data_type = True, data_type
+        return shifted
 
     @classmethod
     def normalize_dates(
