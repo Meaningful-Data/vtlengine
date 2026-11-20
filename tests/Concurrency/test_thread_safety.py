@@ -20,7 +20,13 @@ from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Scalar
 from vtlengine.Operators.Numeric import AbsoluteValue
 from vtlengine.Utils import _duckdb
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._duckdb import query_connection
+from vtlengine.ViralPropagation import (
+    ViralPropagationRegistry,
+    get_current_registry,
+    set_current_registry,
+)
 
 # run() executes these scripts on the pandas engine, so the pandas pass is enough
 pytestmark = pytest.mark.skipif(
@@ -171,6 +177,74 @@ class TestConcurrentAnalysis:
         assert list(results["DS_r1"].data["Me_1"]) == [10.0, 20.0, 30.0, 40.0, 50.0]
         assert results["DS_r2"].data is not None
         assert list(results["DS_r2"].data["Me_1"]) == [11.0, 21.0, 31.0, 41.0, 51.0]
+
+
+class TestConcurrentJoins:
+    """The join operators keep their reference Data Set and the operators number their virtual
+    Data Sets and Components for the thread that runs them, so valid join scripts run in
+    concurrent threads give their results (issue #1352)."""
+
+    def test_concurrent_joins(self) -> None:
+        structures = {
+            "datasets": [
+                *DATA_STRUCTURES["datasets"],
+                {
+                    "name": "DS_2",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": False,
+                        },
+                        {"name": "Me_2", "type": "Number", "role": "Measure", "nullable": True},
+                    ],
+                },
+            ]
+        }
+        datapoints = {
+            **DATAPOINTS,
+            "DS_2": pd.DataFrame({"Id_1": [1, 2, 3], "Me_2": [1.0, 2.0, 3.0]}),
+        }
+        script = "\n".join(
+            f"DS_r{i} <- inner_join(DS_1, DS_2 calc Me_{i + 3} := Me_1 + Me_2);" for i in range(5)
+        )
+
+        def task(_: int) -> None:
+            results = run(script=script, data_structures=structures, datapoints=datapoints)
+            for i in range(5):
+                data = results[f"DS_r{i}"].data
+                assert list(data[f"Me_{i + 3}"]) == [11.0, 21.0, 32.0, 42.0, 53.0]
+
+        previous_interval = sys.getswitchinterval()
+        sys.setswitchinterval(1e-6)
+        try:
+            with ThreadPoolExecutor(max_workers=6) as executor:
+                futures = [executor.submit(task, i) for i in range(24)]
+                for future in as_completed(futures):
+                    future.result()
+        finally:
+            sys.setswitchinterval(previous_interval)
+
+    def test_virtual_names_and_rules_per_thread(self) -> None:
+        VirtualCounter.reset()
+        assert VirtualCounter._new_ds_name() == "__VDS_1__"
+        registry = ViralPropagationRegistry()
+        set_current_registry(registry)
+
+        def other_thread() -> tuple:  # type: ignore[type-arg]
+            return (
+                VirtualCounter._new_ds_name(),
+                VirtualCounter._new_dc_name(),
+                get_current_registry() is registry,
+            )
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            assert executor.submit(other_thread).result() == ("__VDS_1__", "__VDC_1__", False)
+        assert VirtualCounter._new_ds_name() == "__VDS_2__"
+        assert VirtualCounter.component_count == 0
+        assert get_current_registry() is registry
+        VirtualCounter.reset()
 
 
 class TestConcurrentAnalytic:

@@ -1,10 +1,31 @@
+import threading
 from copy import copy
 
+# The counts of the virtual names, for the thread that asks for them: runs in concurrent threads
+# number their virtual Data Sets and Components on their own (issue #1352)
+_counts = threading.local()
 
-class VirtualCounter:
+
+class _ThreadCounts(type):
+    @property
+    def dataset_count(cls) -> int:
+        return int(getattr(_counts, "dataset_count", 0))
+
+    @dataset_count.setter
+    def dataset_count(cls, value: int) -> None:
+        _counts.dataset_count = value
+
+    @property
+    def component_count(cls) -> int:
+        return int(getattr(_counts, "component_count", 0))
+
+    @component_count.setter
+    def component_count(cls, value: int) -> None:
+        _counts.component_count = value
+
+
+class VirtualCounter(metaclass=_ThreadCounts):
     _instance = None
-    dataset_count: int = 0
-    component_count: int = 0
 
     def __init__(self) -> None:
         self.dataset_count = 0
