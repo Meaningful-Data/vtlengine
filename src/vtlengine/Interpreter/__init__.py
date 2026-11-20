@@ -983,6 +983,7 @@ class InterpreterAnalyzer(ASTTemplate):
             data_type=op_comp.data_type,
             role=Role.MEASURE,
             nullable=op_comp.nullable,
+            value_domain=op_comp.value_domain,
         )
         if operand.data is not None:
             cols_to_keep = operand.get_identifiers_names() + operand.get_viral_attributes_names()
@@ -1115,6 +1116,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     data_type=operand_comp.data_type,
                     role=analytic_role,
                     nullable=operand_comp.nullable,
+                    value_domain=operand_comp.value_domain,
                 )
 
                 # Any existing component can be ordered by, as in the dataset-level
@@ -1291,6 +1293,7 @@ class InterpreterAnalyzer(ASTTemplate):
             data_type=result.components[measure_name].data_type,
             role=result.components[measure_name].role,
             nullable=result.components[measure_name].nullable,
+            value_domain=result.components[measure_name].value_domain,
         )
         return self.merge_then_else_datasets(result_comp)
 
@@ -1599,6 +1602,7 @@ class InterpreterAnalyzer(ASTTemplate):
                         data_type=measure.data_type,
                         role=role if role is not None else kept_role,
                         nullable=measure.nullable,
+                        value_domain=measure.value_domain,
                     )
                 )
             operands = aux_operands

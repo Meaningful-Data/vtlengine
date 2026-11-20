@@ -174,7 +174,10 @@ class Aggregation(Operator.Unary):
         for _, comp in result_components.items():
             if comp.role == Role.MEASURE:
                 unary_implicit_promotion(comp.data_type, cls.type_to_check)
-                comp.value_domain = None
+                # max and min give one of the values of the Measure, which keeps its value
+                # domain; the other operators compute a value of the basic type (issue #1364)
+                if cls.op not in (MAX, MIN):
+                    comp.value_domain = None
                 if cls.return_type is not None:
                     comp.data_type = cls.return_type
         if cls.op == COUNT:

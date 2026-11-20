@@ -298,7 +298,13 @@ below), the Components that ``filter``, ``keep``, ``drop``,
 ``rename``, ``sub`` and the joins keep, the Measures that
 ``flow_to_stock`` and ``stock_to_flow`` pass through (all but the
 ``Integer`` and ``Number`` ones, which they accumulate), and a
-Component written alone in ``calc`` (``calc Me_3 := Id_2``).
+Component written alone in ``calc`` (``calc Me_3 := Id_2``). The
+operators that give one of the values of their operand keep its
+value domain too: ``max`` and ``min``, in an aggregation and as
+analytic operators, ``first_value``, ``last_value``, and ``lag`` and
+``lead`` without a default value. With a default value, ``lag`` and
+``lead`` give the basic type, as the default is a literal of it and
+``nvl`` gives that mix the basic type.
 ``run()`` and ``semantic_analysis()`` write ``"type": "VD_FLOW"``
 for them, and ``Dataset.from_json``, ``Component.from_json``,
 ``DataComponent.from_json`` and ``Scalar.from_json`` read such a type

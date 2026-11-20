@@ -14087,3 +14087,136 @@ class BasicTypeValueBugs(BugHelper):
             exception_code="1-1-1-1",
             exception_message="Invalid implicit cast from Number to String.",
         )
+
+
+class ValueDomainFollowUpBugs(BugHelper):
+    """Value domains, returns types, viral Attributes and error messages that results and checks
+    keep (issue #1364)."""
+
+    vd_1364 = ["GH_1364-VD_INT", "GH_1364-VD_NUM", "GH_1364-VD_STR", "GH_1364-VD_STR2"]
+
+    def test_GH_1364_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- max ( DS_1 group by Id_1 );
+        Description: The aggregate max of Me_1, on the value domain VD_INT, is one of its values,
+                     so Me_1 keeps VD_INT. It was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_1", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := min ( Me_1 ) group by Id_1 ];
+        Description: The aggregate min of Me_1, on VD_INT, in an aggr gives Me_2 on VD_INT. It was
+                     an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_2", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- max ( DS_1 over ( partition by Id_1 ) );
+        Description: The analytic max of Me_1, on VD_INT, keeps VD_INT. It was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_3", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := min ( Me_1 over ( partition by Id_1 ) ) ];
+        Description: The analytic min of Me_1, on VD_INT, in a calc gives Me_2 on VD_INT. It was
+                     an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_4", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- first_value ( DS_1 over ( partition by Id_1 order by Id_2 ) );
+        Description: first_value of Me_1, on VD_INT, keeps VD_INT. It was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_5", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- last_value ( DS_1 over ( partition by Id_1 order by Id_2 ) );
+        Description: last_value of Me_1, on VD_INT, keeps VD_INT. It was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_6", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- lag ( DS_1 , 1 over ( partition by Id_1 order by Id_2 ) );
+        Description: lag of Me_1, on VD_INT, without a default keeps VD_INT, with nulls at the
+                     edges of the partitions. It was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_7", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- lead ( DS_1 , 1 over ( partition by Id_1 order by Id_2 ) );
+        Description: lead of Me_1, on VD_INT, without a default keeps VD_INT. It was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_8", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- lag ( DS_1 , 1 , 9 over ( partition by Id_1 order by Id_2 ) );
+        Description: Control: the default 9 is a literal of the basic type, so lag of Me_1, on
+                     VD_INT, gives an Integer, as nvl ( DS_1 , 9 ) does.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_9", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( DS_1 group by Id_1 );
+        Description: Control: sum computes a new value, so the sum of Me_1, on VD_INT, is an
+                     Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_10", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
