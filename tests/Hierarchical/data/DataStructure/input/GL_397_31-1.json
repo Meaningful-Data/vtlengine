@@ -6,7 +6,7 @@
         {
           "name": "REF_AREA",
           "role": "Identifier",
-          "type": "String",
+          "type": "GeoArea",
           "nullable": false
         },
         {
@@ -24,7 +24,7 @@
         {
           "name": "DATE_STR",
           "role": "Identifier",
-          "type": "String",
+          "type": "ReferenceTime",
           "nullable": false
         },
         {

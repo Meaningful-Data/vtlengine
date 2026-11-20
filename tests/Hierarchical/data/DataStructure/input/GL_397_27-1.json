@@ -6,13 +6,13 @@
         {
           "name": "ACCOUNTING_ENTRY",
           "role": "Identifier",
-          "type": "String",
+          "type": "ACCOUNTING_ENTRY_vd",
           "nullable": false
         },
         {
           "name": "FUNCTIONAL_CAT",
           "role": "Identifier",
-          "type": "String",
+          "type": "FUNCTIONAL_CAT",
           "nullable": false
         },
         {
@@ -30,13 +30,13 @@
         {
           "name": "REF_AREA",
           "role": "Identifier",
-          "type": "String",
+          "type": "VD_REF_AREA",
           "nullable": false
         },
         {
           "name": "REF_SECTOR",
           "role": "Identifier",
-          "type": "String",
+          "type": "vd_REF_SECTOR",
           "nullable": false
         },
         {

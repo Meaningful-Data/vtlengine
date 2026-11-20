@@ -355,6 +355,7 @@ class Hierarchy(Operators.Operator):
         node_children: Optional[Dict[str, Tuple[str, List[str]]]] = None,
         rule_component: Optional[str] = None,
         ruleset: Optional[str] = None,
+        keep_rule_domain: bool = False,
     ) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {
@@ -362,8 +363,8 @@ class Hierarchy(Operators.Operator):
         }
         for comp in result_components.values():
             # The Measures hold the computed values, and the rule Identifier the computed code
-            # items (issue #1348)
-            if comp.role == Role.MEASURE or comp.name == rule_component:
+            # items: it keeps its value domain when keep_rule_domain says so (issue #1348)
+            if comp.role == Role.MEASURE or (comp.name == rule_component and not keep_rule_domain):
                 comp.value_domain = None
         # Viral attributes propagate to the hierarchy result (issue #877).
         for viral_comp in viral_components or []:
@@ -475,6 +476,7 @@ class Hierarchy(Operators.Operator):
         node_children: Optional[Dict[str, Tuple[str, List[str]]]] = None,
         rule_component: Optional[str] = None,
         ruleset: Optional[str] = None,
+        keep_rule_domain: bool = False,
     ) -> Dataset:
         result = cls.validate(
             dataset,
@@ -482,6 +484,7 @@ class Hierarchy(Operators.Operator):
             output,
             viral_components=viral_components,
             rule_component=rule_component,
+            keep_rule_domain=keep_rule_domain,
         )
         if len(computed_dict) == 0:
             computed_data = pd.DataFrame(columns=result.get_components_names())

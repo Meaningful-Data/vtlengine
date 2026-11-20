@@ -17,7 +17,7 @@
         },
         {
           "name": "COUNTRY",
-          "type": "String",
+          "type": "COUNTRY",
           "nullable": false,
           "role": "Identifier"
         },
@@ -101,7 +101,7 @@
         },
         {
           "name": "TIME_PERIOD",
-          "type": "Time_Period",
+          "type": "TIME_PERIOD",
           "nullable": false,
           "role": "Identifier"
         },

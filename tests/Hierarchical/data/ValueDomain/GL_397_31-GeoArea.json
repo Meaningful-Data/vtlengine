@@ -1,0 +1,20 @@
+{
+  "name": "GeoArea",
+  "type": "String",
+  "setlist": [
+    "BR",
+    "ES",
+    "EU",
+    "FR",
+    "GB",
+    "GR",
+    "IT",
+    "PT",
+    "BE",
+    "DE",
+    "LU",
+    "NL",
+    "DK",
+    "IE"
+  ]
+}

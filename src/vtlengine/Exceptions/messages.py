@@ -363,6 +363,12 @@ centralised_messages = {
         "description": "Raised when a row of a CSV file has more fields than its header names, "
         "or a quote that leaves it unterminated.",
     },
+    "0-3-1-19": {
+        "message": "Could not write {file}: {error}",
+        "description": "Raised when the DuckDB engine cannot write a result file to the output "
+        "folder, such as an S3 URI without credentials, or without network access to install "
+        "the httpfs extension.",
+    },
     # Input validation errors for URL datapoints
     "0-1-3-8": {
         "message": "data_structures must be a file path or URL "
@@ -856,13 +862,21 @@ centralised_messages = {
         "description": "Raised when check_datapoint calls a ruleset defined on value domains "
         "with another number of components than the value domains of its signature.",
     },
+    "1-1-10-16": {
+        "message": "At op {op}: The condition of the ruleset {ruleset} is defined on {expected} "
+        "value domains, but the call lists {found} condition components.",
+        "description": "Raised when check_hierarchy or hierarchy calls a ruleset defined on value "
+        "domains with another number of condition components than the value domains of its "
+        "condition.",
+    },
     "1-1-10-13": {
         "message": "The {element} {value} of {where} is not one of the values of the Value "
         "Domain {value_domain}.",
         "description": "Raised when an error code or an error level is not a value of "
         "errorcode_vd or errorlevel_vd, given as value domains, also when it is a literal of "
-        "another type, which is not converted, or when a constant of a viral propagation rule "
-        "on a value domain is not one of its values.",
+        "another type, which is not converted, when a constant of a viral propagation rule "
+        "on a value domain is not one of its values, or when a code item of a hierarchical "
+        "ruleset on a value domain is not one of its values.",
     },
     "1-1-10-11": {
         "message": "At op {op}: The validation and imbalance operands must have the same "

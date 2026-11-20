@@ -13,6 +13,7 @@ Public functions:
 from ._execution import execute_queries, validate_datapoints
 from ._io import (
     extract_datapoint_paths,
+    is_s3_uri,
     load_datapoints_duckdb,
     register_dataframes,
     save_datapoints_duckdb,
@@ -24,6 +25,7 @@ __all__ = [
     "save_datapoints_duckdb",
     "execute_queries",
     "extract_datapoint_paths",
+    "is_s3_uri",
     "register_dataframes",
     "apply_time_period_representation",
     "format_time_period_scalar",

@@ -148,21 +148,30 @@ def reference_datasets(param):
 
 def load_dataset(dataPoints, dataStructures, dp_dir, param):
     datasets = {}
+    value_domains = {
+        vd.name: vd
+        for vd in (ValueDomain.from_json(p.read_text()) for p in value_domain_dir.glob("*.json"))
+    }
     for f in dataStructures:
         with open(f, "r") as file:
             structures = json.load(file)
 
         for dataset_json in structures["datasets"]:
             dataset_name = dataset_json["name"]
-            components = {
-                component["name"]: Component(
+            components = {}
+            for component in dataset_json["DataStructure"]:
+                value_domain = value_domains.get(component["type"])
+                components[component["name"]] = Component(
                     name=component["name"],
-                    data_type=SCALAR_TYPES[component["type"]],
+                    data_type=(
+                        SCALAR_TYPES[component["type"]]
+                        if value_domain is None
+                        else value_domain.type
+                    ),
                     role=Role(component["role"]),
                     nullable=component["nullable"],
+                    value_domain=value_domain,
                 )
-                for component in dataset_json["DataStructure"]
-            }
             if dataset_name not in dataPoints:
                 data = pd.DataFrame(columns=components.keys())
             else:

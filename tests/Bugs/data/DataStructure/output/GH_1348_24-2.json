@@ -1,7 +1,7 @@
 {
   "datasets": [
     {
-      "name": "DS_r",
+      "name": "DS_r2",
       "DataStructure": [
         {
           "name": "Id_1",
@@ -12,7 +12,7 @@
         {
           "name": "Id_2",
           "role": "Identifier",
-          "type": "String",
+          "type": "VD_STR",
           "nullable": false
         },
         {
@@ -42,7 +42,7 @@
         {
           "name": "imbalance",
           "role": "Measure",
-          "type": "Number",
+          "type": "Integer",
           "nullable": true
         }
       ]

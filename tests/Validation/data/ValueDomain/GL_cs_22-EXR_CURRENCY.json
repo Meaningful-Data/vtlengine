@@ -1,0 +1,15 @@
+{
+  "name": "EXR_CURRENCY",
+  "type": "String",
+  "setlist": [
+    "'_T'",
+    "AUD",
+    "BRN",
+    "CNY",
+    "INR",
+    "MXN",
+    "NOK",
+    "THB",
+    "_T"
+  ]
+}
