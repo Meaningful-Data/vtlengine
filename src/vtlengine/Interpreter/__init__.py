@@ -1399,6 +1399,14 @@ class InterpreterAnalyzer(ASTTemplate):
                         self.udo_params.pop()
                 # The checks of the operators that passed the value on come first
                 for op, param, constraint in checks:
+                    declared = next(
+                        p["declared"]
+                        for p in cast(Dict[str, Any], self.udos)[op]["params"]
+                        if p["name"] == param
+                    )
+                    if isinstance(declared.data_type, type):
+                        # A component of the type the parameter declares (issue #1356)
+                        self._check_udo_component_type(op, param, declared, udo_element)
                     self._check_udo_constraint(op, f"parameter {param}", constraint, udo_element)
                 return udo_element
             if isinstance(udo_element, (Scalar, Dataset, DataComponent)):
@@ -3113,6 +3121,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
                 if constraints is not None and constraints.value is not None:
                     checks.append((node.op, param["name"], constraints.value))
+                elif isinstance(declared.data_type, type):
+                    # The type of a typed component is checked where the body reads it, as its
+                    # constraints are (issue #1356)
+                    checks.append((node.op, param["name"], AST.TypeConstraint()))
                 if checks:
                     component_constraints[param["name"]] = checks
                 continue

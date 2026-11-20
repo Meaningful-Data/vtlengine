@@ -14593,6 +14593,76 @@ class SemanticCheckBugs(BugHelper):
             "regexp: [,  in position 0.",
         )
 
+    def test_GH_1356_56(self):
+        """
+        Status: OK
+        Expression: define operator f ( ds dataset , x component < integer > ) returns dataset is ds
+                    [ calc Me_9 := x ] end operator; DS_r <- f ( DS_1 , Me_3 );
+        Description: The String Component Me_3 given to the parameter x component < integer > raises
+                     1-2-18, as the String "a" given to an integer parameter (case 56b). Both
+                     engines took it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_56",
+            number_inputs=1,
+            exception_code="1-2-18",
+            exception_message="Expected Integer, got String on UDO f, parameter x.",
+        )
+
+    def test_GH_1356_56b(self):
+        """
+        Status: OK
+        Expression: define operator f ( ds dataset , x integer ) returns dataset is ds [ calc Me_9
+                    := x ] end operator; DS_r <- f ( DS_1 , "a" );
+        Description: Control of case 56: the String "a" given to an integer parameter raises 1-2-18.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_56b",
+            number_inputs=1,
+            exception_code="1-2-18",
+            exception_message="Expected Integer, got String on UDO f, parameter x.",
+        )
+
+    def test_GH_1356_57(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component < integer > ) returns component is x end
+                    operator; DS_r <- DS_1 [ calc Me_9 := f ( Me_3 ) ];
+        Description: The String Component Me_3 given to the parameter x component < integer > in a
+                     calc raises 1-2-18. Both engines took it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_57",
+            number_inputs=1,
+            exception_code="1-2-18",
+            exception_message="Expected Integer, got String on UDO f, parameter x.",
+        )
+
+    def test_GH_1356_58(self):
+        """
+        Status: OK
+        Expression: define operator f ( ds dataset , x component < VD_1 > ) returns dataset is ds [
+                    calc Me_9 := x ] end operator; DS_r <- f ( DS_1 , Me_3 );
+        Description: The String Component Me_3 given to a parameter on the Integer value domain VD_1
+                     raises 1-2-18. The pandas engine raised 2-1-5-4 and the DuckDB engine a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_58",
+            number_inputs=1,
+            exception_code="1-2-18",
+            exception_message="Expected Integer, got String on UDO f, parameter x.",
+            vd_names=["GH_1356-VD_1"],
+        )
+
     def test_GH_1356_63(self):
         """
         Status: OK
