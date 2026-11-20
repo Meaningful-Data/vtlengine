@@ -14186,7 +14186,8 @@ class SemanticCheckBugs(BugHelper):
             code="GH_1356_9",
             number_inputs=1,
             exception_code="1-1-19-13",
-            exception_message="At op sum: RANGE window is not supported for Boolean data type in component Me_4.",
+            exception_message="At op sum: RANGE window is not supported for Boolean data "
+            "type in component Me_4.",
         )
 
     def test_GH_1356_10(self):
@@ -14204,7 +14205,8 @@ class SemanticCheckBugs(BugHelper):
             code="GH_1356_10",
             number_inputs=1,
             exception_code="1-1-3-3",
-            exception_message="At op sum: A range window with a limit other than unbounded or current data point needs one order by Component, found 2.",
+            exception_message="At op sum: A range window with a limit other than unbounded "
+            "or current data point needs one order by Component, found 2.",
         )
 
     def test_GH_1356_10b(self):
@@ -14221,7 +14223,8 @@ class SemanticCheckBugs(BugHelper):
             code="GH_1356_10b",
             number_inputs=1,
             exception_code="1-1-3-3",
-            exception_message="At op sum: A range window with a limit other than unbounded or current data point needs one order by Component, found 0.",
+            exception_message="At op sum: A range window with a limit other than unbounded "
+            "or current data point needs one order by Component, found 0.",
         )
 
     def test_GH_1356_11(self):
@@ -14238,7 +14241,9 @@ class SemanticCheckBugs(BugHelper):
             code="GH_1356_11",
             number_inputs=1,
             exception_code="1-1-3-4",
-            exception_message="Invalid analytic window 'data points between 1 following and 1 preceding' (line 1, column 79): the window starts after it ends.",
+            exception_message="Invalid analytic window 'data points between 1 following and "
+            "1 preceding' (line 1, column 79): the window starts after it "
+            "ends.",
         )
 
     def test_GH_1356_12(self):
@@ -14301,7 +14306,8 @@ class SemanticCheckBugs(BugHelper):
             code="GH_1356_14",
             number_inputs=1,
             exception_code="1-1-3-5",
-            exception_message="Invalid limit '-2 preceding' (line 1, column 99) of an analytic window: a limit cannot be negative.",
+            exception_message="Invalid limit '-2 preceding' (line 1, column 99) of an "
+            "analytic window: a limit cannot be negative.",
         )
 
     def test_GH_1356_15(self):
@@ -14351,7 +14357,8 @@ class SemanticCheckBugs(BugHelper):
             code="GH_1356_17",
             number_inputs=1,
             exception_code="1-1-19-10",
-            exception_message="getyear can only be applied to operands with data type as Date or Time Period",
+            exception_message="getyear can only be applied to operands with data type as "
+            "Date or Time Period",
         )
 
     def test_GH_1356_18(self):
@@ -14582,5 +14589,26 @@ class SemanticCheckBugs(BugHelper):
             code="GH_1356_55",
             number_inputs=1,
             exception_code="1-1-18-8",
-            exception_message="At op match_characters: unterminated character set in regexp: [,  in position 0.",
+            exception_message="At op match_characters: unterminated character set in "
+            "regexp: [,  in position 0.",
+        )
+
+    def test_GH_1356_63(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_DUR ) is when "A" then "XYZ" ;
+                    else "A" end viral propagation; DS_r <- DS_7 + DS_7;
+        Description: The constant "XYZ" of the rule is not a Duration, so not a value of VD_DUR:
+                     1-1-10-13, an error of the script. Both engines and the semantic analysis
+                     raised the input error 0-1-1-35.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_63",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message='The constant "XYZ" of viral propagation rule VP_1 is not one '
+            "of the values of the Value Domain VD_DUR.",
+            vd_names=["GH_1356-VD_DUR"],
         )
