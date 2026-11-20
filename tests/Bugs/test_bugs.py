@@ -13594,3 +13594,42 @@ class TimeValueBugs(BugHelper):
             exception_message="Time Period operands with different period indicators do not "
             "support < and > Comparison operations, unable to get the max",
         )
+
+    def test_GH_1352_36p6(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := max ( Me_1 over ( partition by Id_1 ) ) ];
+        Description: Extra of case 36: Me_1 holds 2020Q1, 2020M1 and 2020Q2, periods of
+                     different indicators, which max cannot compare, so the analytic max raises
+                     2-1-19-20, as the max of a Data Set does. The DuckDB engine compared the
+                     texts and gave 2020Q1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36p6",
+            number_inputs=1,
+            exception_code="2-1-19-20",
+            exception_message="Time Period operands with different period indicators do not "
+            "support < and > Comparison operations, unable to get the max",
+        )
+
+    def test_GH_1352_36p7(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := min ( Me_1 over ( partition by Id_1 ) ) ]
+                        [ keep Me_4 ];
+        Description: Extra of case 36: the periods of Me_1 have different indicators, so the
+                     analytic min raises 2-1-19-20, also when the keep that follows removes the
+                     Measure it gives. The DuckDB engine compared the texts and returned the Data
+                     Set.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36p7",
+            number_inputs=1,
+            exception_code="2-1-19-20",
+            exception_message="Time Period operands with different period indicators do not "
+            "support < and > Comparison operations, unable to get the min",
+        )

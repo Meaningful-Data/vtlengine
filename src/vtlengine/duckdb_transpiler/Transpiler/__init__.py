@@ -3726,6 +3726,18 @@ FROM (
             func_sql = f"{func_sql} OVER ({over_clause})"
         if is_duration:
             func_sql = f"vtl_int_to_duration({func_sql})"
+        elif op in (tokens.MAX, tokens.MIN) and (
+            node.operand is not None and self._detect_scalar_type(node.operand) == TimePeriod
+        ):
+            # The periods of the operand must have one indicator, as for the max and the min of
+            # a Data Set (_add_tp_indicator_check) and on the pandas engine (issue #1352)
+            indicator = f"vtl_period_parse({operand_sql}).period_indicator"
+            func_sql = (
+                f"CASE WHEN MIN({indicator}) OVER () <> MAX({indicator}) OVER () "
+                f"THEN error('VTL Error 2-1-19-20: Time Period operands with different period "
+                f"indicators do not support < and > Comparison operations, unable to get the "
+                f"{op}') ELSE {func_sql} END"
+            )
         # An analytic inside another analytic's operand cannot be emitted inline
         # (SQL forbids nesting window functions): hand it to the enclosing clause
         # as a pending column and reference it by alias (#1026)
