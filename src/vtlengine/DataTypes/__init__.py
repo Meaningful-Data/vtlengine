@@ -279,7 +279,7 @@ class Integer(Number):
             # TODO: VTL 2.2 specifies truncation toward zero (return int(value)),
             #  pending discussion
             if value.is_integer():
-                return int(value)
+                return cls.in_range(value, from_type)
             # else:
             #     raise RunTimeError(
             #         "2-1-5-1",
@@ -287,7 +287,7 @@ class Integer(Number):
             #         type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
             #         type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
             #     )
-            return int(value)
+            return cls.in_range(value, from_type)
 
         raise RunTimeError(
             "2-1-5-1",
@@ -295,6 +295,20 @@ class Integer(Number):
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
             type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
         )
+
+    @classmethod
+    def in_range(cls, value: Any, from_type: Any) -> int:
+        """The whole number value as an Integer, which holds 64 bits: a value out of that range
+        raises 2-1-5-1, as the DuckDB engine does (issue #1356)."""
+        whole = int(value)
+        if not -(2**63) <= whole < 2**63:
+            raise RunTimeError(
+                "2-1-5-1",
+                value=value,
+                type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
+            )
+        return whole
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> int:
@@ -319,7 +333,7 @@ class Integer(Number):
                     type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
                     type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
                 )
-            return int(value)
+            return cls.in_range(value, from_type)
 
         raise RunTimeError(
             "2-1-5-1",

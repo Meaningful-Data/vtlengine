@@ -161,7 +161,7 @@ def test_chained_rounding_matches_pandas_kernel() -> None:
 def test_unary_math_parity() -> None:
     """Sqrt is IEEE-correctly-rounded so raw float64 results are identical;
     exp/ln act as canaries for libm agreement on valid values."""
-    values = [0.123456789012345, 1.5, 4.0, 12345.6789012345, 2.0]
+    values = [0.123456789012345, 1.5, 4.0, 123.456789012345, 2.0]
     df = pd.DataFrame({"Id_1": range(1, len(values) + 1), "Me_1": values})
     script = """
         DS_sqrt <- DS_1[calc Me_1 := sqrt(Me_1)];

@@ -2,13 +2,14 @@ import inspect
 import json
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
 from pandas import DataFrame as PandasDataFrame
 from pandas._testing import assert_frame_equal
+from sqlglot.dialects.duckdb import DuckDB
 
 import vtlengine.DataTypes as DataTypes
 from vtlengine.DataTypes import RESERVED_COMPONENT_NAMES, SCALAR_TYPES, ScalarType
@@ -177,6 +178,8 @@ def named_type(
     """The data type and the value domain of the type a Component or a scalar is written with,
     the inverse of component_type_name: a basic type, or one of the value domains given, by
     name, on its basic type. Any other name raises 0-2-1-1 for the element."""
+    if value_domains is not None and not isinstance(value_domains, dict):
+        raise InputValidationException(code="0-1-1-2", input=value_domains)
     if type_name in SCALAR_TYPES:
         return SCALAR_TYPES[type_name], None
     value_domain = (value_domains or {}).get(type_name)
@@ -707,7 +710,27 @@ class ExternalRoutine:
 
     @classmethod
     def _extract_dataset_names(cls, query: str) -> List[str]:
+        """The tables the query reads, each once: a name its WITH clause defines is not one
+        (issue #1356)."""
         expression = sqlglot.parse_one(query, dialect="duckdb")
-        tables_info = list(expression.find_all(exp.Table))
-        dataset_names = [t.name for t in tables_info]
-        return dataset_names
+        defined = {cte.alias for cte in expression.find_all(exp.CTE)}
+        tables = [t.name for t in expression.find_all(exp.Table) if t.name not in defined]
+        return list(dict.fromkeys(tables))
+
+    def query_on(self, operands: Iterable["Dataset"]) -> str:
+        """The query both engines run. A double-quoted name is an identifier when it names a
+        Component or an operand, or the query defines it (an alias, a WITH name or column);
+        otherwise it is a text, as between single quotes. DuckDB matches identifiers ignoring
+        case, so does this (issue #1356)."""
+        expression = sqlglot.parse_one(self.query, dialect="duckdb")
+        names = [*self.dataset_names, *(a.alias for a in expression.find_all(exp.Alias))]
+        for alias in expression.find_all(exp.TableAlias):
+            names += [alias.name, *(column.name for column in alias.columns)]
+        names += [name for operand in operands for name in operand.components]
+        identifiers = {name.lower() for name in names}
+        query = self.query
+        for token in reversed(DuckDB().tokenize(self.query)):
+            if self.query[token.start] == '"' and token.text.lower() not in identifiers:
+                text = token.text.replace("'", "''")
+                query = f"{query[: token.start]}'{text}'{query[token.end + 1 :]}"
+        return query

@@ -28,7 +28,7 @@ from vtlengine.DataTypes import (
     check_binary_implicit_promotion,
     check_unary_implicit_promotion,
 )
-from vtlengine.Exceptions import SemanticError
+from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import value_of
 
 
@@ -214,7 +214,11 @@ def _is_value_of(value: Any, data_type: Type[ScalarType]) -> bool:
         compatible = value_type in (String, Null)
     else:
         compatible = check_unary_implicit_promotion(value_type, data_type)
-    return compatible and data_type.check(value)
+    try:
+        return compatible and data_type.check(value)
+    except InputValidationException:
+        # A constant of the script that is no value of the type, not an input (issue #1356)
+        return False
 
 
 def is_value_of_domain(value: Any, value_domain: Any) -> bool:

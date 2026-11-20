@@ -56,6 +56,9 @@ class Set(Operator):
 
     @classmethod
     def validate(cls, operands: List[Dataset]) -> Dataset:
+        if any(len(operand.get_identifiers()) == 0 for operand in operands):
+            # The Data Points are matched by their Identifiers, as in a join (issue #1356)
+            raise SemanticError("1-2-10", op=cls.op)
         base_operand = operands[0]
         for operand in operands[1:]:
             cls.check_same_structure(base_operand, operand)

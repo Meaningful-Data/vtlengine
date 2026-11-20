@@ -227,6 +227,11 @@ centralised_messages = {
         "in the script, please check: {names}",
         "description": "Raised when an output of a transformation is incorrectly used as an input.",
     },
+    "0-1-2-9": {
+        "message": "Not found dataset {name} in datastructures.",
+        "description": "Raised when datapoints are given for a Dataset that the data structures "
+        "do not define.",
+    },
     # Run SDMX errors
     "0-1-3-1": {
         "message": "Expected exactly one input Dataset in the whole script, "
@@ -547,6 +552,24 @@ centralised_messages = {
         "description": "Raised when a non-Identifier component is used as a "
         "partitioning key in an analytic operation.",
     },
+    "1-1-3-3": {
+        "message": "At op {op}: A range window with a limit other than unbounded or current "
+        "data point needs one order by Component, found {number}.",
+        "description": "Raised when a range window measures its limits on no order by "
+        "Component or on more than one, as its limits are distances between the values of "
+        "one Component.",
+    },
+    "1-1-3-4": {
+        "message": "Invalid analytic window {window}: the window starts after it ends.",
+        "description": "Raised when an analytic window starts after it ends: a following "
+        "start before a preceding or current data point end, or a current data point start "
+        "before a preceding end.",
+    },
+    "1-1-3-5": {
+        "message": "Invalid limit {limit} of an analytic window: a limit cannot be negative.",
+        "description": "Raised when a limit of an analytic window is a negative number, which "
+        "is neither a number of data points nor a distance.",
+    },
     "2-1-1-1": {
         "message": "At op {op}: DuckDB runtime error during query execution: {error}.",
         "description": "Raised when DuckDB encounters an unexpected runtime error "
@@ -568,9 +591,10 @@ centralised_messages = {
         "than its operand.",
     },  # RunTimeError.
     "2-1-3-1": {
-        "message": "At op {op}: Division by zero produced infinite values.",
-        "description": "Raised when a division by zero in a DuckDB query produces "
-        "infinite floating-point values in measure columns.",
+        "message": "At op {op}: Division by zero or a value beyond the range of a Number "
+        "produced infinite values.",
+        "description": "Raised when a division by zero, or a result too large for a Number "
+        "(as power or exp can give), produces infinite floating-point values.",
     },
     # Cast errors
     "1-1-5-1": {
@@ -1088,9 +1112,9 @@ centralised_messages = {
         "description": "Runtime error when a value is negative but must be non-negative.",
     },  # RunTimeError.
     "2-1-15-3": {
-        "message": "At op {op}: Base value {value} could not be less or equal 0.",
-        "description": "Runtime error when a base value is less than or equal to zero, "
-        "which is not allowed.",
+        "message": "At op {op}: Base value {value} must be greater than 0 and other than 1.",
+        "description": "Runtime error when a logarithm base is less than or equal to zero, "
+        "or 1, which have no logarithm.",
     },  # RunTimeError.
     "2-1-15-4": {
         "message": "At op {op}: Invalid values in Component {name}.",

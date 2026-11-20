@@ -84,7 +84,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _UDO_OP,
     StructureVisitor,
 )
-from vtlengine.Exceptions import SemanticError, transformation_output
+from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Operators import _promotes
 from vtlengine.Operators.Clause import Pivot
@@ -407,6 +407,29 @@ class _PairwiseJoin:
         else:
             builder.cross_join(self.right_src, "b")
         return builder.build()
+
+
+# What eval reads a value of the result as, by the type returns declares: a value of another
+# type raises 2-1-5-1, or 2-1-5-2 for a number with decimals for an Integer, and a Time_Period
+# is read in any of its accepted forms, as on the pandas engine (issue #1356)
+_EVAL_RESULT_TYPES = {
+    Integer: "vtl_to_integer({0})",
+    Number: "vtl_text_to_double({0})",
+    TimePeriod: "vtl_period_normalize(CAST({0} AS VARCHAR))",
+}
+
+
+def _eval_column(name: str, component: Component) -> str:
+    """A column of the result of eval as a value of its Component: a null Identifier raises
+    2-1-1-16, as on the pandas engine (issue #1356)."""
+    quoted = quote_name(name)
+    value = _EVAL_RESULT_TYPES.get(component.data_type, "{0}").format(quoted)
+    if component.role == Role.IDENTIFIER:
+        value = (
+            f"CASE WHEN {value} IS NULL THEN error('VTL 2-1-1-16: null value on an Identifier') "
+            f"ELSE {value} END"
+        )
+    return f"{value} AS {quoted}"
 
 
 @dataclass
@@ -3658,6 +3681,15 @@ FROM (
                     self._resolve_udo_name(node.order_by[0].component)
                 )
                 order_is_date = comp is not None and comp.data_type == Date
+            for limit in (node.window.start, node.window.stop):
+                scalar = (
+                    self.input_scalars.get(limit.value) if isinstance(limit, AST.VarID) else None
+                )
+                if scalar is not None and pd.isnull(scalar.value):
+                    # A limit read from a null Scalar (issue #1356)
+                    raise RunTimeError(
+                        "2-1-18-1", op=node.op, param_type="Window bound", correct_type="Integer"
+                    )
             window_sql = self.visit_Windowing(node.window, order_is_date=order_is_date)
             over_parts.append(window_sql)
         # With no window clause, the default frame of SQL is the default window of VTL 2.2
@@ -6292,33 +6324,48 @@ FROM (
     def visit_EvalOp(self, node: AST.EvalOp) -> str:
         """Visit EVAL operator (external routine execution)."""
         routine = self.external_routines[node.name]
-        # Without its closing semicolon, the query can be the operand of another (issue #1276)
-        query = routine.query.replace('"', "'").strip().rstrip(";")
+        # The query runs as on the pandas engine (query_on). Without its closing semicolon it
+        # can be the operand of another (issue #1276), and the line break keeps a closing --
+        # comment from hiding the parenthesis that follows (issue #1356)
+        operands = [self._get_dataset_structure(operand) for operand in node.operands]
+        query = routine.query_on(operand for operand in operands if operand is not None)
+        query = f"({query.strip().rstrip(';')}\n)"
 
-        # Map SQL table names to actual DuckDB table names.
-        for table_name in routine.dataset_names:
-            for operand in node.operands:
-                short_name = operand.value.rsplit(".", 1)[-1]  # type: ignore[attr-defined]
-                if short_name == table_name:
-                    op_name = quote_name(operand.value)  # type: ignore[attr-defined]
-                    query = re.sub(rf"\b{re.escape(table_name)}\b", op_name, query)
-                    break
+        # A table the query names after an operand of another name (C07.DS_1 read as DS_1) is
+        # that operand, through a WITH clause around the query (issue #1356)
+        renamed = [
+            f"{quote_name(table)} AS (SELECT * FROM {quote_name(operand.value)})"  # type: ignore[attr-defined]
+            for table in routine.dataset_names
+            for operand in node.operands
+            if operand.value != table  # type: ignore[attr-defined]
+            and operand.value.rsplit(".", 1)[-1] == table  # type: ignore[attr-defined]
+        ]
+        if renamed:
+            query = f"(WITH {', '.join(renamed)} SELECT * FROM {query} AS eval_query)"
 
+        output = node.output
+        if output is None:
+            return f"SELECT * FROM {query} AS eval_result"
         # An infinite value in the result raises 2-1-3-1, as on the pandas engine
-        numeric = (
-            [
-                quote_name(name)
-                for name, comp in node.output.components.items()
-                if comp.data_type in (Number, Integer)
-            ]
-            if node.output is not None
-            else []
-        )
-        if not numeric:
-            return query
-        infinite = " OR ".join(f"isinf(TRY_CAST({name} AS DOUBLE))" for name in numeric)
-        error = "'VTL Error 2-1-3-1: Division by zero produced infinite values in eval'"
+        numeric = [
+            quote_name(name)
+            for name, comp in output.components.items()
+            if comp.data_type in (Number, Integer)
+        ]
+        where = ""
+        if numeric:
+            infinite = " OR ".join(f"isinf(TRY_CAST({name} AS DOUBLE))" for name in numeric)
+            error = "'VTL Error 2-1-3-1: Division by zero produced infinite values in eval'"
+            where = f" WHERE CASE WHEN {infinite} THEN error({error}) ELSE TRUE END"
+        columns = ", ".join(_eval_column(name, comp) for name, comp in output.components.items())
+        checked = f"SELECT {columns} FROM {query} AS eval_result{where}"
+        ids = [name for name, comp in output.components.items() if comp.role == Role.IDENTIFIER]
+        if not ids:
+            return checked
+        # Duplicated Identifiers are invalid values (2-1-15-4), as on the pandas engine
+        message = f"VTL 2-1-15-4 eval {', '.join(ids)}".replace("'", "''")
         return (
-            f"SELECT * FROM ({query}) AS eval_result "
-            f"WHERE CASE WHEN {infinite} THEN error({error}) ELSE TRUE END"
+            f"WITH eval_checked AS ({checked}) SELECT * FROM eval_checked WHERE CASE WHEN EXISTS "
+            f"(SELECT 1 FROM eval_checked GROUP BY {', '.join(quote_name(n) for n in ids)} "
+            f"HAVING COUNT(*) > 1) THEN error('{message}') ELSE TRUE END"
         )
