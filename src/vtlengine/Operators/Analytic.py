@@ -28,6 +28,7 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import (
     BASIC_TYPES,
     COMP_NAME_MAPPING,
+    Boolean,
     Date,
     Duration,
     Integer,
@@ -137,8 +138,9 @@ class Analytic(Operator.Unary):
                     op=cls.op,
                     context="analytic",
                 )
-            # RANGE window is not supported for String, Duration, TimePeriod, TimeInterval
-            range_unsupported_types = (String, Duration, TimePeriod, TimeInterval)
+            # RANGE window is not supported for String, Duration, TimePeriod, TimeInterval, nor
+            # Boolean, which has no distance (issue #1356)
+            range_unsupported_types = (String, Duration, TimePeriod, TimeInterval, Boolean)
             if (
                 window is not None
                 and window.type_ != "data"
@@ -150,6 +152,18 @@ class Analytic(Operator.Unary):
                     data_type=operand.components[comp_name].data_type.__name__,
                     comp_name=comp_name,
                 )
+
+        if (
+            window is not None
+            and window.type_ != "data"
+            and len(order_components) != 1
+            and any(
+                limit not in ("unbounded", "current row", 0)
+                for limit in (window.start, window.stop)
+            )
+        ):
+            # The limits of a range window are distances on one order by Component (issue #1356)
+            raise SemanticError("1-1-3-3", op=cls.op, number=len(order_components))
 
         # TimeInterval is not supported as a measure in analytic operations
         if component_name is not None:
@@ -308,6 +322,9 @@ class Analytic(Operator.Unary):
             start = (
                 "UNBOUNDED"
                 if window.start == "unbounded" or window.start == -1
+                # A limit 0 read from a Scalar is the current data point (issue #1356)
+                else "CURRENT ROW"
+                if window.start == 0
                 else str(window.start)
             )
             stop = (
@@ -408,6 +425,11 @@ class Analytic(Operator.Unary):
         component_name: Optional[str] = None,
     ) -> Dataset:
         result = cls.validate(operand, partitioning, ordering, window, params, component_name)
+        if window is not None and any(pd.isnull(limit) for limit in (window.start, window.stop)):
+            # A limit read from a null Scalar is data (issue #1356)
+            raise RunTimeError(
+                "2-1-18-1", op=cls.op, param_type="Window bound", correct_type="Integer"
+            )
         df = operand.data.copy() if operand.data is not None else pd.DataFrame()
         df = cls.normalize_dates(df, operand.components)
         identifier_names = operand.get_identifiers_names()

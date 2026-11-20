@@ -14170,3 +14170,136 @@ class SemanticCheckBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1356_8b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1356_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := sum ( Me_1 over ( order by Me_4 range between 1
+                    preceding and current data point ) ) ];
+        Description: A range window ordered by the Boolean Me_4 raises 1-1-19-13, as for a String
+                     order. Both engines raised a raw BinderException and the semantic analysis
+                     accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_9",
+            number_inputs=1,
+            exception_code="1-1-19-13",
+            exception_message="At op sum: RANGE window is not supported for Boolean data type in component Me_4.",
+        )
+
+    def test_GH_1356_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := sum ( Me_1 over ( order by Id_1 , Me_1 range between
+                    1 preceding and current data point ) ) ];
+        Description: A range window with a limit of 1 measures the distance on one order by
+                     Component, so two raise 1-1-3-3. Both engines raised a raw BinderException and
+                     the semantic analysis accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_10",
+            number_inputs=1,
+            exception_code="1-1-3-3",
+            exception_message="At op sum: A range window with a limit other than unbounded or current data point needs one order by Component, found 2.",
+        )
+
+    def test_GH_1356_10b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := sum ( Me_1 over ( partition by Id_1 range between 1
+                    preceding and current data point ) ) ];
+        Description: A range window with a limit of 1 and no order by raises 1-1-3-3. Both engines
+                     raised a raw BinderException and the semantic analysis accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_10b",
+            number_inputs=1,
+            exception_code="1-1-3-3",
+            exception_message="At op sum: A range window with a limit other than unbounded or current data point needs one order by Component, found 0.",
+        )
+
+    def test_GH_1356_11(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := sum ( Me_1 over ( partition by Id_1 order by Id_2
+                    data points between 1 following and 1 preceding ) ) ];
+        Description: A window that starts after it ends raises 1-1-3-4. Both engines raised a raw
+                     ParserException and the semantic analysis accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_11",
+            number_inputs=1,
+            exception_code="1-1-3-4",
+            exception_message="Invalid analytic window 'data points between 1 following and 1 preceding' (line 1, column 79): the window starts after it ends.",
+        )
+
+    def test_GH_1356_12(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := sum ( Me_1 over ( partition by Id_1 order by Id_2
+                    data points between SC_1 preceding and current data point ) ) ];
+        Description: The Scalar SC_1 that gives a limit of the window is null, so the window has no
+                     limit and raises 2-1-18-1. Both engines raised a raw error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_12",
+            number_inputs=1,
+            exception_code="2-1-18-1",
+            exception_message="At op sum: Window bound parameter should be Integer.",
+            scalars={"SC_1": None},
+        )
+
+    def test_GH_1356_13(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := sum ( Me_1 over ( partition by Id_1 order by Id_2
+                    data points between SC_1 preceding and current data point ) ) ];
+        Description: The Scalar SC_1 = 0 as a limit is the current data point, as the literal 0
+                     (case 13b). The pandas engine raised a raw ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1356_13",
+            number_inputs=1,
+            references_names=["1"],
+            scalars={"SC_1": 0},
+        )
+
+    def test_GH_1356_13b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := sum ( Me_1 over ( partition by Id_1 order by Id_2
+                    data points between 0 preceding and current data point ) ) ];
+        Description: Control of case 13: the literal limit 0 is the current data point.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1356_13b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1356_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := sum ( Me_1 over ( partition by Id_1 order by Id_2
+                    data points between -2 preceding and current data point ) ) ];
+        Description: A negative literal limit raises 1-1-3-5. The pandas engine returned null values
+                     and the DuckDB engine took the limit as unbounded.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_14",
+            number_inputs=1,
+            exception_code="1-1-3-5",
+            exception_message="Invalid limit '-2 preceding' (line 1, column 99) of an analytic window: a limit cannot be negative.",
+        )
