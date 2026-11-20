@@ -18,13 +18,13 @@ from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
 from vtlengine.Operators import (
     Binary,
     Operator,
+    _as_type,
     _id_type_promotion_join_keys,
-    _is_cast_to_time,
     check_common_identifier_types,
+    common_identifiers,
+    promoted_keys,
     share_value_domains,
     shared_value_domain,
-    time_identifiers,
-    time_keys,
     time_names,
     to_time,
 )
@@ -103,23 +103,6 @@ def _scalar_result(conditions: List[Scalar], then_ops: List[Scalar], else_op: Sc
         literal=selected is not None and selected.literal,
         value_domain=shared_value_domain(operands),
     )
-
-
-def _time_values(data: Any, data_type: Any, from_type: Any) -> Any:
-    """The data of a Date or a Time_Period ``from_type`` as Time values when ``data_type`` is
-    Time: the Time that starts and ends on a Date, the start and end of a Time_Period (issue
-    #1352). Other data is returned as it is."""
-    if not _is_cast_to_time(from_type, data_type):
-        return data
-    return data.map(lambda x: TimeInterval.implicit_cast(x, from_type), na_action="ignore")
-
-
-def _as_type(data: Any, data_type: Any, from_type: Any = None) -> Any:
-    """The data in the dtype of ``data_type``. As a String, a Boolean is "true" or "false", as
-    VTL casts it, where astype writes a numpy or Python Boolean as "True" (issue #1314). The
-    values of a Date or a Time_Period ``from_type`` become Time values (issue #1352)."""
-    data = _time_values(data, data_type, from_type)
-    return to_strings(data) if data_type is String else data.astype(data_type.dtype())
 
 
 def _time_operand(operand: Any, result: Any) -> Any:
@@ -423,7 +406,7 @@ class Nvl(Binary):
     def evaluate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(left, right)
         if isinstance(result, Dataset) and isinstance(left, Dataset) and isinstance(right, Dataset):
-            left, right = time_keys(left, result), time_keys(right, result)
+            left, right = promoted_keys(left, result), promoted_keys(right, result)
 
         if isinstance(left, Scalar) and isinstance(result, Scalar):
             if left.data_type is Null:
@@ -472,7 +455,7 @@ class Nvl(Binary):
                     ]
                     right_data = right.data[join_keys + measures].copy()
                     for join_key in join_keys:
-                        _id_type_promotion_join_keys(
+                        result.data, right_data = _id_type_promotion_join_keys(
                             left.get_component(join_key),
                             right.get_component(join_key),
                             join_key,
@@ -568,7 +551,7 @@ class Nvl(Binary):
                 if comp.name in promoted:
                     comp.data_type = promoted[comp.name]
             if isinstance(right, Dataset):
-                time_identifiers(result_components, left, right)
+                common_identifiers(result_components, left, right)
             share_value_domains(result_components, [left, right])
         return Dataset(name=dataset_name, components=result_components, data=None)
 

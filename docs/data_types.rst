@@ -524,7 +524,14 @@ common type.
 Key rules:
 
 - **Integer / Number**: Both directions are implicit
-  (Integer is a subtype of Number).
+  (Integer is a subtype of Number). The common type of an
+  Integer and a Number is Number: the common Identifiers
+  that the joins (whatever the order of their operands),
+  the set operators, the binary operators, ``exists_in``
+  and ``nvl`` match are matched as Number values and are
+  Number in the result, so ``3.5`` does not match ``3``;
+  and a Component that the set operators give from an
+  Integer and a Number is a Number.
 - **Date to Time**: A Date is implicitly converted to a
   Time interval
   (``"2020-01-15"`` becomes ``"2020-01-15/2020-01-15"``).
@@ -556,7 +563,12 @@ Key rules:
   ``cast(Me_1, time_period) = Me_2``.
 - **Boolean to String**: ``true`` becomes ``"true"``,
   ``false`` becomes ``"false"``, as the VTL 2.2 reference
-  manual defines it, in both execution engines.
+  manual defines it, in both execution engines. So a
+  Boolean Identifier that those operators match with a
+  String one is matched as its text, only ``"true"``
+  matches ``true``, and the Identifier is a String in the
+  result (a String is never converted to a Boolean, which
+  only ``cast`` does).
 - **Null to any type**: Null is compatible with every type.
 
 
@@ -683,7 +695,12 @@ Conversion details:
   (or ``1.0``), ``false`` becomes ``0`` (or ``0.0``).
 - **Boolean to String**: ``true`` becomes ``"true"``,
   ``false`` becomes ``"false"``, as the VTL 2.2 reference
-  manual defines it, in both execution engines.
+  manual defines it, in both execution engines. So a
+  Boolean Identifier that those operators match with a
+  String one is matched as its text, only ``"true"``
+  matches ``true``, and the Identifier is a String in the
+  result (a String is never converted to a Boolean, which
+  only ``cast`` does).
 - **String to Integer**: Must be a valid integer string
   (rejects ``"3.5"``).
 - **String to Date**: The text is read as the loaders read a

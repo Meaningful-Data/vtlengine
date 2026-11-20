@@ -1,7 +1,7 @@
 import re
 import threading
 from copy import copy
-from typing import Any, Dict, Iterable, List, Optional, Union, cast
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import pandas as pd
 
@@ -24,14 +24,21 @@ from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
     Date,
+    Integer,
     Null,
+    Number,
     TimeInterval,
     TimePeriod,
     binary_implicit_promotion,
     check_binary_implicit_promotion,
     check_unary_implicit_promotion,
+    to_strings,
     unary_implicit_promotion,
 )
+
+# Aliased: the submodules Boolean and String of this package take these names once imported
+from vtlengine.DataTypes import Boolean as BooleanType
+from vtlengine.DataTypes import String as StringType
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
     TimeIntervalHandler,
@@ -300,23 +307,80 @@ def to_time(operand: Any, names: Iterable[str] = ()) -> Any:
     return converted
 
 
-def time_identifiers(components: Dict[str, Component], left: Dataset, right: Dataset) -> None:
-    """The common Identifiers of two Data Sets that are a Time in one and a Date or a
-    Time_Period in the other are Time in the result ``components``, as their values are matched
-    as Time values (issue #1352). A retyped Component is replaced with a copy."""
+def _time_values(data: Any, data_type: Any, from_type: Any) -> Any:
+    """The data of a Date or a Time_Period ``from_type`` as Time values when ``data_type`` is
+    Time: the Time that starts and ends on a Date, the start and end of a Time_Period (issue
+    #1352). Other data is returned as it is."""
+    if not _is_cast_to_time(from_type, data_type):
+        return data
+    return data.map(lambda x: TimeInterval.implicit_cast(x, from_type), na_action="ignore")
+
+
+def _as_type(data: Any, data_type: Any, from_type: Any = None) -> Any:
+    """The data in the dtype of ``data_type``. As a String, a Boolean is "true" or "false", as
+    VTL casts it, where astype writes a numpy or Python Boolean as "True" (issue #1314). The
+    values of a Date or a Time_Period ``from_type`` become Time values (issue #1352)."""
+    data = _time_values(data, data_type, from_type)
+    return to_strings(data) if data_type is StringType else data.astype(data_type.dtype())
+
+
+def _promotes(from_type: Any, to_type: Any) -> bool:
+    """Whether the values of ``from_type`` are cast to ``to_type`` to be matched or merged with
+    values of it: the implicit casts of the VTL 2.2 manual from integer to number, from boolean
+    to string, and from a Date or a Time_Period to Time (issues #1352 and #1353)."""
+    return (from_type, to_type) in (
+        (Integer, Number),
+        (BooleanType, StringType),
+    ) or _is_cast_to_time(from_type, to_type)
+
+
+def promoted(dataset: Dataset, result: Dataset, names: Iterable[str]) -> Dataset:
+    """A copy of the Data Set with its Components ``names`` cast to their type in the result,
+    where that is the type they are implicitly cast to (see _promotes): an Integer becomes a
+    Number, a Boolean the String "true" or "false", a Date or a Time_Period a Time (issues #1352
+    and #1353). The Data Set is never changed: the other statements read it too."""
+    names = [
+        name
+        for name in names
+        if name in dataset.components
+        and name in result.components
+        and _promotes(dataset.components[name].data_type, result.components[name].data_type)
+    ]
+    if not names:
+        return dataset
+    converted = copy(dataset)
+    converted.components = {name: copy(comp) for name, comp in dataset.components.items()}
+    converted.data = None if dataset.data is None else dataset.data.copy()
+    for name in names:
+        comp = converted.components[name]
+        data_type = result.components[name].data_type
+        if converted.data is not None and name in converted.data.columns:
+            converted.data[name] = _as_type(converted.data[name], data_type, comp.data_type)
+        comp.data_type, comp.value_domain = data_type, None
+    return converted
+
+
+def common_identifiers(components: Dict[str, Component], left: Dataset, right: Dataset) -> None:
+    """The common Identifiers of two Data Sets have their common type in the result
+    ``components``, whatever the order of the operands, as their values are matched as values
+    of it: an Integer and a Number are Numbers, a Boolean and a String Strings, a Date or a
+    Time_Period and a Time are Times (issues #1352 and #1353). A retyped Component is replaced
+    with a copy."""
     for name in set(left.get_identifiers_names()) & set(right.get_identifiers_names()):
-        types = {left.components[name].data_type, right.components[name].data_type}
+        left_type, right_type = left.components[name].data_type, right.components[name].data_type
         comp = components.get(name)
-        if TimeInterval in types and comp is not None and comp.data_type is not TimeInterval:
+        if comp is None or left_type is right_type:
+            continue
+        data_type = binary_implicit_promotion(left_type, right_type)
+        if comp.data_type is not data_type:
             components[name] = copy(comp)
-            components[name].data_type, components[name].value_domain = TimeInterval, None
+            components[name].data_type, components[name].value_domain = data_type, None
 
 
-def time_keys(dataset: Dataset, result: Dataset) -> Dataset:
-    """The Data Set with its Date or Time_Period Identifiers that are Time in the result cast
-    to Time, on a copy (issue #1352)."""
-    names = [name for name in time_names(result) if name in dataset.get_identifiers_names()]
-    return cast(Dataset, to_time(dataset, names))
+def promoted_keys(dataset: Dataset, result: Dataset) -> Dataset:
+    """The Data Set with its Identifiers cast to their type in the result, on a copy (issues
+    #1352 and #1353)."""
+    return promoted(dataset, result, dataset.get_identifiers_names())
 
 
 def check_common_identifier_types(op: str, left: Dataset, right: Dataset) -> None:
@@ -339,47 +403,21 @@ def _id_type_promotion_join_keys(
     c_left: Component,
     c_right: Component,
     join_key: str,
-    left_data: Optional[pd.DataFrame] = None,
-    right_data: Optional[pd.DataFrame] = None,
-) -> None:
-    if left_data is None:
-        left_data = pd.DataFrame()
-    if right_data is None:
-        right_data = pd.DataFrame()
-
-    left_type_name: str = str(c_left.data_type.__name__)
-    right_type_name: str = str(c_right.data_type.__name__)
-
-    target_dtype = c_left.data_type.dtype()
-    if left_type_name == right_type_name or len(left_data) == 0 or len(right_data) == 0:
-        left_data[join_key] = left_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
-        right_data[join_key] = right_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
-        return
-    if (left_type_name == "Integer" and right_type_name == "Number") or (
-        left_type_name == "Number" and right_type_name == "Integer"
-    ):
-        left_data[join_key] = left_data[join_key].map(lambda x: int(float(x)))
-        right_data[join_key] = right_data[join_key].map(lambda x: int(float(x)))
-        target_dtype = "int64[pyarrow]"
-    elif (left_type_name == "String" and right_type_name in ("Integer", "Number")) or (
-        left_type_name in ("Integer", "Number") and right_type_name == "String"
-    ):
-        left_data[join_key] = left_data[join_key].map(lambda x: _handle_str_number(x))
-        right_data[join_key] = right_data[join_key].map(lambda x: _handle_str_number(x))
-    left_data[join_key] = left_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
-    right_data[join_key] = right_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
-
-
-def _handle_str_number(x: Union[str, int, float]) -> Union[str, int, float]:
-    if isinstance(x, int):
-        return x
-    try:
-        x = float(x)
-        if x.is_integer():
-            return int(x)
-        return x
-    except ValueError:  # Unable to get to string, return the same value that will not be matched
-        return x
+    left_data: Any,
+    right_data: Any,
+) -> Tuple[Any, Any]:
+    """The data of two operands with their join key in the common type of its two Components,
+    on copies: the data of the operands is never changed, as the other statements read it too.
+    An Integer key matched with a Number one is a Number, never truncated (issue #1353)."""
+    data_type = c_left.data_type
+    if c_right.data_type is not data_type:
+        data_type = binary_implicit_promotion(data_type, c_right.data_type)
+    frames = []
+    for data, comp in ((left_data, c_left), (right_data, c_right)):
+        if data is not None:
+            data = data.assign(**{join_key: _as_type(data[join_key], data_type, comp.data_type)})
+        frames.append(data)
+    return frames[0], frames[1]
 
 
 class Binary(Operator):
@@ -505,7 +543,7 @@ class Binary(Operator):
             for component_name, component in base_operand.components.items()
             if component.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
-        time_identifiers(result_components, left_operand, right_operand)
+        common_identifiers(result_components, left_operand, right_operand)
         # Also include viral attributes from the other operand
         for comp_name, comp in other_operand.components.items():
             if comp.role == Role.VIRAL_ATTRIBUTE and comp_name not in result_components:
@@ -755,17 +793,16 @@ class Binary(Operator):
     @classmethod
     def dataset_evaluation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
         result_dataset = cls.dataset_validation(left_operand, right_operand)
-        left_operand = time_keys(left_operand, result_dataset)
-        right_operand = time_keys(right_operand, result_dataset)
+        left_operand = promoted_keys(left_operand, result_dataset)
+        right_operand = promoted_keys(right_operand, result_dataset)
 
         use_right_as_base = False
+        base_operand, other_operand = left_operand, right_operand
         if len(left_operand.get_identifiers_names()) < len(right_operand.get_identifiers_names()):
             use_right_as_base = True
-            base_operand_data = right_operand.data
-            other_operand_data = left_operand.data
-        else:
-            base_operand_data = left_operand.data
-            other_operand_data = right_operand.data
+            base_operand, other_operand = right_operand, left_operand
+        base_operand_data = base_operand.data
+        other_operand_data = other_operand.data
 
         join_keys = list(
             set(left_operand.get_identifiers_names()).intersection(
@@ -774,9 +811,9 @@ class Binary(Operator):
         )
 
         for join_key in join_keys:
-            _id_type_promotion_join_keys(
-                left_operand.get_component(join_key),
-                right_operand.get_component(join_key),
+            base_operand_data, other_operand_data = _id_type_promotion_join_keys(
+                base_operand.get_component(join_key),
+                other_operand.get_component(join_key),
                 join_key,
                 base_operand_data,
                 other_operand_data,

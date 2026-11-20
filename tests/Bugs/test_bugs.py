@@ -13695,6 +13695,226 @@ class BasicTypeValueBugs(BugHelper):
     """Values of the basic types converted, written and compared alike by both engines (issue
     #1353)."""
 
+    def test_GH_1353_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_2 + DS_1;
+        Description: The Number Identifier Id_1 of DS_2 (1.0, 3.5) and the Integer one of DS_1
+                     (1, 3) are matched as Numbers, so 3.5 does not match 3. The pandas engine
+                     truncated 3.5 to 3 and matched it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_1", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_1b(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: Extra of case 1: the Integer Id_1 of DS_1 and the Number Id_1 of DS_2 are
+                     matched as Numbers and Id_1 is a Number in the result, whatever the order of
+                     the operands, as in a join. Both engines typed Id_1 as the first operand,
+                     and the pandas engine matched 3 with 3.5.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_1b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_1c(self):
+        """
+        Status: OK
+        Expression: DS_r <- exists_in ( DS_1 , DS_2 );
+        Description: Extra of case 1: the Integer Id_1 of DS_1 is matched as a Number with the
+                     Number Id_1 of DS_2, and it is a Number in the result. Both engines typed it
+                     as an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_1c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_1d(self):
+        """
+        Status: OK
+        Expression: DS_r <- exists_in ( DS_2 , DS_1 );
+        Description: Extra of case 1: the Number Id_1 of DS_2 is matched with the Integer Id_1
+                     of DS_1 as Numbers, so 3.5 does not exist in DS_1. The pandas engine raised
+                     a raw ArrowInvalid.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_1d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- intersect ( DS_2 , DS_1 );
+        Description: The Number Id_1 of DS_2 and the Integer Id_1 of DS_1 are matched as Numbers:
+                     only 1.0 is in both. The pandas engine raised a raw ArrowInvalid.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_2", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- full_join ( DS_2 as A , DS_1 as B keep A#Me_1 );
+        Description: The join key Id_1, a Number in DS_2 and an Integer in DS_1, is a Number in
+                     the result and keeps 3.5. The pandas engine raised a raw ArrowInvalid, and
+                     the DuckDB engine and the semantic analysis typed Id_1 as an Integer and
+                     rounded 3.5 to 4.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_3", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_3b(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_2 , DS_1 );
+        Description: Extra of case 3: the join key Id_1, a Number in DS_2 and an Integer in
+                     DS_1, is a Number and its values are compared as Numbers, so 3.5 does not
+                     match 3. The pandas engine raised a raw ArrowInvalid and the DuckDB engine
+                     typed Id_1 as an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_3b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_3c(self):
+        """
+        Status: OK
+        Expression: DS_r <- left_join ( DS_2 , DS_1 );
+        Description: Extra of case 3: the join key Id_1 is a Number, so the data point 3.5 of
+                     DS_2 keeps its key and finds no match. The pandas engine raised a raw
+                     ArrowInvalid and the DuckDB engine typed Id_1 as an Integer and gave 4.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_3c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_3d(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_2 , DS_1 using Id_1 );
+        Description: Extra of case 3: with using, the key Id_1 is a Number too and 3.5 does not
+                     match 3. The pandas engine truncated 3.5 to 3 and matched it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_3d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_4(self):
+        """
+        Status: OK
+        Expression: DS_a <- DS_1 + DS_2;
+                    DS_r <- DS_2;
+        Description: Matching the keys of DS_1 and DS_2 does not change the data of DS_2, which
+                     the next statement reads with its key 3.5. The pandas engine wrote the
+                     truncated key 3.0 into the data of DS_2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_4", number_inputs=2, references_names=["1", "2"])
+
+    def test_GH_1353_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 + DS_4;
+        Description: The Boolean Id_1 of DS_4 is cast to the String "true" to match the String
+                     Id_1 of DS_3, as the implicit cast from boolean to string of the VTL 2.2
+                     reference manual gives it, so only "true" matches. The pandas engine
+                     matched nothing and the DuckDB engine cast "1" to true and matched it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_5", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_5b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 = DS_4;
+        Description: Extra of case 5: the Boolean Id_1 of DS_4 is matched as a String with the
+                     String Id_1 of DS_3, which also holds "abc". The pandas engine matched
+                     nothing and the DuckDB engine raised a raw ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_5b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_5c(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_3 , DS_4 );
+        Description: Extra of case 5: nvl matches the String Id_1 of DS_3 with the Boolean Id_1
+                     of DS_4 as Strings. The pandas engine matched nothing and the DuckDB engine
+                     raised a raw ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_5c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_5d(self):
+        """
+        Status: OK
+        Expression: DS_r <- exists_in ( DS_3 , DS_4 );
+        Description: Extra of case 5: "true" of the String Id_1 of DS_3 exists in DS_4, whose
+                     Boolean Id_1 is matched as a String. The pandas engine gave false for all
+                     and the DuckDB engine raised a raw ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_5d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_5e(self):
+        """
+        Status: OK
+        Expression: DS_r <- intersect ( DS_3 , DS_4 );
+        Description: Extra of case 5: the String Id_1 of DS_3 and the Boolean Id_1 of DS_4 are
+                     matched as Strings, so "true" is in both. The pandas engine matched nothing
+                     and the DuckDB engine raised a raw ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_5e", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_5f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_4 + DS_3;
+        Description: Extra of case 5: with the Boolean operand first, Id_1 is a String in the
+                     result too and only "true" matches. The pandas engine raised a raw
+                     ArrowInvalid, the DuckDB engine a raw ConversionException, and both typed
+                     Id_1 as a Boolean.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_5f", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_3 as A , DS_4 as B keep A#Me_1 );
+        Description: The join key Id_1, a String in DS_3 and a Boolean in DS_4, is a String and
+                     only "true" matches the Boolean true. Both engines and the semantic analysis
+                     typed Id_1 as a Boolean, and matched "1" too.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_6", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_6b(self):
+        """
+        Status: OK
+        Expression: DS_r <- full_join ( DS_4 , DS_3 );
+        Description: Extra of case 6: the join key Id_1, a Boolean in DS_4 and a String in DS_3,
+                     is a String, and the Boolean true is the String "true". The pandas engine
+                     wrote it as "True" and the DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_6b", number_inputs=2, references_names=["1"])
+
     def test_GH_1353_7(self):
         """
         Status: OK
@@ -13742,6 +13962,18 @@ class BasicTypeValueBugs(BugHelper):
             exception_code="1-1-13-18",
             exception_message="Incompatible types for common identifier Id_1: Integer and String.",
         )
+
+    def test_GH_1353_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- symdiff ( DS_1 , DS_5 );
+        Description: The Number Me_1 of DS_1 and the Integer Me_1 of DS_5 give a Number Me_1,
+                     and the Integer values of DS_5 are cast to Number. The pandas engine wrote
+                     the Number values into the Integer column and raised a raw ArrowInvalid.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_10", number_inputs=2, references_names=["1"])
 
     def test_GH_1353_11(self):
         """

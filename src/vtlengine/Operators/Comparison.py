@@ -582,7 +582,7 @@ class ExistIn(Operator.Operator):
         Operator.check_common_identifier_types(cls.op, dataset_1, dataset_2)
 
         result_components = {comp.name: copy(comp) for comp in dataset_1.get_identifiers()}
-        Operator.time_identifiers(result_components, dataset_1, dataset_2)
+        Operator.common_identifiers(result_components, dataset_1, dataset_2)
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         result_dataset.add_component(
             Component(name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=False)
@@ -594,8 +594,8 @@ class ExistIn(Operator.Operator):
         cls, dataset_1: Dataset, dataset_2: Dataset, retain_element: Optional[Boolean]
     ) -> Any:
         result_dataset = cls.validate(dataset_1, dataset_2, retain_element)
-        dataset_1 = Operator.time_keys(dataset_1, result_dataset)
-        dataset_2 = Operator.time_keys(dataset_2, result_dataset)
+        dataset_1 = Operator.promoted_keys(dataset_1, result_dataset)
+        dataset_2 = Operator.promoted_keys(dataset_2, result_dataset)
 
         # Checking the subset
         left_id_names = dataset_1.get_identifiers_names()
