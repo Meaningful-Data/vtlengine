@@ -2405,10 +2405,16 @@ class InterpreterAnalyzer(ASTTemplate):
             else:
                 self.rule_data = self.ruleset_dataset.data.copy()
         validation_data = self.visit(node.rule)
-        if isinstance(validation_data, DataComponent):
+        if isinstance(validation_data, (DataComponent, Scalar)):
             if self.rule_data is not None and self.ruleset_dataset is not None:
                 aux = self.rule_data.loc[:, self.ruleset_dataset.get_components_names()]
-                aux["bool_var"] = validation_data.data
+                # A rule that reads no Component holds its constant for every data point
+                # (issue #1356)
+                aux["bool_var"] = (
+                    validation_data.value
+                    if isinstance(validation_data, Scalar)
+                    else validation_data.data
+                )
                 validation_data = aux
             else:
                 validation_data = None
@@ -2457,13 +2463,27 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.op == WHEN:
             filter_comp = self.visit(node.left)
             if self.rule_data is None:
+                # The then part is checked also without data (issue #1356)
+                self.visit(node.right)
                 return None
+            if isinstance(filter_comp, Scalar):
+                # A condition that reads no Component holds its constant for every data point
+                # (issue #1356)
+                filter_comp = DataComponent(
+                    name=filter_comp.name,
+                    data=pd.Series(filter_comp.value, index=self.rule_data.index, dtype=object),
+                    data_type=filter_comp.data_type,
+                    role=Role.MEASURE,
+                )
             if filter_comp.data is None:
                 return self.visit(node.right)
             filtering_indexes = list(filter_comp.data[filter_comp.data == True].index)
             nan_indexes = list(filter_comp.data[filter_comp.data.isnull()].index)
             # If no filtering indexes, then all datapoints are valid on DPR and HR
             if len(filtering_indexes) == 0 and not (self.is_from_hr_agg or self.is_from_hr_val):
+                # The then part is checked although no data point meets the condition
+                # (issue #1356)
+                self._visit_structure(deepcopy(node.right))
                 self.rule_data["bool_var"] = True
                 if nan_indexes:
                     # pandas 3 refuses to write None into a bool column: widen it first.

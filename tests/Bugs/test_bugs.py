@@ -14353,3 +14353,111 @@ class SemanticCheckBugs(BugHelper):
             exception_code="1-1-19-10",
             exception_message="getyear can only be applied to operands with data type as Date or Time Period",
         )
+
+    def test_GH_1356_18(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 ) is R1 : true errorcode "E1" end
+                    datapoint ruleset; DS_r <- check_datapoint ( DS_2 , DPR_1 invalid );
+        Description: A rule that reads no Component holds its constant for every data point: true,
+                     so no data point is invalid. Both engines and the semantic analysis raised a
+                     raw TypeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1356_18", number_inputs=1, references_names=["1"])
+
+    def test_GH_1356_19(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 ) is R1 : when true then Me_1 > 1
+                    end datapoint ruleset; DS_r <- check_datapoint ( DS_2 , DPR_1 all );
+        Description: A when condition that reads no Component applies the rule to every data point.
+                     The pandas engine raised a raw AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1356_19", number_inputs=1, references_names=["1"])
+
+    def test_GH_1356_20(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( variable rule Id_2 ) is R1 : when true then A
+                    = B + C end hierarchical ruleset; DS_r <- check_hierarchy ( DS_3 , HR_1 rule
+                    Id_2 all );
+        Description: A when condition that reads no Component applies the hierarchical rule to every
+                     data point. The pandas engine raised a raw AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1356_20", number_inputs=1, references_names=["1"])
+
+    def test_GH_1356_21(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 ) is R1 : when Me_1 > 0 then Me_9
+                    > 0 end datapoint ruleset; DS_r <- check_datapoint ( DS_2 , DPR_1 all );
+        Description: The then part of the rule reads Me_9, which is not in the signature: 1-1-10-7
+                     on both engines and in the semantic analysis. The DuckDB engine raised a raw
+                     BinderException and the semantic analysis accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_21",
+            number_inputs=1,
+            exception_code="1-1-10-7",
+            exception_message="Not found component Me_9 on signature.",
+        )
+
+    def test_GH_1356_22(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 ) is R1 : when Me_1 > 100 then
+                    Me_9 > 0 end datapoint ruleset; DS_r <- check_datapoint ( DS_2 , DPR_1 all );
+        Description: The then part of the rule is checked also when no data point meets the
+                     condition: 1-1-10-7. The pandas engine returned a result and the DuckDB engine
+                     raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_22",
+            number_inputs=1,
+            exception_code="1-1-10-7",
+            exception_message="Not found component Me_9 on signature.",
+        )
+
+    def test_GH_1356_23(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 ) is R1 : when Me_1 > 0 then Me_1
+                    > "a" end datapoint ruleset; DS_r <- check_datapoint ( DS_2 , DPR_1 all );
+        Description: The then part compares the Number Me_1 with a String: 1-1-1-1 on both engines
+                     and in the semantic analysis. The DuckDB engine raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_23",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Number to String.",
+        )
+
+    def test_GH_1356_24(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( variable Me_1 ) is R1 : when Me_1 > 0 then f (
+                    Me_1 ) > 0 end datapoint ruleset; DS_r <- check_datapoint ( DS_2 , DPR_1 all );
+        Description: The then part calls the operator f, which is not defined: 1-2-22 on both
+                     engines and in the semantic analysis. The DuckDB engine raised a raw KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_24",
+            number_inputs=1,
+            exception_code="1-2-22",
+            exception_message="No User Defined Operators have been defined.",
+        )
