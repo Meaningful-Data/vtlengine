@@ -29,7 +29,7 @@
           },
           {
             "name": "BIS_TOPIC",
-            "type": "String",
+            "type": "bis_topic",
             "nullable": false,
             "role": "Identifier"
           },

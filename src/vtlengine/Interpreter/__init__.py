@@ -122,6 +122,7 @@ from vtlengine.Operators.Validation import (
     Check_Datapoint,
     Check_Hierarchy,
     bind_value_domains,
+    check_value_domains,
     error_values,
 )
 from vtlengine.Utils import (
@@ -1985,7 +1986,16 @@ class InterpreterAnalyzer(ASTTemplate):
         hr_info = self.hrs[hr_name]
 
         if hr_info is not None:
+            on_value_domains = hr_info["node"].signature_type == "valuedomain"
             if len(cond_components) != len(hr_info["condition"]):
+                if on_value_domains:
+                    raise SemanticError(
+                        "1-1-10-16",
+                        op=node.op,
+                        ruleset=hr_name,
+                        expected=len(hr_info["condition"]),
+                        found=len(cond_components),
+                    )
                 raise SemanticError("1-1-10-2", op=node.op)
 
             if hr_info["node"].signature_type == "variable" and hr_info["signature"] != component:
@@ -1995,7 +2005,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     found=component,
                     expected=hr_info["signature"],
                 )
-            elif hr_info["node"].signature_type == "valuedomain" and component is None:
+            elif on_value_domains and component is None:
                 raise SemanticError("1-1-10-4", op=node.op)
 
             cond_info = {}
@@ -2064,6 +2074,17 @@ class InterpreterAnalyzer(ASTTemplate):
             # A ruleset with a signature or a rule clause gives the component
             component = cast(str, component)
             Check_Hierarchy.validate_hr_dataset(dataset, component, cond_info.values())
+            if on_value_domains:
+                check_value_domains(
+                    node.op,
+                    hr_name,
+                    zip(
+                        [*hr_info["condition_variables"], hr_info["signature"]],
+                        [*cond_info.values(), component],
+                    ),
+                    dataset.components,
+                    self.value_domains,
+                )
 
             # Set up interpreter state for rule processing
             self.ruleset_dataset = dataset

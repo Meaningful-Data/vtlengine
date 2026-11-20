@@ -534,7 +534,7 @@ def cleanup_scheduled_datasets(
     conn: duckdb.DuckDBPyConnection,
     statement_num: int,
     ds_analysis: DatasetSchedule,
-    output_folder: Optional[Path],
+    output_folder: Optional[Union[Path, str]],
     output_datasets: Dict[str, Dataset],
     output_scalars: Dict[str, Scalar],
     results: Dict[str, Union[Dataset, Scalar]],
@@ -549,7 +549,7 @@ def cleanup_scheduled_datasets(
         conn: DuckDB connection
         statement_num: Current statement number (1-indexed)
         ds_analysis: DAG analysis dict with deletion schedule
-        output_folder: Path to save CSVs (None for in-memory mode)
+        output_folder: Folder or S3 URI to save the results in (None for in-memory mode)
         output_datasets: Dict of output dataset structures
         output_scalars: Dict of output scalar structures
         results: Dict to store results
@@ -589,7 +589,7 @@ def cleanup_scheduled_datasets(
 def fetch_result(
     conn: duckdb.DuckDBPyConnection,
     result_name: str,
-    output_folder: Optional[Path],
+    output_folder: Optional[Union[Path, str]],
     output_datasets: Dict[str, Dataset],
     output_scalars: Dict[str, Scalar],
     representation: Optional[TimePeriodRepresentation] = None,
@@ -601,7 +601,7 @@ def fetch_result(
     Args:
         conn: DuckDB connection
         result_name: Name of the result table
-        output_folder: Path to save CSV (None for in-memory mode)
+        output_folder: Folder or S3 URI to save the result in (None for in-memory mode)
         output_datasets: Dict of output dataset structures
         output_scalars: Dict of output scalar structures
         representation: TimePeriod output format (applied before save/fetch)
@@ -714,7 +714,7 @@ def execute_queries(
     input_datasets: Dict[str, Dataset],
     output_datasets: Dict[str, Dataset],
     output_scalars: Dict[str, Scalar],
-    output_folder: Optional[Path],
+    output_folder: Optional[Union[Path, str]],
     return_only_persistent: bool,
     time_period_output_format: str = "vtl",
     output_format: Literal["csv", "parquet"] = "csv",
@@ -731,7 +731,7 @@ def execute_queries(
         input_datasets: Dict of input dataset structures
         output_datasets: Dict of output dataset structures
         output_scalars: Dict of output scalar structures
-        output_folder: Path to save CSVs (None for in-memory mode)
+        output_folder: Folder or S3 URI to save the results in (None for in-memory mode)
         return_only_persistent: Only return persistent assignments
         time_period_output_format: Output format for TimePeriod columns
         output_format: Output file format ("csv" or "parquet")
@@ -757,8 +757,8 @@ def execute_queries(
         sql_fragments.append(repr_macro)
     initialize_time_types(conn, sql_fragments=sql_fragments)
 
-    # Ensure output folder exists if provided
-    if output_folder:
+    # Ensure a local output folder exists; an S3 URI is written through DuckDB
+    if isinstance(output_folder, Path):
         output_folder.mkdir(parents=True, exist_ok=True)
 
     copies, ds_analysis = _reuse_repeated_statements(queries, ds_analysis)
@@ -823,6 +823,6 @@ def execute_queries(
     # Save scalars to CSV when output_folder is provided
     if output_folder:
         result_scalars = {k: v for k, v in results.items() if isinstance(v, Scalar)}
-        save_scalars_duckdb(result_scalars, output_folder)
+        save_scalars_duckdb(conn, result_scalars, output_folder)
 
     return results

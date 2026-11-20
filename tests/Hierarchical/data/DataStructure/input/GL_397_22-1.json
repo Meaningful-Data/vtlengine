@@ -6,7 +6,7 @@
         {
           "name": "ACCOUNTING_ENTRY",
           "role": "Identifier",
-          "type": "String",
+          "type": "ACCOUNTING_ENTRY",
           "nullable": false
         },
         {
@@ -30,7 +30,7 @@
         {
           "name": "REF_AREA",
           "role": "Identifier",
-          "type": "String",
+          "type": "VD_REF_AREA",
           "nullable": false
         },
         {

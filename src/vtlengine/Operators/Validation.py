@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Any, Collection, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Collection, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import pandas as pd
 
@@ -121,7 +121,22 @@ def bind_value_domains(
             expected=len(signature),
             found=len(called),
         )
-    for name, comp_name in zip(signature.values(), called):
+    check_value_domains(
+        CHECK_DATAPOINT, ruleset, zip(signature.values(), called), components, value_domains
+    )
+    return dict(zip(signature, called))
+
+
+def check_value_domains(
+    op: str,
+    ruleset: str,
+    bindings: Iterable[Tuple[str, str]],
+    components: Dict[str, Component],
+    value_domains: Optional[Dict[str, ValueDomain]],
+) -> None:
+    """Each value domain of a ruleset must be given, and the component bound to it must be
+    defined on it."""
+    for name, comp_name in bindings:
         if value_domains is None:
             raise SemanticError("1-2-22", comp_type="Value Domains")
         if name not in value_domains:
@@ -130,13 +145,12 @@ def bind_value_domains(
         if component.value_domain is None or component.value_domain.name != name:
             raise SemanticError(
                 "1-1-10-12",
-                op=CHECK_DATAPOINT,
+                op=op,
                 comp_name=comp_name,
                 type=component_type_name(component.data_type, component.value_domain),
                 value_domain=name,
                 ruleset=ruleset,
             )
-    return dict(zip(signature, called))
 
 
 class Check(Operator):
@@ -478,13 +492,11 @@ class Check_Hierarchy(Validation):
             raise SemanticError(
                 "1-1-10-1", op=Check_Hierarchy.op, op_type="hierarchy", me_type="Number"
             )
-        if component_name not in dataset.components:
-            raise SemanticError(
-                "1-1-1-10",
-                op=Check_Hierarchy.op,
-                comp_name=component_name,
-                dataset_name=dataset.name,
-            )
+        for name in (component_name, *condition_components):
+            if name not in dataset.components:
+                raise SemanticError(
+                    "1-1-1-10", op=Check_Hierarchy.op, comp_name=name, dataset_name=dataset.name
+                )
         if dataset.components[component_name].role != Role.IDENTIFIER:
             raise SemanticError(
                 "1-2-7",
