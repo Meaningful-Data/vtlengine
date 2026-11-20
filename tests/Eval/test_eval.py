@@ -469,6 +469,20 @@ def test_GH_1356_53(use_duckdb):
 
 
 @pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_53b(use_duckdb):
+    """In one query, "Me_1" names a Component, so it is the Measure Me_1, and "N/A" names
+    nothing, so it is the text N/A, on both engines (issue #1356)."""
+    result = _eval_1356(
+        use_duckdb,
+        'SELECT Id_1, "Me_1" AS Me_2, "N/A" AS Me_3 FROM DS_2',
+        "measure<number> Me_2, measure<string> Me_3",
+    )
+    assert result["Me_2"].tolist()[0] == 1.5
+    assert pd.isna(result["Me_2"].tolist()[1])
+    assert result["Me_3"].tolist() == ["N/A", "N/A"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
 def test_GH_1356_54(use_duckdb):
     """The query is checked on the declared types of its operands, so a date function on the
     Date Me_1 runs on both engines and in semantic_analysis, which raised 1-1-1-23 (issue

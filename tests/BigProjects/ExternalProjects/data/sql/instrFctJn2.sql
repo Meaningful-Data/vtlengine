@@ -1,12 +1,12 @@
 SELECT 
   A.CNTRCT_ID,
   A.DT_RFRNC,
-  ifnull(A.DBTR_ID, 'N/A') as DBTR_ID, 
+  ifnull(A.DBTR_ID, "N/A") as DBTR_ID, 
   A.INSTRMNT_ID, 
   A.OBSRVD_AGNT_ID, 
   A.JNT_LBLTY_AMNT, 
-  ifnull(A.CRDTR_ID, 'N/A') as CRDTR_ID, 
-  ifnull(A.SRVCR_ID, 'N/A') as SRVCR_ID
+  ifnull(A.CRDTR_ID, "N/A") as CRDTR_ID, 
+  ifnull(A.SRVCR_ID, "N/A") as SRVCR_ID
 FROM 
   B01.INSTRMNT_FCT_4_TEMP as A 
   inner join B01.INSTRMNT_FCT_SRVCR as B 

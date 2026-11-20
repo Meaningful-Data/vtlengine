@@ -12,6 +12,7 @@ import sqlglot
 import sqlglot.expressions as exp
 from pandas import DataFrame as PandasDataFrame
 from pandas._testing import assert_frame_equal
+from sqlglot.dialects.duckdb import DuckDB
 
 import vtlengine.DataTypes as DataTypes
 from vtlengine.DataTypes import RESERVED_COMPONENT_NAMES, SCALAR_TYPES, ScalarType
@@ -778,3 +779,21 @@ class ExternalRoutine:
         defined = {cte.alias for cte in expression.find_all(exp.CTE)}
         tables = [t.name for t in expression.find_all(exp.Table) if t.name not in defined]
         return list(dict.fromkeys(tables))
+
+    def query_on(self, operands: Iterable["Dataset"]) -> str:
+        """The query both engines run. A double-quoted name is an identifier when it names a
+        Component or an operand, or the query defines it (an alias, a WITH name or column);
+        otherwise it is a text, as between single quotes. DuckDB matches identifiers ignoring
+        case, so does this (issue #1356)."""
+        expression = sqlglot.parse_one(self.query, dialect="duckdb")
+        names = [*self.dataset_names, *(a.alias for a in expression.find_all(exp.Alias))]
+        for alias in expression.find_all(exp.TableAlias):
+            names += [alias.name, *(column.name for column in alias.columns)]
+        names += [name for operand in operands for name in operand.components]
+        identifiers = {name.lower() for name in names}
+        query = self.query
+        for token in reversed(DuckDB().tokenize(self.query)):
+            if self.query[token.start] == '"' and token.text.lower() not in identifiers:
+                text = token.text.replace("'", "''")
+                query = f"{query[: token.start]}'{text}'{query[token.end + 1 :]}"
+        return query

@@ -372,11 +372,12 @@ _POSIX_CLASSES = {
 _POSIX_CLASS = re.compile(r"\[:([a-z]+):\]")
 
 
-def posix_classes(pattern: str) -> str:
+def posix_classes(pattern: str, strict: bool = False) -> str:
     """The pattern with the POSIX character classes of its bracket expressions, such as
     [[:alpha:]], written as the ranges Python re reads: the pattern is a POSIX Extended
     Regular Expression in the VTL 2.2 manual, read so by RE2 on the DuckDB engine (issue
-    #1353)."""
+    #1353). With strict, a class RE2 does not know, such as [:foo:], raises re.error, as
+    RE2 does (issue #1356)."""
     out: List[str] = []
     i, in_set = 0, False
     while i < len(pattern):
@@ -386,6 +387,8 @@ def posix_classes(pattern: str) -> str:
             out.append(_POSIX_CLASSES[match.group(1)])
             i = match.end()
             continue
+        if match is not None and strict:
+            raise re.error(f"unknown POSIX character class {match.group(0)}", pattern, i)
         if char == "\\":
             out.append(pattern[i : i + 2])
             i += 2
@@ -409,9 +412,10 @@ class Match(Binary):
 
     @classmethod
     def check_pattern(cls, pattern: str) -> None:
-        """A pattern that is not a regular expression (issue #1356)."""
+        """A pattern that is not a regular expression, read as op_func reads it (issue
+        #1356)."""
         try:
-            re.compile(pattern)
+            re.compile(posix_classes(pattern, strict=True))
         except re.error as error:
             raise SemanticError(
                 "1-1-18-8", op=cls.op, msg=error.msg, regexp=pattern, pos=error.pos

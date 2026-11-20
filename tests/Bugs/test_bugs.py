@@ -14364,6 +14364,18 @@ class BasicTypeValueBugs(BugHelper):
         """
         self.BaseTest(code="GH_1353_43", number_inputs=1, references_names=["1"])
 
+    def test_GH_1353_15b(self):
+        """
+        Status: OK
+        Expression: DS_r <- lag ( DS_1 [ keep T ] , 1 , "2023Q4" over ( order by Id_1 ) );
+        Description: The String default "2023Q4" of lag on the Time_Period T is the period
+                     2023Q4, given to the first Data Point on both engines. The DuckDB engine
+                     gave it a null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_15b", number_inputs=1, references_names=["1"])
+
 
 class SemanticCheckBugs(BugHelper):
     """Invalid scripts refused by the semantic analysis on both engines (issue #1356)."""
@@ -14880,6 +14892,43 @@ class SemanticCheckBugs(BugHelper):
             exception_code="1-1-18-8",
             exception_message="At op match_characters: unterminated character set in "
             "regexp: [,  in position 0.",
+        )
+
+    def test_GH_1356_55b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := match_characters ( Me_3 , "[[:alpha:]" ) ];
+        Description: The pattern "[[:alpha:]" is checked as it is evaluated, with its POSIX class
+                     read: its bracket expression is not closed, 1-1-18-8. The semantic analysis
+                     accepted it, the pandas engine raised a raw re.error and the DuckDB engine a
+                     raw InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_55b",
+            number_inputs=1,
+            exception_code="1-1-18-8",
+            exception_message="At op match_characters: unterminated character set in "
+            "regexp: [[:alpha:],  in position 0.",
+        )
+
+    def test_GH_1356_55c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := match_characters ( Me_3 , "[[:foo:]]" ) ];
+        Description: [:foo:] is not a POSIX character class: 1-1-18-8. The semantic analysis
+                     accepted it, the pandas engine gave false for every data point and the DuckDB
+                     engine raised a raw InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_55c",
+            number_inputs=1,
+            exception_code="1-1-18-8",
+            exception_message="At op match_characters: unknown POSIX character class [:foo:] "
+            "in regexp: [[:foo:]],  in position 1.",
         )
 
     def test_GH_1356_56(self):
@@ -16545,6 +16594,38 @@ class StructureDataBugs(BugHelper):
             number_inputs=1,
             references_names=["1"],
             scalars={"SC_1": "abcabc"},
+        )
+
+    def test_GH_1354_29b(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 [ aggr Me_2 := sum ( Me_1 ) ] > 3
+                        imbalance DS_1 [ aggr Me_2 := sum ( Me_1 ) ] );
+        Description: An operand and an imbalance without Identifiers have one Data Point each,
+                     which match: bool_var true, imbalance 5. The pandas engine raised
+                     IndexError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1354_29b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1354_29c(self):
+        """
+        Status: OK
+        Expression: DS_r <- check ( DS_1 > 0 imbalance DS_2 );
+        Description: The Integer Id_1 of the operand and the String Id_1 of the imbalance have
+                     no common type, so check raises 1-1-13-18, as the binary operators do. The
+                     pandas engine raised ValueError, the DuckDB engine and the semantic
+                     analysis accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1354
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1354_29c",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="At op check: Incompatible types for common identifier Id_1: "
+            "Integer and String.",
         )
 
 

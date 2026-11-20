@@ -3791,7 +3791,15 @@ FROM (
                     operand_sql = _bool_to_str(operand_sql)
             func_sql = f"{op.upper()}({operand_sql}, {offset}"
             if default_val is not None:
-                if isinstance(default_val, AST.AST):
+                if (
+                    operand_type is TimePeriod
+                    and isinstance(default_val, AST.Constant)
+                    and isinstance(default_val.value, str)
+                ):
+                    # A String default on a Time_Period is the period in the form the
+                    # values are kept in, as on the pandas engine (issue #1353)
+                    default_sql = self._to_sql_literal(default_val.value, "TimePeriod")
+                elif isinstance(default_val, AST.AST):
                     default_sql = self.visit(default_val)
                 else:
                     default_sql = str(default_val)
@@ -3823,9 +3831,13 @@ FROM (
         )
         if is_duration:
             operand_sql = f"vtl_duration_to_int({operand_sql})"
-        operand_type = (
-            Boolean if node.operand is not None and self._is_boolean_expr(node.operand) else None
-        )
+        operand_type: Optional[type] = None
+        if node.operand is not None:
+            operand_type = (
+                Boolean
+                if self._is_boolean_expr(node.operand)
+                else self._detect_scalar_type(node.operand)
+            )
         func_sql = self._build_analytic_expr(op, operand_sql, node, operand_type)
         # ratio_to_report already includes its own OVER clause
         if op != tokens.RATIO_TO_REPORT:
@@ -6441,10 +6453,12 @@ FROM (
     def visit_EvalOp(self, node: AST.EvalOp) -> str:
         """Visit EVAL operator (external routine execution)."""
         routine = self.external_routines[node.name]
-        # The query runs as written. Without its closing semicolon it can be the operand of
-        # another (issue #1276), and the line break keeps a closing -- comment from hiding the
-        # parenthesis that follows (issue #1356)
-        query = f"({routine.query.strip().rstrip(';')}\n)"
+        # The query runs as on the pandas engine (query_on). Without its closing semicolon it
+        # can be the operand of another (issue #1276), and the line break keeps a closing --
+        # comment from hiding the parenthesis that follows (issue #1356)
+        operands = [self._get_dataset_structure(operand) for operand in node.operands]
+        query = routine.query_on(operand for operand in operands if operand is not None)
+        query = f"({query.strip().rstrip(';')}\n)"
 
         # A table the query names after an operand of another name (C07.DS_1 read as DS_1) is
         # that operand, through a WITH clause around the query (issue #1356)

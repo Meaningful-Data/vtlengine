@@ -21,7 +21,12 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Component, Dataset, Role, ValueDomain, component_type_name
-from vtlengine.Operators import Operator, on_basic_types
+from vtlengine.Operators import (
+    Operator,
+    _id_type_promotion_join_keys,
+    check_common_identifier_types,
+    on_basic_types,
+)
 from vtlengine.Operators.HROperators import fills_with_zero
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
@@ -212,6 +217,7 @@ class Check(Operator):
             imbalance_identifiers = imbalance_element.get_identifiers_names()
             if operand_identifiers != imbalance_identifiers:
                 raise SemanticError("1-1-10-11", op=cls.op)
+            check_common_identifier_types(cls.op, validation_element, imbalance_element)
             if len(imbalance_element.get_measures()) != 1:
                 raise SemanticError("1-1-10-1", op=cls.op, op_type="imbalance", me_type="Numeric")
 
@@ -277,7 +283,22 @@ class Check(Operator):
             imbalance_data = imbalance_element.data[identifiers + [imbalance_measure_name]].rename(
                 columns={imbalance_measure_name: "imbalance"}
             )
-            result.data = merge_frames(result.data, imbalance_data, on=identifiers, how="left")
+            op_data = result.data
+            for id_name in identifiers:
+                op_comp = validation_element.components[id_name]
+                imbalance_comp = imbalance_element.components[id_name]
+                if op_comp.data_type is not imbalance_comp.data_type:
+                    op_data, imbalance_data = _id_type_promotion_join_keys(
+                        op_comp, imbalance_comp, id_name, op_data, imbalance_data
+                    )
+            if identifiers:
+                merged = merge_frames(op_data, imbalance_data, on=identifiers, how="left")
+            else:
+                # Without Identifiers, op and imbalance have one data point at most, which match
+                merged = op_data.reset_index(drop=True).join(imbalance_data.reset_index(drop=True))
+            # The left merge keeps the order of the data points of op, whose Identifiers keep
+            # their type where the imbalance has another one matched by value
+            result.data = merged.assign(**{name: result.data[name].array for name in identifiers})
         else:
             result.data["imbalance"] = None
 
