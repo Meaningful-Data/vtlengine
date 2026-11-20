@@ -456,6 +456,7 @@ class Check_Hierarchy(Validation):
         value_domains: Optional[Dict[str, ValueDomain]] = None,
         rule_component: Optional[str] = None,
         mode: Optional[str] = None,
+        keep_rule_domain: bool = False,
     ) -> Dataset:
         result = super().validate(
             dataset_element,
@@ -465,9 +466,12 @@ class Check_Hierarchy(Validation):
             value_domains=value_domains,
         )
         measures = dataset_element.get_measures()
-        # As in hierarchy, the rule Identifier holds the computed code items, and the Measures
-        # the 0 of a missing one in the modes that read it as 0 (issue #1348)
-        computed = [rule_component] if rule_component in result.components else []
+        # As in hierarchy, the rule Identifier holds the checked code items and keeps its value
+        # domain when keep_rule_domain says so, and the Measures the 0 of a missing one in the
+        # modes that read it as 0 (issue #1348)
+        computed = (
+            [rule_component] if rule_component in result.components and not keep_rule_domain else []
+        )
         if mode is not None and fills_with_zero(mode):
             computed += [m.name for m in measures if m.name in result.components]
         result.components = on_basic_types(result.components, computed)

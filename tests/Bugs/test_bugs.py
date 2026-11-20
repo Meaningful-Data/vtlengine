@@ -9861,3 +9861,23 @@ class ValueDomainBugs(BugHelper):
             references_names=["1"],
             vd_names=self.vd_1348_c,
         )
+
+    def test_GH_1348_24(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( variable rule Id_2 ) is
+                        r1 : A = B end hierarchical ruleset;
+                    DS_r1 <- hierarchy ( DS_1 , HR_1 rule Id_2 all );
+                    DS_r2 <- check_hierarchy ( DS_1 , HR_1 rule Id_2 all );
+        Description: The ruleset is on a variable and the item A that its rule computes and
+                     checks is a value of VD_STR, so the rule Identifier Id_2 keeps VD_STR in
+                     both results, unlike cases 8 and 9, whose item C is not a value of it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_24",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=self.vd_1348,
+        )
