@@ -8199,20 +8199,17 @@ class ValueDomainBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- check_datapoint ( DS_1 , DPR_1 components Id_2 , Me_1 );
-        Description: Id_2, a String, is not defined on VD_FLOW, the value domain it is bound
-                     to (issue #1338).
+        Description: Id_2, a String, and Me_1, an Integer, are of the basic types of VD_FLOW
+                     and VD_AMOUNT, the value domains they are bound to, so the ruleset applies
+                     to them and they keep their basic types (issue #1348). It raised 1-1-10-12,
+                     as they are not defined on the value domains (issue #1338).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
-        Goal: Check Exception.
+        Goal: Check Result.
         """
-        code = "GH_1236_4"
-        number_inputs = 1
-
-        self.NewSemanticExceptionTest(
-            code=code,
-            number_inputs=number_inputs,
-            exception_code="1-1-10-12",
-            exception_message="Component Id_2 of type String is not defined on the Value Domain "
-            "VD_FLOW",
+        self.BaseTest(
+            code="GH_1236_4",
+            number_inputs=1,
+            references_names=["1"],
             vd_names=["GH_1236-VD_FLOW", "GH_1236-VD_AMOUNT"],
         )
 
@@ -8558,16 +8555,16 @@ class ValueDomainBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- check_datapoint ( DS_1 , dpr_cty components Me_3 all );
-        Description: Me_3, a String, is not defined on VD_CTY, the value domain it is bound to.
+        Description: Me_3, a String, is of the basic type of VD_CTY, the value domain it is
+                     bound to, so the ruleset applies to it (issue #1348); it raised 1-1-10-12.
+                     The value IT, outside VD_CTY, is checked as any other.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1338
-        Goal: Check Exception.
+        Goal: Check Result.
         """
-        self.NewSemanticExceptionTest(
+        self.BaseTest(
             code="GH_1338_3",
             number_inputs=1,
-            exception_code="1-1-10-12",
-            exception_message="Component Me_3 of type String is not defined on the Value Domain "
-            "VD_CTY",
+            references_names=["1"],
             vd_names=self.vd_1338,
         )
 
@@ -8629,16 +8626,16 @@ class ValueDomainBugs(BugHelper):
         Status: OK
         Expression: DS_r <- check_hierarchy ( DS_1 , hr_cty rule Id_1 all );
         Description: hr_cty is defined on the value domain VD_CTY, and Id_1 is a String
-                     component, with a value outside VD_CTY.
+                     component, of the basic type of VD_CTY, so the ruleset applies to it and
+                     Id_1 stays a String (issue #1348); the value IT, outside VD_CTY, is not a
+                     code item of it. It raised 1-1-10-12.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
-        Goal: Check Exception.
+        Goal: Check Result.
         """
-        self.NewSemanticExceptionTest(
+        self.BaseTest(
             code="GH_1339_1",
             number_inputs=1,
-            exception_code="1-1-10-12",
-            exception_message="Component Id_1 of type String is not defined on the Value Domain "
-            "VD_CTY of the ruleset hr_cty",
+            references_names=["1"],
             vd_names=self.vd_1339,
         )
 
@@ -8664,17 +8661,16 @@ class ValueDomainBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- check_hierarchy ( DS_1 , hr_cond condition Id_2 rule Id_1 all );
-        Description: The condition component Id_2 is an Integer component, not defined on the
-                     value domain VD_YEAR of the condition of hr_cond.
+        Description: The condition component Id_2 is an Integer component, of the basic type
+                     of the value domain VD_YEAR of the condition of hr_cond, so the ruleset
+                     applies to it and Id_2 stays an Integer (issue #1348). It raised 1-1-10-12.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
-        Goal: Check Exception.
+        Goal: Check Result.
         """
-        self.NewSemanticExceptionTest(
+        self.BaseTest(
             code="GH_1339_4",
             number_inputs=1,
-            exception_code="1-1-10-12",
-            exception_message="Component Id_2 of type Integer is not defined on the Value Domain "
-            "VD_YEAR of the ruleset hr_cond",
+            references_names=["1"],
             vd_names=self.vd_1339,
         )
 
@@ -9572,6 +9568,92 @@ class ValueDomainBugs(BugHelper):
             exception_message="The code item C of the hierarchical ruleset HR_1 is not one of "
             "the values of the Value Domain VD_STR",
             vd_names=self.vd_1348,
+        )
+
+    vd_1348_n = [*vd_1348, "GH_1348-VD_STR2", "GH_1348-VD_NUM"]
+
+    def test_GH_1348_8d(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( valuedomain condition VD_NUM as Y
+                        rule VD_STR ) is r1 : when Y > 2020 then A = B
+                    end hierarchical ruleset;
+                    DS_r <- hierarchy ( DS_1 , HR_1 condition Id_3 rule Id_2 all );
+        Description: The condition Component Id_3 is a String, a basic type that does not
+                     promote to Number, the basic type of the value domain VD_NUM it is bound
+                     to.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_8d",
+            number_inputs=1,
+            exception_code="1-1-10-12",
+            exception_message="Component Id_3 of type String is not defined on the Value Domain "
+            "VD_NUM of the ruleset HR_1, nor of a basic type that promotes to its type Number",
+            vd_names=self.vd_1348_n,
+        )
+
+    def test_GH_1348_8e(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( valuedomain condition VD_NUM as Y
+                        rule VD_STR ) is r1 : when Y > 2020 then A = B
+                    end hierarchical ruleset;
+                    DS_r <- hierarchy ( DS_1 , HR_1 condition Id_3 rule Id_2 all );
+        Description: The condition Component Id_3 is an Integer, which promotes to Number,
+                     the basic type of VD_NUM, so the ruleset applies to it: A is computed in
+                     2021 only, and Id_3 stays an Integer. It raised 1-1-10-12, as Id_3 is not
+                     defined on VD_NUM.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_8e",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348_n,
+        )
+
+    def test_GH_1348_8f(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_STR as S , VD_INT as I ) is
+                        r1 : when S = "A" then I > 1 errorcode "A_low"
+                    end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 , Me_2 all_measures );
+        Description: Me_1 is a String, the basic type of VD_STR, and Me_2 is on VD_INT, so the
+                     ruleset applies to both, and Me_1 stays a String. It raised 1-1-10-12, as
+                     Me_1 is not defined on VD_STR.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_8f",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348_n,
+        )
+
+    def test_GH_1348_8g(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_STR as S , VD_INT as I ) is
+                        r1 : when S = "A" then I > 1 errorcode "A_low"
+                    end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 , Me_2 all_measures );
+        Description: Me_1 is on VD_STR2, another value domain of the basic type of VD_STR, so
+                     it is rejected, as a basic String would not be.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_8g",
+            number_inputs=1,
+            exception_code="1-1-10-12",
+            exception_message="Component Me_1 of type VD_STR2 is not defined on the Value Domain "
+            "VD_STR of the ruleset DPR_1",
+            vd_names=self.vd_1348_n,
         )
 
     def test_GH_1348_9(self):
