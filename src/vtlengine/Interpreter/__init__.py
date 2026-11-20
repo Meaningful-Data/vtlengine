@@ -73,6 +73,7 @@ from vtlengine.AST.UDOTypes import (
 )
 from vtlengine.DataTypes import (
     BASIC_TYPES,
+    COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Integer,
@@ -284,7 +285,10 @@ class InterpreterAnalyzer(ASTTemplate):
     )
     # The key of the call being computed (see udo_call_key), and, in the semantic analysis, the
     # result of each call (None) and each of its dataset arguments (by the parameter), which the
-    # DuckDB engine reads in place of the structures it would work out (issue #1351)
+    # DuckDB engine reads in place of the structures it would work out (issue #1351). The
+    # Components each aggr clause computes are kept as well, under the key of the clause and
+    # aggr, and the type of the operand of a Component-level analytic function, under the key of
+    # the function and its operator (issue #1354)
     udo_call: Tuple[Any, ...] = ()
     udo_results: Dict[Tuple[Tuple[Any, ...], Optional[str]], Any] = field(default_factory=dict)
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
@@ -786,6 +790,8 @@ class InterpreterAnalyzer(ASTTemplate):
             Match.check_pattern(node.right.value)
         left_operand = self.visit(node.left)
         right_operand = self._visit_right_operand(node.op, left_operand, node.right)
+        if node.op == NVL and self.is_from_having:
+            right_operand = self._as_having_replacement(left_operand, right_operand)
 
         if self.condition_stack:
             left_operand = self.merge_then_else_datasets(left_operand)
@@ -801,6 +807,24 @@ class InterpreterAnalyzer(ASTTemplate):
             elif self.is_from_regular_aggregation:
                 raise SemanticError("1-1-6-6", dataset_name=left_operand, comp_name=right_operand)
         return BINARY_MAPPING[node.op].analyze(left_operand, right_operand)
+
+    @staticmethod
+    def _as_having_replacement(left: Any, right: Any) -> Any:
+        """In a having clause an aggregate is a value of each group, as a Component is of each
+        Data Point: the replacement of an nvl is the value of an aggregate however its Measure
+        is named, as in nvl(min(Me_2), count(Me_2)), so it takes the name of the Measure it
+        replaces (issue #1354)."""
+        if not isinstance(left, Dataset) or not isinstance(right, Dataset):
+            return right
+        left_measures, right_measures = left.get_measures_names(), right.get_measures_names()
+        if len(left_measures) != 1 or len(right_measures) != 1 or left_measures == right_measures:
+            return right
+        old_name, new_name = right_measures[0], left_measures[0]
+        components = {name: comp for name, comp in right.components.items() if name != old_name}
+        components[new_name] = copy(right.components[old_name])
+        components[new_name].name = new_name
+        data = None if right.data is None else right.data.rename(columns={old_name: new_name})
+        return Dataset(name=right.name, components=components, data=data)
 
     def _visit_right_operand(self, op: str, left: Any, node: AST.AST) -> Any:
         """The right operand of a binary operator. The right operand of an and or an or, and
@@ -1126,6 +1150,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 condition_stack, self.condition_stack = self.condition_stack, None
                 operand_comp = self.visit(node.operand)
                 self.condition_stack = condition_stack
+                if self.only_semantic:
+                    self.udo_results[(udo_call_key(self.udo_call, node), node.op)] = (
+                        operand_comp.data_type
+                    )
                 component_name = operand_comp.name
                 id_names = self.regular_aggregation_dataset.get_identifiers_names()
                 measure_names = self.regular_aggregation_dataset.get_measures_names()
@@ -1143,12 +1171,13 @@ class InterpreterAnalyzer(ASTTemplate):
                 analytic_component_name = (
                     f"__vtl_op_{operand_comp.name}" if operand_id_collision else operand_comp.name
                 )
-                analytic_role = Role.MEASURE if operand_id_collision else operand_comp.role
 
+                # The analytic computes a Measure, also from an Identifier or an Attribute
+                # (issue #1354)
                 dataset_components[analytic_component_name] = Component(
                     name=analytic_component_name,
                     data_type=operand_comp.data_type,
-                    role=analytic_role,
+                    role=Role.MEASURE,
                     nullable=operand_comp.nullable,
                     value_domain=operand_comp.value_domain,
                 )
@@ -1295,7 +1324,11 @@ class InterpreterAnalyzer(ASTTemplate):
         )
 
         # # Extracting the component we need (only measure)
-        if analytic_component_name is None or node.op == COUNT:
+        measure_name: str
+        if node.op == COUNT:
+            # count gives int_var, whatever Measures the ordering carries (issue #1354)
+            measure_name = COMP_NAME_MAPPING[Integer]
+        elif analytic_component_name is None:
             measure_name = result.get_measures_names()[0]
         else:
             measure_name = analytic_component_name
@@ -1305,9 +1338,12 @@ class InterpreterAnalyzer(ASTTemplate):
 
         # Joining the result with the original dataset
         if self.only_semantic:
-            data = None
+            column = None
         else:
-            if (
+            if result.data is not None and id_columns == []:
+                # A Data Set without Identifiers has a single Data Point (issue #1354)
+                column = result.data[measure_name]
+            elif (
                 self.regular_aggregation_dataset is not None
                 and self.regular_aggregation_dataset.data is not None
             ):
@@ -1322,13 +1358,13 @@ class InterpreterAnalyzer(ASTTemplate):
                     # A Data Set without Identifiers holds one Data Point at most (issue #1356)
                     else result.data.reset_index(drop=True)
                 )
-                data = joined_result[measure_name]
+                column = joined_result[measure_name]
             else:
-                data = None
+                column = None
 
         result_comp = DataComponent(
             name=output_name,
-            data=data,
+            data=column,
             data_type=result.components[measure_name].data_type,
             role=result.components[measure_name].role,
             nullable=result.components[measure_name].nullable,
@@ -1662,6 +1698,8 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
                 )
             operands = aux_operands
+            if self.only_semantic:
+                self.udo_results[(udo_call_key(self.udo_call, node), AGGREGATE)] = operands
         self.regular_aggregation_dataset = None
         self.regular_aggregation_op = None
         if node.op == FILTER:

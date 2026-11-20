@@ -1,4 +1,5 @@
 from copy import copy
+from math import inf
 from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
@@ -268,12 +269,16 @@ class Analytic(Operator.Unary):
         # The operators that give one of the values of the operand keep its value domain, but
         # for lag and lead with a default, a literal of the basic type (issue #1364)
         has_default = cls.op in (LAG, LEAD) and params is not None and len(params) > 1
-        if cls.op in (MAX, MIN, FIRST_VALUE, LAST_VALUE, LAG, LEAD) and not has_default:
-            analyzed = []
+        keeps_domain = cls.op in (MAX, MIN, FIRST_VALUE, LAST_VALUE, LAG, LEAD) and not has_default
         for name in analyzed:
-            if name in result_components and result_components[name].value_domain is not None:
+            if name not in result_components:
+                continue
+            if not keeps_domain and result_components[name].value_domain is not None:
                 result_components[name] = copy(result_components[name])
                 result_components[name].value_domain = None
+            # A window of a single Data Point has no sample statistic (issue #1354)
+            if cls.op in (STDDEV_SAMP, VAR_SAMP) or (cls.op != COUNT and cls._may_be_empty(window)):
+                result_components[name] = cls._shifted(result_components[name], None)
         dataset_name = VirtualCounter._new_ds_name()
         # Analytic combines the data points within each partition, so the surviving viral
         # attributes are combined and require a propagation rule (issue #906).
@@ -396,7 +401,8 @@ class Analytic(Operator.Unary):
                     f'as "{denominator_prefix}{measure}"'
                 )
 
-        # A Data Set without Identifiers selects its Measures alone (issue #1356)
+        # A Data Set without Identifiers, such as the result of an aggr without grouping, has
+        # Measures only (issues #1354 and #1356)
         columns = [f'"{name}"' for name in identifier_names] + measure_queries
         query = f"SELECT {', '.join(columns)} FROM df"
 
@@ -485,6 +491,9 @@ class Analytic(Operator.Unary):
             registry = get_current_registry()
             result.data = cls.normalize_dates(result.data, result.components)
             viral_src = df[identifier_names + viral_attr_names].copy()
+            # The rules read the values as given, not as the Dates parsed for the analytic
+            # (issue #1354)
+            viral_src[viral_attr_names] = operand.data[viral_attr_names]
             for va_name in viral_attr_names:
                 component = operand.components[va_name]
                 if registry.rule_for(component) is None:
@@ -535,6 +544,8 @@ class Analytic(Operator.Unary):
         the operand and the default value, as nvl gives it: a Number default makes an Integer
         operand a Number, and a String default on a Number raises 1-1-1-1 (issue #1353). A
         time type has no literals, so a String default is a value of it (issue #1352).
+        Without params it is a nullable copy, for a window that can hold no data point
+        (issue #1354).
         """
         data_type = component.data_type
         default_type = BASIC_TYPES.get(type(params[1])) if params and len(params) > 1 else None
@@ -548,6 +559,28 @@ class Analytic(Operator.Unary):
         shifted.nullable, shifted.data_type = True, data_type
         return shifted
 
+    @staticmethod
+    def _may_be_empty(window: Optional[Windowing]) -> bool:
+        """Whether the window can hold no data point: it does when it does not reach the
+        current data point, so the function gives null there (issue #1354)."""
+        if window is None:
+            return False
+
+        def offset(limit: Union[int, str], mode: str) -> Optional[float]:
+            """Position of a limit from the current data point, None when it is not known
+            here (a scalar in the semantic analysis)."""
+            if limit == "current row":
+                return 0
+            if limit == "unbounded":
+                return -inf if mode == "preceding" else inf
+            if not isinstance(limit, int):
+                return None
+            return -limit if mode == "preceding" else limit
+
+        start = offset(window.start, window.start_mode)
+        stop = offset(window.stop, window.stop_mode)
+        return start is None or stop is None or start > 0 or stop < 0
+
     @classmethod
     def normalize_dates(
         cls, data: Optional[pd.DataFrame], components: Dict[str, Component]
@@ -557,7 +590,8 @@ class Analytic(Operator.Unary):
         elif any(comp.data_type is Date for comp in components.values()):
             data = data.copy()
             for comp_name, comp in components.items():
-                if comp.data_type is Date:
+                # A viral Attribute is not in the data yet (issue #1354)
+                if comp.data_type is Date and comp_name in data.columns:
                     data[comp_name] = data[comp_name].astype(DATE_COMPARISON_DTYPE)
         return data
 

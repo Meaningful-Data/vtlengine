@@ -1,0 +1,5 @@
+define hierarchical ruleset HR_1 (variable rule Id_2) is
+    R1: A = B errorlevel 1;
+    R2: A > B
+end hierarchical ruleset;
+DS_r <- check_hierarchy(DS_1[rename Me_1 to 'imbalance'], HR_1 rule Id_2 all);

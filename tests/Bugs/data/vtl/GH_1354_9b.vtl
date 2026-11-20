@@ -1,0 +1,4 @@
+define datapoint ruleset DPR_2 (variable bool_var) is
+    R1: bool_var > 0 errorcode "E3"
+end datapoint ruleset;
+DS_r <- check_datapoint(DS_1[rename Me_1 to bool_var], DPR_2 all);

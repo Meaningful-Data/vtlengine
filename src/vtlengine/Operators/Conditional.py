@@ -22,6 +22,7 @@ from vtlengine.Operators import (
     _id_type_promotion_join_keys,
     check_common_identifier_types,
     common_identifiers,
+    may_be_null,
     promoted_keys,
     share_value_domains,
     shared_value_domain,
@@ -505,7 +506,10 @@ class Nvl(Binary):
         dataset_name = VirtualCounter._new_ds_name()
         comp_name = VirtualCounter._new_dc_name()
         result_components = {}
-        keeps_nulls = isinstance(right, Scalar) and (right.data_type is Null or right.value is None)
+        # A scalar replacement that cannot be null, such as a cast of a literal, replaces the
+        # nulls also in the semantic analysis, which does not know the values it computes
+        # (issue #1354)
+        keeps_nulls = isinstance(right, Scalar) and (right.data_type is Null or may_be_null(right))
         if isinstance(right, DataComponent):
             keeps_nulls = right.nullable
         if isinstance(left, Scalar):
@@ -550,6 +554,9 @@ class Nvl(Binary):
                         component.data_type, right.data_type
                     )
             if isinstance(right, Dataset):
+                # The operands must have the same Components, as in a case (issue #1354)
+                if set(left.get_components_names()) != set(right.get_components_names()):
+                    raise SemanticError("1-1-9-20", op=NVL)
                 # The Data Points match on the common Identifiers, which need a common type, as
                 # in the other operators on two Data Sets (issue #1352)
                 check_common_identifier_types(NVL, left, right)

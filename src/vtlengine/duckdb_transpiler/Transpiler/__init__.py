@@ -9,6 +9,7 @@ from itertools import groupby
 from typing import (
     Any,
     Callable,
+    Collection,
     Dict,
     FrozenSet,
     Generator,
@@ -92,6 +93,7 @@ from vtlengine.Operators.HROperators import fills_with_zero
 from vtlengine.Operators.Join import merged_viral_attribute_names
 from vtlengine.Operators.Time import Period_indicator, Time_Aggregation
 from vtlengine.Operators.Validation import (
+    VALIDATION_MEASURES,
     bind_value_domains,
     error_domains,
     error_level_text,
@@ -221,17 +223,22 @@ def _datediff_to_date(ref: str, dt: Optional[type]) -> str:
     return f"vtl_datediff_date({ref})"
 
 
+def _tp_indicator_error(agg_op: str) -> str:
+    """The SQL text of the error 2-1-19-20 of a max or a min of Time_Periods."""
+    return (
+        f"'VTL Error 2-1-19-20: Time Period operands with "
+        f"different period indicators do not support < and > "
+        f"Comparison operations, unable to get the {agg_op}'"
+    )
+
+
 def _add_tp_indicator_check(sql: str, table_src: str, tp_cols: List[tuple[str, str]]) -> str:
     """Add a TimePeriod indicator consistency check to an aggregate query."""
     checks: List[str] = []
     for col_name, agg_op in tp_cols:
         qc = quote_name(col_name)
         indicator = f"vtl_period_parse({qc}).period_indicator"
-        err = (
-            f"'VTL Error 2-1-19-20: Time Period operands with "
-            f"different period indicators do not support < and > "
-            f"Comparison operations, unable to get the {agg_op}'"
-        )
+        err = _tp_indicator_error(agg_op)
         checks.append(
             f"CASE WHEN COUNT(DISTINCT {indicator}) "
             f"FILTER (WHERE {qc} IS NOT NULL) > 1 "
@@ -1376,7 +1383,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Build the viral-attribute SELECT columns for a two-dataset binary op.
 
         Operators that combine data points run the propagation rule (``vp_pair_sql``);
-        ``nvl`` is single-operand and copies the primary operand (COALESCE-filled) (#906).
+        ``nvl`` is single-operand and copies the primary operand (#906).
         A viral attribute present in only one operand is copied from that operand.
         """
         left_viral = {n for n, c in left_ds.components.items() if c.role == Role.VIRAL_ATTRIBUTE}
@@ -1393,11 +1400,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             in_left = name in left_viral
             in_right = name in right_viral
             if op == tokens.NVL:
-                # nvl copies the primary operand's viral value, filling nulls from the
-                # secondary operand; no rule is run (issue #906).
-                if in_left and in_right:
-                    result.append(f"COALESCE({alias_a}.{qn}, {alias_b}.{qn}) AS {qn}")
-                elif in_left:
+                # nvl copies the primary operand's viral value, also a null, and runs no
+                # rule (issues #906 and #1354).
+                if in_left:
                     result.append(f"{alias_a}.{qn} AS {qn}")
                 elif in_right:
                     result.append(f"{alias_b}.{qn} AS {qn}")
@@ -3340,7 +3345,9 @@ FROM (
             except_set = set(grouping_names)
             group_ids = [n for n in all_input_ids if n not in except_set]
         elif not grouping_names:
-            output_ds = self._get_output_dataset()
+            # The structure of the clause, also when it is the operand of another clause, where
+            # the output of the assignment is not its result (issue #1354)
+            output_ds = self._get_output_dataset() or self._get_dataset_structure(node)
             group_ids = list(output_ds.get_identifiers_names() if output_ds else all_input_ids)
 
         if time_agg_id and time_agg_id not in group_ids and grouping_op != "group except":
@@ -3460,7 +3467,15 @@ FROM (
         # Viral attributes are copied (replicated) across the unpivoted rows below; no rule
         # is executed on this row-preserving reshape (issue #906).
         if not measure_names:
-            return f"SELECT * FROM {table_src}"
+            # No Measure to unpivot: no data points, with the new Identifier and the new
+            # Measure, a String as the semantic analysis gives it (issue #1354)
+            empty = [
+                *map(quote_name, id_names),
+                f"CAST(NULL AS VARCHAR) AS {quote_name(new_id_name)}",
+                f"CAST(NULL AS VARCHAR) AS {quote_name(new_measure_name)}",
+                *map(quote_name, viral_names),
+            ]
+            return f"SELECT {', '.join(empty)} FROM {table_src} WHERE FALSE"
         # In a Time Measure, the Date and Time_Period values are Time values (issue #1352)
         if self._time_names([ds]) & set(measure_names):
             table_src = self._promoted_source(
@@ -3796,19 +3811,31 @@ FROM (
         if op != tokens.RATIO_TO_REPORT:
             over_clause = self._build_over_clause(node)
             func_sql = f"{func_sql} OVER ({over_clause})"
+        # The type the semantic analysis gives the operand, of any expression (issue #1354)
+        semantic_type = self.udo_results.get((self._udo_call_key(node), op))
         if is_duration:
             func_sql = f"vtl_int_to_duration({func_sql})"
-        elif op in (tokens.MAX, tokens.MIN) and (
-            node.operand is not None and self._detect_scalar_type(node.operand) == TimePeriod
+        elif (
+            op in (tokens.MIN, tokens.MAX)
+            and node.operand is not None
+            and (
+                semantic_type is TimePeriod
+                or (
+                    semantic_type is None
+                    and (
+                        self._detect_scalar_type(node.operand) == TimePeriod
+                        or self._is_operand_type(node.operand, TimePeriod)
+                    )
+                )
+            )
         ):
             # The periods of the operand must have one indicator, as for the max and the min of
-            # a Data Set (_add_tp_indicator_check) and on the pandas engine (issue #1352)
+            # a Data Set (_add_tp_indicator_check) and on the pandas engine (issues #1352 and
+            # #1354)
             indicator = f"vtl_period_parse({operand_sql}).period_indicator"
             func_sql = (
                 f"CASE WHEN MIN({indicator}) OVER () <> MAX({indicator}) OVER () "
-                f"THEN error('VTL Error 2-1-19-20: Time Period operands with different period "
-                f"indicators do not support < and > Comparison operations, unable to get the "
-                f"{op}') ELSE {func_sql} END"
+                f"THEN error({_tp_indicator_error(op)}) ELSE {func_sql} END"
             )
         # An analytic inside another analytic's operand cannot be emitted inline
         # (SQL forbids nesting window functions): hand it to the enclosing clause
@@ -5789,22 +5816,34 @@ FROM (
     def _error_level_sql(self, rule: Any) -> str:
         """The errorlevel of a rule, written as text when the levels of its ruleset mix types
         and errorlevel_vd is not given."""
+        levels = next(
+            (
+                [r.erLevel for r in info["rules"]]
+                for info in (*self._dprs.values(), *self._hrs.values())
+                if any(r is rule for r in info["rules"])
+            ),
+            [rule.erLevel],
+        )
         level = rule.erLevel
-        if level is not None and error_domains(self.value_domains)["errorlevel"] is None:
-            for info in (*self._dprs.values(), *self._hrs.values()):
-                if any(r is rule for r in info["rules"]):
-                    if error_level_type([r.erLevel for r in info["rules"]]) is String:
-                        level = error_level_text(level)
-                    break
-        return self._error_code_sql(level, "errorlevel")
+        if (
+            level is not None
+            and error_domains(self.value_domains)["errorlevel"] is None
+            and error_level_type(levels) is String
+        ):
+            level = error_level_text(level)
+        return self._error_code_sql(level, "errorlevel", levels)
 
-    def _error_code_sql(self, value: Any, element: str = "errorcode") -> str:
+    def _error_code_sql(
+        self, value: Any, element: str = "errorcode", levels: Collection[Any] = ()
+    ) -> str:
         """Convert an errorcode or errorlevel value (element) to a SQL literal, of the basic type
-        of errorcode_vd or errorlevel_vd when it is given."""
+        of errorcode_vd or errorlevel_vd when it is given. An omitted errorlevel is a null of the
+        type of the errorlevel of the levels of its ruleset (issue #1354)."""
         value_domain = error_domains(self.value_domains)[element]
         if value_domain is None:
             if value is None:
-                return "CAST(NULL AS VARCHAR)"
+                null_type = error_level_type(levels) if element == "errorlevel" else String
+                return f"CAST(NULL AS {get_duckdb_type(null_type.__name__)})"
             return self._to_sql_literal(value=error_value(element, value, None, ""))
         type_name = value_domain.type.__name__
         if value is None:
@@ -5894,10 +5933,18 @@ FROM (
 
         for val, col in ((error_code, "errorcode"), (error_level, "errorlevel")):
             cols.append(f'CASE WHEN {bool_ref} IS FALSE THEN {val} ELSE NULL END AS "{col}"')
+        # check combines no data points: the viral attributes are copied (issue #1354), except
+        # one named like a computed Measure, which gives way to it
+        cols.extend(
+            f"t.{quote_name(n)}"
+            for n in ds.get_viral_attributes_names()
+            if n not in VALIDATION_MEASURES
+        )
 
         sql = f"SELECT {', '.join(cols)} FROM ({validation_sql}) AS t"
         if imbalance_sql is not None and join_cond is not None:
-            sql += f" JOIN ({imbalance_sql}) AS i ON {join_cond}"
+            # all keeps every data point of op, with a null imbalance where it has none
+            sql += f" LEFT JOIN ({imbalance_sql}) AS i ON {join_cond}"
         if node.invalid:
             sql += f" WHERE {bool_ref} IS FALSE"
         return sql

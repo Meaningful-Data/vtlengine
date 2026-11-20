@@ -106,7 +106,11 @@ def _enumerated_group_sql(rule: ViralPropagationRule, lst: str) -> str:
     values are folded pairwise. ``list_reduce`` alone would skip the lambda for a
     one-element list, leaving a lone value unmapped, so the single case is explicit.
     """
-    single = _enumerated_single_case(rule, f"({lst})[1]")
+    # The single value goes through list_reduce as well, which gives the result the type of
+    # the values, as for two or more, where a rule written with String literals on a Date
+    # would otherwise mix two types in the CASE (issue #1354)
+    first = f"({lst})[1]"
+    single = f"list_reduce([{first}, {first}], (acc, x) -> {_enumerated_single_case(rule, 'x')})"
     pair = _enumerated_case(rule, "acc", "x")
     return (
         f"CASE WHEN len({lst}) = 0 THEN NULL "

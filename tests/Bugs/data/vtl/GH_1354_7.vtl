@@ -1,0 +1,5 @@
+define hierarchical ruleset HR_1 (variable rule Id_2) is
+    R1: A = B errorlevel 1;
+    R2: A > B
+end hierarchical ruleset;
+DS_r <- sum(check_hierarchy(DS_1, HR_1 rule Id_2 all)[keep 'errorlevel'] group by Id_1);
