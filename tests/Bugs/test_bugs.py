@@ -11496,9 +11496,9 @@ class ValueDomainBugs(BugHelper):
         Expression: define operator f ( x integer default 2.5 ) returns number is x * 2
                         end operator;
                     SC_r <- f ( );
-        Description: Extra case: the default 2.5 of an integer parameter is checked as an
-                     argument passed to it is: a Number with decimals is not an Integer and
-                     raises 1-2-18, on both engines and in the semantic analysis. The pandas
+        Description: Extra case: the default 2.5 of an integer parameter is not an Integer, a
+                     Number with decimals, and raises 1-3-1-1 where the operator is defined
+                     (issue #1356), on both engines and in the semantic analysis. The pandas
                      engine and the semantic analysis took the default as it was written, so
                      pandas gave 5.0, while the DuckDB engine raised 1-2-18.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
@@ -11507,8 +11507,9 @@ class ValueDomainBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code="GH_1351_41",
             number_inputs=1,
-            exception_code="1-2-18",
-            exception_message="Expected Integer, got Number on UDO f, parameter x.",
+            exception_code="1-3-1-1",
+            exception_message="At op f: User defined default of parameter x declared as "
+            "Integer, found Number.",
         )
 
     def test_GH_1351_42(self):
@@ -14660,6 +14661,100 @@ class SemanticCheckBugs(BugHelper):
             number_inputs=1,
             exception_code="1-2-18",
             exception_message="Expected Integer, got String on UDO f, parameter x.",
+            vd_names=["GH_1356-VD_1"],
+        )
+
+    def test_GH_1356_59(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer default 2.5 ) returns integer is x end operator;
+                    SC_r <- f ( 1 );
+        Description: The default 2.5 of the integer parameter x is not an Integer: 1-3-1-1 where the
+                     operator is defined, whether the default is used or not. Both engines accepted
+                     it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_59",
+            number_inputs=1,
+            exception_code="1-3-1-1",
+            exception_message="At op f: User defined default of parameter x declared as "
+            "Integer, found Number.",
+        )
+
+    def test_GH_1356_60(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer default 2.5 ) returns integer is x end operator;
+                    SC_r <- f ( _ );
+        Description: The default 2.5 of the integer parameter x raises 1-3-1-1 where the operator is
+                     defined, not 1-2-18 at the call.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_60",
+            number_inputs=1,
+            exception_code="1-3-1-1",
+            exception_message="At op f: User defined default of parameter x declared as "
+            "Integer, found Number.",
+        )
+
+    def test_GH_1356_60b(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer default "a" ) returns integer is x end operator;
+                    SC_r <- f ( 1 );
+        Description: Control of cases 59 and 60: the default "a" of an integer parameter raises
+                     1-3-1-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_60b",
+            number_inputs=1,
+            exception_code="1-3-1-1",
+            exception_message="At op f: User defined default of parameter x declared as "
+            "Integer, found String.",
+        )
+
+    def test_GH_1356_61(self):
+        """
+        Status: OK
+        Expression: define operator f ( x VD_1 default 5 ) returns integer is x end operator; SC_r
+                    <- f ( 1 );
+        Description: The default 5 is not a value of the value domain VD_1 of the parameter x:
+                     1-1-10-13 where the operator is defined, whether the default is used or not.
+                     Both engines accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_61",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message="The default 5 of parameter x of the operator f is not one of "
+            "the values of the Value Domain VD_1.",
+            vd_names=["GH_1356-VD_1"],
+        )
+
+    def test_GH_1356_62(self):
+        """
+        Status: OK
+        Expression: define operator f ( x VD_1 default 5 ) returns integer is x end operator; SC_r
+                    <- f ( _ );
+        Description: The default 5 outside VD_1 raises 1-1-10-13 where the operator is defined. Both
+                     engines raised 2-1-5-4 at run time and the semantic analysis accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_62",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message="The default 5 of parameter x of the operator f is not one of "
+            "the values of the Value Domain VD_1.",
             vd_names=["GH_1356-VD_1"],
         )
 

@@ -504,6 +504,12 @@ class InterpreterAnalyzer(ASTTemplate):
                 if not isinstance(declared, Scalar) and not (
                     isinstance(declared, type)
                     and check_unary_implicit_promotion(default.data_type, declared)
+                    # A Number with decimals is no Integer, as for an argument (issue #1356)
+                    and not (
+                        declared == Integer
+                        and isinstance(default.value, float)
+                        and not default.value.is_integer()
+                    )
                 ):
                     raise SemanticError(
                         "1-3-1-1",
@@ -511,6 +517,18 @@ class InterpreterAnalyzer(ASTTemplate):
                         option=f"default of parameter {param.name}",
                         type_1=type_,
                         type_2=default.data_type,
+                    )
+                domain = (
+                    constraints.value.value_domain if constraints and constraints.value else None
+                )
+                if domain is not None and not is_value_of_domain(default.value, domain):
+                    # A default is a value of the value domain of its parameter (issue #1356)
+                    raise SemanticError(
+                        "1-1-10-13",
+                        element="default",
+                        value=literal_text(default.value),
+                        where=f"parameter {param.name} of the operator {node.op}",
+                        value_domain=domain.name,
                     )
                 param_info[-1]["default"] = param.default
             if len(param_info) > 1:
