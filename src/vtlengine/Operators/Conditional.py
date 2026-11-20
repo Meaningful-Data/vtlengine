@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Union, cast
 
 import pandas as pd
 
-from vtlengine.AST.Grammar.tokens import NVL
+from vtlengine.AST.Grammar.tokens import CASE, IF, NVL
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
@@ -121,6 +121,27 @@ def _identifiers(dataset: Dataset) -> Dict[str, Any]:
     matches the condition in whatever order each one declares them (issue #1008), and on the
     basic types, as a value domain is upcast to its basic type (issue #1348)."""
     return {comp.name: comp.data_type for comp in dataset.get_identifiers()}
+
+
+def _check_identifiers(op: str, operand: Dataset, condition: Dataset) -> None:
+    """A Data Set operand or condition of an if or a case has the Identifiers of the condition,
+    on their names and basic types; the error names both (issue #1364)."""
+    if _identifiers(operand) != _identifiers(condition):
+        raise SemanticError(
+            "1-1-9-10",
+            op=op,
+            clause=operand.name,
+            ids=_identifiers_text(operand),
+            condition_ids=_identifiers_text(condition),
+        )
+
+
+def _identifiers_text(dataset: Dataset) -> str:
+    """The Identifiers of a Data Set with their basic types, as Id_1 String, Id_2 Integer."""
+    return ", ".join(
+        f"{name} {SCALAR_TYPES_CLASS_REVERSE[data_type]}"
+        for name, data_type in _identifiers(dataset).items()
+    )
 
 
 def _promote_measures(components: Dict[str, Component], operands: List[Any]) -> None:
@@ -356,11 +377,9 @@ class If(Operator):
             # Two Scalars (having) only need a common type: an operand is never retyped
             binary_implicit_promotion(left.data_type, right.data_type)
             return Dataset(name=dataset_name, components=copy(condition.components), data=None)
-        if _identifiers(left) != _identifiers(condition):
-            raise SemanticError("1-1-9-10", op=cls.op, clause=left.name)
+        _check_identifiers(IF, left, condition)
         if isinstance(right, Dataset):
-            if _identifiers(right) != _identifiers(condition):
-                raise SemanticError("1-1-9-10", op=cls.op, clause=right.name)
+            _check_identifiers(IF, right, condition)
             # The branches must hold the same Components, in whatever order each one
             # happens to declare them (issue #1008).
             if set(left.get_components_names()) != set(right.get_components_names()):
@@ -718,8 +737,8 @@ class Case(Operator):
         # Each later condition and each Data Set operand has the Identifiers of the first
         # condition, which gives the Data Points, as in an if (issue #1314)
         for item in [*conditions[1:], *ops]:
-            if isinstance(item, Dataset) and _identifiers(item) != _identifiers(conditions[0]):
-                raise SemanticError("1-1-9-10", op=cls.op, clause=item.name)
+            if isinstance(item, Dataset):
+                _check_identifiers(CASE, item, conditions[0])
 
         # Copy the components: the result must never share them, or the dict, with the
         # branch dataset, as their value domains are set and apply_viral_return_types may

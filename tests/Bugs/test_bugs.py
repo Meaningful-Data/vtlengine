@@ -14389,3 +14389,61 @@ class ValueDomainFollowUpBugs(BugHelper):
             exception_message="Viral attribute At_1 has no viral propagation rule",
             vd_names=self.vd_1364,
         )
+
+    def test_GH_1364_22(self):
+        """
+        Status: OK
+        Expression: DS_r <- if DS_6 then DS_7 else DS_2 [ keep Me_1 ];
+        Description: The Identifier Id_1 is a String in DS_7 and an Integer in the condition: the
+                     message names the operator, the Identifier and both types. It said that
+                     DS_7 had a different number of Identifiers, at op None.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_22",
+            number_inputs=3,
+            exception_code="1-1-9-10",
+            exception_message=(
+                "At op if: The Identifiers of DS_7 (Id_1 String) are not the Identifiers of the "
+                "condition (Id_1 Integer)."
+            ),
+            vd_names=self.vd_1364,
+        )
+
+    def test_GH_1364_23(self):
+        """
+        Status: OK
+        Expression: DS_r <- case when DS_6 then DS_7 else DS_2 [ keep Me_1 ];
+        Description: As 22, for case: the message names case, Id_1 and both types.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_23",
+            number_inputs=3,
+            exception_code="1-1-9-10",
+            exception_message=(
+                "At op case: The Identifiers of DS_7 (Id_1 String) are not the Identifiers of "
+                "the condition (Id_1 Integer)."
+            ),
+            vd_names=self.vd_1364,
+        )
+
+    def test_GH_1364_24(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 + DS_2 [ keep Me_1 ];
+        Description: Control: the String Id_1 of DS_7 and the Integer Id_1 of DS_2 have no common
+                     type.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_24",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="At op +: Incompatible types for common identifier Id_1: String "
+            "and Integer.",
+            vd_names=self.vd_1364,
+        )
