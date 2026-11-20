@@ -13689,3 +13689,67 @@ class TimeValueBugs(BugHelper):
             "shiftNumber, expected Integer.",
             scalars={"SC_N": 2.7},
         )
+
+
+class BasicTypeValueBugs(BugHelper):
+    """Values of the basic types converted, written and compared alike by both engines (issue
+    #1353)."""
+
+    def test_GH_1353_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- exists_in ( DS_1 , DS_3 );
+        Description: The Integer Id_1 of DS_1 and the String Id_1 of DS_3 have no common type,
+                     so exists_in raises 1-1-13-18, as the binary operators do.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1353_7",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="Incompatible types for common identifier Id_1: Integer and String.",
+        )
+
+    def test_GH_1353_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_3 );
+        Description: The Integer Id_1 of DS_1 and the String Id_1 of DS_3 have no common type,
+                     so nvl raises 1-1-13-18.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1353_8",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="Incompatible types for common identifier Id_1: Integer and String.",
+        )
+
+    def test_GH_1353_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- full_join ( DS_1 as A , DS_3 as B keep A#Me_1 );
+        Description: The join key Id_1, an Integer in DS_1 and a String in DS_3, has no common
+                     type, so full_join raises 1-1-13-18, as inner_join and left_join do.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1353_9",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="Incompatible types for common identifier Id_1: Integer and String.",
+        )
+
+    def test_GH_1353_11(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := substr ( Me_1 , 1 , Me_3 ) ];
+        Description: The Number length Me_3 (2.0) is implicitly cast to Integer. The DuckDB
+                     engine passed the DOUBLE to SUBSTR and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_11", number_inputs=1, references_names=["1"])
