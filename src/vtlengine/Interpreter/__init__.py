@@ -40,10 +40,12 @@ from vtlengine.AST.Grammar.tokens import (
     EXTERNAL,
     FILL_TIME_SERIES,
     FILTER,
+    GTE,
     HAVING,
     HIERARCHY,
     INSTR,
     KEEP,
+    LTE,
     MEMBERSHIP,
     MINUS,
     NVL,
@@ -1310,6 +1312,15 @@ class InterpreterAnalyzer(ASTTemplate):
             operand_element = self.visit(node.children[0])
             from_element = self.visit(node.children[1])
             to_element = self.visit(node.children[2])
+            if self.is_from_having and (
+                isinstance(from_element, Dataset) or isinstance(to_element, Dataset)
+            ):
+                # An aggregate in a having clause is a Data Set of the groups: between is
+                # op >= from and op <= to, as the VTL 2.2 manual defines it (issue #1356)
+                return BINARY_MAPPING[AND].analyze(
+                    BINARY_MAPPING[GTE].analyze(operand_element, from_element),
+                    BINARY_MAPPING[LTE].analyze(operand_element, to_element),
+                )
 
             return Between.analyze(operand_element, from_element, to_element)
 

@@ -14074,3 +14074,99 @@ class BasicTypeValueBugs(BugHelper):
             exception_code="1-1-1-1",
             exception_message="Invalid implicit cast from Number to String.",
         )
+
+
+class SemanticCheckBugs(BugHelper):
+    """Invalid scripts refused by the semantic analysis on both engines (issue #1356)."""
+
+    def test_GH_1356_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := between ( Me_3 , 1 , 10 ) ];
+        Description: The String Me_3 and the Integer bounds of between have no common type, so
+                     between raises 1-1-1-1, as Me_3 > 1 does. Both engines raised a raw error and
+                     the semantic analysis accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_4",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from String to Integer.",
+        )
+
+    def test_GH_1356_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := between ( Me_2 , true , 10 ) ];
+        Description: The Number Me_2 and the Boolean bound true have no common type, so between
+                     raises 1-1-1-1, as Me_2 > true does. The pandas engine returned a result and
+                     the DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_5",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Number to Boolean.",
+        )
+
+    def test_GH_1356_6(self):
+        """
+        Status: OK
+        Expression: SC_r <- between ( "a" , 1 , 10 );
+        Description: The String "a" and the Integer bounds have no common type, so between raises
+                     1-1-1-1. Both engines raised a raw error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_6",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from String to Integer.",
+        )
+
+    def test_GH_1356_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- between ( DS_2 , DS_2 , 10 );
+        Description: A bound of between is a Component or a Scalar, so the Data Set DS_2 as a bound
+                     raises 1-1-15-8, as round ( DS_2 , DS_2 ) does. Both engines and the semantic
+                     analysis raised a raw AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_7",
+            number_inputs=1,
+            exception_code="1-1-15-8",
+            exception_message="At op between: between operator cannot have a Dataset as parameter.",
+        )
+
+    def test_GH_1356_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_9 := sum ( Me_2 ) group by Id_1 having between ( max (
+                    Me_2 ) , 0 , sum ( Me_2 ) ) ];
+        Description: In a having clause the aggregates sum ( Me_2 ) and max ( Me_2 ) are valid
+                     bounds of between, which keeps the groups as max ( Me_2 ) >= 0 and max ( Me_2 )
+                     <= sum ( Me_2 ) does (case 8b). Both engines and the semantic analysis raised a
+                     raw AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1356_8", number_inputs=1, references_names=["1"])
+
+    def test_GH_1356_8b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_9 := sum ( Me_2 ) group by Id_1 having max ( Me_2 ) >= 0
+                    and max ( Me_2 ) <= sum ( Me_2 ) ];
+        Description: Control of case 8: the same condition written with >= and <=.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1356_8b", number_inputs=1, references_names=["1"])

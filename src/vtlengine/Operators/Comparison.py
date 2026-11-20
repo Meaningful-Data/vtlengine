@@ -8,6 +8,7 @@ import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
+    BETWEEN,
     CHARSET_MATCH,
     EQ,
     GT,
@@ -357,6 +358,7 @@ class Match(Binary):
 
 
 class Between(Operator.Operator):
+    op = BETWEEN
     return_type = Boolean
     """
     This comparison operator has the following class methods.
@@ -434,10 +436,13 @@ class Between(Operator.Operator):
     def validate(
         cls,
         operand: Union[Dataset, DataComponent, Scalar],
-        from_: Union[DataComponent, Scalar],
-        to: Union[DataComponent, Scalar],
+        from_: Union[Dataset, DataComponent, Scalar],
+        to: Union[Dataset, DataComponent, Scalar],
     ) -> Any:
         result: Union[Dataset, DataComponent, Scalar]
+        if isinstance(from_, Dataset) or isinstance(to, Dataset):
+            # A bound is a Component or a Scalar (issue #1356)
+            raise SemanticError("1-1-15-8", op=cls.op, comp_type="Dataset")
         if isinstance(operand, Dataset):
             if len(operand.get_measures()) == 0:
                 raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
