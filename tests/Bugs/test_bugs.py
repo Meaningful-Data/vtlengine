@@ -11196,17 +11196,18 @@ class ValueDomainBugs(BugHelper):
         Status: OK
         Expression: define operator f ( x number ) returns VD_1 is x end operator;
                     SC_r <- f ( 2.5 );
-        Description: A Number result may be returned as an Integer, as with returns integer,
-                     but 2.5 is not a value of VD_1. The DuckDB engine and the semantic
-                     analysis cast the result to Integer first and raised 0-1-1-27.
+        Description: A Number is not implicitly cast to Integer, so the Number result does not
+                     have the basic type of VD_1, as with returns integer (issue #1364). The
+                     DuckDB engine and the semantic analysis cast the result to Integer first
+                     and raised 0-1-1-27.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(
             code="GH_1351_31",
             number_inputs=1,
-            exception_code="2-1-5-4",
-            exception_message="At op f: Cannot cast 2.5 of Integer to Value Domain VD_1",
+            exception_code="1-3-1-1",
+            exception_message="At op f: User defined output declared as VD_1, found number.",
             vd_names=self.vd_1351,
         )
 
@@ -11468,13 +11469,19 @@ class ValueDomainBugs(BugHelper):
         Expression: define operator f ( x component < integer > )
                         returns component < integer > is x end operator;
                     DS_r <- DS_1 [ calc Me_2 := f ( Me_1 ) ];
-        Description: A Number Component is accepted by a component < integer > parameter and
-                     returned as it is, with its decimals, as a Number Component, on both
-                     engines.
+        Description: A Number Component is accepted by a component < integer > parameter, but
+                     a Number is not implicitly cast to Integer, so the Number result does not
+                     have the type the returns declares (issue #1364).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
-        Goal: Check Result.
+        Goal: Check Exception.
         """
-        self.BaseTest(code="GH_1351_39", number_inputs=1, references_names=["1"])
+        self.NewSemanticExceptionTest(
+            code="GH_1351_39",
+            number_inputs=1,
+            exception_code="1-3-1-1",
+            exception_message="At op f: User defined output declared as component<integer>, "
+            "found measure<number>.",
+        )
 
     def test_GH_1351_40(self):
         """
@@ -14219,4 +14226,106 @@ class ValueDomainFollowUpBugs(BugHelper):
         """
         self.BaseTest(
             code="GH_1364_10", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_11(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( 2 ); (x integer, returns number)
+                    DS_r <- DS_2 [ calc Me_3 := SC_r ];
+        Description: The Integer result 2 is cast to the Number the returns declares, 2.0. It was
+                     the Integer 2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_11", number_inputs=1, references_names=["1", "2"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_12(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( true ); (x boolean, returns string)
+                    DS_r <- DS_2 [ calc Me_3 := SC_r ];
+        Description: The Boolean result true is cast to the String the returns declares, "true".
+                     It was the Boolean true.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_12", number_inputs=1, references_names=["1", "2"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_13(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( 2.5 ); (x number, returns integer)
+        Description: A Number is not implicitly cast to Integer, so the Number result does not
+                     have the type the returns declares. It was returned as the Number 2.5.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_13",
+            number_inputs=1,
+            exception_code="1-3-1-1",
+            exception_message="At op f: User defined output declared as integer, found number.",
+            vd_names=self.vd_1364,
+        )
+
+    def test_GH_1364_14(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( "1" ); (x string, returns integer)
+        Description: Control: the String result does not have the type the returns declares.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_14",
+            number_inputs=1,
+            exception_code="1-3-1-1",
+            exception_message="At op f: User defined output declared as integer, found string.",
+            vd_names=self.vd_1364,
+        )
+
+    def test_GH_1364_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_2 [ calc Me_3 := f ( Me_1 ) ]; (returns component < number >)
+        Description: The Integer Component result is cast to the Number the returns declares. It
+                     was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_15", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_16(self):
+        """
+        Status: OK
+        Expression: DS_r <- f ( DS_2 ); (returns dataset { measure < number > Me_1 },
+                    is x [ keep Me_1 ])
+        Description: The Integer Measure Me_1 of the result is cast to the Number the dataset type
+                     of the returns declares for it. It was an Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_16", number_inputs=1, references_names=["1"], vd_names=self.vd_1364
+        )
+
+    def test_GH_1364_17(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( 2 ); (x integer, returns VD_NUM)
+                    DS_r <- DS_2 [ calc Me_3 := SC_r ];
+        Description: Control: the Integer result 2 is on VD_NUM, a value domain of Numbers, as
+                     2.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1364_17", number_inputs=1, references_names=["1", "2"], vd_names=self.vd_1364
         )

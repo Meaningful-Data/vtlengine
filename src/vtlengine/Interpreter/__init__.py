@@ -64,7 +64,9 @@ from vtlengine.AST.UDOTypes import (
     udo_call_key,
     udo_component_matches,
     udo_dataset_components,
+    udo_result_on_basic_types,
     udo_result_on_value_domains,
+    udo_returns,
 )
 from vtlengine.DataTypes import (
     BASIC_TYPES,
@@ -207,10 +209,14 @@ def _check_udo_return_type(
 ) -> None:
     """The result of a user defined operator must have the type it returns (issue #1161)."""
     if isinstance(declared, Component):
-        matches = udo_component_matches(declared, result)
+        # A component declared without a type is parsed with a String instance
+        data_type: Any = declared.data_type
+        matches = udo_component_matches(declared, result) and (
+            not isinstance(data_type, type) or udo_returns(result.data_type, data_type)
+        )
         found_type = _format_component_type(result)
     elif isinstance(declared, type):
-        matches = check_unary_implicit_promotion(result.data_type, declared)
+        matches = udo_returns(result.data_type, declared)
         found_type = _format_type(result.data_type)
     else:
         return
@@ -2906,6 +2912,7 @@ class InterpreterAnalyzer(ASTTemplate):
         taken = self._check_udo_signature(
             node.op, "the output", return_type, return_constraints, result
         )
+        result = udo_result_on_basic_types(result, return_type)
         result = udo_result_on_value_domains(result, return_constraints, taken)
         if isinstance(result, Scalar) and result.data_type in (Integer, Number, String):
             result = self._udo_scalar_result(result)

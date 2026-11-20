@@ -484,7 +484,14 @@ Value domains also appear in the VTL-DL definitions:
   for a Data Set), their values must be values of it (``2-1-5-4``),
   and they are then defined on it. The other Components keep their
   types. A ``returns`` of a basic type keeps the value domain of a
-  result already on one.
+  result of that type already on one. A result of another type is
+  converted to the type the ``returns`` declares where the VTL implicit
+  cast applies (an ``Integer`` to a ``Number``, a ``Boolean`` to the
+  ``String`` ``true`` or ``false``), for a scalar, a Component and the
+  Components a ``dataset`` type names, and is then on no value domain.
+  A ``Number`` is not cast to ``integer``: a scalar or Component
+  ``Number`` result of a ``returns integer`` raises ``1-3-1-1``, as a
+  result of any other type does.
 
 .. code-block:: text
 
