@@ -610,6 +610,17 @@ RAISING_FUNCTIONS = (
     CAST_MASK_FUNCTION,
     "error",
 )
+# A call of one of them: the name before a parenthesis, outside a string literal and a quoted
+# name, which a group of their own keeps from matching
+_RAISING_CALL = re.compile(
+    r"'(?:[^']|'')*'|\"(?:[^\"]|\"\")*\"|\b(" + "|".join(RAISING_FUNCTIONS) + r")\s*\(",
+    re.IGNORECASE,
+)
+
+
+def calls_raising_function(sql: str) -> bool:
+    """Whether ``sql`` calls a function of RAISING_FUNCTIONS."""
+    return any(match.group(1) for match in _RAISING_CALL.finditer(sql))
 
 
 def text_to_period(value: str) -> Optional[str]:
