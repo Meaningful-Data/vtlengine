@@ -37,7 +37,11 @@ from vtlengine.DataTypes import (
     check_unary_implicit_promotion,
     unary_implicit_promotion,
 )
-from vtlengine.DataTypes._time_checking import _has_time_component, parse_date_value
+from vtlengine.DataTypes._time_checking import (
+    _has_time_component,
+    parse_date_value,
+    parse_datetime_value,
+)
 from vtlengine.DataTypes.TimeHandling import (
     MAX_YEAR,
     PERIOD_IND_MAPPING,
@@ -133,14 +137,14 @@ class Time(Operators.Operator):
         return parse_date_value(date_str)
 
     @staticmethod
-    def _is_whole_month_gap(start: Any, end: Any, months: int) -> bool:
+    def _is_whole_month_gap(start: date, end: date, months: int) -> bool:
         """Whether the gap spans a whole number of calendar months."""
         if months <= 0:
             return False
-        if start + pd.DateOffset(months=months) == end:
+        if start + relativedelta(months=months) == end:
             return True
         # Month ends stay month ends even though their day numbers differ.
-        return start.day == start.days_in_month and end.day == end.days_in_month
+        return all(day.day == calendar.monthrange(day.year, day.month)[1] for day in (start, end))
 
     @classmethod
     def find_min_frequency(cls, values: Any) -> str:
@@ -153,11 +157,12 @@ class Time(Operators.Operator):
         days = values.map(lambda value: cls.parse_date(str(value)))
         if days.duplicated().any():
             return "D"
-        ordered = pd.to_datetime(days).sort_values().reset_index(drop=True)
+        # Python dates, which hold every year of a Date on any pandas version (issue #1352)
+        ordered = sorted(days)
         if len(ordered) < 2:
             return "Y"
 
-        gaps = list(zip(ordered.iloc[:-1], ordered.iloc[1:]))
+        gaps = list(zip(ordered[:-1], ordered[1:]))
         day_diffs = [(end - start).days for start, end in gaps]
         month_diffs = [
             (end.year - start.year) * 12 + (end.month - start.month) for start, end in gaps
@@ -265,7 +270,7 @@ class Time(Operators.Operator):
         )
 
     @classmethod
-    def _period_range(cls, start: Any, end: Any, code: str) -> List[pd.Timestamp]:
+    def _period_range(cls, start: Any, end: Any, code: str) -> List[datetime]:
         """Dates from *start* to *end*, one period at a time.
 
         Every date is measured from the lower limit rather than from its predecessor.
@@ -277,18 +282,19 @@ class Time(Operators.Operator):
         limit keeps a period-end series on period ends and leaves any other series
         exactly where it was.
         """
-        offset = cls._period_offset(code)
-        start_ts = pd.Timestamp(start)
-        limit = pd.Timestamp(end)
+        # Python datetimes, which hold every year of a Date on any pandas version (issue #1352)
+        offset = relativedelta(**cls._period_offset(code).kwds)
+        start_ts = start if isinstance(start, datetime) else parse_datetime_value(str(start))
+        limit = end if isinstance(end, datetime) else parse_datetime_value(str(end))
         if start_ts - offset >= start_ts:  # guard against a zero-length period
             return [start_ts] if start_ts <= limit else []
-        dates: List[pd.Timestamp] = []
+        dates: List[datetime] = []
         step = 0
         while True:
             try:
                 current = start_ts + step * offset if step else start_ts
             except (ValueError, OverflowError):
-                # A date past the year 9999, which no Timestamp holds, is past the limit too
+                # A date past the year 9999, which no datetime holds, is past the limit too
                 # (issue #1352)
                 return dates
             if current > limit:
@@ -593,8 +599,8 @@ class Fill_time_series(Binary):
             # The limits keep their time of the day, from which each period is counted, as the
             # manual counts it from the lower limit (issue #1352)
             return {
-                "min": datetime.fromisoformat(str(group.min())),
-                "max": datetime.fromisoformat(str(group.max())),
+                "min": parse_datetime_value(str(group.min())),
+                "max": parse_datetime_value(str(group.max())),
             }
 
         if fill_type == "all":
@@ -809,29 +815,12 @@ class Time_Shift(Binary):
         return int(m.group(1) or 0) * 12 + int(m.group(2) or 0), int(m.group(3) or 0)
 
     @classmethod
-    def shift_dates(cls, dates: Any, shift_value: int, frequency: str) -> Any:
-        dates = pd.to_datetime(dates)
-        if frequency == "D":
-            return dates + pd.to_timedelta(shift_value, unit="D")
-        if frequency == "W":
-            return dates + pd.to_timedelta(shift_value, unit="W")
-        if frequency == "Y":
-            return dates + pd.DateOffset(years=shift_value)
-        if frequency in ("M", "Q", "S"):
-            months_per = {"M": 1, "Q": 3, "S": 6}[frequency]
-            return dates + pd.DateOffset(months=months_per * shift_value)
-        if frequency.startswith("P"):
-            m = cls._PERIOD_DURATION_RE.match(frequency)
-            if m is not None:
-                years = int(m.group(1) or 0)
-                months = int(m.group(2) or 0)
-                days = int(m.group(3) or 0)
-                return dates + pd.DateOffset(
-                    years=years * shift_value,
-                    months=months * shift_value,
-                    days=days * shift_value,
-                )
-        raise RunTimeError("2-1-19-2", period=frequency)
+    def shift_dates(cls, dates: Any, shift_value: int, frequency: str) -> datetime:
+        # A Python datetime, which holds every year of a Time on any pandas version (#1352)
+        months, days = cls._interval_step(frequency)
+        return parse_datetime_value(dates) + relativedelta(
+            months=months * shift_value, days=days * shift_value
+        )
 
     @classmethod
     def shift_period(
