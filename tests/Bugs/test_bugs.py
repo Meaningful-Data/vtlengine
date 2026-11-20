@@ -13669,3 +13669,23 @@ class TimeValueBugs(BugHelper):
             exception_message="Impossible to cast 0999-01-15 from type String to Date using mask "
             "YYYY-MM-DD.",
         )
+
+    def test_GH_1352_19g(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , SC_N ) ;
+        Description: Extra of case 19: the shift of timeshift is a whole number of periods, so
+                     the Number Scalar SC_N raises 1-1-19-15, as a Number shift of dateadd does.
+                     Both engines took the Number 2.7: the pandas engine shifted 2020Q1 by two
+                     quarters and the DuckDB engine by three.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_19g",
+            number_inputs=1,
+            exception_code="1-1-19-15",
+            exception_message="At op timeshift: Invalid param data_type Number for param "
+            "shiftNumber, expected Integer.",
+            scalars={"SC_N": 2.7},
+        )
