@@ -372,7 +372,10 @@ Value domains also appear in the VTL-DL definitions:
   rule to the component in ``rule`` (required, ``1-1-10-4``), in
   ``check_hierarchy`` and ``hierarchy``. The same checks apply: each
   component must be defined on its value domain (``1-1-10-12``), and
-  the value domains must be given (``1-2-22``, ``1-2-8``).
+  the value domains must be given (``1-2-22``, ``1-2-8``). Every code
+  item its rules name, on either side, must be a value of the value
+  domain of its rule, compared as a value of its type (``1-1-10-13``),
+  so its results are values of it.
 - A viral propagation rule on a value domain applies to the viral
   attributes defined on it, unless a rule on the variable overrides
   it. Where a viral attribute is combined, the rule on its value
