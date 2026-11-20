@@ -104,6 +104,9 @@ from vtlengine.Model import (
     Scalar,
     ScalarSet,
     ValueDomain,
+    component_name_characters,
+    component_name_characters_text,
+    printable_name,
     value_of,
 )
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
@@ -268,6 +271,10 @@ class InterpreterAnalyzer(ASTTemplate):
     # Handlers for simplicity
     condition_stack: Optional[List[Dataset]] = None
     regular_aggregation_dataset: Optional[Dataset] = None
+    # The Components of each operand of the join, by its alias or its Data Set name
+    join_operands: Optional[Dict[str, Set[str]]] = None
+    # The Components of the virtual Data Set that the clauses of the join start from
+    join_names: Optional[Set[str]] = None
     regular_aggregation_op: Optional[str] = None
     aggregation_grouping: Optional[List[str]] = None
     aggregation_dataset: Optional[Dataset] = None
@@ -739,6 +746,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
     # Execution Language
     def visit_Assignment(self, node: AST.Assignment) -> Any:
+        # A clause names a new Component, never a membership (issue #1355)
+        self._refuse_membership(node.left)
         if (
             self.is_from_join
             and isinstance(node.left, AST.Identifier)
@@ -768,10 +777,22 @@ class InterpreterAnalyzer(ASTTemplate):
             and hasattr(node.left, "value")
             and hasattr(node.right, "value")
         ):
-            if self.udo_params is not None and node.right.value in self.udo_params[-1]:
-                comp_name = f"{node.left.value}#{self.udo_params[-1][node.right.value]}"
-            else:
-                comp_name = f"{node.left.value}#{node.right.value}"
+            comp = node.right.value
+            if self.udo_params is not None and comp in self.udo_params[-1]:
+                comp = str(self.udo_params[-1][comp])
+            comp_name = f"{node.left.value}#{comp}"
+            if node.op == MEMBERSHIP:
+                self._check_join_member(node.left.value, comp)
+            # A having or a grouping reads the Data Set it aggregates, where the Component
+            # of the operand has the name it has in the join (issue #1355)
+            aggregated = self.aggregation_dataset
+            if (
+                aggregated is not None
+                and (self.is_from_having or self.is_from_grouping)
+                and comp_name not in aggregated.components
+                and comp in aggregated.components
+            ):
+                comp_name = comp
             ast_var_id = AST.VarID(
                 value=comp_name,
                 line_start=node.right.line_start,
@@ -1097,7 +1118,11 @@ class InterpreterAnalyzer(ASTTemplate):
             # For Component handling in operators like time_agg
             self.is_from_grouping = True
             for x in node.grouping:
-                groupings.append(self.visit(x))
+                if isinstance(x, AST.BinOp) and x.op == MEMBERSHIP:
+                    # A grouping takes component names (issue #1355)
+                    groupings.append(self._component_name(x))
+                else:
+                    groupings.append(self.visit(x))
             self.is_from_grouping = False
             if grouping_op == "group all" or has_time_agg:
                 groupings = self._apply_time_agg_grouping(operand, groupings, grouping_op)
@@ -1136,6 +1161,7 @@ class InterpreterAnalyzer(ASTTemplate):
     def visit_Analytic(self, node: AST.Analytic) -> Any:  # noqa: C901
         if self.is_from_having:
             raise SemanticError("1-1-3-1", op=node.op)
+        node = self._resolve_window_names(node)
         component_name = None
         analytic_component_name: Optional[str] = None
         operand_id_collision = False
@@ -1188,7 +1214,8 @@ class InterpreterAnalyzer(ASTTemplate):
                 carried_names = []
                 if node.order_by is not None:
                     for order_by in node.order_by:
-                        order_name = order_by.component
+                        # A name: _resolve_window_names gave the qualified ones by name
+                        order_name = cast(str, order_by.component)
                         if (
                             order_name not in dataset_components
                             and order_name in self.regular_aggregation_dataset.components
@@ -1216,7 +1243,7 @@ class InterpreterAnalyzer(ASTTemplate):
         ordering = []
         if self.udo_params is not None:
             if node.partition_by is not None:
-                for comp_name in node.partition_by:
+                for comp_name in cast(List[str], node.partition_by):
                     if comp_name in self.udo_params[-1]:
                         partitioning.append(self.udo_params[-1][comp_name])
                     elif comp_name in operand.get_identifiers_names():
@@ -1231,7 +1258,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if node.order_by is not None:
                 for o in node.order_by:
                     if o.component in self.udo_params[-1]:
-                        o.component = self.udo_params[-1][o.component]
+                        o.component = self.udo_params[-1][cast(str, o.component)]
                     elif o.component not in operand.get_identifiers_names():
                         raise SemanticError(
                             "1-2-21",
@@ -1285,6 +1312,9 @@ class InterpreterAnalyzer(ASTTemplate):
             for param in node.params:
                 if isinstance(param, AST.Constant):
                     params.append(param.value)
+                elif isinstance(param, AST.VarID) and not params:
+                    # The offset names an Integer Scalar (issue #1355)
+                    params.append(self._integer_scalar(node.op, param, "Offset").value)
                 elif isinstance(param, AST.AST):
                     # A Scalar or an expression, as cast ( "2020-01-01" , date ) for the
                     # default of lag (issue #1352)
@@ -1299,11 +1329,9 @@ class InterpreterAnalyzer(ASTTemplate):
         ):
             window = copy(window)
             if isinstance(window.start, AST.VarID):
-                start = self.visit(window.start)
-                window.start = start.value if hasattr(start, "value") else start
+                window.start = self._window_bound(node.op, window.start)
             if isinstance(window.stop, AST.VarID):
-                stop = self.visit(window.stop)
-                window.stop = stop.value if hasattr(stop, "value") else stop
+                window.stop = self._window_bound(node.op, window.stop)
 
         result = ANALYTIC_MAPPING[node.op].analyze(
             operand=operand,
@@ -1326,7 +1354,8 @@ class InterpreterAnalyzer(ASTTemplate):
         # # Extracting the component we need (only measure)
         measure_name: str
         if node.op == COUNT:
-            # count gives int_var, whatever Measures the ordering carries (issue #1354)
+            # count gives int_var, whatever Measures the ordering carries (issues #1354 and
+            # #1355)
             measure_name = COMP_NAME_MAPPING[Integer]
         elif analytic_component_name is None:
             measure_name = result.get_measures_names()[0]
@@ -1371,6 +1400,99 @@ class InterpreterAnalyzer(ASTTemplate):
             value_domain=result.components[measure_name].value_domain,
         )
         return self.merge_then_else_datasets(result_comp)
+
+    def _resolve_window_names(self, node: AST.Analytic) -> AST.Analytic:
+        """The analytic, with the Components of its partition by and order by named by their
+        qualified name, alias#comp, given as the names of the Components they refer to
+        (issue #1355)."""
+        names = (node.partition_by or []) + [o.component for o in node.order_by or []]
+        if all(isinstance(name, str) for name in names):
+            return node
+        node = copy(node)
+        if node.partition_by is not None:
+            node.partition_by = [self._component_name(name) for name in node.partition_by]
+        if node.order_by is not None:
+            node.order_by = [copy(o) for o in node.order_by]
+            for order_by in node.order_by:
+                order_by.component = self._component_name(order_by.component)
+        return node
+
+    def _component_name(self, component: Union[str, AST.AST]) -> str:
+        """The name of the Component that a component of a clause names. In a join, the
+        membership alias#comp is the Component comp of the operand alias, as in an expression
+        of the join; out of a join it is a membership, which a clause does not allow
+        (issue #1355)."""
+        if isinstance(component, str):
+            return component
+        if not self.is_from_join or self.regular_aggregation_dataset is None:
+            membership = cast(AST.BinOp, component)
+            raise SemanticError(
+                "1-1-6-6",
+                dataset_name=cast(AST.Identifier, membership.left).value,
+                comp_name=cast(AST.Identifier, membership.right).value,
+            )
+        return self.visit(component).name
+
+    @staticmethod
+    def _refuse_membership(node: Any) -> None:
+        """A clause names a new Component, never a membership alias#comp (issue #1355)."""
+        if isinstance(node, AST.BinOp) and node.op == MEMBERSHIP:
+            raise SemanticError(
+                "1-1-6-6",
+                dataset_name=cast(AST.Identifier, node.left).value,
+                comp_name=cast(AST.Identifier, node.right).value,
+            )
+
+    def _check_join_member(self, alias: str, comp_name: str) -> None:
+        """A qualified name alias#comp in a join names the Component comp of the operand alias:
+        an alias that is no operand of the join, or a Component that this operand does not have,
+        is not found (issue #1355). A Data Set parameter of an operator stands for its
+        argument."""
+        operands = self.join_operands
+        if operands is None:
+            return
+        argument = self.udo_params[-1].get(alias) if self.udo_params is not None else None
+        if isinstance(argument, (Dataset, str)):
+            alias = argument if isinstance(argument, str) else argument.name
+        if comp_name not in operands.get(alias, set()):
+            raise SemanticError("1-1-1-10", comp_name=comp_name, dataset_name=alias)
+        # A Component that the join named alias#comp, as one of several operands has comp,
+        # is no longer there once apply or aggr gave a Component comp in its place
+        # (Inner Join page of the VTL 2.2 manual)
+        qualified = f"{alias}#{comp_name}"
+        current = self.regular_aggregation_dataset
+        if (
+            self.join_names is not None
+            and qualified in self.join_names
+            and current is not None
+            and qualified not in current.components
+            and comp_name in current.components
+        ):
+            raise SemanticError("1-1-13-17", op=self.regular_aggregation_op, comp_name=qualified)
+
+    def _integer_scalar(self, op: str, node: AST.VarID, param_type: str) -> Scalar:
+        """The Scalar named as the offset of lag or lead or as a bound of a window: an Integer
+        Scalar, not a Component or a Scalar of another type (issue #1355)."""
+        resolved = self.visit(node)
+        if not (
+            isinstance(resolved, Scalar)
+            and check_unary_implicit_promotion(resolved.data_type, Integer)
+        ):
+            raise SemanticError(
+                "1-1-18-4", op=op, param_type=param_type, correct_type="an Integer Scalar"
+            )
+        return resolved
+
+    def _window_bound(self, op: str, node: AST.VarID) -> Any:
+        """The bound of a window that a Scalar gives, as the bound written in the window: 0 is
+        the current data point and a Number is rounded half away from zero, as the offset of
+        lag or lead. A null or a negative value is passed on as it is (issue #1355)."""
+        value = self._integer_scalar(op, node, "Window bound").value
+        if pd.isnull(value) or value < 0:
+            return value
+        # A whole number: Round.py_op gives the type of the last round validated
+        value = int(Round.py_op(value, None))
+        return "current row" if value == 0 else value
 
     def visit_MulOp(self, node: AST.MulOp) -> None:
         """
@@ -1677,7 +1799,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 data = operand.data[measure.name] if operand.data is not None else None
                 # Getting role from encoded information
                 # (handling also UDO params as it is present in the value of the mapping)
-                if self.udo_params is not None and operand.name in self.udo_params[-1].values():
+                # (a scalar parameter is bound to a Scalar, not to a component name: issue #1355)
+                if self.udo_params is not None and any(
+                    isinstance(v, str) and v == operand.name for v in self.udo_params[-1].values()
+                ):
                     role = None
                     for k, v in self.udo_params[-1].items():
                         if isinstance(v, str) and v == operand.name:
@@ -1721,16 +1846,13 @@ class InterpreterAnalyzer(ASTTemplate):
             return result
         if self.is_from_join:
             if node.op in [DROP, KEEP]:
+                # A Component named by its qualified name is given by its name, an Identifier
+                # too, which drop and keep do not take (issue #1355)
                 operands = [
                     (
                         operand.get_measures_names()
                         if isinstance(operand, Dataset)
-                        else (
-                            operand.name
-                            if isinstance(operand, DataComponent)
-                            and operand.role is not Role.IDENTIFIER
-                            else operand
-                        )
+                        else (operand.name if isinstance(operand, DataComponent) else operand)
                     )
                     for operand in operands
                 ]
@@ -1907,22 +2029,36 @@ class InterpreterAnalyzer(ASTTemplate):
             self.only_semantic = only_semantic[1]
 
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
-        if self.udo_params is not None:
-            if "#" in node.old_name:
-                if node.old_name.split("#")[1] in self.udo_params[-1]:
-                    comp_name = self.udo_params[-1][node.old_name.split("#")[1]]
-                    node.old_name = f"{node.old_name.split('#')[0]}#{comp_name}"
-            else:
-                if node.old_name in self.udo_params[-1]:
-                    node.old_name = self.udo_params[-1][node.old_name]
+        # The names are resolved on a copy: the AST is read again by the DuckDB engine and by
+        # every call of a user defined operator. A name is one Component name, # included; the
+        # membership alias#comp names a Component of a join (issue #1355)
+        node = copy(node)
+        self._refuse_membership(node.new_name)
+        params = self.udo_params[-1] if self.udo_params is not None else {}
+        old_name = node.old_name
+        comp_name: Optional[str] = None
+        if isinstance(old_name, str):
+            node.old_name = params.get(old_name, old_name)
+        else:
+            membership = cast(AST.BinOp, old_name)
+            alias = cast(AST.Identifier, membership.left).value
+            comp_name = cast(AST.Identifier, membership.right).value
+            comp_name = params.get(comp_name, comp_name)
+            if self.is_from_join:
+                self._check_join_member(alias, comp_name)
+            node.old_name = f"{alias}#{comp_name}"
+        # A component parameter as the new name stands for its argument (issue #1355)
+        new_name = cast(str, node.new_name)
+        if isinstance(params.get(new_name), str):
+            node.new_name = params[new_name]
 
         if (
-            self.is_from_join
+            comp_name is not None
+            and self.is_from_join
             and self.regular_aggregation_dataset is not None
             and node.old_name not in self.regular_aggregation_dataset.components
-            and "#" in node.old_name
         ):
-            node.old_name = node.old_name.split("#")[1]
+            node.old_name = comp_name
 
         return node
 
@@ -1970,12 +2106,33 @@ class InterpreterAnalyzer(ASTTemplate):
         if duplicates:
             raise SemanticError("1-1-13-1", op=node.op, duplicates=", ".join(duplicates))
 
+    @staticmethod
+    def _check_join_name(op: str, name: str) -> None:
+        """The name of a join operand, its alias or else its Data Set name, prefixes the names
+        of its Components in the join, alias#comp, so it cannot contain the characters a
+        Component name cannot contain, and it cannot be empty (issue #1355)."""
+        if not name or any(char in name for char in component_name_characters()):
+            raise SemanticError(
+                "1-1-13-28",
+                op=op,
+                name=printable_name(name),
+                characters=component_name_characters_text(),
+            )
+
     def visit_JoinOp(self, node: AST.JoinOp) -> None:
         self._check_join_aliases(node)
         # An alias only names its operand, whose Components the clauses read as alias#comp:
         # it is no Data Set of the script, neither for the other operands nor after the join
         # (issue #1281)
         clause_elements = [self.visit(clause) for clause in node.clauses]
+        for element in clause_elements:
+            if isinstance(element, Dataset):
+                self._check_join_name(node.op, element.name)
+        self.join_operands = {
+            element.name: set(element.components)
+            for element in clause_elements
+            if isinstance(element, Dataset)
+        }
 
         nvl_defaults: Optional[Dict[str, Any]] = None
         if node.nvl:
@@ -1984,6 +2141,7 @@ class InterpreterAnalyzer(ASTTemplate):
         # No need to check using, regular aggregation is executed afterwards
         self.is_from_join = True
         result = JOIN_MAPPING[node.op].analyze(clause_elements, node.using, nvl_defaults)
+        self.join_names = set(result.components)
         if node.isLast:
             self._strip_join_prefixes(result)
             self.is_from_join = False

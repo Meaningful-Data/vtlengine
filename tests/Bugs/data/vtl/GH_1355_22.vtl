@@ -1,0 +1,5 @@
+define operator f ( d dataset )
+    returns dataset is
+        d [ aggr Me_2 := sum ( Me_1 ) group by Id_1 ]
+end operator;
+DS_r <- f ( DS_1 );

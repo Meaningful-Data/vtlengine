@@ -1,6 +1,6 @@
 from copy import copy
 from math import inf
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 import pandas as pd
 import pyarrow as pa
@@ -101,7 +101,8 @@ class Analytic(Operator.Unary):
         params: Optional[List[int]],
         component_name: Optional[str] = None,
     ) -> Dataset:
-        order_components = [] if ordering is None else [o.component for o in ordering]
+        # Names: the interpreter gives a Component named alias#comp in a join by its name
+        order_components = [] if ordering is None else [cast(str, o.component) for o in ordering]
         identifier_names = operand.get_identifiers_names()
         result_components = {
             comp_name: comp
@@ -426,6 +427,17 @@ class Analytic(Operator.Unary):
         return result
 
     @classmethod
+    def _check_null_limits(cls, window: Optional[Windowing], params: Optional[List[Any]]) -> None:
+        """A limit of the window or an offset of lag or lead read from a null Scalar is data,
+        and raises 2-1-18-1 (issues #1355 and #1356)."""
+        if window is not None and any(pd.isnull(limit) for limit in (window.start, window.stop)):
+            raise RunTimeError(
+                "2-1-18-1", op=cls.op, param_type="Window bound", correct_type="Integer"
+            )
+        if cls.op in (LAG, LEAD) and params and pd.isnull(params[0]):
+            raise RunTimeError("2-1-18-1", op=cls.op, param_type="Offset", correct_type="Integer")
+
+    @classmethod
     def evaluate(  # type: ignore[override]
         cls,
         operand: Dataset,
@@ -436,11 +448,7 @@ class Analytic(Operator.Unary):
         component_name: Optional[str] = None,
     ) -> Dataset:
         result = cls.validate(operand, partitioning, ordering, window, params, component_name)
-        if window is not None and any(pd.isnull(limit) for limit in (window.start, window.stop)):
-            # A limit read from a null Scalar is data (issue #1356)
-            raise RunTimeError(
-                "2-1-18-1", op=cls.op, param_type="Window bound", correct_type="Integer"
-            )
+        cls._check_null_limits(window, params)
         df = operand.data.copy() if operand.data is not None else pd.DataFrame()
         df = cls.normalize_dates(df, operand.components)
         identifier_names = operand.get_identifiers_names()

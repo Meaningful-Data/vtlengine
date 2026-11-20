@@ -178,8 +178,10 @@ class Join(Operator, metaclass=_ThreadReference):
                 if comp.name not in nullability:
                     nullability[comp.name] = copy(comp.nullable)
                 if comp.role == Role.IDENTIFIER:
-                    nullability[comp.name] = False
-                elif comp.name in totally_common:
+                    # Never null, and a Measure of the same name in another operand keeps its
+                    # own nullability (issue #1355)
+                    continue
+                if comp.name in totally_common:
                     nullability[comp.name] |= copy(comp.nullable)
                 elif cls.how == "outer" or (
                     cls.how == "left"
@@ -193,7 +195,11 @@ class Join(Operator, metaclass=_ThreadReference):
             operand_name = operand.name
 
             for component_name, component in components.items():
-                component.nullable = nullability[component_name]
+                # An Identifier is never null, also where another operand has a Measure of
+                # the same name (issue #1355)
+                component.nullable = (
+                    component.role != Role.IDENTIFIER and (nullability[component_name])
+                )
                 if component_name in viral_common:
                     if component_name not in merged_components:
                         component.name = component_name
@@ -559,6 +565,14 @@ class Join(Operator, metaclass=_ThreadReference):
                                         comp_name=component,
                                         dataset_name=op.name,
                                     )
+            # A using key may be a Measure or an Attribute of the left-most operand only
+            # (sub-case B2), the other operands have it as an Identifier (issue #1355)
+            for op in operands[1:]:
+                for key in using:
+                    if key not in op.get_identifiers_names():
+                        raise SemanticError(
+                            "1-1-13-7", op=cls.op, using_component=key, dataset=op.name
+                        )
             cls._validate_join_key_types(operands, using)
 
 

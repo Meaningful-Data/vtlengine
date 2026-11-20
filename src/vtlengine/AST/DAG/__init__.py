@@ -34,6 +34,7 @@ from vtlengine.AST import (
     PersistentAssignment,
     RegularAggregation,
     Start,
+    TimeAggregation,
     UDOCall,
     VarID,
     ViralPropagationDef,
@@ -44,6 +45,8 @@ from vtlengine.AST.Grammar.tokens import (
     AS,
     DROP,
     KEEP,
+    LAG,
+    LEAD,
     MEMBERSHIP,
     RENAME,
     TO,
@@ -66,6 +69,8 @@ class DAGAnalyzer(ASTTemplate):
     is_from_regular_aggregation: bool = False
     is_dataset: bool = False
     alias: Set[str] = field(default_factory=set)
+    # The user defined operators whose body is being visited
+    udo_calls: Set[str] = field(default_factory=set)
 
     # Per-statement accumulator (reset between statements)
     current_deps: StatementDeps = field(default_factory=StatementDeps)
@@ -351,6 +356,22 @@ class DAGAnalyzer(ASTTemplate):
     def visit_Analytic(self, node: Analytic) -> None:
         if node.operand is not None:
             self.visit(node.operand)
+        # The offset of lag or lead and the bounds of a window can name a Scalar (issue #1355)
+        if node.op in (LAG, LEAD):
+            for param in node.params or []:
+                if isinstance(param, VarID):
+                    self.visit(param)
+        if node.window is not None:
+            for bound in (node.window.start, node.window.stop):
+                if isinstance(bound, VarID):
+                    self.visit(bound)
+
+    def visit_TimeAggregation(self, node: TimeAggregation) -> None:
+        if node.operand is not None:
+            self.visit(node.operand)
+        # The period to aggregate to can name a Scalar (issue #1355)
+        if node.period_to_ref is not None:
+            self.visit(node.period_to_ref)
 
     def visit_JoinOp(self, node: JoinOp) -> None:
         for clause in node.clauses:
@@ -373,6 +394,19 @@ class DAGAnalyzer(ASTTemplate):
             for sig, param in zip(node_sig, node.params):
                 if not isinstance(param, Constant) and sig is not Component:
                     self.visit(param)
+            # A Data Set that the body reads without receiving it as a parameter is an input
+            # of the statement too: its parameters are not (issue #1355). A recursive call is
+            # not followed: the interpreter raises 1-3-2-7 for it
+            if node.op in self.udo_calls:
+                return
+            alias = self.alias
+            self.alias = alias | {p.name for p in node_args.parameters}
+            self.udo_calls.add(node.op)
+            try:
+                self.visit(node_args.expression)
+            finally:
+                self.alias = alias
+                self.udo_calls.discard(node.op)
 
     def visit_HROperation(self, node: HROperation) -> None:
         """Visit HROperation node for dependency analysis."""

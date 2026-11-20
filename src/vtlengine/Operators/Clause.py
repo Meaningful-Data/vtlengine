@@ -1,6 +1,6 @@
 import re
 from copy import copy
-from typing import List, Type, Union
+from typing import List, Type, Union, cast
 
 import pandas as pd
 
@@ -26,8 +26,22 @@ from vtlengine.DataTypes import (
     to_string,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ValueDomain
-from vtlengine.Operators import Operator, _as_type, _promotes, shared_value_domain
+from vtlengine.Model import (
+    Component,
+    DataComponent,
+    Dataset,
+    Role,
+    Scalar,
+    ValueDomain,
+    join_homonyms,
+)
+from vtlengine.Operators import (
+    Operator,
+    _as_type,
+    _promotes,
+    check_component_name,
+    shared_value_domain,
+)
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
@@ -56,12 +70,19 @@ class Calc(Operator):
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
 
         for operand in operands:
+            # Checked also where the name is a Component of the operand, as the join's
+            # qualified A#Me_1 (issue #1355)
+            check_component_name(cls.op, operand.name)
+            # In a join, the Component replaces the Components alias#name of the operands
+            # that all have it (Inner Join page of the VTL 2.2 manual, issue #1355)
+            replaced = join_homonyms(dataset.components, operand.name)
             if operand.name in result_dataset.components:
-                if result_dataset.components[operand.name].role == Role.IDENTIFIER:
-                    raise SemanticError("1-1-6-13", op=cls.op, comp_name=operand.name)
+                replaced.append(operand.name)
+            for name in replaced:
+                if result_dataset.components[name].role == Role.IDENTIFIER:
+                    raise SemanticError("1-1-6-13", op=cls.op, comp_name=name)
                 # Override component with same name
-                # TODO: Check this for version 2.1
-                result_dataset.delete_component(operand.name)
+                result_dataset.delete_component(name)
 
             if isinstance(operand, Scalar):
                 # A scalar written alone keeps the value domain it is defined on, as a
@@ -97,6 +118,8 @@ class Calc(Operator):
                 result_dataset.data[operand.name] = operand.value
             else:
                 result_dataset.data[operand.name] = operand.data
+            replaced = join_homonyms(dataset.components, operand.name)
+            result_dataset.data = result_dataset.data.drop(columns=replaced)
         return result_dataset
 
 
@@ -111,6 +134,7 @@ class Aggregate(Operator):
         result_dataset = Dataset(name=dataset_name, components=dataset.components, data=None)
 
         for operand in operands:
+            check_component_name(cls.op, operand.name)
             if operand.name in dataset.get_identifiers_names() or (
                 isinstance(operand, DataComponent) and operand.role == Role.IDENTIFIER
             ):
@@ -260,6 +284,8 @@ class Rename(Operator):
 
         from_names_set = set(from_names)
         for operand in operands:
+            # A name: the semantic analysis refused a membership (issue #1355)
+            check_component_name(cls.op, cast(str, operand.new_name))
             if operand.old_name not in dataset.components:
                 raise SemanticError(
                     "1-1-1-10",
@@ -275,7 +301,7 @@ class Rename(Operator):
                     dataset_name=dataset_name,
                 )
 
-        rename_map = {op.old_name: op.new_name for op in operands}
+        rename_map = {op.old_name: cast(str, op.new_name) for op in operands}
         result_components = {}
         for comp in dataset.components.values():
             if comp.name in rename_map:
@@ -348,6 +374,8 @@ class Pivot(Operator):
         }
         viral_attributes = dataset.get_viral_attributes()
         names = cls.measure_names(identifier.value_domain)
+        for name in names:
+            check_component_name(cls.op, name)
         kept = {*components, *(comp.name for comp in viral_attributes)}
         repeated = sorted({name for name in names if name in kept})
         if repeated:
@@ -405,6 +433,8 @@ class Unpivot(Operator):
         if len(operands) != 2:
             raise SemanticError("1-1-6-17", op=cls.op)
         identifier, measure = operands
+        check_component_name(cls.op, identifier)
+        check_component_name(cls.op, measure)
 
         if len(dataset.get_identifiers()) < 1:
             raise SemanticError("1-2-10", op=cls.op)

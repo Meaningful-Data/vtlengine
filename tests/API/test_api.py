@@ -2,6 +2,7 @@ import csv
 import json
 import sys
 from pathlib import Path
+from typing import Any, Dict
 
 import pandas as pd
 import pytest
@@ -3702,3 +3703,238 @@ def test_GH_1356_70(use_duckdb):
         with pytest.raises(InputValidationException) as error:
             call()
         assert error.value.args[1] == "0-1-2-3"
+
+
+def _run_1355(script: str, use_duckdb: bool, tmp_path: Path) -> dict:
+    """Run with DS_3 (Me_2 3, 20) and DS_4 (Me_2 100, 200) given as CSV files, which both
+    engines load at the statements that read them."""
+
+    def structure(name):
+        return {
+            "name": name,
+            "DataStructure": [
+                {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False},
+                {"name": "Me_2", "role": "Measure", "type": "Integer", "nullable": True},
+            ],
+        }
+
+    ds_3 = tmp_path / "DS_3.csv"
+    ds_3.write_text("Id_1,Me_2\n1,3\n2,20\n")
+    ds_4 = tmp_path / "DS_4.csv"
+    ds_4.write_text("Id_1,Me_2\n1,100\n2,200\n")
+    structures = {"datasets": [structure("DS_3"), structure("DS_4")]}
+    datapoints = {"DS_3": ds_3, "DS_4": ds_4}
+    return run(script, structures, datapoints, use_duckdb=use_duckdb)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_8b(use_duckdb, tmp_path):
+    """Extra of test_GH_1355_8, with the datapoints given as files: the body of f reads the
+    input DS_4, which it does not receive as a parameter, so the statement loads it. The
+    pandas engine gave DS_r without data points, and the DuckDB engine never loaded DS_4."""
+    script = "define operator f (x dataset) returns dataset is x + DS_4 end operator;"
+    result = _run_1355(script + " DS_r <- f(DS_3);", use_duckdb, tmp_path)
+    data = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+    assert data.to_dict("list") == {"Id_1": [1, 2], "Me_2": [103, 220]}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_9b(use_duckdb, tmp_path):
+    """Extra of test_GH_1355_9, with the datapoints given as files: the body of f reads DS_9,
+    which an earlier statement computes, so the statement that calls f depends on it. The
+    DuckDB engine dropped DS_9 before that statement."""
+    script = (
+        "DS_9 <- DS_4 * 10;"
+        " define operator f (x dataset) returns dataset is x + DS_9 end operator;"
+        " DS_r <- f(DS_3);"
+    )
+    result = _run_1355(script, use_duckdb, tmp_path)
+    data = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+    assert data.to_dict("list") == {"Id_1": [1, 2], "Me_2": [1003, 2020]}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_14e(use_duckdb):
+    """Extra of test_GH_1355_14: # only separates the alias of a join operand from the name of
+    its Component (Inner Join page of the VTL 2.2 manual), so an input structure with a
+    Component named Id#1 is rejected by the name pattern of the JSON schema, by run,
+    semantic_analysis, validate_dataset and Dataset.from_json. It was accepted."""
+    identifier = {"name": "Id#1", "role": "Identifier", "type": "Integer", "nullable": False}
+    measure = {"name": "Me_1", "role": "Measure", "type": "Number", "nullable": True}
+    structures = {"datasets": [{"name": "DS_1", "DataStructure": [identifier, measure]}]}
+    datapoints = {"DS_1": pd.DataFrame({"Id#1": [1, 2], "Me_1": [1.0, 2.0]})}
+    as_json = {
+        "name": "DS_1",
+        "components": {"Id#1": identifier, "Me_1": measure},
+        "data": datapoints["DS_1"].to_dict("list"),
+    }
+    calls = [
+        lambda: run("DS_r <- DS_1;", structures, datapoints, use_duckdb=use_duckdb),
+        lambda: semantic_analysis("DS_r <- DS_1;", structures),
+        lambda: validate_dataset(structures, datapoints, use_duckdb=use_duckdb),
+        lambda: Dataset.from_json(as_json),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-2-1-1"
+        assert (
+            "'Id#1' is not a valid Component name: a Component name cannot be empty or contain "
+            "', \", #, NUL or carriage return, except quotes around the whole name"
+        ) in error.value.args[0]
+
+
+def _structures_1355() -> Dict[str, Any]:
+    """DS_1 and DS_2, with the Identifiers Id_1 and Id_2 and the Measure Me_1."""
+    components = [
+        {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False},
+        {"name": "Id_2", "role": "Identifier", "type": "String", "nullable": False},
+        {"name": "Me_1", "role": "Measure", "type": "Number", "nullable": True},
+    ]
+    return {
+        "datasets": [
+            {"name": "DS_1", "DataStructure": components},
+            {"name": "DS_2", "DataStructure": components},
+        ]
+    }
+
+
+def _datapoints_1355() -> Dict[str, pd.DataFrame]:
+    data = {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [1.0, 2.0]}
+    return {"DS_1": pd.DataFrame(data), "DS_2": pd.DataFrame(data)}
+
+
+def _check_semantic_error_1355(script: str, use_duckdb: bool, code: str, message: str) -> None:
+    """The script raises the SemanticError code with the message, on the engine and in the
+    semantic analysis."""
+    calls = [
+        lambda: run(script, _structures_1355(), _datapoints_1355(), use_duckdb=use_duckdb),
+        lambda: semantic_analysis(script, _structures_1355()),
+    ]
+    for call in calls:
+        with pytest.raises(SemanticError) as error:
+            call()
+        assert error.value.args[1] == code
+        assert error.value.args[0].startswith(message)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_11t(use_duckdb):
+    """Extra of test_GH_1355_11: a new Component name cannot contain a NUL, which the names of
+    the input structures cannot contain either. The pandas engine and the semantic analysis
+    created the Component and the DuckDB engine raised a raw ParserException."""
+    _check_semantic_error_1355(
+        "DS_r <- DS_1 [ calc 'a\x00b' := Me_1 ];",
+        use_duckdb,
+        "1-1-6-19",
+        "At op calc: Invalid Component name a\\x00b, a Component name cannot contain "
+        "', \", #, NUL or carriage return.",
+    )
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_11u(use_duckdb):
+    """Extra of test_GH_1355_11: as test_GH_1355_11t, for a carriage return. Both engines
+    created the Component."""
+    _check_semantic_error_1355(
+        "DS_r <- DS_1 [ rename Me_1 to 'a\rb' ];",
+        use_duckdb,
+        "1-1-6-19",
+        "At op rename: Invalid Component name a\\rb, a Component name cannot contain "
+        "', \", #, NUL or carriage return.",
+    )
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_11v(use_duckdb):
+    """Extra of test_GH_1355_11l: the alias of a join operand cannot contain a carriage return
+    either. The pandas engine and the semantic analysis ran the join and the DuckDB engine
+    raised a raw BinderException."""
+    _check_semantic_error_1355(
+        "DS_r <- inner_join ( DS_1 as 'A\rB' , DS_2 as C using Id_1 , Id_2 drop C#Me_1 );",
+        use_duckdb,
+        "1-1-13-28",
+        "At op inner_join: Invalid name A\\rB of a join operand, the alias of a join "
+        "operand, or else its Data Set name, cannot be empty or contain ', \", #, NUL or "
+        "carriage return.",
+    )
+
+
+def _check_result_1355(script: str, use_duckdb: bool, expected: Dict[str, dict]) -> None:
+    """The script gives the expected data on the engine, from DS_1 (Me_1 1, 2), DS_2 (Me_1 3, 4)
+    and DS_3 (Me_2 3, 4) with the Identifiers Id_1 and Id_2, and the semantic analysis gives
+    the same Components. A Data Set named x-y cannot be written in a reference file, whose
+    Data Set names follow the input rule."""
+    ids = [
+        {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False},
+        {"name": "Id_2", "role": "Identifier", "type": "String", "nullable": False},
+    ]
+
+    def measure(name: str) -> Dict[str, Any]:
+        return {"name": name, "role": "Measure", "type": "Number", "nullable": True}
+
+    structures = {
+        "datasets": [
+            {"name": "DS_1", "DataStructure": [*ids, measure("Me_1")]},
+            {"name": "DS_2", "DataStructure": [*ids, measure("Me_1")]},
+            {"name": "DS_3", "DataStructure": [*ids, measure("Me_2")]},
+        ]
+    }
+    keys = {"Id_1": [1, 2], "Id_2": ["A", "B"]}
+    datapoints = {
+        "DS_1": pd.DataFrame({**keys, "Me_1": [1.0, 2.0]}),
+        "DS_2": pd.DataFrame({**keys, "Me_1": [3.0, 4.0]}),
+        "DS_3": pd.DataFrame({**keys, "Me_2": [3.0, 4.0]}),
+    }
+    result = run(script, structures, datapoints, use_duckdb=use_duckdb)
+    semantic = semantic_analysis(script, structures)
+    assert set(result) == set(semantic) == set(expected)
+    for name, data in expected.items():
+        assert list(result[name].components) == list(semantic[name].components) == list(data)
+        got = result[name].data.sort_values("Id_1").reset_index(drop=True)
+        assert got[list(data)].to_dict("list") == data
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_10f(use_duckdb):
+    """Extra of test_GH_1355_10d: the name of a Data Set joined without an alias may hold any
+    character a Component name allows, also one such as - that SQL does not take without
+    quotes. The DuckDB engine raised a raw ParserException."""
+    _check_result_1355(
+        "'x-y' <- DS_1; DS_r <- inner_join ( 'x-y' , DS_3 using Id_1 , Id_2 );",
+        use_duckdb,
+        {
+            "x-y": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [1.0, 2.0]},
+            "DS_r": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [1.0, 2.0], "Me_2": [3.0, 4.0]},
+        },
+    )
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_10g(use_duckdb):
+    """Extra of test_GH_1355_10d: control, a Data Set named x-y read by a later statement
+    outside a join."""
+    _check_result_1355(
+        "'x-y' <- DS_1 * 2; DS_r <- 'x-y' [ calc Me_2 := Me_1 + 1 ];",
+        use_duckdb,
+        {
+            "x-y": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [2.0, 4.0]},
+            "DS_r": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [2.0, 4.0], "Me_2": [3.0, 5.0]},
+        },
+    )
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_10i(use_duckdb):
+    """Extra of test_GH_1355_10f: the qualified name 'x-y'#Me_1 names the Component Me_1 of
+    the Data Set x-y joined without an alias. Both engines and the semantic analysis raised
+    1-1-1-10, as the name before # kept its quotes."""
+    _check_result_1355(
+        "'x-y' <- DS_1; DS_r <- inner_join ( 'x-y' , DS_2 using Id_1 , Id_2"
+        " calc Me_9 := 'x-y'#Me_1 + DS_2#Me_1 drop 'x-y'#Me_1 , DS_2#Me_1 );",
+        use_duckdb,
+        {
+            "x-y": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [1.0, 2.0]},
+            "DS_r": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_9": [4.0, 6.0]},
+        },
+    )

@@ -1,0 +1,5 @@
+define operator f ( d dataset , c component )
+    returns dataset is
+        d [ rename Me_1 to c ]
+end operator;
+DS_r <- f ( DS_1 , Me_9 );

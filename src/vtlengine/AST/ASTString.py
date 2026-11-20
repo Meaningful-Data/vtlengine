@@ -691,7 +691,7 @@ class ASTString(ASTTemplate):
             partition = "partition except all"
         elif node.partition_by:
             keyword = "except" if node.partition_op == "except" else "by"
-            partition_values = [_format_name(x) for x in node.partition_by]
+            partition_values = [self._clause_component(x) for x in node.partition_by]
             partition = f"partition {keyword} {', '.join(partition_values)}"
         order = ""
         if node.order_by:
@@ -846,7 +846,7 @@ class ASTString(ASTTemplate):
                 return f"{dataset}[{node.op} {body}]"
 
     def visit_RenameNode(self, node: AST.RenameNode) -> str:
-        return f"{_format_name(node.old_name)} to {_format_name(node.new_name)}"
+        return f"{self._clause_component(node.old_name)} to {self._clause_component(node.new_name)}"
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:
         if node.period_to_ref is not None:
@@ -937,8 +937,13 @@ class ASTString(ASTTemplate):
 
     def visit_OrderBy(self, node: AST.OrderBy) -> str:
         if node.order == "asc":
-            return f"{_format_name(node.component)}"
-        return f"{_format_name(node.component)} {node.order}"
+            return f"{self._clause_component(node.component)}"
+        return f"{self._clause_component(node.component)} {node.order}"
+
+    def _clause_component(self, component: Union[str, AST.AST]) -> str:
+        """A component of partition by, order by or rename: a name, or the membership
+        alias#comp of a Component of a join (issue #1355)."""
+        return _format_name(component) if isinstance(component, str) else self.visit(component)
 
     def visit_Comment(self, node: AST.Comment) -> None:
         self.vtl_script += self._comment_text(node)
