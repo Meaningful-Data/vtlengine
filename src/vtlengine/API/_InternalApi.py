@@ -523,6 +523,99 @@ def _handle_empty_datasets(datasets: Dict[str, Dataset]) -> None:
             _fill_dataset_empty_data(dataset)
 
 
+def _load_inputs(
+    data_structures: DataStructuresInput,
+    datapoints: Optional[DatapointsInput] = None,
+    scalar_values: Optional[ScalarValuesInput] = None,
+    sdmx_mappings: Optional[Dict[str, str]] = None,
+    value_domains: Optional[Dict[str, ValueDomain]] = None,
+) -> Tuple[
+    Dict[str, Dataset], Dict[str, Scalar], Optional[Dict[str, Union[str, Path]]], Dict[str, Any]
+]:
+    """
+    Loads the dataset structures and the scalar values, and checks where the datapoints are,
+    without reading or checking any data: the DataFrames given (or read from URLs) are returned
+    as they are, for _fill_data, so the semantic analysis of a script comes before the data are
+    checked, as on the DuckDB engine (issue #1352).
+
+    Returns:
+        The datasets (without data), the scalars, the files of the datapoints and the
+        DataFrames of the datapoints, by dataset name.
+    """
+    # Load the datasets without data
+    datasets, scalars = load_datasets(data_structures, sdmx_mappings, value_domains)
+    dataframes: Dict[str, Any] = {}
+    # Handle scalar values if no datapoints are given
+    if datapoints is None:
+        _handle_scalars_values(scalars, scalar_values)
+        return datasets, scalars, None, dataframes
+
+    if isinstance(datapoints, dict):
+        dataframes = {k: v for k, v in datapoints.items() if isinstance(v, pd.DataFrame)}
+        paths: Dict[str, Union[pd.DataFrame, Path, str]] = {
+            k: v for k, v in datapoints.items() if isinstance(v, (str, Path))
+        }
+        for dataset_name in datapoints:
+            if dataset_name not in dataframes and dataset_name not in paths:
+                raise InputValidationException(
+                    f"Invalid datapoint for {dataset_name}. Must be DataFrame, Path, or string."
+                )
+
+        for dataset_name in dataframes:
+            if dataset_name not in datasets:
+                raise InputValidationException(
+                    f"Not found dataset {dataset_name} in datastructures."
+                )
+
+        if not paths:
+            _handle_scalars_values(scalars, scalar_values)
+            return datasets, scalars, None, dataframes
+        datapoints = paths
+
+    # Handling Individual, List or Dict of Paths or URLs
+    # At this point, datapoints is narrowed to exclude None and Dict[str, DataFrame]
+    # All file types (CSV, SDMX) are returned as paths for lazy loading
+    # URLs are preserved as strings
+    datapoints_paths = _load_datapoints_path(
+        cast(Union[Dict[str, Union[str, Path]], List[Union[str, Path]], str, Path], datapoints),
+        sdmx_mappings=sdmx_mappings,
+    )
+
+    # Separate URL datapoints from file-based datapoints
+    url_datapoints = {k: cast(str, v) for k, v in datapoints_paths.items() if _is_url(v)}
+    file_paths: Dict[str, Union[str, Path]] = {
+        k: v for k, v in datapoints_paths.items() if not _is_url(v)
+    }
+
+    # Handle URL datapoints via pysdmx
+    if url_datapoints:
+        if not isinstance(data_structures, (str, Path)):
+            raise InputValidationException(code="0-1-3-8")
+        url_ds, _, url_dfs = _handle_url_datapoints(url_datapoints, data_structures, sdmx_mappings)
+        datasets.update(url_ds)
+        for ds_name, df in url_dfs.items():
+            if ds_name in datasets:
+                dataframes[ds_name] = df
+
+    # Validate that all file-based datapoint dataset names exist in structures
+    for dataset_name in file_paths:
+        if dataset_name not in datasets:
+            raise InputValidationException(f"Not found dataset {dataset_name} in datastructures.")
+
+    _handle_scalars_values(scalars, scalar_values)
+    return datasets, scalars, file_paths if file_paths else None, dataframes
+
+
+def _fill_data(datasets: Dict[str, Dataset], dataframes: Dict[str, Any]) -> None:
+    """Checks the DataFrames _load_inputs returned and gives each to its dataset, and the
+    other datasets an empty DataFrame (their files are read when the script needs them)."""
+    for dataset_name, data in dataframes.items():
+        datasets[dataset_name].data = _validate_pandas(
+            datasets[dataset_name].components, data, dataset_name
+        )
+    _handle_empty_datasets(datasets)
+
+
 def load_datasets_with_data(
     data_structures: DataStructuresInput,
     datapoints: Optional[DatapointsInput] = None,
@@ -549,75 +642,15 @@ def load_datasets_with_data(
     Raises:
         Exception: If the Path is wrong or the file is invalid.
     """
-    # Load the datasets without data
-    datasets, scalars = load_datasets(data_structures, sdmx_mappings, value_domains)
-    # Handle empty datasets and scalar values if no datapoints are given
-    if datapoints is None:
-        _handle_empty_datasets(datasets)
-        _handle_scalars_values(scalars, scalar_values)
-        return datasets, scalars, None
-
-    if isinstance(datapoints, dict):
-        dataframes = {k: v for k, v in datapoints.items() if isinstance(v, pd.DataFrame)}
-        paths: Dict[str, Union[pd.DataFrame, Path, str]] = {
-            k: v for k, v in datapoints.items() if isinstance(v, (str, Path))
-        }
-        for dataset_name in datapoints:
-            if dataset_name not in dataframes and dataset_name not in paths:
-                raise InputValidationException(
-                    f"Invalid datapoint for {dataset_name}. Must be DataFrame, Path, or string."
-                )
-
-        for dataset_name, data in dataframes.items():
-            if dataset_name not in datasets:
-                raise InputValidationException(
-                    f"Not found dataset {dataset_name} in datastructures."
-                )
-            datasets[dataset_name].data = _validate_pandas(
-                datasets[dataset_name].components, data, dataset_name
-            )
-
-        if not paths:
-            # Handle empty datasets and scalar values for remaining datasets
-            _handle_empty_datasets(datasets)
-            _handle_scalars_values(scalars, scalar_values)
-            return datasets, scalars, None
-        datapoints = paths
-
-    # Handling Individual, List or Dict of Paths or URLs
-    # At this point, datapoints is narrowed to exclude None and Dict[str, DataFrame]
-    # All file types (CSV, SDMX) are returned as paths for lazy loading
-    # URLs are preserved as strings
-    datapoints_paths = _load_datapoints_path(
-        cast(Union[Dict[str, Union[str, Path]], List[Union[str, Path]], str, Path], datapoints),
-        sdmx_mappings=sdmx_mappings,
+    datasets, scalars, file_paths, dataframes = _load_inputs(
+        data_structures, datapoints, scalar_values, sdmx_mappings, value_domains
     )
-
-    # Separate URL datapoints from file-based datapoints
-    url_datapoints = {k: cast(str, v) for k, v in datapoints_paths.items() if _is_url(v)}
-    file_paths: Dict[str, Union[str, Path]] = {
-        k: v for k, v in datapoints_paths.items() if not _is_url(v)
-    }
-
-    # Handle URL datapoints via pysdmx
-    if url_datapoints:
-        if not isinstance(data_structures, (str, Path)):
-            raise InputValidationException(code="0-1-3-8")
-        url_ds, _, url_dfs = _handle_url_datapoints(url_datapoints, data_structures, sdmx_mappings)
-        datasets.update(url_ds)
-        for ds_name, df in url_dfs.items():
-            if ds_name in datasets:
-                datasets[ds_name].data = _validate_pandas(datasets[ds_name].components, df, ds_name)
-
-    # Validate that all file-based datapoint dataset names exist in structures
-    for dataset_name in file_paths:
-        if dataset_name not in datasets:
-            raise InputValidationException(f"Not found dataset {dataset_name} in datastructures.")
+    _fill_data(datasets, dataframes)
 
     # If validate=True, load and validate data immediately but don't store it
     # (used by validate_dataset API in memory-constrained scenarios).
     # gc.collect() ensures memory is reclaimed after each large DataFrame is validated.
-    if validate:
+    if validate and file_paths:
         for dataset_name, file_path in file_paths.items():
             components = datasets[dataset_name].components
             _ = load_datapoints(
@@ -625,10 +658,7 @@ def load_datasets_with_data(
             )
             gc.collect()
 
-    _handle_empty_datasets(datasets)
-    _handle_scalars_values(scalars, scalar_values)
-
-    return datasets, scalars, file_paths if file_paths else None
+    return datasets, scalars, file_paths
 
 
 def load_vtl(input: Union[str, Path]) -> str:

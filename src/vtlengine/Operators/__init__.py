@@ -1,4 +1,5 @@
 import re
+import threading
 from copy import copy
 from typing import Any, Dict, Iterable, List, Optional, Union, cast
 
@@ -65,7 +66,18 @@ MONOMEASURE_CHANGED_ALLOWED = [CEIL, FLOOR, ROUND, TRUNC]
 BINARY_COMPARISON_OPERATORS = [EQ, NEQ, GT, GTE, LT, LTE]
 BINARY_BOOLEAN_OPERATORS = [AND, OR, XOR]
 
-only_semantic = False
+# Whether the operators check the structures only (the semantic analysis) or also compute the
+# data, for the thread that runs them: run() analyses a whole script before it computes it, and
+# one thread's analysis must not stop the computation of another (issue #1352)
+_mode = threading.local()
+
+
+def is_only_semantic() -> bool:
+    return bool(getattr(_mode, "only_semantic", False))
+
+
+def set_only_semantic(value: bool) -> None:
+    _mode.only_semantic = value
 
 
 def _part_of(operand: Any, component: Any) -> Any:
@@ -138,7 +150,7 @@ class Operator:
 
     @classmethod
     def analyze(cls, *args: Any, **kwargs: Any) -> Any:
-        if only_semantic:
+        if is_only_semantic():
             return cls.validate(*args, **kwargs)
         return cls.evaluate(*args, **kwargs)
 

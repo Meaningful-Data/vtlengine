@@ -109,6 +109,33 @@ class TestConcurrentParsing:
             sys.setswitchinterval(previous_interval)
 
 
+class TestConcurrentAnalysis:
+    """run() analyses the structures of the whole script before it computes the data, and the
+    operators of one thread must compute the data while another thread analyses its script
+    (issue #1352)."""
+
+    def test_concurrent_runs_compute_data(self) -> None:
+        script = "\n".join(f"DS_r{i} <- DS_1 [ calc Me_{i} := Me_1 + {i} ];" for i in range(1, 21))
+
+        def task(_: int) -> None:
+            results = run(script=script, data_structures=DATA_STRUCTURES, datapoints=DATAPOINTS)
+            assert len(results) == 20
+            for result in results.values():
+                assert result.data is not None
+                assert len(result.data) == 5
+
+        previous_interval = sys.getswitchinterval()
+        sys.setswitchinterval(1e-6)
+        try:
+            for _ in range(10):
+                with ThreadPoolExecutor(max_workers=6) as executor:
+                    futures = [executor.submit(task, i) for i in range(6)]
+                    for future in as_completed(futures):
+                        future.result()
+        finally:
+            sys.setswitchinterval(previous_interval)
+
+
 class TestConcurrentAnalytic:
     def test_concurrent_first_value(self) -> None:
         script = "DS_r <- first_value(DS_1 over (partition by Id_1 order by Id_2 asc));"

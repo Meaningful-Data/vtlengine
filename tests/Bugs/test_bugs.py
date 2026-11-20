@@ -13424,3 +13424,97 @@ class TimeValueBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1352_26j", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_36v(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , integer ) ]
+                        [ calc Me_3 := Me_1 + 1 ];
+        Description: Extra of case 36: a String plus an Integer has no type, which the
+                     structures alone tell, so the second calc raises 1-1-1-2 before the first
+                     casts the text abc. The pandas engine computed the cast first and raised
+                     2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36v",
+            number_inputs=1,
+            exception_code="1-1-1-2",
+            exception_message="Invalid implicit cast from String and Integer to Number.",
+        )
+
+    def test_GH_1352_36w(self):
+        """
+        Status: OK
+        Expression: DS_a := DS_1 [ calc Me_2 := cast ( Me_1 , integer ) ] ;
+                    DS_r <- DS_a [ calc Me_3 := Me_1 + 1 ];
+        Description: Extra of case 36: a String plus an Integer has no type, which the
+                     structures alone tell, so the second statement raises 1-1-1-2 before the
+                     first casts the text abc. The pandas engine computed the first statement
+                     and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36w",
+            number_inputs=1,
+            exception_code="1-1-1-2",
+            exception_message="Invalid implicit cast from String and Integer to Number.",
+        )
+
+    def test_GH_1352_36x(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b
+                        filter cast ( a#Me_1 , integer ) > 0 calc Me_3 := a#Me_1 + 1 );
+        Description: Extra of case 36: a String plus an Integer has no type, which the
+                     structures alone tell, so the calc of the join raises 1-1-1-2 before its
+                     filter casts the text abc. The pandas engine computed the filter first and
+                     raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36x",
+            number_inputs=2,
+            exception_code="1-1-1-2",
+            exception_message="Invalid implicit cast from String and Integer to Number.",
+        )
+
+    def test_GH_1352_36y(self):
+        """
+        Status: OK
+        Expression: DS_r <- cast ( DS_1#Me_1 , integer ) + DS_1#Me_1;
+        Description: Extra of case 36: the cast gives the Measure int_var and the other operand
+                     the Measure Me_1, which the structures alone tell, so the addition raises
+                     1-1-14-1 before the text abc is cast. The pandas engine computed the cast
+                     first and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36y",
+            number_inputs=1,
+            exception_code="1-1-14-1",
+            exception_message="At op +: Measure names don't match: ['int_var'] - ['Me_1'].",
+        )
+
+    def test_GH_1352_36z(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := time_agg ( "A" , _ , Me_1 ) ];
+        Description: Extra of case 36: time_agg of a Date needs first or last, which the
+                     structures alone tell, so the script raises 1-1-19-11 before the Date
+                     0999-01-15, out of the years 1000 to 9999, is loaded. The pandas engine
+                     loaded the data first and raised 0-3-1-6.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36z",
+            number_inputs=1,
+            exception_code="1-1-19-11",
+            exception_message="At op time_agg: If used over a Date, first/last parameter must be "
+            "declared.",
+        )

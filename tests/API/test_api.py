@@ -3438,3 +3438,30 @@ def test_GH_1352_39c(use_duckdb):
     with pytest.raises(InputValidationException) as context:
         run("SC_r <- SC_1;", structures, {}, scalar_values={"SC_1": "0001"}, use_duckdb=use_duckdb)
     assert context.value.args[1] == "0-1-2-7"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_36z2(use_duckdb):
+    """Extra of case 36: run analyses the whole script before it checks the DataFrames given
+    as datapoints, so time_agg of a Date without first or last raises 1-1-19-11 before the Date
+    0999-01-15, out of the years 1000 to 9999, is checked, as semantic_analysis raises it. The
+    pandas engine checked the DataFrame first and raised 0-3-1-6 (issue #1352)."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Date", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    script = 'DS_r <- DS_1[calc Me_2 := time_agg("A", _, Me_1)];'
+    data = pd.DataFrame({"Id_1": [1, 2], "Me_1": ["2020-01-15", "0999-01-15"]})
+    with pytest.raises(SemanticError) as context:
+        run(script, structures, {"DS_1": data}, use_duckdb=use_duckdb)
+    assert context.value.args[1] == "1-1-19-11"
+    with pytest.raises(SemanticError) as context:
+        semantic_analysis(script, structures)
+    assert context.value.args[1] == "1-1-19-11"
