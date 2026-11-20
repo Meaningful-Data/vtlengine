@@ -14074,3 +14074,60 @@ class BasicTypeValueBugs(BugHelper):
             exception_code="1-1-1-1",
             exception_message="Invalid implicit cast from Number to String.",
         )
+
+
+class RunTimeErrorMappingBugs(BugHelper):
+    """Errors raised while the data is computed are VTL errors, the same on both engines (issue
+    #1356)."""
+
+    def test_GH_1356_31(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := Me_1 * Me_1 ];
+        Description: The product 10^24 of the Integer 10^12 by itself does not fit in an Integer
+                     (64 bits): both engines raise 2-1-5-1. The pandas engine raised a raw
+                     ArrowInvalid and the DuckDB engine a raw OutOfRangeException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_31",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message="Impossible to cast 1000000000000000000000000 from type Number "
+            "to Integer.",
+        )
+
+    def test_GH_1356_32(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := ceil ( Me_2 ) ];
+        Description: ceil of the Number 1e20 does not fit in an Integer: both engines raise
+                     2-1-5-1. The pandas engine raised a raw ArrowInvalid and the DuckDB engine a
+                     raw ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_32",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message="Impossible to cast 1e+20 from type Number to Integer.",
+        )
+
+    def test_GH_1356_33(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := cast ( Me_2 , integer ) ];
+        Description: The Number 1e20 cast to integer does not fit in an Integer: both engines
+                     raise 2-1-5-1. The pandas engine raised a raw OverflowError and the DuckDB
+                     engine a raw ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_33",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message="Impossible to cast 1e+20 from type Number to Integer.",
+        )

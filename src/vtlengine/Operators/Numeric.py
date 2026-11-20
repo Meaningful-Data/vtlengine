@@ -96,8 +96,9 @@ class Binary(Operator.Binary):
             if cls.op == RANDOM:
                 return cls.py_op(x, y)
             if cls.op in (PLUS, MINUS, MULT, MOD):
-                # Exact integer arithmetic, matching DuckDB BIGINT semantics.
-                return cls.py_op(x, y)
+                # Exact integer arithmetic, matching DuckDB BIGINT semantics: a result out of
+                # the 64 bits of an Integer raises 2-1-5-1 (issue #1356)
+                return Integer.in_range(cls.py_op(x, y), Number)
         x = float(x)
         y = float(y)
         if cls.op == DIV and y == 0:
@@ -261,25 +262,43 @@ class SquareRoot(Unary):
             raise RunTimeError("2-1-15-2", op=cls.op, value=bad.iloc[0])
 
 
-class Ceil(Unary):
+class WholeNumber(Unary):
+    """ceil and floor: an Integer result, so an operand out of the 64 bits of an Integer
+    raises 2-1-5-1, as on the DuckDB engine (issue #1356)."""
+
+    return_type = Integer
+    whole: Any = None
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        Integer.in_range(x, Number)
+        return cls.whole(x)
+
+    @classmethod
+    def _check_domain(cls, series: Any) -> None:
+        bad = series.dropna()
+        bad = bad[(bad >= float(2**63)) | (bad < -float(2**63))]
+        if len(bad):
+            Integer.in_range(bad.iloc[0], Number)
+
+
+class Ceil(WholeNumber):
     """
     `Ceilling <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=110&zoom=100,72,94> `_ unary operator
     """  # noqa E501
 
     op = CEIL
-    py_op = math.ceil
-    return_type = Integer
+    whole = staticmethod(math.ceil)
     pc_func = staticmethod(pc.ceil)
 
 
-class Floor(Unary):
+class Floor(WholeNumber):
     """
     `Floor <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=111&zoom=100,72,442> `_ unary operator
     """  # noqa E501
 
     op = FLOOR
-    py_op = math.floor
-    return_type = Integer
+    whole = staticmethod(math.floor)
     pc_func = staticmethod(pc.floor)
 
 
