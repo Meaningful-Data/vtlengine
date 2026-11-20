@@ -1089,9 +1089,9 @@ centralised_messages = {
         "description": "Runtime error when a value is negative but must be non-negative.",
     },  # RunTimeError.
     "2-1-15-3": {
-        "message": "At op {op}: Base value {value} could not be less or equal 0.",
-        "description": "Runtime error when a base value is less than or equal to zero, "
-        "which is not allowed.",
+        "message": "At op {op}: Base value {value} must be greater than 0 and other than 1.",
+        "description": "Runtime error when a logarithm base is less than or equal to zero, "
+        "or 1, which have no logarithm.",
     },  # RunTimeError.
     "2-1-15-4": {
         "message": "At op {op}: Invalid values in Component {name}.",

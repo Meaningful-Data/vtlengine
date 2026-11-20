@@ -14189,3 +14189,59 @@ class RunTimeErrorMappingBugs(BugHelper):
         Goal: Check Result.
         """
         self.BaseTest(code="GH_1356_37", number_inputs=1, references_names=["1"])
+
+    def test_GH_1356_38(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := log ( Me_2 , 1 ) ];
+        Description: A logarithm in base 1 does not exist: both engines raise 2-1-15-3 from the
+                     check of the base. The pandas engine raised a raw ZeroDivisionError and the
+                     DuckDB engine a raw OutOfRangeException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_38",
+            number_inputs=1,
+            exception_code="2-1-15-3",
+            exception_message="At op log: Base value 1",
+        )
+
+    def test_GH_1356_38b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := log ( Me_1 , Me_2 ) ];
+        Description: Case 38 with the base in a Component: the base 1 of the second data point
+                     raises 2-1-15-3 on both engines. The pandas engine raised a raw
+                     ZeroDivisionError and the DuckDB engine a raw OutOfRangeException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_38b",
+            number_inputs=1,
+            exception_code="2-1-15-3",
+            exception_message="At op log: Base value 1",
+        )
+
+    def test_GH_1356_65(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := Me_2 / Me_1 ];
+        Description: A divisor 0 raises 2-1-15-6 on both engines, also when the dividend is
+                     null. The pandas engine returned null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(code="GH_1356_65", number_inputs=1, exception_code="2-1-15-6")
+
+    def test_GH_1356_66(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := log ( Me_2 , Me_1 ) ];
+        Description: A base 0 raises 2-1-15-3 on both engines, also when the operand is null.
+                     The pandas engine returned null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(code="GH_1356_66", number_inputs=1, exception_code="2-1-15-3")

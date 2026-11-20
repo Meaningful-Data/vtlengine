@@ -92,8 +92,6 @@ class Binary(Operator.Binary):
         non-null.
         """
         if isinstance(x, int) and isinstance(y, int):
-            if cls.op == DIV and y == 0:
-                raise RunTimeError("2-1-15-6", op=cls.op, value=y)
             if cls.op == RANDOM:
                 return cls.py_op(x, y)
             if cls.op in (PLUS, MINUS, MULT, MOD):
@@ -102,8 +100,6 @@ class Binary(Operator.Binary):
                 return Integer.in_range(cls.py_op(x, y), Number)
         x = float(x)
         y = float(y)
-        if cls.op == DIV and y == 0:
-            raise RunTimeError("2-1-15-6", op=cls.op, value=y)
         if cls.op == POWER:
             if x < 0 and not y.is_integer():
                 raise RunTimeError("2-1-15-2", op=cls.op, value=x)
@@ -129,13 +125,18 @@ class Binary(Operator.Binary):
         return result
 
     @classmethod
+    def _check_right(cls, y: Any) -> None:
+        """Hook for the operators whose right operand alone raises an error (a divisor 0, a
+        logarithm base), whatever the left operand is, null included (issue #1356)."""
+
+    @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
-        if pd.isnull(x) or pd.isnull(y):
-            return None
-        return cls._numeric_op(x, y, get_effective_numeric_digits())
+        return cls._null_aware_numeric_op(x, y, get_effective_numeric_digits())
 
     @classmethod
     def _null_aware_numeric_op(cls, x: Any, y: Any, digits: Optional[int]) -> Any:
+        if not pd.isnull(y):
+            cls._check_right(y)
         if pd.isnull(x) or pd.isnull(y):
             return None
         return cls._numeric_op(x, y, digits)
@@ -163,6 +164,8 @@ class Binary(Operator.Binary):
     ) -> Any:
         result_dtype = cls.return_type.dtype() if cls.return_type is not None else "string[pyarrow]"
         if scalar is None:
+            if not series_left:
+                series.dropna().map(cls._check_right)
             return pd.Series(None, index=series.index, dtype=result_dtype)
         digits = get_effective_numeric_digits()
         # Iterate the values rather than Series.map: on pandas 3, map turns a nullable
@@ -361,6 +364,11 @@ class Div(Binary):
     py_op = operator.truediv
     return_type = Number
 
+    @classmethod
+    def _check_right(cls, y: Any) -> None:
+        if y == 0:
+            raise RunTimeError("2-1-15-6", op=cls.op, value=y)
+
 
 class Logarithm(Binary):
     """
@@ -371,16 +379,15 @@ class Logarithm(Binary):
     return_type = Number
 
     @classmethod
+    def _check_right(cls, y: Any) -> None:
+        # A base 1 has no logarithm, as a base <= 0 (issue #1356)
+        if y <= 0 or y == 1:
+            raise RunTimeError("2-1-15-3", op=cls.op, value=y)
+
+    @classmethod
     def py_op(cls, x: Any, param: Any) -> Any:
-        if pd.isnull(param):
-            return None
-        if param <= 0:
-            raise RunTimeError("2-1-15-3", op=cls.op, value=param)
-        if pd.isnull(x):
-            return None
         if x <= 0:
             raise RunTimeError("2-1-15-8", op=cls.op, value=x)
-
         return math.log(x, param)
 
 

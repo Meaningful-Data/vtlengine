@@ -620,11 +620,11 @@ CREATE OR REPLACE MACRO vtl_ln(x) AS (
 );
 
 -- Logarithm with the pandas engine's guard order: null base -> NULL,
--- base <= 0 -> 2-1-15-3, null value -> NULL, value <= 0 -> 2-1-15-8.
+-- base <= 0 or base 1 -> 2-1-15-3, null value -> NULL, value <= 0 -> 2-1-15-8.
 CREATE OR REPLACE MACRO vtl_log(x, base) AS (
     CASE WHEN base IS NULL THEN NULL
-         WHEN base <= 0
-         THEN error('VTL 2-1-15-3 log: non-positive base ' || CAST(base AS VARCHAR))
+         WHEN base <= 0 OR base = 1
+         THEN error('VTL 2-1-15-3 log: invalid base ' || CAST(base AS VARCHAR))
          WHEN x IS NULL OR isnan(CAST(x AS DOUBLE)) THEN NULL
          WHEN x <= 0
          THEN error('VTL 2-1-15-8 log: non-positive value ' || CAST(x AS VARCHAR))
