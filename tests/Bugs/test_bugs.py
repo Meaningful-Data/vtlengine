@@ -13582,8 +13582,8 @@ class TimeValueBugs(BugHelper):
                         group by Id_1 ] [ keep Me_3 ];
         Description: Extra of case 36: the group Id_1 = 1 holds 2020Q1 and 2020M1, which max
                      cannot compare, so the aggr raises 2-1-19-20, also when the keep that
-                     follows removes the Measure it gives. The DuckDB engine did not compute the
-                     removed Measure and returned the Data Set.
+                     follows removes the Measure it gives. Both engines already raised it: the
+                     DuckDB engine computes every aggregate of an aggr, whatever the keep reads.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
         Goal: Check Exception.
         """
