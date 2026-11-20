@@ -1,0 +1,5 @@
+define operator f ( x dataset )
+    returns dataset { measure < number > Me_1 } is
+        x [ keep Me_1 ]
+end operator;
+DS_r <- f ( DS_2 );

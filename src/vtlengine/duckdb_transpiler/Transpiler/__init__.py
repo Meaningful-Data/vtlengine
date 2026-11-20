@@ -784,8 +784,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         sql = self._resolve_udo_param_sql(name, udo_val)
         declared = scope.get(f"__type__{name}") if scope is not None else None
         if declared is Integer and scope is not None:
-            # A whole Number is the Integer, one with decimals raises 1-2-18, as on the pandas
-            # engine, instead of being rounded (issue #1351)
+            # A whole Number is the Integer, one with decimals raises 2-3-10, as on the pandas
+            # engine, instead of being rounded (issues #1351, #1364)
             where = f"{scope[_UDO_OP]}\u00a6{name}".replace("'", "''")
             sql = f"vtl_udo_integer({sql}, '{where}')"
         elif declared is Number or declared is String:
@@ -921,7 +921,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             )
             # The arguments are checked in the order of the parameters
             holds = check if holds == "TRUE" else f"CASE WHEN {check} THEN {holds} END"
-        # A Number with decimals given to an integer parameter raises 1-2-18 before any
+        # A Number with decimals given to an integer parameter raises 2-3-10 before any
         # constraint is checked, also where the body does not read it, as on the pandas engine
         # (issue #1351)
         for param in reversed(params):
@@ -3441,6 +3441,8 @@ FROM (
         else:
             for measure, expr in computed.items():
                 cols.append(f"{expr} AS {quote_name(measure)}")
+        # The viral Attributes combined in the join step are kept (issue #1364)
+        cols.extend(quote_name(name) for name in ds.get_viral_attributes_names() if "#" not in name)
 
         return SQLBuilder().select(*cols).from_table(table_src).build()
 

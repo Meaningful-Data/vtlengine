@@ -67,7 +67,9 @@ from vtlengine.AST.UDOTypes import (
     udo_call_key,
     udo_component_matches,
     udo_dataset_components,
+    udo_result_on_basic_types,
     udo_result_on_value_domains,
+    udo_returns,
 )
 from vtlengine.DataTypes import (
     BASIC_TYPES,
@@ -210,10 +212,14 @@ def _check_udo_return_type(
 ) -> None:
     """The result of a user defined operator must have the type it returns (issue #1161)."""
     if isinstance(declared, Component):
-        matches = udo_component_matches(declared, result)
+        # A component declared without a type is parsed with a String instance
+        data_type: Any = declared.data_type
+        matches = udo_component_matches(declared, result) and (
+            not isinstance(data_type, type) or udo_returns(result.data_type, data_type)
+        )
         found_type = _format_component_type(result)
     elif isinstance(declared, type):
-        matches = check_unary_implicit_promotion(result.data_type, declared)
+        matches = udo_returns(result.data_type, declared)
         found_type = _format_type(result.data_type)
     else:
         return
@@ -1011,6 +1017,7 @@ class InterpreterAnalyzer(ASTTemplate):
             data_type=op_comp.data_type,
             role=Role.MEASURE,
             nullable=op_comp.nullable,
+            value_domain=op_comp.value_domain,
         )
         if operand.data is not None:
             cols_to_keep = operand.get_identifiers_names() + operand.get_viral_attributes_names()
@@ -1143,6 +1150,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     data_type=operand_comp.data_type,
                     role=analytic_role,
                     nullable=operand_comp.nullable,
+                    value_domain=operand_comp.value_domain,
                 )
 
                 # Any existing component can be ordered by, as in the dataset-level
@@ -1324,6 +1332,7 @@ class InterpreterAnalyzer(ASTTemplate):
             data_type=result.components[measure_name].data_type,
             role=result.components[measure_name].role,
             nullable=result.components[measure_name].nullable,
+            value_domain=result.components[measure_name].value_domain,
         )
         return self.merge_then_else_datasets(result_comp)
 
@@ -1649,6 +1658,7 @@ class InterpreterAnalyzer(ASTTemplate):
                         data_type=measure.data_type,
                         role=role if role is not None else kept_role,
                         nullable=measure.nullable,
+                        value_domain=measure.value_domain,
                     )
                 )
             operands = aux_operands
@@ -2972,6 +2982,7 @@ class InterpreterAnalyzer(ASTTemplate):
         taken = self._check_udo_signature(
             node.op, "the output", return_type, return_constraints, result
         )
+        result = udo_result_on_basic_types(result, return_type)
         result = udo_result_on_value_domains(result, return_constraints, taken)
         if isinstance(result, Scalar) and result.data_type in (Integer, Number, String):
             result = self._udo_scalar_result(result)
@@ -3024,7 +3035,8 @@ class InterpreterAnalyzer(ASTTemplate):
     def _udo_scalar_argument(self, op: str, param: Dict[str, Any], argument: Any) -> Scalar:
         """The value a parameter of a basic type takes, given or by default: it must be of the
         type the parameter declares, or promote to it, and is cast to it. A Number with
-        decimals is no Integer."""
+        decimals is no Integer: a literal raises 1-2-18, which the semantic analysis raises too,
+        and a value computed when the script runs is an error of the data (issue #1364)."""
         if isinstance(argument, (Dataset, DataComponent)):
             type_2 = "Dataset" if isinstance(argument, Dataset) else "Component"
             raise SemanticError(
@@ -3032,9 +3044,12 @@ class InterpreterAnalyzer(ASTTemplate):
             )
         scalar_type = param["type"]
         value = argument.value
-        if not check_unary_implicit_promotion(argument.data_type, scalar_type) or (
+        has_decimals = (
             scalar_type == Integer and isinstance(value, float) and not value.is_integer()
-        ):
+        )
+        if has_decimals and not argument.literal:
+            raise RunTimeError("2-3-10", op=op, value=value, param_name=param["name"])
+        if not check_unary_implicit_promotion(argument.data_type, scalar_type) or has_decimals:
             raise SemanticError(
                 "1-2-18",
                 param_type=scalar_type,

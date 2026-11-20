@@ -298,7 +298,13 @@ below), the Components that ``filter``, ``keep``, ``drop``,
 ``rename``, ``sub`` and the joins keep, the Measures that
 ``flow_to_stock`` and ``stock_to_flow`` pass through (all but the
 ``Integer`` and ``Number`` ones, which they accumulate), and a
-Component written alone in ``calc`` (``calc Me_3 := Id_2``).
+Component written alone in ``calc`` (``calc Me_3 := Id_2``). The
+operators that give one of the values of their operand keep its
+value domain too: ``max`` and ``min``, in an aggregation and as
+analytic operators, ``first_value``, ``last_value``, and ``lag`` and
+``lead`` without a default value. With a default value, ``lag`` and
+``lead`` give the basic type, as the default is a literal of it and
+``nvl`` gives that mix the basic type.
 ``run()`` and ``semantic_analysis()`` write ``"type": "VD_FLOW"``
 for them, and ``Dataset.from_json``, ``Component.from_json``,
 ``DataComponent.from_json`` and ``Scalar.from_json`` read such a type
@@ -478,7 +484,14 @@ Value domains also appear in the VTL-DL definitions:
   for a Data Set), their values must be values of it (``2-1-5-4``),
   and they are then defined on it. The other Components keep their
   types. A ``returns`` of a basic type keeps the value domain of a
-  result already on one.
+  result of that type already on one. A result of another type is
+  converted to the type the ``returns`` declares where the VTL implicit
+  cast applies (an ``Integer`` to a ``Number``, a ``Boolean`` to the
+  ``String`` ``true`` or ``false``), for a scalar, a Component and the
+  Components a ``dataset`` type names, and is then on no value domain.
+  A ``Number`` is not cast to ``integer``: a scalar or Component
+  ``Number`` result of a ``returns integer`` raises ``1-3-1-1``, as a
+  result of any other type does.
 
 .. code-block:: text
 

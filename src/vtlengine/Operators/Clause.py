@@ -130,12 +130,14 @@ class Aggregate(Operator):
                     )
                 )
             else:
+                # An aggregate that gives one of the values, as max, keeps its value domain
                 result_dataset.add_component(
                     Component(
                         name=operand.name,
                         data_type=operand.data_type,
                         role=operand.role,
                         nullable=operand.nullable,
+                        value_domain=operand.value_domain,
                     )
                 )
         return result_dataset
