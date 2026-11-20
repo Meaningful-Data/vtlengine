@@ -14364,6 +14364,18 @@ class BasicTypeValueBugs(BugHelper):
         """
         self.BaseTest(code="GH_1353_43", number_inputs=1, references_names=["1"])
 
+    def test_GH_1353_15b(self):
+        """
+        Status: OK
+        Expression: DS_r <- lag ( DS_1 [ keep T ] , 1 , "2023Q4" over ( order by Id_1 ) );
+        Description: The String default "2023Q4" of lag on the Time_Period T is the period
+                     2023Q4, given to the first Data Point on both engines. The DuckDB engine
+                     gave it a null.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_15b", number_inputs=1, references_names=["1"])
+
 
 class SemanticCheckBugs(BugHelper):
     """Invalid scripts refused by the semantic analysis on both engines (issue #1356)."""
@@ -14880,6 +14892,43 @@ class SemanticCheckBugs(BugHelper):
             exception_code="1-1-18-8",
             exception_message="At op match_characters: unterminated character set in "
             "regexp: [,  in position 0.",
+        )
+
+    def test_GH_1356_55b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := match_characters ( Me_3 , "[[:alpha:]" ) ];
+        Description: The pattern "[[:alpha:]" is checked as it is evaluated, with its POSIX class
+                     read: its bracket expression is not closed, 1-1-18-8. The semantic analysis
+                     accepted it, the pandas engine raised a raw re.error and the DuckDB engine a
+                     raw InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_55b",
+            number_inputs=1,
+            exception_code="1-1-18-8",
+            exception_message="At op match_characters: unterminated character set in "
+            "regexp: [[:alpha:],  in position 0.",
+        )
+
+    def test_GH_1356_55c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_9 := match_characters ( Me_3 , "[[:foo:]]" ) ];
+        Description: [:foo:] is not a POSIX character class: 1-1-18-8. The semantic analysis
+                     accepted it, the pandas engine gave false for every data point and the DuckDB
+                     engine raised a raw InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_55c",
+            number_inputs=1,
+            exception_code="1-1-18-8",
+            exception_message="At op match_characters: unknown POSIX character class [:foo:] "
+            "in regexp: [[:foo:]],  in position 1.",
         )
 
     def test_GH_1356_56(self):
