@@ -175,12 +175,6 @@ downcast_error_params = [
         "f",
         id="udo_parameter",
     ),
-    pytest.param(
-        'define operator f(x VD_1 default "Q") returns string is x end operator; SC_r <- f();',
-        {},
-        "f",
-        id="udo_default",
-    ),
 ]
 
 

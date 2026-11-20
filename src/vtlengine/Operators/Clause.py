@@ -49,6 +49,8 @@ class Calc(Operator):
 
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
+        # A Component computed twice (issue #1356)
+        _check_repeated(cls.op, [operand.name for operand in operands])
         result_components = {name: copy(comp) for name, comp in dataset.components.items()}
         dataset_name = VirtualCounter._new_ds_name()
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
@@ -103,6 +105,8 @@ class Aggregate(Operator):
 
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
+        # A Component computed twice (issue #1356)
+        _check_repeated(cls.op, [operand.name for operand in operands])
         dataset_name = VirtualCounter._new_ds_name()
         result_dataset = Dataset(name=dataset_name, components=dataset.components, data=None)
 

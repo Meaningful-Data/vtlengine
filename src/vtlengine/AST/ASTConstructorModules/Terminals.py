@@ -800,6 +800,12 @@ class Terminals:
         first = num_rows_1  # unbounded (default value)
         second = num_rows_2  # current data point (default value)
 
+        # A window starts before it ends: preceding, then the current data point, then
+        # following (issue #1356)
+        position = {"preceding": -1, "current": 0, "following": 1}
+        if (0 if first == 0 else position[mode_1]) > (0 if second == 0 else position[mode_2]):
+            raise SemanticError("1-1-3-4", window=script_location(ctx))
+
         if not (isinstance(first, int) and isinstance(second, int)):
             return create_windowing(win_mode, [first, second], [mode_1, mode_2], token_info)
 
@@ -856,6 +862,9 @@ class Terminals:
         c = ctx_list[0]
         if not c.is_terminal and c.ctx_id == RC.SIGNED_INTEGER:
             result = self.visitSignedInteger(c)
+            if result < 0:
+                # A limit is a number of data points or a distance (issue #1356)
+                raise SemanticError("1-1-3-5", limit=script_location(ctx))
             limit_dir = ctx_list[-1].text
             return result, limit_dir
         elif not c.is_terminal and c.ctx_id == RC.VAR_ID:

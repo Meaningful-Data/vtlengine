@@ -84,7 +84,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _UDO_OP,
     StructureVisitor,
 )
-from vtlengine.Exceptions import SemanticError, transformation_output
+from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Operators import _promotes
 from vtlengine.Operators.Clause import Pivot
@@ -3658,6 +3658,15 @@ FROM (
                     self._resolve_udo_name(node.order_by[0].component)
                 )
                 order_is_date = comp is not None and comp.data_type == Date
+            for limit in (node.window.start, node.window.stop):
+                scalar = (
+                    self.input_scalars.get(limit.value) if isinstance(limit, AST.VarID) else None
+                )
+                if scalar is not None and pd.isnull(scalar.value):
+                    # A limit read from a null Scalar (issue #1356)
+                    raise RunTimeError(
+                        "2-1-18-1", op=node.op, param_type="Window bound", correct_type="Integer"
+                    )
             window_sql = self.visit_Windowing(node.window, order_is_date=order_is_date)
             over_parts.append(window_sql)
         # With no window clause, the default frame of SQL is the default window of VTL 2.2

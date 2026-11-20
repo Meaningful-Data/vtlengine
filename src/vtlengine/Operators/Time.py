@@ -1374,12 +1374,9 @@ class SimpleUnaryTime(Operators.Unary):
         if isinstance(operand, Dataset):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
 
-        # Limit the operand to Date and TimePeriod (cannot be implemented with type_to_check)
-        if operand.data_type == TimeInterval or operand.data_type not in (
-            Date,
-            TimePeriod,
-            Duration,
-        ):
+        # Limit the operand to Date and TimePeriod (cannot be implemented with type_to_check). A
+        # Duration is no time value (issue #1356)
+        if operand.data_type not in (Date, TimePeriod):
             raise SemanticError("1-1-19-10", op=cls.op)
 
         return super().validate(operand)
@@ -1447,9 +1444,27 @@ class Day_of_Year(SimpleUnaryTime):
         return datetime_value.timetuple().tm_yday
 
 
-class Day_to_Year(Operators.Unary):
-    op = DAYTOYEAR
+class DaysToDuration(Operators.Unary):
+    """daytoyear and daytomonth take an Integer number of days. A Number, which this engine
+    promotes to an Integer elsewhere, is refused, as the VTL 2.2 manual types the operand
+    integer (issue #1356)."""
+
+    type_to_check = Integer
     return_type = String
+
+    @classmethod
+    def validate_type_compatibility(cls, operand: Any) -> bool:
+        return operand != Number and super().validate_type_compatibility(operand)
+
+    @classmethod
+    def type_validation(cls, operand: Any) -> Any:
+        if operand == Number:
+            raise SemanticError("1-1-1-1", type_1="Number", type_2="Integer")
+        return super().type_validation(operand)
+
+
+class Day_to_Year(DaysToDuration):
+    op = DAYTOYEAR
 
     @classmethod
     def py_op(cls, value: int) -> str:
@@ -1463,9 +1478,8 @@ class Day_to_Year(Operators.Unary):
         return f"P{int(years)}Y{int(days_remaining)}D"
 
 
-class Day_to_Month(Operators.Unary):
+class Day_to_Month(DaysToDuration):
     op = DAYTOMONTH
-    return_type = String
 
     @classmethod
     def py_op(cls, value: int) -> str:
@@ -1482,6 +1496,8 @@ class Day_to_Month(Operators.Unary):
 class Year_to_Day(Operators.Unary):
     op = YEARTODAY
     return_type = Integer
+    # The duration PnYnD or PnMnD, a String in this engine (issue #1356)
+    type_to_check = String
     _duration_pattern = re.compile(r"^P(?=\d)(\d+Y)?(\d+D)?$")
 
     @classmethod
@@ -1494,6 +1510,8 @@ class Year_to_Day(Operators.Unary):
 class Month_to_Day(Operators.Unary):
     op = MONTHTODAY
     return_type = Integer
+    # The duration PnYnD or PnMnD, a String in this engine (issue #1356)
+    type_to_check = String
     _duration_pattern = re.compile(r"^P(?=\d)(\d+M)?(\d+D)?$")
 
     @classmethod

@@ -8,8 +8,10 @@ import pandas as pd
 
 import vtlengine.Operators as Operator
 from vtlengine.AST.Grammar.tokens import (
+    BETWEEN,
     CHARSET_MATCH,
     EQ,
+    EXISTS_IN,
     GT,
     GTE,
     IN,
@@ -406,6 +408,16 @@ class Match(Binary):
     type_to_check = String
 
     @classmethod
+    def check_pattern(cls, pattern: str) -> None:
+        """A pattern that is not a regular expression (issue #1356)."""
+        try:
+            re.compile(pattern)
+        except re.error as error:
+            raise SemanticError(
+                "1-1-18-8", op=cls.op, msg=error.msg, regexp=pattern, pos=error.pos
+            ) from None
+
+    @classmethod
     def op_func(cls, x: Optional[str], y: Optional[str]) -> Optional[bool]:
         if pd.isnull(x) or pd.isnull(y):
             return None
@@ -416,6 +428,7 @@ class Match(Binary):
 
 
 class Between(Operator.Operator):
+    op = BETWEEN
     return_type = Boolean
     """
     This comparison operator has the following class methods.
@@ -493,10 +506,13 @@ class Between(Operator.Operator):
     def validate(
         cls,
         operand: Union[Dataset, DataComponent, Scalar],
-        from_: Union[DataComponent, Scalar],
-        to: Union[DataComponent, Scalar],
+        from_: Union[Dataset, DataComponent, Scalar],
+        to: Union[Dataset, DataComponent, Scalar],
     ) -> Any:
         result: Union[Dataset, DataComponent, Scalar]
+        if isinstance(from_, Dataset) or isinstance(to, Dataset):
+            # A bound is a Component or a Scalar (issue #1356)
+            raise SemanticError("1-1-15-8", op=cls.op, comp_type="Dataset")
         if isinstance(operand, Dataset):
             if len(operand.get_measures()) == 0:
                 raise SemanticError("1-1-1-8", op=cls.op, name=operand.name)
@@ -634,6 +650,9 @@ class ExistIn(Operator.Operator):
 
         left_ids_set = set(left_identifiers)
         right_ids_set = set(right_identifiers)
+        if not left_ids_set or not right_ids_set:
+            # The Data Points are matched by their Identifiers, as in a join (issue #1356)
+            raise SemanticError("1-2-10", op=EXISTS_IN)
         if not (left_ids_set.issubset(right_ids_set) or right_ids_set.issubset(left_ids_set)):
             raise SemanticError(
                 "1-2-15",

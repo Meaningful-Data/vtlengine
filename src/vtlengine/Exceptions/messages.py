@@ -547,6 +547,24 @@ centralised_messages = {
         "description": "Raised when a non-Identifier component is used as a "
         "partitioning key in an analytic operation.",
     },
+    "1-1-3-3": {
+        "message": "At op {op}: A range window with a limit other than unbounded or current "
+        "data point needs one order by Component, found {number}.",
+        "description": "Raised when a range window measures its limits on no order by "
+        "Component or on more than one, as its limits are distances between the values of "
+        "one Component.",
+    },
+    "1-1-3-4": {
+        "message": "Invalid analytic window {window}: the window starts after it ends.",
+        "description": "Raised when an analytic window starts after it ends: a following "
+        "start before a preceding or current data point end, or a current data point start "
+        "before a preceding end.",
+    },
+    "1-1-3-5": {
+        "message": "Invalid limit {limit} of an analytic window: a limit cannot be negative.",
+        "description": "Raised when a limit of an analytic window is a negative number, which "
+        "is neither a number of data points nor a distance.",
+    },
     "2-1-1-1": {
         "message": "At op {op}: DuckDB runtime error during query execution: {error}.",
         "description": "Raised when DuckDB encounters an unexpected runtime error "
