@@ -807,7 +807,7 @@ class TestViralAttributeHierarchy:
 
     _RULE = "define viral propagation VP (variable VAt_1) is aggregate max end viral propagation;"
     _HR = (
-        "define hierarchical ruleset H (valuedomain rule Id_2) is "
+        "define hierarchical ruleset H (variable rule Id_2) is "
         "A = B + C; T = A + D end hierarchical ruleset;"
     )
 
@@ -859,8 +859,7 @@ class TestViralAttributeCheckHierarchy:
 
     _RULE = "define viral propagation VP (variable VAt_1) is aggregate max end viral propagation;"
     _HR = (
-        "define hierarchical ruleset H (valuedomain rule Id_2) is "
-        "A = B + C end hierarchical ruleset;"
+        "define hierarchical ruleset H (variable rule Id_2) is A = B + C end hierarchical ruleset;"
     )
 
     @staticmethod

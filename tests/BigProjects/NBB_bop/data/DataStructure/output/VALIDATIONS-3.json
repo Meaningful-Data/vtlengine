@@ -30,7 +30,7 @@
         {
           "name": "COUNTERPART_SECTOR",
           "role": "Identifier",
-          "type": "String",
+          "type": "COUNTERPART_SECTOR",
           "nullable": false
         },
         {
@@ -72,7 +72,7 @@
         {
           "name": "REF_SECTOR",
           "role": "Identifier",
-          "type": "String",
+          "type": "COUNTERPART_SECTOR",
           "nullable": false
         },
         {

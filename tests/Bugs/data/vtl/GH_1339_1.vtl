@@ -1,0 +1,9 @@
+define hierarchical ruleset hr_cty ( valuedomain rule VD_CTY ) is
+    r1 : DE = ES + FR
+end hierarchical ruleset;
+
+define hierarchical ruleset hr_cond ( valuedomain condition VD_YEAR as Y rule VD_CTY ) is
+    r1 : when Y = 2020 then DE = ES + FR
+end hierarchical ruleset;
+
+DS_r <- check_hierarchy ( DS_1 , hr_cty rule Id_1 all );

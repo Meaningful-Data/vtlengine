@@ -12,7 +12,7 @@
         {
           "name": "Id_2",
           "role": "Identifier",
-          "type": "Number",
+          "type": "Id_2",
           "nullable": false
         },
         {
