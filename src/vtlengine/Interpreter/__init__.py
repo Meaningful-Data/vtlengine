@@ -1943,6 +1943,20 @@ class InterpreterAnalyzer(ASTTemplate):
         ]
 
     @staticmethod
+    def _hr_items_on_domain(rules: List[AST.HRule], value_domain: Optional[ValueDomain]) -> bool:
+        """Whether the code items on the left of the rules are values of the value domain."""
+        if value_domain is None:
+            return False
+        items = []
+        for rule in rules:
+            comparison = rule.rule if rule.rule.op != WHEN else cast(AST.HRBinOp, rule.rule.right)
+            try:
+                items.append(value_domain.type.cast(comparison.left.value))
+            except (ValueError, TypeError, InputValidationException):
+                return False
+        return len(value_domain.outside(pd.Series(items, dtype=object))) == 0
+
+    @staticmethod
     def _sort_hr_rules(
         node: AST.HROperation, hr_info: Dict[str, Any], rules: List[AST.HRule]
     ) -> List[AST.HRule]:
@@ -2129,6 +2143,16 @@ class InterpreterAnalyzer(ASTTemplate):
             # Only the conditions read the attributes (issue #1223)
             Check_Hierarchy.remove_attributes(dataset)
 
+            # The rule Identifier keeps the value domain a ruleset is defined on, and for a
+            # ruleset on a variable the one of the Component when the code items that the rules
+            # compute, or check, are values of it (issue #1348)
+            keep_rule_domain = on_value_domains or self._hr_items_on_domain(
+                hr_info["rules"]
+                if node.op == CHECK_HIERARCHY
+                else self._hr_eq_rules(hr_info["rules"]),
+                dataset.components[component].value_domain,
+            )
+
             # Final evaluation
             if node.op == CHECK_HIERARCHY:
                 result = Check_Hierarchy.analyze(
@@ -2140,6 +2164,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     value_domains=self.value_domains,
                     rule_component=component,
                     mode=mode,
+                    keep_rule_domain=keep_rule_domain,
                 )
                 del rule_output_values
             else:
@@ -2152,6 +2177,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     node_children=node_children,
                     rule_component=component,
                     ruleset=hr_name,
+                    keep_rule_domain=keep_rule_domain,
                 )
                 self.hr_agg_rules_computed = None
             return result

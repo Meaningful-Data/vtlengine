@@ -287,12 +287,19 @@ A Component into which an operator writes new values has its basic
 type, as those values are not values of the value domain: the time
 Identifier of ``timeshift``, ``fill_time_series`` and an aggregation
 grouped with ``time_agg``, the time Measure of ``time_agg`` on a
-Data Set, the Components that ``dateadd`` shifts, the rule
-Identifier and the Measures of ``hierarchy``, the rule
-Identifier of ``check_hierarchy``, with its Measures in
+Data Set, the Components that ``dateadd`` shifts, the Measures of
+``hierarchy``, the Measures of ``check_hierarchy`` in
 ``non_zero``, ``partial_zero`` and ``always_zero``, which write a
 ``0`` for a missing code item, and the ``Integer`` and ``Number``
 Measures of ``flow_to_stock`` and ``stock_to_flow``.
+
+The rule Identifier of ``hierarchy`` and ``check_hierarchy`` keeps
+the value domain a ruleset is defined on (``valuedomain rule VD``).
+For a ruleset on a variable, it keeps the value domain of the
+Component when every code item that the rules compute (for
+``check_hierarchy``, check) is a value of it, and has its basic type
+otherwise: with ``C = A + B`` on a value domain of ``A`` and ``B``,
+the result holds ``C`` and the rule Identifier has its basic type.
 
 The operators that put the values of several operands into one
 Component (the set operators, the Identifiers that a join
