@@ -13518,3 +13518,79 @@ class TimeValueBugs(BugHelper):
             exception_message="At op time_agg: If used over a Date, first/last parameter must be "
             "declared.",
         )
+
+    def test_GH_1352_36p2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , date , "YYYY-MM-DD" ) ]
+                        [ keep Me_3 ];
+        Description: Extra of case 36: the text notadate does not follow the mask, so the cast
+                     raises 2-1-5-3, also when the keep that follows removes the Measure it
+                     gives. The DuckDB engine did not compute the removed Measure and returned
+                     the Data Set.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36p2",
+            number_inputs=1,
+            exception_code="2-1-5-3",
+            exception_message="Impossible to cast notadate from type String to Date using mask "
+            "YYYY-MM-DD.",
+        )
+
+    def test_GH_1352_36p3(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time ) ] [ keep Me_3 ];
+        Description: Extra of case 36: the text abc is no Time, so the cast raises 2-1-5-1, also
+                     when the keep that follows removes the Measure it gives. The DuckDB engine
+                     did not compute the removed Measure and returned the Data Set.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36p3",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message="Impossible to cast abc from type String to Time.",
+        )
+
+    def test_GH_1352_36p4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := ratio_to_report ( Me_1 over
+                        ( partition by Id_1 ) ) ] [ keep Me_3 ];
+        Description: Extra of case 36: the values of Me_1 in the partition Id_1 = 1 add up to
+                     zero, so ratio_to_report raises 2-1-3-1, also when the keep that follows
+                     removes the Measure it gives. The DuckDB engine did not compute the removed
+                     Measure and returned the Data Set.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36p4",
+            number_inputs=1,
+            exception_code="2-1-3-1",
+            exception_message="At op ratio_to_report: Division by zero produced infinite values.",
+        )
+
+    def test_GH_1352_36p5(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := max ( Me_1 ) , Me_3 := sum ( Me_4 )
+                        group by Id_1 ] [ keep Me_3 ];
+        Description: Extra of case 36: the group Id_1 = 1 holds 2020Q1 and 2020M1, which max
+                     cannot compare, so the aggr raises 2-1-19-20, also when the keep that
+                     follows removes the Measure it gives. The DuckDB engine did not compute the
+                     removed Measure and returned the Data Set.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36p5",
+            number_inputs=1,
+            exception_code="2-1-19-20",
+            exception_message="Time Period operands with different period indicators do not "
+            "support < and > Comparison operations, unable to get the max",
+        )

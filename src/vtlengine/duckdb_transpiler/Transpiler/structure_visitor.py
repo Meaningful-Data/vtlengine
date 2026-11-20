@@ -32,7 +32,7 @@ from vtlengine.DataTypes._time_checking import _has_time_component
 from vtlengine.duckdb_transpiler.sql import references_raising_macro
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     COMPARISON_OPS,
-    RAISING_FUNCTIONS,
+    calls_raising_function,
     get_duckdb_type,
     text_to_period,
 )
@@ -417,9 +417,7 @@ class StructureVisitor(ASTTemplate):
         out of the CTE a column the statement does not read, as a calc Measure that a later
         keep or drop removes (issue #1352).
         """
-        if not references_raising_macro(sql) and not any(
-            f"{function}(" in sql for function in RAISING_FUNCTIONS
-        ):
+        if not references_raising_macro(sql) and not calls_raising_function(sql):
             return sql
         cte = quote_name(f"_vtl_checked_{len(self._materialized_operands)}")
         self._materialized_operands.append((cte, sql))
