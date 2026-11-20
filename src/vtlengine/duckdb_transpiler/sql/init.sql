@@ -397,6 +397,14 @@ CREATE OR REPLACE MACRO vtl_instr(
                 ELSE INSTR(s[COALESCE(start_pos_raw, 1):], pat)
                      + COALESCE(start_pos_raw, 1) - 1
             END
+        -- An empty pattern is found before each character and at the end of the
+        -- string, as on the pandas engine, never past it (issue #1353)
+        WHEN pat = '' THEN
+            CASE
+                WHEN COALESCE(start_pos_raw, 1) + occur_raw - 1 <= LENGTH(s) + 1
+                    THEN COALESCE(start_pos_raw, 1) + occur_raw - 1
+                ELSE 0
+            END
         ELSE (
             WITH RECURSIVE find_occ(pos, n) AS (
                 SELECT
@@ -672,10 +680,27 @@ CREATE OR REPLACE MACRO vtl_num_le(a, b, tol) AS (a <= b OR vtl_num_close(a, b, 
 -- =========================================================================
 
 -- Levenshtein distance: minimum single-character edits to turn s1 into s2.
+-- The text s with each character replaced with the one-byte character chr(n), n its
+-- position among the distinct characters of alphabet_text, so that a function that
+-- counts bytes counts its characters (issue #1353). Exact up to 127 distinct
+-- characters.
+CREATE OR REPLACE MACRO vtl_one_byte_characters(s VARCHAR, alphabet_text VARCHAR) AS (
+    array_to_string(list_transform(
+        string_split(s, ''),
+        lambda ch: chr(list_position(list_sort(list_distinct(string_split(alphabet_text, ''))), ch))
+    ), '')
+);
+
 CREATE OR REPLACE MACRO vtl_levenshtein(s1 VARCHAR, s2 VARCHAR) AS (
     CASE
         WHEN s1 IS NULL OR s2 IS NULL THEN NULL
-        ELSE levenshtein(s1, s2)
+        -- levenshtein counts bytes, so a text beyond ASCII, whose characters can take
+        -- more than one byte, is given to it with one byte per character (issue #1353)
+        WHEN strlen(s1) = LENGTH(s1) AND strlen(s2) = LENGTH(s2) THEN levenshtein(s1, s2)
+        WHEN s1 = '' OR s2 = '' THEN LENGTH(s1) + LENGTH(s2)
+        ELSE levenshtein(
+            vtl_one_byte_characters(s1, s1 || s2), vtl_one_byte_characters(s2, s1 || s2)
+        )
     END
 );
 
@@ -698,7 +723,12 @@ CREATE OR REPLACE MACRO vtl_hamming(s1 VARCHAR, s2 VARCHAR) AS (
         WHEN LENGTH(s1) <> LENGTH(s2) THEN
             error('VTL 2-1-18-2: hamming length mismatch '
                   || LENGTH(s1) || ' ' || LENGTH(s2))
-        ELSE hamming(s1, s2)
+        -- The positions are characters, where hamming counts bytes and refuses two
+        -- empty strings (issue #1353)
+        ELSE COALESCE(list_sum(list_transform(
+            range(1, LENGTH(s1) + 1),
+            lambda i: CAST(substring(s1, i, 1) <> substring(s2, i, 1) AS BIGINT)
+        )), 0)
     END
 );
 

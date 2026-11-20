@@ -316,7 +316,12 @@ class In(Binary):
         # A value is compared with the values of the set as a value of its type, whatever form
         # it is written in (issue #1349)
         left_series = values_of(right_series.data_type, left_series)
-        result = left_series.isin(right_series.compared_values())
+        values = right_series.compared_values()
+        if pd.api.types.is_float_dtype(left_series):
+            # -0.0 is 0.0, as for =, where isin hashes them apart (issue #1353)
+            left_series = left_series + 0.0
+            values = [value + 0.0 if isinstance(value, float) else value for value in values]
+        result = left_series.isin(values)
         return result.where(left_series.notna(), other=pd.NA).astype("bool[pyarrow]")
 
     @classmethod
@@ -340,7 +345,60 @@ class NotIn(Binary):
 
     @classmethod
     def py_op(cls, x: Any, y: Any) -> Any:
-        return not operator.contains(y, x)
+        # The negation of in: null for a set of nulls (issue #1353)
+        result = In.py_op(x, y)
+        return None if result is None else not result
+
+
+# The POSIX character classes, as RE2 reads them on the DuckDB engine (ASCII)
+_POSIX_CLASSES = {
+    "alnum": "0-9A-Za-z",
+    "alpha": "A-Za-z",
+    "ascii": "\\x00-\\x7F",
+    "blank": "\\t ",
+    "cntrl": "\\x00-\\x1F\\x7F",
+    "digit": "0-9",
+    "graph": "!-~",
+    "lower": "a-z",
+    "print": " -~",
+    "punct": "!-/:-@\\[-`{-~",
+    "space": "\\t\\n\\v\\f\\r ",
+    "upper": "A-Z",
+    "word": "0-9A-Za-z_",
+    "xdigit": "0-9A-Fa-f",
+}
+_POSIX_CLASS = re.compile(r"\[:([a-z]+):\]")
+
+
+def posix_classes(pattern: str) -> str:
+    """The pattern with the POSIX character classes of its bracket expressions, such as
+    [[:alpha:]], written as the ranges Python re reads: the pattern is a POSIX Extended
+    Regular Expression in the VTL 2.2 manual, read so by RE2 on the DuckDB engine (issue
+    #1353)."""
+    out: List[str] = []
+    i, in_set = 0, False
+    while i < len(pattern):
+        char = pattern[i]
+        match = _POSIX_CLASS.match(pattern, i) if in_set else None
+        if match is not None and match.group(1) in _POSIX_CLASSES:
+            out.append(_POSIX_CLASSES[match.group(1)])
+            i = match.end()
+            continue
+        if char == "\\":
+            out.append(pattern[i : i + 2])
+            i += 2
+            continue
+        if char == "[" and not in_set:
+            # A ] right after the [ or the [^ is a character of the set
+            start = i + 2 if pattern[i + 1 : i + 2] == "^" else i + 1
+            end = start + 1 if pattern[start : start + 1] == "]" else start
+            out.append(pattern[i:end])
+            i, in_set = end, True
+            continue
+        in_set = in_set and char != "]"
+        out.append(char)
+        i += 1
+    return "".join(out)
 
 
 class Match(Binary):
@@ -351,9 +409,10 @@ class Match(Binary):
     def op_func(cls, x: Optional[str], y: Optional[str]) -> Optional[bool]:
         if pd.isnull(x) or pd.isnull(y):
             return None
+        pattern = posix_classes(str(y))
         if isinstance(x, pd.Series):
-            return x.str.fullmatch(y)
-        return bool(re.fullmatch(str(y), to_string(x)))
+            return x.str.fullmatch(pattern)
+        return bool(re.fullmatch(pattern, to_string(x)))
 
 
 class Between(Operator.Operator):

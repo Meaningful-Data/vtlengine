@@ -1,5 +1,6 @@
 """Resolve VTL dataset structures for the DuckDB transpiler."""
 
+import math
 from contextlib import contextmanager
 from copy import copy
 from functools import reduce
@@ -373,6 +374,10 @@ class StructureVisitor(ASTTemplate):
         if isinstance(value, float):
             # A bare float literal would be typed DECIMAL(p,s) by DuckDB; Number
             # arithmetic and storage are DOUBLE (repr round-trips the exact value).
+            # An infinity and -0.0 are cast from text: as SQL they would be a column name or 0
+            # (issue #1353)
+            if math.isinf(value) or (value == 0 and math.copysign(1.0, value) < 0):
+                return f"CAST('{value!r}' AS DOUBLE)"
             return f"CAST({value!r} AS DOUBLE)"
         return str(value)
 

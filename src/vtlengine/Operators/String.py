@@ -372,7 +372,8 @@ class Replace(Parameterized):
         if pd.isnull(param2):
             return None
         x = to_string(x)
-        return x.replace(str(param1), str(param2))
+        # An empty pattern matches nothing: the value is unchanged, as on DuckDB (issue #1353)
+        return x.replace(str(param1), str(param2)) if str(param1) else x
 
     @classmethod
     def evaluate(cls, *args: Any) -> Union[Dataset, DataComponent, Scalar]:

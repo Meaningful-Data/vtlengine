@@ -14087,3 +14087,270 @@ class BasicTypeValueBugs(BugHelper):
             exception_code="1-1-1-1",
             exception_message="Invalid implicit cast from Number to String.",
         )
+
+    def test_GH_1353_17(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( SC_1 * 2 , string ) ];
+        Description: The whole Number 3.0 computed from the Number Scalar SC_1 (1.5) is a float,
+                     so its cast to string is "3.0" on both engines. The pandas engine held a
+                     Python int and wrote "3".
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1353_17", number_inputs=1, references_names=["1"], scalars={"SC_1": 1.5}
+        )
+
+    def test_GH_1353_18(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 * 2 , string ) ];
+        Description: Control of case 17: the whole Number 3.0 computed from a Component is
+                     written "3.0" on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_18", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_19(self):
+        """
+        Status: OK
+        Expression: DS_r <- union ( DS_8 , DS_9 );
+        Description: The Boolean Me_1 of DS_8 promoted to the String of DS_9 is "true" or
+                     "false". The pandas engine wrote "True" and "False".
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_19", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_20(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_8 [ unpivot Id_2 , Me_9 ];
+        Description: The Boolean Me_1 unpivoted with the String Me_2 into the String Me_9 is
+                     "true" or "false". The pandas engine wrote "True" and "False".
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_20", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_22(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := lag ( Me_2 , 1 , null over ( order by Id_1 ) ) ];
+        Description: The null default of lag gives null. The pandas engine wrote it into its SQL
+                     as the column name None and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_22", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_23(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := lag ( Me_2 , 1 , "x" over ( order by Id_1 ) ) ];
+        Description: The String default "x" of lag is the text x. The pandas engine wrote it
+                     into its SQL as a column name and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_23", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_24(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := lead ( Me_2 , 1 , "Me_2" over ( order by Id_1 ) ) ];
+        Description: The String default "Me_2" of lead is the text Me_2, not the value of the
+                     Component Me_2. The pandas engine gave the value of Me_2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_24", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_25(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := SC_2 ];
+        Description: The Number Scalar SC_2 with the value inf is inf. The DuckDB engine wrote it
+                     into its SQL as the column name inf and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1353_25",
+            number_inputs=1,
+            references_names=["1"],
+            scalars={"SC_2": float("inf")},
+        )
+
+    def test_GH_1353_26(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := cast ( SC_2 , string ) ];
+        Description: The Number Scalar SC_2 with the value -0.0 keeps its sign: its cast to
+                     string is "-0.0". The DuckDB engine wrote it into its SQL as 0.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1353_26", number_inputs=1, references_names=["1"], scalars={"SC_2": -0.0}
+        )
+
+    def test_GH_1353_28(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := 1 not_in { null } ];
+        Description: not_in is the negation of in, so 1 not_in { null } is null, as
+                     1 in { null }, and Me_4 is nullable. The pandas engine gave true, and both
+                     engines declared Me_4 non-nullable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_28", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_29(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := Me_1 in { 0.0 } ];
+        Description: -0.0 is 0.0, so it is in { 0.0 }, as Me_1 = 0.0 gives true. The pandas
+                     engine told -0.0 from 0.0 and gave false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_29", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_30(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := Me_1 = 0.0 ];
+        Description: Control of case 29: -0.0 = 0.0 is true on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_30", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_31(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := replace ( Me_1 , "" , "-" ) ];
+        Description: An empty pattern matches nothing, so replace leaves the value unchanged.
+                     The pandas engine inserted the replacement between the characters.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_31", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_32(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := instr ( Me_1 , "" , 1 , 2 ) ,
+                                         Me_7 := instr ( "" , "" , 1 , 2 ) ];
+        Description: The second occurrence of an empty pattern is at position 2 of "abcb" and
+                     there is none in an empty string, which gives 0. The DuckDB engine gave
+                     the position 2, past the end of the empty string.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_32", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_33(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := match_characters ( Me_1 , "[[:alpha:]]+" ) ];
+        Description: The pattern is a POSIX Extended Regular Expression, so [[:alpha:]] is a
+                     letter on both engines. The pandas engine read it as a set of the
+                     characters [, :, a, l, p and h.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_33", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_35(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := string_distance ( levenshtein , Me_4 , "ab" ) ];
+        Description: The Levenshtein distance counts characters, so "áb" is one edit from "ab".
+                     The DuckDB engine counted UTF-8 bytes and gave 2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_35", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_36(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := string_distance ( hamming , Me_4 , "ab" ) ];
+        Description: The Hamming distance compares characters, so "áb" and "ab" have the same
+                     length and differ in one position. The DuckDB engine counted UTF-8 bytes
+                     and raised a raw InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_36", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_37(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := string_distance ( hamming , "" , "" ) ];
+        Description: The Hamming distance of two empty strings is 0. The DuckDB engine raised a
+                     raw InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_37", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_40(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := lag ( Me_2 , 1 , cast ( 1 , string ) over
+                                                      ( order by Id_1 ) ) ];
+        Description: The default cast ( 1 , string ) of lag is the text 1. The pandas engine
+                     wrote it into its SQL in its Python form and raised a raw ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_40", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_41(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := cast ( f ( 0.1 ) + f ( 0.2 ) , string ) ];
+        Description: The sum of the Number results of the user defined operator f, which
+                     returns its parameter, is rounded to 15 significant digits, as 0.1 + 0.2,
+                     so it is "0.3" on both engines. The DuckDB engine gave
+                     0.30000000000000004; both engines already give "0.3" on the code of this
+                     fix.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_41", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_42(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := ln ( 0 - SC_1 ) ];
+        Description: The Number 0 - SC_1 (SC_1 2.0) is -2.0, so both engines raise 2-1-15-8
+                     with the value -2.0 in the message. The pandas engine wrote -2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1353_42",
+            number_inputs=1,
+            exception_code="2-1-15-8",
+            exception_message="Value -2.0 must be greater than 0",
+            scalars={"SC_1": 2.0},
+        )
+
+    def test_GH_1353_43(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := cast ( g ( 0 ) * -1 , string ) ];
+        Description: The Number result 0 of the user defined operator g times -1 is 0.0, written
+                     "0.0" on both engines. The pandas engine held a Python int and wrote "0",
+                     and the DuckDB engine wrote "-0.0".
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_43", number_inputs=1, references_names=["1"])

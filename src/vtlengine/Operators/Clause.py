@@ -22,13 +22,12 @@ from vtlengine.DataTypes import (
     Duration,
     ScalarType,
     String,
-    TimeInterval,
     binary_implicit_promotion,
     to_string,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ValueDomain
-from vtlengine.Operators import Operator, shared_value_domain, to_time
+from vtlengine.Operators import Operator, _as_type, _promotes, shared_value_domain
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
@@ -448,11 +447,16 @@ class Unpivot(Operator):
             viral_names = dataset.get_viral_attributes_names()
             # Unpivot replicates each source row's viral attribute values across the
             # unpivoted rows (kept as id_vars); no rule is executed — copy only (issue #906).
-            # In a Time Measure, the Date and Time_Period values are Time values (issue #1352)
-            if result_dataset.components[operands[1]].data_type is TimeInterval:
-                src = to_time(dataset, dataset.get_measures_names()).data
-            else:
-                src = dataset.data
+            # The values are cast to the type of the new Measure: a Date or a Time_Period is a
+            # Time value (issue #1352), a Boolean the String "true" or "false" (issue #1353)
+            measure_type = result_dataset.components[operands[1]].data_type
+            src = dataset.data.assign(
+                **{
+                    comp.name: _as_type(dataset.data[comp.name], measure_type, comp.data_type)
+                    for comp in dataset.get_measures()
+                    if _promotes(comp.data_type, measure_type)
+                }
+            )
             result_dataset.data = src.melt(
                 id_vars=dataset.get_identifiers_names() + viral_names,
                 value_vars=dataset.get_measures_names(),
