@@ -7,15 +7,26 @@ when called from multiple threads in the same process.
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, Optional
+from unittest.mock import patch
 
 import duckdb
 import pandas as pd
 import pytest
 
 from tests.Helper import _use_duckdb_backend
-from vtlengine import run
+from vtlengine import run, semantic_analysis
+from vtlengine.DataTypes import Number
+from vtlengine.Exceptions import SemanticError
+from vtlengine.Model import Scalar
+from vtlengine.Operators.Numeric import AbsoluteValue
 from vtlengine.Utils import _duckdb
+from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._duckdb import query_connection
+from vtlengine.ViralPropagation import (
+    ViralPropagationRegistry,
+    get_current_registry,
+    set_current_registry,
+)
 
 # run() executes these scripts on the pandas engine, so the pandas pass is enough
 pytestmark = pytest.mark.skipif(
@@ -107,6 +118,133 @@ class TestConcurrentParsing:
                         future.result()
         finally:
             sys.setswitchinterval(previous_interval)
+
+
+class TestConcurrentAnalysis:
+    """run() analyses the structures of the whole script before it computes the data, and the
+    operators of one thread must compute the data while another thread analyses its script
+    (issue #1352)."""
+
+    def test_concurrent_runs_compute_data(self) -> None:
+        script = "\n".join(f"DS_r{i} <- DS_1 [ calc Me_{i} := Me_1 + {i} ];" for i in range(1, 21))
+
+        def task(_: int) -> None:
+            results = run(script=script, data_structures=DATA_STRUCTURES, datapoints=DATAPOINTS)
+            assert len(results) == 20
+            for result in results.values():
+                assert result.data is not None
+                assert len(result.data) == 5
+
+        previous_interval = sys.getswitchinterval()
+        sys.setswitchinterval(1e-6)
+        try:
+            for _ in range(10):
+                with ThreadPoolExecutor(max_workers=6) as executor:
+                    futures = [executor.submit(task, i) for i in range(6)]
+                    for future in as_completed(futures):
+                        future.result()
+        finally:
+            sys.setswitchinterval(previous_interval)
+
+    def test_failed_run_leaves_computation_on(self) -> None:
+        """A run that raises in its analysis gives back to its thread the mode it had: the
+        operators that the thread calls after it compute their data (issue #1352)."""
+        with pytest.raises(SemanticError, match="1-1-1-10"):
+            run(
+                script="DS_r <- DS_1 [ calc Me_2 := Me_9 ];",
+                data_structures=DATA_STRUCTURES,
+                datapoints=DATAPOINTS,
+            )
+        assert AbsoluteValue.analyze(Scalar(name="SC_1", data_type=Number, value=-2.0)).value == 2.0
+        results = run(
+            script="DS_r <- DS_1 + 1;", data_structures=DATA_STRUCTURES, datapoints=DATAPOINTS
+        )
+        assert list(results["DS_r"].data["Me_1"]) == [11.0, 21.0, 31.0, 41.0, 51.0]
+
+    def test_semantic_analysis_inside_run(self) -> None:
+        """A semantic analysis called while a run computes a statement (from an operator, as an
+        external routine or a callback could) does not stop the computation of the statements
+        that follow (issue #1352)."""
+        evaluate = AbsoluteValue.evaluate
+
+        def evaluate_with_analysis(cls: Any, *args: Any, **kwargs: Any) -> Any:
+            semantic_analysis(script="DS_r <- DS_1 * 2;", data_structures=DATA_STRUCTURES)
+            return evaluate(*args, **kwargs)
+
+        script = "DS_r1 <- abs(DS_1);\nDS_r2 <- DS_1 + 1;"
+        with patch.object(AbsoluteValue, "evaluate", classmethod(evaluate_with_analysis)):
+            results = run(script=script, data_structures=DATA_STRUCTURES, datapoints=DATAPOINTS)
+        assert list(results["DS_r1"].data["Me_1"]) == [10.0, 20.0, 30.0, 40.0, 50.0]
+        assert results["DS_r2"].data is not None
+        assert list(results["DS_r2"].data["Me_1"]) == [11.0, 21.0, 31.0, 41.0, 51.0]
+
+
+class TestConcurrentJoins:
+    """The join operators keep their reference Data Set and the operators number their virtual
+    Data Sets and Components for the thread that runs them, so valid join scripts run in
+    concurrent threads give their results (issue #1352)."""
+
+    def test_concurrent_joins(self) -> None:
+        structures = {
+            "datasets": [
+                *DATA_STRUCTURES["datasets"],
+                {
+                    "name": "DS_2",
+                    "DataStructure": [
+                        {
+                            "name": "Id_1",
+                            "type": "Integer",
+                            "role": "Identifier",
+                            "nullable": False,
+                        },
+                        {"name": "Me_2", "type": "Number", "role": "Measure", "nullable": True},
+                    ],
+                },
+            ]
+        }
+        datapoints = {
+            **DATAPOINTS,
+            "DS_2": pd.DataFrame({"Id_1": [1, 2, 3], "Me_2": [1.0, 2.0, 3.0]}),
+        }
+        script = "\n".join(
+            f"DS_r{i} <- inner_join(DS_1, DS_2 calc Me_{i + 3} := Me_1 + Me_2);" for i in range(5)
+        )
+
+        def task(_: int) -> None:
+            results = run(script=script, data_structures=structures, datapoints=datapoints)
+            for i in range(5):
+                data = results[f"DS_r{i}"].data
+                assert list(data[f"Me_{i + 3}"]) == [11.0, 21.0, 32.0, 42.0, 53.0]
+
+        previous_interval = sys.getswitchinterval()
+        sys.setswitchinterval(1e-6)
+        try:
+            with ThreadPoolExecutor(max_workers=6) as executor:
+                futures = [executor.submit(task, i) for i in range(24)]
+                for future in as_completed(futures):
+                    future.result()
+        finally:
+            sys.setswitchinterval(previous_interval)
+
+    def test_virtual_names_and_rules_per_thread(self) -> None:
+        VirtualCounter.reset()
+        assert VirtualCounter._new_ds_name() == "__VDS_1__"
+        registry = ViralPropagationRegistry()
+        set_current_registry(registry)
+
+        def other_thread() -> tuple:  # type: ignore[type-arg]
+            return (
+                VirtualCounter._new_ds_name(),
+                VirtualCounter._new_dc_name(),
+                get_current_registry() is registry,
+            )
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            assert executor.submit(other_thread).result() == ("__VDS_1__", "__VDC_1__", False)
+        assert VirtualCounter._new_ds_name() == "__VDS_2__"
+        assert VirtualCounter.component_count == 0
+        assert get_current_registry() is registry
+        VirtualCounter.reset()
 
 
 class TestConcurrentAnalytic:

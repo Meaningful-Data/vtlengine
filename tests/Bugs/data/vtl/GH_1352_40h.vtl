@@ -1,0 +1,2 @@
+define operator f ( x component < time_period > ) returns component < time_period > is x end operator;
+DS_r <- DS_1 [ calc Me_2 := f ( Me_1 ) ] [ calc Me_3 := cast ( Me_2 , string ) ] [ keep Me_3 ];

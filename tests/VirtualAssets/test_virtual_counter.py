@@ -22,6 +22,10 @@ filepath_VTL = base_path / "data" / "vtl"
 filepath_json = base_path / "data" / "DataStructure" / "input"
 filepath_csv = base_path / "data" / "Dataset" / "input"
 
+# run() analyses the whole script before it computes it, and the analysis names the same virtual
+# Data Sets and Components as the computation, so a run asks for each name twice (issue #1352)
+RUN_PASSES = 2
+
 
 def test_analytic_generates_virtual_dataset_name():
     VirtualCounter.reset()
@@ -232,8 +236,8 @@ def test_virtual_counter_with_run():
         "vtlengine.Utils.__Virtual_Assets.VirtualCounter._new_dc_name", side_effect=mock_new_dc_name
     ):
         run(script=script, data_structures=data_structures, datapoints=datapoints)
-    assert len(call_vds) == 6
-    assert len(call_vdc) == 1
+    assert len(call_vds) == 6 * RUN_PASSES
+    assert len(call_vdc) == 1 * RUN_PASSES
     assert VirtualCounter.dataset_count == 0
     assert VirtualCounter.component_count == 0
 
@@ -272,8 +276,8 @@ def test_virtual_counter_aggregate():
         "vtlengine.Utils.__Virtual_Assets.VirtualCounter._new_ds_name", side_effect=mock_new_ds_name
     ):
         run(script=script, data_structures=data_structures, datapoints=datapoints)
-    assert len(call_vds) == 1
-    assert set(call_vds) == {"@VDS_1"}
+    assert len(call_vds) == 1 * RUN_PASSES
+    assert set(call_vds) == {"@VDS_1", "@VDS_2"}
     assert VirtualCounter.dataset_count == 0
     assert VirtualCounter.component_count == 0
 
@@ -312,7 +316,7 @@ def test_virtual_counter_analytic():
         "vtlengine.Utils.__Virtual_Assets.VirtualCounter._new_ds_name", side_effect=mock_new_ds_name
     ):
         run(script=script, data_structures=data_structures, datapoints=datapoints)
-    assert len(call_vds) == 1
+    assert len(call_vds) == 1 * RUN_PASSES
     assert VirtualCounter.dataset_count == 0
     assert VirtualCounter.component_count == 0
 
@@ -347,7 +351,7 @@ def test_virtual_counter_run_with_udo():
     ):
         run(script=script, data_structures=data_structures, datapoints=datapoints)
 
-    assert len(call_vds) == 2
+    assert len(call_vds) == 2 * RUN_PASSES
     assert len(call_vdc) == 0
     assert VirtualCounter.dataset_count == 0
     assert VirtualCounter.component_count == 0

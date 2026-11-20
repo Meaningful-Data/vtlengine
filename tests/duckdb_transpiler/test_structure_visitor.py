@@ -2,6 +2,8 @@
 
 from typing import Any, Dict, List
 
+import pytest
+
 from vtlengine.AST import (
     Aggregation,
     BinOp,
@@ -16,6 +18,7 @@ from vtlengine.AST import (
 )
 from vtlengine.AST.Grammar.tokens import MEMBERSHIP
 from vtlengine.DataTypes import Boolean, Integer, Number, String
+from vtlengine.duckdb_transpiler.Transpiler.operators import calls_raising_function
 from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import StructureVisitor
 from vtlengine.Model import Component, Dataset, Role
 
@@ -651,3 +654,22 @@ class TestStructureVisitorUDOCall:
         assert "Id_1" in result.components
         assert "Id_2" not in result.components  # Removed by group except
         assert "Me_1" in result.components
+
+
+@pytest.mark.parametrize(
+    "sql, calls",
+    [
+        ("error('VTL Error 2-1-5-1')", True),
+        ("CASE WHEN x THEN ERROR ('a') END", True),
+        ("vtl_cast_mask(\"Me_1\", 'YYYY')", True),
+        ("SELECT 'it is no error(' AS \"Me_1\"", False),
+        ("SELECT 'it''s no error(' AS \"Me_1\"", False),
+        ('SELECT "error("(1)', False),
+        ("SELECT my_error(1), vtl_cast_masks(2)", False),
+    ],
+)
+def test_GH_1352_36p8(sql: str, calls: bool) -> None:
+    """Extra of case 36: an operand is computed in full when its SQL calls error() or another
+    function that raises, not when its text holds the name in a string literal, a quoted name or
+    a longer name (issue #1352)."""
+    assert calls_raising_function(sql) is calls

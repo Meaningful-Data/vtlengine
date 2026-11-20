@@ -11551,3 +11551,2154 @@ class ValueDomainBugs(BugHelper):
         self.BaseTest(
             code="GH_1351_43", number_inputs=1, references_names=["1"], only_semantic=True
         )
+
+
+class TimeValueBugs(BugHelper):
+    """Date, Time_Period, Time and Duration values handled as values of their type (issue
+    #1352)."""
+
+    def test_GH_1352_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := Me_1 = Me_2 ];
+        Description: A Date and a Time_Period have no common type: the comparison raises
+                     1-1-1-1, as for a Date and an Integer, and the script must cast one side.
+                     Both were promoted to Time, so the pandas engine compared them and the
+                     DuckDB engine raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_1",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_1b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := nvl ( Me_2 , Me_2 ) = Me_3 ] [ keep Me_4 ];
+        Description: Extra of case 1: the nvl of the Time_Period Me_2 is a Time_Period, which =
+                     casts to Time to compare it with the Time Me_3, so 2020Q1 equals
+                     2020-01-01/2020-03-31. The DuckDB engine did not know the type of the nvl and
+                     compared the texts, giving false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_1b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := Me_1 < Me_2 ];
+        Description: A Date and a Time_Period have no common type: the comparison raises
+                     1-1-1-1. The pandas engine raised 2-1-19-19 and the DuckDB engine a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_2",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := between ( Me_1 , Me_2 , Me_2 ) ];
+        Description: between compares the operand with each bound, so a Date with Time_Period
+                     bounds raises 1-1-1-1, as a comparison does. The pandas engine raised
+                     2-1-19-19 and the DuckDB engine a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_3",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := Me_3 < Me_3 ];
+        Description: Control: a Time value allows only = and <>, so < raises 1-1-19-18.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_4",
+            number_inputs=1,
+            exception_code="1-1-19-18",
+            exception_message="At op <: Time operators comparison are only support = and <>",
+        )
+
+    def test_GH_1352_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := nvl ( Me_1 , Me_2 ) ];
+        Description: The operands of nvl must be of the same type, so a Date and a Time_Period
+                     raise 1-1-1-1. The pandas engine copied the Date and Time_Period texts
+                     into a Time Component and the DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_5",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := if Id_1 = 1 then Me_1 else Me_2 ];
+        Description: The branches of if must be of the same type, so a Date and a Time_Period
+                     raise 1-1-1-1. The pandas engine copied the texts into a Time Component
+                     and the DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_6",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_6b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := if Id_1 = 1 then Me_1 else Me_3 ];
+        Description: Extra of case 6: the Date and the Time branches have the common type
+                     Time, so the Date 2020-01-15 is the Time 2020-01-15/2020-01-15. The
+                     DuckDB engine raised a raw BinderException and the pandas engine copied
+                     the Date text.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_6b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_6c(self):
+        """
+        Status: OK
+        Expression: DS_r <- if DS_1 = DS_1 then DS_1 else DS_2;
+        Description: Extra of case 6: the Time Measure of DS_1 and the Date Measure of DS_2
+                     have the common type Time. The DuckDB engine raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_6c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_6d(self):
+        """
+        Status: OK
+        Expression: DS_r <- case when DS_1 = DS_1 then DS_2 else DS_1;
+        Description: Extra of case 6: the Date Measure of DS_2 that case takes is cast to
+                     Time, so 2020-01-15 is 2020-01-15/2020-01-15. The DuckDB engine raised a
+                     raw BinderException and the pandas engine copied the Date text.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_6d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_6e(self):
+        """
+        Status: OK
+        Expression: SC_r <- if true then cast ( "2020-01-15" , date )
+                        else cast ( "2020-01-01/2020-03-31" , time );
+                    DS_r <- DS_1 [ calc Me_2 := SC_r ];
+        Description: Extra of case 6: the scalar if of a Date and a Time is the Time
+                     2020-01-15/2020-01-15. The DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_6e", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1352_6f(self):
+        """
+        Status: OK
+        Expression: DS_r <- ( if DS_2 = DS_2 then DS_1 else DS_2 ) = DS_2;
+        Description: Extra of case 6: the if of the Date DS_1 and the Time DS_2 is a Time, which
+                     = compares with DS_2 as Time values. The DuckDB engine took the if as a Date
+                     and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_6f", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_6g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := ( if Id_1 = 2 then Me_2
+                        else cast ( "2020Q1" , time_period ) ) = Me_3 ] [ keep Me_4 ];
+        Description: Extra of case 6: the if of two Time_Periods is a Time_Period, which = casts to
+                     Time to compare it with the Time Me_3, so 2020Q1 equals
+                     2020-01-01/2020-03-31. The DuckDB engine did not know the type of the if and
+                     compared the texts, giving false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_6g", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 = DS_2;
+        Description: The Date Measure of DS_1 and the Time_Period Measure of DS_2 have no
+                     common type, so = raises 1-1-1-1. The engines returned values that
+                     differed (DuckDB true for null = null).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_7",
+            number_inputs=2,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_8(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 > DS_2;
+        Description: The Date Measure of DS_1 and the Time_Period Measure of DS_2 have no
+                     common type, so > raises 1-1-1-1. The pandas engine raised the
+                     RunTimeError 2-1-19-17 and the DuckDB engine returned values.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_8",
+            number_inputs=2,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_9(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: The Date Measure of DS_1 and the Time_Period Measure of DS_2 have no
+                     common type, so nvl raises 1-1-1-1. The pandas engine copied the texts
+                     into a Time Measure and the DuckDB engine wrote Python struct texts.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_9",
+            number_inputs=2,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Date to Time_Period.",
+        )
+
+    def test_GH_1352_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 = DS_2;
+        Description: A Date is implicitly cast to a Time with its start and end equal to it,
+                     so the Date 2020-01-15 equals the Time 2020-01-15/2020-01-15. The pandas
+                     engine raised a raw TypeError on the Date text.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_10b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 = cast ( "2020-01-15" , date );
+        Description: Extra case: the Date Scalar is cast to the Time 2020-01-15/2020-01-15,
+                     which the second Time of DS_1 equals. The pandas engine compared the
+                     Date text with the Time and gave false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_10c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 in { cast ( "2020-01-15" , date ) };
+        Description: Extra of case 10: the Date of the set is cast to the Time
+                     2020-01-15/2020-01-15, which the second Time of DS_1 is. The DuckDB engine
+                     raised 2-1-19-8 and the pandas engine compared the texts and gave false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_10d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 in { cast ( "2020-01-15/2020-01-15" , time ) };
+        Description: Extra of case 10: the Date 2020-01-15 of DS_1 is cast to Time, so it is in
+                     the set of the Time 2020-01-15/2020-01-15. The DuckDB engine raised 2-1-19-8
+                     and the pandas engine gave false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10d", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_10e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 in { cast ( "2020-01-01/2020-03-31" , time ) };
+        Description: Extra of case 10: the Time_Period 2020Q1 of DS_1 is cast to the Time
+                     2020-01-01/2020-03-31, so it is in the set. Both engines gave false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_10f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := nvl ( Me_3 , Me_1 )
+                        in { cast ( "2020-01-15" , date ) } ] [ keep Me_4 ];
+        Description: Extra of case 10: the nvl of the Time Me_3 and the Date Me_1 is a Time, so the
+                     Date of the set is cast to the Time 2020-01-15/2020-01-15. The DuckDB engine
+                     did not know the type of the nvl and raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10f", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_10g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := nvl ( Me_2 , Me_2 )
+                        in { cast ( "2020-01-01/2020-03-31" , time ) } ] [ keep Me_4 ];
+        Description: Extra of case 10: the nvl of the Time_Period Me_2 is a Time_Period, cast to
+                     Time to look for it in a set of Times, so 2020Q1 is in the set. The DuckDB
+                     engine did not know the type of the nvl and compared the texts, giving false.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10g", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_10h(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_5 := nvl ( Me_3 , Me_1 ) ]
+                        [ calc Me_4 := Me_5 in { cast ( "2020-01-15" , date ) } ] [ keep Me_4 ];
+        Description: Extra of case 10: Me_5, computed by the first calc as the nvl of the Time Me_3
+                     and the Date Me_1, is a Time, so the Date of the set is cast to Time. The
+                     DuckDB engine took Me_5 as a Number and raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10h", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_10i(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := Me_1 in { true } ] [ keep Me_2 ];
+        Description: Extra of case 10: in with no time type among the operand and the set is
+                     unchanged by the cast to Time, so the String Me_1 is not in the Boolean set,
+                     as before. The DuckDB engine dropped the conversion of the set to text and
+                     raised a raw ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_10i", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_11(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 + DS_2;
+        Description: The Date Identifier Id_1 of DS_1 and the Time_Period Identifier Id_1 of
+                     DS_2 have no common type, so + raises 1-1-13-18, as for a Date and an
+                     Integer Identifier. The pandas engine matched no data points and the
+                     DuckDB engine raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_11",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="Incompatible types for common identifier Id_1: Date and "
+            "Time_Period.",
+        )
+
+    def test_GH_1352_11b(self):
+        """
+        Status: OK
+        Expression: DS_r <- exists_in ( DS_1 , DS_2 );
+        Description: Extra case: exists_in matches the Data Points on the common Identifiers,
+                     so the Date Id_1 and the Time_Period Id_1 raise 1-1-13-18, as in +. The
+                     pandas engine gave false for both and the DuckDB engine raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_11b",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="Incompatible types for common identifier Id_1: Date and "
+            "Time_Period.",
+        )
+
+    def test_GH_1352_11c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 + DS_2;
+        Description: Extra of case 11: the Date Identifier of DS_1 is cast to the Time of the
+                     Identifier of DS_2, so 2020-01-01 matches 2020-01-01/2020-01-01 and the
+                     result Identifier is a Time. The pandas engine matched nothing and the DuckDB
+                     engine raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_11c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_11d(self):
+        """
+        Status: OK
+        Expression: DS_r <- exists_in ( DS_1 , DS_2 );
+        Description: Extra of case 11: the Date Identifiers of DS_1 are matched as the Time values
+                     of the Identifiers of DS_2, so 2020-01-01 exists. The pandas engine gave
+                     false for both and the DuckDB engine raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_11d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_11e(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: Extra of case 11: nvl matches the Data Points on the Identifiers as Time values,
+                     so the Date 2020-01-01 matches the Time 2020-01-01/2020-01-01. The pandas
+                     engine matched nothing and the DuckDB engine raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_11e", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_11f(self):
+        """
+        Status: OK
+        Expression: DS_r <- exists_in ( exists_in ( DS_1 , DS_2 ) , DS_1 );
+        Description: Extra of case 11: exists_in of a Data Set that has a bool_var Measure, the
+                     result of the inner exists_in, gives a new bool_var. The pandas engine
+                     merged both bool_var columns and raised a raw KeyError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_11f", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_11g(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: Extra of case 11: nvl matches the Data Points on the common Identifiers, so
+                     the Date Id_1 and the Time_Period Id_1 raise 1-1-13-18, as in +. The pandas
+                     engine matched no data points, the DuckDB engine raised 2-1-19-8 and the
+                     semantic analysis accepted the script.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_11g",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="Incompatible types for common identifier Id_1: Date and "
+            "Time_Period.",
+        )
+
+    def test_GH_1352_11h(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: Extra of case 11: the Integer Id_1 of DS_1 and the String Id_1 of DS_2 have no
+                     common type, so nvl raises 1-1-13-18, as + and exists_in do. The engines
+                     matched the Identifiers by their text.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_11h",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="Incompatible types for common identifier Id_1: Integer and String.",
+        )
+
+    def test_GH_1352_12(self):
+        """
+        Status: OK
+        Expression: DS_r <- full_join ( DS_1 as a , DS_2 as b keep a#Me_1 );
+        Description: The Date Identifier Id_1 of DS_1 and the Time_Period Identifier Id_1 of
+                     DS_2 have no common type, so the join raises 1-1-13-18. The pandas engine
+                     wrote 2020D1 twice as an Identifier and the DuckDB engine raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_12",
+            number_inputs=2,
+            exception_code="1-1-13-18",
+            exception_message="Incompatible types for common identifier Id_1: Date and "
+            "Time_Period.",
+        )
+
+    def test_GH_1352_12b(self):
+        """
+        Status: OK
+        Expression: DS_r <- full_join ( DS_1 as a , DS_2 as b keep a#Me_1 );
+        Description: Extra of case 12: the Date Identifier Id_1 of DS_1 is cast to the Time
+                     of the Identifier of DS_2, so 2020-01-01 matches 2020-01-01/2020-01-01.
+                     The DuckDB engine raised a raw BinderException and the pandas engine
+                     matched nothing, writing the Date and the Time texts as four Identifiers.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_12b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_12c(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b keep a#Me_1 );
+        Description: Extra of case 12: the join key takes the common type Time of the Time
+                     Identifier of DS_1 and the Date one of DS_2, whatever their order. The result
+                     typed it as the Date of the last operand: the pandas engine matched nothing
+                     and the DuckDB engine wrote a Time value in a Date Identifier.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_12c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_12d(self):
+        """
+        Status: OK
+        Expression: DS_r <- left_join ( DS_1 as a , DS_2 as b keep a#Me_1 );
+        Description: Extra of case 12: the Time_Period keys 2020D1 and 2020Q1 of DS_2 are cast to
+                     Time and match the Time keys of DS_1. The result typed the key as a
+                     Time_Period: pandas wrote 2020M1 twice and DuckDB null twice.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_12d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_12e(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b , DS_3 as c keep a#Me_1 );
+        Description: Extra of case 12: with a Date operand last, the key is still a Time and the
+                     Date keys are cast to it. The pandas engine matched nothing and the DuckDB
+                     engine wrote a Time value in a Date Identifier.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_12e", number_inputs=3, references_names=["1"])
+
+    def test_GH_1352_41(self):
+        """
+        Status: OK
+        Expression: DS_r <- union ( DS_1 , dateadd ( DS_1 , 1 , "M" ) );
+        Description: dateadd turns the Time_Period Identifier Id_2 into a Date one, and a
+                     Time_Period and a Date have no common type, so union raises 1-1-1-1. Both
+                     engines returned a Time Identifier holding the raw texts.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_41",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from Time_Period to Date.",
+        )
+
+    def test_GH_1352_42(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := nvl ( Me_3 , Me_2 ) ];
+        Description: A Time_Period is implicitly cast to a Time with its start and end, so the
+                     Time_Period 2021M12 that fills the null Time is 2021-12-01/2021-12-31.
+                     Both engines copied the Time_Period text into the Time Component.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_42", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_42b(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: Extra case: the Time_Period 2020Q2 of DS_2 that fills the null Time of
+                     DS_1 is the Time 2020-04-01/2020-06-30. Both engines copied the
+                     Time_Period text 2020-Q2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_42b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_43(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_4 := nvl ( Me_1 , Me_3 ) ];
+        Description: A Date is implicitly cast to a Time with its start and end equal to it,
+                     so the Date 2020-01-15 is the Time 2020-01-15/2020-01-15. The pandas
+                     engine copied the Date text into the Time Component and the DuckDB engine
+                     raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_43", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_43b(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: Extra case: the Date Measure of DS_1 is cast to Time, so 2020-01-15 is
+                     2020-01-15/2020-01-15, and its nulls take the Time of DS_2. The pandas
+                     engine kept the Date text and the DuckDB engine raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_43b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_43c(self):
+        """
+        Status: OK
+        Expression: DS_r <- union ( DS_1 , DS_2 );
+        Description: Extra of case 43: the Date Measure of DS_1 is cast to the Time of DS_2, so
+                     2020-01-15 is 2020-01-15/2020-01-15. The pandas engine kept the Date text and
+                     DuckDB wrote 2020-01-15 00:00:00.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_43c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_43d(self):
+        """
+        Status: OK
+        Expression: DS_r <- union ( DS_1 , DS_2 );
+        Description: Extra of case 43: the Date Identifiers of DS_1 are cast to Time, so 2020-01-01
+                     is the Data Point 2020-01-01/2020-01-01 that DS_2 repeats. Both engines kept
+                     the Date texts and four Data Points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_43d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_43e(self):
+        """
+        Status: OK
+        Expression: DS_r <- setdiff ( DS_1 , DS_2 );
+        Description: Extra of case 43: the Date 2020-01-01 of DS_2 is the Time
+                     2020-01-01/2020-01-01, which setdiff takes out of DS_1. The pandas engine kept
+                     both Data Points and the DuckDB engine raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_43e", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_43f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ keep Me_2 , Me_3 ] [ unpivot Id_2 , Me_4 ];
+        Description: Extra of case 43: the Time_Period Measure Me_2 unpivoted into the Time Measure
+                     Me_4 holds the Time values 2020-01-01/2020-03-31 and 2021-12-01/2021-12-31.
+                     Both engines kept the Time_Period texts 2020-Q1 and 2021-M12.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_43f", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_43g(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 ) = DS_2;
+        Description: Extra of case 43: the nvl of the Date DS_1 and the Time DS_2 is a Time, which
+                     = compares with DS_2. The DuckDB engine took the nvl as a Date and raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_43g", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_13(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := time_agg ( "A" , _ , SC_1 ) ];
+        Description: The input Scalar SC_1 is a Time_Period inside the clause too, so time_agg
+                     gives 2020 for 2020Q2. The DuckDB engine typed only the Components of the
+                     clause and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1352_13", number_inputs=1, references_names=["1"], scalars={"SC_1": "2020Q2"}
+        )
+
+    def test_GH_1352_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b
+                        calc Me_2 := a#Me_1 > b#Me_1 keep Me_2 );
+        Description: Durations named by their qualified name are ordered by their length, A > M,
+                     as plain Components are. The DuckDB engine compared their letters.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_14", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b
+                        calc Me_2 := getmonth ( a#Me_1 ) keep Me_2 );
+        Description: A Time_Period named by its qualified name keeps its type, so getmonth gives
+                     1 for 2020Q1 and 12 for 2021M12. The DuckDB engine raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_15", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_40e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := time_agg ( "A" , _ , nvl ( Me_1 , Me_1 ) ) ,
+                        Me_3 := time_agg ( "A" , _ , if Id_1 = 1 then Me_1 else Me_1 ) ,
+                        Me_4 := time_agg ( "A" , _ , case when Id_1 = 1 then Me_1 else Me_1 ) ];
+        Description: Extra of case 40: the nvl, the if and the case of the Time_Period Me_1 are
+                     Time_Periods, which time_agg aggregates to 2020 and 2021. The DuckDB engine
+                     read them as Dates and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_16(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := period_indicator ( Id_2 ) ]
+                        [ aggr Me_3 := max ( Me_2 ) , Me_4 := min ( Me_2 ) group by Id_1 ];
+        Description: The Duration that a calc computes is ordered by its length, so max gives A
+                     and min gives D. The DuckDB engine typed the Component as a Number and took
+                     the max and the min of the letters, M and A.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_16", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_40b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := nvl ( Me_1 , Me_1 ) ,
+                        Me_3 := if Id_1 = 1 then Me_1 else Me_1 ,
+                        Me_4 := case when Id_1 = 1 then Me_1 else Me_1 ]
+                        [ calc Me_5 := cast ( Me_2 , string ) , Me_6 := cast ( Me_3 , string ) ,
+                        Me_7 := cast ( Me_4 , string ) ] [ keep Me_5 , Me_6 , Me_7 ];
+        Description: Extra of case 40: a Component that a calc computes as the nvl, the if or the
+                     case of the String Me_1 is a String, which cast to string keeps. The DuckDB
+                     engine typed it as a Number and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_40c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := nvl ( Me_1 , Me_1 ) ,
+                        Me_3 := if Id_1 = 1 then Me_1 else Me_1 ,
+                        Me_4 := case when Id_1 = 1 then Me_1 else Me_1 ]
+                        [ calc Me_5 := cast ( Me_2 , string ) , Me_6 := cast ( Me_3 , string ) ,
+                        Me_7 := cast ( Me_4 , string ) ] [ keep Me_5 , Me_6 , Me_7 ];
+        Description: Extra of case 40: a Component that a calc computes as the nvl, the if or the
+                     case of the Integer Me_1 is an Integer, which cast to string writes 1. The
+                     DuckDB engine typed it as a Number and wrote 1.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_40d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := nvl ( Me_1 , Me_1 ) ,
+                        Me_3 := if Id_1 = 1 then Me_1 else Me_1 ,
+                        Me_4 := case when Id_1 = 1 then Me_1 else Me_1 ]
+                        [ calc Me_5 := cast ( Me_2 , string ) , Me_6 := cast ( Me_3 , string ) ,
+                        Me_7 := cast ( Me_4 , string ) ] [ keep Me_5 , Me_6 , Me_7 ];
+        Description: Extra of case 40: a Component that a calc computes as the nvl, the if or the
+                     case of the Boolean Me_1 is a Boolean, which cast to string writes true. The
+                     DuckDB engine typed it as a Number and wrote 1.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40d", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_17(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := max ( Me_1 over ( ) ) ,
+                        Me_3 := min ( Me_1 over ( ) ) ];
+        Description: The analytic max and min of Durations order them by their length, so max
+                     gives A and min gives M. Both engines took the max and the min of the
+                     letters.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_17", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_18(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := rank ( over ( order by Id_1 ) ) ,
+                        Me_3 := lag ( Id_1 , 1 over ( order by Id_1 ) ) ];
+        Description: An analytic ordered by a Duration orders it by its length, D, M, A, so the
+                     ranks of A, D and M are 3, 1 and 2. Both engines ordered the letters.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_18", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_35(self):
+        """
+        Status: OK
+        Expression: SC_r <- cast ( "2020-01-01/2020-03-31" , time_period );
+                    DS_r <- DS_1 [ calc Me_2 := SC_r ];
+        Description: A start/end text is the Time_Period of its interval when that is a year, a
+                     half, a quarter or a month, so it casts to 2020Q1. The DuckDB engine read its
+                     leading 2020-01 as the month 2020M1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_35", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1352_36(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ];
+        Description: A String Component holding start/end texts casts to the Time_Periods of
+                     their intervals, 2020Q1 and 2020. The DuckDB engine raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_36", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_37(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ];
+        Description: A String Component holding the date 2020-1-1, written without zeros, casts
+                     to 2020D1, as the literal does. The DuckDB engine raised a raw
+                     ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_37", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_37b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1;
+        Description: Extra of case 37: a Time_Period Identifier loaded as a date written without
+                     zeros, 2020-1-5, is the day 2020D5, as the pandas engine reads it. The DuckDB
+                     engine raised 0-3-1-6.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_37b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_38(self):
+        """
+        Status: OK
+        Expression: SC_r <- cast ( "2020-1-1" , time_period );
+                    DS_r <- DS_1 [ calc Me_2 := SC_r ];
+        Description: Control: the literal date 2020-1-1, written without zeros, casts to 2020D1
+                     on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_38", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1352_40(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( nvl ( Me_1 , SC_1 ) , string ) ];
+        Description: The nvl of the Time_Period Me_1 and the Time_Period Scalar SC_1 is a
+                     Time_Period, whose text is 2020Q1, as for cast ( Me_1 , string ). The DuckDB
+                     engine wrote the internal text 2020-Q1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1352_40", number_inputs=1, references_names=["1"], scalars={"SC_1": "2020Q2"}
+        )
+
+    def test_GH_1352_13b(self):
+        """
+        Status: OK
+        Expression: define operator f ( x time_period ) returns time_period is x end operator;
+                    define operator g ( x component < time_period > )
+                        returns component < time_period > is x end operator;
+                    DS_r <- DS_1 [ calc Me_2 := time_agg ( "A" , _ , f ( SC_1 ) ) ,
+                        Me_3 := time_agg ( "A" , _ , g ( Me_1 ) ) ,
+                        Me_4 := getmonth ( g ( Me_1 ) ) ];
+        Description: Extra of case 13: the result of a user defined operator that returns a
+                     Time_Period is a Time_Period, so time_agg gives 2020 and 2021 and getmonth
+                     gives 1 and 12. The DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1352_13b", number_inputs=1, references_names=["1"], scalars={"SC_1": "2020Q2"}
+        )
+
+    def test_GH_1352_40f(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component < time_period > )
+                        returns component < time_period > is x end operator;
+                    define operator g ( x component < date > ) returns component < date > is x
+                        end operator;
+                    DS_r <- DS_1 [ calc Me_3 := cast ( f ( Me_1 ) , string ) ,
+                        Me_4 := cast ( g ( Me_2 ) , string ) ];
+        Description: Extra of case 40: cast to string of the Time_Period and the Date that user
+                     defined operators return writes 2020Q1 and 2020-01-15, as cast of the
+                     Components does. The DuckDB engine wrote 2020-Q1 and 2020-01-15 00:00:00.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40f", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_18b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := lag ( Me_1 , 1 , "Q" over ( order by Id_1 ) ) ];
+        Description: Extra of case 18: lag ordered by the Duration Id_1 (D, M, A) gives the
+                     default Q to the first Data Point, D. The pandas engine read the default as a
+                     column name and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_18b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_18c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := lag ( Me_1 , 1 , "z" over ( order by Id_1 ) ) ,
+                        Me_4 := lag ( Me_2 , 1 , cast ( "2019-01-01" , date )
+                            over ( order by Id_1 ) ) ,
+                        Me_5 := lead ( Me_1 , 1 , null over ( order by Id_1 ) ) ]
+                        [ keep Me_3 , Me_4 , Me_5 ];
+        Description: Extra of case 18: the default of lag and lead is a value, a String, a Date
+                     given by cast or null. The pandas engine read a text and null as column
+                     names and wrote the cast into its query, raising raw DuckDB errors.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_18c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_17b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := max ( nvl ( Me_1 , Me_1 ) over ( ) ) ,
+                        Me_3 := min ( if Id_1 = 1 then Me_1 else Me_1 over ( ) ) ,
+                        Me_4 := max ( case when Id_1 = 1 then Me_1 else Me_1 over ( ) ) ];
+        Description: Extra of case 17: the nvl, the if and the case of a Duration are Durations,
+                     so the analytic max and min order them by their length and give A and M.
+                     The DuckDB engine ordered the letters and gave M and A.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_17b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_17c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( nvl ( Me_1 , Me_1 ) , string ) ];
+        Description: Extra of case 17: the nvl of a Duration is a Duration, which cast to string
+                     writes as P1Y and P1M, as cast ( Me_1 , string ) does. The DuckDB engine
+                     wrote the letters A and M.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_17c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_17d(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b
+                        aggr Me_2 := max ( nvl ( a#Me_1 , b#Me_1 ) ) ,
+                        Me_3 := min ( nvl ( a#Me_1 , b#Me_1 ) ) );
+        Description: Extra of case 17: the max and the min in the aggr of a join of the nvl of
+                     two Durations order them by their length and give A and M. The DuckDB
+                     engine ordered the letters and gave M and A.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_17d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1352_17e(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component < duration > )
+                        returns component < duration > is x end operator;
+                    DS_r <- DS_1 [ calc Me_2 := f ( Me_1 ) ]
+                        [ aggr Me_3 := max ( Me_2 ) , Me_4 := min ( Me_2 ) ];
+        Description: Extra of case 17: a Component that a calc computes with a user defined
+                     operator returning a Duration is a Duration, so the max and the min of the
+                     aggr order it by its length and give A and M. The DuckDB engine typed it as
+                     a Number, ordered the letters and gave M and A.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_17e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_40g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "2020Q2" , time_period ) ]
+                        [ calc Me_3 := getyear ( Me_2 ) ] [ keep Me_3 ];
+        Description: Extra of case 40: a Component that a calc computes with a cast to
+                     time_period is a Time_Period, also when a later keep drops it, so getyear
+                     gives 2020. The DuckDB engine typed it as a Number and raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40g", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_40h(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component < time_period > )
+                        returns component < time_period > is x end operator;
+                    DS_r <- DS_1 [ calc Me_2 := f ( Me_1 ) ] [ calc Me_3 := cast ( Me_2 , string ) ]
+                        [ keep Me_3 ];
+        Description: Extra of case 40: a Component that a calc computes with a user defined
+                     operator returning a Time_Period is a Time_Period, also when a later keep
+                     drops it, so cast to string writes 2020Q1 and 2021M12. The DuckDB engine
+                     typed it as a Number and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40h", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_40i(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , string ) ]
+                        [ calc Me_3 := cast ( Me_2 , string ) ] [ keep Me_3 ];
+        Description: Extra of case 40: a Component that a calc computes with a cast to string is
+                     a String, also when a later keep drops it, so a second cast to string keeps
+                     2020-01-15. The DuckDB engine typed it as a Number and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40i", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_40j(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "2020-01-15" , date ) ]
+                        [ calc Me_3 := cast ( Me_2 , string ) ] [ keep Me_3 ];
+        Description: Extra of case 40: a Component that a calc computes with a cast to date is a
+                     Date, also when a later keep drops it, so cast to string writes 2020-01-15.
+                     The DuckDB engine typed it as a Number and raised 2-1-19-8.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_40j", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_36b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ];
+        Description: Extra of case 36: the year of a Time_Period is written with four digits,
+                     from 1000, so the text 0001 is no Time_Period and the cast raises 2-1-5-1,
+                     as for 10000. The pandas engine gave 1 and the DuckDB engine raised a raw
+                     ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36b",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message="Impossible to cast 0001 from type String to Time_Period.",
+        )
+
+    def test_GH_1352_36c(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ,
+                        Me_3 := cast ( " 2020Q1" , time_period ) ];
+        Description: Extra of case 36: a text cast to time_period is read without the space
+                     around it, as the loaders read a Time_Period and every path reads a Date,
+                     so " 2020Q1" is 2020Q1 and " 2020-01-15" is 2020D15. The pandas engine
+                     raised 2-1-19-2 and a raw ValueError, the DuckDB engine 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_36c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_13d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := max ( ( if Id_1 = 1
+                        then cast ( "2021Q1" , time_period ) else Me_1 ) over ( ) ) ]
+                        [ keep Me_2 ];
+        Description: Extra of case 13: a Time_Period given by cast is held in the one form the
+                     loaded ones are held in, so the analytic max orders the periods and gives
+                     2021Q2. The pandas engine held the cast text as written and ordered the
+                     texts, giving 2021Q1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_13d", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_36d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ];
+        Description: Extra of case 36: the start/end text of a year below 1000,
+                     0001-01-01/0001-12-31, is no Time_Period, whose year is written with four
+                     digits from 1000, so the cast raises 2-1-5-1. The pandas engine raised a raw
+                     ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36d",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message=(
+                "Impossible to cast 0001-01-01/0001-12-31 from type String to Time_Period."
+            ),
+        )
+
+    def test_GH_1352_36e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "2020" , time ) ,
+                        Me_3 := cast ( "2020-01" , time ) ]
+                        [ filter Me_2 = Me_2 and Me_3 = Me_3 ]
+                        [ calc Me_4 := cast ( Me_2 , string ) , Me_5 := cast ( Me_3 , string ) ]
+                        [ keep Me_4 , Me_5 ];
+        Description: Extra of case 36: a Time written as the year or the month it covers is
+                     equal to itself, so the filter keeps the Data Point with 2020 and 2020-01.
+                     The pandas engine read it as a start/end interval and raised a raw
+                     TypeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_36e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_36f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "0001" , time_period ) ];
+        Description: Extra of case 36: the literal 0001 is no Time_Period, whose year is written
+                     with four digits from 1000, so the cast raises 1-1-5-6. The pandas
+                     engine gave the period 1 and the DuckDB engine raised a raw ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36f",
+            number_inputs=1,
+            exception_code="1-1-5-6",
+            exception_message="Impossible to cast 0001 from type String to Time_Period.",
+        )
+
+    def test_GH_1352_36g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "2020M13" , time_period ) ];
+        Description: Control of case 36: the literal 2020M13 is no Time_Period, so the cast
+                     raises 1-1-5-6 on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36g",
+            number_inputs=1,
+            exception_code="1-1-5-6",
+            exception_message="Impossible to cast 2020M13 from type String to Time_Period.",
+        )
+
+    def test_GH_1352_36h(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "0001-01-01/0001-12-31" ,
+                        time_period ) ];
+        Description: Extra of case 36: the literal start/end text of a year below 1000 is no
+                     Time_Period, so the cast raises 1-1-5-6. Both engines and the semantic
+                     analysis raised a raw ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36h",
+            number_inputs=1,
+            exception_code="1-1-5-6",
+            exception_message=(
+                "Impossible to cast 0001-01-01/0001-12-31 from type String to Time_Period."
+            ),
+        )
+
+    def test_GH_1352_13e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc identifier Id_9 := cast ( Id_T , time_period ) ]
+                        [ filter Id_9 = cast ( "2020Q1" , time_period ) ];
+        Description: Extra of case 13: a Time_Period given by the cast of a Time is held in the
+                     one form the loaded ones and the cast literals are held in, so the filter
+                     keeps the Data Point of 2020Q1. The DuckDB engine held the cast Time in
+                     another form, so the filter kept nothing.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_13e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_36i(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ]
+                        [ filter Id_1 = 3 ];
+        Description: Extra of case 36: a Time of a year below 1000, 0500-01-01/0500-12-31 or
+                     0999-01-01/0999-03-31, is no Time, whose years run from 1000 to 9999 as the
+                     ones of a Date and a Time_Period, so loading it raises 0-3-1-6 before the
+                     cast. The DuckDB engine raised a raw ValueError or 2-1-19-10 for the cast.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.DataLoadExceptionTest(
+            code="GH_1352_36i",
+            number_inputs=1,
+            exception_code="0-3-1-6",
+            exception_message=(
+                "On Dataset DS_1 loading: not possible to cast column Me_1 to Time. Error found: "
+                '"Time 0500-01-01/0500-12-31 is invalid. Year must be between 1000 and 9999."'
+            ),
+        )
+
+    def test_GH_1352_36l(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ];
+        Description: Extra of case 36: the Time 9999-12-27/9999-12-31 is no period, as the week
+                     that starts on 9999-12-27 ends in the year 10000, so the cast raises
+                     2-1-5-1. The pandas engine raised a raw ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36l",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message=(
+                "Impossible to cast 9999-12-27/9999-12-31 from type Time to Time_Period."
+            ),
+        )
+
+    def test_GH_1352_36m(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , -2000 );
+        Description: Extra of case 36j: timeshift back by more periods than a year has moves the
+                     year back as many years as they cover, so 2020Q1 back by 2000 quarters is
+                     1520Q1. The pandas engine moved the year back by one and raised a raw
+                     ValueError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_36m", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_36n(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time_period ) ]
+                        [ filter Id_1 = 1 ];
+        Description: Extra of case 36: the text abc is no Time_Period, so the cast raises 2-1-5-1,
+                     also for a Data Point that the filter drops. The DuckDB engine cast only the
+                     Data Point the filter keeps.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36n",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message="Impossible to cast abc from type String to Time_Period.",
+        )
+
+    def test_GH_1352_34(self):
+        """
+        Status: OK
+        Expression: DS_r <- max ( DS_1 group by Id_1 );
+        Description: max of a Time_Period Measure grouped by an Integer Identifier gives the
+                     latest period of each group, 2020Q2 and 2021Q1. The pandas engine raised a
+                     raw InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_34", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_19(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , SC_2 );
+        Description: The Integer Scalar SC_2 that gives timeshift its shift number holds null,
+                     so no period can be shifted and timeshift raises 2-1-19-24, as time_agg
+                     does for a null Scalar. The pandas engine raised a raw TypeError and the
+                     DuckDB engine a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_19",
+            number_inputs=1,
+            exception_code="2-1-19-24",
+            exception_message="At op timeshift: The scalar SC_2 that gives the shift number has "
+            "no value.",
+            scalars={"SC_2": None},
+        )
+
+    def test_GH_1352_21(self):
+        """
+        Status: OK
+        Expression: DS_r <- union ( DS_1 , timeshift ( DS_1 , 10 ) );
+        Description: timeshift of a Date Identifier gives Dates, written as the bare date, so
+                     union writes 2020-11-30 and 2020-12-29. The pandas engine wrote
+                     2020-11-30T00:00:00 and 2020-12-29T00:00:00.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_21", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_22(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( timeshift ( DS_1 , 1 ) , 1 );
+        Description: timeshift reads the Dates that another timeshift gives, so 2020-01-31 and
+                     2020-02-29 move two months to 2020-03-29 and 2020-04-29. The pandas engine
+                     raised a raw TypeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_22", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_30(self):
+        """
+        Status: OK
+        Expression: SC_r <- dateadd ( cast ( "2020-02-29" , date ) , 8000 , "A" );
+        Description: dateadd of 2020-02-29 by 8000 years gives the year 10020, which no Date
+                     has, so it raises 2-1-19-10. The pandas engine raised a raw ValueError and
+                     the DuckDB engine a raw NotImplementedError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_30",
+            number_inputs=1,
+            exception_code="2-1-19-10",
+            exception_message="Invalid year 10020, must be between 1000 and 9999.",
+        )
+
+    def test_GH_1352_23(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( dateadd ( Me_1 , 1 , "M" ) , string ) ];
+        Description: The Date that dateadd gives is cast to string as any Date, 2020-02-15. The
+                     DuckDB engine wrote 2020-02-15 00:00:00.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_23", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_24(self):
+        """
+        Status: OK
+        Expression: DS_r <- cast ( dateadd ( DS_1 , -1 , "Q" ) , string );
+        Description: dateadd of a Time_Period Data Set gives a Date Measure, which is cast to
+                     string as a Date: 2019-12-31 and 2020-03-30. The DuckDB engine read it as a
+                     Time_Period and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_24", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_25(self):
+        """
+        Status: OK
+        Expression: DS_r <- dateadd ( dateadd ( DS_1 , -1 , "Q" ) , -1 , "Q" );
+        Description: The outer dateadd reads the Date Measure that the inner one gives:
+                     2019-09-30 and 2019-12-30. The DuckDB engine read it as a Time_Period and
+                     raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_25", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_26(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , 1 );
+        Description: 2020 has 53 ISO weeks, so 2020W53 moves one week to 2021W1 and 2021W1 to
+                     2021W2. Both engines counted 52 weeks in every year and gave 2021W2 twice.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_26", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_27(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single ) [ filter Id_2 >= cast ( "2020W52" ,
+                        time_period ) and Id_2 <= cast ( "2021W1" , time_period ) ];
+        Description: fill_time_series adds the week 2020W53 between 2020W52 and 2021W1. The
+                     DuckDB engine counted 52 weeks in every year and left it out.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_27", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_28(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := time_agg ( "Q" , _ , Id_2 ) ,
+                        Me_3 := time_agg ( "A" , _ , Id_2 ) ];
+        Description: A week stays in the year it is numbered in, so 2020W53 (2020-12-28 to
+                     2021-01-03) goes to 2020Q4 and 2020. The pandas engine gave 2020Q1 and the
+                     DuckDB engine 2021Q1 and 2021.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_28", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_28b(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := time_agg ( "A" , _ , Me_1 ) ,
+                        Me_3 := time_agg ( "S" , _ , Me_1 ) , Me_4 := time_agg ( "Q" , _ , Me_1 ) ,
+                        Me_5 := time_agg ( "M" , _ , Me_1 ) ];
+        Description: Extra of case 28: a week that ends in the next year, 2021W52 or 9999W52,
+                     goes to the last period of its own year, so time_agg of the last week of
+                     9999 stays in the years 1000 to 9999 of a Time_Period. The pandas engine
+                     raised a raw ValueError for 9999W52 and gave the first period of 2021 for
+                     2021W52, and the DuckDB engine wrote a null for 9999W52 and 2022 for
+                     2021W52.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_28b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_32b(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single );
+        Description: Extra of case 32: over the period indicators 2020Q1, 2020-04, 2020W20,
+                     2020-1-5 and 2020, fill_time_series fills each indicator over the year 2020,
+                     which has 53 ISO weeks and 366 days. The DuckDB engine counted 52 weeks and
+                     365 days in every year and left 2020W53 and 2020D366 out.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_32b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_31(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single );
+        Description: fill_time_series only adds Data Points, so 2020-01-02, whose Measure is
+                     null, stays and 2020-01-03 is added. The pandas engine removed 2020-01-02.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_31", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_32(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , all );
+        Description: fill_time_series in all mode fills a single Data Point, 2020Q2, to the
+                     whole of its year, 2020Q1 to 2020Q4, as it fills two. The pandas engine
+                     returned the Data Point alone.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_32", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_33(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , all );
+        Description: Control of case 32: fill_time_series in all mode fills 2020Q1 and 2020Q3
+                     to the whole of their year, 2020Q1 to 2020Q4, on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_33", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_36o(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := cast ( Me_1 , time_period ) ] [ keep Me_2 ];
+        Description: Extra of case 36: the text abc is no Time_Period, so the cast raises
+                     2-1-5-1, also when the keep that follows removes the Measure it gives. The
+                     DuckDB engine did not compute the removed Measure and returned the Data Set.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36o",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message="Impossible to cast abc from type String to Time_Period.",
+        )
+
+    def test_GH_1352_20(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , -5 );
+        Description: timeshift moves 2020Q1 and 2020Q2 back five quarters, more than a year, to
+                     2018Q4 and 2019Q1. The pandas engine raised 2-1-19-7.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_20", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_29(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , 8000 );
+        Description: timeshift of 2020A by 8000 years gives the year 10020, which no Time_Period
+                     has, so it raises 2-1-19-10. The DuckDB engine wrote null Identifiers.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_29",
+            number_inputs=1,
+            exception_code="2-1-19-10",
+            exception_message="Invalid year 10020, must be between 1000 and 9999.",
+        )
+
+    def test_GH_1352_31b(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single );
+        Description: Extra of case 31: the Measure of a Date Data Set may have any name, also
+                     _added, and fill_time_series keeps it: 1.0, null, null, 2.0. The pandas
+                     engine marked the Data Points it added in a column of that name and removed
+                     the Measure.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_31b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_31c(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single );
+        Description: Extra of case 31: the Measure of a Time_Period Data Set may have any name,
+                     also _freq, and fill_time_series keeps it: 1.0, null, null, 2.0. The pandas
+                     engine grouped the periods by a column of that name and removed the Measure.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_31c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_19b(self):
+        """
+        Status: OK
+        Expression: SC_n := SC_2 + 1 ; DS_r <- timeshift ( DS_1 , SC_n ) ;
+        Description: Extra of case 19: the Scalar SC_n that the script computes from the null
+                     SC_2 holds null, so timeshift raises 2-1-19-24 as for an input Scalar. The
+                     DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_19b",
+            number_inputs=1,
+            exception_code="2-1-19-24",
+            exception_message="At op timeshift: The scalar SC_n that gives the shift number has "
+            "no value.",
+            scalars={"SC_2": None},
+        )
+
+    def test_GH_1352_19c(self):
+        """
+        Status: OK
+        Expression: define operator f ( x dataset , n integer ) returns dataset is
+                        timeshift ( x , n ) end operator ; DS_r <- f ( DS_1 , SC_2 ) ;
+        Description: Extra of case 19: the null Scalar SC_2 given to the parameter of a user
+                     defined operator that gives timeshift its shift number raises 2-1-19-24,
+                     naming SC_2. The DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_19c",
+            number_inputs=1,
+            exception_code="2-1-19-24",
+            exception_message="At op timeshift: The scalar SC_2 that gives the shift number has "
+            "no value.",
+            scalars={"SC_2": None},
+        )
+
+    def test_GH_1352_19d(self):
+        """
+        Status: OK
+        Expression: define operator f ( x dataset , n integer ) returns dataset is
+                        timeshift ( x , n ) end operator ; DS_r <- f ( DS_1 , 1 ) ;
+        Description: Extra of case 19: the parameter of a user defined operator gives timeshift
+                     its shift number, so 2020Q1 and 2020Q2 move to 2020Q2 and 2020Q3. The DuckDB
+                     engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_19d", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_19e(self):
+        """
+        Status: OK
+        Expression: define operator f ( x dataset , n integer ) returns dataset is
+                        timeshift ( x , n ) end operator ; DS_r <- f ( DS_1 , 1 ) ;
+        Description: Extra of case 19: the parameter of a user defined operator gives timeshift
+                     of a Date Identifier its shift number, so 2020-01-31 and 2020-02-29 move one
+                     month to 2020-02-29 and 2020-03-29. The DuckDB engine raised a raw
+                     ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_19e", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_19f(self):
+        """
+        Status: OK
+        Expression: define operator f ( x dataset , n integer ) returns dataset is
+                        timeshift ( x , n ) end operator ; DS_r <- f ( DS_1 , null ) ;
+        Description: Extra of case 19: a null given to the parameter of a user defined operator
+                     that gives timeshift its shift number raises 2-1-19-24, naming the parameter
+                     n. The pandas engine named the scalar None and the DuckDB engine raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_19f",
+            number_inputs=1,
+            exception_code="2-1-19-24",
+            exception_message="At op timeshift: The scalar n that gives the shift number has "
+            "no value.",
+        )
+
+    def test_GH_1352_36p(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , date ) ] [ keep Me_3 ];
+        Description: Extra of case 36: the text notadate is no Date, so the cast raises
+                     2-1-19-8, also when the keep that follows removes the Measure it gives. The
+                     DuckDB engine did not compute the removed Measure and returned the Data Set.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36p",
+            number_inputs=1,
+            exception_code="2-1-19-8",
+            exception_message="Invalid date format, must be YYYY-MM-DD: notadate",
+        )
+
+    def test_GH_1352_27b(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , 1 );
+        Description: Extra of case 27: 2020 has 366 days, so 2020D365 moves one day to 2020D366,
+                     2020D366 to 2021D1 and 2021D1 to 2021D2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_27b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_26e(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , 1 );
+        Description: Extra of case 26: timeshift of the monthly Dates 9999-11-30 and 9999-12-31
+                     by one month gives the year 10000, which no Date has, so it raises
+                     2-1-19-10, as dateadd does.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_26e",
+            number_inputs=1,
+            exception_code="2-1-19-10",
+            exception_message="Invalid year 10000, must be between 1000 and 9999.",
+        )
+
+    def test_GH_1352_26f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , date ) ,
+                        Me_3 := dateadd ( Id_2 , 1 , "M" ) ];
+        Description: Extra of case 26: a Date has the years 1000 to 9999, as a Time_Period, so
+                     the Dates 1500-01-31 and 1000-12-31 load, the texts 1500-06-15 and
+                     1799-12-31 cast to Dates, and dateadd moves the loaded ones one month, to
+                     1500-02-28 (1500 is no leap year) and 1001-01-31. Both engines read the
+                     years 1800 to 9999 only and refused the data.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_26f", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_36q(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc identifier Id_9 := cast ( Me_1 , time_period ) ]
+                        [ sub Id_9 = cast ( "2020Q1" , time_period ) ];
+        Description: Extra of case 36: an Identifier cannot be calculated from the cast of the
+                     nullable Me_1, which the structures alone tell, so the calc raises 1-1-1-16
+                     before the text abc is cast. The pandas engine computed the cast first and
+                     raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36q",
+            number_inputs=1,
+            exception_code="1-1-1-16",
+            exception_message="Identifier Id_9 cannot be calculated from an expression that is "
+            "declared nullable.",
+        )
+
+    def test_GH_1352_36r(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ keep Me_1 ] [ calc Me_2 := max ( Me_1 over ( order by Id_1 ) )
+                        + 1 ];
+        Description: Extra of case 36: a Time_Period plus an Integer has no type, which the
+                     structures alone tell, so the calc raises 1-1-1-2 before max compares
+                     2020Q1 with 2020M1. The pandas engine computed max first and raised
+                     2-1-19-20.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36r",
+            number_inputs=1,
+            exception_code="1-1-1-2",
+            exception_message="Invalid implicit cast from Time_Period and Integer to Number.",
+        )
+
+    def test_GH_1352_36s(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ filter cast ( Me_1 , integer ) > 0 and Me_1 ];
+        Description: Extra of case 36: and takes no String, which the structures alone tell, so
+                     the filter raises 1-1-1-2 before the text abc is cast. The pandas engine
+                     computed the cast first and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36s",
+            number_inputs=1,
+            exception_code="1-1-1-2",
+            exception_message="Invalid implicit cast from Boolean and String to Boolean.",
+        )
+
+    def test_GH_1352_36t(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := sum ( cast ( Me_1 , integer ) ) ,
+                        Me_3 := sum ( Me_1 ) group by Id_1 ];
+        Description: Extra of case 36: sum takes no String, which the structures alone tell, so
+                     the aggr raises 1-1-1-1 before the text abc is cast. The pandas engine
+                     computed the cast first and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36t",
+            number_inputs=1,
+            exception_code="1-1-1-1",
+            exception_message="Invalid implicit cast from String to Number.",
+        )
+
+    def test_GH_1352_36u(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , integer ) , Id_1 := 1 ];
+        Description: Extra of case 36: a calc cannot overwrite the Identifier Id_1, which the
+                     structures alone tell, so it raises 1-1-6-13 before the text abc is cast.
+                     The pandas engine computed the cast first and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36u",
+            number_inputs=1,
+            exception_code="1-1-6-13",
+            exception_message="At op calc: Not allowed to overwrite an Identifier: Id_1",
+        )
+
+    def test_GH_1352_26h(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , 1 );
+        Description: Extra of case 26: timeshift of the Time 9999-01-01/9999-12-31 by one year
+                     gives the year 10000, which no Time has, so it raises 2-1-19-10, as for a
+                     Date. The pandas engine raised a raw OverflowError and the DuckDB engine
+                     wrote 10000-01-01/10000-12-31.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_26h",
+            number_inputs=1,
+            exception_code="2-1-19-10",
+            exception_message="Invalid year 10000, must be between 1000 and 9999.",
+        )
+
+    def test_GH_1352_26i(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , -1 );
+        Description: Extra of case 26: timeshift of the Time 1000-01-01/1000-12-31 back one year
+                     gives the year 999, which no Time has, so it raises 2-1-19-10. Both engines
+                     wrote a Time of the year 999.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_26i",
+            number_inputs=1,
+            exception_code="2-1-19-10",
+            exception_message="Invalid year 999, must be between 1000 and 9999.",
+        )
+
+    def test_GH_1352_32c(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single );
+        Description: Extra of case 32: fill_time_series adds 9999-11-30 between the monthly
+                     Dates 9999-10-31 and 9999-12-31, the last month a Date has. The pandas
+                     engine raised a raw ValueError computing the month after the last one.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_32c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_32d(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single );
+        Description: Extra of case 32: fill_time_series adds 9999-11-01/9999-11-30 between the
+                     monthly Times of October and December 9999, the last month a Time has. The
+                     pandas engine raised a raw OverflowError reading the frequency of the Time
+                     that ends on 9999-12-31.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_32d", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_26j(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := dateadd ( Me_1 , -1 , "W" ) ];
+        Description: Extra of case 26: the week 9999W52 ends on 10000-01-02, so dateadd back one
+                     week gives 9999-12-26, a Date of the years 1000 to 9999, as 2020W1 gives
+                     2019-12-29.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_26j", number_inputs=1, references_names=["1"])
+
+    def test_GH_1352_36v(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , integer ) ]
+                        [ calc Me_3 := Me_1 + 1 ];
+        Description: Extra of case 36: a String plus an Integer has no type, which the
+                     structures alone tell, so the second calc raises 1-1-1-2 before the first
+                     casts the text abc. The pandas engine computed the cast first and raised
+                     2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36v",
+            number_inputs=1,
+            exception_code="1-1-1-2",
+            exception_message="Invalid implicit cast from String and Integer to Number.",
+        )
+
+    def test_GH_1352_36w(self):
+        """
+        Status: OK
+        Expression: DS_a := DS_1 [ calc Me_2 := cast ( Me_1 , integer ) ] ;
+                    DS_r <- DS_a [ calc Me_3 := Me_1 + 1 ];
+        Description: Extra of case 36: a String plus an Integer has no type, which the
+                     structures alone tell, so the second statement raises 1-1-1-2 before the
+                     first casts the text abc. The pandas engine computed the first statement
+                     and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36w",
+            number_inputs=1,
+            exception_code="1-1-1-2",
+            exception_message="Invalid implicit cast from String and Integer to Number.",
+        )
+
+    def test_GH_1352_36x(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b
+                        filter cast ( a#Me_1 , integer ) > 0 calc Me_3 := a#Me_1 + 1 );
+        Description: Extra of case 36: a String plus an Integer has no type, which the
+                     structures alone tell, so the calc of the join raises 1-1-1-2 before its
+                     filter casts the text abc. The pandas engine computed the filter first and
+                     raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36x",
+            number_inputs=2,
+            exception_code="1-1-1-2",
+            exception_message="Invalid implicit cast from String and Integer to Number.",
+        )
+
+    def test_GH_1352_36y(self):
+        """
+        Status: OK
+        Expression: DS_r <- cast ( DS_1#Me_1 , integer ) + DS_1#Me_1;
+        Description: Extra of case 36: the cast gives the Measure int_var and the other operand
+                     the Measure Me_1, which the structures alone tell, so the addition raises
+                     1-1-14-1 before the text abc is cast. The pandas engine computed the cast
+                     first and raised 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36y",
+            number_inputs=1,
+            exception_code="1-1-14-1",
+            exception_message="At op +: Measure names don't match: ['int_var'] - ['Me_1'].",
+        )
+
+    def test_GH_1352_36z(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := time_agg ( "A" , _ , Me_1 ) ];
+        Description: Extra of case 36: time_agg of a Date needs first or last, which the
+                     structures alone tell, so the script raises 1-1-19-11 before the Date
+                     0999-01-15, out of the years 1000 to 9999, is loaded. The pandas engine
+                     loaded the data first and raised 0-3-1-6.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36z",
+            number_inputs=1,
+            exception_code="1-1-19-11",
+            exception_message="At op time_agg: If used over a Date, first/last parameter must be "
+            "declared.",
+        )
+
+    def test_GH_1352_36p2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , date , "YYYY-MM-DD" ) ]
+                        [ keep Me_3 ];
+        Description: Extra of case 36: the text notadate does not follow the mask, so the cast
+                     raises 2-1-5-3, also when the keep that follows removes the Measure it
+                     gives. The DuckDB engine did not compute the removed Measure and returned
+                     the Data Set.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36p2",
+            number_inputs=1,
+            exception_code="2-1-5-3",
+            exception_message="Impossible to cast notadate from type String to Date using mask "
+            "YYYY-MM-DD.",
+        )
+
+    def test_GH_1352_36p3(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , time ) ] [ keep Me_3 ];
+        Description: Extra of case 36: the text abc is no Time, so the cast raises 2-1-5-1, also
+                     when the keep that follows removes the Measure it gives. The DuckDB engine
+                     did not compute the removed Measure and returned the Data Set.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36p3",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            exception_message="Impossible to cast abc from type String to Time.",
+        )
+
+    def test_GH_1352_36p4(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := ratio_to_report ( Me_1 over
+                        ( partition by Id_1 ) ) ] [ keep Me_3 ];
+        Description: Extra of case 36: the values of Me_1 in the partition Id_1 = 1 add up to
+                     zero, so ratio_to_report raises 2-1-3-1, also when the keep that follows
+                     removes the Measure it gives. The DuckDB engine did not compute the removed
+                     Measure and returned the Data Set.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36p4",
+            number_inputs=1,
+            exception_code="2-1-3-1",
+            exception_message="At op ratio_to_report: Division by zero produced infinite values.",
+        )
+
+    def test_GH_1352_36p5(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr Me_2 := max ( Me_1 ) , Me_3 := sum ( Me_4 )
+                        group by Id_1 ] [ keep Me_3 ];
+        Description: Extra of case 36: the group Id_1 = 1 holds 2020Q1 and 2020M1, which max
+                     cannot compare, so the aggr raises 2-1-19-20, also when the keep that
+                     follows removes the Measure it gives. Both engines already raised it: the
+                     DuckDB engine computes every aggregate of an aggr, whatever the keep reads.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36p5",
+            number_inputs=1,
+            exception_code="2-1-19-20",
+            exception_message="Time Period operands with different period indicators do not "
+            "support < and > Comparison operations, unable to get the max",
+        )
+
+    def test_GH_1352_36p6(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := max ( Me_1 over ( partition by Id_1 ) ) ];
+        Description: Extra of case 36: Me_1 holds 2020Q1, 2020M1 and 2020Q2, periods of
+                     different indicators, which max cannot compare, so the analytic max raises
+                     2-1-19-20, as the max of a Data Set does. The DuckDB engine compared the
+                     texts and gave 2020Q1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36p6",
+            number_inputs=1,
+            exception_code="2-1-19-20",
+            exception_message="Time Period operands with different period indicators do not "
+            "support < and > Comparison operations, unable to get the max",
+        )
+
+    def test_GH_1352_36p7(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := min ( Me_1 over ( partition by Id_1 ) ) ]
+                        [ keep Me_4 ];
+        Description: Extra of case 36: the periods of Me_1 have different indicators, so the
+                     analytic min raises 2-1-19-20, also when the keep that follows removes the
+                     Measure it gives. The DuckDB engine compared the texts and returned the Data
+                     Set.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_36p7",
+            number_inputs=1,
+            exception_code="2-1-19-20",
+            exception_message="Time Period operands with different period indicators do not "
+            "support < and > Comparison operations, unable to get the min",
+        )
+
+    def test_GH_1352_26k(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( "0999-01-15" , date , "YYYY-MM-DD" ) ];
+        Description: Extra of case 26: a Date has the years 1000 to 9999 also when a mask reads
+                     it, so the cast of the literal 0999-01-15 raises 1-1-5-6, as the cast
+                     without a mask does. The pandas engine raised the input error 0-1-2-7 and
+                     the DuckDB engine and the semantic analysis gave the Date.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_26k",
+            number_inputs=1,
+            exception_code="1-1-5-6",
+            exception_message="Impossible to cast 0999-01-15 from type String to Date.",
+        )
+
+    def test_GH_1352_26l(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , date , "YYYY-MM-DD" ) ];
+        Description: Extra of case 26: a Date has the years 1000 to 9999 also when a mask reads
+                     it, so the cast of the text 0999-01-15 raises 2-1-5-3. Both engines gave the
+                     Date 0999-01-15.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_26l",
+            number_inputs=1,
+            exception_code="2-1-5-3",
+            exception_message="Impossible to cast 0999-01-15 from type String to Date using mask "
+            "YYYY-MM-DD.",
+        )
+
+    def test_GH_1352_19g(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , SC_N ) ;
+        Description: Extra of case 19: the shift of timeshift is a whole number of periods, so
+                     the Number Scalar SC_N raises 1-1-19-15, as a Number shift of dateadd does.
+                     Both engines took the Number 2.7: the pandas engine shifted 2020Q1 by two
+                     quarters and the DuckDB engine by three.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1352_19g",
+            number_inputs=1,
+            exception_code="1-1-19-15",
+            exception_message="At op timeshift: Invalid param data_type Number for param "
+            "shiftNumber, expected Integer.",
+            scalars={"SC_N": 2.7},
+        )
+
+    def test_GH_1352_26m(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , 1 );
+        Description: Extra of case 26: timeshift of the yearly Times of 1500 and 1501, and of
+                     9997 and 9998, by one year gives the Times of 1501 and 1502, and of 9998 and
+                     9999. The pandas engine raised a raw OutOfBoundsDatetime with pandas 2, whose
+                     nanosecond timestamps hold only the years 1677 to 2262.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1352_26m", number_inputs=1, references_names=["1"])

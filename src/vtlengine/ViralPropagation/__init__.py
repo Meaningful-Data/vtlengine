@@ -7,10 +7,11 @@ Registry for viral attribute propagation rules as defined by the VTL 2.2
 in :mod:`vtlengine.ViralPropagation.sql`.
 """
 
+import threading
 from copy import copy
 from dataclasses import dataclass, field, replace
 from functools import reduce
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Type
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, cast
 
 import pandas as pd
 
@@ -188,23 +189,21 @@ class ViralPropagationRegistry:
         return value
 
 
-# Module-level accessor for operators to use.
-# The Interpreter sets this at the start of each run() call.
-_current_registry: Optional[ViralPropagationRegistry] = None
+# Accessor for operators to use, per thread: runs in concurrent threads keep their own rules
+# (issue #1352). The Interpreter sets it at the start of each run() call.
+_current = threading.local()
 
 
 def get_current_registry() -> ViralPropagationRegistry:
     """Get the current viral propagation registry."""
-    global _current_registry  # noqa: PLW0603
-    if _current_registry is None:
-        _current_registry = ViralPropagationRegistry()
-    return _current_registry
+    if getattr(_current, "registry", None) is None:
+        _current.registry = ViralPropagationRegistry()
+    return cast(ViralPropagationRegistry, _current.registry)
 
 
 def set_current_registry(registry: ViralPropagationRegistry) -> None:
     """Set the current viral propagation registry (called by Interpreter)."""
-    global _current_registry  # noqa: PLW0603
-    _current_registry = registry
+    _current.registry = registry
 
 
 def _is_value_of(value: Any, data_type: Type[ScalarType]) -> bool:

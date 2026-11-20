@@ -378,14 +378,21 @@ class InterpreterAnalyzer(ASTTemplate):
     # **********************************
 
     def visit_Start(self, node: AST.Start) -> Any:
+        # The operators validate or compute as this interpreter says while it runs, and as before
+        # once it ends, also on an error: a semantic analysis called during a run must not stop
+        # its computation (issue #1352)
+        only_semantic = Operators.is_only_semantic()
+        Operators.set_only_semantic(self.only_semantic)
+        try:
+            return self._visit_statements(node)
+        finally:
+            Operators.set_only_semantic(only_semantic)
+
+    def _visit_statements(self, node: AST.Start) -> Any:
         # Initialize fresh viral propagation registry for this run
         set_current_registry(ViralPropagationRegistry())
 
         statement_num = 1
-        if self.only_semantic:
-            Operators.only_semantic = True
-        else:
-            Operators.only_semantic = False
         results = {}
         scalars_to_save = set()
         invalid_dataset_outputs = []
@@ -1213,7 +1220,9 @@ class InterpreterAnalyzer(ASTTemplate):
             for param in node.params:
                 if isinstance(param, AST.Constant):
                     params.append(param.value)
-                elif isinstance(param, AST.VarID):
+                elif isinstance(param, AST.AST):
+                    # A Scalar or an expression, as cast ( "2020-01-01" , date ) for the
+                    # default of lag (issue #1352)
                     resolved = self.visit(param)
                     params.append(resolved.value if hasattr(resolved, "value") else resolved)
                 else:
@@ -1790,12 +1799,14 @@ class InterpreterAnalyzer(ASTTemplate):
     def _visit_structure(self, node: AST.AST) -> Any:
         """The structure of a node, as the semantic analysis gives it: no operation is computed,
         so none raises a runtime error (issue #1314)."""
-        only_semantic = Operators.only_semantic, self.only_semantic
-        Operators.only_semantic = self.only_semantic = True
+        only_semantic = Operators.is_only_semantic(), self.only_semantic
+        Operators.set_only_semantic(True)
+        self.only_semantic = True
         try:
             return self.visit(node)
         finally:
-            Operators.only_semantic, self.only_semantic = only_semantic
+            Operators.set_only_semantic(only_semantic[0])
+            self.only_semantic = only_semantic[1]
 
     def visit_RenameNode(self, node: AST.RenameNode) -> Any:
         if self.udo_params is not None:
@@ -2832,9 +2843,12 @@ class InterpreterAnalyzer(ASTTemplate):
                             signature_values[param["name"]] = param_element
 
                 elif issubclass(param["type"], ScalarType):  # Basic types
-                    signature_values[param["name"]] = self._udo_scalar_argument(
-                        node.op, param, self.visit(node.params[i])
-                    )
+                    argument = self._udo_scalar_argument(node.op, param, self.visit(node.params[i]))
+                    if not isinstance(node.params[i], AST.VarID):
+                        # A value that no scalar names is named after the parameter that
+                        # takes it (issue #1352)
+                        argument.name = param["name"]
+                    signature_values[param["name"]] = argument
 
         component_constraints = self._check_udo_arguments(node, operator, signature_values, key)
 
@@ -2844,6 +2858,9 @@ class InterpreterAnalyzer(ASTTemplate):
 
         caller = self.udo_params[-1] if self.udo_params else {}
         for k, v in signature_values.items():
+            if isinstance(v, Scalar):
+                # A scalar argument holds its value already
+                continue
             if hasattr(v, "name"):
                 v = v.name
             # A set parameter is bound to its values, which name nothing
@@ -3208,7 +3225,7 @@ class InterpreterAnalyzer(ASTTemplate):
             if missing_period:
                 # The structures are checked first, as the semantic pass of DuckDB does
                 Time_Aggregation.validate(operand, node.period_from, period_to, node.conf)
-                raise RunTimeError("2-1-19-24", name=cast(AST.VarID, node.period_to_ref).value)
+                raise Time_Aggregation.no_value_error(cast(AST.VarID, node.period_to_ref).value)
             return Time_Aggregation.analyze(
                 operand=operand,
                 period_from=node.period_from,
@@ -3220,7 +3237,7 @@ class InterpreterAnalyzer(ASTTemplate):
         if self.aggregation_dataset is None:
             raise SemanticError("1-3-2-4")
         if missing_period:
-            raise RunTimeError("2-1-19-24", name=cast(AST.VarID, node.period_to_ref).value)
+            raise Time_Aggregation.no_value_error(cast(AST.VarID, node.period_to_ref).value)
         return Time_Aggregation._execute_without_operand(
             aggregation_dataset=self.aggregation_dataset,
             period_from=node.period_from,

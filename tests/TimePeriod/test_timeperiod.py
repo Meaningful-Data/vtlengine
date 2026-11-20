@@ -2,11 +2,13 @@ import json
 import os
 import warnings
 from pathlib import Path
+from typing import Any, Dict
 
+import pandas as pd
 import pytest
 from pytest import mark
 
-from tests.Helper import _use_duckdb_backend
+from tests.Helper import _use_duckdb_backend, engine_params
 from vtlengine.API import create_ast, run
 from vtlengine.API._InternalApi import load_datasets_with_data
 from vtlengine.DataTypes import Date, TimePeriod
@@ -17,7 +19,7 @@ from vtlengine.DataTypes.TimeHandling import (
     generate_period_range,
     period_to_date,
 )
-from vtlengine.Exceptions import DataLoadError, SemanticError
+from vtlengine.Exceptions import DataLoadError, SemanticError, VTLEngineException
 from vtlengine.Exceptions import RunTimeError as RT
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Component, Dataset, Role
@@ -365,3 +367,219 @@ def test_out_of_range_time_period_is_rejected(tmp_path, value):
         )
 
     assert not (output_folder / "DS_r.csv").exists()
+
+
+def _check_shift_out_of_range(use_duckdb: bool, period: str, shift: int, year: int) -> None:
+    """Check that timeshift of a Data Point whose Identifier is period raises 2-1-19-10."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {
+                        "name": "Id_1",
+                        "type": "Time_Period",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    with pytest.raises(RT) as context:
+        run(
+            script=f"DS_r <- timeshift(DS_1, {shift});",
+            data_structures=structures,
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [period], "Me_1": [1]})},
+            use_duckdb=use_duckdb,
+        )
+    assert context.value.args[1] == "2-1-19-10"
+    assert context.value.args[0].startswith(f"Invalid year {year}, must be between 1000 and 9999.")
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize(
+    "period, shift, year",
+    [
+        ("1000A", -1, 999),
+        ("1000S1", -1, 999),
+        ("1000Q1", -1, 999),
+        ("1000M1", -1, 999),
+        ("1000W1", -1, 999),
+        ("1000D1", -1, 999),
+        ("2020A", -2100, -80),
+        ("2020S1", -4100, -30),
+        ("2020Q1", -8100, -5),
+        ("2020M1", -24300, -5),
+        ("2020W1", -105650, -5),
+        ("2020D1", -740000, -7),
+        ("2020A", 300000000, 300002020),
+        ("2020M1", -400000000, -33331314),
+        ("2020W1", 400000000, 7668159),
+        ("2020D1", 2147483648, 5881630),
+    ],
+)
+def test_GH_1352_36j(use_duckdb: bool, period: str, shift: int, year: int) -> None:
+    """Extra of case 36: timeshift of a Time_Period back to a year below 1000, also below 0,
+    gives a year no Time_Period has, so it raises 2-1-19-10, checked for each period indicator
+    on its own. The DuckDB engine wrote a null Identifier for S and Q and raised a raw
+    ValueError for A, and the pandas engine raised a raw ValueError below the year 0 for S, Q, M,
+    W and D. A shift of hundreds of millions of periods gives the same error and year: the DuckDB
+    engine raised a raw OutOfRange, Overflow or Conversion exception (issue #1352)."""
+    _check_shift_out_of_range(use_duckdb, period, shift, year)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("period", ["9999A", "9999S2", "9999Q4", "9999M12", "9999W52", "9999D365"])
+def test_GH_1352_36k(use_duckdb: bool, period: str) -> None:
+    """Extra of case 36: timeshift of the last Time_Period of the year 9999 forward by one
+    period gives the year 10000, which no Time_Period has, so it raises 2-1-19-10, checked for
+    each period indicator on its own. The DuckDB engine wrote a null Identifier (issue #1352)."""
+    _check_shift_out_of_range(use_duckdb, period, 1, 10000)
+
+
+def _check_dateadd_out_of_range(
+    use_duckdb: bool, script: str, value: str, year: int, data_type: str = "Date"
+) -> None:
+    """Check that dateadd of the Measure Me_1 holding value raises 2-1-19-10 for the year."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": data_type, "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    with pytest.raises(RT) as context:
+        run(
+            script=script,
+            data_structures=structures,
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [value]})},
+            use_duckdb=use_duckdb,
+        )
+    assert context.value.args[1] == "2-1-19-10"
+    assert context.value.args[0].startswith(f"Invalid year {year}, must be between 1000 and 9999.")
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("period", ["A", "S", "Q", "M", "W", "D"])
+def test_GH_1352_26b(use_duckdb: bool, period: str) -> None:
+    """Extra of case 26: dateadd of the Date 9999-12-31 forward by one period gives the year
+    10000, which no Date has, so it raises 2-1-19-10, checked for each period indicator on its
+    own. The pandas engine raised a raw ValueError or OverflowError and the DuckDB engine wrote
+    a Date of the year 10000 (issue #1352)."""
+    script = f'DS_r <- DS_1 [ calc Me_2 := dateadd ( Me_1 , 1 , "{period}" ) ];'
+    _check_dateadd_out_of_range(use_duckdb, script, "9999-12-31", 10000)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_26d(use_duckdb: bool) -> None:
+    """Extra of case 26: dateadd of the Date 2020-01-31 forward by 300 million years gives the
+    year 300002020, which no Date has, so it raises 2-1-19-10, as for one year past 9999. The
+    DuckDB engine raised a raw OutOfRangeException (issue #1352)."""
+    script = 'DS_r <- DS_1 [ calc Me_2 := dateadd ( Me_1 , 300000000 , "A" ) ];'
+    _check_dateadd_out_of_range(use_duckdb, script, "2020-01-31", 300002020)
+
+
+def _date_structures(scalar: bool = False) -> Dict[str, Any]:
+    """DS_1 with an Integer Identifier and a String Measure Me_1, and a Date Scalar SC_1."""
+    structures: Dict[str, Any] = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "String", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    if scalar:
+        structures["scalars"] = [{"name": "SC_1", "type": "Date"}]
+    return structures
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize(
+    "path, script, me_type, scalar, code",
+    [
+        pytest.param("load", "DS_r <- DS_1;", "Date", False, "0-3-1-6", id="load"),
+        pytest.param(
+            "literal cast",
+            'DS_r <- DS_1 [ calc Me_2 := cast ( "0999-12-31" , date ) ];',
+            "String",
+            False,
+            "1-1-5-6",
+            id="literal_cast",
+        ),
+        pytest.param(
+            "data cast",
+            "DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , date ) ];",
+            "String",
+            False,
+            "2-1-19-8",
+            id="data_cast",
+        ),
+        pytest.param(
+            "scalar value",
+            "DS_r <- DS_1 [ calc Me_2 := SC_1 ];",
+            "String",
+            True,
+            "0-1-2-7",
+            id="scalar_value",
+        ),
+        pytest.param(
+            "result",
+            'DS_r <- DS_1 [ calc Me_2 := dateadd ( Me_1 , -1 , "D" ) ];',
+            "Date",
+            False,
+            "2-1-19-10",
+            id="result",
+        ),
+    ],
+)
+def test_GH_1352_26g(
+    use_duckdb: bool, path: str, script: str, me_type: str, scalar: bool, code: str
+) -> None:
+    """Extra of case 26: a Date has the years 1000 to 9999, so the year 999 raises the error of
+    each path: 0999-12-31 loaded, cast from a literal or from data, given as a Scalar value,
+    and the Date that dateadd gives one day before 1000-01-01 (issue #1352)."""
+    structures = _date_structures(scalar)
+    structures["datasets"][0]["DataStructure"][1]["type"] = me_type
+    value = "1000-01-01" if path == "result" else "0999-12-31"
+    with pytest.raises(VTLEngineException) as context:
+        run(
+            script=script,
+            data_structures=structures,
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": [value]})},
+            scalar_values={"SC_1": "0999-12-31"} if scalar else None,
+            use_duckdb=use_duckdb,
+        )
+    assert context.value.args[1] == code
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize(
+    "value, period, year",
+    [
+        ("1000-01-01", "A", 999),
+        ("1000-01-01", "S", 999),
+        ("1000-01-01", "Q", 999),
+        ("1000-01-01", "M", 999),
+        ("1000-01-01", "W", 999),
+        ("1000-01-01", "D", 999),
+        ("1000Q1", "A", 999),
+    ],
+)
+def test_GH_1352_26c(use_duckdb: bool, value: str, period: str, year: int) -> None:
+    """Extra of case 26: dateadd back by one period of the Date 1000-01-01, or of the
+    Time_Period 1000Q1, gives a year below 1000, which no Date has, so it raises 2-1-19-10,
+    checked for each period indicator on its own. Both engines wrote the Date, 999-12-31 on the
+    pandas engine and 0999-12-31 on the DuckDB engine (issue #1352)."""
+    data_type = "Time_Period" if "Q" in value else "Date"
+    script = f'DS_r <- DS_1 [ calc Me_2 := dateadd ( Me_1 , -1 , "{period}" ) ];'
+    _check_dateadd_out_of_range(use_duckdb, script, value, year, data_type)

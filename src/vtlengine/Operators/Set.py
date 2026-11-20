@@ -6,7 +6,7 @@ from vtlengine.AST.Grammar.tokens import INTERSECT, SETDIFF, SYMDIFF, UNION
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset
-from vtlengine.Operators import Operator, share_value_domains
+from vtlengine.Operators import Operator, share_value_domains, time_names, to_time
 from vtlengine.Utils._dataframe import merge_frames
 
 
@@ -46,6 +46,14 @@ class Set(Operator):
                     dataset_2=dataset_2.name,
                 )
 
+    @staticmethod
+    def _time_operands(operands: List[Dataset], result: Dataset) -> List[Dataset]:
+        """The operands with their Date or Time_Period Components that are Time in the result
+        cast to Time, so that their values and the matching of their Data Points are Time
+        values (issue #1352)."""
+        names = time_names(result)
+        return [to_time(operand, names) for operand in operands]
+
     @classmethod
     def validate(cls, operands: List[Dataset]) -> Dataset:
         base_operand = operands[0]
@@ -76,6 +84,7 @@ class Union(Set):
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
+        operands = cls._time_operands(operands, result)
         all_datapoints = [ds.data for ds in operands]
         result.data = pd.concat(all_datapoints, sort=True, ignore_index=True)
         identifiers_names = result.get_identifiers_names()
@@ -90,6 +99,7 @@ class Intersection(Set):
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
+        operands = cls._time_operands(operands, result)
         all_datapoints = [ds.data for ds in operands]
         for data in all_datapoints:
             if result.data is None:
@@ -122,6 +132,7 @@ class Symdiff(Set):
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
+        operands = cls._time_operands(operands, result)
         id_names = result.get_identifiers_names()
         not_identifiers = (
             result.get_measures_names()
@@ -159,6 +170,7 @@ class Setdiff(Set):
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
+        operands = cls._time_operands(operands, result)
         all_datapoints = [ds.data for ds in operands]
         for data in all_datapoints:
             if result.data is None:

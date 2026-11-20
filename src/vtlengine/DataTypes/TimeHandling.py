@@ -1,7 +1,7 @@
 import calendar
 import copy
 import operator
-from datetime import date
+from datetime import date, timedelta
 from datetime import datetime as dt
 from typing import Any, Dict, Optional, Union
 
@@ -14,6 +14,43 @@ PERIOD_IND_MAPPING = {"A": 6, "S": 5, "Q": 4, "M": 3, "W": 2, "D": 1}
 PERIOD_IND_MAPPING_REVERSE = {6: "A", 5: "S", 4: "Q", 3: "M", 2: "W", 1: "D"}
 
 PERIOD_INDICATORS = ["A", "S", "Q", "M", "W", "D"]
+
+
+# The proleptic Gregorian calendar, and its ISO weeks, repeat every 400 years of 146097 days
+_DAYS_IN_400_YEARS = 146097
+_ORDINAL_2000 = date(2000, 1, 1).toordinal()
+
+
+def date_of_ordinal(ordinal: int) -> tuple[date, int]:
+    """The day ``ordinal`` of the proleptic Gregorian calendar, also out of the years 1 to 9999
+    that a date holds: the date on the same day of the calendar 400 times k years apart, and
+    the 400 times k years to add to its year or to its ISO year (issue #1352)."""
+    cycles = (ordinal - _ORDINAL_2000) // _DAYS_IN_400_YEARS
+    return date.fromordinal(ordinal - cycles * _DAYS_IN_400_YEARS), cycles * 400
+
+
+# The years of a Date, a Time_Period and a Time: those written with four digits, from 1000 to
+# 9999, which every loader, cast and time operator keeps to (issue #1352)
+MIN_YEAR = 1000
+MAX_YEAR = 9999
+
+
+def shifted_year(day: date, months: int, days: int) -> int:
+    """The year of day moved by months and then by days, also out of the years a date holds
+    (issue #1352)."""
+    year, month = divmod(day.year * 12 + day.month - 1 + months, 12)
+    if months and not MIN_YEAR <= year <= MAX_YEAR:
+        # The days move further in the same direction
+        return year
+    moved = date(year, month + 1, min(day.day, calendar.monthrange(year, month + 1)[1]))
+    shifted, years = date_of_ordinal(moved.toordinal() + days)
+    return shifted.year + years
+
+
+def check_year(year: int) -> None:
+    """A time value has a year from MIN_YEAR to MAX_YEAR (issue #1352)."""
+    if year < MIN_YEAR or year > MAX_YEAR:
+        raise RunTimeError("2-1-19-10", year=year, min_year=MIN_YEAR)
 
 
 class TimePeriodConfig:
@@ -192,19 +229,13 @@ class TimePeriodHandler:
             period_number_str = str(self.period_number)
         return f"{self.year}-{self.period_indicator}{period_number_str}"
 
-    @staticmethod
-    def _check_year(year: int) -> None:
-        if year < 0 or year > 9999:
-            raise RunTimeError("2-1-19-10", year=year)
-            # raise ValueError(f'Invalid year {year}, must be between 1900 and 9999.')
-
     @property
     def year(self) -> int:
         return self._year
 
     @year.setter
     def year(self, value: int) -> None:
-        self._check_year(value)
+        check_year(value)
         self._year = value
 
     @property
@@ -331,6 +362,14 @@ class TimePeriodHandler:
     def __ge__(self, other: Any) -> Optional[bool]:
         return self._meta_comparison(other, operator.ge)
 
+    def _last_day_in_year(self) -> date:
+        """The last day of the period in its own year: a week keeps the year it is numbered in,
+        so a week that ends in the next year ends on the last day of its own (issue #1352)."""
+        if self.period_indicator != "W":
+            return period_to_date(self.year, self.period_indicator, self.period_number)
+        start = period_to_date(self.year, "W", self.period_number, start=True)
+        return min(start, date(self.year, 12, 25)) + timedelta(days=6)
+
     def change_indicator(self, new_indicator: str) -> None:
         if self.period_indicator == new_indicator:
             return
@@ -340,7 +379,7 @@ class TimePeriodHandler:
                 value=self.period_indicator,
                 new_indicator=new_indicator,
             )
-        date_value = period_to_date(self.year, self.period_indicator, self.period_number)
+        date_value = self._last_day_in_year()
         self.period_indicator = new_indicator
         self.period_number = date_to_period(
             date_value, period_indicator=new_indicator
@@ -659,15 +698,23 @@ def interval_to_period_str(interval_value: str) -> Optional[str]:
     except ValueError:
         return None
 
+    if start.year < MIN_YEAR:
+        # A period has a year of four digits (issue #1352)
+        return None
     # Try each period indicator from largest to smallest
     for indicator in ["A", "S", "Q", "M", "W", "D"]:
         period_handler = date_to_period(start, indicator)
-        expected_start = period_to_date(
-            period_handler.year, indicator, period_handler.period_number, start=True
-        )
-        expected_end = period_to_date(
-            period_handler.year, indicator, period_handler.period_number, start=False
-        )
+        try:
+            expected_start = period_to_date(
+                period_handler.year, indicator, period_handler.period_number, start=True
+            )
+            expected_end = period_to_date(
+                period_handler.year, indicator, period_handler.period_number, start=False
+            )
+        except (ValueError, OverflowError):
+            # The last week of 9999 ends in a year no date has, so it is no such interval
+            # (issue #1352)
+            continue
         if expected_start == start and expected_end == end:
             return str(period_handler)
     return None

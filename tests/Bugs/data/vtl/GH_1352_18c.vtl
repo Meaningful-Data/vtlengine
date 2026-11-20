@@ -1,0 +1,1 @@
+DS_r <- DS_1 [ calc Me_3 := lag ( Me_1 , 1 , "z" over ( order by Id_1 ) ) , Me_4 := lag ( Me_2 , 1 , cast ( "2019-01-01" , date ) over ( order by Id_1 ) ) , Me_5 := lead ( Me_1 , 1 , null over ( order by Id_1 ) ) ] [ keep Me_3 , Me_4 , Me_5 ];

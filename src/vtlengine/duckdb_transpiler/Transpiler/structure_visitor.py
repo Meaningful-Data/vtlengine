@@ -2,6 +2,7 @@
 
 from contextlib import contextmanager
 from copy import copy
+from functools import reduce
 from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union
 
 import vtlengine.AST as AST
@@ -24,29 +25,27 @@ from vtlengine.DataTypes import (
     Number,
     TimeInterval,
     TimePeriod,
+    binary_implicit_promotion,
 )
 from vtlengine.DataTypes import String as StringType
 from vtlengine.DataTypes._time_checking import _has_time_component
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.duckdb_transpiler.sql import references_raising_macro
-from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS, get_duckdb_type
+from vtlengine.duckdb_transpiler.Transpiler.operators import (
+    COMPARISON_OPS,
+    calls_raising_function,
+    get_duckdb_type,
+    text_to_period,
+)
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset, Role, ValueDomain, value_of
 from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Clause import Pivot, Unpivot
 from vtlengine.Operators.Join import Apply, merged_viral_attribute_names
+from vtlengine.Operators.Time import Date_Add
 from vtlengine.Operators.Time import Unary as TimeUnary
 from vtlengine.Operators.Validation import error_domains, error_level_type
 from vtlengine.Utils import ANALYTIC_MAPPING, BINARY_MAPPING
-
-
-def _try_normalize_time_period(value: str) -> Optional[str]:
-    """Return the canonical TimePeriod string, or None if the handler rejects it."""
-    try:
-        return str(TimePeriodHandler(value))
-    except Exception:
-        return None
-
 
 # Operand type tags
 _DATASET = "Dataset"
@@ -61,6 +60,9 @@ _UDO_CHECKS_PREFIX = "__checks__"
 _UDO_CALL = "__call__"
 # Key of a UDO scope with the name of its operator
 _UDO_OP = "__op__"
+# Key of a UDO scope with the name of the scalar a parameter takes: the scalar the argument
+# names, or the parameter that took a value no scalar names
+_UDO_NAME_PREFIX = "__name__"
 
 # Role encoded in UnaryOp.op for calc clauses.
 _CALC_ROLE_BY_TOKEN: Dict[str, Role] = {
@@ -363,7 +365,7 @@ class StructureVisitor(ASTTemplate):
                 return f"{sql_type} '{value}'"
             escaped = value.replace("'", "''")
             if type_name == "TimePeriod":
-                canonical = _try_normalize_time_period(value)
+                canonical = text_to_period(value)
                 if canonical is not None:
                     return f"'{canonical.replace(chr(39), chr(39) * 2)}'"
                 return f"vtl_period_normalize('{escaped}')"
@@ -411,13 +413,15 @@ class StructureVisitor(ASTTemplate):
         with the operation that holds it when its statistics show that a join needs no row
         of that operation, as an if or a case operand of another one (issue #1314). The
         operands already materialized inside it are read from their own CTE, so they are
-        not checked again.
+        not checked again. Its rows are read as a whole, which no row is not, as DuckDB leaves
+        out of the CTE a column the statement does not read, as a calc Measure that a later
+        keep or drop removes (issue #1352).
         """
-        if not references_raising_macro(sql):
+        if not references_raising_macro(sql) and not calls_raising_function(sql):
             return sql
         cte = quote_name(f"_vtl_checked_{len(self._materialized_operands)}")
         self._materialized_operands.append((cte, sql))
-        return f"(SELECT * FROM {cte})"
+        return f"(SELECT * FROM {cte} WHERE {cte} IS NOT NULL)"
 
     def _with_checked_operands(self, sql: str) -> str:
         """The query ``sql`` of a statement after the MATERIALIZED CTEs of the operands that
@@ -595,7 +599,10 @@ class StructureVisitor(ASTTemplate):
         """The structure of the first Data Set operand of an if or a case, as in the semantic
         analysis (issue #1304)."""
         operands = self._branch_operands(node)
-        return next(filter(None, map(self._get_dataset_structure, operands)), None)
+        structures = [self._get_dataset_structure(op) for op in operands]
+        first = next(filter(None, structures), None)
+        names = set(first.get_measures_names()) if first is not None else set()
+        return self._with_time(first, structures, names)
 
     def _resolve_varid_structure(self, node: AST.VarID) -> Optional[Dataset]:
         """Resolve a VarID (including UDO bindings) to its dataset structure."""
@@ -726,8 +733,15 @@ class StructureVisitor(ASTTemplate):
     def _resolve_paramop_structure(self, node: AST.ParamOp) -> Optional[Dataset]:
         """Resolve a ParamOp to its dataset structure."""
         ds = self._get_dataset_structure(node.children[0]) if node.children else None
-        if ds is None or node.op in (tokens.FILL_TIME_SERIES, tokens.DATE_ADD):
+        if ds is None or node.op == tokens.FILL_TIME_SERIES:
             return ds
+        if node.op == tokens.DATE_ADD:
+            # The shifted Components are Dates, as in the semantic analysis (issue #1352)
+            comps = {name: copy(comp) for name, comp in ds.components.items()}
+            for shifted in Date_Add._dateadd_targets(ds):
+                comps[shifted.name].data_type = Date
+                comps[shifted.name].value_domain = None
+            return Dataset(name=ds.name, components=comps, data=None)
         measures = ds.get_measures()
         if len(measures) == 1 and node.op == tokens.INSTR:
             return self._build_integer_result_structure(ds)
@@ -780,6 +794,11 @@ class StructureVisitor(ASTTemplate):
             if ds is not None and len(ds.get_measures_names()) == 1:
                 return self._build_boolean_result_structure(ds)
             return self._without_attributes(ds)
+        if node.op in (tokens.UNION, tokens.INTERSECT, tokens.SETDIFF, tokens.SYMDIFF):
+            structures = [self._get_dataset_structure(child) for child in node.children]
+            first = structures[0]
+            names = set(first.components) if first is not None else set()
+            return self._with_time(first, structures, names)
         return self._get_dataset_structure(node.children[0])
 
     def _build_aggregation_structure(self, node: AST.Aggregation) -> Optional[Dataset]:
@@ -850,10 +869,16 @@ class StructureVisitor(ASTTemplate):
                 if scope is None:
                     bindings[param_name] = argument
                     bindings[f"{_UDO_DEPTH_PREFIX}{param_name}"] = depth
+                    bindings[f"{_UDO_NAME_PREFIX}{param_name}"] = (
+                        argument.value if isinstance(argument, AST.VarID) else param_name
+                    )
                 else:
                     bindings[param_name] = scope[argument.value]
                     bindings[f"{_UDO_DEPTH_PREFIX}{param_name}"] = scope.get(
                         f"{_UDO_DEPTH_PREFIX}{argument.value}"
+                    )
+                    bindings[f"{_UDO_NAME_PREFIX}{param_name}"] = scope.get(
+                        f"{_UDO_NAME_PREFIX}{argument.value}", argument.value
                     )
                     inherited = scope.get(f"{_UDO_CHECKS_PREFIX}{argument.value}", [])
             elif param_info.get("default") is not None:
@@ -945,6 +970,34 @@ class StructureVisitor(ASTTemplate):
     ) -> Component:
         """Build a ``Component`` with the common field ordering."""
         return Component(name=name, data_type=dtype, role=role, nullable=nullable)
+
+    def _with_time(
+        self, ds: Optional[Dataset], structures: List[Optional[Dataset]], names: Set[str]
+    ) -> Optional[Dataset]:
+        """The structure ``ds`` with its Date or Time_Period Components ``names`` that are Time
+        in one of the ``structures`` as Time, as the operators cast them to Time (issue
+        #1352), as in the semantic analysis."""
+        if ds is None:
+            return None
+        time = {
+            name
+            for structure in structures
+            if structure is not None
+            for name, comp in structure.components.items()
+            if comp.data_type is TimeInterval and name in names
+        }
+        changed = [
+            name
+            for name, comp in ds.components.items()
+            if name in time and comp.data_type in (Date, TimePeriod)
+        ]
+        if not changed:
+            return ds
+        comps = dict(ds.components)
+        for name in changed:
+            comp = comps[name]
+            comps[name] = self._make_comp(name, TimeInterval, comp.role, comp.nullable)
+        return Dataset(name=ds.name, components=comps, data=None)
 
     @staticmethod
     def _identifiers_dict(ds: Dataset) -> Dict[str, Component]:
@@ -1048,7 +1101,9 @@ class StructureVisitor(ASTTemplate):
 
         comps = self._identifiers_dict(left_ds)
         comps["bool_var"] = self._make_comp("bool_var", Boolean)
-        return Dataset(name="", components=comps, data=None)
+        right_ds = self._get_dataset_structure(node.children[1])
+        ds = Dataset(name="", components=comps, data=None)
+        return self._with_time(ds, [right_ds], set(left_ds.get_identifiers_names()))
 
     # =========================================================================
     # Structure builders for clause operations
@@ -1171,27 +1226,30 @@ class StructureVisitor(ASTTemplate):
             constraints = self._udos[node.op].get("return_constraints")
             constraint = constraints.value if constraints is not None else None
             return constraint.value_domain if constraint is not None else None
-        if isinstance(node, AST.BinOp) and node.op == tokens.NVL:
-            operands = [node.left, node.right]
-        elif isinstance(node, AST.If):
-            operands = [node.thenOp, node.elseOp]
-        elif isinstance(node, AST.Case):
-            operands = [case.thenOp for case in node.cases] + [node.elseOp]
-        else:
+        operands = self._choice_operands(node)
+        if operands is None:
             return None
-        domains = [
-            self._calc_value_domain(operand, source)
-            for operand in operands
-            if not (isinstance(operand, AST.Constant) and operand.value is None)
-        ]
+        domains = [self._calc_value_domain(operand, source) for operand in operands]
         names = {None if domain is None else domain.name for domain in domains}
         return domains[0] if len(names) == 1 else None
+
+    def _choice_operands(self, node: AST.AST) -> Optional[List[AST.AST]]:
+        """The operands an nvl, an if-then-else or a case can return, nulls aside, or ``None``
+        for any other expression."""
+        if isinstance(node, AST.BinOp) and node.op == tokens.NVL:
+            operands = [node.left, node.right]
+        elif isinstance(node, (AST.If, AST.Case)):
+            operands = self._branch_operands(node)
+        else:
+            return None
+        return [op for op in operands if not (isinstance(op, AST.Constant) and op.value is None)]
 
     def _calc_value_type(self, node: AST.AST, source: Dataset) -> Any:
         """Data type of a calc expression, or ``None`` when unknown.
 
-        Only literals, plain component references, a cast into a value domain and a
-        time_agg of a typed operand are resolved. Callers must treat the result as a best
+        Only literals, plain component and scalar references (also in parentheses), a cast, the
+        call of a user defined operator, a time_agg of a typed operand, period_indicator and an
+        nvl, an if or a case of typed operands are resolved. Callers must treat the result as a best
         effort, not as a guarantee of the column type.
         """
         value_domain = self._calc_value_domain(node, source)
@@ -1199,14 +1257,34 @@ class StructureVisitor(ASTTemplate):
             return value_domain.type
         if isinstance(node, AST.Constant) and node.value is not None:
             return BASIC_TYPES.get(type(node.value), Number)
+        if isinstance(node, AST.ParFunction):
+            return self._calc_value_type(node.operand, source)
         if isinstance(node, AST.VarID):
-            comp = source.components.get(self._resolve_udo_name(node.value))
+            name = self._resolve_udo_name(node.value)
+            comp = source.components.get(name) or self.scalars.get(name)
             if comp is not None:
                 return comp.data_type
         if isinstance(node, AST.TimeAggregation) and node.operand is not None:
             # time_agg keeps the type of its operand, a Time_Period or a Date (issue #1309)
             return self._calc_value_type(node.operand, source)
-        return None
+        if isinstance(node, AST.UnaryOp) and node.op == tokens.PERIOD_INDICATOR:
+            return Duration
+        if isinstance(node, AST.ParamOp) and node.op == tokens.CAST and len(node.children) > 1:
+            # The type a cast converts to (issue #1352)
+            target = node.children[1]
+            return target if isinstance(target, type) else None
+        if isinstance(node, AST.UDOCall) and node.op in self._udos:
+            # The type of the result the semantic analysis gives (issue #1352)
+            return getattr(self._udo_result(node), "data_type", None)
+        types = [self._calc_value_type(op, source) for op in self._choice_operands(node) or []]
+        if not types or None in types:
+            return None
+        # An nvl, an if or a case has the common type of its operands, as the semantic analysis
+        # gives it: a Number for Integers and Numbers, a Time for Dates and Times (issue #1352)
+        try:
+            return reduce(binary_implicit_promotion, types)
+        except SemanticError:
+            return None
 
     def _build_ds_ds_binop_structure(self, node: AST.BinOp) -> Optional[Dataset]:
         """Build structure for dataset-dataset binary ops."""
@@ -1236,7 +1314,10 @@ class StructureVisitor(ASTTemplate):
                 if comp.role == Role.VIRAL_ATTRIBUTE:
                     comps[name] = comp
 
-        return Dataset(name=left_ds.name, components=comps, data=None)
+        # The keys, and the Measures of nvl, are Time where one operand has a Time (#1352)
+        names = all_ids | (right_measures if node.op == tokens.NVL else set())
+        ds = Dataset(name=left_ds.name, components=comps, data=None)
+        return self._with_time(ds, [left_ds, right_ds], names)
 
     @staticmethod
     def _iter_assignments(children: List[AST.AST]) -> List[AST.Assignment]:
@@ -1494,7 +1575,8 @@ class StructureVisitor(ASTTemplate):
                     comps[comp_name] = comp
         if not comps:
             return self._get_output_dataset()
-        return Dataset(name="_join", components=comps, data=None)
+        ds = Dataset(name="_join", components=comps, data=None)
+        return self._with_time(ds, [ds for _, ds in clause_datasets], all_join_ids)
 
     # =========================================================================
     # Component name resolution helpers
