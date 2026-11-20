@@ -2965,7 +2965,8 @@ class InterpreterAnalyzer(ASTTemplate):
     def _udo_scalar_argument(self, op: str, param: Dict[str, Any], argument: Any) -> Scalar:
         """The value a parameter of a basic type takes, given or by default: it must be of the
         type the parameter declares, or promote to it, and is cast to it. A Number with
-        decimals is no Integer."""
+        decimals is no Integer: a literal raises 1-2-18, which the semantic analysis raises too,
+        and a value computed when the script runs is an error of the data (issue #1364)."""
         if isinstance(argument, (Dataset, DataComponent)):
             type_2 = "Dataset" if isinstance(argument, Dataset) else "Component"
             raise SemanticError(
@@ -2973,9 +2974,12 @@ class InterpreterAnalyzer(ASTTemplate):
             )
         scalar_type = param["type"]
         value = argument.value
-        if not check_unary_implicit_promotion(argument.data_type, scalar_type) or (
+        has_decimals = (
             scalar_type == Integer and isinstance(value, float) and not value.is_integer()
-        ):
+        )
+        if has_decimals and not argument.literal:
+            raise RunTimeError("2-3-10", op=op, value=value, param_name=param["name"])
+        if not check_unary_implicit_promotion(argument.data_type, scalar_type) or has_decimals:
             raise SemanticError(
                 "1-2-18",
                 param_type=scalar_type,

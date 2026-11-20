@@ -11428,18 +11428,18 @@ class ValueDomainBugs(BugHelper):
         Expression: define operator f ( x integer ) returns integer is x end operator;
                     SC_r <- f ( 7 / 2 );
         Description: The Number 3.5 is not an Integer, which the parameter x declares: the
-                     call raises 1-2-18 where it is computed, as the semantic analysis does
-                     not know the value and gives the structure. The DuckDB engine rounded
-                     3.5 to the Integer 4.
+                     call raises the RunTimeError 2-3-10 where it is computed (issue #1364), as
+                     the semantic analysis does not know the value and gives the structure. The
+                     DuckDB engine rounded 3.5 to the Integer 4.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Exception.
         """
-        with pytest.raises(SemanticError) as context:
+        with pytest.raises(RunTimeError) as context:
             self.BaseTest(code="GH_1351_37", number_inputs=1, references_names=["1"])
         self._check_error(
             context.value,
-            "1-2-18",
-            "Expected Integer, got Number on UDO f, parameter x.",
+            "2-3-10",
+            "At op f: The value 3.5 given to the parameter x is not an Integer.",
         )
         self.BaseTest(
             code="GH_1351_37", number_inputs=1, references_names=["1"], only_semantic=True
@@ -11541,19 +11541,19 @@ class ValueDomainBugs(BugHelper):
         Expression: define operator f ( x integer , y integer ) returns integer is y
                         end operator;
                     SC_r <- f ( 7 / 2 , 1 );
-        Description: Extra case: the Number 3.5 given to the integer parameter x raises
-                     1-2-18 where the call is computed, on both engines, also when the body
-                     never reads x (test_GH_1351_37 reads it). The semantic analysis does not
-                     know the value and gives the structure.
+        Description: Extra case: the Number 3.5 given to the integer parameter x raises the
+                     RunTimeError 2-3-10 where the call is computed (issue #1364), on both
+                     engines, also when the body never reads x (test_GH_1351_37 reads it). The
+                     semantic analysis does not know the value and gives the structure.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Exception.
         """
-        with pytest.raises(SemanticError) as context:
+        with pytest.raises(RunTimeError) as context:
             self.BaseTest(code="GH_1351_43", number_inputs=1, references_names=["1"])
         self._check_error(
             context.value,
-            "1-2-18",
-            "Expected Integer, got Number on UDO f, parameter x.",
+            "2-3-10",
+            "At op f: The value 3.5 given to the parameter x is not an Integer.",
         )
         self.BaseTest(
             code="GH_1351_43", number_inputs=1, references_names=["1"], only_semantic=True
@@ -14446,4 +14446,56 @@ class ValueDomainFollowUpBugs(BugHelper):
             exception_message="At op +: Incompatible types for common identifier Id_1: String "
             "and Integer.",
             vd_names=self.vd_1364,
+        )
+
+    def test_GH_1364_25(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( 3.5 ); (x integer)
+        Description: Control: the literal 3.5 given to the integer parameter x is known from the
+                     script, so the semantic analysis raises too.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_25",
+            number_inputs=1,
+            exception_code="1-2-18",
+            exception_message="Expected Integer, got Number on UDO f, parameter x.",
+            vd_names=self.vd_1364,
+        )
+
+    def test_GH_1364_26(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( 7 / 2 ); (x integer)
+        Description: The value 3.5 given to the integer parameter x is computed when the script
+                     runs, so it is an error of the data, which the semantic analysis accepts. It
+                     raised the SemanticError 1-2-18.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_26",
+            number_inputs=1,
+            exception_code="2-3-10",
+            exception_message="At op f: The value 3.5 given to the parameter x is not an Integer.",
+            vd_names=self.vd_1364,
+        )
+
+    def test_GH_1364_27(self):
+        """
+        Status: OK
+        Expression: SC_r <- f ( SC_1 / 2 ); (x integer, SC_1 = 7)
+        Description: As 26, with the value of the input scalar SC_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1364_27",
+            number_inputs=2,
+            exception_code="2-3-10",
+            exception_message="At op f: The value 3.5 given to the parameter x is not an Integer.",
+            vd_names=self.vd_1364,
+            scalars={"SC_1": 7},
         )

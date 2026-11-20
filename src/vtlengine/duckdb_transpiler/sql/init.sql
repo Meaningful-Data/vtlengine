@@ -375,11 +375,12 @@ CREATE OR REPLACE MACRO vtl_param_min(x, min_value, op_name, param_name) AS (
 
 -- A scalar argument of an integer parameter of a user defined operator. A whole
 -- Number is the Integer, one with decimals is no Integer (mirrors VTL error
--- 1-2-18, which the pandas engine raises where the call is computed). where is
--- the operator and the parameter, separated by a broken bar.
+-- 2-3-10, which the pandas engine raises where the call is computed, as a literal
+-- with decimals raises 1-2-18 in the semantic analysis first). where is the
+-- operator and the parameter, separated by a broken bar.
 CREATE OR REPLACE MACRO vtl_udo_integer(x, where_) AS (
     CASE WHEN x <> trunc(x)
-         THEN error('VTL 1-2-18 ' || where_)
+         THEN error('VTL 2-3-10 ' || where_ || chr(166) || CAST(x AS VARCHAR))
          ELSE CAST(x AS BIGINT)
     END
 );
