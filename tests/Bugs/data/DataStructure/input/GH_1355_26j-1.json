@@ -1,0 +1,27 @@
+{
+  "datasets": [
+    {
+      "name": "DS_3",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "role": "Identifier",
+          "type": "Integer",
+          "nullable": false
+        },
+        {
+          "name": "Me_2",
+          "role": "Measure",
+          "type": "Integer",
+          "nullable": true
+        }
+      ]
+    }
+  ],
+  "scalars": [
+    {
+      "name": "SI_1",
+      "type": "Integer"
+    }
+  ]
+}

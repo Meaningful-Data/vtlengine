@@ -383,13 +383,13 @@ CREATE OR REPLACE MACRO vtl_lag_offset(x, op_name) AS (
     END
 );
 
--- A bound of an analytic window that a Scalar gives when only the query knows it.
--- A null or negative one is not taken as a bound, and a Number is rounded half away
--- from zero, as the offset of lag (issue #1355).
-CREATE OR REPLACE MACRO vtl_window_bound(x) AS (
-    CASE WHEN x IS NULL OR x < 0
-         THEN error('VTL window bound ' || COALESCE(CAST(x AS VARCHAR), 'null')
-                    || ' is not a number of data points or a range')
+-- A bound of an analytic window that a Scalar gives when only the query knows it,
+-- checked as the pandas engine checks it. A Number is rounded half away from zero,
+-- as the offset of lag, and a null or negative bound raises VTL error 2-1-18-1
+-- (issue #1355).
+CREATE OR REPLACE MACRO vtl_window_bound(x, op_name) AS (
+    CASE WHEN x IS NULL OR round(x) < 0
+         THEN error('VTL 2-1-18-1 ' || op_name || ' Window bound')
          ELSE CAST(round(x) AS BIGINT)
     END
 );

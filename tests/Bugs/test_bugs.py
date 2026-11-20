@@ -14549,7 +14549,7 @@ class SemanticCheckBugs(BugHelper):
             code="GH_1356_12",
             number_inputs=1,
             exception_code="2-1-18-1",
-            exception_message="At op sum: Window bound parameter should be Integer.",
+            exception_message="At op sum: Window bound parameter should be a non-negative Integer.",
             scalars={"SC_1": None},
         )
 
@@ -17945,4 +17945,91 @@ class NameResolutionBugs(BugHelper):
             exception_message="At op left_join: Invalid subcase B2, the using component 'Id_2' "
             "must be an Identifier of the Dataset 'B', as of every operand except the "
             "left-most one.",
+        )
+
+    def test_GH_1355_26j(self):
+        """
+        Status: OK
+        Expression: SC_1 <- SI_1 + 1;
+                    DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SC_1 preceding and current data point ) ) ];
+                    (SI_1 an input Integer Scalar, null)
+        Description: Extra of test_GH_1355_26: the bound of the window that a statement computes
+                     is null, which raises 2-1-18-1 on both engines. The DuckDB engine raised an
+                     internal InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_26j",
+            number_inputs=1,
+            exception_code="2-1-18-1",
+            exception_message="At op sum: Window bound parameter should be a non-negative Integer.",
+            scalars={"SI_1": None},
+        )
+
+    def test_GH_1355_26k(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer ) returns dataset is
+                        sum ( DS_3 over ( order by Id_1 data points
+                        between current data point and x following ) ) end operator;
+                    DS_r <- f ( null );
+        Description: Extra of test_GH_1355_26: the null given to the parameter x is the bound of
+                     the window, which raises 2-1-18-1 on both engines. The DuckDB engine raised
+                     an internal BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_26k",
+            number_inputs=1,
+            exception_code="2-1-18-1",
+            exception_message="At op sum: Window bound parameter should be a non-negative Integer.",
+        )
+
+    def test_GH_1355_26l(self):
+        """
+        Status: OK
+        Expression: SC_1 <- SI_1 * 2;
+                    DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SC_1 preceding and current data point ) ) ];
+                    DS_s <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SI_1 preceding and current data point ) ) ];
+                    (SI_1 an input Integer Scalar, -1)
+        Description: Extra of test_GH_1355_26: a negative bound of the window that a Scalar
+                     gives, computed by a statement or an input one, raises 2-1-18-1 on both
+                     engines, as a null one does. The input Scalar gave an unbounded window, and
+                     the computed one an internal ParserException on the pandas engine and an
+                     internal InvalidInputException on the DuckDB engine.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_26l",
+            number_inputs=1,
+            exception_code="2-1-18-1",
+            exception_message="At op sum: Window bound parameter should be a non-negative Integer.",
+            scalars={"SI_1": -1},
+        )
+
+    def test_GH_1355_26m(self):
+        """
+        Status: OK
+        Expression: DS_a <- round ( DS_3 , 1 );
+                    DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SF_2 preceding and current data point ) ) ];
+                    (SF_2 an input Number Scalar, 10000000000000000000.0)
+        Description: Extra of test_GH_1355_26: the bound of the window that a Scalar gives does
+                     not depend on an earlier round, so a bound beyond the range of an Integer
+                     raises 2-1-5-1 on both engines. After the round the pandas engine raised an
+                     internal ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_26m",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            scalars={"SF_2": 10000000000000000000.0},
         )

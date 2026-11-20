@@ -110,6 +110,7 @@ from vtlengine.Model import (
     value_of,
 )
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
+from vtlengine.Operators.Analytic import scalar_window_bound
 from vtlengine.Operators.Assignment import Assignment
 from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Comparison import Between, ExistIn, Match
@@ -1484,14 +1485,14 @@ class InterpreterAnalyzer(ASTTemplate):
         return resolved
 
     def _window_bound(self, op: str, node: AST.VarID) -> Any:
-        """The bound of a window that a Scalar gives, as the bound written in the window: 0 is
-        the current data point and a Number is rounded half away from zero, as the offset of
-        lag or lead. A null or a negative value is passed on as it is (issue #1355)."""
+        """The bound of a window that a Scalar gives, as the bound written in the window
+        (scalar_window_bound): 0 is the current data point. A null value, as the semantic
+        analysis reads every input Scalar, is passed on, and raises 2-1-18-1 where the data
+        is computed (issue #1355)."""
         value = self._integer_scalar(op, node, "Window bound").value
-        if pd.isnull(value) or value < 0:
+        if pd.isnull(value):
             return value
-        # A whole number: Round.py_op gives the type of the last round validated
-        value = int(Round.py_op(value, None))
+        value = scalar_window_bound(op, value)
         return "current row" if value == 0 else value
 
     def visit_MulOp(self, node: AST.MulOp) -> None:

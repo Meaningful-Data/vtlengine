@@ -96,10 +96,10 @@ from vtlengine.Model import (
     join_homonyms,
 )
 from vtlengine.Operators import _promotes
+from vtlengine.Operators.Analytic import scalar_window_bound
 from vtlengine.Operators.Clause import Pivot
 from vtlengine.Operators.HROperators import fills_with_zero
 from vtlengine.Operators.Join import merged_viral_attribute_names
-from vtlengine.Operators.Numeric import Round
 from vtlengine.Operators.Time import Period_indicator, Time_Aggregation
 from vtlengine.Operators.Validation import (
     VALIDATION_MEASURES,
@@ -3715,16 +3715,7 @@ FROM (
                     self._clause_component_name(node.order_by[0].component)
                 )
                 order_is_date = comp is not None and comp.data_type == Date
-            for limit in (node.window.start, node.window.stop):
-                scalar = (
-                    self.input_scalars.get(limit.value) if isinstance(limit, AST.VarID) else None
-                )
-                if scalar is not None and pd.isnull(scalar.value):
-                    # A limit read from a null Scalar (issue #1356)
-                    raise RunTimeError(
-                        "2-1-18-1", op=node.op, param_type="Window bound", correct_type="Integer"
-                    )
-            window_sql = self.visit_Windowing(node.window, order_is_date=order_is_date)
+            window_sql = self.visit_Windowing(node.window, op=node.op, order_is_date=order_is_date)
             over_parts.append(window_sql)
         # With no window clause, the default frame of SQL is the default window of VTL 2.2
         # (issue #1249)
@@ -3945,9 +3936,9 @@ FROM (
         return result
 
     def visit_Windowing(  # type: ignore[override]
-        self, node: AST.Windowing, *, order_is_date: bool = False
+        self, node: AST.Windowing, *, op: str, order_is_date: bool = False
     ) -> str:
-        """Visit a windowing specification."""
+        """Visit a windowing specification of the analytic operator op."""
         type_str = str(node.type_).upper() if node.type_ else "ROWS"
         # Map VTL types to SQL: DATA POINTS → ROWS
         if "DATA" in type_str:
@@ -3970,17 +3961,15 @@ FROM (
 
         def scalar_bound(value: Any, mode: str) -> str:
             # A bound that a Scalar gives is read as any Scalar, the argument of a scalar
-            # parameter included, and a Number is rounded half away from zero, as on the pandas
-            # engine. A value only the query knows is checked there, once (issue #1355)
+            # parameter included, and checked and rounded as on the pandas engine
+            # (scalar_window_bound): here when its value is known, else where the query runs,
+            # once (issue #1355)
             if not isinstance(value, AST.VarID):
                 return bound_str(value, mode)
             known, scalar_value = self._known_scalar_value(value.value)
             if known:
-                if isinstance(scalar_value, float) and scalar_value >= 0:
-                    # A whole number: Round.py_op gives the type of the last round validated
-                    scalar_value = int(Round.py_op(scalar_value, None))
-                return bound_str(scalar_value, mode)
-            sql = f"(SELECT vtl_window_bound({self.visit(value)}))"
+                return bound_str(scalar_window_bound(op, scalar_value), mode)
+            sql = f"(SELECT vtl_window_bound({self.visit(value)}, '{op}'))"
             if is_range_date:
                 sql = f"to_days(CAST({sql} AS INTEGER))"
             return f"{sql} {mode.upper()}"
