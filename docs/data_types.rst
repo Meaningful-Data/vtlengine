@@ -568,7 +568,10 @@ Key rules:
   String one is matched as its text, only ``"true"``
   matches ``true``, and the Identifier is a String in the
   result (a String is never converted to a Boolean, which
-  only ``cast`` does).
+  only ``cast`` does). Likewise ``in`` and ``not_in``
+  compare a String with a set of Booleans as text:
+  ``"true" in {true}`` is true and ``"1" in {true}`` is
+  false.
 - **Null to any type**: Null is compatible with every type.
 
 
@@ -700,7 +703,10 @@ Conversion details:
   String one is matched as its text, only ``"true"``
   matches ``true``, and the Identifier is a String in the
   result (a String is never converted to a Boolean, which
-  only ``cast`` does).
+  only ``cast`` does). Likewise ``in`` and ``not_in``
+  compare a String with a set of Booleans as text:
+  ``"true" in {true}`` is true and ``"1" in {true}`` is
+  false.
 - **String to Integer**: Must be a valid integer string
   (rejects ``"3.5"``).
 - **String to Date**: The text is read as the loaders read a

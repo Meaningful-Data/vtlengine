@@ -1,7 +1,7 @@
 import operator
 import re
 from copy import copy
-from typing import Any, Optional, Union
+from typing import Any, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -280,7 +280,9 @@ class LessEqual(Ordering):
 def _time_in_operands(operand: Any, values: Any) -> Any:
     """The operand of in / not_in and its set of values, compared as Time values where a Date
     or a Time_Period meets a Time: the one of them that is a Date or a Time_Period is cast to
-    Time (issue #1352)."""
+    Time (issue #1352). A String operand is compared with a set of Booleans as text: the
+    Boolean values are cast to the Strings "true" and "false", as a Boolean is implicitly cast
+    to String and a String never to Boolean (issue #1353)."""
     if not isinstance(values, ScalarSet):
         return operand, values
     if isinstance(operand, Dataset):
@@ -291,6 +293,9 @@ def _time_in_operands(operand: Any, values: Any) -> Any:
         types = {operand.data_type}
         if values.data_type is TimeInterval:
             return Operator.to_time(operand), values
+    if values.data_type is Boolean and types == {String}:
+        texts: List[Any] = [to_string(v) for v in values.values]
+        return operand, ScalarSet(data_type=String, values=texts)
     return operand, (Operator.to_time(values) if types == {TimeInterval} else values)
 
 

@@ -13891,6 +13891,30 @@ class BasicTypeValueBugs(BugHelper):
         """
         self.BaseTest(code="GH_1353_5f", number_inputs=2, references_names=["1"])
 
+    def test_GH_1353_5g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := Me_1 in { true } ];
+        Description: Extra of case 5: the String Me_1 is compared with the set of Booleans as
+                     Strings, so only "true" is in it. The pandas engine gave false for "true"
+                     and the DuckDB engine true.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_5g", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_5h(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 in { true };
+        Description: Extra of case 5: the String Measure of DS_1 is compared with the set of
+                     Booleans as Strings. The pandas engine gave false for "true" and the DuckDB
+                     engine raised a raw ConversionException on "abc".
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_5h", number_inputs=1, references_names=["1"])
+
     def test_GH_1353_6(self):
         """
         Status: OK

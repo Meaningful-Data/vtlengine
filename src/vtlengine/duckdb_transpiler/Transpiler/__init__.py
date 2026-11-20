@@ -1054,7 +1054,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     def _time_in(self, operand: str, values: AST.AST, operand_type: Optional[str]) -> List[str]:
         """The operand of in / not_in and its set of values, compared as Time values where a
         Date or a Time_Period meets a Time: the one of them that is a Date or a Time_Period is
-        cast to Time (issue #1352)."""
+        cast to Time (issue #1352). A String operand is compared with a set of Booleans as
+        text, "true" and "false", as a Boolean is cast to String and a String never to Boolean
+        (issue #1353)."""
         if not isinstance(values, AST.Collection):
             return [operand, self.visit(values)]
         values_type = self._value_type(values)
@@ -1063,6 +1065,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             operand = _time_text(operand, operand_type)
         elif _is_time_name(operand_type):
             sqls = [_time_text(v, values_type) for v in sqls]
+        elif values_type == "Boolean" and operand_type == "String":
+            sqls = [_bool_to_str(v) for v in sqls]
         return [operand, f"({', '.join(sqls)})"]
 
     def _resolve_value_domain_name(self, name: str) -> str:
