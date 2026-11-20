@@ -415,8 +415,13 @@ def _declared_type_expr(
         return f"CAST({quoted} AS BIGINT) AS {quoted}"
     if comp.data_type == Boolean and col_type != "BOOLEAN":
         return f"CAST({quoted} AS BOOLEAN) AS {quoted}"
-    if comp.data_type == String and col_type != "VARCHAR":
-        return f"CAST({quoted} AS VARCHAR) AS {quoted}"
+    if comp.data_type == String:
+        text = quoted if col_type == "VARCHAR" else f"CAST({quoted} AS VARCHAR)"
+        if csv_text_mode:
+            # An empty String is written as an empty field, as null and as on the pandas
+            # engine, where COPY would quote it (issue #1353)
+            return f"NULLIF({text}, '') AS {quoted}"
+        return quoted if text == quoted else f"{text} AS {quoted}"
     return quoted
 
 

@@ -14100,6 +14100,102 @@ class BasicTypeValueBugs(BugHelper):
         """
         self.BaseTest(code="GH_1353_18", number_inputs=1, references_names=["1"])
 
+    def test_GH_1353_19(self):
+        """
+        Status: OK
+        Expression: DS_r <- union ( DS_8 , DS_9 );
+        Description: The Boolean Me_1 of DS_8 promoted to the String of DS_9 is "true" or
+                     "false". The pandas engine wrote "True" and "False".
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_19", number_inputs=2, references_names=["1"])
+
+    def test_GH_1353_20(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_8 [ unpivot Id_2 , Me_9 ];
+        Description: The Boolean Me_1 unpivoted with the String Me_2 into the String Me_9 is
+                     "true" or "false". The pandas engine wrote "True" and "False".
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_20", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_22(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := lag ( Me_2 , 1 , null over ( order by Id_1 ) ) ];
+        Description: The null default of lag gives null. The pandas engine wrote it into its SQL
+                     as the column name None and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_22", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_23(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := lag ( Me_2 , 1 , "x" over ( order by Id_1 ) ) ];
+        Description: The String default "x" of lag is the text x. The pandas engine wrote it
+                     into its SQL as a column name and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_23", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_24(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := lead ( Me_2 , 1 , "Me_2" over ( order by Id_1 ) ) ];
+        Description: The String default "Me_2" of lead is the text Me_2, not the value of the
+                     Component Me_2. The pandas engine gave the value of Me_2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_24", number_inputs=1, references_names=["1"])
+
+    def test_GH_1353_25(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := SC_2 ];
+        Description: The Number Scalar SC_2 with the value inf is inf. The DuckDB engine wrote it
+                     into its SQL as the column name inf and raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1353_25",
+            number_inputs=1,
+            references_names=["1"],
+            scalars={"SC_2": float("inf")},
+        )
+
+    def test_GH_1353_26(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ calc Me_4 := cast ( SC_2 , string ) ];
+        Description: The Number Scalar SC_2 with the value -0.0 keeps its sign: its cast to
+                     string is "-0.0". The DuckDB engine wrote it into its SQL as 0.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1353_26", number_inputs=1, references_names=["1"], scalars={"SC_2": -0.0}
+        )
+
+    def test_GH_1353_40(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_6 := lag ( Me_2 , 1 , cast ( 1 , string ) over
+                                                      ( order by Id_1 ) ) ];
+        Description: The default cast ( 1 , string ) of lag is the text 1. The pandas engine
+                     wrote it into its SQL in its Python form and raised a raw ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1353_40", number_inputs=1, references_names=["1"])
+
     def test_GH_1353_41(self):
         """
         Status: OK

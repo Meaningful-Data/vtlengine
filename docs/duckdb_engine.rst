@@ -211,3 +211,7 @@ Behavioural notes
   implicit coercions produce ``"true"``/``"false"``, as the VTL 2.2 reference manual
   defines them, in both engines. Parquet output and in-memory results keep the
   native boolean type.
+* **Empty strings in CSV output**: an empty String and a null are both written to CSV
+  output as an empty field, in both engines. The loaders read an empty field back as
+  null, so an empty String does not survive a CSV round trip. Parquet output and
+  in-memory results keep the empty String.

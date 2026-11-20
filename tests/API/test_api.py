@@ -3559,3 +3559,50 @@ def test_GH_1352_32e(use_duckdb):
         use_duckdb=use_duckdb,
     )["DS_r"].data
     assert sorted(result["Id_2"].tolist()) == ["2020-01-01T10:00:00", "2020-01-01T10:00:03"]
+
+
+_STRUCTURES_1353 = {
+    "datasets": [
+        {
+            "name": "DS_7",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_5", "type": "String", "role": "Measure", "nullable": True},
+            ],
+        }
+    ],
+    "scalars": [{"name": "SC_3", "type": "Integer"}],
+}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1353_21(use_duckdb, tmp_path):
+    """An empty String and null are both written to the CSV output as an empty field, on both
+    engines (the loaders read an empty field back as null); DuckDB wrote the empty String as
+    "" (issue #1353)."""
+    datapoints = {"DS_7": pd.DataFrame({"Id_1": [1, 2], "Me_5": ["", None]})}
+    run(
+        "DS_r <- DS_7;",
+        _STRUCTURES_1353,
+        datapoints,
+        output_folder=tmp_path,
+        use_duckdb=use_duckdb,
+    )
+    assert (tmp_path / "DS_r.csv").read_text() == "Id_1,Me_5\n1,\n2,\n"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1353_27(use_duckdb):
+    """A value of an Integer Scalar beyond 64 bits, 2 ** 70, is no Integer value: it raises
+    0-1-2-7 on both engines, as the datapoints of an Integer Component beyond 64 bits are
+    refused; pandas kept the Python int and DuckDB gave a float (issue #1353)."""
+    datapoints = {"DS_7": pd.DataFrame({"Id_1": [1], "Me_5": ["a"]})}
+    with pytest.raises(InputValidationException) as error:
+        run(
+            "SC_r <- SC_3;",
+            _STRUCTURES_1353,
+            datapoints,
+            scalar_values={"SC_3": 2**70},
+            use_duckdb=use_duckdb,
+        )
+    assert error.value.args[1] == "0-1-2-7"

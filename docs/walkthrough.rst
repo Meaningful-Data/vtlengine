@@ -61,7 +61,9 @@ A few optional inputs let you extend or tune the run:
 * ``scalar_values`` — scalar inputs to the script (``run`` only). See
   Example 2 below.
 * ``output_folder`` — write results to disk instead of returning them
-  in memory.
+  in memory. In CSV output an empty String and a null are both an empty
+  field, which the loaders read back as null: an empty String does not
+  survive the round trip.
 * ``output_format`` — ``"csv"`` (default) or ``"parquet"`` for results
   written to ``output_folder``. ``"parquet"`` requires ``use_duckdb=True``;
   see :doc:`duckdb_engine`.

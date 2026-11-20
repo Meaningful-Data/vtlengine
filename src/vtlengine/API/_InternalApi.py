@@ -30,9 +30,11 @@ from vtlengine._input_types import (
 )
 from vtlengine.AST import Assignment, DPRuleset, HRuleset, Operator, PersistentAssignment, Start
 from vtlengine.AST.ASTString import ASTString
-from vtlengine.DataTypes import Date, TimePeriod
+from vtlengine.DataTypes import Date, Integer, TimePeriod
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.files.parser import (
+    _INT64_MAX,
+    _INT64_MIN,
     _check_value_domain,
     _fill_dataset_empty_data,
     _validate_pandas,
@@ -499,8 +501,13 @@ def _handle_scalars_values(
     for name, value in scalar_values.items():
         if name not in scalars:
             raise InputValidationException(code="0-1-2-6", name=name)
-        # Casting value to scalar data type; a list or another collection is no scalar value
-        if not pd.api.types.is_scalar(value) or not scalars[name].data_type.check(value):
+        # Casting value to scalar data type; a list or another collection is no scalar value.
+        # An Integer is a 64-bit integer, as the datapoints of an Integer Component (issue #1353)
+        data_type = scalars[name].data_type
+        valid = pd.api.types.is_scalar(value) and data_type.check(value)
+        if valid and data_type is Integer and not pd.isnull(value):
+            valid = _INT64_MIN <= cast(int, Integer.cast(value)) <= _INT64_MAX
+        if not valid:
             raise InputValidationException(
                 code="0-1-2-7",
                 value=value,
