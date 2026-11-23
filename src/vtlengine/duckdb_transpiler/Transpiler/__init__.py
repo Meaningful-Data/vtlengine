@@ -20,6 +20,8 @@ from typing import (
     cast,
 )
 
+import pandas as pd
+
 import vtlengine.AST as AST
 from vtlengine.AST.ASTString import _format_constraint
 from vtlengine.AST.ASTTemplate import ASTTemplate
@@ -71,8 +73,10 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _COMPONENT,
     _DATASET,
     _SCALAR,
+    _UDO_CALL,
     _UDO_CHECKS_PREFIX,
     _UDO_DEPTH_PREFIX,
+    _UDO_OP,
     StructureVisitor,
     _try_normalize_time_period,
 )
@@ -412,6 +416,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     value_domains: Dict[str, ValueDomain] = field(default_factory=dict)
     external_routines: Dict[str, ExternalRoutine] = field(default_factory=dict)
 
+    # The results and dataset arguments of the calls of user defined operators, as the
+    # semantic analysis gives them (see InterpreterAnalyzer.udo_results)
+    udo_results: Dict[Tuple[Tuple[Any, ...], Optional[str]], Any] = field(default_factory=dict)
+
     # Dependency graph
     dag: Any = field(default=None)
 
@@ -671,7 +679,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         )
         basic_type = SCALAR_TYPES_CLASS_REVERSE[value_domain.type]
         info = "\u00a6".join((op, basic_type, value_domain.name, "")).replace("'", "''")
-        return f"vtl_downcast({expr}, [{values}], '{info}')"
+        macro = "vtl_downcast_text" if value_domain.type is String else "vtl_downcast"
+        return f"{macro}({expr}, [{values}], '{info}')"
 
     def _unqualify_join_columns(self, node: AST.RegularAggregation, query: str) -> str:
         """Rename remaining alias#comp columns to plain component names."""
@@ -742,6 +751,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         if scope is not None and f"{_UDO_SQL_PREFIX}{name}" in scope:
             return str(scope[f"{_UDO_SQL_PREFIX}{name}"])
         sql = self._resolve_udo_param_sql(name, udo_val)
+        declared = scope.get(f"__type__{name}") if scope is not None else None
+        if declared is Integer and scope is not None:
+            # A whole Number is the Integer, one with decimals raises 1-2-18, as on the pandas
+            # engine, instead of being rounded (issue #1351)
+            where = f"{scope[_UDO_OP]}\u00a6{name}".replace("'", "''")
+            sql = f"vtl_udo_integer({sql}, '{where}')"
+        elif declared is Number or declared is String:
+            # A scalar argument is promoted to the type of its parameter, as on the pandas
+            # engine: an Integer to a Number, a Boolean to the String true or false (issue #1351)
+            sql = f"CAST({sql} AS {get_duckdb_type(declared.__name__)})"
         checks = scope.get(f"{_UDO_CHECKS_PREFIX}{name}") if scope is not None else None
         if not checks:
             return sql
@@ -761,8 +780,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         ]
         if not dataset_checks:
             return sql
-        with self._udo_arg_scope(name):
-            structure = self._get_dataset_structure(udo_val)
+        # The structure of the argument as the semantic analysis gives it (issue #1351)
+        structure = self.udo_results.get((scope.get(_UDO_CALL, ()), name)) if scope else None
+        if structure is None:
+            with self._udo_arg_scope(name):
+                structure = self._get_dataset_structure(udo_val)
         return self._udo_checked_dataset_sql(sql, structure, dataset_checks)
 
     def _udo_checked_sql(
@@ -851,10 +873,16 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 or argument is None
             ):
                 continue
+            if isinstance(param["type"], AST.SetType):
+                value = self._set_value_outside(name, constraints.value)
+                if value is None:
+                    continue
+            else:
+                value = self._resolve_udo_param(name, argument)
             scope = self._find_udo_scope(name)
             # TRUE, or the error of the argument
             check = self._udo_checked_sql(
-                self._resolve_udo_param(name, argument),
+                value,
                 argument,
                 [(op, f"parameter {name}", constraints.value)],
                 scope.get(f"{_UDO_DEPTH_PREFIX}{name}") if scope else None,
@@ -862,6 +890,15 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             )
             # The arguments are checked in the order of the parameters
             holds = check if holds == "TRUE" else f"CASE WHEN {check} THEN {holds} END"
+        # A Number with decimals given to an integer parameter raises 1-2-18 before any
+        # constraint is checked, also where the body does not read it, as on the pandas engine
+        # (issue #1351)
+        for param in reversed(params):
+            argument = self._get_udo_param(param["name"])
+            if param["type"] is Integer and argument is not None:
+                value = self._resolve_udo_param(param["name"], argument)
+                check = f"CASE WHEN {value} IS NULL THEN TRUE ELSE TRUE END"
+                holds = check if holds == "TRUE" else f"CASE WHEN {check} THEN {holds} END"
         if holds == "TRUE":
             return sql
         if is_dataset:
@@ -871,6 +908,19 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
                 f"(SELECT {holds} AS _vtl_holds) AS _vtl_check WHERE _vtl_check._vtl_holds"
             )
         return f"CASE WHEN {holds} THEN {sql} END"
+
+    def _set_value_outside(self, name: str, constraint: AST.TypeConstraint) -> Optional[str]:
+        """The first value of the value domain that a set parameter takes that is not a value
+        of the value domain that types the set, as an SQL literal, or None when there is none:
+        its check raises VTL 2-1-5-4 where the call is computed, as a scalar argument
+        (issue #1351)."""
+        argument = self.value_domains.get(self._resolve_value_domain_name(name))
+        if argument is None or constraint.value_domain is None:
+            return None
+        outside = constraint.value_domain.outside(pd.Series(argument.setlist, dtype=object))
+        if not len(outside):
+            return None
+        return self._to_sql_literal(outside.iloc[0], argument.type.__name__)
 
     def _udo_checked_dataset_sql(
         self,
@@ -1842,6 +1892,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return Number
         if self._is_operand_type(node, Number):
             return Number
+        if isinstance(node, AST.VarID) and self._get_udo_param(f"__type__{node.value}") is Number:
+            # A number parameter of a user defined operator, read as a Number, so its
+            # arithmetic is rounded as any Number's: 0 * -1 is 0.0, not -0.0 (issue #1351)
+            return Number
         # Recurse into nested numeric expressions so chained arithmetic keeps the
         # per-op rounding wrap (issue #985). Only Number propagates upward; any
         # other inner type keeps the previous None (no dispatch change).
@@ -2619,6 +2673,10 @@ FROM (
             # operator has the type of its argument, then a scalar its own (issue #1254)
             argument = self._get_udo_param(node.value)
             if isinstance(argument, AST.AST) and argument is not node:
+                declared = self._get_udo_param(f"__type__{node.value}")
+                if declared is Integer or declared is Number or declared is String:
+                    # visit_VarID casts the argument to its parameter's type (issue #1351)
+                    return declared.__name__
                 with self._udo_arg_scope(node.value):
                     return self._get_source_vtl_type(argument)
             if node.value in self.scalars:
@@ -4369,8 +4427,8 @@ FROM (
     # UDO definition and call
 
     def visit_Operator(self, node: AST.Operator) -> None:
-        """Register a UDO definition. A value domain types a parameter with its basic type, whose
-        values are checked against it (issue #1236)."""
+        """Register a UDO definition. A value domain types a parameter or the result with its
+        basic type, whose values are checked against it (issues #1236, #1351)."""
         params = []
         for p in node.parameters:
             declared, constraints = resolve_value_domain_type(
@@ -4379,30 +4437,36 @@ FROM (
             params.append(
                 {"name": p.name, "type": declared, "default": p.default, "constraints": constraints}
             )
+        return_type, return_constraints = resolve_value_domain_type(
+            node.return_type, node.return_constraints, self.value_domains
+        )
         self._udos[node.op] = {
             "params": params,
             "output": node.output_type,
             "expression": node.expression,
-            "return_type": node.return_type,
-            "return_constraints": node.return_constraints,
+            "return_type": return_type,
+            "return_constraints": return_constraints,
         }
 
     def visit_UDOCall(self, node: AST.UDOCall) -> str:  # type: ignore[override]
         """Visit a UDO call by expanding its definition with parameter bindings."""
         udo_def = self._udos[node.op]
         is_dataset = self._get_node_type(node) == _DATASET
-        bindings = self._build_udo_bindings(udo_def, node.params, include_types=True, op=node.op)
+        declared, constraints = udo_def["return_type"], udo_def["return_constraints"]
+        checked_dataset = constraints is not None and isinstance(declared, Dataset)
+        # The structure of the result, worked out in the scope of the caller, and the result as
+        # the semantic analysis gives it
+        structure = self._get_dataset_structure(node) if checked_dataset else None
+        result = self._udo_result(node)
+        bindings = self._build_udo_bindings(udo_def, node, include_types=True)
         expression = deepcopy(udo_def["expression"])
 
         self._push_udo_params(bindings)
         try:
             sql = self.visit(expression)
-            declared, constraints = udo_def["return_type"], udo_def["return_constraints"]
-            if constraints is not None and isinstance(declared, Dataset):
+            if checked_dataset:
                 sql = self._udo_checked_dataset_sql(
-                    sql,
-                    self._get_dataset_structure(node),
-                    [(node.op, "the output", declared, constraints)],
+                    sql, structure, [(node.op, "the output", declared, constraints)]
                 )
             elif constraints is not None and constraints.value is not None:
                 # A Component or a scalar output
@@ -4410,6 +4474,10 @@ FROM (
                 sql = self._udo_checked_sql(
                     sql, value, [(node.op, "the output", constraints.value)]
                 )
+            if isinstance(result, Scalar) and result.data_type in (Integer, Number, String):
+                # A scalar result is a value of its type, as on the pandas engine: 2 returned as
+                # a Number is 2.0 (issue #1351)
+                sql = f"CAST({sql} AS {get_duckdb_type(result.data_type.__name__)})"
             return self._udo_checked_arguments(sql, node.op, udo_def["params"], is_dataset)
         finally:
             self._pop_udo_params()

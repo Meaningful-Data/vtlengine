@@ -446,7 +446,39 @@ Value domains also appear in the VTL-DL definitions:
   argument is of the basic type of the value domain, and its values
   must be values of it (``2-1-5-4``). In the body a scalar parameter
   is defined on the value domain, and a component parameter behaves
-  as its basic type.
+  as its basic type. A value of a type promoted to the basic type is
+  compared as the value it is promoted to, here and in the forms
+  below: an ``Integer`` as a ``Number``, a ``Boolean`` as the
+  ``String`` ``true`` or ``false``.
+- A value domain types the values of a ``set`` parameter
+  (``s set<VD_FLOW>``): the argument is a value domain of its basic
+  type (another one raises ``1-2-18``, as ``set<string>`` does), and
+  its values must be values of it (``2-1-5-4``): ``VD_FLOW`` itself
+  or a value domain whose values are all in ``VD_FLOW``. In the body
+  the parameter holds the values of the argument, wherever a set can
+  be used (``Me_1 in s``). ``set<VD_FLOW not null>`` raises
+  ``1-3-13``, as ``set<string not null>`` does.
+- A value domain types the components of a ``dataset`` parameter,
+  with any role and with a component name or a multiplicity modifier
+  (``dataset {identifier<VD_FLOW> Id_2}``,
+  ``dataset {measure<VD_FLOW> _+}``): the constraint takes the
+  Components of the basic type of the value domain, as
+  ``x component<VD_FLOW>`` does, and their values must be values of
+  it (``2-1-5-4``). A Component of another basic type raises what
+  the basic type raises (``1-3-1-12``, ``1-3-1-13``, ``1-3-1-14``).
+  The argument is passed as it is: its Components keep their types
+  and value domains.
+- A value domain types the result of a user defined operator
+  (``returns VD_FLOW``, ``returns component<VD_FLOW>``,
+  ``returns measure<VD_FLOW>``,
+  ``returns dataset {measure<VD_FLOW> Me_1}``): the result, or the
+  Components of a Data Set result that the type names on a value
+  domain, must be of its basic type (otherwise what the basic type
+  raises: ``1-3-1-1``, or ``1-3-1-11``, ``1-3-1-12``, ``1-3-1-14``
+  for a Data Set), their values must be values of it (``2-1-5-4``),
+  and they are then defined on it. The other Components keep their
+  types. A ``returns`` of a basic type keeps the value domain of a
+  result already on one.
 
 .. code-block:: text
 
@@ -468,9 +500,23 @@ Value domains also appear in the VTL-DL definitions:
             x || "_X"
     end operator;
 
+    /* Keeps the data points whose Me_1 is one of the values of s */
+    define operator in_flows (ds dataset {measure<VD_FLOW> Me_1}, s set<VD_FLOW>)
+        returns dataset is
+            ds [filter Me_1 in s]
+    end operator;
+
+    /* Me_2 is on VD_FLOW: each value of Me_3 must be one of its values */
+    define operator as_flow (x component)
+        returns measure<VD_FLOW> is
+            x
+    end operator;
+
     DS_r <- check_datapoint(DS_1, DPR_1 components Id_2, Me_1 all);
     DS_h <- check_hierarchy(DS_2, HR_1 condition Id_2 rule Id_1 all);
     DS_s <- DS_1 [calc Me_2 := with_suffix(Id_2)];
+    DS_t <- in_flows(DS_2, VD_FLOW);
+    DS_u <- DS_1 [calc Me_2 := as_flow(Me_3)];
 
 The value domains ``errorcode_vd`` and ``errorlevel_vd``, when given,
 type the error codes and the error levels of ``check``,
@@ -516,6 +562,9 @@ it:
 - A scalar parameter of a user defined operator typed by a value
   domain is defined on it. One of a basic type keeps the value domain
   of an argument of that same type.
+- The result of a user defined operator that ``returns`` a value
+  domain is defined on it, and must be one of its values
+  (``2-1-5-4``).
 
 ``run()`` and ``semantic_analysis()`` write ``"type": "VD_FLOW"`` for
 the scalar results on a value domain.
@@ -528,8 +577,9 @@ the scalar results on a value domain.
     /* Me_2 is on VD_FLOW */
     DS_r <- DS_1 [calc Me_2 := SC_1];
 
-The value domains in the ``returns`` of a user defined operator are
-not supported (``1-3-2-6``).
+    /* SC_r is on VD_FLOW: "CREDIT" is one of its values */
+    define operator flow (x string) returns VD_FLOW is x end operator;
+    SC_r <- flow("CREDIT");
 
 
 Validation

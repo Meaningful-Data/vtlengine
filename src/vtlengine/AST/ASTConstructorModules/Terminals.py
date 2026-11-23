@@ -300,7 +300,7 @@ class Terminals:
         """
         pass
 
-    def visitCompConstraint(self, ctx, allow_constraints=False):
+    def visitCompConstraint(self, ctx, allow_constraints=False, allow_value_domain=False):
         """
         compConstraint: componentType (componentID|multModifier) ;
 
@@ -310,7 +310,7 @@ class Terminals:
         ctx_list = ctx.children
 
         component_node = [
-            self.visitComponentType(component, allow_constraints)
+            self.visitComponentType(component, allow_constraints, allow_value_domain)
             for component in ctx_list
             if not component.is_terminal and component.ctx_id == RC.COMPONENT_TYPE
         ]
@@ -411,14 +411,16 @@ class Terminals:
 
         return type_node
 
-    def visitDatasetType(self, ctx, allow_constraints=False):
+    def visitDatasetType(self, ctx, allow_constraints=False, allow_value_domain=False):
         """
         datasetType: DATASET ('{'compConstraint (',' compConstraint)* '}' )? ;
+
+        In a user defined operator signature a value domain can type a component (issue #1351).
         """
         ctx_list = ctx.children
 
         components = [
-            self.visitCompConstraint(constraint, allow_constraints)
+            self.visitCompConstraint(constraint, allow_constraints, allow_value_domain)
             for constraint in ctx_list
             if not constraint.is_terminal and constraint.ctx_id == RC.COMP_CONSTRAINT
         ]
@@ -510,7 +512,7 @@ class Terminals:
             return self.visitScalarType(c, allow_constraints, allow_value_domain=True)
 
         elif not c.is_terminal and c.ctx_id == RC.DATASET_TYPE:
-            return self.visitDatasetType(c, allow_constraints)
+            return self.visitDatasetType(c, allow_constraints, allow_value_domain=True)
 
         elif not c.is_terminal and c.ctx_id == RC.SCALAR_SET_TYPE:
             return self.visitScalarSetType(c)
@@ -541,26 +543,18 @@ class Terminals:
         # componentType, the last alternative of the grammar
         return "Component"
 
-    def visitDeclaredOutputType(self, ctx, allow_constraints=False):
+    def visitDeclaredOutputType(self, ctx):
         """
         The type that outputParameterType declares, read as visitInputParameterType reads a
-        parameter type, or None when a parameter type cannot represent it (a value domain,
-        or a type constraint, not null or a multiplicity modifier without allow_constraints).
+        parameter type: a value domain can type it (issue #1351).
         """
         c = ctx.children[0]
-        try:
-            if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
-                return self.visitScalarType(c, allow_constraints)
-            elif not c.is_terminal and c.ctx_id == RC.DATASET_TYPE:
-                return self.visitDatasetType(c, allow_constraints)
-            elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
-                return self.visitComponentType(c, allow_constraints)
-        except (InputValidationException, SemanticError) as error:
-            # The type visitors reject these forms, so only output_type describes the result
-            if error.args[1] not in ("0-5-1-10", "1-3-13"):
-                raise
-            return None
-        return None
+        if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
+            return self.visitScalarType(c, allow_constraints=True, allow_value_domain=True)
+        elif not c.is_terminal and c.ctx_id == RC.DATASET_TYPE:
+            return self.visitDatasetType(c, allow_constraints=True, allow_value_domain=True)
+        # componentType, the last alternative of the grammar
+        return self.visitComponentType(c, allow_constraints=True, allow_value_domain=True)
 
     def visitOutputParameterTypeComponent(self, ctx):
         """
@@ -620,7 +614,8 @@ class Terminals:
         scalarSetType: SET ('<' scalarType '>')? ;
         """
         types = [
-            self.visitScalarType(c)
+            # A value domain can type the values of the set (issue #1351)
+            self.visitScalarType(c, allow_value_domain=True)
             for c in ctx.children
             if not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE
         ]

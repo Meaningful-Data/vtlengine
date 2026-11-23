@@ -588,9 +588,11 @@ class RulesetType:
 @dataclass(frozen=True)
 class SetType:
     """The type set<data_type> of a parameter of a user defined operator, whose argument is a
-    value domain or a set of values of that type. A set of any scalar type has no data_type."""
+    value domain or a set of values of that type. A set of any scalar type has no data_type.
+    A value domain can be the data_type, which the operator, once defined, gives as its basic
+    type, whose values must be values of it (issue #1351)."""
 
-    data_type: Optional[Type[ScalarType]] = None
+    data_type: Optional[Union[Type[ScalarType], "ValueDomainType"]] = None
 
 
 @dataclass

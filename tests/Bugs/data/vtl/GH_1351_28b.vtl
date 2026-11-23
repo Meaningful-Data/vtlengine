@@ -1,0 +1,5 @@
+define operator g ( x integer )
+    returns VD_1 is
+        x
+end operator;
+DS_r2 <- DS_1 [ calc identifier Id_3 := g ( 1 ) ] [ keep Me_1 ] [ sub Id_1 = 1 , Id_2 = 1 ] [ pivot Id_3 , Me_1 ];

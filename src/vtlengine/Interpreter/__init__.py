@@ -61,16 +61,21 @@ from vtlengine.AST.Grammar.tokens import (
 )
 from vtlengine.AST.UDOTypes import (
     resolve_value_domain_type,
+    udo_call_key,
     udo_component_matches,
     udo_dataset_components,
+    udo_result_on_value_domains,
 )
 from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Integer,
+    Number,
     ScalarType,
+    String,
     check_unary_implicit_promotion,
+    to_string,
 )
 from vtlengine.Exceptions import (
     InputValidationException,
@@ -197,7 +202,9 @@ def _udo_scalar_value_domain(param: Dict[str, Any], argument: Scalar) -> Optiona
     return None
 
 
-def _check_udo_return_type(op: str, declared: Any, result: Any) -> None:
+def _check_udo_return_type(
+    op: str, declared: Any, constraints: Optional[AST.SignatureConstraints], result: Any
+) -> None:
     """The result of a user defined operator must have the type it returns (issue #1161)."""
     if isinstance(declared, Component):
         matches = udo_component_matches(declared, result)
@@ -209,7 +216,11 @@ def _check_udo_return_type(op: str, declared: Any, result: Any) -> None:
         return
     if not matches:
         raise SemanticError(
-            "1-3-1-1", op=op, option="output", type_1=_format_type(declared), type_2=found_type
+            "1-3-1-1",
+            op=op,
+            option="output",
+            type_1=_format_type(declared, constraints),
+            type_2=found_type,
         )
 
 
@@ -262,6 +273,11 @@ class InterpreterAnalyzer(ASTTemplate):
     udo_constraints: List[Dict[str, List[Tuple[str, str, AST.TypeConstraint]]]] = field(
         default_factory=list
     )
+    # The key of the call being computed (see udo_call_key), and, in the semantic analysis, the
+    # result of each call (None) and each of its dataset arguments (by the parameter), which the
+    # DuckDB engine reads in place of the structures it would work out (issue #1351)
+    udo_call: Tuple[Any, ...] = ()
+    udo_results: Dict[Tuple[Tuple[Any, ...], Optional[str]], Any] = field(default_factory=dict)
     hr_agg_rules_computed: Optional[Dict[str, pd.DataFrame]] = None
     # Names of the rules that computed each code item, in evaluation order
     hr_agg_item_rules: Optional[Dict[str, List[str]]] = None
@@ -494,12 +510,15 @@ class InterpreterAnalyzer(ASTTemplate):
                         raise SemanticError("1-3-12")
                     previous_default = param_info[i]
 
+        return_type, return_constraints = resolve_value_domain_type(
+            node.return_type, node.return_constraints, self.value_domains
+        )
         self.udos[node.op] = {
             "params": param_info,
             "expression": node.expression,
             "output": node.output_type,
-            "return_type": node.return_type,
-            "return_constraints": node.return_constraints,
+            "return_type": return_type,
+            "return_constraints": return_constraints,
         }
 
     def visit_DPRuleset(self, node: AST.DPRuleset) -> None:
@@ -2730,6 +2749,7 @@ class InterpreterAnalyzer(ASTTemplate):
 
         operator = self.udos[node.op]
         signature_values: Dict[str, Any] = {}
+        key = udo_call_key(self.udo_call, node)
 
         if operator is None:
             raise SemanticError("1-2-3", node_op=node.op, op_type="User Defined Operator")
@@ -2747,17 +2767,24 @@ class InterpreterAnalyzer(ASTTemplate):
             if i >= len(node.params) or _is_omitted(node.params[i]):
                 if "default" in param:
                     default = self.visit(param["default"])
-                    value = default.value
-                    signature_values[param["name"]] = Scalar(
-                        name=str(value),
-                        value=value,
-                        data_type=BASIC_TYPES[type(value)],
-                        nullable=value is None,
-                        literal=default.literal,
-                        # A default of a parameter typed by a value domain is on it, as an
-                        # argument passed to it is
-                        value_domain=_udo_scalar_value_domain(param, default),
-                    )
+                    if isinstance(param["type"], type) and issubclass(param["type"], ScalarType):
+                        # A default is checked and cast as an argument passed to the
+                        # parameter is: 2.5 is no Integer, 2.0 is the Integer 2 (issue #1351)
+                        signature_values[param["name"]] = self._udo_scalar_argument(
+                            node.op, param, default
+                        )
+                    else:
+                        value = default.value
+                        signature_values[param["name"]] = Scalar(
+                            name=str(value),
+                            value=value,
+                            data_type=BASIC_TYPES[type(value)],
+                            nullable=value is None,
+                            literal=default.literal,
+                            # A default of a parameter typed by a value domain is on it, as an
+                            # argument passed to it is
+                            value_domain=_udo_scalar_value_domain(param, default),
+                        )
                 else:
                     raise SemanticError(
                         "1-2-11",
@@ -2805,43 +2832,11 @@ class InterpreterAnalyzer(ASTTemplate):
                             signature_values[param["name"]] = param_element
 
                 elif issubclass(param["type"], ScalarType):  # Basic types
-                    # For basic Scalar types (Integer, Float, String, Boolean)
-                    # We validate the type is correct and cast the value
-                    param_element = self.visit(node.params[i])
-                    if isinstance(param_element, (Dataset, DataComponent)):
-                        type_2 = "Dataset" if isinstance(param_element, Dataset) else "Component"
-                        raise SemanticError(
-                            "1-3-1-1",
-                            op=node.op,
-                            option=param["name"],
-                            type_1=param["type"],
-                            type_2=type_2,
-                        )
-                    scalar_type = param["type"]
-                    value = param_element.value
-                    if not check_unary_implicit_promotion(param_element.data_type, scalar_type) or (
-                        scalar_type == Integer
-                        and isinstance(value, float)
-                        and not value.is_integer()
-                    ):
-                        raise SemanticError(
-                            "1-2-18",
-                            param_type=scalar_type,
-                            type_name=param_element.data_type,
-                            op=node.op,
-                            param_name=param["name"],
-                        )
-                    signature_values[param["name"]] = Scalar(
-                        name=param_element.name,
-                        value=scalar_type.cast(param_element.value),
-                        data_type=scalar_type,
-                        nullable=param_element.nullable,
-                        # A literal argument stays a literal inside the operator (issue #1192)
-                        literal=param_element.literal,
-                        value_domain=_udo_scalar_value_domain(param, param_element),
+                    signature_values[param["name"]] = self._udo_scalar_argument(
+                        node.op, param, self.visit(node.params[i])
                     )
 
-        component_constraints = self._check_udo_arguments(node, operator, signature_values)
+        component_constraints = self._check_udo_arguments(node, operator, signature_values, key)
 
         # We set it here to a list to start the stack of UDO params
         if self.udo_params is None:
@@ -2864,8 +2859,11 @@ class InterpreterAnalyzer(ASTTemplate):
         self.udo_constraints.append(component_constraints)
 
         # Calling the UDO AST, we use deepcopy to avoid changing the original UDO AST
-        if operator is not None:
+        outer_call, self.udo_call = self.udo_call, key
+        try:
             result = self.visit(deepcopy(operator["expression"]))
+        finally:
+            self.udo_call = outer_call
         self.udo_calls.pop()
         self.udo_constraints.pop()
 
@@ -2882,10 +2880,16 @@ class InterpreterAnalyzer(ASTTemplate):
                 type_1=operator["output"],
                 type_2=result_type,
             )
-        _check_udo_return_type(node.op, operator["return_type"], result)
-        self._check_udo_signature(
-            node.op, "the output", operator["return_type"], operator["return_constraints"], result
+        return_type, return_constraints = operator["return_type"], operator["return_constraints"]
+        _check_udo_return_type(node.op, return_type, return_constraints, result)
+        taken = self._check_udo_signature(
+            node.op, "the output", return_type, return_constraints, result
         )
+        result = udo_result_on_value_domains(result, return_constraints, taken)
+        if isinstance(result, Scalar) and result.data_type in (Integer, Number, String):
+            result = self._udo_scalar_result(result)
+        if self.only_semantic:
+            self.udo_results[(key, None)] = result
 
         # We pop the last element of the stack (current UDO params)
         # to avoid using them in the next UDO call
@@ -2894,6 +2898,18 @@ class InterpreterAnalyzer(ASTTemplate):
         # We set to None if empty to ensure we do not use these params anymore
         if len(self.udo_params) == 0:
             self.udo_params = None
+        return result
+
+    def _udo_scalar_result(self, result: Scalar) -> Scalar:
+        """A scalar result of a user defined operator, whose value is of its type, as the DuckDB
+        engine gives it: 2 returned as a Number is 2.0, and the whole Number 1.0 stays one
+        (issue #1351). The semantic analysis knows no computed value and does not check the
+        values: 2.5 returned on an Integer value domain raises VTL 2-1-5-4 where the call is
+        computed, not an error of the cast."""
+        if self.only_semantic:
+            return result
+        result = copy(result)
+        result.value = result.data_type.cast(result.value)
         return result
 
     def _ruleset_type(self, name: str) -> Optional[AST.RulesetType]:
@@ -2917,6 +2933,37 @@ class InterpreterAnalyzer(ASTTemplate):
         ruleset defined with that name."""
         bound = self.udo_params[-1].get(name) if self.udo_params else None
         return bound if isinstance(bound, str) else name
+
+    def _udo_scalar_argument(self, op: str, param: Dict[str, Any], argument: Any) -> Scalar:
+        """The value a parameter of a basic type takes, given or by default: it must be of the
+        type the parameter declares, or promote to it, and is cast to it. A Number with
+        decimals is no Integer."""
+        if isinstance(argument, (Dataset, DataComponent)):
+            type_2 = "Dataset" if isinstance(argument, Dataset) else "Component"
+            raise SemanticError(
+                "1-3-1-1", op=op, option=param["name"], type_1=param["type"], type_2=type_2
+            )
+        scalar_type = param["type"]
+        value = argument.value
+        if not check_unary_implicit_promotion(argument.data_type, scalar_type) or (
+            scalar_type == Integer and isinstance(value, float) and not value.is_integer()
+        ):
+            raise SemanticError(
+                "1-2-18",
+                param_type=scalar_type,
+                type_name=argument.data_type,
+                op=op,
+                param_name=param["name"],
+            )
+        return Scalar(
+            name=argument.name,
+            value=scalar_type.cast(value),
+            data_type=scalar_type,
+            nullable=argument.nullable,
+            # A literal argument stays a literal inside the operator (issue #1192)
+            literal=argument.literal,
+            value_domain=_udo_scalar_value_domain(param, argument),
+        )
 
     def _udo_ruleset_argument(self, op: str, param: Dict[str, Any], argument: AST.AST) -> str:
         """The ruleset a ruleset parameter takes: the one the argument names, or the one a
@@ -2956,14 +3003,14 @@ class InterpreterAnalyzer(ASTTemplate):
             elif self.value_domains is not None and argument.value in self.value_domains:
                 domain = self.value_domains[argument.value]
                 value = ScalarSet(data_type=domain.type, values=domain.setlist)
-        declared = param["declared"]
+        declared, written = param["declared"], _format_type(param["declared"], param["constraints"])
         if value is None:
             found = self.visit(argument)
             raise SemanticError(
                 "1-3-1-1",
                 op=op,
                 option=f"parameter {param['name']}",
-                type_1=_format_type(declared),
+                type_1=written,
                 type_2=type(found).__name__,
             )
         if declared.data_type is not None and not check_unary_implicit_promotion(
@@ -2971,7 +3018,7 @@ class InterpreterAnalyzer(ASTTemplate):
         ):
             raise SemanticError(
                 "1-2-18",
-                param_type=_format_type(declared),
+                param_type=written,
                 type_name=_format_type(AST.SetType(value.data_type)),
                 op=op,
                 param_name=param["name"],
@@ -2979,7 +3026,11 @@ class InterpreterAnalyzer(ASTTemplate):
         return value
 
     def _check_udo_arguments(
-        self, node: AST.UDOCall, operator: Dict[str, Any], signature_values: Dict[str, Any]
+        self,
+        node: AST.UDOCall,
+        operator: Dict[str, Any],
+        signature_values: Dict[str, Any],
+        key: Tuple[Any, ...],
     ) -> Dict[str, List[Tuple[str, str, AST.TypeConstraint]]]:
         """Check the scalar and dataset arguments of a call against what the types of their
         parameters declare, and give the constraints of the component parameters, whose values
@@ -3004,12 +3055,19 @@ class InterpreterAnalyzer(ASTTemplate):
                 if checks:
                     component_constraints[param["name"]] = checks
                 continue
-            if constraints is None and not (isinstance(declared, Dataset) and declared.components):
-                continue
             value = signature_values[param["name"]]
-            if isinstance(value, str):
+            checked = constraints is not None or (
+                isinstance(declared, Dataset) and bool(declared.components)
+            )
+            if isinstance(declared, Dataset) and isinstance(value, str):
+                if not (checked or self.only_semantic):
+                    continue
                 # A dataset given by its name
                 value = self.visit(node.params[i])
+            if isinstance(declared, Dataset) and self.only_semantic:
+                self.udo_results[(key, param["name"])] = value
+            if not checked:
+                continue
             self._check_udo_signature(
                 node.op, f"parameter {param['name']}", declared, constraints, value
             )
@@ -3038,10 +3096,12 @@ class InterpreterAnalyzer(ASTTemplate):
         declared: Any,
         constraints: Optional[AST.SignatureConstraints],
         value: Any,
-    ) -> None:
-        """value, a Scalar, DataComponent or Dataset, must meet what the type of a parameter or
-        of the output of a user defined operator declares beyond its kind and data type: the
-        structure of a dataset type and the constraints on the values."""
+    ) -> Dict[str, Optional[AST.TypeConstraint]]:
+        """value, a Scalar, ScalarSet, DataComponent or Dataset, must meet what the type of a
+        parameter or of the output of a user defined operator declares beyond its kind and data
+        type: the structure of a dataset type and the constraints on the values. Gives the
+        components that a dataset type takes, each with its constraint."""
+        taken: Dict[str, Optional[AST.TypeConstraint]] = {}
         if isinstance(declared, Dataset) and isinstance(value, Dataset):
             taken = udo_dataset_components(op, element, declared, constraints, value)
             for name, constraint in taken.items():
@@ -3061,17 +3121,23 @@ class InterpreterAnalyzer(ASTTemplate):
                     )
         elif constraints is not None and constraints.value is not None:
             self._check_udo_constraint(op, element, constraints.value, value)
+        return taken
 
     def _check_udo_constraint(
         self, op: str, element: str, constraint: AST.TypeConstraint, value: Any
     ) -> None:
-        """Raise when a value of a Scalar or DataComponent breaks a constraint of the type of a
-        user defined operator: not null, a condition on value or the values allowed."""
+        """Raise when a value of a Scalar, ScalarSet or DataComponent breaks a constraint of the
+        type of a user defined operator: not null, a condition on value or the values allowed."""
         if isinstance(value, DataComponent):
             if value.data is None:
                 # The semantic analysis has no data points
                 return
             values = value.data.astype(object).reset_index(drop=True)
+        elif isinstance(value, ScalarSet):
+            # The values of a set<VD_1> argument, checked as a scalar argument is (issue #1351)
+            if self.only_semantic:
+                return
+            values = pd.Series(value.values, dtype=object)
         elif isinstance(value, Scalar):
             if self.only_semantic:
                 # The values are checked when the call is computed: by the pandas engine, and by
@@ -3082,7 +3148,11 @@ class InterpreterAnalyzer(ASTTemplate):
         else:
             return
         if constraint.value_domain is not None:
-            Operators.check_values(values, constraint.value_domain, op)
+            checked = values
+            if constraint.value_domain.type is String:
+                # A Boolean is promoted to String as the text true or false (issue #1351)
+                checked = values.map(to_string, na_action="ignore")
+            Operators.check_values(checked, constraint.value_domain, op)
         broken = pd.Series(False, index=values.index)
         if constraint.not_null:
             broken |= values.isna()

@@ -1,0 +1,8 @@
+{
+  "name": "VD_SB",
+  "type": "String",
+  "setlist": [
+    "true",
+    "false"
+  ]
+}

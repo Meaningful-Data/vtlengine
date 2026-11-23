@@ -374,12 +374,24 @@ CREATE OR REPLACE MACRO vtl_period_to_natural(input VARCHAR) AS (
 
 -- An integer parameter of substr or instr read from the data, which must be at
 -- least min_value (mirrors VTL error 2-1-18-1). A literal parameter is checked
--- by the semantic analysis before any SQL runs.
+-- by the semantic analysis before any SQL runs. A Number is checked as it is and
+-- then truncated to an integer, as the pandas engine does (issue #1351).
 CREATE OR REPLACE MACRO vtl_param_min(x, min_value, op_name, param_name) AS (
     CASE WHEN x < min_value
          THEN error('VTL 2-1-18-1 ' || op_name || ' ' || param_name || ' '
                     || CAST(min_value AS VARCHAR))
-         ELSE x
+         ELSE CAST(trunc(x) AS BIGINT)
+    END
+);
+
+-- A scalar argument of an integer parameter of a user defined operator. A whole
+-- Number is the Integer, one with decimals is no Integer (mirrors VTL error
+-- 1-2-18, which the pandas engine raises where the call is computed). where is
+-- the operator and the parameter, separated by a broken bar.
+CREATE OR REPLACE MACRO vtl_udo_integer(x, where_) AS (
+    CASE WHEN x <> trunc(x)
+         THEN error('VTL 1-2-18 ' || where_)
+         ELSE CAST(x AS BIGINT)
     END
 );
 
@@ -495,6 +507,15 @@ CREATE OR REPLACE MACRO vtl_text_to_integer(x) AS (
 -- followed by a broken bar (issue #1301).
 CREATE OR REPLACE MACRO vtl_downcast(v, vals, info) AS (
     CASE WHEN v IS NULL OR list_contains(vals, v) THEN v
+         ELSE error('VTL 2-1-5-4 ' || info || CAST(v AS VARCHAR))
+    END
+);
+
+-- vtl_downcast into a value domain of Strings, which a value of another type is compared with
+-- as the text it is promoted to: a Boolean is 'true' or 'false' (issue #1351). The value is
+-- returned as it is.
+CREATE OR REPLACE MACRO vtl_downcast_text(v, vals, info) AS (
+    CASE WHEN v IS NULL OR list_contains(vals, CAST(v AS VARCHAR)) THEN v
          ELSE error('VTL 2-1-5-4 ' || info || CAST(v AS VARCHAR))
     END
 );
