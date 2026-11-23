@@ -27,6 +27,16 @@ _TIME_VALUE_CHECKS: Dict[Any, Any] = {
     DataTypes.TimePeriod: check_time_period,
     DataTypes.TimeInterval: check_time,
 }
+TIME_TYPES = tuple(_TIME_VALUE_CHECKS)
+
+
+def on_distinct(series: Any, function: Any) -> Any:
+    """The Series the function gives for the series, computed on its distinct values that are
+    not null, each once, and taken back to its rows, null where the series is null. A column of
+    a time type holds few distinct values, and each costs Python calls."""
+    codes, distinct = pd.factorize(series)
+    result = function(pd.Series(distinct))
+    return pd.Series(result.array.take(codes, allow_fill=True), index=series.index)
 
 
 @lru_cache(maxsize=None)
@@ -105,7 +115,7 @@ def values_of(data_type: Any, values: Any) -> Any:
     """The values of the series, each written as value_of writes it."""
     if data_type not in _TIME_VALUE_CHECKS:
         return values
-    return values.map(lambda value: value_of(data_type, value), na_action="ignore")
+    return on_distinct(values, lambda distinct: distinct.map(lambda v: value_of(data_type, v)))
 
 
 BASIC_TYPE_NAMES = frozenset(

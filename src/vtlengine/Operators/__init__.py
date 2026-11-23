@@ -46,6 +46,7 @@ from vtlengine.DataTypes.TimeHandling import (
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import (
+    TIME_TYPES,
     Component,
     DataComponent,
     Dataset,
@@ -55,6 +56,7 @@ from vtlengine.Model import (
     ValueDomain,
     component_name_characters,
     component_name_characters_text,
+    on_distinct,
     printable_name,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -202,19 +204,19 @@ class Operator:
 
     @classmethod
     def cast_time_types(cls, data_type: Any, series: Any, other_type: Any = None) -> Any:
+        """The values of the series as a comparison orders them, each distinct value of a time
+        type cast once, as cast_time_types_scalar casts it."""
         if cls.op not in BINARY_COMPARISON_OPERATORS:
             return series
-        if _is_cast_to_time(data_type, other_type):
-            series = series.map(
-                lambda x: TimeInterval.implicit_cast(x, data_type), na_action="ignore"
+        if data_type.__name__ == "Duration":
+            return series.map(PERIOD_IND_MAPPING)
+        if data_type in (TimePeriod, TimeInterval) or _is_cast_to_time(data_type, other_type):
+            return on_distinct(
+                series,
+                lambda values: values.map(
+                    lambda x: cls.cast_time_types_scalar(data_type, x, other_type)
+                ),
             )
-            data_type = TimeInterval
-        if data_type.__name__ == "TimeInterval":
-            series = series.map(_time_value, na_action="ignore")
-        elif data_type.__name__ == "TimePeriod":
-            series = series.map(lambda x: TimePeriodHandler(x), na_action="ignore")
-        elif data_type.__name__ == "Duration":
-            series = series.map(PERIOD_IND_MAPPING)
         return series
 
     @classmethod
@@ -913,6 +915,28 @@ class Binary(Operator):
         return result_scalar
 
     @classmethod
+    def _series_scalar_operation(
+        cls, data_type: Any, series: Any, scalar: Scalar, series_left: bool
+    ) -> Any:
+        """The operation of the values of the series, of the type given, with the Scalar. A
+        comparison of values of a time type is computed once per distinct value."""
+        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value, data_type)
+        if (
+            data_type.__name__.__str__() == "Duration"
+            and not isinstance(scalar_value, int)
+            and scalar_value is not None
+        ):
+            scalar_value = PERIOD_IND_MAPPING[scalar_value]
+
+        def operation(values: Any) -> Any:
+            values = cls.cast_time_types(data_type, values, scalar.data_type)
+            return cls.apply_operation_series_scalar(values, scalar_value, series_left)
+
+        if cls.op in BINARY_COMPARISON_OPERATORS and data_type in TIME_TYPES:
+            return on_distinct(series, operation)
+        return operation(series)
+
+    @classmethod
     def dataset_scalar_evaluation(
         cls, dataset: Dataset, scalar: Scalar, dataset_left: bool = True
     ) -> Dataset:
@@ -921,20 +945,8 @@ class Binary(Operator):
         result_dataset.data = result_data
 
         for measure in dataset.get_measures():
-            scalar_value = cls.cast_time_types_scalar(
-                scalar.data_type, scalar.value, measure.data_type
-            )
-            measure_data = cls.cast_time_types(
-                measure.data_type, result_data[measure.name].copy(), scalar.data_type
-            )
-            if (
-                measure.data_type.__name__.__str__() == "Duration"
-                and not isinstance(scalar_value, int)
-                and scalar_value is not None
-            ):
-                scalar_value = PERIOD_IND_MAPPING[scalar_value]
-            result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
-                measure_data, scalar_value, dataset_left
+            result_dataset.data[measure.name] = cls._series_scalar_operation(
+                measure.data_type, result_data[measure.name].copy(), scalar, dataset_left
             )
             # Enforce measure dtype from component declaration
             result_comp = result_dataset.components.get(measure.name)
@@ -984,22 +996,11 @@ class Binary(Operator):
         cls, component: DataComponent, scalar: Scalar, component_left: bool = True
     ) -> DataComponent:
         result_component = cls.component_scalar_validation(component, scalar)
-        comp_data = cls.cast_time_types(
+        result_component.data = cls._series_scalar_operation(
             component.data_type,
             component.data.copy() if component.data is not None else pd.Series(),
-            scalar.data_type,
-        )
-        scalar_value = cls.cast_time_types_scalar(
-            scalar.data_type, scalar.value, component.data_type
-        )
-        if (
-            component.data_type.__name__.__str__() == "Duration"
-            and not isinstance(scalar_value, int)
-            and scalar_value is not None
-        ):
-            scalar_value = PERIOD_IND_MAPPING[scalar_value]
-        result_component.data = cls.apply_operation_series_scalar(
-            comp_data, scalar_value, component_left
+            scalar,
+            component_left,
         )
         # Enforce dtype from component declaration
         target = result_component.data_type.dtype()

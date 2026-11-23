@@ -31,7 +31,17 @@ from vtlengine.DataTypes import (
     to_strings,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet, values_of
+from vtlengine.Model import (
+    TIME_TYPES,
+    Component,
+    DataComponent,
+    Dataset,
+    Role,
+    Scalar,
+    ScalarSet,
+    on_distinct,
+    values_of,
+)
 from vtlengine.Operators.Boolean import And
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
@@ -587,6 +597,23 @@ class Between(Operator.Operator):
         )
 
     @classmethod
+    def _between(cls, element: Any, data: Any, from_data: Any, to_data: Any) -> Any:
+        """The between of the values of the element. Values of a time type between two Scalar
+        bounds are computed once per distinct value."""
+
+        def operation(values: Any) -> Any:
+            return cls.apply_operation_component(cls._ordered(element, values), from_data, to_data)
+
+        bounds_are_series = isinstance(from_data, pd.Series) or isinstance(to_data, pd.Series)
+        if (
+            element.data_type in TIME_TYPES
+            and isinstance(data, pd.Series)
+            and not bounds_are_series
+        ):
+            return on_distinct(data, operation)
+        return operation(data)
+
+    @classmethod
     def evaluate(
         cls,
         operand: Union[DataComponent, Scalar],
@@ -609,18 +636,15 @@ class Between(Operator.Operator):
         if isinstance(operand, Dataset):
             result.data = operand.data.copy()
             for measure_name in operand.get_measures_names():
-                values = cls._ordered(operand.components[measure_name], operand.data[measure_name])
-                result.data[measure_name] = cls.apply_operation_component(
-                    values, from_data, to_data
+                result.data[measure_name] = cls._between(
+                    operand.components[measure_name], operand.data[measure_name], from_data, to_data
                 )
                 if len(result.get_measures()) == 1:
                     result.data[COMP_NAME_MAPPING[cls.return_type]] = result.data[measure_name]
                     result.data = result.data.drop(columns=[measure_name])
             result.data = result.data[result.get_components_names()]
         if isinstance(operand, DataComponent):
-            result.data = cls.apply_operation_component(
-                cls._ordered(operand, operand.data), from_data, to_data
-            )
+            result.data = cls._between(operand, operand.data, from_data, to_data)
         if isinstance(operand, Scalar) and isinstance(from_, Scalar) and isinstance(to, Scalar):
             result.value = cls.op_func(cls._ordered(operand, operand.value), from_data, to_data)
         elif isinstance(operand, Scalar) and (
