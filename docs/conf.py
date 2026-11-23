@@ -158,7 +158,7 @@ html_context = {
     "display_github": True,
     "github_user": "Meaningful-Data",
     "github_repo": "vtlengine",
-    "github_version": "main",
+    "github_version": "develop",
     "conf_py_path": "/docs/",
     "latest_version": _latest_stable,
     "current_branch": _current_version,

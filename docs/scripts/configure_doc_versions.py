@@ -73,12 +73,12 @@ def build_versions_list(
     Assemble the ordered list of refs to build.
 
     Order (most-recent first for display):
-      main, <extra_branch?>, <latest_rc if build_rc>, *stable_versions
+      develop, <extra_branch?>, <latest_rc if build_rc>, *stable_versions
 
-    The list deduplicates entries so an explicit `--include-current-branch=main`
-    does not duplicate the always-present `main` entry.
+    The list deduplicates entries so an explicit `--include-current-branch=develop`
+    does not duplicate the always-present `develop` entry.
     """
-    versions = ["main"]
+    versions = ["develop"]
     if extra_branch and extra_branch not in versions:
         versions.append(extra_branch)
     if build_rc and latest_rc:
@@ -120,7 +120,7 @@ def main() -> int:
     extra_branch: Optional[str] = None
     if include_current_branch:
         current_branch = get_current_branch()
-        if current_branch and current_branch != "main":
+        if current_branch and current_branch != "develop":
             extra_branch = current_branch
             print(f"Including current branch in build list: {current_branch}")
 

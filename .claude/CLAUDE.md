@@ -184,7 +184,7 @@ Only use the following labels — **never create new labels**:
 
 | Label | Purpose |
 | ----- | ------- |
-| `documentation` | Documentation changes (triggers docs workflow on PR merge) |
+| `documentation` | Documentation changes |
 | `workflows` | CI/CD and GitHub Actions issues |
 | `dependencies` | Dependency management and updates |
 | `optimization` | Performance improvements and code complexity reduction |
