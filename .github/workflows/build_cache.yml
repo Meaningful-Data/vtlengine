@@ -8,7 +8,7 @@ name: Build caches
 
 on:
   push:
-    branches: ["1.9.X"]
+    branches: ["develop", "main"]
   workflow_dispatch:
 
 concurrency:

@@ -71,7 +71,7 @@ def same_sources(monkeypatch: pytest.MonkeyPatch, same: bool) -> None:
         ("v2.0.0rc3", "2.0.0rc3"),
         ("main", None),
         ("cr-1242", None),
-        ("1.9.X", None),
+        ("develop", None),
     ],
 )
 def test_wheel_version_of_tags_and_branches(ref: str, version: Optional[str]) -> None:
