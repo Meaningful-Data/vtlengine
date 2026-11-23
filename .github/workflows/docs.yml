@@ -8,8 +8,18 @@ on:
   repository_dispatch:
     types: [ release-published ]
   workflow_dispatch:
+  # Only what the docs read from the repository: the pages and scripts, the public API
+  # docstrings, the error messages and the version. The demo's wasm wheel is cached on all of
+  # src/vtlengine, so an unfiltered push would rebuild it on every code change.
   push:
     branches: [ develop ]
+    paths:
+      - "docs/**"
+      - "src/vtlengine/__init__.py"
+      - "src/vtlengine/API/**"
+      - "src/vtlengine/Exceptions/**"
+      - "pyproject.toml"
+      - ".github/workflows/docs.yml"
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
