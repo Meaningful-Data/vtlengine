@@ -13712,6 +13712,44 @@ class TimeValueBugs(BugHelper):
         """
         self.BaseTest(code="GH_1352_26m", number_inputs=1, references_names=["1"])
 
+    vd_1365 = ["GH_1365-VD_TP", "GH_1365-VD_DATE"]
+
+    def test_GH_1365_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_3 := Me_1 >= cast ( "2021Q2" , time_period ) ,
+                        Me_4 := between ( Me_1 , cast ( "2021Q1" , time_period ) ,
+                                          cast ( "2021-Q3" , time_period ) ) ,
+                        Me_5 := Me_2 < cast ( "2020-01-31" , date ) ,
+                        Me_6 := between ( Me_2 , cast ( "2020-01-05" , date ) ,
+                                          cast ( "2020-01-31" , date ) ) ];
+        Description: The pandas engine compares the Time_Period Me_1 and the Date Me_2 with
+                     Scalar bounds once per distinct value. A value repeated, written in
+                     another form (2021-Q1, 2020-1-5) or null gets, on its rows, the result of
+                     its value, null for a null, as on the DuckDB engine.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1365
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1365_1", number_inputs=1, references_names=["1"])
+
+    def test_GH_1365_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := Me_1 in VD_DATE , Me_3 := Me_1 not_in VD_DATE ]
+                        [ filter Id_2 in { cast ( "2021-Q1" , time_period ) ,
+                                           cast ( "2021Q3" , time_period ) } ];
+        Description: The pandas engine checks the values of Id_2, on the Time_Period value
+                     domain VD_TP, and of the Date Me_1 against a value domain or a set once
+                     per distinct value. A value repeated or written in another form (2021-Q1,
+                     2020-1-6) is in the domain or the set as its value is, a null Me_1 gives
+                     null, as on the DuckDB engine.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1365
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1365_2", number_inputs=1, references_names=["1"], vd_names=self.vd_1365
+        )
+
 
 class BasicTypeValueBugs(BugHelper):
     """Values of the basic types converted, written and compared alike by both engines (issue

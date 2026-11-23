@@ -1,0 +1,11 @@
+Id_1,Me_1,Me_2,Me_3,Me_4,Me_5,Me_6
+1,2021Q1,2020-01-05,False,True,True,True
+2,2021Q1,2020-01-05,False,True,True,True
+3,2021Q2,,True,True,,
+4,,2020-01-31,,,False,True
+5,2021Q3,2020-02-01,True,True,False,False
+6,2021Q1,2020-01-05,False,True,True,True
+7,2020Q4,,False,False,,
+8,,2019-12-31,,,True,False
+9,2021Q2,2020-01-06,True,True,True,True
+10,2022Q1,2020-01-06,True,False,True,True
