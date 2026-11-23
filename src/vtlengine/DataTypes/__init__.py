@@ -796,7 +796,7 @@ IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
 
 EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     String: {Integer, Number, Boolean, String, Date, TimePeriod, TimeInterval, Duration},
-    Number: {Integer, Boolean, String, Number},
+    Number: {Boolean, String, Number},
     Integer: {Number, Boolean, String, Integer},
     TimeInterval: {Date, TimePeriod, String, TimeInterval},
     Date: {TimePeriod, Date, String},

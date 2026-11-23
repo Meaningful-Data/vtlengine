@@ -859,15 +859,12 @@ class NumericBugs(BugHelper):
     def test_GL_413(self):
         """
         Expression: A := cast(BIS_LBS_DISS#OBS_VALUE, integer) * 2;
-        Description: Cast Operator.
-        Git Issue: GL_413-cast-with-integer
-        Goal: Check Result.
+        Description: The cast of the Number Measure OBS_VALUE to integer is refused, as the VTL 2.2
+                     manual marks number to integer as not feasible. It used to drop the decimals.
+        Git Issue: GL_413-cast-with-integer, https://github.com/Meaningful-Data/vtlengine/issues/1388
+        Goal: Check Exception.
         """
-        code = "GL_413"
-        number_inputs = 1
-        references_names = ["1"]
-
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(code="GL_413", number_inputs=1, exception_code="1-1-5-4")
 
     def test_GH_763_1(self):
         """
@@ -7358,12 +7355,12 @@ class CastBugs(BugHelper):
                                         Me_3 := cast ( Me_i , VD_CODE ) ,
                                         Me_4 := cast ( Me_b , VD_INT ) ,
                                         Me_5 := cast ( Me_d , VD_DATE ) ,
-                                        Me_6 := cast ( Me_n , VD_INT ) ,
                                         Me_7 := cast ( Me_v , VD_NUM ) ,
                                         Me_8 := cast ( "3" , VD_INT ) ] [ keep ... ];
         Description: A cast to a value domain casts to its basic type first, from any type that
-                     casts to it: String, Integer, Boolean and Number, and another value domain
-                     (VD_INT2) of another basic type. They raised 1-1-5-1.
+                     casts to it: String, Integer and Boolean, and another value domain (VD_INT2)
+                     of another basic type. They raised 1-1-5-1. A Number does not cast to the
+                     integers of VD_INT (issue #1388).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1342
         Goal: Check Result.
         """
@@ -15177,17 +15174,18 @@ class RunTimeErrorMappingBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- DS_1 [ calc Me_9 := cast ( Me_2 , integer ) ];
-        Description: The Number 1e20 cast to integer does not fit in an Integer: both engines
-                     raise 2-1-5-1. The pandas engine raised a raw OverflowError and the DuckDB
-                     engine a raw ConversionException.
+        Description: The cast of the Number Me_2 to integer is refused by the semantic analysis on
+                     both engines, as the VTL 2.2 manual marks number to integer as not feasible
+                     (issue #1388). It raised 2-1-5-1 for the value 1e20, which does not fit in an
+                     Integer, and dropped the decimals of the other values.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(
             code="GH_1356_33",
             number_inputs=1,
-            exception_code="2-1-5-1",
-            exception_message="Impossible to cast 1e+20 from type Number to Integer.",
+            exception_code="1-1-5-4",
+            exception_message="Invalid mask to cast from type Number to Integer.",
         )
 
     def test_GH_1356_34(self):

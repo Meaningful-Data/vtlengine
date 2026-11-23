@@ -5568,11 +5568,6 @@
       "value": 5.0
     },
     {
-      "name": "cast_sc_num_int",
-      "data_type": "Integer",
-      "value": 6
-    },
-    {
       "name": "cast_sc_str_date",
       "data_type": "Date",
       "value": "2020-01-01"

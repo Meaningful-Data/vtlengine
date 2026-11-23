@@ -10,6 +10,8 @@ from vtlengine.DataTypes import (
     EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING,
     IMPLICIT_TYPE_PROMOTION_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
+    Integer,
+    Number,
     ScalarType,
 )
 from vtlengine.DataTypes.CastMasks import cast_with_mask, check_mask
@@ -70,6 +72,9 @@ class Cast(Operator.Unary):
 
     @staticmethod
     def castable_without_mask(from_type: Type[ScalarType], to_type: Type[ScalarType]) -> bool:
+        # VTL 2.2 marks the cast from number to integer as not feasible
+        if from_type is Number and to_type is Integer:
+            return False
         return to_type.is_included(
             EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING[from_type]
         ) or to_type.is_included(IMPLICIT_TYPE_PROMOTION_MAPPING[from_type])

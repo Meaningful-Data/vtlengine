@@ -625,7 +625,7 @@ Supported conversions without mask
     * - **Number**
       - |y|
       - |y|
-      - |y|
+      - —
       - |y|
       - —
       - —
@@ -692,6 +692,13 @@ Legend: |y| = implemented.
 
 Conversion details:
 
+- **Number to Integer**: Not feasible, as the VTL 2.2
+  reference manual defines it, also to a value domain of
+  integers: ``cast(2.7, integer)`` raises ``1-1-5-4``. Use
+  ``round``, ``trunc``, ``floor`` or ``ceil`` to choose how
+  the decimals are dropped: without a number of decimals,
+  ``round`` and ``trunc`` give an Integer, as ``floor`` and
+  ``ceil`` do.
 - **Number/Integer to Boolean**: ``0`` becomes ``false``,
   any other value becomes ``true``.
 - **Boolean to Number/Integer**: ``true`` becomes ``1``
@@ -841,8 +848,8 @@ generic name based on the target type:
 .. note::
 
     When the source type can be implicitly promoted to the
-    target type (e.g. Boolean to String, Integer to Number,
-    or Number to Integer), the measure is **not** renamed.
+    target type (e.g. Boolean to String or Integer to
+    Number), the measure is **not** renamed.
 
 
 Cast to a value domain

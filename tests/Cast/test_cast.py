@@ -391,19 +391,6 @@ class TestCastStringToDuration:
             Cast.evaluate(operand=Scalar("x", String, "P2Y"), scalarType=Duration)
 
 
-class TestCastNumberToInteger:
-    """Number -> Integer (Implicit cast)"""
-
-    @pytest.mark.parametrize(
-        "input_val, expected",
-        [(5.0, 5), (None, None)],
-    )
-    def test_cast(self, input_val: object, expected: object) -> None:
-        result = Cast.evaluate(operand=Scalar("x", Number, input_val), scalarType=Integer)
-        assert result.value == expected
-        assert result.data_type == Integer
-
-
 class TestCastIntegerToNumber:
     """Integer -> Number (Implicit cast)"""
 
@@ -655,6 +642,8 @@ class TestCastSemanticErrors:
             (Integer, 1, Date),
             (Integer, 1, TimePeriod),
             (Integer, 1, Duration),
+            # The VTL 2.2 manual marks number to integer as not feasible (issue #1388)
+            (Number, 2.7, Integer),
             (Number, 1.0, TimeInterval),
             (Number, 1.0, Date),
             (Boolean, True, TimeInterval),
@@ -858,7 +847,6 @@ class TestCastInterpreter:
             ('cast("true", boolean)', True, Boolean),
             ('cast("false", boolean)', False, Boolean),
             ('cast("hello", boolean)', False, Boolean),
-            ("cast(42.0, integer)", 42, Integer),
             ("cast(42.5, string)", "42.5", String),
             ("cast(42, string)", "42", String),
             # Boolean → String gives "true" or "false" in both engines, as the VTL 2.2
