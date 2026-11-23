@@ -12,7 +12,8 @@
 The VTL Engine is a Python library that allows you to validate, format and execute VTL scripts.
 
 It is a Python-based library around
-the [VTL Language 2.1](https://sdmx-twg.github.io/vtl/2.1/html/index.html).
+the [VTL 2.2 Language](https://sdmx-twg.github.io/vtl/v2.2/index.html). See the
+[VTL 2.2 Reference Manual](https://sdmx-twg.github.io/vtl/v2.2/reference_manual/index.html).
 
 ## Useful Links
 

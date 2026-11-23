@@ -189,8 +189,8 @@ class Binary(Operator.Binary):
 
 class UnPlus(Unary):
     """
-    `Plus <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=94&zoom=100,72,142> `_ unary operator
-    """  # noqa E501
+    Plus unary operator
+    """
 
     op = PLUS
     py_op = operator.pos
@@ -202,8 +202,8 @@ class UnPlus(Unary):
 
 class UnMinus(Unary):
     """
-    `Minus <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=95&zoom=100,72,414> `_unary operator
-    """  # noqa E501
+    Minus unary operator
+    """
 
     op = MINUS
     py_op = operator.neg
@@ -212,8 +212,8 @@ class UnMinus(Unary):
 
 class AbsoluteValue(Unary):
     """
-    `Absolute <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=112&zoom=100,72,801> `_ unary operator
-    """  # noqa E501
+    Absolute unary operator
+    """
 
     op = ABS
     py_op = operator.abs
@@ -222,8 +222,8 @@ class AbsoluteValue(Unary):
 
 class Exponential(Unary):
     """
-    `Exponential <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=114&zoom=100,72,94>`_ unary operator
-    """  # noqa E501
+    Exponential unary operator
+    """
 
     op = EXP
     return_type = Number
@@ -247,9 +247,9 @@ class Exponential(Unary):
 
 class NaturalLogarithm(Unary):
     """
-    `Natural logarithm <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=115&zoom=100,72,394> `_
+    Natural logarithm
     unary operator
-    """  # noqa E501
+    """
 
     op = LN
     return_type = Number
@@ -271,9 +271,9 @@ class NaturalLogarithm(Unary):
 
 class SquareRoot(Unary):
     """
-    `Square Root <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=119&zoom=100,72,556> '_
+    Square Root
     unary operator
-    """  # noqa E501
+    """
 
     op = SQRT
     return_type = Number
@@ -315,8 +315,8 @@ class WholeNumber(Unary):
 
 class Ceil(WholeNumber):
     """
-    `Ceilling <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=110&zoom=100,72,94> `_ unary operator
-    """  # noqa E501
+    Ceiling unary operator
+    """
 
     op = CEIL
     whole = staticmethod(math.ceil)
@@ -325,8 +325,8 @@ class Ceil(WholeNumber):
 
 class Floor(WholeNumber):
     """
-    `Floor <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=111&zoom=100,72,442> `_ unary operator
-    """  # noqa E501
+    Floor unary operator
+    """
 
     op = FLOOR
     whole = staticmethod(math.floor)
@@ -335,8 +335,8 @@ class Floor(WholeNumber):
 
 class BinPlus(Binary):
     """
-    `Addition <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=96&zoom=100,72,692> `_ binary operator
-    """  # noqa E501
+    Addition binary operator
+    """
 
     op = PLUS
     py_op = operator.add
@@ -345,8 +345,8 @@ class BinPlus(Binary):
 
 class BinMinus(Binary):
     """
-    `Subtraction <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=98&zoom=100,72,448> `_ binary operator
-    """  # noqa E501
+    Subtraction binary operator
+    """
 
     op = MINUS
     py_op = operator.sub
@@ -355,9 +355,9 @@ class BinMinus(Binary):
 
 class Mult(Binary):
     """
-    `Multiplication <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=100&zoom=100,72,254>`_
+    Multiplication
     binary operator
-    """  # noqa E501
+    """
 
     op = MULT
     py_op = operator.mul
@@ -365,9 +365,9 @@ class Mult(Binary):
 
 class Div(Binary):
     """
-    `Division <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=102&zoom=100,72,94>`_
+    Division
     binary operator
-    """  # noqa E501
+    """
 
     op = DIV
     py_op = operator.truediv
@@ -381,8 +381,8 @@ class Div(Binary):
 
 class Logarithm(Binary):
     """
-    `Logarithm <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=118&zoom=100,72,228>`_ operator
-    """  # noqa E501
+    Logarithm operator
+    """
 
     op = LOG
     return_type = Number
@@ -402,8 +402,8 @@ class Logarithm(Binary):
 
 class Modulo(Binary):
     """
-    `Module <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=104&zoom=100,72,94>`_ operator
-    """  # noqa E501
+    Module operator
+    """
 
     op = MOD
 
@@ -416,8 +416,8 @@ class Modulo(Binary):
 
 class Power(Binary):
     """
-    `Power <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=116&zoom=100,72,693>`_ operator
-    """  # noqa E501
+    Power operator
+    """
 
     op = POWER
     return_type = Number
@@ -573,8 +573,8 @@ class Parameterized(Unary):
 
 class Round(Parameterized):
     """
-    `Round <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=106&zoom=100,72,94>`_ operator
-    """  # noqa E501
+    Round operator
+    """
 
     op = ROUND
     return_type = Integer
@@ -586,8 +586,8 @@ class Round(Parameterized):
 
 class Trunc(Parameterized):
     """
-    `Trunc <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=108&zoom=100,72,94>`_ operator.
-    """  # noqa E501
+    Trunc operator.
+    """
 
     op = TRUNC
 
