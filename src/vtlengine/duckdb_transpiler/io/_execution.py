@@ -41,7 +41,8 @@ from vtlengine.duckdb_transpiler.sql import initialize_time_types
 from vtlengine.Exceptions import RunTimeError, transformation_output
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Component, Dataset, Scalar
-from vtlengine.Operators.Time import Time_Shift
+from vtlengine.Operators.Analytic import WINDOW_BOUND
+from vtlengine.Operators.Time import Time_Aggregation, Time_Shift
 from vtlengine.Utils._number_config import get_effective_output_digits
 
 # A query that returns one table as it is: ``SELECT * FROM "name"``
@@ -87,6 +88,37 @@ def _mixed_frequency_error(msg_lower: str) -> Exception:
         comp_type="dataset",
         param="single time interval frequency",
     )
+
+
+def _parameter_error(msg: str) -> RunTimeError:
+    """A parameter read from the data that the operator does not take (mirrors 2-1-18-1): a
+    null or negative window bound that a Scalar gives (macro vtl_window_bound), a null offset
+    of lag or lead (macro vtl_lag_offset, issue #1355) or an integer parameter of substr or
+    instr below its minimum."""
+    window_bound = re.search(r"VTL 2-1-18-1 (\S+) Window bound", msg)
+    if window_bound is not None:
+        op = window_bound.group(1)
+        return RunTimeError("2-1-18-1", op=op, param_type="Window bound", correct_type=WINDOW_BOUND)
+    match = re.search(r"VTL 2-1-18-1 (\S+) (\S+) (\S+)", msg)
+    op, param, expected = match.groups() if match else ("", "", "")
+    correct_type = expected if expected == "Integer" else f">= {expected}"
+    return RunTimeError("2-1-18-1", op=op, param_type=param, correct_type=correct_type)
+
+
+def _period_error(msg: str) -> Optional[Exception]:
+    """A period indicator that is not one (macros vtl_dateadd and vtl_time_agg_period, mirrors
+    2-1-19-2), and the period that a Scalar gives time_agg, which the query checks (macro
+    vtl_time_agg_period, issue #1355): a null or one not coarser than the period to aggregate
+    from."""
+    if "vtl 2-1-19-2 invalid period" in msg.lower():
+        return RunTimeError("2-1-19-2", period=msg.rsplit(" ", 1)[-1])
+    missing = re.search(r"VTL 2-1-19-24 (\S+)", msg)
+    if missing is not None:
+        return Time_Aggregation.no_value_error(missing.group(1))
+    finer = re.search(r"VTL 2-1-19-26 (\S+) (\S+)", msg)
+    if finer is not None:
+        return RunTimeError("2-1-19-26", value_1=finer.group(1), value_2=finer.group(2))
+    return None
 
 
 def _map_udo_constraint_error(msg: str) -> Optional[Exception]:
@@ -173,19 +205,16 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
     if "vtl 2-1-19-8 " in msg_lower:
         return RunTimeError("2-1-19-8", date=msg.split("VTL 2-1-19-8 ", 1)[-1])
 
-    # VTL macro vtl_dateadd: a period indicator that is not one (mirrors 2-1-19-2)
-    if "vtl 2-1-19-2 invalid period" in msg_lower:
-        return RunTimeError("2-1-19-2", period=msg.rsplit(" ", 1)[-1])
+    period = _period_error(msg)
+    if period is not None:
+        return period
 
     # datediff: a Time value, which holds two dates
     if "vtl 2-1-19-25" in msg_lower:
         return RunTimeError("2-1-19-25", op="datediff", comp_type="Date or Time_Period value")
 
-    # substr / instr: an integer parameter read from the data below its minimum
     if "vtl 2-1-18-1" in msg_lower:
-        match = re.search(r"VTL 2-1-18-1 (\S+) (\S+) (-?\d+)", msg)
-        op, param, minimum = match.groups() if match else ("", "", "")
-        return RunTimeError("2-1-18-1", op=op, param_type=param, correct_type=f">= {minimum}")
+        return _parameter_error(msg)
 
     # hierarchy: two rules compute different values for one data point (issues #1142, #1193)
     if "vtl 2-1-10-1" in msg_lower:

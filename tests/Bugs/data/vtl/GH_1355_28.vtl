@@ -1,0 +1,5 @@
+define operator w ( d dataset )
+    returns dataset is
+        d [ calc Z9 := Me_2 + 1 ] [ calc Z8 := cast ( Z9 , string ) ]
+end operator;
+DS_r <- w ( DS_3 ) [ calc Z := 1 ];

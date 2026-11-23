@@ -1,0 +1,8 @@
+define hierarchical ruleset HR_1 ( valuedomain rule VD_1 ) is
+    A = B + C
+end hierarchical ruleset;
+define operator f ( d dataset , r component )
+    returns dataset is
+        check_hierarchy ( d , HR_1 rule r all )
+end operator;
+DS_r <- f ( DS_5 , Id_2 );

@@ -726,6 +726,15 @@ centralised_messages = {
         "a value domain: the Measures it creates are named after the values of the value "
         "domain.",
     },
+    "1-1-6-19": {
+        "message": "At op {op}: Invalid Component name {name}, a Component name cannot contain "
+        "{characters}.",
+        "description": "Raised when a script names a new Component (rename, calc, aggr, unpivot, "
+        "the Measures of pivot, the result of eval) with a name that contains a character "
+        "that the names of the Components of the input structures cannot contain: a quote, a "
+        "double quote, #, NUL or a carriage return. # only separates the alias of a join "
+        "operand from the name of its Component.",
+    },
     # Comparison errors
     "1-1-7-1": {
         "message": "At op {op}: Value in {left_name} of type {left_type} is not comparable "
@@ -962,10 +971,12 @@ centralised_messages = {
         "reference Dataset in subcase B2.",
     },
     "1-1-13-7": {
-        "message": "At op {op}: Invalid subcase B2, All the non reference Datasets must "
-        "share as Identifiers the using ones.",
-        "description": "Raised when non-reference Datasets in subcase B2 do not share "
-        "the declared 'using' Identifiers.",
+        "message": "At op {op}: Invalid subcase B2, the using component '{using_component}' "
+        "must be an Identifier of the Dataset '{dataset}', as of every operand except the "
+        "left-most one.",
+        "description": "Raised when a using component of an inner_join or a left_join is not "
+        "an Identifier of an operand other than the left-most one, which alone may have it as "
+        "a Measure or an Attribute.",
     },
     "1-1-13-8": {
         "message": "At op {op}: No available using clause.",
@@ -1007,6 +1018,13 @@ centralised_messages = {
         "message": "At op {op}: The nvl rule of {name} gives null to an Identifier, which "
         "cannot be null.",
         "description": "Raised when a nvl rule of a join gives the null constant to an Identifier.",
+    },
+    "1-1-13-28": {
+        "message": "At op {op}: Invalid name {name} of a join operand, the alias of a join "
+        "operand, or else its Data Set name, cannot be empty or contain {characters}.",
+        "description": "Raised when the alias of a join operand, or the name of a Data Set "
+        "joined without an alias, is empty or contains a character that a Component name "
+        "cannot contain: the join names the Components of its operands alias#comp.",
     },
     "1-1-13-9": {
         "message": "Ambiguity for this variable {comp_name} inside a Join clause.",
@@ -1698,7 +1716,7 @@ centralised_messages = {
         "description": "Raised when the time values of the operand hold more than one frequency.",
     },
     "2-1-19-24": {
-        "message": "At op {op}: The scalar {name} that gives the {param} has no value.",
+        "message": "At op {op}: The {scalar} has no value.",
         "description": "Raised when the scalar that gives time_agg its period indicator or "
         "timeshift its shift number holds a null.",
     },

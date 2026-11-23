@@ -1,7 +1,10 @@
 import inspect
 import json
+import re
 from dataclasses import dataclass, field
 from enum import Enum
+from functools import lru_cache
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import pandas as pd
@@ -24,6 +27,65 @@ _TIME_VALUE_CHECKS: Dict[Any, Any] = {
     DataTypes.TimePeriod: check_time_period,
     DataTypes.TimeInterval: check_time,
 }
+
+
+@lru_cache(maxsize=None)
+def component_name_pattern() -> "re.Pattern[str]":
+    """The pattern of a Component name in the JSON schema of the data structures."""
+    schema_path = Path(__file__).parents[1] / "API" / "data" / "schema" / "json_schema_2.1.json"
+    with open(schema_path, "r") as file:
+        return re.compile(json.load(file)["$defs"]["component-name"]["pattern"])
+
+
+# How a message names a character that cannot be printed
+_CHARACTER_NAMES = {"\x00": "NUL", "\r": "carriage return"}
+
+
+@lru_cache(maxsize=None)
+def component_name_characters() -> str:
+    """The characters a Component name cannot contain: the ones that the name pattern of the
+    JSON schema of the data structures leaves out (issue #1355)."""
+    pattern = component_name_pattern().pattern
+    excluded = pattern[len("^[^") : pattern.index("]")]
+    return excluded.encode().decode("unicode_escape")
+
+
+def component_name_characters_text() -> str:
+    """The characters a Component name cannot contain, as a message lists them."""
+    names = [_CHARACTER_NAMES.get(char, char) for char in component_name_characters()]
+    return f"{', '.join(names[:-1])} or {names[-1]}"
+
+
+def join_homonyms(names: Iterable[str], name: str) -> List[str]:
+    """The Components alias#name that a join names after the operands that all have name. A
+    calc that computes name replaces them (Inner Join page of the VTL 2.2 manual), and no other
+    Component name holds # (issue #1355)."""
+    return [comp for comp in names if comp.partition("#")[2] == name]
+
+
+def printable_name(name: str) -> str:
+    """A name as a message writes it, with the characters that cannot be printed escaped."""
+    return "".join(char if char.isprintable() else repr(char)[1:-1] for char in name)
+
+
+def component_name_error(name: str) -> str:
+    """Why an input structure cannot name a Component name (0-2-1-1)."""
+    return (
+        f"'{printable_name(name)}' is not a valid Component name: a Component name cannot be "
+        f"empty or contain {component_name_characters_text()}, except quotes around the "
+        "whole name"
+    )
+
+
+def check_input_component_name(name: str) -> None:
+    """A Component name of an input structure follows the name pattern of the JSON schema of
+    the data structures: no quotes, no # (issue #1355), no NUL and no carriage return."""
+    if not component_name_pattern().search(name):
+        raise InputValidationException(
+            code="0-2-1-1",
+            element=f"Component '{printable_name(name)}'",
+            error=component_name_error(name),
+        )
 
 
 def value_of(data_type: Any, value: Any) -> Any:
@@ -286,6 +348,7 @@ class Component:
     ) -> "Component":
         """The component to_dict writes. Its type can name one of the value domains given, by
         name, on which the component is then defined."""
+        check_input_component_name(json_str["name"])
         # Support both 'type' and 'data_type' for backward compatibility
         data_type, value_domain = named_type(
             json_str.get("type") or json_str.get("data_type"),

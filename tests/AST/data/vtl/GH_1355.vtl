@@ -1,0 +1,3 @@
+DS_t <- inner_join(DS_1 as A, DS_2 as B calc Me_9 := sum(B#Me_2 over (partition by A#Id_2 order by A#Me_1)));
+DS_u <- inner_join(DS_1 as A, DS_2 as B rename A#Me_1 to Me_9, Me_2 to Me_8);
+DS_v <- inner_join(DS_1 as 'A B', DS_2 as B keep 'A B'#Me_1, Me_2);

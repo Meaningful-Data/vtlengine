@@ -1,0 +1,5 @@
+define operator w ( d dataset , n integer )
+    returns dataset is
+        d [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points between n preceding and current data point ) ) ]
+end operator;
+DS_r <- w ( DS_3 , 1 + 0 );
