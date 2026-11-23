@@ -521,6 +521,8 @@ common type.
       - —
       - |y|
 
+.. |y| unicode:: U+2705
+
 Key rules:
 
 - **Integer / Number**: Both directions are implicit
@@ -597,105 +599,23 @@ operator converts values from one type to another:
     ``string``, ``integer``, ``number``, ``boolean``,
     ``time``, ``date``, ``time_period``, ``duration``.
 
-Supported conversions without mask
------------------------------------
+Supported conversions
+---------------------
 
-.. list-table::
-    :widths: 14 10 10 10 10 10 10 12 10
-    :header-rows: 1
-
-    * - From / To
-      - String
-      - Number
-      - Integer
-      - Boolean
-      - Time
-      - Date
-      - Time_Period
-      - Duration
-    * - **String**
-      - |y|
-      - |y|
-      - |y|
-      - —
-      - |y|
-      - |y|
-      - |y|
-      - |y|
-    * - **Number**
-      - |y|
-      - |y|
-      - —
-      - |y|
-      - —
-      - —
-      - —
-      - —
-    * - **Integer**
-      - |y|
-      - |y|
-      - |y|
-      - |y|
-      - —
-      - —
-      - —
-      - —
-    * - **Boolean**
-      - |y|
-      - |y|
-      - |y|
-      - |y|
-      - —
-      - —
-      - —
-      - —
-    * - **Time**
-      - |y|
-      - —
-      - —
-      - —
-      - |y|
-      - —
-      - —
-      - —
-    * - **Date**
-      - |y|
-      - —
-      - —
-      - —
-      - —
-      - |y|
-      - |y|
-      - —
-    * - **Time_Period**
-      - |y|
-      - —
-      - —
-      - —
-      - —
-      - —
-      - |y|
-      - —
-    * - **Duration**
-      - |y|
-      - —
-      - —
-      - —
-      - —
-      - —
-      - —
-      - |y|
-
-Legend: |y| = implemented.
-
-.. |y| unicode:: U+2705
+The conversions that ``cast`` supports are those of the table at the end of
+the `Behaviour
+<https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators
+/General%20purpose%20operators/Type%20conversion/index.html#behaviour>`_
+section of the VTL 2.2 reference manual: implicit, explicit, and explicit with
+an optional mask. A cast to the same type is accepted too. A conversion that
+the table marks as not feasible raises SemanticError ``1-1-5-4``, or
+``1-1-5-1`` when the target is a value domain.
 
 Conversion details:
 
-- **Number to Integer**: Not feasible, as the VTL 2.2
-  reference manual defines it, also to a value domain of
-  integers: ``cast(2.7, integer)`` raises ``1-1-5-4``. Use
-  ``round``, ``trunc``, ``floor`` or ``ceil`` to choose how
+- **Number to Integer**: Not feasible, also to a value
+  domain of integers: ``cast(2.7, integer)`` raises
+  ``1-1-5-4``. Use ``round``, ``trunc``, ``floor`` or ``ceil`` to choose how
   the decimals are dropped: without a number of decimals,
   ``round`` and ``trunc`` give an Integer, as ``floor`` and
   ``ceil`` do.
