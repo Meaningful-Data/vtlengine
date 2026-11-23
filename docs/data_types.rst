@@ -5,23 +5,23 @@ Data Types
 This page documents the data types supported by vtlengine,
 covering input formats, internal representation, output formats,
 and type casting rules based on the
-`VTL 2.2 specification <https://sdmx-twg.github.io/vtl/2.2/>`_.
+`VTL 2.2 specification <https://sdmx-twg.github.io/vtl/v2.2/>`_.
 
 .. seealso::
 
     - `VTL Data Types
-      <https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html>`_
+      <https://sdmx-twg.github.io/vtl/v2.2/user_manual/types.html>`_
       — Full type system in the VTL 2.2 User Manual
     - `Scalar type definitions
-      <https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html
+      <https://sdmx-twg.github.io/vtl/v2.2/user_manual/types.html
       #scalar-types>`_
       — Detailed scalar type descriptions
     - `Type conversion\: cast
-      <https://sdmx-twg.github.io/vtl/2.2/reference_manual/operators
+      <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators
       /General%20purpose%20operators/Type%20conversion/index.html>`_
       — Cast operator reference
     - `Type Conversion and Formatting Mask
-      <https://sdmx-twg.github.io/vtl/2.2/reference_manual
+      <https://sdmx-twg.github.io/vtl/v2.2/reference_manual
       /typical_behaviour.html
       #type-conversion-and-formatting-mask>`_
       — Conversion rules and masks
@@ -31,7 +31,7 @@ Type Hierarchy
 
 The VTL 2.2 specification defines a hierarchy of
 `scalar types
-<https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html
+<https://sdmx-twg.github.io/vtl/v2.2/user_manual/types.html
 #basic-scalar-types>`_:
 
 .. code-block:: text
@@ -59,7 +59,7 @@ Data Types Reference
 Each type below describes how vtlengine handles input, storage,
 and output. For the formal VTL definitions, see
 `External representations and literals
-<https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html
+<https://sdmx-twg.github.io/vtl/v2.2/user_manual/types.html
 #external-representations-and-literals-used-in-the-vtl-manuals>`_.
 
 String
@@ -428,7 +428,7 @@ Implicit casts happen automatically when operators receive
 operands of different but compatible types.
 The engine resolves the common type using the
 `type promotion rules
-<https://sdmx-twg.github.io/vtl/2.2/reference_manual
+<https://sdmx-twg.github.io/vtl/v2.2/reference_manual
 /typical_behaviour.html#operators-changing-the-data-type>`_
 defined in VTL 2.2: the common type of two operands is the
 type of one of them, to which the other one is implicitly
@@ -579,7 +579,7 @@ Explicit Casting (cast operator)
 ================================
 
 The `cast
-<https://sdmx-twg.github.io/vtl/2.2/reference_manual/operators
+<https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators
 /General%20purpose%20operators/Type%20conversion/index.html>`_
 operator converts values from one type to another:
 

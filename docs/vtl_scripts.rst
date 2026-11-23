@@ -12,8 +12,8 @@ This page is about the *engine side* of scripts: which forms the engine
 accepts, how persistent and non-persistent results work, and the related
 options. For the VTL language itself — what operators exist, how the
 syntax is spelled — see the
-`VTL 2.1 Reference Manual
-<https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf>`_.
+`VTL 2.2 Reference Manual
+<https://sdmx-twg.github.io/vtl/v2.2/reference_manual/index.html>`_.
 
 
 ******************************

@@ -16,8 +16,8 @@ VTL syntax, and validation for each feature.
       — Combined example using both features as dictionaries
     - :ref:`example_6_run_using_paths`
       — Combined example using both features as Path objects
-    - `VTL 2.1 Reference Manual
-      <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf>`_
+    - `VTL 2.2 Reference Manual
+      <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/index.html>`_
       — Full VTL specification
 
 

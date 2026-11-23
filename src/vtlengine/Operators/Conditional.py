@@ -212,7 +212,7 @@ def _combine_viral_attributes(result: Any, operands: List[Any]) -> None:
 class If(Operator):
     """
     If class:
-        `If-then-else <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=225&zoom=100,72,142>`_ operator
+        If-then-else operator
         inherits from Operator, a superclass that contains general validate and evaluate class methods.
         It has the following class methods:
     Class methods:
@@ -413,7 +413,7 @@ class If(Operator):
 class Nvl(Binary):
     """
     Null class:
-        `Nvl <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=229&zoom=100,72,370>`_operator class.
+        Nvl operator class.
         It has the following class methods:
 
     Class methods:
