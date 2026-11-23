@@ -38,7 +38,7 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
+from vtlengine.DataTypes.TimeHandling import TimePeriodHandler, check_year
 from vtlengine.Exceptions import RunTimeError, SemanticError
 
 MASK_TYPES = (Date, TimeInterval, TimePeriod, Duration, Number, Integer)
@@ -327,6 +327,8 @@ def _parse_date(text: str, tokens: Tuple[_Token, ...]) -> str:
         day_date = date(year, 1, 1) + timedelta(days=day - 1)
         if day < 1 or day_date.year != year:
             raise _MaskMismatch(text)
+    # A Date, as a Time and a Time_Period, has the years 1000 to 9999 (issue #1352)
+    check_year(day_date.year)
     if not any(letter in fields for letter in _TIME_OF_DAY):
         return day_date.isoformat()
     fraction = fields.get("d", "")

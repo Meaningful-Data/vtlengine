@@ -6,9 +6,10 @@ handling dataset loading/saving with DAG scheduling for memory efficiency.
 """
 
 import re
+from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, List, Literal, Optional, Tuple, Union
 
 import duckdb
 import pandas as pd
@@ -39,6 +40,7 @@ from vtlengine.duckdb_transpiler.sql import initialize_time_types
 from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Component, Dataset, Scalar
+from vtlengine.Operators.Time import Time_Shift
 from vtlengine.Utils._number_config import get_effective_output_digits
 
 # A query that returns one table as it is: ``SELECT * FROM "name"``
@@ -223,6 +225,22 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     if macro_error is not None:
         return macro_error
 
+    # timeshift, dateadd: a period or a date of a year it cannot have (check before the
+    # 2-1-19-1 prefix match)
+    if "vtl error 2-1-19-10" in msg_lower:
+        match = re.search(r"Invalid year (-?\d+), must be between (\d+)", msg)
+        year, min_year = match.groups() if match else ("unknown", "1000")
+        return RunTimeError("2-1-19-10", year=year, min_year=min_year)
+
+    # timeshift: a shift number of no value (mirrors 2-1-19-24)
+    if "vtl error 2-1-19-24" in msg_lower:
+        match = re.search(r"2-1-19-24 scalar (.*?) \|end", msg, re.S)
+        return Time_Shift.no_value_error(match.group(1) if match else "unknown")
+
+    # sdmx_gregorian output format: a period of an indicator it cannot write (mirrors 2-1-19-21)
+    if "vtl error 2-1-19-21" in msg_lower:
+        return RunTimeError("2-1-19-21", period=msg.rsplit("got ", 1)[-1].strip()[:1])
+
     # time_agg: period indicator too coarse for target
     if "vtl error 2-1-19-1" in msg_lower:
         return _map_time_agg_error(msg, msg_lower)
@@ -239,7 +257,8 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
 
     # Custom VTL macro errors: cannot determine period
     if "cannot determine period for interval" in msg_lower:
-        value = msg.split(": ", 1)[-1] if ": " in msg else "unknown"
+        match = re.search(r"Cannot determine period for interval: (.*)", msg)
+        value = match.group(1) if match else "unknown"
         return RunTimeError("2-1-5-1", value=value, type_1="Time", type_2="Time_Period")
 
     # Text cast to a number whose type the SQL generation could not tell (mirrors 2-1-5-1)
@@ -298,6 +317,18 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
 
     # Return original error if no mapping found
     return error
+
+
+@contextmanager
+def _mapped_query_errors(sql_query: str) -> Iterator[None]:
+    """Raise the VTL error that a DuckDB error of the query maps to, or the DuckDB error."""
+    try:
+        yield
+    except duckdb.Error as e:
+        mapped = _map_query_error(e, sql_query)
+        if mapped is not e:
+            raise mapped from e
+        raise
 
 
 def _format_timestamp(ts: Any) -> str:
@@ -617,10 +648,12 @@ def fetch_result(
     Returns:
         Dataset or Scalar with result data
     """
-    # Apply time period representation before saving/fetching
-    apply_time_period_representation(
-        conn, result_name, output_datasets, output_scalars, representation
-    )
+    # Apply time period representation before saving/fetching. A period the format cannot
+    # write raises its VTL error (issue #1352)
+    with _mapped_query_errors(""):
+        apply_time_period_representation(
+            conn, result_name, output_datasets, output_scalars, representation
+        )
 
     # Scalars are always fetched in-memory (never saved to CSV)
     if result_name in output_scalars:
@@ -782,13 +815,8 @@ def execute_queries(
             # Execute query and create table
             copied = copies.get(statement_num)
             source_sql = sql_query if copied is None else f'SELECT * FROM "{copied}"'
-            try:
+            with _mapped_query_errors(sql_query):
                 conn.execute(f'CREATE TABLE "{result_name}" AS {source_sql}')
-            except duckdb.Error as e:
-                mapped = _map_query_error(e, sql_query)
-                if mapped is not e:
-                    raise mapped from e
-                raise
 
         # Clean up datasets scheduled for deletion
         cleanup_scheduled_datasets(

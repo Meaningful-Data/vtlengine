@@ -8,7 +8,6 @@ from vtlengine.API import create_ast
 from vtlengine.API._InternalApi import load_datasets_with_data
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Dataset, Scalar
 
 
 class SemanticHelper(TestHelper):
@@ -836,24 +835,20 @@ class ClauseClauseTests(SemanticHelper):
         Dataset --> Dataset
         Status:
         Expression: DS_r := DS_1[sub Id_2 = "a"][calc identifier Id_3 := Id_1][calc Me_3 := Me_2=Me_1][keep Me_3];
-        Description: VTL 2.2: Date vs TimePeriod comparison is valid (both promote to TimeInterval).
-        Note: Me_1 is a Time_Period and Me_2 is a Date
+        Description: A Date and a Time_Period have no common type, so comparing them needs a
+                     cast (issue #1352).
+        Note: Me_1 is a Date and Me_2 is a Time_Period
 
         Git Branch: 388-clause-clause-tests
-        Goal: Verify no SemanticError is raised.
+        Goal: Check Exception.
         """
         code = "CC_48"
         number_inputs = 1
+        error_code = "1-1-1-1"
 
-        text = self.LoadVTL(code)
-        input_datasets = self.LoadInputs(code=code, number_inputs=number_inputs, only_semantic=True)
-        datasets = {k: v for k, v in input_datasets.items() if isinstance(v, Dataset)}
-        scalars_obj = {k: v for k, v in input_datasets.items() if isinstance(v, Scalar)}
-        interpreter = InterpreterAnalyzer(
-            datasets=datasets, scalars=scalars_obj, only_semantic=True
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=error_code
         )
-        result = interpreter.visit(create_ast(text))
-        assert "DS_r" in result
 
     def test_49(self):
         """

@@ -4,8 +4,9 @@ VTL 2.2 specifies these implicit casts for time types:
   - Date → TimeInterval
   - TimePeriod → TimeInterval
 
-This means comparing a Date measure against a TimePeriod measure should
-succeed by promoting both operands to TimeInterval.
+A Date and a TimePeriod are each cast to TimeInterval, but neither to the other, so they
+have no common type: comparing a Date measure against a TimePeriod measure raises 1-1-1-1
+and the script must cast one of them (issue #1352).
 """
 
 import pandas as pd
@@ -16,24 +17,24 @@ from vtlengine import run
 from vtlengine.DataTypes import (
     Boolean,
     Date,
-    TimeInterval,
     TimePeriod,
     binary_implicit_promotion,
     check_binary_implicit_promotion,
 )
+from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Dataset
 
 
 class TestDateTimePeriodImplicitPromotion:
-    """Date vs TimePeriod should promote to TimeInterval for comparison."""
+    """Date vs TimePeriod have no common type: the comparison needs a cast."""
 
     @pytest.mark.parametrize(
-        "left, right, return_type, expected",
+        "left, right, return_type",
         [
-            (Date, TimePeriod, Boolean, Boolean),
-            (TimePeriod, Date, Boolean, Boolean),
-            (Date, TimePeriod, None, TimeInterval),
-            (TimePeriod, Date, None, TimeInterval),
+            (Date, TimePeriod, Boolean),
+            (TimePeriod, Date, Boolean),
+            (Date, TimePeriod, None),
+            (TimePeriod, Date, None),
         ],
         ids=[
             "Date_vs_TimePeriod_returns_Boolean",
@@ -42,9 +43,10 @@ class TestDateTimePeriodImplicitPromotion:
             "TimePeriod_vs_Date_returns_TimeInterval",
         ],
     )
-    def test_binary_implicit_promotion(self, left, right, return_type, expected):
-        result = binary_implicit_promotion(left, right, return_type=return_type)
-        assert result == expected
+    def test_binary_implicit_promotion(self, left, right, return_type):
+        with pytest.raises(SemanticError) as context:
+            binary_implicit_promotion(left, right, return_type=return_type)
+        assert context.value.args[1] == "1-1-1-1"
 
     @pytest.mark.parametrize(
         "left, right",
@@ -52,7 +54,7 @@ class TestDateTimePeriodImplicitPromotion:
         ids=["Date_vs_TimePeriod", "TimePeriod_vs_Date"],
     )
     def test_check_binary_implicit_promotion(self, left, right):
-        assert check_binary_implicit_promotion(left, right) is True
+        assert check_binary_implicit_promotion(left, right) is False
 
 
 DATA_STRUCTURES = {
@@ -76,35 +78,15 @@ DATA_STRUCTURES = {
 
 
 class TestDateTimePeriodComparison:
-    """End-to-end: comparing Date and TimePeriod datasets should work."""
+    """End-to-end: comparing Date and TimePeriod datasets raises 1-1-1-1 (issue #1352)."""
 
     @pytest.mark.parametrize(
-        "script, date_vals, period_vals, expected",
+        "script, date_vals, period_vals",
         [
-            (
-                "DS_r <- DS_date = DS_period;",
-                ["2020-01-01"],
-                ["2020D1"],
-                [True],
-            ),
-            (
-                "DS_r <- DS_date = DS_period;",
-                ["2020-01-15"],
-                ["2020Q1"],
-                [False],
-            ),
-            (
-                "DS_r <- DS_date <> DS_period;",
-                ["2020-06-15", "2020-01-01"],
-                ["2020Q1", "2020Q1"],
-                [True, True],
-            ),
-            (
-                "DS_r <- DS_period <> DS_date;",
-                ["2020-06-15"],
-                ["2020Q1"],
-                [True],
-            ),
+            ("DS_r <- DS_date = DS_period;", ["2020-01-01"], ["2020D1"]),
+            ("DS_r <- DS_date = DS_period;", ["2020-01-15"], ["2020Q1"]),
+            ("DS_r <- DS_date <> DS_period;", ["2020-06-15", "2020-01-01"], ["2020Q1", "2020Q1"]),
+            ("DS_r <- DS_period <> DS_date;", ["2020-06-15"], ["2020Q1"]),
         ],
         ids=[
             "date_eq_daily_period_true",
@@ -113,20 +95,20 @@ class TestDateTimePeriodComparison:
             "period_neq_date",
         ],
     )
-    def test_comparison(self, script, date_vals, period_vals, expected):
+    def test_comparison(self, script, date_vals, period_vals):
         ids = list(range(1, len(date_vals) + 1))
         datapoints = {
             "DS_date": pd.DataFrame({"Id_1": ids, "Me_1": date_vals}),
             "DS_period": pd.DataFrame({"Id_1": ids, "Me_1": period_vals}),
         }
-        result = run(
-            script=script,
-            data_structures=DATA_STRUCTURES,
-            datapoints=datapoints,
-            use_duckdb=_use_duckdb_backend(),
-        )
-        assert "DS_r" in result
-        assert list(result["DS_r"].data["bool_var"]) == expected
+        with pytest.raises(SemanticError) as context:
+            run(
+                script=script,
+                data_structures=DATA_STRUCTURES,
+                datapoints=datapoints,
+                use_duckdb=_use_duckdb_backend(),
+            )
+        assert context.value.args[1] == "1-1-1-1"
 
 
 DURATION_DS = {

@@ -173,7 +173,8 @@ Date
         microseconds. A time at midnight is no time:
         ``"2020-01-15T00:00:00"`` loads as
         ``"2020-01-15"``; any other time is kept.
-        Year range: 1800–9999.
+        Year range: 1000–9999, as for a Time_Period
+        and a Time.
     * - **Input (DataFrame)**
       - String values validated against the same
         ISO 8601 formats, or values pandas has already
@@ -195,10 +196,26 @@ Date
       - ISO 8601 with ``T`` separator, each value on its
         own in both execution engines: ``"YYYY-MM-DD"``,
         or ``"YYYY-MM-DDThh:mm:ss"`` for a value whose
-        time is not midnight. Timezone offsets are not
-        included in the output.
+        time is not midnight, with a fraction of a
+        second in six digits when it has one
+        (``"2020-01-15T10:30:00.123000"``). Timezone
+        offsets are not included in the output.
     * - **Output dtype**
       - ``string[pyarrow]``
+
+``dateadd`` and ``timeshift`` give a Date of the years 1000–9999
+only, the years a Date is read in: a result out of them raises
+``2-1-19-10``, in both execution engines.
+
+``timeshift`` and ``fill_time_series`` read the period of a series of
+Dates from the days of its values: the day, the week, the month, the
+quarter, the semester or the year. The shortest is the day, so two
+values on one day, at different times of it, make a daily series, and
+the periods are counted from the lower limit with its time of the
+day: ``timeshift`` by one of ``2020-01-15T10:30:00`` and
+``2020-01-15T10:30:05`` gives ``2020-01-16T10:30:00`` and
+``2020-01-16T10:30:05``, and ``fill_time_series`` adds no Data Point
+to them.
 
 Date is a **subtype of Time** — anywhere a Time value is
 expected, a Date is accepted automatically.
@@ -211,7 +228,18 @@ Time_Period
     :header-rows: 0
 
     * - **Input (CSV/DataFrame)**
-      - Multiple formats accepted (see tables below).
+      - Multiple formats accepted (see tables below),
+        read without the whitespace around the value
+        (spaces, tabs and line breaks). The digits are
+        the ASCII ones. Year range: 1000–9999. A value
+        written in one of the formats that is no period
+        (``"2020M13"``, ``"2021D366"``, ``"0001"``) raises
+        ``0-3-1-6``.
+    * - **Input (scalar value)**
+      - A ``Time_Period`` value given in ``scalar_values``
+        is read on the same rule, in both execution
+        engines; a value that is no period raises
+        ``0-1-2-7``.
     * - **Internal representation**
       - Hyphenated string (e.g. ``"2020-M01"``,
         ``"2020-Q1"``), stored as ``string[pyarrow]``.
@@ -246,10 +274,11 @@ Time_Period
       - ``YYYYWw``, ``YYYYWww``, ``YYYY-Wxx``
       - ``2020W1``, ``2020W01``, ``2020-W01``
     * - Daily
-      - ``YYYYD[dd]d``, ``YYYY-D[xx]x``, ``YYYY-MM-DD``
+      - ``YYYYD[dd]d``, ``YYYY-D[xx]x``, ``YYYY-MM-DD``,
+        ``YYYY-M-D``
       - ``2020D1``, ``2020D01``, ``2020D001``,
         ``2020D-1``, ``2020D-01``, ``2020D-001``,
-        ``2020-01-01``
+        ``2020-01-01``, ``2020-1-1``
 
 The operators ``>``, ``<``, ``>=``, ``<=`` and ``between`` order the
 periods of one period indicator; two periods of different indicators
@@ -261,6 +290,23 @@ the operand with both bounds: it raises ``2-1-19-19`` for a bound of
 another period indicator even when the other comparison is already
 false, where the pair stops at a false first comparison. A null bound gives ``false`` where the other
 comparison is false and null elsewhere.
+
+The time operators count the periods of each year on its calendar: a
+year has 52 or 53 ISO weeks and 365 or 366 days, so ``timeshift`` of
+``2020W53`` by one period is ``2021W1``, and ``fill_time_series`` adds
+``2020W53`` and ``2020D366``. A week stays in the year it is numbered
+in, also when it ends in the next one: ``time_agg`` gives ``2020Q4``
+and ``2020`` for ``2020W53`` (2020-12-28 to 2021-01-03). A result out
+of the years 1000–9999 raises ``2-1-19-10``.
+
+``fill_time_series`` in ``all`` mode fills the periods of a
+Time_Period to whole years, from the first period of the earliest
+year to the last period of the latest one, also for a single Data
+Point: ``2020Q2`` alone gives ``2020Q1`` to ``2020Q4``. A series of
+Dates or of Time values of a single Data Point stays as it is, in
+both execution engines: its period cannot be read from one value,
+and the limits the manual gives, its earliest and latest values,
+are that value.
 
 **Output formats** (controlled by ``time_period_output_format``
 parameter):
@@ -305,6 +351,9 @@ parameter):
       - ``2020-W15``
       - ``2020-01-15``
 
+Writing a semester, a quarter or a week in ``"sdmx_gregorian"``
+raises ``2-1-19-21``, in both execution engines.
+
 Time_Period is a **subtype of Time** — anywhere a Time value
 is expected, a Time_Period is accepted automatically.
 
@@ -319,7 +368,10 @@ Time (TimeInterval)
       - ISO 8601 interval: ``"2020-01-01/2020-12-31"``.
         Also accepts ``"YYYY"`` (expanded to full year
         interval) and ``"YYYY-MM"`` (expanded to full
-        month interval).
+        month interval). Year range: 1000–9999, as for
+        a Date and a Time_Period: ``timeshift`` of a
+        Time out of those years raises ``2-1-19-10``,
+        in both execution engines.
     * - **Internal representation**
       - Python ``str`` in ``"YYYY-MM-DD/YYYY-MM-DD"``
         format, stored as ``string[pyarrow]``.
@@ -343,9 +395,10 @@ Duration
     * - **Output dtype**
       - ``string[pyarrow]``
 
-The operators ``>``, ``<``, ``>=``, ``<=`` and ``between`` order the
-Durations by their length, not by their text: ``D`` < ``W`` < ``M`` <
-``Q`` < ``S`` < ``A``.
+The operators ``>``, ``<``, ``>=``, ``<=`` and ``between``, ``max`` and
+``min`` (also as analytic functions) and the ``order by`` of an analytic
+function order the Durations by their length, not by their text: ``D`` <
+``W`` < ``M`` < ``Q`` < ``S`` < ``A``.
 
 
 Null Handling
@@ -377,7 +430,10 @@ The engine resolves the common type using the
 `type promotion rules
 <https://sdmx-twg.github.io/vtl/2.2/reference_manual
 /typical_behaviour.html#operators-changing-the-data-type>`_
-defined in VTL 2.2.
+defined in VTL 2.2: the common type of two operands is the
+type of one of them, to which the other one is implicitly
+cast. Two types that are only cast to a third one have no
+common type.
 
 .. list-table::
     :widths: 14 10 10 10 10 10 10 12 10
@@ -475,6 +531,29 @@ Key rules:
 - **Time_Period to Time**: A Time_Period is implicitly
   converted to a Time interval
   (``"2020-Q1"`` becomes ``"2020-01-01/2020-03-31"``).
+  So wherever an operator combines a Date or a Time_Period
+  with a Time, the Date or the Time_Period is converted to
+  a Time value: comparisons and ``in`` / ``not_in``
+  compare Time values; ``nvl``, ``if``, ``case``, the set
+  operators and ``unpivot`` give a Time; and the common
+  Identifiers that the joins (whatever the order of their
+  operands), the binary operators, ``exists_in`` and
+  ``nvl`` match are matched as Time values and are Time in
+  the result.
+- **Date with Time_Period**: Neither is implicitly
+  converted to the other, so they have no common type,
+  although both are converted to Time. An operator that
+  receives both, such as ``=``, ``<``, ``between``,
+  ``nvl``, ``if``, ``case``, ``union``, or a join, a
+  binary operator, ``exists_in`` or ``nvl`` on a Date and
+  a Time_Period Identifier, raises a
+  SemanticError, and the script must ``cast`` one of them,
+  as the `Type conversion
+  <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators
+  /General%20purpose%20operators/Type%20conversion/index.html>`_
+  page of the VTL 2.2 reference manual asks for every
+  conversion that is not implicit: for instance
+  ``cast(Me_1, time_period) = Me_2``.
 - **Boolean to String**: ``true`` becomes ``"true"``,
   ``false`` becomes ``"false"``, as the VTL 2.2 reference
   manual defines it, in both execution engines.
@@ -613,9 +692,24 @@ Conversion details:
   and a time other than midnight is kept. A text that is not a
   ``Date`` raises ``1-1-5-6`` for a literal and ``2-1-19-8`` for
   data.
+- **String to Time_Period**: The text is read in any of the
+  accepted input formats of a Time_Period (see the Time_Period
+  section above), a date written without zeros too
+  (``"2020-1-5"`` is ``2020D5``), without the whitespace around
+  it (``" 2020Q1"`` is ``2020Q1``), as the loaders read it. A
+  ``start/end`` text is the period of its interval when that
+  interval is a whole year, semester, quarter, month, week or day
+  (``"2020-01-01/2020-03-31"`` is ``2020Q1``), as the VTL 2.2
+  reference manual defines it. Any other text raises ``1-1-5-6``
+  for a literal and ``2-1-5-1`` for data.
 - **Date to Time_Period**: Converts to daily period
   (e.g. ``"2020-01-15"`` becomes ``"2020D15"``
   with the default ``vtl`` output format).
+- **Time to Time_Period**: A Time is the period of its interval
+  when that interval is a whole year, semester, quarter, month,
+  week or day of a year from 1000 (``2020-01-01/2020-03-31`` is
+  ``2020Q1``), as a ``start/end`` text is. Any other Time raises
+  ``2-1-5-1``.
 
 Supported conversions with mask
 -------------------------------
@@ -676,7 +770,11 @@ a day and a month, or a week, writes a daily period. A Time is two Date masks
 separated by ``/``.
 
 A value that its mask does not describe raises RunTimeError ``2-1-5-3``, and
-a mask that does not describe the type raises SemanticError ``1-1-5-4``.
+a mask that does not describe the type raises SemanticError ``1-1-5-4``. A
+Date, a Time or a Time_Period read through a mask has the years 1000–9999, as
+any other: a value of another year raises ``2-1-5-3``, and a literal of the
+script, such as ``cast("0999-01-15", date, "YYYY-MM-DD")``, SemanticError
+``1-1-5-6``.
 vtlengine does not support these parts of the VTL 2.2 masks, which raise
 SemanticError ``1-3-13``:
 

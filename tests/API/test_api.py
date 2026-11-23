@@ -31,7 +31,12 @@ from vtlengine.API._InternalApi import (
     load_vtl,
 )
 from vtlengine.DataTypes import Integer, Null, String
-from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
+from vtlengine.Exceptions import (
+    DataLoadError,
+    InputValidationException,
+    RunTimeError,
+    SemanticError,
+)
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Utils._recursion import MIN_RECURSION_LIMIT, recursion_headroom
 
@@ -3372,3 +3377,185 @@ def test_GH_1349_57b(use_duckdb, name):
         run("DS_r <- DS_1;", structures, {"DS_1": data}, use_duckdb=use_duckdb)
     with pytest.raises(InputValidationException, match="0-2-1-1"):
         semantic_analysis("DS_r <- DS_1;", structures)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_39b(use_duckdb):
+    """Extra of case 39: a Time_Period Scalar value is read without the space around it, as a
+    loaded Time_Period and a Date Scalar value are, so "2020-01-15 " is the day 2020D15 and
+    " 2020Q1" is 2020Q1. The pandas engine raised a raw ValueError and 2-1-19-2, and the DuckDB
+    engine a raw ConversionException for " 2020Q1" (issue #1352)."""
+    structures = {
+        "datasets": [],
+        "scalars": [
+            {"name": "SC_1", "type": "Time_Period"},
+            {"name": "SC_2", "type": "Time_Period"},
+        ],
+    }
+    result = run(
+        "SC_r1 <- SC_1; SC_r2 <- SC_2;",
+        structures,
+        {},
+        scalar_values={"SC_1": "2020-01-15 ", "SC_2": " 2020Q1"},
+        use_duckdb=use_duckdb,
+    )
+    assert result["SC_r1"].value == "2020D15"
+    assert result["SC_r2"].value == "2020Q1"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_13c(use_duckdb):
+    """Extra of case 13: a Time_Period Scalar value and a Time_Period given by cast are held in
+    one form, so the analytic max of an if over them orders the periods and gives 2020Q2. The
+    pandas engine held the cast text as written beside the Scalar value in the loaders' form and
+    ordered the texts, giving 2020Q1 (issue #1352)."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+                ],
+            }
+        ],
+        "scalars": [{"name": "SC_1", "type": "Time_Period"}],
+    }
+    script = (
+        "DS_r <- DS_1[calc Me_2 := max((if Id_1 = 1 then SC_1 "
+        'else cast("2020Q1", time_period)) over ())][keep Me_2];'
+    )
+    result = run(
+        script,
+        structures,
+        {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [1, 2]})},
+        scalar_values={"SC_1": "2020Q2"},
+        use_duckdb=use_duckdb,
+    )
+    assert result["DS_r"].data["Me_2"].tolist() == ["2020Q2", "2020Q2"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_39c(use_duckdb):
+    """Extra of case 39: a Time_Period Scalar value has a year of four digits from 1000, so the
+    value 0001 is refused with 0-1-2-7 on both engines (issue #1352)."""
+    structures = {"datasets": [], "scalars": [{"name": "SC_1", "type": "Time_Period"}]}
+    with pytest.raises(InputValidationException) as context:
+        run("SC_r <- SC_1;", structures, {}, scalar_values={"SC_1": "0001"}, use_duckdb=use_duckdb)
+    assert context.value.args[1] == "0-1-2-7"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_36z2(use_duckdb):
+    """Extra of case 36: run analyses the whole script before it checks the DataFrames given
+    as datapoints, so time_agg of a Date without first or last raises 1-1-19-11 before the Date
+    0999-01-15, out of the years 1000 to 9999, is checked, as semantic_analysis raises it. The
+    pandas engine checked the DataFrame first and raised 0-3-1-6 (issue #1352)."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Date", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    script = 'DS_r <- DS_1[calc Me_2 := time_agg("A", _, Me_1)];'
+    data = pd.DataFrame({"Id_1": [1, 2], "Me_1": ["2020-01-15", "0999-01-15"]})
+    with pytest.raises(SemanticError) as context:
+        run(script, structures, {"DS_1": data}, use_duckdb=use_duckdb)
+    assert context.value.args[1] == "1-1-19-11"
+    with pytest.raises(SemanticError) as context:
+        semantic_analysis(script, structures)
+    assert context.value.args[1] == "1-1-19-11"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_19i(use_duckdb):
+    """Extra of case 19: each time series of timeshift is read from its own Data Points, also
+    when the DataFrame given repeats its index labels, so the monthly series A and the daily
+    series B disagree on the period and raise 2-1-19-23. The pandas engine read the series by
+    the index labels and shifted both by one day (issue #1352)."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Id_2", "type": "Date", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    data = pd.DataFrame(
+        {
+            "Id_1": ["A", "A", "B", "B"],
+            "Id_2": ["2020-01-31", "2020-03-31", "2020-01-01", "2020-01-02"],
+            "Me_1": [1.0, 2.0, 3.0, 4.0],
+        },
+        index=[0, 1, 0, 1],
+    )
+    with pytest.raises(RunTimeError) as context:
+        run("DS_r <- timeshift(DS_1, 1);", structures, {"DS_1": data}, use_duckdb=use_duckdb)
+    assert context.value.args[1] == "2-1-19-23"
+
+
+_DATE_SERIES_STRUCTURES = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Date", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_19h(use_duckdb):
+    """Extra of case 19: the shortest period of a Date is the day, so the series of
+    2020-01-15T10:30:00 and 2020-01-15T10:30:05, two points on one day, has the period of a day
+    and moves to 2020-01-16. The pandas engine read no period and moved it one year, and the
+    DuckDB engine read a week (issue #1352)."""
+    data = pd.DataFrame(
+        {
+            "Id_1": ["A", "A"],
+            "Id_2": ["2020-01-15T10:30:00", "2020-01-15T10:30:05"],
+            "Me_1": [1.0, 2.0],
+        }
+    )
+    result = run(
+        "DS_r <- timeshift(DS_1, 1);",
+        _DATE_SERIES_STRUCTURES,
+        {"DS_1": data},
+        use_duckdb=use_duckdb,
+    )["DS_r"].data
+    assert sorted(result["Id_2"].tolist()) == ["2020-01-16T10:30:00", "2020-01-16T10:30:05"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_32e(use_duckdb):
+    """Extra of case 32: the series of 2020-01-01T10:00:00 and 2020-01-01T10:00:03 has the
+    period of a day, counted from its lower limit with its time of the day, so no Data Point is
+    missing. The pandas engine dropped the time of the limits and added the Data Point
+    2020-01-01 (issue #1352)."""
+    data = pd.DataFrame(
+        {
+            "Id_1": ["A", "A"],
+            "Id_2": ["2020-01-01T10:00:00", "2020-01-01T10:00:03"],
+            "Me_1": [1.0, 2.0],
+        }
+    )
+    result = run(
+        "DS_r <- fill_time_series(DS_1, single);",
+        _DATE_SERIES_STRUCTURES,
+        {"DS_1": data},
+        use_duckdb=use_duckdb,
+    )["DS_r"].data
+    assert sorted(result["Id_2"].tolist()) == ["2020-01-01T10:00:00", "2020-01-01T10:00:03"]

@@ -170,7 +170,8 @@ centralised_messages = {
     },
     "0-1-1-35": {
         "message": "Impossible to cast {value} from type {type_1} to {type_2}.",
-        "description": "Raised when a value given as Duration is not a duration code.",
+        "description": "Raised when a value given as Duration is not a duration code, or a "
+        "value given as Time_Period is no period of its format, such as 2020M13.",
     },
     "0-1-1-36": {
         "message": "Value {value} is not one of the values of Value Domain {value_domain}.",
@@ -1621,8 +1622,9 @@ centralised_messages = {
         "description": "Occurs when the day value is invalid for the given year.",
     },
     "2-1-19-10": {
-        "message": "Invalid year {year}, must be between 1900 and 9999.",
-        "description": "Raised when the year is outside the allowed range.",
+        "message": "Invalid year {year}, must be between {min_year} and 9999.",
+        "description": "Raised when a time operator gives a Time_Period or a Date out of the "
+        "years 1000 to 9999, the years each type holds.",
     },
     "2-1-19-11": {
         "message": "{op} operator is not compatible with time values",
@@ -1671,9 +1673,9 @@ centralised_messages = {
         "description": "Raised when the time values of the operand hold more than one frequency.",
     },
     "2-1-19-24": {
-        "message": "At op time_agg: The period indicator {name} to aggregate to has no value.",
-        "description": "Raised when the scalar that gives time_agg its period indicator holds "
-        "a null.",
+        "message": "At op {op}: The scalar {name} that gives the {param} has no value.",
+        "description": "Raised when the scalar that gives time_agg its period indicator or "
+        "timeshift its shift number holds a null.",
     },
     "2-1-19-25": {
         "message": "At op {op}: {op} can only be applied to a {comp_type}",

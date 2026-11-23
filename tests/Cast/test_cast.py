@@ -322,7 +322,8 @@ class TestCastStringToDate:
 
 
 class TestCastStringToTimePeriod:
-    """String -> TimePeriod (Explicit without mask)"""
+    """String -> TimePeriod (Explicit without mask), in the one form the loaders write a
+    Time_Period in (issue #1352)"""
 
     @pytest.mark.parametrize(
         "input_val, expected",
@@ -330,7 +331,7 @@ class TestCastStringToTimePeriod:
             ("2024-01-01/2024-12-31", "2024A"),
             ("2024-01-01/2024-03-31", "2024-Q1"),
             ("2020A", "2020A"),
-            ("2020Q1", "2020Q1"),
+            ("2020Q1", "2020-Q1"),
             (None, None),
         ],
     )
@@ -531,14 +532,15 @@ class TestCastDurationToString:
 
 
 class TestCastDateToTimePeriod:
-    """Date -> TimePeriod (Explicit without mask)"""
+    """Date -> TimePeriod (Explicit without mask), in the one form the loaders write a
+    Time_Period in (issue #1352)"""
 
     @pytest.mark.parametrize(
         "input_val, expected",
         [
-            ("2020-01-15", "2020D15"),
-            ("2025-01-01", "2025D1"),
-            ("2025-12-31", "2025D365"),
+            ("2020-01-15", "2020-D015"),
+            ("2025-01-01", "2025-D001"),
+            ("2025-12-31", "2025-D365"),
             (None, None),
         ],
     )

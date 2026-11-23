@@ -68,8 +68,11 @@ class FullJoinIdentifiersTypeChecking(TestFullJoinTypeChecking):
         """
         code = "2-2-3-3"
         number_inputs = 2
-        references_names = ["DS_r"]
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        # The Boolean and Integer Identifiers Id_1 have no common type, as in inner_join and
+        # left_join (issue #1352)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code="1-1-13-18"
+        )
 
     def test_4(self):
         """

@@ -277,8 +277,29 @@ class LessEqual(Ordering):
         return cls.py_op(x, y)
 
 
+def _time_in_operands(operand: Any, values: Any) -> Any:
+    """The operand of in / not_in and its set of values, compared as Time values where a Date
+    or a Time_Period meets a Time: the one of them that is a Date or a Time_Period is cast to
+    Time (issue #1352)."""
+    if not isinstance(values, ScalarSet):
+        return operand, values
+    if isinstance(operand, Dataset):
+        types = {comp.data_type for comp in operand.get_measures()}
+        if values.data_type is TimeInterval:
+            return Operator.to_time(operand, operand.get_measures_names()), values
+    else:
+        types = {operand.data_type}
+        if values.data_type is TimeInterval:
+            return Operator.to_time(operand), values
+    return operand, (Operator.to_time(values) if types == {TimeInterval} else values)
+
+
 class In(Binary):
     op = IN
+
+    @classmethod
+    def evaluate(cls, left_operand: Any, right_operand: Any) -> Any:
+        return super().evaluate(*_time_in_operands(left_operand, right_operand))
 
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: ScalarSet) -> Any:
@@ -302,6 +323,10 @@ class In(Binary):
 
 class NotIn(Binary):
     op = NOT_IN
+
+    @classmethod
+    def evaluate(cls, left_operand: Any, right_operand: Any) -> Any:
+        return super().evaluate(*_time_in_operands(left_operand, right_operand))
 
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
@@ -554,8 +579,10 @@ class ExistIn(Operator.Operator):
                 right_name=dataset_2.name,
                 right=sorted(right_ids_set),
             )
+        Operator.check_common_identifier_types(cls.op, dataset_1, dataset_2)
 
         result_components = {comp.name: copy(comp) for comp in dataset_1.get_identifiers()}
+        Operator.time_identifiers(result_components, dataset_1, dataset_2)
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         result_dataset.add_component(
             Component(name="bool_var", data_type=Boolean, role=Role.MEASURE, nullable=False)
@@ -567,6 +594,8 @@ class ExistIn(Operator.Operator):
         cls, dataset_1: Dataset, dataset_2: Dataset, retain_element: Optional[Boolean]
     ) -> Any:
         result_dataset = cls.validate(dataset_1, dataset_2, retain_element)
+        dataset_1 = Operator.time_keys(dataset_1, result_dataset)
+        dataset_2 = Operator.time_keys(dataset_2, result_dataset)
 
         # Checking the subset
         left_id_names = dataset_1.get_identifiers_names()
@@ -599,8 +628,9 @@ class ExistIn(Operator.Operator):
             true_results["bool_var"] = True
         if dataset_1.data is None:
             dataset_1.data = pd.DataFrame(columns=reference_identifiers_names)
+        # Only the Identifiers of dataset_1: a bool_var Measure of it is replaced, not merged
         final_result = merge_frames(
-            dataset_1.data,
+            dataset_1.data[reference_identifiers_names],
             true_results,
             how="left",
             left_on=reference_identifiers_names,

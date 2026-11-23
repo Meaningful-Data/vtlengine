@@ -1,6 +1,7 @@
+import threading
 from copy import copy
 from functools import reduce
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, cast
 
 import pandas as pd
 
@@ -11,6 +12,7 @@ from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
     Integer,
+    TimeInterval,
     binary_implicit_promotion,
     check_unary_implicit_promotion,
 )
@@ -19,7 +21,10 @@ from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Operators import (
     Operator,
     _id_type_promotion_join_keys,
+    _is_cast_to_time,
     share_value_domains,
+    time_names,
+    to_time,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
@@ -53,9 +58,25 @@ def merged_viral_attribute_names(
     return merged
 
 
-class Join(Operator):
+# The reference Data Set of each join operator, for the thread that runs it: joins of runs in
+# concurrent threads must not read each other's (issue #1352)
+_reference_datasets = threading.local()
+
+
+class _ThreadReference(type):
+    @property
+    def reference_dataset(cls) -> Dataset:
+        return cast(Dataset, getattr(_reference_datasets, "by_class", {}).get(cls))
+
+    @reference_dataset.setter
+    def reference_dataset(cls, value: Dataset) -> None:
+        if not hasattr(_reference_datasets, "by_class"):
+            _reference_datasets.by_class = {}
+        _reference_datasets.by_class[cls] = value
+
+
+class Join(Operator, metaclass=_ThreadReference):
     how: str
-    reference_dataset: Dataset
 
     @classmethod
     def _keys_only(cls, using: Optional[List[str]]) -> bool:
@@ -192,6 +213,14 @@ class Join(Operator):
                         merged_components[new_name] = component
                         merged_components[new_name].name = new_name
                     else:
+                        key = merged_components.get(component_name)
+                        if key is not None and (
+                            _is_cast_to_time(key.data_type, component.data_type)
+                            or _is_cast_to_time(component.data_type, key.data_type)
+                        ):
+                            # A Date or a Time_Period key matched with a Time one is a Time,
+                            # whatever the order of the operands (issue #1352)
+                            component.data_type = TimeInterval
                         merged_components[component_name] = component
                 else:
                     if component_name in using and component_name in merged_components:
@@ -343,6 +372,7 @@ class Join(Operator):
                     comp.role != Role.IDENTIFIER or cls.how == "cross" or keys_only
                 ):
                     op.data = op.data.rename(columns={column: op.name + "#" + column})
+            cls._time_keys(op, result)
         result.data = copy(cls.reference_dataset.data)
 
         join_keys = using if using else result.get_identifiers_names()
@@ -383,6 +413,14 @@ class Join(Operator):
         if result.data is not None:
             result.data.reset_index(drop=True, inplace=True)
         return result
+
+    @classmethod
+    def _time_keys(cls, operand: Dataset, result: Dataset) -> None:
+        """The Date or Time_Period Identifiers of a join operand that are Time in the result are
+        cast to Time, so that the keys match as Time values (issue #1352). The operand is a
+        copy: its data is replaced, not changed."""
+        if cls.how != "cross":
+            operand.data = to_time(operand, time_names(result)).data
 
     @classmethod
     def _combine_viral_attributes(
@@ -599,6 +637,8 @@ class FullJoin(Join):
                 raise SemanticError("1-1-13-13", op=cls.op)
             if op.get_identifiers_names() != cls.reference_dataset.get_identifiers_names():
                 raise SemanticError("1-1-13-12", op=cls.op)
+        # The operands match on all their Identifiers, which need a common type (issue #1352)
+        cls._validate_join_key_types(operands, cls.reference_dataset.get_identifiers_names())
 
 
 class CrossJoin(Join):

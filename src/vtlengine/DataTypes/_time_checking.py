@@ -4,8 +4,8 @@ from datetime import date, datetime
 from functools import lru_cache
 from typing import Any, Final
 
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
-from vtlengine.Exceptions import InputValidationException
+from vtlengine.DataTypes.TimeHandling import MAX_YEAR, MIN_YEAR, TimePeriodHandler
+from vtlengine.Exceptions import InputValidationException, RunTimeError
 
 _DATE_PART_RE = re.compile(r"^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})")
 
@@ -96,6 +96,16 @@ def parse_date_value(value: str) -> date:
     return date.fromisoformat(value[:10])
 
 
+def parse_datetime_value(value: str) -> datetime:
+    """Parse a date or datetime string, a Date or an end of a Time, into a datetime that keeps
+    its time of the day.
+
+    A Python datetime holds the years 1000 to 9999 of a Date on every pandas version, which
+    the nanosecond Timestamp of pandas 2 does not: it ends in the years 1677 and 2262 (#1352).
+    """
+    return datetime.fromisoformat(_normalize_fractional_seconds(value))
+
+
 def _build_date_error(value: str) -> InputValidationException:
     """Build a precise error for a value that failed date parsing.
 
@@ -171,11 +181,11 @@ def check_date(value: Any) -> str:
     except (ValueError, InputValidationException):
         raise _build_date_error(value) from None
 
-    # Check date is between 1800 and 9999
+    # A Date has a year from 1000 to 9999, as a Time_Period and a Time (issue #1352)
     year = int(value[:4])
-    if not 1800 <= year <= 9999:
+    if not MIN_YEAR <= year <= MAX_YEAR:
         raise InputValidationException(
-            f"Date {value} is invalid. Year must be between 1800 and 9999."
+            f"Date {value} is invalid. Year must be between {MIN_YEAR} and {MAX_YEAR}."
         )
 
     return iso_result
@@ -203,6 +213,11 @@ def check_time(value: str) -> str:
 
 
 def _check_time(value: str) -> str:
+    # A Time has a year from 1000 to 9999, as a Date and a Time_Period (issue #1352)
+    if any(not MIN_YEAR <= int(year) <= MAX_YEAR for year in re.findall(r"(?:^|/)(\d{4})", value)):
+        raise InputValidationException(
+            f"Time {value} is invalid. Year must be between {MIN_YEAR} and {MAX_YEAR}."
+        )
     year_result = re.fullmatch(year_pattern, value)
     if year_result is not None:
         date1_time = datetime.strptime(value, "%Y")
@@ -232,7 +247,9 @@ _vtl_period_re = re.compile(
     r"|^\d{4}Q[1-4]$"  # YYYYQN (quarter)
     r"|^\d{4}M[0-1]?\d$"  # YYYYM[M] (month, 1 or 2 digits)
     r"|^\d{4}W[0-5]?\d$"  # YYYYW[W] (week, 1 or 2 digits)
-    r"|^\d{4}D[0-3]?\d{1,2}$"  # YYYYD[DD] (day of year, 1 to 3 digits)
+    r"|^\d{4}D[0-3]?\d{1,2}$",  # YYYYD[DD] (day of year, 1 to 3 digits)
+    # Only the ASCII digits write a period: \d matches other digits too (issue #1352)
+    re.ASCII,
 )
 
 # Hyphenated formats: YYYY-MM, YYYY-M, YYYY-MM-DD, YYYY-MXX, YYYY-QX, YYYY-SX, YYYY-WXX,
@@ -245,18 +262,26 @@ _sdmx_period_re = re.compile(
     r"|^\d{4}-S[1-2]$"  # YYYY-SX (hyphenated semester)
     r"|^\d{4}-W([0-4]\d|5[0-3]|[1-9])$"  # YYYY-WXX (hyphenated week)
     r"|^\d{4}-D[0-3]?\d{1,2}$"  # YYYY-D[XX]X (hyphenated day)
-    r"|^\d{4}-A1$"  # YYYY-A1 (SDMX reporting annual)
+    r"|^\d{4}-A1$",  # YYYY-A1 (SDMX reporting annual)
+    re.ASCII,
 )
 
-_iso_date_re = re.compile(r"^(\d{4})-(\d{1,2})-(\d{1,2})$")
-_iso_month_re = re.compile(r"^(\d{4})-(\d{1,2})$")
+_iso_date_re = re.compile(r"^(\d{4})-(\d{1,2})-(\d{1,2})$", re.ASCII)
+_iso_month_re = re.compile(r"^(\d{4})-(\d{1,2})$", re.ASCII)
 
 
 def check_time_period(value: str) -> str:
     if isinstance(value, int):
         value = str(value)
     value = value.strip()
-    return _check_time_period_cached(value)
+    try:
+        return _check_time_period_cached(value)
+    except (RunTimeError, ValueError):
+        # A period written in one of the formats that is no period, such as 2020M13, 2021D366,
+        # 2020-13-1 or the year 0001: a value that cannot be read as a Time_Period (issue #1352)
+        raise InputValidationException(
+            code="0-1-1-35", value=value, type_1="String", type_2="Time_Period"
+        ) from None
 
 
 @lru_cache(maxsize=4096)

@@ -26,6 +26,7 @@ from vtlengine.duckdb_transpiler.io._validation import (
     get_column_sql_type,
     handle_sdmx_columns,
     map_duckdb_error,
+    sql_trim,
     validate_input_path,
     validate_no_duplicates,
     validate_temporal_columns,
@@ -116,10 +117,11 @@ def _normalize_time_period_columns(
     """
     for comp_name, comp in components.items():
         if comp.data_type == TimePeriod:
+            value = sql_trim(f'"{comp_name}"')
             try:
                 conn.execute(
                     f'UPDATE "{table_name}" SET "{comp_name}" = '
-                    f'vtl_period_normalize(TRIM("{comp_name}")) '
+                    f"vtl_period_normalize({value}) "
                     f'WHERE "{comp_name}" IS NOT NULL AND "{comp_name}" != \'\''
                 )
             except duckdb.Error as e:
@@ -149,7 +151,7 @@ def _normalize_time_interval_columns(
     for comp_name, comp in components.items():
         if comp.data_type != TimeInterval:
             continue
-        value = f'TRIM("{comp_name}")'
+        value = sql_trim(f'"{comp_name}"')
         year = f"CAST(SUBSTR({value}, 1, 4) AS INTEGER)"
         month = f"CAST(SUBSTR({value}, 6) AS INTEGER)"
         first_day = f"MAKE_DATE({year}, {month}, 1)"
@@ -434,7 +436,8 @@ def load_datapoints_duckdb(
             action_filter = 'WHERE "ACTION" != \'D\' OR "ACTION" IS NULL'
 
         # 8. Execute INSERT
-        read_expr = f"""
+        def csv_read(parallel: bool) -> str:
+            return f"""
             FROM read_csv(
                 '{file_path}',
                 header=true,
@@ -442,17 +445,26 @@ def load_datapoints_duckdb(
                 auto_detect=false,
                 {_sniffed_fmt},
                 null_padding=true,
-                parallel=true,
+                parallel={str(parallel).lower()},
                 ignore_errors=false
             )
             {action_filter}
         """
-        insert_sql = f"""
-            INSERT INTO "{dataset_name}"
-            SELECT {", ".join(select_cols)}
-            {read_expr}
-        """
-        conn.execute(insert_sql)
+
+        def insert(read: str) -> None:
+            conn.execute(f'INSERT INTO "{dataset_name}" SELECT {", ".join(select_cols)} {read}')
+
+        read_expr = csv_read(parallel=True)
+        try:
+            insert(read_expr)
+        except duckdb.Error as e:
+            if "quoted new lines" not in str(e):
+                raise
+            # A value with a line break between quotes, which the pandas loader reads, is read
+            # by the serial reader only, as the parallel one refuses it with null_padding
+            # (issue #1352)
+            read_expr = csv_read(parallel=False)
+            insert(read_expr)
 
     except duckdb.Error as e:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')

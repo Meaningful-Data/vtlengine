@@ -1617,3 +1617,215 @@ class TestInputDataFrameIsLeftUntouched:
         assert result["DS_r"].data["Me_1"].isnull().tolist() == [False, True, False]
         assert list(data_df.columns) == list(snapshot.columns)
         pd.testing.assert_frame_equal(data_df, snapshot)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_39(use_duckdb: bool) -> None:
+    """A Duration is one period indicator, so P1Y is refused with 0-3-1-6, with the same
+    message on both engines; the DuckDB engine wrote another one (issue #1352)."""
+    with pytest.raises(VTLEngineException) as context:
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("Duration"),
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1], "Me_1": ["P1Y"]})},
+            use_duckdb=use_duckdb,
+        )
+    assert context.value.args[1] == "0-3-1-6"
+    assert context.value.args[0] == (
+        "On Dataset DS_1 loading: not possible to cast column Me_1 to Duration. Error found: "
+        '"Impossible to cast P1Y from type String to Duration." Please check loaded file'
+    )
+
+
+def _load_1352(use_duckdb: bool, role: str, source: str, value: str, tmp_path: Path) -> Any:
+    """Load a Time_Period Measure or Identifier holding value, from a DataFrame or a CSV file."""
+    is_measure = role == "Measure"
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {
+                        "name": "Id_1",
+                        "type": "Integer" if is_measure else "Time_Period",
+                        "role": "Identifier",
+                        "nullable": False,
+                    },
+                    {
+                        "name": "Me_1",
+                        "type": "Time_Period" if is_measure else "Integer",
+                        "role": "Measure",
+                        "nullable": True,
+                    },
+                ],
+            }
+        ]
+    }
+    data = pd.DataFrame(
+        {"Id_1": [1], "Me_1": [value]} if is_measure else {"Id_1": [value], "Me_1": [1]}
+    )
+    datapoints: Any = data
+    if source == "csv":
+        datapoints = tmp_path / "DS_1.csv"
+        data.to_csv(datapoints, index=False)
+    return run(
+        script="DS_r <- DS_1;",
+        data_structures=structures,
+        datapoints={"DS_1": datapoints},
+        use_duckdb=use_duckdb,
+    )
+
+
+def _check_1352_load_error(
+    use_duckdb: bool, role: str, source: str, value: str, tmp_path: Path
+) -> None:
+    with pytest.raises(VTLEngineException) as context:
+        _load_1352(use_duckdb, role, source, value, tmp_path)
+    column = "Me_1" if role == "Measure" else "Id_1"
+    # A text in none of the formats, such as one with fullwidth digits, is told by the formats
+    if value.isascii():
+        error = f"Impossible to cast {value} from type String to Time_Period."
+    else:
+        error = f"Time period '{value}' is not in a valid format"
+    assert context.value.args[1] == "0-3-1-6"
+    assert context.value.args[0].startswith(
+        f"On Dataset DS_1 loading: not possible to cast column {column} to Time_Period. Error "
+        f'found: "{error}'
+    )
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("role", ["Measure", "Identifier"])
+@pytest.mark.parametrize("source", ["dataframe", "csv"])
+def test_GH_1352_37c(use_duckdb: bool, role: str, source: str, tmp_path: Path) -> None:
+    """Extra of case 37: the year of a Time_Period is written with four digits, from 1000, so
+    0001 is refused with 0-3-1-6, with the same message on both engines, as a Date out of its
+    years is. The pandas engine raised a raw ValueError and the DuckDB engine loaded 1
+    (issue #1352)."""
+    _check_1352_load_error(use_duckdb, role, source, "0001", tmp_path)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("role", ["Measure", "Identifier"])
+@pytest.mark.parametrize("source", ["dataframe", "csv"])
+@pytest.mark.parametrize(
+    "value",
+    [
+        "2020M13",
+        "2020W54",
+        "2020W00",
+        "2020D367",
+        "2020D0",
+        "2021D366",
+        "2020-13-1",
+        "2020-02-30",
+        "２０２０Q1",
+    ],
+)
+def test_GH_1352_37d(use_duckdb: bool, role: str, source: str, value: str, tmp_path: Path) -> None:
+    """Extra of case 37: a period written in one of the formats that is no period cannot be read
+    as a Time_Period, so it is refused with 0-3-1-6, with the same message on both engines.
+    The pandas engine raised 2-1-19-7 or 2-1-19-9, and wrote the Python error of a date that is
+    no date, such as 2020-13-1, and the DuckDB engine the DuckDB error of a date the calendar has
+    not, such as 2020-02-30. Only the ASCII digits write a period: the pandas engine loaded
+    2020Q1 written with fullwidth digits (issue #1352)."""
+    _check_1352_load_error(use_duckdb, role, source, value, tmp_path)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("role", ["Measure", "Identifier"])
+@pytest.mark.parametrize(
+    "source, value, expected",
+    [
+        ("dataframe", "\t2020Q1", "2020Q1"),
+        ("dataframe", "2020Q1\n", "2020Q1"),
+        ("dataframe", "\r\n2020-01-15\r\n", "2020D15"),
+        ("csv", "\t2020Q1", "2020Q1"),
+        ("csv", "2020-01-15\t", "2020D15"),
+        ("csv", "2020Q1\n", "2020Q1"),
+        ("csv", "\r\n2020-01-15\r\n", "2020D15"),
+    ],
+)
+def test_GH_1352_37e(
+    use_duckdb: bool, role: str, source: str, value: str, expected: str, tmp_path: Path
+) -> None:
+    """Extra of case 37: a Time_Period is loaded without the whitespace around it, tabs and line
+    breaks too, as the pandas engine loads it. The DuckDB engine took off the spaces only and
+    raised 0-3-1-6, and its CSV reader refused a value with a line break between quotes
+    (issue #1352)."""
+    result = _load_1352(use_duckdb, role, source, value, tmp_path)
+    column = "Me_1" if role == "Measure" else "Id_1"
+    assert result["DS_r"].data[column].tolist() == [expected]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize(
+    "source, value",
+    [
+        ("dataframe", "\t2020-01-15"),
+        ("dataframe", "2020-01-15\n"),
+        ("dataframe", "\r\n2020-01-15\r\n"),
+        ("csv", "\t2020-01-15"),
+        ("csv", "2020-01-15\t"),
+        ("csv", "2020-01-15\n"),
+        ("csv", "\r\n2020-01-15\r\n"),
+    ],
+)
+def test_GH_1352_37f(use_duckdb: bool, source: str, value: str, tmp_path: Path) -> None:
+    """Extra of case 37: a Date is loaded without the whitespace around it, tabs and line
+    breaks too, as the pandas engine loads it. The DuckDB engine took off the spaces only and
+    raised 0-3-1-6 (issue #1352)."""
+    data = pd.DataFrame({"Id_1": [1], "Me_1": [value]})
+    datapoints: Any = data
+    if source == "csv":
+        datapoints = tmp_path / "DS_1.csv"
+        data.to_csv(datapoints, index=False)
+    result = run(
+        script="DS_r <- DS_1;",
+        data_structures=_dataframe_structures("Date"),
+        datapoints={"DS_1": datapoints},
+        use_duckdb=use_duckdb,
+    )
+    assert result["DS_r"].data["Me_1"].tolist() == ["2020-01-15"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("folder", ["data", "parallel=true"])
+def test_GH_1352_37g(use_duckdb: bool, folder: str, tmp_path: Path) -> None:
+    """Extra of case 37: a CSV whose String column holds a line break between quotes loads the
+    same data on both engines, also from a folder whose name is a reader option. The DuckDB
+    engine raised 0-3-1-6 on the first column, and once it read such a file again with its
+    serial reader, it read another path when the folder held the text of the option
+    (issue #1352)."""
+    datapoints = tmp_path / folder / "DS_1.csv"
+    datapoints.parent.mkdir()
+    pd.DataFrame({"Id_1": [1, 2], "Me_1": ["a\nb", "c"]}).to_csv(datapoints, index=False)
+    result = run(
+        script="DS_r <- DS_1;",
+        data_structures=_dataframe_structures("String"),
+        datapoints={"DS_1": datapoints},
+        use_duckdb=use_duckdb,
+    )
+    assert result["DS_r"].data.values.tolist() == [[1, "a\nb"], [2, "c"]]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("text", ["Id_1,Me_1\n1,a,x\n2,c\n", 'Id_1,Me_1\n1,"a\nb",x\n2,c\n'])
+def test_GH_1352_37h(use_duckdb: bool, text: str, tmp_path: Path) -> None:
+    """Extra of case 37, a control: a CSV line with a field more than its header is refused with
+    0-3-1-18 on both engines, with or without a line break between quotes, as it was before
+    the DuckDB engine read a file with such a line break again with its serial reader
+    (issue #1352)."""
+    datapoints = tmp_path / "DS_1.csv"
+    datapoints.write_text(text)
+    with pytest.raises(VTLEngineException) as context:
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=_dataframe_structures("String"),
+            datapoints={"DS_1": datapoints},
+            use_duckdb=use_duckdb,
+        )
+    assert context.value.args[1] == "0-3-1-18"
+    assert context.value.args[0].startswith(
+        "On Dataset DS_1 loading: line 2 of the file does not split into the fields of its header."
+    )

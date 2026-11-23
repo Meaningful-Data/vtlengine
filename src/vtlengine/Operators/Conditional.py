@@ -3,11 +3,13 @@ from typing import Any, Dict, List, Optional, Union, cast
 
 import pandas as pd
 
+from vtlengine.AST.Grammar.tokens import NVL
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Null,
     String,
+    TimeInterval,
     binary_implicit_promotion,
     to_strings,
 )
@@ -17,8 +19,14 @@ from vtlengine.Operators import (
     Binary,
     Operator,
     _id_type_promotion_join_keys,
+    _is_cast_to_time,
+    check_common_identifier_types,
     share_value_domains,
     shared_value_domain,
+    time_identifiers,
+    time_keys,
+    time_names,
+    to_time,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
@@ -97,10 +105,32 @@ def _scalar_result(conditions: List[Scalar], then_ops: List[Scalar], else_op: Sc
     )
 
 
-def _as_type(data: Any, data_type: Any) -> Any:
+def _time_values(data: Any, data_type: Any, from_type: Any) -> Any:
+    """The data of a Date or a Time_Period ``from_type`` as Time values when ``data_type`` is
+    Time: the Time that starts and ends on a Date, the start and end of a Time_Period (issue
+    #1352). Other data is returned as it is."""
+    if not _is_cast_to_time(from_type, data_type):
+        return data
+    return data.map(lambda x: TimeInterval.implicit_cast(x, from_type), na_action="ignore")
+
+
+def _as_type(data: Any, data_type: Any, from_type: Any = None) -> Any:
     """The data in the dtype of ``data_type``. As a String, a Boolean is "true" or "false", as
-    VTL casts it, where astype writes a numpy or Python Boolean as "True" (issue #1314)."""
+    VTL casts it, where astype writes a numpy or Python Boolean as "True" (issue #1314). The
+    values of a Date or a Time_Period ``from_type`` become Time values (issue #1352)."""
+    data = _time_values(data, data_type, from_type)
     return to_strings(data) if data_type is String else data.astype(data_type.dtype())
+
+
+def _time_operand(operand: Any, result: Any) -> Any:
+    """An operand of an if or a case with its Date or Time_Period values cast to Time where the
+    result is a Time, as the then and else operands take the common type (issue #1352)."""
+    if isinstance(result, Dataset):
+        if isinstance(operand, Dataset):
+            return to_time(operand, time_names(result))
+        types = {comp.data_type for comp in result.get_measures()}
+        return to_time(operand) if types == {TimeInterval} else operand
+    return to_time(operand) if result.data_type is TimeInterval else operand
 
 
 def _identifiers(dataset: Dataset) -> Dict[str, Any]:
@@ -201,6 +231,8 @@ class If(Operator):
         cls, condition: Any, true_branch: Any, false_branch: Any, is_from_having: bool = False
     ) -> Any:
         result = cls.validate(condition, true_branch, false_branch, is_from_having)
+        true_branch = _time_operand(true_branch, result)
+        false_branch = _time_operand(false_branch, result)
         if isinstance(result, Scalar):
             # The value of the operand that the condition selects, in the type of the result
             selected = true_branch if condition.value else false_branch
@@ -390,6 +422,8 @@ class Nvl(Binary):
     @classmethod
     def evaluate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(left, right)
+        if isinstance(result, Dataset) and isinstance(left, Dataset) and isinstance(right, Dataset):
+            left, right = time_keys(left, result), time_keys(right, result)
 
         if isinstance(left, Scalar) and isinstance(result, Scalar):
             if left.data_type is Null:
@@ -409,10 +443,12 @@ class Nvl(Binary):
                     for me in result.get_measures_names():
                         if me in result.data.columns:
                             result.data[me] = _as_type(
-                                result.data[me], result.components[me].data_type
+                                result.data[me],
+                                result.components[me].data_type,
+                                left.components[me].data_type,
                             )
                 else:
-                    result.data = _as_type(left.data, result.data_type)
+                    result.data = _as_type(left.data, result.data_type, left.data_type)
                 if isinstance(right, Scalar):
                     # A null applicable value replaces nothing, so the operand is
                     # returned as it is instead of filling with it (issue #1008).
@@ -448,12 +484,16 @@ class Nvl(Binary):
                     )
                     for me in measures:
                         data_type = result.components[me].data_type
-                        fill = _as_type(result.data[f"{me}_r"], data_type)
+                        fill = _as_type(
+                            result.data[f"{me}_r"], data_type, right.components[me].data_type
+                        )
                         result.data[me] = _as_type(result.data[me].fillna(fill), data_type)
                 else:
                     # nvl is single-operand: the primary operand's viral attributes are
                     # copied through unchanged; no rule is executed (issue #906).
-                    result.data = result.data.fillna(_as_type(right.data, result.data_type))
+                    result.data = result.data.fillna(
+                        _as_type(right.data, result.data_type, right.data_type)
+                    )
                 if isinstance(result, Dataset):
                     result.data = result.data[result.get_components_names()]
         return result
@@ -508,6 +548,9 @@ class Nvl(Binary):
                         component.data_type, right.data_type
                     )
             if isinstance(right, Dataset):
+                # The Data Points match on the common Identifiers, which need a common type, as
+                # in the other operators on two Data Sets (issue #1352)
+                check_common_identifier_types(NVL, left, right)
                 for component in left.get_measures():
                     promoted[component.name] = cls.type_validation(
                         component.data_type, right.components[component.name].data_type
@@ -524,6 +567,8 @@ class Nvl(Binary):
                 comp.nullable = replacement_keeps_nulls and comp.nullable
                 if comp.name in promoted:
                     comp.data_type = promoted[comp.name]
+            if isinstance(right, Dataset):
+                time_identifiers(result_components, left, right)
             share_value_domains(result_components, [left, right])
         return Dataset(name=dataset_name, components=result_components, data=None)
 
@@ -534,6 +579,8 @@ class Case(Operator):
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any, is_from_having: bool = False
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(conditions, thenOps, elseOp, is_from_having)
+        thenOps = [_time_operand(op, result) for op in thenOps]
+        elseOp = _time_operand(elseOp, result)
         if isinstance(result, Scalar):
             # The value of the then operand of the first true condition (issues #1008 and
             # #1251), in the common type of the operands (issue #1314)
