@@ -460,7 +460,7 @@ common type.
     * - **Number**
       - —
       - |y|
-      - |y|
+      - —
       - —
       - —
       - —
@@ -525,8 +525,14 @@ common type.
 
 Key rules:
 
-- **Integer / Number**: Both directions are implicit
-  (Integer is a subtype of Number). The common type of an
+- **Integer / Number**: An Integer is implicitly converted
+  to a Number (Integer is a subtype of Number). A Number is
+  never converted to an Integer, as the VTL 2.2 reference
+  manual marks that conversion as not feasible: a Number
+  given where an Integer is expected, such as the length of
+  ``substr``, the offset of ``lag`` or an ``integer``
+  parameter of a user defined operator, raises a
+  SemanticError. The common type of an
   Integer and a Number is Number: the common Identifiers
   that the joins (whatever the order of their operands),
   the set operators, the binary operators, ``exists_in``

@@ -1743,10 +1743,4 @@ centralised_messages = {
         "operator, is null for a not null type, or breaks the condition or the allowed values "
         "of its type.",
     },
-    "2-3-10": {
-        "message": "At op {op}: The value {value} given to the parameter {param_name} is not an "
-        "Integer.",
-        "description": "Raised when a Number with decimals computed when the script runs is "
-        "given to an integer parameter of a user defined operator.",
-    },
 }

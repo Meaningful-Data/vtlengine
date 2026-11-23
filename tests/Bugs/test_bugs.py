@@ -11389,76 +11389,25 @@ class ValueDomainBugs(BugHelper):
             vd_names=self.vd_1351,
         )
 
-    def test_GH_1351_35(self):
-        """
-        Status: OK
-        Expression: define operator f ( s component < string > , k number )
-                        returns component < string > is substr ( s , 1 , k ) end operator;
-                    define operator g ( s component < string > , k number )
-                        returns component < integer > is instr ( s , "c" , k ) end operator;
-                    DS_r <- DS_1 [ calc Me_2 := f ( Me_1 , 3 ) , Me_3 := g ( Me_1 , 2 ) ];
-        Description: A number parameter is the length of substr and the start of instr. The
-                     DuckDB engine read the Number parameter as a DOUBLE, which substr and
-                     instr do not take, and failed with an internal error.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
-        Goal: Check Result.
-        """
-        self.BaseTest(code="GH_1351_35", number_inputs=1, references_names=["1"])
-
-    def test_GH_1351_36(self):
-        """
-        Status: OK
-        Expression: define operator f ( x number ) returns number is x end operator;
-                    DS_r <- DS_1 [ calc Me_2 := substr ( Me_1 , f ( 2 ) , f ( 3 ) ) ,
-                        Me_3 := substr ( Me_1 , f ( 1 ) , f ( 2.5 ) ) ];
-        Description: The Number results of f are the start and the length of substr, and a
-                     length with decimals is truncated, 2.5 to 2, as for any Number. The
-                     DuckDB engine failed with an internal error on the DOUBLE results.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
-        Goal: Check Result.
-        """
-        self.BaseTest(code="GH_1351_36", number_inputs=1, references_names=["1"])
-
     def test_GH_1351_37(self):
         """
         Status: OK
         Expression: define operator f ( x integer ) returns integer is x end operator;
                     SC_r <- f ( 7 / 2 );
-        Description: The Number 3.5 is not an Integer, which the parameter x declares: the
-                     call raises the RunTimeError 2-3-10 where it is computed (issue #1364), as
-                     the semantic analysis does not know the value and gives the structure. The
-                     DuckDB engine rounded 3.5 to the Integer 4.
+        Description: The Number 7 / 2 is no Integer, which the parameter x declares, as the VTL 2.2
+                     manual marks number to integer as not feasible (issue #1388): the semantic
+                     analysis raises 1-2-18 on both engines. A Number with decimals raised the
+                     RunTimeError 2-3-10 where the call was computed (issue #1364), and a whole
+                     Number was the Integer.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Exception.
         """
-        with pytest.raises(RunTimeError) as context:
-            self.BaseTest(code="GH_1351_37", number_inputs=1, references_names=["1"])
-        self._check_error(
-            context.value,
-            "2-3-10",
-            "At op f: The value 3.5 given to the parameter x is not an Integer.",
+        self.NewSemanticExceptionTest(
+            code="GH_1351_37",
+            number_inputs=1,
+            exception_code="1-2-18",
+            exception_message="Expected Integer, got Number on UDO f, parameter x.",
         )
-        self.BaseTest(
-            code="GH_1351_37", number_inputs=1, references_names=["1"], only_semantic=True
-        )
-
-    def test_GH_1351_38(self):
-        """
-        Status: OK
-        Expression: define operator f ( x integer ) returns integer is x end operator;
-                    define operator g ( x integer ) returns string is cast ( x , string )
-                        end operator;
-                    SC_r <- f ( 4 / 2 );
-                    DS_r <- DS_2 [ calc Me_2 := cast ( SC_r , string ) ,
-                        Me_3 := cast ( f ( 2.0 ) , string ) , Me_4 := g ( 4 / 2 ) ,
-                        Me_5 := f ( 4 / 2 ) ];
-        Description: A whole Number given to an integer parameter is the Integer 2, also
-                     where the body reads it, so cast to String it gives 2. The DuckDB engine
-                     kept the Number 2.0 inside the body.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
-        Goal: Check Result.
-        """
-        self.BaseTest(code="GH_1351_38", number_inputs=1, references_names=["1", "2"])
 
     def test_GH_1351_39(self):
         """
@@ -11466,18 +11415,18 @@ class ValueDomainBugs(BugHelper):
         Expression: define operator f ( x component < integer > )
                         returns component < integer > is x end operator;
                     DS_r <- DS_1 [ calc Me_2 := f ( Me_1 ) ];
-        Description: A Number Component is accepted by a component < integer > parameter, but
-                     a Number is not implicitly cast to Integer, so the Number result does not
-                     have the type the returns declares (issue #1364).
+        Description: A Number Component is no component < integer >, as the VTL 2.2 manual marks
+                     number to integer as not feasible (issue #1388): the call raises 1-2-18. It was
+                     accepted, and the Number result raised 1-3-1-1, as it does not have the type
+                     the returns declares (issue #1364).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(
             code="GH_1351_39",
             number_inputs=1,
-            exception_code="1-3-1-1",
-            exception_message="At op f: User defined output declared as component<integer>, "
-            "found measure<number>.",
+            exception_code="1-2-18",
+            exception_message="Expected Integer, got Number on UDO f, parameter x.",
         )
 
     def test_GH_1351_40(self):
@@ -11524,37 +11473,18 @@ class ValueDomainBugs(BugHelper):
                     define operator g ( x integer default 2.0 ) returns integer is x
                         end operator;
                     DS_r <- DS_2 [ calc Me_2 := f ( ) , Me_3 := g ( ) ];
-        Description: Extra case: the whole Number default 2.0 of an integer parameter is the
-                     Integer 2, as an argument 2.0 passed to it is, so cast to String it gives
-                     2 and g returns the Integer 2. The pandas engine kept the Number 2.0 and
-                     gave 2.0 as the String, and both engines typed Me_3 as a Number.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
-        Goal: Check Result.
-        """
-        self.BaseTest(code="GH_1351_42", number_inputs=1, references_names=["1"])
-
-    def test_GH_1351_43(self):
-        """
-        Status: OK
-        Expression: define operator f ( x integer , y integer ) returns integer is y
-                        end operator;
-                    SC_r <- f ( 7 / 2 , 1 );
-        Description: Extra case: the Number 3.5 given to the integer parameter x raises the
-                     RunTimeError 2-3-10 where the call is computed (issue #1364), on both
-                     engines, also when the body never reads x (test_GH_1351_37 reads it). The
-                     semantic analysis does not know the value and gives the structure.
+        Description: Extra case: the Number default 2.0 of an integer parameter is no Integer, as
+                     the VTL 2.2 manual marks number to integer as not feasible (issue #1388): the
+                     definition raises 1-3-1-1. The whole Number was the Integer 2.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Exception.
         """
-        with pytest.raises(RunTimeError) as context:
-            self.BaseTest(code="GH_1351_43", number_inputs=1, references_names=["1"])
-        self._check_error(
-            context.value,
-            "2-3-10",
-            "At op f: The value 3.5 given to the parameter x is not an Integer.",
-        )
-        self.BaseTest(
-            code="GH_1351_43", number_inputs=1, references_names=["1"], only_semantic=True
+        self.NewSemanticExceptionTest(
+            code="GH_1351_42",
+            number_inputs=1,
+            exception_code="1-3-1-1",
+            exception_message="At op f: User defined default of parameter x declared as Integer, "
+            "found Number.",
         )
 
 
@@ -13680,19 +13610,20 @@ class TimeValueBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- timeshift ( DS_1 , SC_N ) ;
-        Description: Extra of case 19: the shift of timeshift is a whole number of periods, so
-                     the Number Scalar SC_N raises 1-1-19-15, as a Number shift of dateadd does.
-                     Both engines took the Number 2.7: the pandas engine shifted 2020Q1 by two
-                     quarters and the DuckDB engine by three.
+        Description: Extra of case 19: the shift of timeshift is an Integer Scalar, and the Number
+                     Scalar SC_N is no Integer, as the VTL 2.2 manual marks number to integer as not
+                     feasible (issue #1388): both engines raise 1-1-18-4. Both engines took the
+                     Number 2.7 before issue #1352: the pandas engine shifted 2020Q1 by two quarters
+                     and the DuckDB engine by three.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1352
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(
             code="GH_1352_19g",
             number_inputs=1,
-            exception_code="1-1-19-15",
-            exception_message="At op timeshift: Invalid param data_type Number for param "
-            "shiftNumber, expected Integer.",
+            exception_code="1-1-18-4",
+            exception_message="At op timeshift: Shift number parameter should be an Integer "
+            "Scalar.",
             scalars={"SC_N": 2.7},
         )
 
@@ -14022,24 +13953,26 @@ class BasicTypeValueBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- DS_7 [ calc Me_6 := substr ( Me_1 , 1 , Me_3 ) ];
-        Description: The Number length Me_3 (2.0) is implicitly cast to Integer. The DuckDB
-                     engine passed the DOUBLE to SUBSTR and raised a raw BinderException.
+        Description: The Number length Me_3 is no Integer, as the VTL 2.2 manual marks number to
+                     integer as not feasible (issue #1388): both engines raise 1-1-18-4. It was
+                     implicitly cast to Integer, and the DuckDB engine passed the DOUBLE to SUBSTR
+                     and raised a raw BinderException.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
-        Goal: Check Result.
+        Goal: Check Exception.
         """
-        self.BaseTest(code="GH_1353_11", number_inputs=1, references_names=["1"])
+        self.NewSemanticExceptionTest(code="GH_1353_11", number_inputs=1, exception_code="1-1-18-4")
 
     def test_GH_1353_12(self):
         """
         Status: OK
         Expression: DS_r <- DS_7 [ calc Me_6 := instr ( Me_1 , "b" , 1 , Me_3 ) ];
-        Description: The Number occurrence Me_3 (2.0) is implicitly cast to Integer. The pandas
-                     engine raised 2-1-18-1, naming it the start parameter, and the DuckDB engine
-                     raised a raw BinderException.
+        Description: The Number occurrence Me_3 is no Integer, as the VTL 2.2 manual marks number to
+                     integer as not feasible (issue #1388): both engines raise 1-1-18-4. It was
+                     implicitly cast to Integer.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1353
-        Goal: Check Result.
+        Goal: Check Exception.
         """
-        self.BaseTest(code="GH_1353_12", number_inputs=1, references_names=["1"])
+        self.NewSemanticExceptionTest(code="GH_1353_12", number_inputs=1, exception_code="1-1-18-4")
 
     def test_GH_1353_13(self):
         """
@@ -15708,41 +15641,6 @@ class ValueDomainFollowUpBugs(BugHelper):
             vd_names=self.vd_1364,
         )
 
-    def test_GH_1364_26(self):
-        """
-        Status: OK
-        Expression: SC_r <- f ( 7 / 2 ); (x integer)
-        Description: The value 3.5 given to the integer parameter x is computed when the script
-                     runs, so it is an error of the data, which the semantic analysis accepts. It
-                     raised the SemanticError 1-2-18.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
-        Goal: Check Exception.
-        """
-        self.NewSemanticExceptionTest(
-            code="GH_1364_26",
-            number_inputs=1,
-            exception_code="2-3-10",
-            exception_message="At op f: The value 3.5 given to the parameter x is not an Integer.",
-            vd_names=self.vd_1364,
-        )
-
-    def test_GH_1364_27(self):
-        """
-        Status: OK
-        Expression: SC_r <- f ( SC_1 / 2 ); (x integer, SC_1 = 7)
-        Description: As 26, with the value of the input scalar SC_1.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1364
-        Goal: Check Exception.
-        """
-        self.NewSemanticExceptionTest(
-            code="GH_1364_27",
-            number_inputs=2,
-            exception_code="2-3-10",
-            exception_message="At op f: The value 3.5 given to the parameter x is not an Integer.",
-            vd_names=self.vd_1364,
-            scalars={"SC_1": 7},
-        )
-
 
 class StructureDataBugs(BugHelper):
     """Results whose data do not match their declared structure (issue #1354)."""
@@ -16920,28 +16818,19 @@ class NameResolutionBugs(BugHelper):
         Status: OK
         Expression: DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , SF_1 over ( order by Id_1 ) ) ];
                     (SF_1 an input Number Scalar, 0.5)
-        Description: Extra of test_GH_1355_23: a Number offset is rounded half away from
-                     zero, so 0.5 is the offset 1, on both engines. The DuckDB engine rounded it
-                     half to even, to 0.
+        Description: Extra of test_GH_1355_23: the offset of lag is an Integer Scalar, and the
+                     Number SF_1 is no Integer, as the VTL 2.2 manual marks number to integer as not
+                     feasible (issue #1388): both engines raise 1-1-18-4. A Number offset was
+                     rounded half away from zero.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
-        Goal: Check Result.
+        Goal: Check Exception.
         """
-        self.BaseTest(
-            code="GH_1355_23f", number_inputs=1, references_names=["1"], scalars={"SF_1": 0.5}
+        self.NewSemanticExceptionTest(
+            code="GH_1355_23f",
+            number_inputs=1,
+            exception_code="1-1-18-4",
+            scalars={"SF_1": 0.5},
         )
-
-    def test_GH_1355_23g(self):
-        """
-        Status: OK
-        Expression: SC_1 <- 2.5;
-                    DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , SC_1 over ( order by Id_1 ) ) ];
-        Description: Extra of test_GH_1355_23: the offset 2.5 that a statement computes is
-                     rounded half away from zero, to 3, on both engines. The DuckDB engine
-                     rounded it half to even, to 2.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
-        Goal: Check Result.
-        """
-        self.BaseTest(code="GH_1355_23g", number_inputs=1, references_names=["1", "2"])
 
     def test_GH_1355_23h(self):
         """
@@ -17212,46 +17101,18 @@ class NameResolutionBugs(BugHelper):
         Expression: DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
                         between SF_2 preceding and current data point ) ) ];
                     (SF_2 an input Number Scalar, 2.5)
-        Description: Extra of test_GH_1355_26: a Number bound is rounded half away from zero,
-                     as the offset of lag, so 2.5 is the bound 3. The pandas engine raised an
-                     internal ParserException.
+        Description: Extra of test_GH_1355_26: a bound of the window is an Integer Scalar, and the
+                     Number SF_2 is no Integer, as the VTL 2.2 manual marks number to integer as not
+                     feasible (issue #1388): both engines raise 1-1-18-4. A Number bound was rounded
+                     half away from zero.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
-        Goal: Check Result.
+        Goal: Check Exception.
         """
-        self.BaseTest(
-            code="GH_1355_26g", number_inputs=1, references_names=["1"], scalars={"SF_2": 2.5}
-        )
-
-    def test_GH_1355_26h(self):
-        """
-        Status: OK
-        Expression: SC_1 <- 2.5;
-                    DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
-                        between SC_1 preceding and current data point ) ) ];
-        Description: Extra of test_GH_1355_26: the bound 2.5 that a statement computes is
-                     rounded half away from zero, to 3, as in test_GH_1355_26g. The pandas
-                     engine raised an internal ParserException and the DuckDB engine rounded
-                     it half to even, to 2.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
-        Goal: Check Result.
-        """
-        self.BaseTest(code="GH_1355_26h", number_inputs=1, references_names=["1", "2"])
-
-    def test_GH_1355_26i(self):
-        """
-        Status: OK
-        Expression: DS_r <- DS_D [ calc Me_3 := sum ( Me_2 over ( order by Id_1 range
-                        between SF_2 preceding and current data point ) ) ];
-                    (SF_2 an input Number Scalar, 2.5, Id_1 a Date)
-        Description: Extra of test_GH_1355_26: the Number bound 2.5 of a range window ordered
-                     by a Date is rounded half away from zero, to 3 days. The pandas engine
-                     raised an internal ParserException and the DuckDB engine an internal
-                     BinderException.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
-        Goal: Check Result.
-        """
-        self.BaseTest(
-            code="GH_1355_26i", number_inputs=1, references_names=["1"], scalars={"SF_2": 2.5}
+        self.NewSemanticExceptionTest(
+            code="GH_1355_26g",
+            number_inputs=1,
+            exception_code="1-1-18-4",
+            scalars={"SF_2": 2.5},
         )
 
     def test_GH_1355_27(self):
@@ -18091,27 +17952,6 @@ class NameResolutionBugs(BugHelper):
             exception_code="2-1-18-1",
             exception_message="At op sum: Window bound parameter should be a non-negative Integer.",
             scalars={"SI_1": -1},
-        )
-
-    def test_GH_1355_26m(self):
-        """
-        Status: OK
-        Expression: DS_a <- round ( DS_3 , 1 );
-                    DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
-                        between SF_2 preceding and current data point ) ) ];
-                    (SF_2 an input Number Scalar, 10000000000000000000.0)
-        Description: Extra of test_GH_1355_26: the bound of the window that a Scalar gives does
-                     not depend on an earlier round, so a bound beyond the range of an Integer
-                     raises 2-1-5-1 on both engines. After the round the pandas engine raised an
-                     internal ConversionException.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
-        Goal: Check Exception.
-        """
-        self.NewSemanticExceptionTest(
-            code="GH_1355_26m",
-            number_inputs=1,
-            exception_code="2-1-5-1",
-            scalars={"SF_2": 10000000000000000000.0},
         )
 
     def test_GH_1355_26n(self):

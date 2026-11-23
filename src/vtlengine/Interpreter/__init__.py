@@ -522,12 +522,6 @@ class InterpreterAnalyzer(ASTTemplate):
                 if not isinstance(declared, Scalar) and not (
                     isinstance(declared, type)
                     and check_unary_implicit_promotion(default.data_type, declared)
-                    # A Number with decimals is no Integer, as for an argument (issue #1356)
-                    and not (
-                        declared == Integer
-                        and isinstance(default.value, float)
-                        and not default.value.is_integer()
-                    )
                 ):
                     raise SemanticError(
                         "1-3-1-1",
@@ -3240,9 +3234,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def _udo_scalar_argument(self, op: str, param: Dict[str, Any], argument: Any) -> Scalar:
         """The value a parameter of a basic type takes, given or by default: it must be of the
-        type the parameter declares, or promote to it, and is cast to it. A Number with
-        decimals is no Integer: a literal raises 1-2-18, which the semantic analysis raises too,
-        and a value computed when the script runs is an error of the data (issue #1364)."""
+        type the parameter declares, or promote to it, and is cast to it. A Number is no
+        Integer, as the VTL 2.2 manual marks the conversion as not feasible (issue #1388)."""
         if isinstance(argument, (Dataset, DataComponent)):
             type_2 = "Dataset" if isinstance(argument, Dataset) else "Component"
             raise SemanticError(
@@ -3250,12 +3243,7 @@ class InterpreterAnalyzer(ASTTemplate):
             )
         scalar_type = param["type"]
         value = argument.value
-        has_decimals = (
-            scalar_type == Integer and isinstance(value, float) and not value.is_integer()
-        )
-        if has_decimals and not argument.literal:
-            raise RunTimeError("2-3-10", op=op, value=value, param_name=param["name"])
-        if not check_unary_implicit_promotion(argument.data_type, scalar_type) or has_decimals:
+        if not check_unary_implicit_promotion(argument.data_type, scalar_type):
             raise SemanticError(
                 "1-2-18",
                 param_type=scalar_type,
