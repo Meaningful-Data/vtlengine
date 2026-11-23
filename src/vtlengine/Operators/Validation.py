@@ -5,6 +5,7 @@ import pandas as pd
 
 from vtlengine.AST.Grammar.tokens import CHECK, CHECK_DATAPOINT, CHECK_HIERARCHY
 from vtlengine.DataTypes import (
+    SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Integer,
     Number,
@@ -14,7 +15,8 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Component, Dataset, Role, ValueDomain, component_type_name
-from vtlengine.Operators import Operator
+from vtlengine.Operators import Operator, on_basic_types
+from vtlengine.Operators.HROperators import fills_with_zero
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 
@@ -109,7 +111,7 @@ def bind_value_domains(
     value domains of its signature, or their aliases.
 
     The call must list the components, as many as the value domains, which must be given, and
-    each component must be defined on the value domain it is bound to."""
+    each component must be accepted by check_value_domains."""
     if not called:
         raise SemanticError("1-1-10-14", op=CHECK_DATAPOINT, ruleset=ruleset)
     if len(called) != len(signature):
@@ -134,14 +136,19 @@ def check_value_domains(
     value_domains: Optional[Dict[str, ValueDomain]],
 ) -> None:
     """Each value domain of a ruleset must be given, and the component bound to it must be
-    defined on it."""
+    defined on it, or be of a basic type that promotes to the basic type of the value domain
+    (issue #1348): a component on another value domain is rejected."""
     for name, comp_name in bindings:
         if value_domains is None:
             raise SemanticError("1-2-22", comp_type="Value Domains")
         if name not in value_domains:
             raise SemanticError("1-2-8", name=name)
         component = components[comp_name]
-        if component.value_domain is None or component.value_domain.name != name:
+        if component.value_domain is None:
+            accepted = check_unary_implicit_promotion(component.data_type, value_domains[name].type)
+        else:
+            accepted = component.value_domain.name == name
+        if not accepted:
             raise SemanticError(
                 "1-1-10-12",
                 op=op,
@@ -149,6 +156,7 @@ def check_value_domains(
                 type=component_type_name(component.data_type, component.value_domain),
                 value_domain=name,
                 ruleset=ruleset,
+                basic_type=SCALAR_TYPES_CLASS_REVERSE[value_domains[name].type],
             )
 
 
@@ -343,6 +351,7 @@ class Validation(Operator):
         viral_components: Optional[List[Component]] = None,
         viral_values: Optional[pd.DataFrame] = None,
         value_domains: Optional[Dict[str, ValueDomain]] = None,
+        **kwargs: Any,
     ) -> Dataset:
         result = cls.validate(
             dataset_element,
@@ -350,6 +359,7 @@ class Validation(Operator):
             output,
             viral_components=viral_components,
             value_domains=value_domains,
+            **kwargs,
         )
         if result.components["errorlevel"].data_type is String:
             # Levels of mixed types are written as text, a boolean as true or false
@@ -451,6 +461,9 @@ class Check_Hierarchy(Validation):
         viral_components: Optional[List[Component]] = None,
         viral_values: Optional[pd.DataFrame] = None,
         value_domains: Optional[Dict[str, ValueDomain]] = None,
+        rule_component: Optional[str] = None,
+        mode: Optional[str] = None,
+        keep_rule_domain: bool = False,
     ) -> Dataset:
         result = super().validate(
             dataset_element,
@@ -460,6 +473,15 @@ class Check_Hierarchy(Validation):
             value_domains=value_domains,
         )
         measures = dataset_element.get_measures()
+        # As in hierarchy, the rule Identifier holds the checked code items and keeps its value
+        # domain when keep_rule_domain says so, and the Measures the 0 of a missing one in the
+        # modes that read it as 0 (issue #1348)
+        computed = (
+            [rule_component] if rule_component in result.components and not keep_rule_domain else []
+        )
+        if mode is not None and fills_with_zero(mode):
+            computed += [m.name for m in measures if m.name in result.components]
+        result.components = on_basic_types(result.components, computed)
         result.components["imbalance"] = Component(
             name="imbalance",
             data_type=measures[0].data_type if measures else Number,

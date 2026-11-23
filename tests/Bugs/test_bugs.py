@@ -8199,20 +8199,17 @@ class ValueDomainBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- check_datapoint ( DS_1 , DPR_1 components Id_2 , Me_1 );
-        Description: Id_2, a String, is not defined on VD_FLOW, the value domain it is bound
-                     to (issue #1338).
+        Description: Id_2, a String, and Me_1, an Integer, are of the basic types of VD_FLOW
+                     and VD_AMOUNT, the value domains they are bound to, so the ruleset applies
+                     to them and they keep their basic types (issue #1348). It raised 1-1-10-12,
+                     as they are not defined on the value domains (issue #1338).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
-        Goal: Check Exception.
+        Goal: Check Result.
         """
-        code = "GH_1236_4"
-        number_inputs = 1
-
-        self.NewSemanticExceptionTest(
-            code=code,
-            number_inputs=number_inputs,
-            exception_code="1-1-10-12",
-            exception_message="Component Id_2 of type String is not defined on the Value Domain "
-            "VD_FLOW",
+        self.BaseTest(
+            code="GH_1236_4",
+            number_inputs=1,
+            references_names=["1"],
             vd_names=["GH_1236-VD_FLOW", "GH_1236-VD_AMOUNT"],
         )
 
@@ -8558,16 +8555,16 @@ class ValueDomainBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- check_datapoint ( DS_1 , dpr_cty components Me_3 all );
-        Description: Me_3, a String, is not defined on VD_CTY, the value domain it is bound to.
+        Description: Me_3, a String, is of the basic type of VD_CTY, the value domain it is
+                     bound to, so the ruleset applies to it (issue #1348); it raised 1-1-10-12.
+                     The value IT, outside VD_CTY, is checked as any other.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1338
-        Goal: Check Exception.
+        Goal: Check Result.
         """
-        self.NewSemanticExceptionTest(
+        self.BaseTest(
             code="GH_1338_3",
             number_inputs=1,
-            exception_code="1-1-10-12",
-            exception_message="Component Me_3 of type String is not defined on the Value Domain "
-            "VD_CTY",
+            references_names=["1"],
             vd_names=self.vd_1338,
         )
 
@@ -8629,16 +8626,16 @@ class ValueDomainBugs(BugHelper):
         Status: OK
         Expression: DS_r <- check_hierarchy ( DS_1 , hr_cty rule Id_1 all );
         Description: hr_cty is defined on the value domain VD_CTY, and Id_1 is a String
-                     component, with a value outside VD_CTY.
+                     component, of the basic type of VD_CTY, so the ruleset applies to it and
+                     Id_1 stays a String (issue #1348); the value IT, outside VD_CTY, is not a
+                     code item of it. It raised 1-1-10-12.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
-        Goal: Check Exception.
+        Goal: Check Result.
         """
-        self.NewSemanticExceptionTest(
+        self.BaseTest(
             code="GH_1339_1",
             number_inputs=1,
-            exception_code="1-1-10-12",
-            exception_message="Component Id_1 of type String is not defined on the Value Domain "
-            "VD_CTY of the ruleset hr_cty",
+            references_names=["1"],
             vd_names=self.vd_1339,
         )
 
@@ -8664,17 +8661,16 @@ class ValueDomainBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- check_hierarchy ( DS_1 , hr_cond condition Id_2 rule Id_1 all );
-        Description: The condition component Id_2 is an Integer component, not defined on the
-                     value domain VD_YEAR of the condition of hr_cond.
+        Description: The condition component Id_2 is an Integer component, of the basic type
+                     of the value domain VD_YEAR of the condition of hr_cond, so the ruleset
+                     applies to it and Id_2 stays an Integer (issue #1348). It raised 1-1-10-12.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
-        Goal: Check Exception.
+        Goal: Check Result.
         """
-        self.NewSemanticExceptionTest(
+        self.BaseTest(
             code="GH_1339_4",
             number_inputs=1,
-            exception_code="1-1-10-12",
-            exception_message="Component Id_2 of type Integer is not defined on the Value Domain "
-            "VD_YEAR of the ruleset hr_cond",
+            references_names=["1"],
             vd_names=self.vd_1339,
         )
 
@@ -9392,4 +9388,619 @@ class ValueDomainBugs(BugHelper):
             references_names=["1", "2"],
             vd_names=self.vd_1350,
             scalars={"SC_1": 1},
+        )
+
+    vd_1348 = ["GH_1348-VD_TP", "GH_1348-VD_INT", "GH_1348-VD_STR"]
+
+    def test_GH_1348_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( DS_1 group all time_agg ( "A" ) );
+        Description: time_agg in the grouping writes the aggregated periods into Id_2, which
+                     is on VD_TP. The period 2024 is not a value of VD_TP, so Id_2 has the
+                     basic type Time_Period; it kept VD_TP.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_1",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( DS_1 group all time_agg ( "A" ) ) [ pivot Id_2 , Me_1 ];
+        Description: Id_2 holds the aggregated period 2024 with the basic type Time_Period, so
+                     pivot raises as in case 3. While Id_2 kept VD_TP, pivot gave the Measures
+                     2024Q1 and 2024Q3, both null, and the data point was lost.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_2",
+            number_inputs=1,
+            exception_code="1-1-6-18",
+            exception_message="The Identifier Id_2 is not defined on a value domain",
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( DS_1 group all time_agg ( "A" ) ) [ pivot Id_2 , Me_1 ];
+        Description: Control of case 2 with the basic types: Id_2 is a Time_Period, which is
+                     on no value domain, so pivot raises.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_3",
+            number_inputs=1,
+            exception_code="1-1-6-18",
+            exception_message="The Identifier Id_2 is not defined on a value domain",
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_4(self):
+        """
+        Status: OK
+        Expression: DS_r <- time_agg ( "A" , _ , DS_1 );
+        Description: time_agg on a Data Set writes the aggregated periods into the time
+                     Measure Me_1, which is on VD_TP, so Me_1 has the basic type Time_Period;
+                     it kept VD_TP.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_4",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_5(self):
+        """
+        Status: OK
+        Expression: DS_r <- timeshift ( DS_1 , 1 );
+        Description: timeshift writes the shifted periods into the time Identifier Id_2, which
+                     is on VD_TP, so Id_2 has the basic type Time_Period; it kept VD_TP.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_5",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , all );
+        Description: fill_time_series writes the filled periods into the time Identifier Id_2,
+                     which is on VD_TP, so Id_2 has the basic type Time_Period; it kept VD_TP.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_6",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- dateadd ( DS_1 , 1 , "M" );
+        Description: dateadd on a Data Set writes Dates into the time Identifier Id_2, which is
+                     on VD_TP, so Id_2 has the basic type Date; it kept VD_TP.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_7",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_8(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( variable rule Id_2 ) is
+                        r1 : C = A + B end hierarchical ruleset;
+                    DS_r <- hierarchy ( DS_1 , HR_1 rule Id_2 non_null all )
+                                [ calc Me_2 := Id_2 in VD_STR ];
+        Description: hierarchy writes the computed code item C into the rule Identifier Id_2,
+                     which is on VD_STR, so Id_2 has the basic type String; it kept VD_STR,
+                     while Id_2 in VD_STR is false on C.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_8",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_8b(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( valuedomain rule VD_STR ) is
+                        r1 : C = A + B end hierarchical ruleset;
+                    DS_r <- hierarchy ( DS_1 , HR_1 rule Id_2 non_null all );
+        Description: The ruleset is defined on VD_STR, whose values are A and B, and its rule
+                     computes the code item C, which is not one of them, so the ruleset gives
+                     values outside its value domain. hierarchy computed C on Id_2, on VD_STR.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_8b",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message="The code item C of the hierarchical ruleset HR_1 is not one of "
+            "the values of the Value Domain VD_STR",
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_8c(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( valuedomain rule VD_STR ) is
+                        r1 : A = B + C end hierarchical ruleset;
+                    DS_r <- check_hierarchy ( DS_1 , HR_1 rule Id_2 always_zero all );
+        Description: Case 8b for check_hierarchy, with the code item C, not a value of
+                     VD_STR, on the right of the rule: it was read as a missing 0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_8c",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message="The code item C of the hierarchical ruleset HR_1 is not one of "
+            "the values of the Value Domain VD_STR",
+            vd_names=self.vd_1348,
+        )
+
+    vd_1348_n = [*vd_1348, "GH_1348-VD_STR2", "GH_1348-VD_NUM"]
+
+    def test_GH_1348_8d(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( valuedomain condition VD_NUM as Y
+                        rule VD_STR ) is r1 : when Y > 2020 then A = B
+                    end hierarchical ruleset;
+                    DS_r <- hierarchy ( DS_1 , HR_1 condition Id_3 rule Id_2 all );
+        Description: The condition Component Id_3 is a String, a basic type that does not
+                     promote to Number, the basic type of the value domain VD_NUM it is bound
+                     to.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_8d",
+            number_inputs=1,
+            exception_code="1-1-10-12",
+            exception_message="Component Id_3 of type String is not defined on the Value Domain "
+            "VD_NUM of the ruleset HR_1, nor of a basic type that promotes to its type Number",
+            vd_names=self.vd_1348_n,
+        )
+
+    def test_GH_1348_8e(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( valuedomain condition VD_NUM as Y
+                        rule VD_STR ) is r1 : when Y > 2020 then A = B
+                    end hierarchical ruleset;
+                    DS_r <- hierarchy ( DS_1 , HR_1 condition Id_3 rule Id_2 all );
+        Description: The condition Component Id_3 is an Integer, which promotes to Number,
+                     the basic type of VD_NUM, so the ruleset applies to it: A is computed in
+                     2021 only, and Id_3 stays an Integer. It raised 1-1-10-12, as Id_3 is not
+                     defined on VD_NUM.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_8e",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348_n,
+        )
+
+    def test_GH_1348_8f(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_STR as S , VD_INT as I ) is
+                        r1 : when S = "A" then I > 1 errorcode "A_low"
+                    end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 , Me_2 all_measures );
+        Description: Me_1 is a String, the basic type of VD_STR, and Me_2 is on VD_INT, so the
+                     ruleset applies to both, and Me_1 stays a String. It raised 1-1-10-12, as
+                     Me_1 is not defined on VD_STR.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_8f",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348_n,
+        )
+
+    def test_GH_1348_8g(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_STR as S , VD_INT as I ) is
+                        r1 : when S = "A" then I > 1 errorcode "A_low"
+                    end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 , Me_2 all_measures );
+        Description: Me_1 is on VD_STR2, another value domain of the basic type of VD_STR, so
+                     it is rejected, as a basic String would not be.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_8g",
+            number_inputs=1,
+            exception_code="1-1-10-12",
+            exception_message="Component Me_1 of type VD_STR2 is not defined on the Value Domain "
+            "VD_STR of the ruleset DPR_1",
+            vd_names=self.vd_1348_n,
+        )
+
+    def test_GH_1348_9(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( variable rule Id_2 ) is
+                        r1 : C = A + B end hierarchical ruleset;
+                    DS_r <- check_hierarchy ( DS_1 , HR_1 rule Id_2 always_zero all_measures );
+        Description: check_hierarchy writes the computed code item C into the rule Identifier
+                     Id_2, on VD_STR, and the 0 of the missing C into the Measure Me_1, on
+                     VD_INT, so Id_2 is a String and Me_1 an Integer, as in hierarchy; they
+                     kept their value domains.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_9",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_10(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_INT ) is
+                        aggregate sum end viral propagation;
+                    DS_r <- DS_1 + DS_2;
+        Description: At_1 is on VD_INT in both operands, so the rule on VD_INT sums it. The
+                     sums 5 and 6 are not values of VD_INT, so At_1 has the basic type Integer;
+                     it kept VD_INT.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_10",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_9b(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( variable rule Id_2 ) is
+                        r1 : C = A + B end hierarchical ruleset;
+                    DS_r <- check_hierarchy ( DS_1 , HR_1 rule Id_2 non_zero all_measures );
+        Description: non_zero also writes the 0 of the missing C into the Measure Me_1, on
+                     VD_INT, so Me_1 is an Integer, as in case 9; it kept VD_INT.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_9b",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_11(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b apply nvl ( a , b ) );
+        Description: Me_1 is on VD_INT in both operands and nvl only puts their values into it,
+                     so Me_1 keeps VD_INT, as in nvl ( DS_1 , DS_2 ); it had the basic type
+                     Integer.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_11",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_12(self):
+        """
+        Status: OK
+        Expression: DS_r <- nvl ( DS_1 , DS_2 );
+        Description: Control of case 11: Me_1 is on VD_INT in both operands, so it keeps VD_INT.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_12",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_13(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as a , DS_2 as b
+                                calc Me_2 := nvl ( a#Me_1 , b#Me_1 ) keep Me_2 );
+        Description: Control of case 11: both operands of nvl are on VD_INT, so Me_2 is on
+                     VD_INT.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_13",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- flow_to_stock ( DS_1 );
+        Description: flow_to_stock only accumulates the number Measures, so the String Measures
+                     Me_1 and Me_2 keep VD_STR, and Me_3, on VD_INT, holds the sums with the
+                     basic type Integer. Me_1 and Me_2 had the basic type String.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_14",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- stock_to_flow ( DS_1 );
+        Description: stock_to_flow only takes the differences of the number Measures, so the
+                     String Measures Me_1 and Me_2 keep VD_STR, and Me_3, on VD_INT, has the
+                     basic type Integer. Me_1 and Me_2 had the basic type String.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_15",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_14b(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_STR as X ) is
+                        r1 : X = "A" errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( flow_to_stock ( DS_1 ) , DPR_1 components Me_1 all );
+        Description: Me_1 keeps VD_STR through flow_to_stock (case 14), so the ruleset on VD_STR
+                     applies to it; it raised 1-1-10-12, while it works on the input.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_14b",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_16(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ unpivot Id_3 , Me_3 ];
+        Description: Both unpivoted Measures are on VD_STR, so the new Measure Me_3 keeps VD_STR;
+                     it had the basic type String. The new Identifier Id_3 is a String.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_16",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_16b(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_STR as X ) is
+                        r1 : X = "A" errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 [ unpivot Id_3 , Me_3 ] ,
+                                DPR_1 components Me_3 all );
+        Description: Me_3 keeps VD_STR (case 16), so the ruleset on VD_STR applies to it; it
+                     raised 1-1-10-12, while it works on the input Measures.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_16b",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_17(self):
+        """
+        Status: OK
+        Expression: DS_r <- if DS_1 then DS_2 else DS_3;
+        Description: Id_1 is on VD_INT in the condition and an Integer in the then and else
+                     operands, so the Identifiers match on the basic type and Id_1 is an Integer;
+                     Me_1 is on VD_INT in both branches and keeps it. It raised 1-1-9-10.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_17",
+            number_inputs=3,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    def test_GH_1348_18(self):
+        """
+        Status: OK
+        Expression: DS_r <- case when DS_1 then DS_2 else DS_3;
+        Description: As in case 17, the Identifiers match on the basic type and Id_1 is an
+                     Integer; Me_1 keeps VD_INT. It raised 1-1-9-10.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_18",
+            number_inputs=3,
+            references_names=["1"],
+            vd_names=self.vd_1348,
+        )
+
+    vd_1348_c = [*vd_1348, "GH_1348-VD_STR2"]
+
+    def test_GH_1348_19(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_STR ) is
+                        when "A" then "A"; else "B" end viral propagation;
+                    define viral propagation VP_2 ( valuedomain VD_STR2 ) is
+                        when "A" then "X"; else "X" end viral propagation;
+                    DS_r <- DS_1 + DS_2;
+        Description: At_1 is on VD_STR in DS_1 and on VD_STR2 in DS_2. The mix is promoted to
+                     String, on neither value domain, and At_1 has no rule on the variable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_19",
+            number_inputs=2,
+            exception_code="1-3-3-6",
+            exception_message="Viral attribute At_1 has no viral propagation rule",
+            vd_names=self.vd_1348_c,
+        )
+
+    def test_GH_1348_20(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_STR ) is
+                        when "A" then "A"; else "B" end viral propagation;
+                    define viral propagation VP_2 ( valuedomain VD_STR2 ) is
+                        when "A" then "X"; else "X" end viral propagation;
+                    DS_r <- DS_2 + DS_1;
+        Description: Case 19 in the other operand order raises the same error.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_20",
+            number_inputs=2,
+            exception_code="1-3-3-6",
+            exception_message="Viral attribute At_1 has no viral propagation rule",
+            vd_names=self.vd_1348_c,
+        )
+
+    def test_GH_1348_21(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_STR ) is
+                        when "A" then "A"; else "B" end viral propagation;
+                    DS_r <- DS_1 + DS_2;
+        Description: At_1 is on VD_STR in DS_1 and a String in DS_2. The mix is promoted to
+                     String, so the rule on VD_STR does not apply and At_1 has no rule.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_21",
+            number_inputs=2,
+            exception_code="1-3-3-6",
+            exception_message="Viral attribute At_1 has no viral propagation rule",
+            vd_names=self.vd_1348_c,
+        )
+
+    def test_GH_1348_22(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_STR ) is
+                        when "A" then "A"; else "B" end viral propagation;
+                    DS_r <- DS_2 + DS_1;
+        Description: Case 21 in the other operand order raises the same error; it returned an
+                     all-null At_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1348_22",
+            number_inputs=2,
+            exception_code="1-3-3-6",
+            exception_message="Viral attribute At_1 has no viral propagation rule",
+            vd_names=self.vd_1348_c,
+        )
+
+    def test_GH_1348_23(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_STR ) is
+                        when "A" then "A"; else "B" end viral propagation;
+                    define viral propagation VP_2 ( valuedomain VD_STR2 ) is
+                        when "A" then "X"; else "X" end viral propagation;
+                    define viral propagation VP_3 ( variable At_1 ) is
+                        when "A" then "V"; else "W" end viral propagation;
+                    DS_r <- DS_2 + DS_1;
+        Description: Control of cases 19 and 20: the rule on the variable At_1 applies to the
+                     mix of VD_STR and VD_STR2, promoted to String.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_23",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1348_c,
+        )
+
+    def test_GH_1348_24(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( variable rule Id_2 ) is
+                        r1 : A = B end hierarchical ruleset;
+                    DS_r1 <- hierarchy ( DS_1 , HR_1 rule Id_2 all );
+                    DS_r2 <- check_hierarchy ( DS_1 , HR_1 rule Id_2 all );
+        Description: The ruleset is on a variable and the item A that its rule computes and
+                     checks is a value of VD_STR, so the rule Identifier Id_2 keeps VD_STR in
+                     both results, unlike cases 8 and 9, whose item C is not a value of it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1348_24",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=self.vd_1348,
         )

@@ -28,6 +28,7 @@ from vtlengine.DataTypes import (
     Date,
     Duration,
     Integer,
+    Number,
     ScalarType,
     String,
     TimeInterval,
@@ -284,11 +285,17 @@ class Unary(Time):
         if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         operand.data = cls.sort_by_time(operand)
+        return Dataset(name=dataset_name, components=cls.components(operand), data=None)
+
+    @staticmethod
+    def components(operand: Dataset) -> Dict[str, Component]:
+        """The Components of the result, copied: only the number Measures accumulate, so
+        only they leave their value domain, and the other Measures keep it (issue #1348)."""
         components = {name: copy(comp) for name, comp in operand.components.items()}
         for comp in components.values():
-            if comp.role == Role.MEASURE:
+            if comp.role == Role.MEASURE and comp.data_type in (Integer, Number):
                 comp.value_domain = None
-        return Dataset(name=dataset_name, components=components, data=None)
+        return components
 
     @classmethod
     def evaluate(cls, operand: Any) -> Any:
@@ -484,7 +491,9 @@ class Fill_time_series(Binary):
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         if fill_type not in ["all", "single"]:
             fill_type = "all"
-        return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
+        # The filled periods are new values of the time Identifier
+        components = Operators.on_basic_types(operand.components, [cls.time_id])
+        return Dataset(name=dataset_name, components=components, data=None)
 
     @classmethod
     def fill_periods(cls, data: pd.DataFrame, fill_type: str) -> pd.DataFrame:
@@ -746,7 +755,9 @@ class Time_Shift(Binary):
             )
         if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
-        return Dataset(name=dataset_name, components=operand.components.copy(), data=None)
+        # The shifted periods are new values of the time Identifier
+        components = Operators.on_basic_types(operand.components, [cls._get_time_id(operand)])
+        return Dataset(name=dataset_name, components=components, data=None)
 
     @classmethod
     def shift_dates(cls, dates: Any, shift_value: int, frequency: str) -> Any:
@@ -913,7 +924,11 @@ class Time_Aggregation(Time):
             for comp in operand.components.values()
             if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
-
+        # The aggregated periods are new values of the time Measure
+        time_measure = [
+            m.name for m in operand.get_measures() if m.data_type in cls.TIME_DATA_TYPES
+        ]
+        result_components = Operators.on_basic_types(result_components, time_measure)
         return Dataset(name=operand.name, components=result_components, data=None)
 
     @classmethod
@@ -1217,7 +1232,9 @@ class Date_Add(Parametrized):
         # (shared) Component objects (#1032)
         result_components = {name: copy(comp) for name, comp in operand.components.items()}
         for target in cls._dateadd_targets(operand):
+            # The shifted Dates are new values, of the basic type Date (issue #1348)
             result_components[target.name].data_type = Date
+            result_components[target.name].value_domain = None
         return Dataset(name=dataset_name, components=result_components, data=None)
 
     @classmethod

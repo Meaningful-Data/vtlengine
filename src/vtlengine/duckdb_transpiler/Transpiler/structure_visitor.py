@@ -27,10 +27,11 @@ from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS, get
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
 from vtlengine.Model import Component, Dataset, Role, ValueDomain
 from vtlengine.Operators.CastOperator import Cast
-from vtlengine.Operators.Clause import Pivot
-from vtlengine.Operators.Join import merged_viral_attribute_names
+from vtlengine.Operators.Clause import Pivot, Unpivot
+from vtlengine.Operators.Join import Apply, merged_viral_attribute_names
+from vtlengine.Operators.Time import Unary as TimeUnary
 from vtlengine.Operators.Validation import error_domains, error_level_type
-from vtlengine.Utils import ANALYTIC_MAPPING
+from vtlengine.Utils import ANALYTIC_MAPPING, BINARY_MAPPING
 
 
 def _try_normalize_time_period(value: str) -> Optional[str]:
@@ -613,6 +614,8 @@ class StructureVisitor(ASTTemplate):
                 return result
         elif op == tokens.PIVOT:
             return self._build_pivot_structure(node)
+        elif op == tokens.APPLY:
+            return self._build_apply_structure(node)
         builder_attr = self._CLAUSE_BUILDER_ATTRS.get(op)
         if builder_attr is not None:
             return getattr(self, builder_attr)(node)
@@ -747,7 +750,8 @@ class StructureVisitor(ASTTemplate):
             comps["duration_var"] = self._make_comp("duration_var", Duration)
             return Dataset(name=ds.name, components=comps, data=None)
         if node.op in (tokens.FLOW_TO_STOCK, tokens.STOCK_TO_FLOW):
-            return ds
+            # As the semantic analysis builds it (issue #1348)
+            return Dataset(name=ds.name, components=TimeUnary.components(ds), data=None)
         return self._without_attributes(ds)
 
     def _resolve_mulop_structure(self, node: AST.MulOp) -> Optional[Dataset]:
@@ -1014,24 +1018,14 @@ class StructureVisitor(ASTTemplate):
     # =========================================================================
 
     def _build_unpivot_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
-        """Build the output dataset structure for an unpivot clause."""
+        """The structure of an unpivot clause, as the semantic analysis builds it: the new
+        Measure has the common type of the unpivoted Measures and the value domain they all
+        share (issue #1348)."""
         input_ds = self._get_dataset_structure(node.dataset)
         if input_ds is None:
             return None
-        new_id = self._resolve_name(node.children[0])
-        new_measure = self._resolve_name(node.children[1])
-        comps = self._identifiers_dict(input_ds)
-        comps[new_id] = self._make_comp(new_id, StringType, role=Role.IDENTIFIER, nullable=False)
-        measure_types = [
-            c.data_type for c in input_ds.components.values() if c.role == Role.MEASURE
-        ]
-        m_type = measure_types[0] if measure_types else StringType
-        comps[new_measure] = self._make_comp(new_measure, m_type)
-        # Viral attributes propagate to the unpivot result (issue #877).
-        for name, comp in input_ds.components.items():
-            if comp.role == Role.VIRAL_ATTRIBUTE:
-                comps[name] = comp
-        return Dataset(name="_unpivot", components=comps, data=None)
+        names = [self._resolve_udo_name(self._resolve_name(child)) for child in node.children]
+        return Unpivot.validate(names, input_ds)
 
     def _build_pivot_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
         """The structure of a pivot clause, as the semantic analysis builds it."""
@@ -1040,6 +1034,14 @@ class StructureVisitor(ASTTemplate):
             return None
         names = [self._resolve_udo_name(self._resolve_name(child)) for child in node.children]
         return Pivot.validate(names, input_ds)
+
+    def _build_apply_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
+        """The structure of the apply clause of a join, as the semantic analysis builds it:
+        each Measure has the type and the value domain its expression gives (issue #1348)."""
+        input_ds = self._get_dataset_structure(node.dataset)
+        if input_ds is None:
+            return None
+        return Apply.validate(input_ds, node.children, BINARY_MAPPING)
 
     def _build_calc_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
         """Build the output dataset structure for a calc clause."""

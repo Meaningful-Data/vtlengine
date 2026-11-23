@@ -837,9 +837,12 @@ centralised_messages = {
     },
     "1-1-10-12": {
         "message": "At op {op}: Component {comp_name} of type {type} is not defined on the Value "
-        "Domain {value_domain} of the ruleset {ruleset}.",
+        "Domain {value_domain} of the ruleset {ruleset}, nor of a basic type that promotes to "
+        "its type {basic_type}.",
         "description": "Raised when a ruleset defined on value domains is called with a "
-        "component that is not defined on the value domain it is bound to.",
+        "component that is neither defined on the value domain it is bound to nor of a basic "
+        "type that promotes to the type of the value domain, such as a component on another "
+        "value domain or a String component bound to a Number value domain.",
     },
     "1-1-10-14": {
         "message": "At op {op}: The ruleset {ruleset} is defined on value domains, so the call "
@@ -864,7 +867,8 @@ centralised_messages = {
         "message": "The {element} {value} of {where} is not one of the values of the Value "
         "Domain {value_domain}.",
         "description": "Raised when an error code or an error level is not a value of "
-        "errorcode_vd or errorlevel_vd, given as value domains.",
+        "errorcode_vd or errorlevel_vd, given as value domains, or when a code item of a "
+        "hierarchical ruleset on a value domain is not one of its values.",
     },
     "1-1-10-11": {
         "message": "At op {op}: The validation and imbalance operands must have the same "

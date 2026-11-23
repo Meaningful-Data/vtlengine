@@ -1,0 +1,5 @@
+define datapoint ruleset DPR_1 ( valuedomain VD_STR as X ) is
+    r1 : X = "A" errorcode "E1"
+end datapoint ruleset;
+
+DS_r <- check_datapoint ( DS_1 [ unpivot Id_3 , Me_3 ] , DPR_1 components Me_3 all );

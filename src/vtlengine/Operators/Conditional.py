@@ -103,10 +103,11 @@ def _as_type(data: Any, data_type: Any) -> Any:
     return to_strings(data) if data_type is String else data.astype(data_type.dtype())
 
 
-def _identifiers(dataset: Dataset) -> Dict[str, Component]:
-    """The Identifiers of a Data Set by name: an operand of an if or a case matches the
-    condition in whatever order each one declares them, as their Components (issue #1008)."""
-    return {comp.name: comp for comp in dataset.get_identifiers()}
+def _identifiers(dataset: Dataset) -> Dict[str, Any]:
+    """The basic types of the Identifiers of a Data Set by name: an operand of an if or a case
+    matches the condition in whatever order each one declares them (issue #1008), and on the
+    basic types, as a value domain is upcast to its basic type (issue #1348)."""
+    return {comp.name: comp.data_type for comp in dataset.get_identifiers()}
 
 
 def _promote_measures(components: Dict[str, Component], operands: List[Any]) -> None:
@@ -355,6 +356,8 @@ class If(Operator):
         result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
         _promote_measures(result_components, [right])
         share_value_domains(result_components, [left, right])
+        # The Identifiers match the ones of the condition too (issue #1348)
+        share_value_domains(result_components, [condition, left, right], _identifiers(condition))
         if isinstance(condition, Dataset):
             if len(condition.get_measures()) != 1:
                 raise SemanticError("1-1-9-4", op=cls.op, name=condition.name)
@@ -707,6 +710,8 @@ class Case(Operator):
         # case over two or more datasets combines their data points, so viral attributes
         # carried by two or more branches require a propagation rule (issue #906).
         share_value_domains(components, ops)
+        # The Identifiers match the ones of the conditions too (issue #1348)
+        share_value_domains(components, [*conditions, *ops], _identifiers(conditions[0]))
         combined = combined_viral_components([op for op in ops if isinstance(op, Dataset)])
         require_rules(combined)
         apply_viral_return_types(combined, components)

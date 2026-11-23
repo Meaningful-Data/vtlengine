@@ -244,10 +244,11 @@ def apply_viral_return_types(components: Iterable[Any], result_components: Dict[
     ``avg`` gives Number, as it yields fractional values, mirroring the Avg operator's
     return type, and min/max/sum give the type of the combined component, the common
     type of the operands that :func:`combined_viral_components` gives (sum mirrors Sum,
-    which has no return type) (issue #1314). Enumerated rules keep the input type.
-    Promoted entries are always replaced with a copy, because some operators share the
-    result component objects (or the dict itself) with their input datasets and the input
-    structure must never be mutated.
+    which has no return type) (issue #1314). Enumerated rules keep the input type. A rule on
+    a value domain keeps it with min and max, which pick one of the values, while sum and avg
+    compute new values, of the basic type (issue #1348). Promoted entries are always replaced
+    with a copy, because some operators share the result component objects (or the dict
+    itself) with their input datasets and the input structure must never be mutated.
 
     Call this right after :func:`require_rules` at every combination point, with the
     same combined components and the result-components mapping under construction.
@@ -260,7 +261,7 @@ def apply_viral_return_types(components: Iterable[Any], result_components: Dict[
         rule = registry.rule_for(comp)
         aggregate = rule.aggregate_function if rule is not None else None
         on_domain = rule is not None and rule.signature_type == "valuedomain"
-        if on_domain and aggregate != "avg":
+        if on_domain and aggregate not in ("sum", "avg"):
             continue
         if aggregate is None and result_comp.value_domain is None:
             continue
