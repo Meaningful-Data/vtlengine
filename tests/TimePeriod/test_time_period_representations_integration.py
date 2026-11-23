@@ -169,3 +169,21 @@ def test_GH_1352_13g(use_duckdb: bool, script: str, period: str) -> None:
     assert context.value.args[0].startswith(
         f"SDMX Gregorian representation is not supported for period indicator '{period[4]}'."
     )
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("written", [False, True], ids=["in_memory", "output_folder"])
+def test_GH_1356_39(use_duckdb: bool, written: bool, tmp_path) -> None:
+    """The sdmx_gregorian format cannot write the quarter 2020Q1: both engines raise 2-1-19-21,
+    in memory and with an output_folder. The DuckDB engine raised a raw InvalidInputException
+    (issue #1356)."""
+    with pytest.raises(RunTimeError) as context:
+        run(
+            script="DS_r <- DS_1;",
+            data_structures=DATA_STRUCTURES,
+            datapoints={"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": ["2020Q1", "2020A"]})},
+            use_duckdb=use_duckdb,
+            time_period_output_format="sdmx_gregorian",
+            output_folder=tmp_path if written else None,
+        )
+    assert context.value.args[1] == "2-1-19-21"

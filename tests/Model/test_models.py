@@ -407,3 +407,20 @@ def test_GH_1349_17():
         with pytest.raises(InputValidationException) as error:
             call()
         assert error.value.args[1] == "0-2-1-1"
+
+
+def test_GH_1356_71():
+    """value_domains of from_json is a dict of the value domains by name: a list raises 0-1-1-2,
+    as run does for an input of the wrong kind. It raised a raw AttributeError (issue #1356)."""
+    vd_1 = ValueDomain("VD_1", DataTypes.Integer, [1, 2, 3])
+    data = {
+        "name": "DS_8",
+        "data": {"Id_1": [1], "Me_1": [1]},
+        "components": {
+            "Id_1": {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False},
+            "Me_1": {"name": "Me_1", "role": "Measure", "type": "VD_1", "nullable": True},
+        },
+    }
+    with pytest.raises(InputValidationException) as error:
+        Dataset.from_json(data, value_domains=[vd_1])
+    assert error.value.args[1] == "0-1-1-2"

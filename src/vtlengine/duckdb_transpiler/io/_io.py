@@ -759,14 +759,14 @@ def extract_datapoint_paths(
             return
         resolved = name or path.stem
         if resolved not in input_datasets:
-            raise InputValidationException(f"Not found dataset {resolved} in datastructures.")
+            raise InputValidationException(code="0-1-2-9", name=resolved)
         path_dict[resolved] = path
 
     # Handle dictionary input
     if isinstance(datapoints, dict):
         for name, value in datapoints.items():
             if name not in input_datasets:
-                raise InputValidationException(f"Not found dataset {name} in datastructures.")
+                raise InputValidationException(code="0-1-2-9", name=name)
 
             if isinstance(value, pd.DataFrame):
                 # Store DataFrame for direct DuckDB registration

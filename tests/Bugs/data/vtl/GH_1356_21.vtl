@@ -1,0 +1,4 @@
+define datapoint ruleset DPR_1 ( variable Me_1 ) is
+    R1 : when Me_1 > 0 then Me_9 > 0
+end datapoint ruleset;
+DS_r <- check_datapoint ( DS_2 , DPR_1 all );

@@ -1,4 +1,4 @@
 {
   "name": "SQL_4",
-  "query": "SELECT Id_1, Me_1 FROM DS_1;"
+  "query": "SELECT Id_1, MAX(Me_1) AS Me_1 FROM DS_1 GROUP BY Id_1;"
 }

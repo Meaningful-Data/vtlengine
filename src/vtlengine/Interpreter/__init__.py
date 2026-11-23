@@ -26,6 +26,7 @@ from vtlengine.AST.Grammar.tokens import (
     BETWEEN,
     CALC,
     CAST,
+    CHARSET_MATCH,
     CHECK,
     CHECK_DATAPOINT,
     CHECK_HIERARCHY,
@@ -40,10 +41,12 @@ from vtlengine.AST.Grammar.tokens import (
     EXTERNAL,
     FILL_TIME_SERIES,
     FILTER,
+    GTE,
     HAVING,
     HIERARCHY,
     INSTR,
     KEEP,
+    LTE,
     MEMBERSHIP,
     MINUS,
     NVL,
@@ -103,7 +106,7 @@ from vtlengine.Model import (
 from vtlengine.Operators.Aggregation import extract_grouping_identifiers
 from vtlengine.Operators.Assignment import Assignment
 from vtlengine.Operators.CastOperator import Cast
-from vtlengine.Operators.Comparison import Between, ExistIn
+from vtlengine.Operators.Comparison import Between, ExistIn, Match
 from vtlengine.Operators.Conditional import Case, If
 from vtlengine.Operators.General import Eval
 from vtlengine.Operators.HROperators import (
@@ -501,6 +504,12 @@ class InterpreterAnalyzer(ASTTemplate):
                 if not isinstance(declared, Scalar) and not (
                     isinstance(declared, type)
                     and check_unary_implicit_promotion(default.data_type, declared)
+                    # A Number with decimals is no Integer, as for an argument (issue #1356)
+                    and not (
+                        declared == Integer
+                        and isinstance(default.value, float)
+                        and not default.value.is_integer()
+                    )
                 ):
                     raise SemanticError(
                         "1-3-1-1",
@@ -508,6 +517,18 @@ class InterpreterAnalyzer(ASTTemplate):
                         option=f"default of parameter {param.name}",
                         type_1=type_,
                         type_2=default.data_type,
+                    )
+                domain = (
+                    constraints.value.value_domain if constraints and constraints.value else None
+                )
+                if domain is not None and not is_value_of_domain(default.value, domain):
+                    # A default is a value of the value domain of its parameter (issue #1356)
+                    raise SemanticError(
+                        "1-1-10-13",
+                        element="default",
+                        value=literal_text(default.value),
+                        where=f"parameter {param.name} of the operator {node.op}",
+                        value_domain=domain.name,
                     )
                 param_info[-1]["default"] = param.default
             if len(param_info) > 1:
@@ -750,6 +771,13 @@ class InterpreterAnalyzer(ASTTemplate):
             )
             return self.visit(ast_var_id)
 
+        if (
+            node.op == CHARSET_MATCH
+            and isinstance(node.right, AST.Constant)
+            and isinstance(node.right.value, str)
+        ):
+            # A pattern written in the script is a regular expression (issue #1356)
+            Match.check_pattern(node.right.value)
         left_operand = self.visit(node.left)
         right_operand = self._visit_right_operand(node.op, left_operand, node.right)
 
@@ -1275,11 +1303,16 @@ class InterpreterAnalyzer(ASTTemplate):
                 self.regular_aggregation_dataset is not None
                 and self.regular_aggregation_dataset.data is not None
             ):
-                joined_result = merge_frames(
-                    cast(pd.DataFrame, self.regular_aggregation_dataset.data[id_columns]),
-                    result.data,
-                    on=id_columns,
-                    how="inner",
+                joined_result = (
+                    merge_frames(
+                        self.regular_aggregation_dataset.data[id_columns],
+                        result.data,
+                        on=id_columns,
+                        how="inner",
+                    )
+                    if id_columns
+                    # A Data Set without Identifiers holds one Data Point at most (issue #1356)
+                    else result.data.reset_index(drop=True)
                 )
                 data = joined_result[measure_name]
             else:
@@ -1310,6 +1343,15 @@ class InterpreterAnalyzer(ASTTemplate):
             operand_element = self.visit(node.children[0])
             from_element = self.visit(node.children[1])
             to_element = self.visit(node.children[2])
+            if self.is_from_having and (
+                isinstance(from_element, Dataset) or isinstance(to_element, Dataset)
+            ):
+                # An aggregate in a having clause is a Data Set of the groups: between is
+                # op >= from and op <= to, as the VTL 2.2 manual defines it (issue #1356)
+                return BINARY_MAPPING[AND].analyze(
+                    BINARY_MAPPING[GTE].analyze(operand_element, from_element),
+                    BINARY_MAPPING[LTE].analyze(operand_element, to_element),
+                )
 
             return Between.analyze(operand_element, from_element, to_element)
 
@@ -1375,6 +1417,14 @@ class InterpreterAnalyzer(ASTTemplate):
                         self.udo_params.pop()
                 # The checks of the operators that passed the value on come first
                 for op, param, constraint in checks:
+                    declared = next(
+                        p["declared"]
+                        for p in cast(Dict[str, Any], self.udos)[op]["params"]
+                        if p["name"] == param
+                    )
+                    if isinstance(declared.data_type, type):
+                        # A component of the type the parameter declares (issue #1356)
+                        self._check_udo_component_type(op, param, declared, udo_element)
                     self._check_udo_constraint(op, f"parameter {param}", constraint, udo_element)
                 return udo_element
             if isinstance(udo_element, (Scalar, Dataset, DataComponent)):
@@ -2394,10 +2444,16 @@ class InterpreterAnalyzer(ASTTemplate):
             else:
                 self.rule_data = self.ruleset_dataset.data.copy()
         validation_data = self.visit(node.rule)
-        if isinstance(validation_data, DataComponent):
+        if isinstance(validation_data, (DataComponent, Scalar)):
             if self.rule_data is not None and self.ruleset_dataset is not None:
                 aux = self.rule_data.loc[:, self.ruleset_dataset.get_components_names()]
-                aux["bool_var"] = validation_data.data
+                # A rule that reads no Component holds its constant for every data point
+                # (issue #1356)
+                aux["bool_var"] = (
+                    validation_data.value
+                    if isinstance(validation_data, Scalar)
+                    else validation_data.data
+                )
                 validation_data = aux
             else:
                 validation_data = None
@@ -2446,13 +2502,27 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.op == WHEN:
             filter_comp = self.visit(node.left)
             if self.rule_data is None:
+                # The then part is checked also without data (issue #1356)
+                self.visit(node.right)
                 return None
+            if isinstance(filter_comp, Scalar):
+                # A condition that reads no Component holds its constant for every data point
+                # (issue #1356)
+                filter_comp = DataComponent(
+                    name=filter_comp.name,
+                    data=pd.Series(filter_comp.value, index=self.rule_data.index, dtype=object),
+                    data_type=filter_comp.data_type,
+                    role=Role.MEASURE,
+                )
             if filter_comp.data is None:
                 return self.visit(node.right)
             filtering_indexes = list(filter_comp.data[filter_comp.data == True].index)
             nan_indexes = list(filter_comp.data[filter_comp.data.isnull()].index)
             # If no filtering indexes, then all datapoints are valid on DPR and HR
             if len(filtering_indexes) == 0 and not (self.is_from_hr_agg or self.is_from_hr_val):
+                # The then part is checked although no data point meets the condition
+                # (issue #1356)
+                self._visit_structure(deepcopy(node.right))
                 self.rule_data["bool_var"] = True
                 if nan_indexes:
                     # pandas 3 refuses to write None into a bool column: widen it first.
@@ -3069,6 +3139,10 @@ class InterpreterAnalyzer(ASTTemplate):
                 )
                 if constraints is not None and constraints.value is not None:
                     checks.append((node.op, param["name"], constraints.value))
+                elif isinstance(declared.data_type, type):
+                    # The type of a typed component is checked where the body reads it, as its
+                    # constraints are (issue #1356)
+                    checks.append((node.op, param["name"], AST.TypeConstraint()))
                 if checks:
                     component_constraints[param["name"]] = checks
                 continue

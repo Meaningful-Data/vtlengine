@@ -2,7 +2,8 @@ import math
 import operator
 import struct
 import warnings
-from typing import Any, Optional, Union
+from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
+from typing import Any, Callable, Optional, Union
 
 import pandas as pd
 import pyarrow.compute as pc
@@ -91,23 +92,24 @@ class Binary(Operator.Binary):
         non-null.
         """
         if isinstance(x, int) and isinstance(y, int):
-            if cls.op == DIV and y == 0:
-                raise RunTimeError("2-1-15-6", op=cls.op, value=y)
             if cls.op == RANDOM:
                 return cls.py_op(x, y)
             if cls.op in (PLUS, MINUS, MULT, MOD):
-                # Exact integer arithmetic, matching DuckDB BIGINT semantics.
-                return cls.py_op(x, y)
+                # Exact integer arithmetic, matching DuckDB BIGINT semantics: a result out of
+                # the 64 bits of an Integer raises 2-1-5-1 (issue #1356)
+                return Integer.in_range(cls.py_op(x, y), Number)
         x = float(x)
         y = float(y)
-        if cls.op == DIV and y == 0:
-            raise RunTimeError("2-1-15-6", op=cls.op, value=y)
         if cls.op == POWER:
             if x < 0 and not y.is_integer():
                 raise RunTimeError("2-1-15-2", op=cls.op, value=x)
             if x == 0 and y < 0:
                 raise RunTimeError("2-1-15-6", op=cls.op, value=x)
-            result = cls.py_op(x, y)
+            try:
+                result = cls.py_op(x, y)
+            except OverflowError:
+                # Beyond the range of a Number, as the DuckDB engine raises (issue #1356)
+                raise RunTimeError("2-1-3-1", op=cls.op) from None
         else:
             result = cls.py_op(x, y)
         if not isinstance(result, float):
@@ -123,13 +125,18 @@ class Binary(Operator.Binary):
         return result
 
     @classmethod
+    def _check_right(cls, y: Any) -> None:
+        """Hook for the operators whose right operand alone raises an error (a divisor 0, a
+        logarithm base), whatever the left operand is, null included (issue #1356)."""
+
+    @classmethod
     def op_func(cls, x: Any, y: Any) -> Any:
-        if pd.isnull(x) or pd.isnull(y):
-            return None
-        return cls._numeric_op(x, y, get_effective_numeric_digits())
+        return cls._null_aware_numeric_op(x, y, get_effective_numeric_digits())
 
     @classmethod
     def _null_aware_numeric_op(cls, x: Any, y: Any, digits: Optional[int]) -> Any:
+        if not pd.isnull(y):
+            cls._check_right(y)
         if pd.isnull(x) or pd.isnull(y):
             return None
         return cls._numeric_op(x, y, digits)
@@ -157,6 +164,8 @@ class Binary(Operator.Binary):
     ) -> Any:
         result_dtype = cls.return_type.dtype() if cls.return_type is not None else "string[pyarrow]"
         if scalar is None:
+            if not series_left:
+                series.dropna().map(cls._check_right)
             return pd.Series(None, index=series.index, dtype=result_dtype)
         digits = get_effective_numeric_digits()
         # Iterate the values rather than Series.map: on pandas 3, map turns a nullable
@@ -217,9 +226,23 @@ class Exponential(Unary):
     """  # noqa E501
 
     op = EXP
-    py_op = math.exp
     return_type = Number
     pc_func = staticmethod(pc.exp)
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        try:
+            return math.exp(x)
+        except OverflowError:
+            # Beyond the range of a Number, as the DuckDB engine raises (issue #1356)
+            raise RunTimeError("2-1-3-1", op=cls.op) from None
+
+    @classmethod
+    def apply_operation_component(cls, series: Any) -> Any:
+        result = super().apply_operation_component(series)
+        if (result == math.inf).any():
+            raise RunTimeError("2-1-3-1", op=cls.op)
+        return result
 
 
 class NaturalLogarithm(Unary):
@@ -270,25 +293,43 @@ class SquareRoot(Unary):
             raise RunTimeError("2-1-15-2", op=cls.op, value=bad.iloc[0])
 
 
-class Ceil(Unary):
+class WholeNumber(Unary):
+    """ceil and floor: an Integer result, so an operand out of the 64 bits of an Integer
+    raises 2-1-5-1, as on the DuckDB engine (issue #1356)."""
+
+    return_type = Integer
+    whole: Any = None
+
+    @classmethod
+    def py_op(cls, x: Any) -> Any:
+        Integer.in_range(x, Number)
+        return cls.whole(x)
+
+    @classmethod
+    def _check_domain(cls, series: Any) -> None:
+        bad = series.dropna()
+        bad = bad[(bad >= float(2**63)) | (bad < -float(2**63))]
+        if len(bad):
+            Integer.in_range(bad.iloc[0], Number)
+
+
+class Ceil(WholeNumber):
     """
     `Ceilling <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=110&zoom=100,72,94> `_ unary operator
     """  # noqa E501
 
     op = CEIL
-    py_op = math.ceil
-    return_type = Integer
+    whole = staticmethod(math.ceil)
     pc_func = staticmethod(pc.ceil)
 
 
-class Floor(Unary):
+class Floor(WholeNumber):
     """
     `Floor <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=111&zoom=100,72,442> `_ unary operator
     """  # noqa E501
 
     op = FLOOR
-    py_op = math.floor
-    return_type = Integer
+    whole = staticmethod(math.floor)
     pc_func = staticmethod(pc.floor)
 
 
@@ -332,6 +373,11 @@ class Div(Binary):
     py_op = operator.truediv
     return_type = Number
 
+    @classmethod
+    def _check_right(cls, y: Any) -> None:
+        if y == 0:
+            raise RunTimeError("2-1-15-6", op=cls.op, value=y)
+
 
 class Logarithm(Binary):
     """
@@ -342,16 +388,15 @@ class Logarithm(Binary):
     return_type = Number
 
     @classmethod
+    def _check_right(cls, y: Any) -> None:
+        # A base 1 has no logarithm, as a base <= 0 (issue #1356)
+        if y <= 0 or y == 1:
+            raise RunTimeError("2-1-15-3", op=cls.op, value=y)
+
+    @classmethod
     def py_op(cls, x: Any, param: Any) -> Any:
-        if pd.isnull(param):
-            return None
-        if param <= 0:
-            raise RunTimeError("2-1-15-3", op=cls.op, value=param)
-        if pd.isnull(x):
-            return None
         if x <= 0:
             raise RunTimeError("2-1-15-8", op=cls.op, value=x)
-
         return math.log(x, param)
 
 
@@ -382,6 +427,10 @@ class Power(Binary):
         if pd.isnull(param):
             return None
         return x**param
+
+
+def _half_away_from_zero(value: float) -> int:
+    return math.floor(value + 0.5) if value >= 0.0 else math.ceil(value - 0.5)
 
 
 class Parameterized(Unary):
@@ -419,6 +468,29 @@ class Parameterized(Unary):
     @classmethod
     def op_func(cls, x: Any, param: Optional[Any]) -> Any:
         return None if pd.isnull(x) else cls.py_op(x, param)
+
+    @classmethod
+    def at_digits(cls, x: Any, param: Any, whole: Callable[[float], int], mode: str) -> Any:
+        """Round and trunc: x made whole by whole at its digit 10^-param (10^0 for a null param).
+        A digit past the last one a Number holds leaves x unchanged and a digit above its first
+        one gives 0, as on the DuckDB engine, so no number of digits overflows (issue #1356)."""
+        digits = 0 if pd.isnull(param) else param
+        position = math.floor(math.log10(abs(x))) + digits if x != 0 else 0
+        if position >= 17:
+            value = float(x)
+        elif position < -1:
+            value = 0.0
+        elif abs(digits) > 300:
+            # Only a value near the limits of a Number gets here: its exact decimal value
+            value = float(Decimal(x).quantize(Decimal(1).scaleb(-digits), rounding=mode))
+        else:
+            multiplier = 10**digits
+            value = whole(x * multiplier) / multiplier
+        if cls.return_type is Integer:
+            return Integer.in_range(value, Number)
+        # Number result: normalize like every arithmetic result so both engines agree
+        # bit-for-bit (issue #985)
+        return _round_to_significant(value, get_effective_numeric_digits())
 
     @classmethod
     def apply_operation_two_series(cls, left_series: Any, right_series: Any) -> Any:
@@ -509,21 +581,7 @@ class Round(Parameterized):
 
     @classmethod
     def py_op(cls, x: Any, param: Any) -> Any:
-        multiplier = 1.0
-        if not pd.isnull(param):
-            multiplier = 10**param
-
-        if x >= 0.0:
-            rounded_value = math.floor(x * multiplier + 0.5) / multiplier
-        else:
-            rounded_value = math.ceil(x * multiplier - 0.5) / multiplier
-
-        if param is not None:
-            # Number result: normalize like every arithmetic result so both
-            # engines' round() agree bit-for-bit (issue #985)
-            return _round_to_significant(rounded_value, get_effective_numeric_digits())
-
-        return int(rounded_value)
+        return cls.at_digits(x, param, _half_away_from_zero, ROUND_HALF_UP)
 
 
 class Trunc(Parameterized):
@@ -535,17 +593,7 @@ class Trunc(Parameterized):
 
     @classmethod
     def py_op(cls, x: float, param: Optional[float]) -> Any:
-        multiplier = 1.0
-        if not pd.isnull(param) and param is not None:
-            multiplier = 10**param
-
-        truncated_value = int(x * multiplier) / multiplier
-
-        if not pd.isnull(param):
-            # Number result: normalize like every arithmetic result (issue #985)
-            return _round_to_significant(truncated_value, get_effective_numeric_digits())
-
-        return int(truncated_value)
+        return cls.at_digits(x, param, math.trunc, ROUND_DOWN)
 
 
 class Random(Parameterized):
