@@ -184,14 +184,15 @@ class Aggregation(Operator.Unary):
                 comp.nullable = comp.nullable or cls.op in (STDDEV_SAMP, VAR_SAMP)
         if cls.op == COUNT:
             # count reports the number of Data Points, so whatever the Measures of the
-            # operand, the result holds the single Integer Measure int_var (issue #1049).
+            # operand, the result holds the single Integer Measure int_var (issue #1049),
+            # never null: a group with nothing to count gives 0 (issue #1277).
             for measure_name in operand.get_measures_names():
                 result_components.pop(measure_name)
             result_components["int_var"] = Component(
                 name="int_var",
                 role=Role.MEASURE,
                 data_type=Integer,
-                nullable=True,
+                nullable=False,
             )
 
         # Aggregation combines the data points of each group, so the surviving viral
