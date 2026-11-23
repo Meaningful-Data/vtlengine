@@ -39,6 +39,8 @@ from vtlengine.DataTypes import (
     String,
     TimeInterval,
     TimePeriod,
+    binary_implicit_promotion,
+    check_binary_implicit_promotion,
 )
 from vtlengine.duckdb_transpiler.io._validation import text_to_date
 from vtlengine.duckdb_transpiler.Transpiler.macro_binding import bind_repeated_macro_arguments
@@ -84,6 +86,7 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
 )
 from vtlengine.Exceptions import SemanticError, transformation_output
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
+from vtlengine.Operators import _promotes
 from vtlengine.Operators.Clause import Pivot
 from vtlengine.Operators.HROperators import fills_with_zero
 from vtlengine.Operators.Join import merged_viral_attribute_names
@@ -274,6 +277,16 @@ def _bool_to_str(col_ref: str) -> str:
     """Cast a Boolean expression to String: 'true' or 'false', as the VTL 2.2 reference manual
     casts a Boolean to String (issue #1314)."""
     return f"CAST({col_ref} AS VARCHAR)"
+
+
+def _promoted_sql(expr: str, from_type: Any, to_type: Any) -> str:
+    """A value of ``from_type`` cast to ``to_type``, the type it is implicitly cast to (see
+    _promotes): a Date or a Time_Period to Time, a Boolean to String, an Integer to Number."""
+    if to_type is TimeInterval:
+        return _CASTS_TO_TEXT[from_type.__name__.lower(), "time"].format(expr)
+    if to_type is String:
+        return _bool_to_str(expr)
+    return f"CAST({expr} AS DOUBLE)"
 
 
 def _hr_literal(code_item: str) -> str:
@@ -1041,7 +1054,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
     def _time_in(self, operand: str, values: AST.AST, operand_type: Optional[str]) -> List[str]:
         """The operand of in / not_in and its set of values, compared as Time values where a
         Date or a Time_Period meets a Time: the one of them that is a Date or a Time_Period is
-        cast to Time (issue #1352)."""
+        cast to Time (issue #1352). A String operand is compared with a set of Booleans as
+        text, "true" and "false", as a Boolean is cast to String and a String never to Boolean
+        (issue #1353)."""
         if not isinstance(values, AST.Collection):
             return [operand, self.visit(values)]
         values_type = self._value_type(values)
@@ -1050,6 +1065,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             operand = _time_text(operand, operand_type)
         elif _is_time_name(operand_type):
             sqls = [_time_text(v, values_type) for v in sqls]
+        elif values_type == "Boolean" and operand_type == "String":
+            sqls = [_bool_to_str(v) for v in sqls]
         return [operand, f"({', '.join(sqls)})"]
 
     def _resolve_value_domain_name(self, name: str) -> str:
@@ -1405,9 +1422,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         with self._stash_assignment():
             left_ds = self._get_dataset_structure(left_node)
             right_ds = self._get_dataset_structure(right_node)
-        names = self._time_key_names([left_ds, right_ds])
-        left_src = self._time_source(self._get_dataset_sql(left_node), left_ds, names)
-        right_src = self._time_source(self._get_dataset_sql(right_node), right_ds, names)
+        key_types = self._key_types([left_ds, right_ds])
+        left_src = self._promoted_source(self._get_dataset_sql(left_node), left_ds, key_types)
+        right_src = self._promoted_source(self._get_dataset_sql(right_node), right_ds, key_types)
 
         alias_a = "a"
         alias_b = "b"
@@ -1593,10 +1610,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             else quote_name(m)
             for m in measures
         ]
-        names = self._time_key_names(structures)
+        types = self._key_types(structures)
         branches = [
             f"SELECT {', '.join(branch_cols)}, {k} AS {position} "
-            f"FROM {self._time_source(self._get_dataset_sql(operand), ds, names)} AS t"
+            f"FROM {self._promoted_source(self._get_dataset_sql(operand), ds, types)} AS t"
             for k, (operand, ds) in enumerate(zip(operands, structures))
         ]
 
@@ -1867,9 +1884,9 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Build SQL for exists_in operation."""
         left_ds = self._get_dataset_structure(left_node)
         right_ds = self._get_dataset_structure(right_node)
-        names = self._time_key_names([left_ds, right_ds])
-        left_src = self._time_source(self._get_dataset_sql(left_node), left_ds, names)
-        right_src = self._time_source(self._get_dataset_sql(right_node), right_ds, names)
+        key_types = self._key_types([left_ds, right_ds])
+        left_src = self._promoted_source(self._get_dataset_sql(left_node), left_ds, key_types)
+        right_src = self._promoted_source(self._get_dataset_sql(right_node), right_ds, key_types)
 
         left_ids = left_ds.get_identifiers_names()
         right_ids = right_ds.get_identifiers_names()
@@ -3421,7 +3438,9 @@ FROM (
             return f"SELECT * FROM {table_src}"
         # In a Time Measure, the Date and Time_Period values are Time values (issue #1352)
         if self._time_names([ds]) & set(measure_names):
-            table_src = self._time_source(table_src, ds, set(measure_names))
+            table_src = self._promoted_source(
+                table_src, ds, dict.fromkeys(measure_names, TimeInterval)
+            )
 
         parts: List[str] = []
         for measure in measure_names:
@@ -3669,7 +3688,9 @@ FROM (
             return list(self._current_dataset.get_identifiers_names())
         return []
 
-    def _build_analytic_expr(self, op: str, operand_sql: str, node: AST.Analytic) -> str:
+    def _build_analytic_expr(
+        self, op: str, operand_sql: str, node: AST.Analytic, operand_type: Any = None
+    ) -> str:
         """Build the analytic function expression (without OVER).
 
         For ratio_to_report, returns the complete expression including OVER clause.
@@ -3691,9 +3712,25 @@ FROM (
         if op in (tokens.LAG, tokens.LEAD) and node.params:
             offset = self._resolve_scalar_varid(node.params[0] if node.params else 1)
             default_val = node.params[1] if len(node.params) > 1 else None
+            if isinstance(default_val, AST.AST):
+                # The values are shifted in the common type of the operand and the default, as
+                # in nvl: a Number default makes an Integer operand a Number, a String default a
+                # Boolean one a String (issue #1353)
+                if self._detect_scalar_type(default_val) is Number:
+                    operand_sql = f"CAST({operand_sql} AS DOUBLE)"
+                elif operand_type is Boolean and self._value_type(default_val) == "String":
+                    operand_sql = _bool_to_str(operand_sql)
             func_sql = f"{op.upper()}({operand_sql}, {offset}"
             if default_val is not None:
-                if isinstance(default_val, AST.AST):
+                if (
+                    operand_type is TimePeriod
+                    and isinstance(default_val, AST.Constant)
+                    and isinstance(default_val.value, str)
+                ):
+                    # A String default on a Time_Period is the period in the form the
+                    # values are kept in, as on the pandas engine (issue #1353)
+                    default_sql = self._to_sql_literal(default_val.value, "TimePeriod")
+                elif isinstance(default_val, AST.AST):
                     default_sql = self.visit(default_val)
                 else:
                     default_sql = str(default_val)
@@ -3725,7 +3762,14 @@ FROM (
         )
         if is_duration:
             operand_sql = f"vtl_duration_to_int({operand_sql})"
-        func_sql = self._build_analytic_expr(op, operand_sql, node)
+        operand_type: Optional[type] = None
+        if node.operand is not None:
+            operand_type = (
+                Boolean
+                if self._is_boolean_expr(node.operand)
+                else self._detect_scalar_type(node.operand)
+            )
+        func_sql = self._build_analytic_expr(op, operand_sql, node, operand_type)
         # ratio_to_report already includes its own OVER clause
         if op != tokens.RATIO_TO_REPORT:
             over_clause = self._build_over_clause(node)
@@ -3773,7 +3817,9 @@ FROM (
             )
             if is_duration:
                 col_ref = f"vtl_duration_to_int({col_ref})"
-            func_sql = self._build_analytic_expr(op, col_ref, node)
+            func_sql = self._build_analytic_expr(
+                op, col_ref, node, getattr(comp, "data_type", None)
+            )
             if op == tokens.RATIO_TO_REPORT:
                 return func_sql
             func_sql = f"{func_sql} OVER ({over_clause})"
@@ -3951,10 +3997,12 @@ FROM (
         from SQL INTERSECT/EXCEPT which compare all columns.
         """
         structures = [self._get_dataset_structure(child) for child in node.children]
-        # The Components that are Time in one operand are Time values in all (issue #1352)
-        names = self._time_names(structures)
+        # The Components have the common type of the operands in all of them: a Time in one
+        # operand is a Time in all (issue #1352), a Number a Number and a String a String
+        # (issue #1353)
+        types = self._common_types(structures)
         sources = [
-            self._time_source(self._get_dataset_sql(child), ds, names)
+            self._promoted_source(self._get_dataset_sql(child), ds, types)
             for child, ds in zip(node.children, structures)
         ]
         child_sqls = [f"SELECT * FROM {source}" for source in sources]
@@ -5956,26 +6004,43 @@ FROM (
             if comp.data_type is TimeInterval
         }
 
-    def _time_source(self, source: str, ds: Optional[Dataset], names: Set[str]) -> str:
-        """The SQL source of a Data Set operand with its Date or Time_Period Components
-        ``names`` cast to Time, the text of their start and end dates (issue #1352)."""
+    @staticmethod
+    def _common_types(structures: List[Optional[Dataset]]) -> Dict[str, Any]:
+        """The common type of each Component of the Data Sets: the operands that hold one in
+        another type cast it to the common one, so that its values match and merge as values
+        of it (issues #1352 and #1353). Types without a common one are left to the checks of
+        the operators."""
+        types: Dict[str, Any] = {}
+        for ds in structures:
+            for name, comp in ds.components.items() if ds is not None else []:
+                current = types.setdefault(name, comp.data_type)
+                if current is not comp.data_type and check_binary_implicit_promotion(
+                    current, comp.data_type
+                ):
+                    types[name] = binary_implicit_promotion(current, comp.data_type)
+        return types
+
+    def _promoted_source(self, source: str, ds: Optional[Dataset], types: Dict[str, Any]) -> str:
+        """The SQL source of a Data Set operand with its Components cast to their type in
+        ``types`` where it is the one they are implicitly cast to: a Date or a Time_Period to
+        Time, the text of its start and end dates (issue #1352), a Boolean to the String
+        "true" or "false" and an Integer to Number (issue #1353)."""
         casts = [
-            _CASTS_TO_TEXT[comp.data_type.__name__.lower(), "time"].format(quote_name(name))
-            + f" AS {quote_name(name)}"
+            f"{_promoted_sql(quote_name(name), comp.data_type, types[name])} AS {quote_name(name)}"
             for name, comp in (ds.components.items() if ds is not None else [])
-            if name in names and comp.data_type in (Date, TimePeriod)
+            if name in types and _promotes(comp.data_type, types[name])
         ]
         if not casts:
             return source
         return f"(SELECT * REPLACE ({', '.join(casts)}) FROM {self._as_subquery(source)})"
 
-    def _time_key_names(self, structures: List[Optional[Dataset]]) -> Set[str]:
-        """The Identifiers that are Time in one of the Data Sets and Identifiers in all those
-        that have them: the keys that the operands holding them as a Date or a Time_Period
-        cast to Time, so that they match as Time values (issue #1352)."""
+    def _key_types(self, structures: List[Optional[Dataset]]) -> Dict[str, Any]:
+        """The common types of the Identifiers that are Identifiers in all the Data Sets that
+        have them: the keys whose values are matched as values of their common type (issues
+        #1352 and #1353)."""
         return {
-            name
-            for name in self._time_names(structures)
+            name: data_type
+            for name, data_type in self._common_types(structures).items()
             if all(
                 ds.components[name].role == Role.IDENTIFIER
                 for ds in structures
@@ -5983,15 +6048,15 @@ FROM (
             )
         }
 
-    def _time_join_keys(self, op: str, clause_info: List[Dict[str, Any]]) -> None:
-        """A Date or a Time_Period Identifier of a join operand that another operand has as a
-        Time is cast to Time in the operand, so that the keys match as Time values (issue
-        #1352). A cross join matches no keys."""
+    def _promoted_join_keys(self, op: str, clause_info: List[Dict[str, Any]]) -> None:
+        """A key of a join operand that another operand has in another type is cast to their
+        common type in the operand, so that the keys match as values of it (issues #1352 and
+        #1353). A cross join matches no keys."""
         if op == tokens.CROSS_JOIN:
             return
-        names = self._time_key_names([info["ds"] for info in clause_info])
+        types = self._key_types([info["ds"] for info in clause_info])
         for info in clause_info:
-            info["table_src"] = self._time_source(info["table_src"], info["ds"], names)
+            info["table_src"] = self._promoted_source(info["table_src"], info["ds"], types)
 
     def visit_JoinOp(self, node: AST.JoinOp) -> str:  # type: ignore[override]
         """Visit a join operation."""
@@ -6017,7 +6082,7 @@ FROM (
             )
 
         is_cross_join = node.op == tokens.CROSS_JOIN
-        self._time_join_keys(node.op, clause_info)
+        self._promoted_join_keys(node.op, clause_info)
         explicit_using = list(node.using) if node.using else None
         keys_only = explicit_using is not None and node.op in (
             tokens.LEFT_JOIN,

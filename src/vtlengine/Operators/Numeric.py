@@ -168,6 +168,15 @@ class Binary(Operator.Binary):
             result = [cls._null_aware_numeric_op(scalar, x, digits) for x in series.values]
         return pd.Series(result, index=series.index, dtype=result_dtype)
 
+    @classmethod
+    def scalar_evaluation(cls, left_operand: Scalar, right_operand: Scalar) -> Scalar:
+        """A Number result is a float even when it is whole, as a Number Component holds it:
+        3.0 is written "3.0", as on the DuckDB engine, not "3" (issue #1353)."""
+        result = super().scalar_evaluation(left_operand, right_operand)
+        if result.data_type is Number and isinstance(result.value, int):
+            result.value = float(result.value)
+        return result
+
 
 class UnPlus(Unary):
     """

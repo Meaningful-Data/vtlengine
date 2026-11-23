@@ -12,7 +12,6 @@ from vtlengine.DataTypes import (
     BASIC_TYPES,
     SCALAR_TYPES_CLASS_REVERSE,
     Integer,
-    TimeInterval,
     binary_implicit_promotion,
     check_unary_implicit_promotion,
 )
@@ -21,10 +20,8 @@ from vtlengine.Model import Component, DataComponent, Dataset, Role
 from vtlengine.Operators import (
     Operator,
     _id_type_promotion_join_keys,
-    _is_cast_to_time,
+    promoted,
     share_value_domains,
-    time_names,
-    to_time,
 )
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
@@ -214,13 +211,14 @@ class Join(Operator, metaclass=_ThreadReference):
                         merged_components[new_name].name = new_name
                     else:
                         key = merged_components.get(component_name)
-                        if key is not None and (
-                            _is_cast_to_time(key.data_type, component.data_type)
-                            or _is_cast_to_time(component.data_type, key.data_type)
-                        ):
-                            # A Date or a Time_Period key matched with a Time one is a Time,
-                            # whatever the order of the operands (issue #1352)
-                            component.data_type = TimeInterval
+                        if key is not None and key.data_type is not component.data_type:
+                            # A key has the common type of the operands, whatever their order:
+                            # an Integer and a Number key is a Number, a Boolean and a String
+                            # one a String, a Date or a Time_Period and a Time one a Time
+                            # (issues #1352 and #1353)
+                            component.data_type = binary_implicit_promotion(
+                                key.data_type, component.data_type
+                            )
                         merged_components[component_name] = component
                 else:
                     if component_name in using and component_name in merged_components:
@@ -361,6 +359,7 @@ class Join(Operator, metaclass=_ThreadReference):
         common = cls.get_components_intersection([op.get_components_names() for op in operands])
         viral_common = merged_viral_attribute_names([op.components for op in operands], set(using))
         registry = get_current_registry()
+        join_keys = using if using else result.get_identifiers_names()
         for op in operands:
             if op.data is None:
                 continue
@@ -372,10 +371,9 @@ class Join(Operator, metaclass=_ThreadReference):
                     comp.role != Role.IDENTIFIER or cls.how == "cross" or keys_only
                 ):
                     op.data = op.data.rename(columns={column: op.name + "#" + column})
-            cls._time_keys(op, result)
+            cls._promoted_keys(op, result, join_keys)
         result.data = copy(cls.reference_dataset.data)
 
-        join_keys = using if using else result.get_identifiers_names()
         ordered = cls._join_order(operands) if not using and cls.how == "inner" else operands
 
         for op in ordered:
@@ -392,18 +390,19 @@ class Join(Operator, metaclass=_ThreadReference):
                 )
                 if len(merge_join_keys) == 0:
                     raise SemanticError("1-1-13-14", name=op.name)
+                op_data = op.data
                 for join_key in merge_join_keys:
-                    _id_type_promotion_join_keys(
+                    result.data, op_data = _id_type_promotion_join_keys(
                         result.get_component(join_key),
                         op.get_component(join_key),
                         join_key,
                         result.data,
-                        op.data,
+                        op_data,
                     )
-                if op.data is not None and result.data is not None:
+                if op_data is not None and result.data is not None:
                     result.data = merge_frames(
                         result.data,
-                        op.data,
+                        op_data,
                         how=cls.how,
                         on=merge_join_keys,
                     )
@@ -415,12 +414,14 @@ class Join(Operator, metaclass=_ThreadReference):
         return result
 
     @classmethod
-    def _time_keys(cls, operand: Dataset, result: Dataset) -> None:
-        """The Date or Time_Period Identifiers of a join operand that are Time in the result are
-        cast to Time, so that the keys match as Time values (issue #1352). The operand is a
-        copy: its data is replaced, not changed."""
+    def _promoted_keys(cls, operand: Dataset, result: Dataset, join_keys: List[str]) -> None:
+        """The join keys of an operand are cast to their type in the result, the common type of
+        the operands, so that the keys match as values of it: an Integer is a Number, a Boolean
+        a String, a Date or a Time_Period a Time (issues #1352 and #1353). The operand is a
+        copy: its data and Components are replaced, not changed."""
         if cls.how != "cross":
-            operand.data = to_time(operand, time_names(result)).data
+            converted = promoted(operand, result, join_keys)
+            operand.data, operand.components = converted.data, converted.components
 
     @classmethod
     def _combine_viral_attributes(
