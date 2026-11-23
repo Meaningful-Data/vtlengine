@@ -1,0 +1,9 @@
+DS_r <- DS_1 [ calc Me_4 := between ( Me_1 , Me_2 , Me_3 ) ,
+                   Me_5 := Me_1 >= Me_2 and Me_1 <= Me_3 ,
+                   Me_6 := between ( Me_1 , cast ( "M" , duration ) , null ) ,
+                   Me_7 := between ( Me_1 , null , cast ( "M" , duration ) ) ,
+                   Me_8 := between ( cast ( "Q" , duration ) , Me_2 , Me_3 ) ,
+                   Me_9 := between ( cast ( "M" , duration ) , cast ( "A" , duration ) ,
+                                     cast ( "D" , duration ) ) ]
+                 [ drop Me_1 , Me_2 , Me_3 ];
+DS_r2 <- between ( DS_1 [ keep Me_1 ] , cast ( "D" , duration ) , cast ( "M" , duration ) );

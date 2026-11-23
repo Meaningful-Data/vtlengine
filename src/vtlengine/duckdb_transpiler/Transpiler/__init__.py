@@ -38,6 +38,7 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
+from vtlengine.duckdb_transpiler.io._validation import text_to_date
 from vtlengine.duckdb_transpiler.Transpiler.macro_binding import bind_repeated_macro_arguments
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
     _BOOLEAN_RESULT_BINOPS,
@@ -316,16 +317,17 @@ def _rename_var_ids(node: AST.AST, names: Dict[str, str]) -> AST.AST:
 _HR_PIVOT_RULES = 16
 
 # Text casts that check the text as the pandas engine does, by the lower case name of the
-# target type ({0}: the text, {1}: the SQL type)
-_TEXT_CASTS = {
-    "integer": "vtl_text_to_integer({0})",
-    "number": "vtl_text_to_double({0})",
-    "duration": "vtl_text_to_duration({0})",
-    "date": "CAST(vtl_text_to_date({0}) AS {1})",
+# target type, each called with the text and the SQL type. A Date is read as the loader
+# reads it (issue #1349)
+_TEXT_CASTS: Dict[str, Callable[[str, str], str]] = {
+    "integer": "vtl_text_to_integer({0})".format,
+    "number": "vtl_text_to_double({0})".format,
+    "duration": "vtl_text_to_duration({0})".format,
+    "date": text_to_date,
     "time": (
         f"CASE WHEN NOT {TIME_CHECK_FUNCTION}({{0}}) "
         "THEN error('VTL 2-1-5-1 Time ' || {0}) ELSE {0} END"
-    ),
+    ).format,
 }
 _TEXT_CASTS["timeinterval"] = _TEXT_CASTS["time"]
 
@@ -983,19 +985,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """Visit a Collection (Set or ValueDomain reference)."""
         if node.kind == "ValueDomain":
             return self._visit_value_domain(node)
-        values = [self._visit_collection_element(child) for child in node.children]
+        values = [self.visit(child) for child in node.children]
         return f"({', '.join(values)})"
-
-    def _visit_collection_element(self, child: AST.AST) -> str:
-        """Visit a set element, preserving raw CAST behavior for time_period literals."""
-        if isinstance(child, AST.ParamOp) and child.op == tokens.CAST:
-            type_node = child.children[1]
-            if type_node == TimePeriod:
-                source_type = self._get_source_vtl_type(child.children[0])
-                if source_type not in (Date, TimeInterval):
-                    operand_sql = self.visit(child.children[0])
-                    return f"CAST({operand_sql} AS VARCHAR)"
-        return self.visit(child)
 
     def _resolve_value_domain_name(self, name: str) -> str:
         """The value domain a set parameter of a user defined operator is bound to, through the
@@ -2761,7 +2752,7 @@ FROM (
 
         if source_lower == "string" and target_lower in _TEXT_CASTS:
             # Text the pandas engine does not cast raises its error (issue #1192)
-            return _TEXT_CASTS[target_lower].format(expr, duckdb_type)
+            return _TEXT_CASTS[target_lower](expr, duckdb_type)
 
         if (source_lower, target_lower) in _CASTS_TO_TEXT:
             return _CASTS_TO_TEXT[source_lower, target_lower].format(expr)
@@ -3733,34 +3724,35 @@ FROM (
         """Visit SYMDIFF set operation."""
         return self._visit_set_operation(node, tokens.SYMDIFF)
 
-    @staticmethod
-    def _between_expr(operand: str, low: str, high: str, is_number: bool = False) -> str:
-        """Build a VTL-compliant BETWEEN expression with NULL propagation.
+    def _between_expr(
+        self,
+        refs: List[str],
+        types: List[Optional[type]],
+        value_types: List[Optional[str]],
+    ) -> str:
+        """Build the SQL of between: ``op >= from and op <= to``, as the VTL 2.2 manual
+        defines it, joined by the AND of three-valued logic, which is false where one
+        comparison is false, also when a bound is null (issue #1349).
 
-        VTL requires that if ANY operand of between is NULL, the result is NULL.
-        SQL's three-valued logic differs: FALSE AND NULL = FALSE.  To match VTL
-        semantics we wrap the expression with an explicit NULL check.
-
-        Number operands compare through the configured tolerance (issue #919),
-        mirroring ``x >= low and x <= high``.
+        Each comparison is the SQL of the ``>=`` / ``<=`` operator for the types of its
+        operands, so between orders every type as they do: Numbers through the configured
+        tolerance, Time_Periods as periods (2-1-19-19 for different period indicators) and
+        Durations by their rank (issue #1349).
         """
-        inner = f"({operand} BETWEEN {low} AND {high})"
-        if is_number:
-            ge_sql = number_tolerance_sql(tokens.GTE, operand, low)
-            le_sql = number_tolerance_sql(tokens.LTE, operand, high)
-            if ge_sql is not None and le_sql is not None:
-                inner = f"({ge_sql} AND {le_sql})"
-        return (
-            f"CASE WHEN {operand} IS NULL OR {low} IS NULL OR {high} IS NULL "
-            f"THEN NULL ELSE {inner} END"
-        )
+        comparisons = []
+        for op, i in ((tokens.GTE, 1), (tokens.LTE, 2)):
+            left, right = self._promoted_to_text(
+                [refs[0], refs[i]], [value_types[0], value_types[i]]
+            )
+            comparisons.append(self._make_binary_expr(left, right, op, types[0], types[i]))
+        return f"({comparisons[0]} AND {comparisons[1]})"
 
     def visit_MulOp_between(self, node: AST.MulOp) -> str:
         """Visit BETWEEN: expr BETWEEN low AND high. Handles dataset operand."""
         operand_type = self._get_node_type(node.children[0])
-        low_sql = self.visit(node.children[1])
-        high_sql = self.visit(node.children[2])
+        bound_sqls = [self.visit(c) for c in node.children[1:3]]
         bound_types = [self._detect_scalar_type(c) for c in node.children[1:3]]
+        bound_value_types = [self._value_type(c) for c in node.children[1:3]]
 
         if operand_type == _DATASET:
             ds = self._get_dataset_structure(node.children[0])
@@ -3769,18 +3761,17 @@ FROM (
                 comp = ds.components.get(col.strip('"')) if ds else None
                 dt = comp.data_type if comp else None
                 return self._between_expr(
-                    col, low_sql, high_sql, is_number_comparison(dt, *bound_types)
+                    [col, *bound_sqls],
+                    [dt, *bound_types],
+                    [getattr(dt, "__name__", None), *bound_value_types],
                 )
 
             return self._apply_measures(node.children[0], _between, self._result_measure_name(node))
 
-        operand_sql = self.visit(node.children[0])
-        operand_dt = self._detect_scalar_type(node.children[0])
         return self._between_expr(
-            operand_sql,
-            low_sql,
-            high_sql,
-            is_number_comparison(operand_dt, *bound_types),
+            [self.visit(node.children[0]), *bound_sqls],
+            [self._detect_scalar_type(node.children[0]), *bound_types],
+            [self._value_type(c) for c in node.children],
         )
 
     def visit_MulOp_exists_in(self, node: AST.MulOp) -> str:
@@ -5545,7 +5536,9 @@ FROM (
         of errorcode_vd or errorlevel_vd when it is given."""
         value_domain = error_domains(self.value_domains)[element]
         if value_domain is None:
-            return "CAST(NULL AS VARCHAR)" if value is None else self._to_sql_literal(value=value)
+            if value is None:
+                return "CAST(NULL AS VARCHAR)"
+            return self._to_sql_literal(value=error_value(element, value, None, ""))
         type_name = value_domain.type.__name__
         if value is None:
             return f"CAST(NULL AS {get_duckdb_type(type_name)})"

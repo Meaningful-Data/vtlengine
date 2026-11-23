@@ -2954,3 +2954,421 @@ def test_GH_1343_run_rejects_an_unused_invalid_value_domain(use_duckdb):
         use_duckdb=use_duckdb,
     )
     assert result["SC_r"].value is True
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_16(use_duckdb):
+    """The legacy subset key of a Component or a scalar was ignored, so OTHER loaded into a
+    Component declared String with subset VD_1. It is rejected with an input error that tells
+    to name the value domain in the type, by run, semantic_analysis and validate_dataset."""
+    value_domains = [{"name": "VD_1", "type": "String", "setlist": ["A", "B"]}]
+    identifier = {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False}
+    measure = {"name": "Me_3", "role": "Measure", "type": "String", "subset": "VD_1"}
+    dataset = {"datasets": [{"name": "DS_1", "DataStructure": [identifier, measure]}]}
+    scalar = {"datasets": [], "scalars": [{"name": "SC_1", "type": "String", "subset": "VD_1"}]}
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_3": ["A", "OTHER"]})}
+    calls = [
+        lambda: run("DS_r <- DS_1;", dataset, datapoints, value_domains, use_duckdb=use_duckdb),
+        lambda: run("SC_r <- SC_1;", scalar, {}, value_domains, use_duckdb=use_duckdb),
+        lambda: semantic_analysis("DS_r <- DS_1;", dataset, value_domains),
+        lambda: semantic_analysis("SC_r <- SC_1;", scalar, value_domains),
+        lambda: validate_dataset(
+            dataset, datapoints, use_duckdb=use_duckdb, value_domains=value_domains
+        ),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-2-1-1"
+        assert "is not accepted; name the value domain in its type instead" in error.value.args[0]
+        assert '("type": "VD_1")' in error.value.args[0]
+
+
+@pytest.mark.parametrize(
+    "type_name, value",
+    [
+        ("String", "A"),
+        ("Number", 1.5),
+        ("Integer", 1),
+        ("Boolean", True),
+        ("Date", "2024-01-05"),
+        ("Time_Period", "2024Q1"),
+        ("Time", "2024-01-01/2024-12-31"),
+        ("Duration", "A"),
+    ],
+)
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_18(use_duckdb, type_name, value):
+    """ValueDomain.to_dict and to_json write the type name that the loaders read, for every
+    basic type: a Time_Period value domain was written TimePeriod and a Time one TimeInterval,
+    which ValueDomain.from_dict rejected with 0-1-1-24 and the loaders with 0-2-1-1."""
+    value_domain = ValueDomain.from_dict({"name": "VD_1", "type": type_name, "setlist": [value]})
+    written = value_domain.to_dict()
+    assert written["type"] == type_name
+    assert ValueDomain.from_dict(written) == value_domain
+    assert ValueDomain.from_json(value_domain.to_json()) == value_domain
+    validate_value_domain(written)
+    structures = {"datasets": [], "scalars": [{"name": "SC_1", "type": "VD_1"}]}
+    analysis = semantic_analysis("SC_r <- SC_1;", structures, written)
+    assert analysis["SC_r"].to_dict()["type"] == "VD_1"
+    result = run(
+        "SC_r <- SC_1;",
+        structures,
+        {},
+        written,
+        scalar_values={"SC_1": value},
+        use_duckdb=use_duckdb,
+    )
+    assert result["SC_r"].to_dict()["type"] == "VD_1"
+
+
+_STRUCTURES_1349 = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+            ],
+        }
+    ],
+    "scalars": [{"name": "SC_4", "type": "Integer"}],
+}
+
+_ROUTINE_1349 = (
+    'DS_r <- eval(SQL_1(DS_1) language "SQL" returns dataset'
+    " { identifier<integer> Id_1, measure<integer> Me_1 });"
+)
+
+_SQL_1 = {"name": "SQL_1", "query": "SELECT Id_1, Me_1 FROM DS_1"}
+
+
+def _datapoints_1349():
+    return {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [1, 3]})}
+
+
+def _run_1349(script, use_duckdb, **arguments):
+    arguments = {"datapoints": _datapoints_1349(), **arguments}
+    return run(script, _STRUCTURES_1349, use_duckdb=use_duckdb, **arguments)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_19(use_duckdb, tmp_path):
+    """value_domains given as a Path to one JSON file holding a list of value domains, or to a
+    folder holding such a file, loads every value domain of the list, as the documentation
+    says; it raised 0-1-1-23."""
+    value_domains = [
+        {"name": "VD_B", "type": "Boolean", "setlist": [True, False]},
+        {"name": "VD_TP", "type": "Time_Period", "setlist": ["2024Q1", "2024Q2"]},
+    ]
+    folder = tmp_path / "value_domains"
+    folder.mkdir()
+    path = folder / "value_domains.json"
+    path.write_text(json.dumps(value_domains))
+    identifier = {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False}
+    id_2 = {"name": "Id_2", "type": "VD_B", "role": "Identifier", "nullable": False}
+    structures = {"datasets": [{"name": "DS_1", "DataStructure": [identifier, id_2]}]}
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Id_2": [True, False]})}
+    for given in (path, folder):
+        validate_value_domain(given)
+        assert sorted(load_value_domains(given)) == ["VD_B", "VD_TP"]
+        result = run("DS_r <- DS_1;", structures, datapoints, given, use_duckdb=use_duckdb)
+        ds_r = result["DS_r"]
+        assert ds_r.components["Id_2"].to_dict()["type"] == "VD_B"
+        assert ds_r.data.sort_values("Id_1")["Id_2"].tolist() == [True, False]
+        analysis = semantic_analysis("DS_r <- DS_1;", structures, given)
+        assert analysis["DS_r"].components["Id_2"].to_dict()["type"] == "VD_B"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_25(use_duckdb):
+    """Datapoints given as a list holding a DataFrame is not an accepted form: both engines
+    raise 0-1-1-2; DuckDB raised a raw AttributeError."""
+    with pytest.raises(InputValidationException) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, datapoints=[_datapoints_1349()["DS_1"]])
+    assert error.value.args[1] == "0-1-1-2"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_26(use_duckdb, tmp_path):
+    """An output_folder that does not exist yet, nested in another missing folder, is created
+    with its parents and the results are written there; pandas raised FileNotFoundError."""
+    output_folder = tmp_path / "missing" / "deeper"
+    _run_1349("DS_r <- DS_1;", use_duckdb, output_folder=output_folder)
+    written = pd.read_csv(output_folder / "DS_r.csv").sort_values("Id_1")
+    assert written["Me_1"].tolist() == [1, 3]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_27(use_duckdb, tmp_path):
+    """An output_folder that is an existing file raises 0-3-1-2 on both engines; pandas raised
+    a raw OSError and DuckDB a raw FileExistsError."""
+    output_folder = tmp_path / "out.txt"
+    output_folder.write_text("x")
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, output_folder=output_folder)
+    assert error.value.args[1] == "0-3-1-2"
+    assert output_folder.read_text() == "x"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_28(use_duckdb, tmp_path):
+    """A missing output_folder with a file suffix (result.csv) raises 0-3-1-2 on both engines;
+    DuckDB created a folder named result.csv and wrote the results into it."""
+    output_folder = tmp_path / "result.csv"
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, output_folder=output_folder)
+    assert error.value.args[1] == "0-3-1-2"
+    assert not output_folder.exists()
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_28b(use_duckdb, tmp_path):
+    """The datapoints are checked before the output_folder on both engines: a missing
+    datapoint file raises 0-3-1-1 and creates no output folder, also when the output folder is
+    bad. DuckDB checked the output folder first, so it created the missing folder before
+    raising 0-3-1-1 and raised 0-3-1-2 for an existing file."""
+    datapoints = {"DS_1": tmp_path / "missing.csv"}
+    output_folder = tmp_path / "missing" / "deeper"
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, datapoints=datapoints, output_folder=output_folder)
+    assert error.value.args[1] == "0-3-1-1"
+    assert not (tmp_path / "missing").exists()
+    output_file = tmp_path / "out.txt"
+    output_file.write_text("x")
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, datapoints=datapoints, output_folder=output_file)
+    assert error.value.args[1] == "0-3-1-1"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_28c(use_duckdb, tmp_path):
+    """Datapoints whose values do not fit the structure (a text in an Integer Measure), given
+    as a DataFrame or as a CSV file, raise 0-3-1-6 on both engines and create no output folder:
+    the folder is created with the first result written. DuckDB created the folder before
+    loading the DataFrame, pandas before loading the CSV file."""
+    csv_path = tmp_path / "DS_1.csv"
+    csv_path.write_text("Id_1,Me_1\n1,x\n")
+    frame = pd.DataFrame({"Id_1": [1], "Me_1": ["x"]})
+    output_folder = tmp_path / "missing" / "deeper"
+    for datapoints in ({"DS_1": frame}, {"DS_1": csv_path}):
+        with pytest.raises(DataLoadError) as error:
+            _run_1349(
+                "DS_r <- DS_1;", use_duckdb, datapoints=datapoints, output_folder=output_folder
+            )
+        assert error.value.args[1] == "0-3-1-6"
+        assert not (tmp_path / "missing").exists()
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_51(use_duckdb, tmp_path, monkeypatch):
+    """An empty string as output_folder is no output folder, as None is: both engines write
+    nothing and return the results with their data. pandas wrote the results into the current
+    folder and returned them without data."""
+    monkeypatch.chdir(tmp_path)
+    result = _run_1349("DS_r <- DS_1;", use_duckdb, output_folder="")
+    assert result["DS_r"].data.sort_values("Id_1")["Me_1"].tolist() == [1, 3]
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_29(use_duckdb):
+    """A list given as a value in scalar_values is not a scalar value: it raises 0-1-2-7 as a
+    value of the wrong type does (case 30); it raised a raw ValueError."""
+    with pytest.raises(InputValidationException) as error:
+        _run_1349("DS_r <- DS_1 * SC_4;", use_duckdb, scalar_values={"SC_4": [1, 2]})
+    assert error.value.args[1] == "0-1-2-7"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_30(use_duckdb):
+    """Control of case 29: a text given as the value of an Integer scalar raises 0-1-2-7."""
+    with pytest.raises(InputValidationException) as error:
+        _run_1349("DS_r <- DS_1 * SC_4;", use_duckdb, scalar_values={"SC_4": "x"})
+    assert error.value.args[1] == "0-1-2-7"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_31(use_duckdb, tmp_path):
+    """external_routines given as a Path to a JSON file holding an array of routines loads
+    every routine of the array, as the documentation says; it raised a raw TypeError."""
+    path = tmp_path / "routines.json"
+    path.write_text(json.dumps([_SQL_1, {**_SQL_1, "name": "SQL_2"}]))
+    script = _ROUTINE_1349 + _ROUTINE_1349.replace("DS_r", "DS_s").replace("SQL_1", "SQL_2")
+    result = _run_1349(script, use_duckdb, external_routines=path)
+    for name in ("DS_r", "DS_s"):
+        assert result[name].data.sort_values("Id_1")["Me_1"].tolist() == [1, 3]
+    analysis = semantic_analysis(script, _STRUCTURES_1349, external_routines=path)
+    assert sorted(analysis["DS_s"].components) == ["Id_1", "Me_1"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_32(use_duckdb, tmp_path):
+    """A value_domains .json file that is not valid JSON raises the input error 0-1-1-40
+    naming the file; run and semantic_analysis raised a raw JSONDecodeError."""
+    path = tmp_path / "broken.json"
+    path.write_text("not json")
+    calls = [
+        lambda: _run_1349("DS_r <- DS_1;", use_duckdb, value_domains=path),
+        lambda: semantic_analysis("DS_r <- DS_1;", _STRUCTURES_1349, path),
+        lambda: validate_value_domain(path),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-1-1-40"
+        assert "broken.json" in error.value.args[0]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_32b(use_duckdb, tmp_path):
+    """The data structures read from a .json file that is not valid JSON raise the same input
+    error 0-1-1-40 as the value domains of case 32; they raised a raw JSONDecodeError."""
+    path = tmp_path / "broken.json"
+    path.write_text("not json")
+    calls = [
+        lambda: run("DS_r <- DS_1;", path, _datapoints_1349(), use_duckdb=use_duckdb),
+        lambda: semantic_analysis("DS_r <- DS_1;", path),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-1-1-40"
+        assert "broken.json" in error.value.args[0]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_33(use_duckdb, tmp_path):
+    """An external_routines .json file that is not valid JSON raises the input error 0-1-1-40
+    naming the file; run and semantic_analysis raised a raw JSONDecodeError."""
+    path = tmp_path / "broken.json"
+    path.write_text("not json")
+    calls = [
+        lambda: _run_1349(_ROUTINE_1349, use_duckdb, external_routines=path),
+        lambda: semantic_analysis(_ROUTINE_1349, _STRUCTURES_1349, external_routines=path),
+        lambda: validate_external_routine(path),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-1-1-40"
+        assert "broken.json" in error.value.args[0]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_34(use_duckdb, tmp_path):
+    """A routine read from a file is registered under the name its JSON gives, not under the
+    name of the file: routine.json holding SQL_1 serves eval(SQL_1(...)); it raised 1-3-5."""
+    path = tmp_path / "routine.json"
+    path.write_text(json.dumps(_SQL_1))
+    result = _run_1349(_ROUTINE_1349, use_duckdb, external_routines=path)
+    assert result["DS_r"].data.sort_values("Id_1")["Me_1"].tolist() == [1, 3]
+    analysis = semantic_analysis(_ROUTINE_1349, _STRUCTURES_1349, external_routines=path)
+    assert sorted(analysis["DS_r"].components) == ["Id_1", "Me_1"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_52(use_duckdb, tmp_path):
+    """Two external routines of one name raise 0-1-1-41, as two value domains of one name
+    raise 0-1-1-38, whether they are given in a list, in one JSON file or in two files of a
+    folder; the routine read last was used."""
+    other = {**_SQL_1, "query": "SELECT Id_1, Me_1 * 10 AS Me_1 FROM DS_1"}
+    array = tmp_path / "routines.json"
+    array.write_text(json.dumps([_SQL_1, other]))
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "a.json").write_text(json.dumps(_SQL_1))
+    (folder / "b.json").write_text(json.dumps(other))
+    for routines in ([_SQL_1, other], array, folder):
+        calls = [
+            lambda: _run_1349(_ROUTINE_1349, use_duckdb, external_routines=routines),
+            lambda: semantic_analysis(_ROUTINE_1349, _STRUCTURES_1349, external_routines=routines),
+            lambda: validate_external_routine(routines),
+        ]
+        for call in calls:
+            with pytest.raises(InputValidationException) as error:
+                call()
+            assert error.value.args[1] == "0-1-1-41"
+            assert "SQL_1" in error.value.args[0]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_57(use_duckdb, tmp_path):
+    """The structure semantic_analysis writes for a pivot result, whose Measures are named
+    2024-01-05 or A B, is read back as an input structure by run and validate_dataset, and a
+    script reads those Measures by their quoted names; written between single quotes in the
+    structure, a name names the same Component. The structure schema rejected those names."""
+
+    def component(name, role, type_):
+        return {"name": name, "role": role, "type": type_, "nullable": role != "Identifier"}
+
+    value_domains = [
+        {"name": "VD_D", "type": "Date", "setlist": ["2024-1-5", "2024-01-06"]},
+        {"name": "VD_S", "type": "String", "setlist": ["A B", "x-y"]},
+    ]
+    structures = {
+        "datasets": [
+            {
+                "name": name,
+                "DataStructure": [
+                    component("Id_1", "Identifier", "Integer"),
+                    component("Id_2", "Identifier", value_domain),
+                    component("Me_1", "Measure", "Integer"),
+                ],
+            }
+            for name, value_domain in (("DS_1", "VD_D"), ("DS_2", "VD_S"))
+        ]
+    }
+    analysis = semantic_analysis(
+        "DS_r <- DS_1[pivot Id_2, Me_1]; DS_s <- DS_2[pivot Id_2, Me_1];", structures, value_domains
+    )
+    back = []
+    for result, name in (("DS_r", "DS_1"), ("DS_s", "DS_2")):
+        written = json.loads(analysis[result].to_json_datastructure())
+        written["datasets"][0]["name"] = name
+        back.append(written)
+    assert [c["name"] for c in back[1]["datasets"][0]["DataStructure"]] == ["Id_1", "A B", "x-y"]
+    back[1]["datasets"][0]["DataStructure"][2]["name"] = "'x-y'"
+    ds_1 = tmp_path / "DS_1.csv"
+    ds_1.write_text("Id_1,2024-01-05,2024-01-06\n1,1,2\n")
+    ds_2 = tmp_path / "DS_2.csv"
+    ds_2.write_text("Id_1,A B,x-y\n1,3,4\n")
+    script = (
+        "DS_a <- DS_1[calc Me_9 := '2024-01-05' + '2024-01-06'];"
+        " DS_b <- DS_2[calc Me_9 := 'A B' * 'x-y'];"
+    )
+    result = run(script, back, {"DS_1": ds_1, "DS_2": ds_2}, use_duckdb=use_duckdb)
+    assert result["DS_a"].data["Me_9"].tolist() == [3]
+    assert result["DS_b"].data["Me_9"].tolist() == [12]
+    assert list(result["DS_b"].components) == ["Id_1", "A B", "x-y", "Me_9"]
+    validate_dataset(back[0], ds_1, use_duckdb=use_duckdb)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize(
+    "name",
+    ['a"b', "'a\"b'", "a\x00b", "'a\x00b'", "a\rb", "'a\rb'"],
+    ids=["double-quote", "quoted-double-quote", "nul", "quoted-nul", "cr", "quoted-cr"],
+)
+def test_GH_1349_57b(use_duckdb, name):
+    """A Component name holding a double quote, a NUL or a carriage return is rejected by the
+    structure schema (0-2-1-1), in run on both engines and in semantic_analysis, also between
+    single quotes: the DuckDB engine cannot create the table of a name with a double quote or
+    a NUL, and reads no row from a CSV file whose header holds a carriage return, so pandas
+    alone would run it."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False},
+                    {"name": name, "role": "Measure", "type": "Integer", "nullable": True},
+                ],
+            }
+        ]
+    }
+    data = pd.DataFrame({"Id_1": [1], name.strip("'"): [1]})
+    with pytest.raises(InputValidationException, match="0-2-1-1"):
+        run("DS_r <- DS_1;", structures, {"DS_1": data}, use_duckdb=use_duckdb)
+    with pytest.raises(InputValidationException, match="0-2-1-1"):
+        semantic_analysis("DS_r <- DS_1;", structures)

@@ -1,0 +1,11 @@
+DS_r <- DS_1 [ calc Me_5 := between ( Me_1 , 2 , null ) , Me_6 := between ( Me_1 , null , 2 ) ,
+                   Me_7 := between ( Me_2 , "b" , null ) , Me_8 := between ( Me_2 , null , "b" ) ,
+                   Me_9 := between ( Me_3 , cast ( "2024-01-02" , date ) , null ) ,
+                   Me_10 := between ( Me_3 , null , cast ( "2024-01-02" , date ) ) ,
+                   Me_11 := between ( Me_4 , cast ( "2024Q2" , time_period ) , null ) ,
+                   Me_12 := between ( Me_4 , null , cast ( "2024Q2" , time_period ) ) ,
+                   Me_13 := between ( 3 , null , 2 ) , Me_14 := between ( 1 , null , 2 ) ,
+                   Me_15 := between ( Me_1 , null , null ) ]
+                 [ drop Me_1 , Me_2 , Me_3 , Me_4 ];
+DS_r2 <- between ( DS_1 [ keep Me_1 ] , 2 , null );
+DS_r3 <- between ( DS_1 [ keep Me_4 ] , null , cast ( "2024Q2" , time_period ) );

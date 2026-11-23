@@ -89,6 +89,8 @@ params_prettier = [
     ("GH_1166.vtl", "reference_GH_1166.vtl"),
     ("GH_1322.vtl", "reference_GH_1322.vtl"),
     ("GH_1334.vtl", "reference_GH_1334.vtl"),
+    # An error code is written as the literal it is, a number with no quotes (issue #1349)
+    ("GH_1349.vtl", "reference_GH_1349.vtl"),
     ("GH_1358.vtl", "reference_GH_1358.vtl"),
 ]
 

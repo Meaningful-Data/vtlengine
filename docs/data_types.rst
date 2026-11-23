@@ -179,6 +179,13 @@ Date
         ISO 8601 formats, or values pandas has already
         parsed into dates or datetimes, read on the
         same rule.
+    * - **Input (scalar value)**
+      - A ``Date`` value given in ``scalar_values`` is
+        read on the same rule, in both execution
+        engines: ``"2020-1-15"`` and
+        ``"2020-01-15T00:00:00"`` are
+        ``"2020-01-15"``, and
+        ``"2020-01-15 10:30:00"`` keeps its time.
     * - **Internal representation**
       - Python ``str`` in ``"YYYY-MM-DD"`` format, or
         ``"YYYY-MM-DD HH:MM:SS"`` for a value whose
@@ -243,6 +250,17 @@ Time_Period
       - ``2020D1``, ``2020D01``, ``2020D001``,
         ``2020D-1``, ``2020D-01``, ``2020D-001``,
         ``2020-01-01``
+
+The operators ``>``, ``<``, ``>=``, ``<=`` and ``between`` order the
+periods of one period indicator; two periods of different indicators
+raise ``2-1-19-19``. ``between(op, from, to)`` is
+``op >= from and op <= to``, as the VTL 2.2 manual defines it, for
+every type (the same types are accepted, and the values are ordered
+as those two operators order them), except that it always compares
+the operand with both bounds: it raises ``2-1-19-19`` for a bound of
+another period indicator even when the other comparison is already
+false, where the pair stops at a false first comparison. A null bound gives ``false`` where the other
+comparison is false and null elsewhere.
 
 **Output formats** (controlled by ``time_period_output_format``
 parameter):
@@ -324,6 +342,10 @@ Duration
         stored as ``string[pyarrow]``.
     * - **Output dtype**
       - ``string[pyarrow]``
+
+The operators ``>``, ``<``, ``>=``, ``<=`` and ``between`` order the
+Durations by their length, not by their text: ``D`` < ``W`` < ``M`` <
+``Q`` < ``S`` < ``A``.
 
 
 Null Handling
@@ -585,6 +607,12 @@ Conversion details:
   manual defines it, in both execution engines.
 - **String to Integer**: Must be a valid integer string
   (rejects ``"3.5"``).
+- **String to Date**: The text is read as the loaders read a
+  ``Date`` (see the Date section above): ``"2020-1-15"``,
+  ``"20200115"`` and ``"2020-01-15T00:00:00"`` are ``2020-01-15``,
+  and a time other than midnight is kept. A text that is not a
+  ``Date`` raises ``1-1-5-6`` for a literal and ``2-1-19-8`` for
+  data.
 - **Date to Time_Period**: Converts to daily period
   (e.g. ``"2020-01-15"`` becomes ``"2020D15"``
   with the default ``vtl`` output format).

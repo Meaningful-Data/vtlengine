@@ -597,8 +597,11 @@ class Terminals:
 
         param_node = (
             [
+                # The mask is the text of the string, as for a cast outside a set (issue #1349)
                 ParamConstant(
-                    type_="PARAM_CAST", value=ctx_list[6], **extract_token_info(ctx_list[6])
+                    type_="PARAM_CAST",
+                    value=ctx_list[6].text.strip('"'),
+                    **extract_token_info(ctx_list[6]),
                 )
             ]
             if len(ctx_list) > 6
@@ -686,8 +689,8 @@ class Terminals:
         ctx_list = ctx.children
 
         try:
-            value = self.visitConstant(ctx_list[1]).value
-            return str(value).lower() if isinstance(value, bool) else str(value)
+            # The literal keeps its type, which errorcode_vd checks (issue #1349)
+            return self.visitConstant(ctx_list[1]).value
         except Exception:
             raise InputValidationException(code="0-5-1-5", definition=script_location(ctx_list[1]))
 

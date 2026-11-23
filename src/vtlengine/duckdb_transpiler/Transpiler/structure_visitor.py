@@ -21,11 +21,12 @@ from vtlengine.DataTypes import (
     TimePeriod,
 )
 from vtlengine.DataTypes import String as StringType
+from vtlengine.DataTypes._time_checking import _has_time_component
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.duckdb_transpiler.sql import references_raising_macro
 from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS, get_duckdb_type
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
-from vtlengine.Model import Component, Dataset, Role, ValueDomain
+from vtlengine.Model import Component, Dataset, Role, ValueDomain, value_of
 from vtlengine.Operators.CastOperator import Cast
 from vtlengine.Operators.Clause import Pivot, Unpivot
 from vtlengine.Operators.Join import Apply, merged_viral_attribute_names
@@ -343,7 +344,11 @@ class StructureVisitor(ASTTemplate):
             return "TRUE" if value else "FALSE"
         if isinstance(value, str):
             if type_name == "Date":
-                return f"DATE '{value}'"
+                # A Date is written as the loaders write it, padded, and keeps the time it
+                # has: 2024-1-5 10:00:00 is 2024-01-05 10:00:00 (issue #1349)
+                value = value_of(Date, value)
+                sql_type = "TIMESTAMP" if _has_time_component(value) else "DATE"
+                return f"{sql_type} '{value}'"
             escaped = value.replace("'", "''")
             if type_name == "TimePeriod":
                 canonical = _try_normalize_time_period(value)

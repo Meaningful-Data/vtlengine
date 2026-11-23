@@ -596,6 +596,13 @@ def _number_cast(value_expr: str) -> str:
     return f"CASE WHEN isnan({double}) THEN NULL ELSE {double} END"
 
 
+def text_to_date(value_expr: str, target_type: str) -> str:
+    """SQL of a String cast to Date, which reads the text as the loader reads a Date and
+    raises VTL 2-1-19-8 for a text that is not one (issue #1349)."""
+    error = f"'VTL 2-1-19-8 ' || TRIM(CAST({value_expr} AS VARCHAR))"
+    return _date_sql(value_expr, target_type, error, error)
+
+
 def _date_cast(value_expr: str, column_name: str, target_type: str) -> str:
     """SQL reading a Date input value as text, on the rules of the pandas loader.
 
@@ -606,6 +613,18 @@ def _date_cast(value_expr: str, column_name: str, target_type: str) -> str:
     truncated a partial time ("...T12:30") or failed with an out-of-range error.
     """
     text = f"TRIM(CAST({value_expr} AS VARCHAR))"
+    format_err = (
+        f"'Column {column_name}: Date ' || {text} || ' is not in the correct format. "
+        f"Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS.'"
+    )
+    year_err = f"'Date ' || {text} || ' is invalid. Year must be between 1800 and 9999.'"
+    return _date_sql(value_expr, target_type, format_err, year_err)
+
+
+def _date_sql(value_expr: str, target_type: str, format_err: str, year_err: str) -> str:
+    """SQL reading a Date written as text on the rules of the pandas loader, raising the
+    errors given for a text of another shape or a year out of range."""
+    text = f"TRIM(CAST({value_expr} AS VARCHAR))"
     # DuckDB casts a date written in full only, and rewriting the value of the length of
     # a compact date alone keeps the regex off the others
     date = (
@@ -613,11 +632,6 @@ def _date_cast(value_expr: str, column_name: str, target_type: str) -> str:
         f"THEN regexp_replace({text}, '{_COMPACT_DATE_REGEX}', '{_FULL_DATE_REPLACEMENT}') "
         f"ELSE {text} END"
     )
-    format_err = (
-        f"'Column {column_name}: Date ' || {text} || ' is not in the correct format. "
-        f"Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS.'"
-    )
-    year_err = f"'Date ' || {text} || ' is invalid. Year must be between 1800 and 9999.'"
     return (
         f"CASE WHEN {value_expr} IS NULL THEN NULL "
         f"WHEN NOT regexp_matches({text}, '{VALID_DATE_REGEX}') THEN error({format_err}) "

@@ -24,7 +24,8 @@ def transpile(
     Args:
         vtl_script: The VTL script to transpile.
         data_structures: Input dataset structures (raw dict format as used by the API).
-        value_domains: Value domain definitions.
+        value_domains: Value domain definitions, in the forms run() accepts. The type of a
+            Component or a scalar of the data structures can name one of them.
         external_routines: External routine definitions.
 
     Returns:
@@ -43,11 +44,10 @@ def transpile(
     ast = create_ast(vtl_script)
     dag = DAGAnalyzer.create_dag(ast)
 
-    # Load datasets structure (without data) from raw dict format
-    input_datasets, input_scalars = load_datasets(data_structures)
-
-    # Load value domains and external routines
+    # Load the value domains first, as the type of a Component or a scalar can name one, then
+    # the datasets structure (without data) from raw dict format and the external routines
     loaded_vds = load_value_domains(value_domains) if value_domains else None
+    input_datasets, input_scalars = load_datasets(data_structures, value_domains=loaded_vds)
     loaded_routines = load_external_routines(external_routines) if external_routines else None
 
     # Run semantic analysis to get output structures

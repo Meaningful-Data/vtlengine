@@ -192,6 +192,15 @@ centralised_messages = {
         "(string, integer, number, boolean, date, time, time_period, duration, scalar), "
         "which a script cannot refer to as a Value Domain.",
     },
+    "0-1-1-40": {
+        "message": "File {file} is not valid JSON: {error}.",
+        "description": "Raised when a JSON file given as data structures, value domains or "
+        "external routines cannot be read as JSON.",
+    },
+    "0-1-1-41": {
+        "message": "External Routine {name} is defined more than once.",
+        "description": "Raised when two of the External Routines given have the same name.",
+    },
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",
         "description": "Occurs when an element (e.g., Identifier or component) "
@@ -867,8 +876,10 @@ centralised_messages = {
         "message": "The {element} {value} of {where} is not one of the values of the Value "
         "Domain {value_domain}.",
         "description": "Raised when an error code or an error level is not a value of "
-        "errorcode_vd or errorlevel_vd, given as value domains, or when a code item of a "
-        "hierarchical ruleset on a value domain is not one of its values.",
+        "errorcode_vd or errorlevel_vd, given as value domains, also when it is a literal of "
+        "another type, which is not converted, when a constant of a viral propagation rule "
+        "on a value domain is not one of its values, or when a code item of a hierarchical "
+        "ruleset on a value domain is not one of its values.",
     },
     "1-1-10-11": {
         "message": "At op {op}: The validation and imbalance operands must have the same "

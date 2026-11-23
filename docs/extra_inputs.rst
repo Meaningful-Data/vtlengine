@@ -133,7 +133,8 @@ The ``value_domains`` parameter accepts the following formats:
 
 - **Dictionary**: A single value domain as a Python dict.
 - **Path to a JSON file**: A ``Path`` pointing to a ``.json``
-  file containing one or more value domain definitions.
+  file containing one value domain definition, or a JSON array of
+  them.
 - **Path to a directory**: A ``Path`` pointing to a directory;
   all ``.json`` files in the directory are loaded.
 - **ValueDomain object**: A ``vtlengine.Model.ValueDomain``, for example one
@@ -170,6 +171,10 @@ The ``value_domains`` parameter accepts the following formats:
         ValueDomain(name="Currencies", type=String, setlist=["EUR", "USD"]),
     ]
 
+A ``.json`` file that is not valid JSON raises ``0-1-1-40``, naming
+the file. ``ValueDomain.to_dict()`` and ``ValueDomain.to_json()``
+write the definition in this format, so it can be given back.
+
 
 VTL Usage
 =========
@@ -188,6 +193,21 @@ and component contexts.
 
     /* Filter rows where a component belongs to a domain */
     DS_r <- DS_1 [filter Me_1 in Thresholds];
+
+A value is compared with the values of a value domain as a value of
+its type, not as the text it is written in: a ``Time_Period``
+``2024Q1`` or ``2024-Q1`` is in a value domain whose ``setlist``
+holds ``"2024-Q1"`` or ``"2024Q1"``, and a ``Date`` ``2024-1-5`` in
+one holding ``"2024-01-05"``. The same holds wherever a value is
+checked against a value domain: ``in`` and ``not_in``, the values of
+a Component or a scalar on a value domain, ``cast`` into a value
+domain and the parameters of a user defined operator typed by one.
+The elements of a literal set are compared in the same way, as values
+of their type: ``Me_1 in {cast("2024-Q2", time_period)}`` is true for
+the ``Time_Period`` ``2024Q2``, as ``Me_1 = cast("2024-Q2",
+time_period)`` is, and two elements that are one value written in two
+forms (``cast("2024Q1", time_period)`` and ``cast("2024-Q1",
+time_period)``) are a repeated value, which raises ``1-2-27``.
 
 
 Example
@@ -262,7 +282,9 @@ value domain and has its basic type:
     {"name": "Id_2", "type": "VD_FLOW", "role": "Identifier", "nullable": false}
 
 A type that is neither a basic type nor the name of a value
-domain given raises ``0-2-1-1``. Loading the datapoints checks
+domain given raises ``0-2-1-1``, and so does the legacy ``subset``
+key of a Component or a scalar, which is not accepted: the value
+domain is named in the ``type``. Loading the datapoints checks
 that every value of the Component is a value of its value
 domain, and raises ``0-3-1-6`` on another one. Nulls follow
 ``nullable``, as with a basic type.
@@ -278,7 +300,13 @@ below), the Components that ``filter``, ``keep``, ``drop``,
 ``Integer`` and ``Number`` ones, which they accumulate), and a
 Component written alone in ``calc`` (``calc Me_3 := Id_2``).
 ``run()`` and ``semantic_analysis()`` write ``"type": "VD_FLOW"``
-for them. A join ``apply`` gives each Measure the type and the value
+for them, and ``Dataset.from_json``, ``Component.from_json``,
+``DataComponent.from_json`` and ``Scalar.from_json`` read such a type
+back on the value domain given in their ``value_domains`` parameter,
+a dict by name (``{"VD_FLOW": vd_flow}``); a type that is neither a
+basic type nor one of them raises ``0-2-1-1``. The data structures
+given to ``vtlengine.duckdb_transpiler.transpile()`` can name the
+value domains given to it as well. A join ``apply`` gives each Measure the type and the value
 domain its expression gives, as ``calc`` does: ``apply nvl(a, b)``
 follows the rules of ``nvl`` below, and ``apply a + b`` gives the
 basic type.
@@ -346,9 +374,15 @@ value domain (``2-1-5-4``):
 
 ``pivot`` needs the Identifier it pivots defined on a value domain:
 the result has one Measure per value of the value domain, named after
-the value, of the type (and on the value domain) of the pivoted
-Measure. The other Identifiers group the data points, a value with no
-data point in a group leaves its Measure null, the other Measures and
+the value as a cast to ``string`` writes it, whatever form the
+``setlist`` writes it in (``true`` and ``false`` for a ``Boolean``
+value domain, so ``[keep 'true']`` keeps the first one; ``2024Q1``
+for a ``Time_Period`` written ``"2024-Q1"``; ``2024-01-05`` for a
+``Date`` written ``"2024-1-5"``). A ``Duration`` value domain names
+them as its ``setlist`` writes the values (``A``, ``Q``), not as the
+cast does (``P1Y``, ``P3M``). The Measures are of the type (and on
+the value domain) of the pivoted Measure. The other Identifiers group
+the data points, a value with no data point in a group leaves its Measure null, the other Measures and
 the non-viral Attributes are dropped, and the viral Attributes of a
 group are combined by their propagation rule. An Identifier on no
 value domain raises ``1-1-6-18``.
@@ -382,8 +416,19 @@ Value domains also appear in the VTL-DL definitions:
   item its rules name, on either side, must be a value of the value
   domain of its rule, compared as a value of its type (``1-1-10-13``),
   so its results are values of it.
-- A viral propagation rule on a value domain applies to the viral
-  attributes defined on it, unless a rule on the variable overrides
+- A viral propagation rule on a value domain needs it given
+  (``1-2-8``), and the constants of its ``when``, ``then`` and
+  ``else`` must be values of it (``1-1-10-13``); the definition
+  checks both, also when no statement uses the rule. The constants
+  are values of the type of the value domain, whatever form they are
+  written in: ``when "2024Q1"`` matches the ``Time_Period``
+  ``2024-Q1``, and ``then "2024-1-6"`` gives the ``Date``
+  ``2024-01-06``. A rule on a variable reads its constants as values
+  of the type of the Attribute it applies to in the same way, and two
+  ``when`` on the same values written in two forms raise
+  ``1-3-3-4``. The rule
+  applies to the viral attributes defined on the value domain,
+  unless a rule on the variable overrides
   it. Where a viral attribute is combined, the rule on its value
   domain applies only when it is on that value domain in every
   operand: when an operand gives it on no value domain or on another
@@ -432,7 +477,12 @@ type the error codes and the error levels of ``check``,
 ``check_datapoint`` and ``check_hierarchy``: the ``errorcode`` and
 ``errorlevel`` Measures take their basic types, and every error code
 and level of a rule or of ``check`` must be one of their values
-(``1-1-10-13``). Without them, the Measures keep their usual types.
+(``1-1-10-13``). A literal of another type is not converted and
+raises the same error: ``errorcode "100"`` on an ``Integer``
+``errorcode_vd``, ``errorlevel 1`` on a ``String`` ``errorlevel_vd``
+or ``errorlevel 1.0`` on an ``Integer`` one (an ``Integer`` literal is
+a value of a ``Number`` value domain). Without them, the Measures
+keep their usual types.
 
 .. _scalars_on_value_domains:
 
@@ -472,7 +522,7 @@ the scalar results on a value domain.
 
 .. code-block:: text
 
-    /* SC_r is on VD_FLOW, and "OTHER" must be one of its values */
+    /* SC_r is a String: "OTHER" is a value of the basic type of VD_FLOW */
     SC_r <- nvl(SC_1, "OTHER");
 
     /* Me_2 is on VD_FLOW */
@@ -571,19 +621,16 @@ Input Options
 The ``external_routines`` parameter accepts the following formats:
 
 - **Dictionary**: A single routine as a Python dict.
-- **Path to a file**: A ``Path`` pointing to a ``.json`` file.
+- **Path to a file**: A ``Path`` pointing to a ``.json`` file
+  holding one routine, or a JSON array of them. Each routine is
+  used under its ``name``, whatever the name of the file.
 - **Path to a directory**: A ``Path`` pointing to a directory;
   all ``.json`` files in the directory are loaded.
-- **ValueDomain object**: A ``vtlengine.Model.ValueDomain``, for example one
-  built from an SDMX codelist.
 - **List**: A list mixing any of the above formats.
 
 .. code-block:: python
 
     from pathlib import Path
-
-    from vtlengine.DataTypes import String
-    from vtlengine.Model import ValueDomain
 
     # Single dict
     external_routines = {
@@ -602,6 +649,13 @@ The ``external_routines`` parameter accepts the following formats:
         {"name": "SQL_1", "query": "SELECT * FROM DS_1;"},
         Path("data/SQL_2.json"),
     ]
+
+A ``.json`` file that is not valid JSON raises ``0-1-1-40``, naming
+the file.
+
+The names of the routines given must be unique, whether they are
+given in a list, in one JSON array or in the files of a directory:
+two routines of one name raise ``0-1-1-41``.
 
 
 VTL Syntax
