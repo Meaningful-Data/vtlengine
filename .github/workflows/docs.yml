@@ -36,11 +36,12 @@ concurrency:
 jobs:
   # Build the in-browser JupyterLite demo (vtlengine on the Pyodide kernel).
   # Assembles a static site that the deploy job publishes at /jupyterlite/ alongside the docs.
-  # Runs in parallel with the docs build (build); the two are merged at deploy time. A release
-  # (repository_dispatch) cross-compiles the vtlengine WebAssembly wheel from its tag; every other
-  # run takes the wheel of the newest release from PyPI, so the demo always matches the last
-  # release and a push to develop does not compile. A Pages deployment replaces the whole site,
-  # so the deploy job needs this job to succeed: without it the demo would disappear.
+  # Runs in parallel with the docs build (build); the two are merged at deploy time. A run at a
+  # release tag (Create Release dispatches the workflow at the tag) cross-compiles the vtlengine
+  # WebAssembly wheel from it; every other run takes the wheel of the newest release from PyPI,
+  # so the demo always matches the last release and a push to develop does not compile. A Pages
+  # deployment replaces the whole site, so the deploy job needs this job to succeed: without it
+  # the demo would disappear.
   build-jupyterlite:
     runs-on: ubuntu-latest
     steps:
@@ -56,20 +57,20 @@ jobs:
         with:
           python-version: '3.14'
       - name: Cache vtlengine WebAssembly wheel
-        if: github.event_name == 'repository_dispatch'
+        if: github.ref_type == 'tag'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: wasm-wheel-cache
         with:
           path: docs/jupyterlite/wheels
           key: vtl-wasm-wheel-${{ hashFiles('src/vtlengine/**', 'CMakeLists.txt', 'pyproject.toml', 'scripts/setup_antlr4_runtime.sh', 'docs/jupyterlite/build-wheel.sh') }}
       - name: Cache Emscripten SDK
-        if: github.event_name == 'repository_dispatch' && steps.wasm-wheel-cache.outputs.cache-hit != 'true'
+        if: github.ref_type == 'tag' && steps.wasm-wheel-cache.outputs.cache-hit != 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: emsdk
           key: emsdk-5.0.3-${{ runner.os }}
       - name: Build the vtlengine wasm wheel
-        if: github.event_name == 'repository_dispatch' && steps.wasm-wheel-cache.outputs.cache-hit != 'true'
+        if: github.ref_type == 'tag' && steps.wasm-wheel-cache.outputs.cache-hit != 'true'
         # Emscripten 5.0.3 and the 314.0.6 cross-build environment are the pair the
         # Pyodide 314.x line pins (`pyodide xbuildenv search --all`); keep them in
         # step with build-wheel.sh and build.sh.
@@ -83,7 +84,7 @@ jobs:
           export PATH="$PWD/.pyobuild/bin:$PATH"
           bash docs/jupyterlite/build-wheel.sh
       - name: Download the wasm wheel of the newest release from PyPI
-        if: github.event_name != 'repository_dispatch'
+        if: github.ref_type != 'tag'
         run: python docs/jupyterlite/fetch_release_wheel.py docs/jupyterlite/wheels
       - name: Cache Pyodide distribution
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
