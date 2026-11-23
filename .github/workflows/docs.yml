@@ -7,20 +7,25 @@ on:
     types: [ published ]
   repository_dispatch:
     types: [ release-published ]
-
   workflow_dispatch:
-
-  pull_request:
-    types: [ closed ]
-    branches: [ main, 1.9.X ]
+  # Only what the docs read from the repository: the pages and scripts, the public API
+  # docstrings, the error messages and the version. The demo's wasm wheel is cached on all of
+  # src/vtlengine, so an unfiltered push would rebuild it on every code change.
+  push:
+    branches: [ develop ]
+    paths:
+      - "docs/**"
+      - "src/vtlengine/__init__.py"
+      - "src/vtlengine/API/**"
+      - "src/vtlengine/Exceptions/**"
+      - "pyproject.toml"
+      - ".github/workflows/docs.yml"
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
-  issues: read
-  pull-requests: read
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
@@ -29,74 +34,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Check if a merged PR is linked to a documentation issue
-  check-docs-label:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    outputs:
-      should_build: ${{ steps.check.outputs.should_build }}
-    steps:
-      - name: Check for documentation label
-        id: check
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            const merged = context.payload.pull_request.merged;
-            if (!merged) {
-              core.setOutput('should_build', 'false');
-              core.info('PR was closed without merging. Skipping.');
-              return;
-            }
-
-            const branch = context.payload.pull_request.head.ref;
-            core.info(`PR branch: ${branch}`);
-
-            const match = branch.match(/^cr-(\d+)$/);
-            if (!match) {
-              core.setOutput('should_build', 'false');
-              core.info('Branch does not match cr-{number} pattern. Skipping.');
-              return;
-            }
-
-            const issueNumber = parseInt(match[1], 10);
-            core.info(`Extracted issue number: ${issueNumber}`);
-
-            try {
-              const issue = await github.rest.issues.get({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issueNumber,
-              });
-
-              const issueLabels = issue.data.labels.map(l => l.name);
-              core.info(`Issue #${issueNumber} labels: ${issueLabels.join(', ') || '(none)'}`);
-
-              if (issueLabels.includes('documentation')) {
-                core.setOutput('should_build', 'true');
-                core.info(`Issue #${issueNumber} has "documentation" label. Will build docs.`);
-              } else {
-                core.setOutput('should_build', 'false');
-                core.info(`Issue #${issueNumber} does not have "documentation" label. Skipping.`);
-              }
-            } catch (error) {
-              core.warning(`Could not fetch issue #${issueNumber}: ${error.message}`);
-              core.setOutput('should_build', 'false');
-            }
-
   # Build the in-browser JupyterLite demo (vtlengine on the Pyodide kernel).
   # Cross-compiles the vtlengine WebAssembly wheel and assembles a static site
   # that the deploy job publishes at /jupyterlite/ alongside the docs. Runs in
   # parallel with the docs build (build); the two are merged at deploy time.
   build-jupyterlite:
-    needs: [ check-docs-label ]
-    if: |
-      always() && !cancelled() &&
-      (
-        github.event_name == 'release' ||
-        github.event_name == 'repository_dispatch' ||
-        github.event_name == 'workflow_dispatch' ||
-        needs.check-docs-label.outputs.should_build == 'true'
-      )
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -157,15 +99,6 @@ jobs:
 
   # Build job
   build:
-    needs: [ check-docs-label ]
-    if: |
-      always() && !cancelled() &&
-      (
-        github.event_name == 'release' ||
-        github.event_name == 'repository_dispatch' ||
-        github.event_name == 'workflow_dispatch' ||
-        needs.check-docs-label.outputs.should_build == 'true'
-      )
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

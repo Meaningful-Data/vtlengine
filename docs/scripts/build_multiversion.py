@@ -87,8 +87,8 @@ def overlay_current_docs(worktree: Path) -> None:
 def resolve_worktree_ref(ref: str) -> str:
     """Return a ref name that ``git worktree add`` can resolve.
 
-    When the CI checkout is a detached HEAD at a tag, branch names like ``main``
-    only exist as remote-tracking refs (``origin/main``); ``git worktree add``
+    When the CI checkout is a detached HEAD at a tag, branch names like ``develop``
+    only exist as remote-tracking refs (``origin/develop``); ``git worktree add``
     does not DWIM a bare branch name to its remote counterpart. Tries the ref
     as-is first, then falls back to ``origin/<ref>``.
     """

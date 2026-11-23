@@ -40,7 +40,7 @@ The command exits silently on success. If the parser is missing or fails to load
 raises `ImportError` with a remediation message pointing back to this section.
 
 ## Development Workflow
-1) Branch from `main` and use a descriptive branch name.
+1) Branch from `develop` and use a descriptive branch name.
 2) Make changes with tests and type hints in mind.
 3) Run mandatory quality checks (must pass before any commit/PR):
    ```bash
@@ -65,7 +65,7 @@ raises `ImportError` with a remediation message pointing back to this section.
 - For SDMX integrations, use `run_sdmx` with proper `VtlDataflowMapping` when multiple datasets are present.
 
 ## Submitting Changes
-- Open a Pull Request against `main` with a clear description of the change and testing performed.
+- Open a Pull Request against `develop` with a clear description of the change and testing performed.
 - Reference related issues and include screenshots/logs if relevant.
 - Be responsive to review feedback; keep discussions respectful (see Code of Conduct).
 
