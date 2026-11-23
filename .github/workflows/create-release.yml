@@ -11,6 +11,9 @@ permissions:
 
 jobs:
   create-release:
+    # Needs the approval of a reviewer of the release environment, which only allows develop and
+    # main, so a branch with an edited workflow cannot create a release.
+    environment: release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
