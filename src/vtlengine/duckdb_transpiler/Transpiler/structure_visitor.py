@@ -46,7 +46,8 @@ from vtlengine.Operators.Join import Apply, merged_viral_attribute_names
 from vtlengine.Operators.Time import Date_Add
 from vtlengine.Operators.Time import Unary as TimeUnary
 from vtlengine.Operators.Validation import error_domains, error_level_type
-from vtlengine.Utils import ANALYTIC_MAPPING, BINARY_MAPPING
+from vtlengine.Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING
+from vtlengine.ViralPropagation import apply_viral_return_types
 
 # Operand type tags
 _DATASET = "Dataset"
@@ -70,6 +71,7 @@ _CALC_ROLE_BY_TOKEN: Dict[str, Role] = {
     tokens.IDENTIFIER: Role.IDENTIFIER,
     tokens.ATTRIBUTE: Role.ATTRIBUTE,
     tokens.MEASURE: Role.MEASURE,
+    tokens.VIRAL_ATTRIBUTE: Role.VIRAL_ATTRIBUTE,
 }
 
 
@@ -899,8 +901,9 @@ class StructureVisitor(ASTTemplate):
                 bindings[f"{_UDO_CHECKS_PREFIX}{param_name}"] = [*inherited, *own]
         return bindings
 
-    def _udo_call_key(self, node: AST.UDOCall) -> Tuple[Any, ...]:
-        """The key of a call made in the current UDO scope (see udo_call_key)."""
+    def _udo_call_key(self, node: AST.AST) -> Tuple[Any, ...]:
+        """The key of a call, or of an aggr clause, made in the current UDO scope (see
+        udo_call_key)."""
         scopes = reversed(self._udo_params or [])
         return udo_call_key(next((s[_UDO_CALL] for s in scopes if _UDO_CALL in s), ()), node)
 
@@ -951,6 +954,9 @@ class StructureVisitor(ASTTemplate):
             with_ruleid=False,
             with_bool_var=True,
         )
+        # The viral attributes are copied to the check result (issue #1354)
+        for comp in inner_ds.get_viral_attributes():
+            val_comps.setdefault(comp.name, comp)
         return Dataset(name="", components=val_comps, data=None)
 
     # =========================================================================
@@ -1168,10 +1174,12 @@ class StructureVisitor(ASTTemplate):
                     comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
                 elif output_ds and col in output_ds.components:
                     # The result holds the Component as the last calc computes it, so its
-                    # type only stands in for an expression not typed here (issue #1309)
+                    # type only stands in for an expression not typed here (issue #1309). Its
+                    # role is the one the calc gives it, which a later operator of the
+                    # statement can change (issue #1354)
                     comp = output_ds.components[col]
                     value_type = self._calc_value_type(assignment.right, input_ds) or comp.data_type
-                    comps[col] = self._make_comp(col, value_type, comp.role, comp.nullable)
+                    comps[col] = self._make_comp(col, value_type, calc_role, comp.nullable)
                     comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
                 else:
                     # calc_role comes from the clause itself, so a new component keeps
@@ -1344,7 +1352,10 @@ class StructureVisitor(ASTTemplate):
         all_input_ids = {n for n, c in input_ds.components.items() if c.role == Role.IDENTIFIER}
         group_ids: Set[str] = set()
         grouping_op: str = ""
-        computed_roles: Dict[str, Role] = {}
+        computed: Dict[str, Component] = {}
+        # The types the semantic analysis gives the computed Components (issue #1354)
+        analyzed = self.udo_results.get((self._udo_call_key(node), tokens.AGGREGATE)) or []
+        analyzed_types = {comp.name: comp.data_type for comp in analyzed}
 
         for assignment in self._iter_assignments(node.children):
             agg_node = assignment.right
@@ -1354,26 +1365,45 @@ class StructureVisitor(ASTTemplate):
                     if isinstance(g, (AST.VarID, AST.Identifier)):
                         group_ids.add(self._resolve_udo_name(g.value))
             name = self._resolve_udo_name(self._resolve_name(assignment.left))
-            computed_roles[name] = getattr(assignment.left, "role", None) or self._omitted_role(
+            role = getattr(assignment.left, "role", None) or self._omitted_role(
                 node, input_ds.components.get(name)
             )
+            value_type = analyzed_types.get(name) or self._aggregate_value_type(agg_node, input_ds)
+            computed[name] = self._make_comp(name, value_type, role)
 
         if grouping_op == tokens.GROUP_BY:
             kept_ids = group_ids
         elif grouping_op == tokens.GROUP_EXCEPT:
             kept_ids = all_input_ids - group_ids
-        else:
+        elif grouping_op == tokens.GROUP_ALL:
             kept_ids = all_input_ids
+        else:
+            # Without grouping, the aggregation gives a single Data Point (issue #1354)
+            kept_ids = set()
 
         comps: Dict[str, Component] = {
             name: comp
             for name, comp in input_ds.components.items()
             if comp.role == Role.IDENTIFIER and name in kept_ids
         }
-        for col_name, role in computed_roles.items():
-            comps[col_name] = self._make_comp(col_name, Number, role)
+        # The viral Attributes that the aggregation propagates (issue #1354)
+        viral_attributes = input_ds.get_viral_attributes()
+        comps.update((comp.name, comp) for comp in viral_attributes)
+        apply_viral_return_types(viral_attributes, comps)
+        comps.update(computed)
 
         return Dataset(name=input_ds.name, components=comps, data=None)
+
+    def _aggregate_value_type(self, node: AST.AST, source: Dataset) -> Any:
+        """Data type of an expression of an aggr clause: the return type of its aggregate
+        function, else the type of the operand, which max, min and sum keep (issue #1354).
+        Number when it is not worked out here."""
+        if not isinstance(node, AST.Aggregation):
+            return Number
+        return_type = AGGREGATION_MAPPING[node.op].return_type
+        if return_type is not None or node.operand is None:
+            return return_type or Number
+        return self._calc_value_type(node.operand, source) or Number
 
     def _build_membership_structure(self, node: AST.BinOp) -> Optional[Dataset]:
         """Build the output structure for a membership (#) operation.

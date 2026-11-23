@@ -1,6 +1,6 @@
 import operator
 import re
-from typing import Any, ClassVar, Optional, Union
+from typing import Any, ClassVar, Optional, Tuple, Union, cast
 
 import pandas as pd
 
@@ -145,6 +145,9 @@ class Concatenate(Binary):
 
 
 class Parameterized(Unary):
+    # The positions of the parameters whose null gives a null result
+    null_params: ClassVar[Tuple[int, ...]] = ()
+
     # Implemented by each operator
     @classmethod
     def check_param(cls, param: Optional[Union[DataComponent, Scalar]], position: int) -> None:
@@ -161,24 +164,38 @@ class Parameterized(Unary):
             cls.check_param(param1, 1)
         if param2 is not None:
             cls.check_param(param2, 2)
-        return super().validate(cls.component_operand(operand, param1, param2))
+        operand = cls.operand_in_data_points(operand, (param1, param2))
+        return cls.declare_null_params(super().validate(operand), (param1, param2))
 
     @staticmethod
-    def component_operand(operand: Any, *params: Any) -> Any:
-        """A Scalar operand with a Component parameter is taken as the Component that has the
-        value of the Scalar at each Data Point, as the result has a value per Data Point, null
-        where a parameter is (issue #1353). Any other operand is returned as it is."""
-        components = [param for param in params if isinstance(param, DataComponent)]
-        if not isinstance(operand, Scalar) or not components:
+    def operand_in_data_points(operand: Any, params: Tuple[Any, ...]) -> Any:
+        """A Scalar operand with a Component parameter gives a value in each Data Point, so it
+        is taken as a Component that holds its value in each of them (issue #1354)."""
+        component = next((param for param in params if isinstance(param, DataComponent)), None)
+        if not isinstance(operand, Scalar) or component is None:
             return operand
-        data = components[0].data
+        data = None
+        if component.data is not None:
+            data = pd.Series(operand.value, index=component.data.index, dtype=object)
         return DataComponent(
             name=operand.name,
-            data=None if data is None else pd.Series(operand.value, index=data.index, dtype=object),
+            data=data,
             data_type=operand.data_type,
             role=Role.MEASURE,
-            nullable=operand.nullable or any(comp.nullable for comp in components),
+            nullable=operand.nullable,
         )
+
+    @classmethod
+    def declare_null_params(cls, result: Any, params: Tuple[Any, ...]) -> Any:
+        """A parameter that gives a null result for a null and can hold one makes the result
+        nullable, the Measures of a Data Set (issue #1354)."""
+        if any(Operator.param_may_be_null(params[i - 1]) for i in cls.null_params):
+            if isinstance(result, Dataset):
+                for measure in result.get_measures():
+                    measure.nullable = True
+            else:
+                result.nullable = True
+        return result
 
     @classmethod
     def op_func(cls, *args: Any) -> Any:
@@ -267,7 +284,7 @@ class Parameterized(Unary):
         param1: Optional[Union[DataComponent, Scalar]]
         param2: Optional[Union[DataComponent, Scalar]]
         operand, param1, param2 = (args + (None, None))[:3]
-        operand = cls.component_operand(operand, param1, param2)
+        operand = cls.operand_in_data_points(operand, (param1, param2))
 
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, param1, param2)
@@ -276,29 +293,19 @@ class Parameterized(Unary):
         return cls.scalar_evaluation(operand, param1, param2)
 
     @classmethod
-    def generate_series_from_param(
-        cls, param: Optional[Union[DataComponent, Scalar]], index: Any
-    ) -> Any:
-        """The values of a parameter at the Data Points ``index``: a Scalar keeps its value,
-        whatever its type, as a String Series wrote a number as text (issue #1353)."""
-        if param is None:
-            return pd.Series(index=index, dtype=object)
-        if isinstance(param, Scalar):
-            return pd.Series(data=param.value, index=index, dtype=object)
-        return param.data
-
-    @classmethod
-    def apply_operation_series(cls, *args: Any) -> Any:
-        """The operation at each Data Point, on the values of the operand and the parameters
-        taken by position: the operand and a parameter can be the same Component (issue
-        #1353)."""
-        data, *params = args
-        frame = pd.concat(
-            [data] + [cls.generate_series_from_param(param, data.index) for param in params],
-            axis=1,
-            ignore_index=True,
+    def apply_operation_series(cls, data: Any, *params: Any) -> Any:
+        """Apply the operator data point by data point, with the value of each Component
+        parameter in that data point and the value of each Scalar one, of the type they have
+        (issue #1354)."""
+        values = [
+            list(cast(pd.Series, param.data))
+            if isinstance(param, DataComponent)
+            else [getattr(param, "value", None)] * len(data)
+            for param in params
+        ]
+        return pd.Series(
+            [cls.op_func(x, *row) for x, *row in zip(data, *values)], index=data.index, dtype=object
         )
-        return frame.apply(lambda row: cls.op_func(*row), axis=1)
 
 
 class Substr(Parameterized):
@@ -364,6 +371,7 @@ class Substr(Parameterized):
 class Replace(Parameterized):
     op = REPLACE
     return_type = String
+    null_params = (1, 2)
 
     @classmethod
     def py_op(cls, x: str, param1: Optional[Any], param2: Optional[Any]) -> Any:
@@ -545,6 +553,7 @@ DISTANCE_DISPATCH: dict[str, type[StringDistance]] = {
 class Instr(Parameterized):
     op = INSTR
     return_type = Integer
+    null_params = (1,)
 
     @classmethod
     def validate(
@@ -566,8 +575,8 @@ class Instr(Parameterized):
             cls.check_param(param2, 2)
         if param3 is not None:
             cls.check_param(param3, 3)
-
-        return super().validate(cls.component_operand(operand, param1, param2, param3))
+        operand = cls.operand_in_data_points(operand, (param1, param2, param3))
+        return cls.declare_null_params(super().validate(operand), (param1, param2, param3))
 
     @classmethod
     def validate_params(cls, params: Any) -> None:
@@ -621,16 +630,6 @@ class Instr(Parameterized):
         cls, series: Any, param1: Any, param2: Any, param3: Any
     ) -> Any:
         return series.map(lambda x: cls.op_func(x, param1, param2, param3))
-
-    @classmethod
-    def apply_operation_series(
-        cls,
-        data: Any,
-        param1: Optional[Union[DataComponent, Scalar]],
-        param2: Optional[Union[DataComponent, Scalar]],
-        param3: Optional[Union[DataComponent, Scalar]],
-    ) -> Any:
-        return super().apply_operation_series(data, param1, param2, param3)
 
     @classmethod
     def dataset_evaluation(  # type: ignore[override]
@@ -713,7 +712,7 @@ class Instr(Parameterized):
         param2: Optional[Any] = None,
         param3: Optional[Any] = None,
     ) -> Any:
-        operand = cls.component_operand(operand, param1, param2, param3)
+        operand = cls.operand_in_data_points(operand, (param1, param2, param3))
         if isinstance(operand, Dataset):
             return cls.dataset_evaluation(operand, param1, param2, param3)
         if isinstance(operand, DataComponent):

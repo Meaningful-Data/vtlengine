@@ -21,12 +21,19 @@ from vtlengine.DataTypes import (
 )
 from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Component, Dataset, Role, ValueDomain, component_type_name
-from vtlengine.Operators import Operator, on_basic_types
+from vtlengine.Operators import (
+    Operator,
+    _id_type_promotion_join_keys,
+    check_common_identifier_types,
+    on_basic_types,
+)
 from vtlengine.Operators.HROperators import fills_with_zero
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 
 ERROR_VALUE_DOMAINS = {"errorcode": "errorcode_vd", "errorlevel": "errorlevel_vd"}
+# The Measures a validation computes
+VALIDATION_MEASURES = ("bool_var", "imbalance", "errorcode", "errorlevel")
 
 
 def error_domains(
@@ -210,6 +217,7 @@ class Check(Operator):
             imbalance_identifiers = imbalance_element.get_identifiers_names()
             if operand_identifiers != imbalance_identifiers:
                 raise SemanticError("1-1-10-11", op=cls.op)
+            check_common_identifier_types(cls.op, validation_element, imbalance_element)
             if len(imbalance_element.get_measures()) != 1:
                 raise SemanticError("1-1-10-1", op=cls.op, op_type="imbalance", me_type="Numeric")
 
@@ -217,19 +225,20 @@ class Check(Operator):
             if imbalance_measure.data_type not in (Number, Integer):
                 raise SemanticError("1-1-10-1", op=cls.op, op_type="imbalance", me_type="Numeric")
 
-        # Generating the result dataset components
-        result_components = {
-            comp.name: comp
-            for comp in validation_element.components.values()
-            if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
-        }
+        # The result has the Identifiers of op, its Measure as bool_var and its viral
+        # Attributes, which are copied unchanged as no data points are combined (issue #1354)
+        result_components = {comp.name: comp for comp in validation_element.get_identifiers()}
+        result_components["bool_var"] = copy(measure)
+        result_components["bool_var"].name = "bool_var"
         if imbalance_measure is None:
             result_components["imbalance"] = Component(
                 name="imbalance", data_type=Number, role=Role.MEASURE, nullable=True
             )
         else:
+            # A data point of op without one in imbalance has a null imbalance
             result_components["imbalance"] = copy(imbalance_measure)
             result_components["imbalance"].name = "imbalance"
+            result_components["imbalance"].nullable = True
 
         result_components["errorcode"] = Component(
             name="errorcode", data_type=String, role=Role.MEASURE, nullable=True
@@ -242,6 +251,9 @@ class Check(Operator):
             nullable=True,
         )
         _set_error_types(result_components, value_domains)
+        # A viral Attribute named like a computed Measure gives way to it
+        for viral_comp in validation_element.get_viral_attributes():
+            result_components.setdefault(viral_comp.name, copy(viral_comp))
 
         return Dataset(name=dataset_name, components=result_components, data=None)
 
@@ -260,20 +272,39 @@ class Check(Operator):
         )
         if validation_element.data is None:
             validation_element.data = pd.DataFrame()
-        columns_to_keep = (
-            validation_element.get_identifiers_names() + validation_element.get_measures_names()
-        )
-        result.data = validation_element.data.loc[:, columns_to_keep]
+        identifiers = validation_element.get_identifiers_names()
+        validation_measure_name = validation_element.get_measures_names()[0]
+        result.data = validation_element.data[
+            identifiers + [validation_measure_name] + result.get_viral_attributes_names()
+        ].rename(columns={validation_measure_name: "bool_var"})
         if imbalance_element is not None and imbalance_element.data is not None:
+            # Matched on the Identifiers, as all keeps every data point of op (issue #1354)
             imbalance_measure_name = imbalance_element.get_measures_names()[0]
-            result.data["imbalance"] = imbalance_element.data[imbalance_measure_name]
+            imbalance_data = imbalance_element.data[identifiers + [imbalance_measure_name]].rename(
+                columns={imbalance_measure_name: "imbalance"}
+            )
+            op_data = result.data
+            for id_name in identifiers:
+                op_comp = validation_element.components[id_name]
+                imbalance_comp = imbalance_element.components[id_name]
+                if op_comp.data_type is not imbalance_comp.data_type:
+                    op_data, imbalance_data = _id_type_promotion_join_keys(
+                        op_comp, imbalance_comp, id_name, op_data, imbalance_data
+                    )
+            if identifiers:
+                merged = merge_frames(op_data, imbalance_data, on=identifiers, how="left")
+            else:
+                # Without Identifiers, op and imbalance have one data point at most, which match
+                merged = op_data.reset_index(drop=True).join(imbalance_data.reset_index(drop=True))
+            # The left merge keeps the order of the data points of op, whose Identifiers keep
+            # their type where the imbalance has another one matched by value
+            result.data = merged.assign(**{name: result.data[name].array for name in identifiers})
         else:
             result.data["imbalance"] = None
 
         # Set errorcode/errorlevel ONLY when validation explicitly fails (bool_var is False)
         # NULL bool_var means indeterminate - should NOT have errorcode/errorlevel
-        validation_measure_name = validation_element.get_measures_names()[0]
-        bool_col = result.data[validation_measure_name]
+        bool_col = result.data["bool_var"]
         is_false = bool_col.fillna(True) == False  # noqa: E712
         errorcode_type = result.components["errorcode"].data_type
         result.data["errorcode"] = pd.Series(
@@ -287,8 +318,9 @@ class Check(Operator):
             result.data.loc[is_false, "errorlevel"] = error_level
 
         if invalid:
-            result.data = result.data[result.data[validation_measure_name] == False]
+            result.data = result.data[result.data["bool_var"] == False]
             result.data.reset_index(drop=True, inplace=True)
+        result.data = result.data[result.get_components_names()]
         return result
 
 
@@ -321,6 +353,11 @@ class Validation(Operator):
         viral_values: Optional[pd.DataFrame] = None,
         value_domains: Optional[Dict[str, ValueDomain]] = None,
     ) -> Dataset:
+        # A Measure of the operand that the result keeps (invalid, all_measures) and that is named
+        # like a computed one would collide with it, as in an unpivot (issue #1354)
+        for name in dataset_element.get_measures_names() if output != "all" else []:
+            if name in VALIDATION_MEASURES:
+                raise SemanticError("1-1-6-14", op=cls.op, name=name, dataset=dataset_element.name)
         error_levels = [rule_data.get("errorlevel") for rule_data in rule_info.values()]
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {comp.name: comp for comp in dataset_element.get_identifiers()}
@@ -404,8 +441,8 @@ class Validation(Operator):
             subset=result.get_identifiers_names() + ["ruleid"]
         ).reset_index(drop=True)
         validation_measures = ["bool_var", "errorcode", "errorlevel"]
-        # Only for check hierarchy
-        if "imbalance" in result.components:
+        # Only for check hierarchy, not a viral Attribute named imbalance (issue #1354)
+        if "imbalance" in result.get_measures_names():
             validation_measures.append("imbalance")
         if output == "invalid":
             result.data = result.data[result.data["bool_var"] == False]
@@ -453,7 +490,7 @@ class Validation(Operator):
 
 
 class Check_Datapoint(Validation):
-    pass
+    op = CHECK_DATAPOINT
 
 
 class Check_Hierarchy(Validation):
