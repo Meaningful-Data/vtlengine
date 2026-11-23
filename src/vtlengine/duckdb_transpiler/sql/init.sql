@@ -373,6 +373,27 @@ CREATE OR REPLACE MACRO vtl_param_min(x, min_value, op_name, param_name) AS (
     END
 );
 
+-- The offset of lag or lead that a Scalar gives when only the query knows it. A
+-- null offset is no Integer (mirrors VTL error 2-1-18-1, issue #1355). A Number
+-- is rounded half away from zero, as the pandas engine rounds it.
+CREATE OR REPLACE MACRO vtl_lag_offset(x, op_name) AS (
+    CASE WHEN x IS NULL
+         THEN error('VTL 2-1-18-1 ' || op_name || ' Offset Integer')
+         ELSE CAST(round(x) AS BIGINT)
+    END
+);
+
+-- A bound of an analytic window that a Scalar gives when only the query knows it,
+-- checked as the pandas engine checks it. A Number is rounded half away from zero,
+-- as the offset of lag, and a null or negative bound raises VTL error 2-1-18-1
+-- (issue #1355).
+CREATE OR REPLACE MACRO vtl_window_bound(x, op_name) AS (
+    CASE WHEN x IS NULL OR round(x) < 0
+         THEN error('VTL 2-1-18-1 ' || op_name || ' Window bound')
+         ELSE CAST(round(x) AS BIGINT)
+    END
+);
+
 -- A scalar argument of an integer parameter of a user defined operator. A whole
 -- Number is the Integer, one with decimals is no Integer (mirrors VTL error
 -- 2-3-10, which the pandas engine raises where the call is computed, as a literal

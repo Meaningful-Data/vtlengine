@@ -1,0 +1,5 @@
+define operator f ( d dataset , p string )
+    returns dataset is
+        d [ calc Me_3 := time_agg ( p , _ , Tp ) ]
+end operator;
+DS_r <- f ( DS_7 , "A" );

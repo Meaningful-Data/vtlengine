@@ -13712,44 +13712,6 @@ class TimeValueBugs(BugHelper):
         """
         self.BaseTest(code="GH_1352_26m", number_inputs=1, references_names=["1"])
 
-    vd_1365 = ["GH_1365-VD_TP", "GH_1365-VD_DATE"]
-
-    def test_GH_1365_1(self):
-        """
-        Status: OK
-        Expression: DS_r <- DS_1 [ calc Me_3 := Me_1 >= cast ( "2021Q2" , time_period ) ,
-                        Me_4 := between ( Me_1 , cast ( "2021Q1" , time_period ) ,
-                                          cast ( "2021-Q3" , time_period ) ) ,
-                        Me_5 := Me_2 < cast ( "2020-01-31" , date ) ,
-                        Me_6 := between ( Me_2 , cast ( "2020-01-05" , date ) ,
-                                          cast ( "2020-01-31" , date ) ) ];
-        Description: The pandas engine compares the Time_Period Me_1 and the Date Me_2 with
-                     Scalar bounds once per distinct value. A value repeated, written in
-                     another form (2021-Q1, 2020-1-5) or null gets, on its rows, the result of
-                     its value, null for a null, as on the DuckDB engine.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1365
-        Goal: Check Result.
-        """
-        self.BaseTest(code="GH_1365_1", number_inputs=1, references_names=["1"])
-
-    def test_GH_1365_2(self):
-        """
-        Status: OK
-        Expression: DS_r <- DS_1 [ calc Me_2 := Me_1 in VD_DATE , Me_3 := Me_1 not_in VD_DATE ]
-                        [ filter Id_2 in { cast ( "2021-Q1" , time_period ) ,
-                                           cast ( "2021Q3" , time_period ) } ];
-        Description: The pandas engine checks the values of Id_2, on the Time_Period value
-                     domain VD_TP, and of the Date Me_1 against a value domain or a set once
-                     per distinct value. A value repeated or written in another form (2021-Q1,
-                     2020-1-6) is in the domain or the set as its value is, a null Me_1 gives
-                     null, as on the DuckDB engine.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1365
-        Goal: Check Result.
-        """
-        self.BaseTest(
-            code="GH_1365_2", number_inputs=1, references_names=["1"], vd_names=self.vd_1365
-        )
-
 
 class BasicTypeValueBugs(BugHelper):
     """Values of the basic types converted, written and compared alike by both engines (issue
@@ -14599,7 +14561,7 @@ class SemanticCheckBugs(BugHelper):
             code="GH_1356_12",
             number_inputs=1,
             exception_code="2-1-18-1",
-            exception_message="At op sum: Window bound parameter should be Integer.",
+            exception_message="At op sum: Window bound parameter should be a non-negative Integer.",
             scalars={"SC_1": None},
         )
 
@@ -15153,6 +15115,24 @@ class SemanticCheckBugs(BugHelper):
             vd_names=["GH_1356-VD_DUR"],
         )
 
+    def test_GH_1356_64(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_2 [ rename Me_1 to 'x"y' ];
+        Description: A Component name cannot hold a double quote, as the input structures refuse
+                     it, so the new name x"y raises 1-1-6-19 on both engines and in the semantic
+                     analysis. The pandas engine returned the Component x"y, the DuckDB engine
+                     raised a raw ParserException and the semantic analysis accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_64",
+            number_inputs=1,
+            exception_code="1-1-6-19",
+            exception_message='At op rename: Invalid Component name x"y',
+        )
+
 
 class RunTimeErrorMappingBugs(BugHelper):
     """Errors raised while the data is computed are VTL errors, the same on both engines (issue
@@ -15322,6 +15302,26 @@ class RunTimeErrorMappingBugs(BugHelper):
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(code="GH_1356_66", number_inputs=1, exception_code="2-1-15-3")
+
+    def test_GH_1356_67(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_6 [ pivot Id_2 , Me_1 ];
+        Description: The Measures of pivot are the values of VD_X, the value domain of Id_2, and
+                     its value a"b holds a double quote, which a Component name cannot hold, so
+                     pivot raises 1-1-6-19 on both engines and in the semantic analysis, as
+                     test_GH_1356_64. The pandas engine returned the Measure a"b, the DuckDB
+                     engine raised a raw ParserException and the semantic analysis accepted it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1356
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1356_67",
+            number_inputs=1,
+            exception_code="1-1-6-19",
+            exception_message='At op pivot: Invalid Component name a"b',
+            vd_names=["GH_1356-VD_X"],
+        )
 
     def test_GH_1356_43(self):
         """
@@ -16626,4 +16626,1531 @@ class StructureDataBugs(BugHelper):
             exception_code="1-1-13-18",
             exception_message="At op check: Incompatible types for common identifier Id_1: "
             "Integer and String.",
+        )
+
+
+class NameResolutionBugs(BugHelper):
+    """Names inside user defined operators resolved to what they name (issue #1355)."""
+
+    vd_1355 = ["GH_1355-VD_1"]
+
+    def test_GH_1355_1(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , c component ) returns dataset is
+                        d [ rename Me_1 to c ] end operator;
+                    DS_r <- f ( DS_1 , Me_9 );
+        Description: The component parameter c, as the new name of rename, stands for its
+                     argument Me_9, on both engines and in the semantic analysis. The result
+                     component was named c, and the DuckDB engine lost its column.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_1", number_inputs=1, references_names=["1"])
+        self.BaseTest(code="GH_1355_1", number_inputs=1, references_names=["1"], only_semantic=True)
+
+    def test_GH_1355_2(self):
+        """
+        Status: OK
+        Expression: define operator f ( value integer ) returns integer [ value > 0 ] is
+                        value + 10 end operator;
+                    SC_r <- f ( 3 );
+                    DS_r <- DS_3 [ calc Me_3 := SC_r ];
+        Description: value in the constraint of the result is the result being checked, and
+                     value in the body is the parameter, so f ( 3 ) is 13. The DuckDB engine
+                     raised a RecursionError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_2", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1355_2b(self):
+        """
+        Status: OK
+        Expression: define operator f ( value integer ) returns VD_2 [ value > 0 ] is
+                        value + 10 end operator;
+                    define operator g ( value component ) returns component < VD_2 [ value > 0 ]
+                        > is value + 10 end operator;
+                    SC_r <- f ( 3 );
+                    DS_r <- DS_3 [ calc Me_3 := SC_r , Me_4 := g ( Me_2 ) ];
+        Description: Extra case: as test_GH_1355_2, for operators that return a value of the
+                     value domain VD_2, a scalar and a Component. The DuckDB engine raised a
+                     RecursionError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_2b",
+            number_inputs=1,
+            references_names=["1", "2"],
+            vd_names=["GH_1355-VD_2"],
+        )
+
+    def test_GH_1355_3(self):
+        """
+        Status: OK
+        Expression: define operator f ( value component )
+                        returns component < integer [ value > 0 ] > is value - 10 end operator;
+                    DS_r <- DS_3 [ calc Me_3 := f ( Me_2 ) ];
+        Description: The result 3 - 10 does not meet the constraint of the result, where value
+                     is the result, so the call raises 2-3-9. The DuckDB engine raised a
+                     RecursionError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_3",
+            number_inputs=1,
+            exception_code="2-3-9",
+            exception_message=(
+                "At op f: the output has the value -7, which its type constraint "
+                "[value > 0] does not allow."
+            ),
+        )
+
+    def test_GH_1355_4(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer ) returns integer [ value > 0 ] is x - 10
+                        end operator;
+                    SC_r <- f ( 3 );
+        Description: Control: with the parameter named x, the constraint of the result raises
+                     2-3-9 on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_4",
+            number_inputs=1,
+            exception_code="2-3-9",
+            exception_message=(
+                "At op f: the output has the value -7, which its type constraint "
+                "[value > 0] does not allow."
+            ),
+        )
+
+    def test_GH_1355_5(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , r component ) returns dataset is
+                        hierarchy ( d , HR_1 rule r all ) end operator;
+                    DS_r <- f ( DS_5 , Id_2 );
+        Description: The component parameter r, as the rule component of a value domain
+                     hierarchical ruleset, stands for its argument Id_2. The DuckDB engine
+                     read the column r, which does not exist.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_5", number_inputs=1, references_names=["1"], vd_names=self.vd_1355
+        )
+
+    def test_GH_1355_6(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , r component ) returns dataset is
+                        check_hierarchy ( d , HR_1 rule r all ) end operator;
+                    DS_r <- f ( DS_5 , Id_2 );
+        Description: As test_GH_1355_5, for check_hierarchy: the result is the one of
+                     test_GH_1355_7. The DuckDB engine read the column r, which does not exist.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_6", number_inputs=1, references_names=["1"], vd_names=self.vd_1355
+        )
+
+    def test_GH_1355_7(self):
+        """
+        Status: OK
+        Expression: DS_r <- check_hierarchy ( DS_5 , HR_1 rule Id_2 all );
+        Description: Control: the same check_hierarchy outside an operator.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_7", number_inputs=1, references_names=["1"], vd_names=self.vd_1355
+        )
+
+    def test_GH_1355_8(self):
+        """
+        Status: OK
+        Expression: define operator f ( x dataset ) returns dataset is x + DS_4 end operator;
+                    DS_r <- f ( DS_3 );
+        Description: The body of f reads the input DS_4, which it does not receive as a
+                     parameter, so the statement reads DS_4. The DuckDB engine never loaded it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_8", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_9(self):
+        """
+        Status: OK
+        Expression: DS_9 <- DS_4 * 10;
+                    define operator f ( x dataset ) returns dataset is x + DS_9 end operator;
+                    DS_r <- f ( DS_3 );
+        Description: The body of f reads DS_9, which an earlier statement computes, so the
+                     statement that calls f depends on it. The DuckDB engine dropped DS_9
+                     before the call.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_9", number_inputs=2, references_names=["1", "2"])
+
+    def test_GH_1355_20(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , x number ) returns dataset is
+                        d [ aggr Me_2 := sum ( Me_1 * x ) group by Id_1 ] end operator;
+                    DS_r <- f ( DS_1 , 2.5 );
+        Description: The scalar parameter x of an operator whose body has an aggr clause is
+                     2.5 in the aggregation, as in DS_1 [ aggr Me_2 := sum ( Me_1 * 2.5 ) group
+                     by Id_1 ]. Both engines and the semantic analysis raised an internal
+                     AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_20", number_inputs=1, references_names=["1"])
+        self.BaseTest(
+            code="GH_1355_20", number_inputs=1, references_names=["1"], only_semantic=True
+        )
+
+    def test_GH_1355_21(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , x integer ) returns dataset is
+                        d [ aggr Me_2 := sum ( Me_1 ) group by Id_1 ] end operator;
+                    DS_r <- f ( DS_1 , 2 );
+        Description: The aggr clause gives the result of test_GH_1355_22 also when the
+                     operator has a scalar parameter that it does not read. Both engines raised
+                     an internal AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_21", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_22(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset ) returns dataset is
+                        d [ aggr Me_2 := sum ( Me_1 ) group by Id_1 ] end operator;
+                    DS_r <- f ( DS_1 );
+        Description: Control: the aggr clause in an operator without a scalar parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_22", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_23(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , x integer ) returns dataset is
+                        d [ calc Me_3 := lag ( Me_2 , x over ( order by Id_1 ) ) ] end operator;
+                    DS_r <- f ( DS_3 , 1 );
+        Description: The scalar parameter x is the offset 1 of lag, as in test_GH_1355_26.
+                     The DuckDB engine raised a KeyError with the name of the parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_23", number_inputs=1, references_names=["1"])
+        self.BaseTest(
+            code="GH_1355_23", number_inputs=1, references_names=["1"], only_semantic=True
+        )
+
+    def test_GH_1355_23b(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , x integer ) returns dataset is
+                        d [ calc Me_3 := lag ( Me_2 , x over ( order by Id_1 ) ) ] end operator;
+                    DS_r <- f ( DS_3 , -1 );
+        Description: Extra of test_GH_1355_23: the negative offset -1 given to x, which lag
+                     takes as lead 1. The DuckDB engine raised a KeyError with the name of the
+                     parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_23b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_23c(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , x integer ) returns dataset is
+                        d [ calc Me_3 := lag ( Me_2 , x over ( order by Id_1 ) ) ] end operator;
+                    DS_r <- f ( DS_3 , 1 + 0 );
+        Description: Extra of test_GH_1355_23: the offset given to x is the expression 1 + 0.
+                     The DuckDB engine raised a KeyError with the name of the parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_23c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_23d(self):
+        """
+        Status: OK
+        Expression: SC_1 <- 1;
+                    DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , SC_1 over ( order by Id_1 ) ) ];
+        Description: Extra of test_GH_1355_23: the offset of lag is SC_1, a Scalar that an
+                     earlier statement computes. The DuckDB engine raised a KeyError with the
+                     name of the Scalar.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_23d", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1355_23e(self):
+        """
+        Status: OK
+        Expression: SC_1 <- cast ( null , integer );
+                    DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , SC_1 over ( order by Id_1 ) ) ];
+        Description: Extra of test_GH_1355_23: SC_1, a Scalar that an earlier statement
+                     computes, gives lag a null offset, which raises 2-1-18-1 on both engines.
+                     The pandas engine raised an internal BinderException and the DuckDB engine
+                     gave null data points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_23e",
+            number_inputs=1,
+            exception_code="2-1-18-1",
+            exception_message="At op lag: Offset parameter should be Integer.",
+        )
+
+    def test_GH_1355_23f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , SF_1 over ( order by Id_1 ) ) ];
+                    (SF_1 an input Number Scalar, 0.5)
+        Description: Extra of test_GH_1355_23: a Number offset is rounded half away from
+                     zero, so 0.5 is the offset 1, on both engines. The DuckDB engine rounded it
+                     half to even, to 0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_23f", number_inputs=1, references_names=["1"], scalars={"SF_1": 0.5}
+        )
+
+    def test_GH_1355_23g(self):
+        """
+        Status: OK
+        Expression: SC_1 <- 2.5;
+                    DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , SC_1 over ( order by Id_1 ) ) ];
+        Description: Extra of test_GH_1355_23: the offset 2.5 that a statement computes is
+                     rounded half away from zero, to 3, on both engines. The DuckDB engine
+                     rounded it half to even, to 2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_23g", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1355_23h(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , Me_2 over ( order by Id_1 ) ) ];
+        Description: Extra of test_GH_1355_23: the offset of lag is an Integer Scalar, so the
+                     Component Me_2 raises 1-1-18-4 on both engines and in the semantic
+                     analysis. The pandas engine raised an internal ParserException and the
+                     DuckDB engine gave null data points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_23h",
+            number_inputs=1,
+            exception_code="1-1-18-4",
+            exception_message="At op lag: Offset parameter should be an Integer Scalar.",
+        )
+
+    def test_GH_1355_23i(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , SP_1 over ( order by Id_1 ) ) ];
+                    (SP_1 an input String Scalar)
+        Description: Extra of test_GH_1355_23: the String Scalar SP_1 is no Integer, which
+                     raises 1-1-18-4 on both engines and in the semantic analysis. The pandas
+                     engine raised an internal BinderException and the DuckDB engine 2-1-5-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_23i",
+            number_inputs=1,
+            exception_code="1-1-18-4",
+            exception_message="At op lag: Offset parameter should be an Integer Scalar.",
+            scalars={"SP_1": "A"},
+        )
+
+    def test_GH_1355_24(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , x integer ) returns dataset is
+                        d [ calc Me_3 := lead ( Me_2 , x over ( order by Id_1 ) ) ] end operator;
+                    DS_r <- f ( DS_3 , 1 );
+        Description: The scalar parameter x is the offset 1 of lead. The DuckDB engine raised
+                     a KeyError with the name of the parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_24", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_24b(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , x integer ) returns dataset is
+                        d [ calc Me_3 := lead ( Me_2 , x over ( order by Id_1 ) ) ] end operator;
+                    SC_1 <- cast ( null , integer );
+                    DS_r <- f ( DS_3 , SC_1 );
+        Description: Extra of test_GH_1355_24: the parameter x, given the null Scalar SC_1, is
+                     a null offset of lead, which raises 2-1-18-1 on both engines. The pandas
+                     engine raised an internal BinderException and the DuckDB engine gave null
+                     data points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_24b",
+            number_inputs=1,
+            exception_code="2-1-18-1",
+            exception_message="At op lead: Offset parameter should be Integer.",
+        )
+
+    def test_GH_1355_25(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , p string ) returns dataset is
+                        d [ calc Me_3 := time_agg ( p , _ , Tp ) ] end operator;
+                    DS_r <- f ( DS_7 , "A" );
+        Description: The scalar parameter p is the period "A" of time_agg, as in
+                     test_GH_1355_27. The DuckDB engine raised a KeyError with the name of the
+                     parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_25", number_inputs=1, references_names=["1"])
+        self.BaseTest(
+            code="GH_1355_25", number_inputs=1, references_names=["1"], only_semantic=True
+        )
+
+    def test_GH_1355_25b(self):
+        """
+        Status: OK
+        Expression: define operator f ( d dataset , p string ) returns dataset is
+                        d [ calc Me_3 := time_agg ( p , _ , Tp ) ] end operator;
+                    DS_r <- f ( DS_7 , "A" || "" );
+        Description: Extra of test_GH_1355_25: the period given to p is the expression
+                     "A" || "". The DuckDB engine raised a KeyError with the name of the
+                     parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_25b", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_25c(self):
+        """
+        Status: OK
+        Expression: SC_2 <- "A";
+                    DS_r <- DS_7 [ calc Me_3 := time_agg ( SC_2 , _ , Tp ) ];
+        Description: Extra of test_GH_1355_25: the period of time_agg is SC_2, a Scalar that
+                     an earlier statement computes. The DuckDB engine raised a KeyError with the
+                     name of the Scalar.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_25c", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1355_25d(self):
+        """
+        Status: OK
+        Expression: SC_2 <- cast ( null , string );
+                    DS_r <- DS_7 [ calc Me_3 := time_agg ( SC_2 , _ , Tp ) ];
+        Description: Extra of test_GH_1355_25: SC_2, a Scalar that an earlier statement
+                     computes, gives time_agg no period, which raises 2-1-19-24 on both engines.
+                     The DuckDB engine raised a KeyError with the name of the Scalar.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_25d",
+            number_inputs=1,
+            exception_code="2-1-19-24",
+            exception_message=(
+                "At op time_agg: The period indicator SC_2 to aggregate to has no value."
+            ),
+        )
+
+    def test_GH_1355_25e(self):
+        """
+        Status: OK
+        Expression: SC_2 <- cast ( null , string );
+                    DS_r <- DS_7 [ calc Me_3 := time_agg ( SC_2 , _ , Tp ) ];
+        Description: Extra of test_GH_1355_25: as test_GH_1355_25d, with DS_7 without data
+                     points, the null period raises 2-1-19-24 on both engines. The DuckDB
+                     engine checked the period on each data point, so it raised nothing.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_25e",
+            number_inputs=1,
+            exception_code="2-1-19-24",
+            exception_message=(
+                "At op time_agg: The period indicator SC_2 to aggregate to has no value."
+            ),
+        )
+
+    def test_GH_1355_25f(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_7 as a , DS_4 as b
+                        calc Me_9 := time_agg ( "A" , _ , a#Tp ) drop b#Me_2 );
+        Description: Extra of test_GH_1355_25: time_agg of the Time_Period a#Tp in the calc
+                     of a join. The DuckDB engine took a#Tp as a Date and raised an internal
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_25f", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_26(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := lag ( Me_2 , 1 over ( order by Id_1 ) ) ];
+        Description: Control: lag with a literal offset.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_26", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_26b(self):
+        """
+        Status: OK
+        Expression: SC_1 <- 2;
+                    DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SC_1 preceding and current data point ) ) ];
+        Description: Extra of test_GH_1355_26: SC_1, a Scalar that an earlier statement
+                     computes, is the bound of the window. The DuckDB engine raised a KeyError
+                     with the name of the Scalar.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_26b", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1355_26c(self):
+        """
+        Status: OK
+        Expression: define operator w ( d dataset , n integer ) returns dataset is
+                        d [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between n preceding and current data point ) ) ] end operator;
+                    DS_r <- w ( DS_3 , 1 + 0 );
+        Description: Extra of test_GH_1355_26: the expression 1 + 0 given to the parameter n
+                     is the bound of the window. The DuckDB engine raised a KeyError with the
+                     name of the parameter.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_26c", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_26d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between Me_2 preceding and current data point ) ) ];
+        Description: Extra of test_GH_1355_26: the bound of a window is an Integer Scalar, so
+                     the Component Me_2 raises 1-1-18-4 on both engines and in the semantic
+                     analysis. The pandas engine raised an internal ParserException and the
+                     DuckDB engine read the Me_2 of each data point as its bound.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_26d",
+            number_inputs=1,
+            exception_code="1-1-18-4",
+            exception_message="At op sum: Window bound parameter should be an Integer Scalar.",
+        )
+
+    def test_GH_1355_26e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SP_1 preceding and current data point ) ) ];
+                    (SP_1 an input String Scalar)
+        Description: Extra of test_GH_1355_26: the String Scalar SP_1 is no Integer, which
+                     raises 1-1-18-4 on both engines and in the semantic analysis. The pandas
+                     engine raised an internal ParserException and the DuckDB engine an
+                     internal BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_26e",
+            number_inputs=1,
+            exception_code="1-1-18-4",
+            exception_message="At op sum: Window bound parameter should be an Integer Scalar.",
+            scalars={"SP_1": "A"},
+        )
+
+    def test_GH_1355_26f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SI_0 preceding and current data point ) ) ];
+                    (SI_0 an input Integer Scalar, 0)
+        Description: Extra of test_GH_1355_26: the bound 0 that a Scalar gives is the bound 0
+                     preceding written in the window, the current data point. The pandas engine
+                     raised an internal ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_26f", number_inputs=1, references_names=["1"], scalars={"SI_0": 0}
+        )
+
+    def test_GH_1355_26g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SF_2 preceding and current data point ) ) ];
+                    (SF_2 an input Number Scalar, 2.5)
+        Description: Extra of test_GH_1355_26: a Number bound is rounded half away from zero,
+                     as the offset of lag, so 2.5 is the bound 3. The pandas engine raised an
+                     internal ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_26g", number_inputs=1, references_names=["1"], scalars={"SF_2": 2.5}
+        )
+
+    def test_GH_1355_26h(self):
+        """
+        Status: OK
+        Expression: SC_1 <- 2.5;
+                    DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SC_1 preceding and current data point ) ) ];
+        Description: Extra of test_GH_1355_26: the bound 2.5 that a statement computes is
+                     rounded half away from zero, to 3, as in test_GH_1355_26g. The pandas
+                     engine raised an internal ParserException and the DuckDB engine rounded
+                     it half to even, to 2.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_26h", number_inputs=1, references_names=["1", "2"])
+
+    def test_GH_1355_26i(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_D [ calc Me_3 := sum ( Me_2 over ( order by Id_1 range
+                        between SF_2 preceding and current data point ) ) ];
+                    (SF_2 an input Number Scalar, 2.5, Id_1 a Date)
+        Description: Extra of test_GH_1355_26: the Number bound 2.5 of a range window ordered
+                     by a Date is rounded half away from zero, to 3 days. The pandas engine
+                     raised an internal ParserException and the DuckDB engine an internal
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1355_26i", number_inputs=1, references_names=["1"], scalars={"SF_2": 2.5}
+        )
+
+    def test_GH_1355_27(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_7 [ calc Me_3 := time_agg ( "A" , _ , Tp ) ];
+        Description: Control: time_agg with a literal period.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_27", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_28(self):
+        """
+        Status: OK
+        Expression: define operator w ( d dataset ) returns dataset is
+                        d [ calc Z9 := Me_2 + 1 ] [ calc Z8 := cast ( Z9 , string ) ]
+                        end operator;
+                    DS_r <- w ( DS_3 ) [ calc Z := 1 ];
+        Description: Z9, which the body computes and then reads, is an Integer also where the
+                     call is the operand of a clause, so cast to String it gives 4, as w ( DS_3 )
+                     alone does. The DuckDB engine took Z9 as a Number and gave 4.0.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_28", number_inputs=1, references_names=["1"])
+        self.BaseTest(
+            code="GH_1355_28", number_inputs=1, references_names=["1"], only_semantic=True
+        )
+
+    def test_GH_1355_10(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B drop B#Id_2 );
+        Description: Id_2 is an Identifier of DS_1 and a Measure of DS_2, so the join keeps
+                     both and B#Id_2 is the Measure of DS_2: dropping it keeps the Identifier
+                     Id_2. The DuckDB engine kept a single Id_2 column and dropped it from the
+                     data.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_10", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_10b(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_2 as B , DS_1 as A drop B#Id_2 );
+        Description: Extra of test_GH_1355_10: the same with the operand that has Id_2 as a
+                     Measure first.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_10b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_10c(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_2 as X , DS_1 as Y , DS_5 as Z drop X#Id_2 );
+        Description: Extra of test_GH_1355_10: three operands, the first with Id_2 as a
+                     Measure and the others with Id_2 as an Identifier, are joined on the
+                     Identifier Id_2 of DS_1 and DS_5. The DuckDB engine joined on the Measure
+                     Id_2 of DS_2 and gave no data point.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_10c", number_inputs=3, references_names=["1"])
+
+    def test_GH_1355_10d(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as 'A-B' , DS_2 as B using Id_1 , Id_2
+                        calc Me_9 := 'A-B'#Me_1 + B#Me_1 drop 'A-B'#Me_1 , B#Me_1 );
+        Description: Extra of test_GH_1355_10: a quoted alias names its operand without the
+                     quotes, as a quoted Data Set name, and any name a Component name allows
+                     is a valid alias, also one with a character such as - that SQL does not
+                     take without quotes. The DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_10d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_10e(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as '1A' , DS_2 as B using Id_1 , Id_2
+                        rename '1A'#Me_1 to Me_8 , B#Me_1 to Me_9 );
+        Description: Extra of test_GH_1355_10: as test_GH_1355_10d, for an alias that starts
+                     with a digit. The DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_10e", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_10h(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as '' , DS_2 as B using Id_1 , Id_2 );
+        Description: Extra of test_GH_1355_10d: an empty alias names no operand, as an empty
+                     Component name is no name. The pandas engine ran the join and the DuckDB
+                     engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_10h", number_inputs=2, exception_code="1-1-13-28"
+        )
+
+    def test_GH_1355_10j(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset dpr1 ( variable Me_1 as 'X' ) is
+                        r1 : X > 1 errorcode "e"
+                    end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , dpr1 all );
+        Description: Extra of test_GH_1355_10d: a quoted alias of a datapoint ruleset signature
+                     names the variable without the quotes too, so the rule reads it as X. Both
+                     engines and the semantic analysis raised 1-1-10-7 for X.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_10j", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_11(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B rename B#Id_2 to Me_3 );
+        Description: As test_GH_1355_10, B#Id_2 is the Measure of DS_2, so Me_3 takes its
+                     values and the Identifier Id_2 stays. The DuckDB engine gave Me_3 the
+                     values of the Identifier.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_11", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_11b(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_2 as B , DS_1 as A rename B#Id_2 to Me_3 );
+        Description: Extra of test_GH_1355_11: the same with the operand that has Id_2 as a
+                     Measure first.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_11b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_11c(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_2 as B , DS_1 as A rename A#Id_2 to Me_3 );
+        Description: Extra of test_GH_1355_11: A#Id_2 is the Identifier of DS_1, so Me_3 takes
+                     its values, and the Measure Id_2 of DS_2 keeps its own. The DuckDB engine
+                     renamed both to Me_3 and lost the Measure.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_11c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_11d(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B rename Id_2 to Me_3 );
+        Description: Extra of test_GH_1355_11: Id_2 written alone is the Identifier Id_2 of
+                     the join, so only it is renamed, and the Measure Id_2 of DS_2 keeps its
+                     own name. The DuckDB engine renamed both to Me_3 and lost the Measure.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_11d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_11e(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc 'Me#1' := Me_1 ];
+        Description: Extra of test_GH_1355_11: a new Component cannot be named with #, which
+                     only separates the alias of a join operand from the name of its Component
+                     (Inner Join page of the VTL 2.2 manual). Both engines created Me#1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11e", number_inputs=1, exception_code="1-1-6-19"
+        )
+
+    def test_GH_1355_11f(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B rename A#Me_1 to 'x#y' );
+        Description: Extra of test_GH_1355_11: the same for the new name of a rename in a
+                     join. Both engines named the Component y, the part after the #.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11f", number_inputs=2, exception_code="1-1-6-19"
+        )
+
+    def test_GH_1355_11g(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ rename Me_1 to 'x"y' ];
+        Description: Extra of test_GH_1355_11: a new Component cannot be named with a double
+                     quote either. The pandas engine renamed Me_1 to x"y and the DuckDB engine
+                     raised a raw ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11g", number_inputs=1, exception_code="1-1-6-19"
+        )
+
+    def test_GH_1355_11h(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B calc A#Me_1 := 1 );
+        Description: Extra of test_GH_1355_11: calc names a new Component, never a membership.
+                     Both engines read the qualified target as its alias and created a Measure
+                     named A.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11h",
+            number_inputs=2,
+            exception_code="1-1-6-6",
+            exception_message="Membership is not allowed inside a clause, found A#Me_1.",
+        )
+
+    def test_GH_1355_11i(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B rename A#Me_2 to Me_9 );
+        Description: Extra of test_GH_1355_11: A#Me_2 names the Component Me_2 of the operand
+                     A, which has none. Both engines renamed Me_2 of the operand B.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11i",
+            number_inputs=2,
+            exception_code="1-1-1-10",
+            exception_message="Component Me_2 not found in Dataset A.",
+        )
+
+    def test_GH_1355_11j(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B aggr Me_9 := sum ( Me_1 )
+                        group by C#Id_1 );
+        Description: Extra of test_GH_1355_11: C is no operand of the join. Both engines grouped
+                     by the Identifier Id_1 of the join.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11j",
+            number_inputs=2,
+            exception_code="1-1-1-10",
+            exception_message="Component Id_1 not found in Dataset C.",
+        )
+
+    def test_GH_1355_11k(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B calc Me_9 := B#Me_1 );
+        Description: Extra of test_GH_1355_11: Me_1 is a Component of the operand A, not of B.
+                     Both engines gave Me_9 the values of Me_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11k",
+            number_inputs=2,
+            exception_code="1-1-1-10",
+            exception_message="Component Me_1 not found in Dataset B.",
+        )
+
+    def test_GH_1355_11l(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as 'A#B' , DS_2 as C using Id_1 , Id_2 );
+        Description: Extra of test_GH_1355_11: the alias of a join operand prefixes the names
+                     of its Components in the join, alias#comp, so it cannot contain #
+                     (Inner Join page of the VTL 2.2 manual). The pandas engine and the
+                     semantic analysis gave a Component B'#Me_1 and the DuckDB engine raised a
+                     raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11l",
+            number_inputs=2,
+            exception_code="1-1-13-28",
+            exception_message="At op inner_join: Invalid name A#B of a join operand, the "
+            "alias of a join operand, or else its Data Set name, cannot be empty or contain ', \", "
+            "#, NUL or carriage return.",
+        )
+
+    def test_GH_1355_11m(self):
+        """
+        Status: OK
+        Expression: 'x#y' <- DS_1;
+                    DS_r <- inner_join ( 'x#y' , DS_2 using Id_1 , Id_2 );
+        Description: Extra of test_GH_1355_11: as test_GH_1355_11l, for the name of a Data Set
+                     joined without an alias. The pandas engine and the semantic analysis gave
+                     a Component y#Me_1 and the DuckDB engine raised a raw ParserException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11m",
+            number_inputs=2,
+            exception_code="1-1-13-28",
+            exception_message="At op inner_join: Invalid name x#y of a join operand, the "
+            "alias of a join operand, or else its Data Set name, cannot be empty or contain ', \", "
+            "#, NUL or carriage return.",
+        )
+
+    def test_GH_1355_11n(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B using Id_1 , Id_2
+                        calc 'A#Me_1' := 1 drop B#Me_1 );
+        Description: Extra of test_GH_1355_11: a calc target written as a quoted name holding
+                     # is refused as a new name, also where the join has a Component A#Me_1.
+                     Both engines and the semantic analysis gave Me_1 the value 1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11n",
+            number_inputs=2,
+            exception_code="1-1-6-19",
+            exception_message="At op calc: Invalid Component name A#Me_1, a Component name "
+            "cannot contain ', \", #, NUL or carriage return.",
+        )
+
+    def test_GH_1355_11o(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ aggr 'x#y' := sum ( Me_1 ) group by Id_1 ];
+        Description: Extra of test_GH_1355_11: as test_GH_1355_11e, for the new Component of
+                     an aggr.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11o", number_inputs=1, exception_code="1-1-6-19"
+        )
+
+    def test_GH_1355_11p(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ unpivot Id_9 , 'x#y' ];
+        Description: Extra of test_GH_1355_11: as test_GH_1355_11e, for the Measure of an
+                     unpivot.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11p", number_inputs=1, exception_code="1-1-6-19"
+        )
+
+    def test_GH_1355_11q(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ pivot Id_2 , Me_1 ];
+        Description: Extra of test_GH_1355_11: as test_GH_1355_11e, for the Measures of a
+                     pivot, which the values x#y of the value domain VD_3 of Id_2 name.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11q",
+            number_inputs=1,
+            exception_code="1-1-6-19",
+            vd_names=["GH_1355-VD_3"],
+        )
+
+    def test_GH_1355_11r(self):
+        """
+        Status: OK
+        Expression: DS_r <- eval ( GH_1355_11r ( DS_1 ) language "SQL" returns dataset
+                        { identifier < integer > Id_1 , identifier < string > Id_2 ,
+                        measure < number > 'x#y' } );
+        Description: Extra of test_GH_1355_11: as test_GH_1355_11e, for a Component of the
+                     result of eval.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11r",
+            number_inputs=1,
+            exception_code="1-1-6-19",
+            sql_names=["GH_1355_11r"],
+        )
+
+    def test_GH_1355_11s(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B keep B#Me_1 );
+        Description: Extra of test_GH_1355_11: as test_GH_1355_11k, for keep: Me_1 is a
+                     Component of the operand A, not of B.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_11s",
+            number_inputs=2,
+            exception_code="1-1-1-10",
+            exception_message="Component Me_1 not found in Dataset B.",
+        )
+
+    def test_GH_1355_12(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_3 as A , DS_4 as B apply A + B
+                        rename Me_2 to Me_9 );
+        Description: rename in the join body after apply renames the Measure that apply
+                     computes. The DuckDB engine read the column A#Me_2, which apply no longer
+                     has.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_12", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_13(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_3 as A , DS_4 as B apply A + B )
+                        [ rename Me_2 to Me_9 ];
+        Description: Control: the same rename as a clause after the join.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_13", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_13b(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B apply A + B keep A#Me_1 );
+        Description: Extra of test_GH_1355_12: apply replaces the Measures Me_1 of A and B
+                     with one Measure Me_1, so A#Me_1 is no longer in the join after it (Inner
+                     Join page of the VTL 2.2 manual: the input Measures do not appear in the
+                     result of apply). The pandas engine kept the Me_1 of apply and the DuckDB
+                     engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_13b",
+            number_inputs=2,
+            exception_code="1-1-13-17",
+            exception_message="At op keep: A#Me_1 not present in the Dataset(result from join "
+            "VDS) at the time it is called",
+        )
+
+    def test_GH_1355_13c(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B apply A + B
+                        rename A#Me_1 to Me_9 );
+        Description: Extra of test_GH_1355_12: as test_GH_1355_13b, for rename. The pandas
+                     engine renamed the Me_1 of apply and the DuckDB engine gave data without
+                     the column Me_9 that its structure had.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_13c",
+            number_inputs=2,
+            exception_code="1-1-13-17",
+            exception_message="At op rename: A#Me_1 not present in the Dataset(result from "
+            "join VDS) at the time it is called",
+        )
+
+    def test_GH_1355_13d(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B apply A + B drop A#Me_1 );
+        Description: Extra of test_GH_1355_12: as test_GH_1355_13b, for drop. The pandas
+                     engine dropped the Me_1 of apply and the DuckDB engine raised a raw
+                     BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_13d", number_inputs=2, exception_code="1-1-13-17"
+        )
+
+    def test_GH_1355_13e(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B
+                        aggr Me_1 := sum ( A#Me_1 ) group by Id_1 keep A#Me_1 );
+        Description: Extra of test_GH_1355_12: as test_GH_1355_13b, after an aggr whose new
+                     Measure Me_1 replaces the Measures Me_1 of A and B. The pandas engine
+                     kept the Me_1 of aggr and the DuckDB engine raised a raw BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_13e", number_inputs=2, exception_code="1-1-13-17"
+        )
+
+    def test_GH_1355_13f(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B using Id_1 , Id_2
+                        calc Me_1 := 1 keep A#Me_1 );
+        Description: Extra of test_GH_1355_12: as test_GH_1355_13b, after a calc whose new
+                     Measure Me_1 replaces the Measures Me_1 of A and B (Inner Join page of the
+                     VTL 2.2 manual: the input Components homonymous to a Component that calc
+                     generates are removed). Both engines kept the Me_1 of A and dropped the one
+                     of calc.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_13f",
+            number_inputs=2,
+            exception_code="1-1-13-17",
+            exception_message="At op keep: A#Me_1 not present in the Dataset(result from join "
+            "VDS) at the time it is called",
+        )
+
+    def test_GH_1355_13g(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B using Id_1 , Id_2
+                        calc Me_1 := 1 );
+        Description: Extra of test_GH_1355_13f: the Measure Me_1 that calc generates replaces
+                     the Measures Me_1 of A and B, so the result has one Me_1 (Inner Join page
+                     of the VTL 2.2 manual). Both engines and the semantic analysis kept A#Me_1
+                     and B#Me_1 next to it and raised 1-1-13-9 when the join removed the prefixes.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_13g", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_14(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_3 as B
+                        calc Me_3 := sum ( B#Me_2 over ( partition by A#Id_2 ) ) );
+        Description: In a join, the qualified Identifier A#Id_2 in partition by is Id_2 of
+                     the operand A, as partition by Id_2. Both engines and the semantic
+                     analysis raised an internal AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_14", number_inputs=2, references_names=["1"])
+        self.BaseTest(
+            code="GH_1355_14", number_inputs=2, references_names=["1"], only_semantic=True
+        )
+
+    def test_GH_1355_14b(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_8 as a , DS_9 as b
+                        calc Me_9 := rank ( over ( order by a#Dt ) ) );
+        Description: Extra of test_GH_1355_14: in a join, the qualified Identifier a#Dt in
+                     order by is the Date Dt of the operand a, as order by Dt. Both engines
+                     raised an internal AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_14b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_14c(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_8 as a , DS_9 as b
+                        calc Me_9 := count ( a#Me_1 over ( partition by a#Id_1
+                            order by a#Me_2 ) ) );
+        Description: Extra of test_GH_1355_14: in a join, a qualified Measure is the operand
+                     of an analytic and the component of its order by. Both engines raised an
+                     internal AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_14c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_14d(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_8 [ calc Me_9 := count ( Me_1 over ( partition by Id_1
+                        order by Me_2 ) ) ];
+        Description: Extra of test_GH_1355_14: count of a Component ordered by a Measure gives
+                     the count, not the Measure of the order by. The pandas engine raised an
+                     internal KeyError, where the DuckDB engine gave the result.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_14d", number_inputs=1, references_names=["1"])
+
+    def test_GH_1355_14f(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ rename Me_1 to 'Me#1' ];
+        Description: Extra of test_GH_1355_14: a Component named with # out of a join would
+                     read as the qualified name of a Component of a join, so the new name of a
+                     rename cannot hold it. Both engines renamed Me_1 to Me#1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_14f", number_inputs=1, exception_code="1-1-6-19"
+        )
+
+    def test_GH_1355_15(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := rank ( over ( order by DS_1#Me_1 ) ) ];
+        Description: Out of a join, DS_1#Me_1 is a membership, which a clause does not allow
+                     in order by, as in DS_1 [ calc Me_2 := DS_1#Me_1 ]. Both engines and the
+                     semantic analysis raised an internal AttributeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_15",
+            number_inputs=1,
+            exception_code="1-1-6-6",
+            exception_message="Membership is not allowed inside a clause, found DS_1#Me_1.",
+        )
+
+    def test_GH_1355_16(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_3 as B
+                        aggr Me_3 := sum ( B#Me_2 ) group by A#Id_2 );
+        Description: In a join, the qualified Identifier A#Id_2 in group by is Id_2 of the
+                     operand A, as group by Id_2. Both engines and the semantic analysis raised
+                     an internal TypeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_16", number_inputs=2, references_names=["1"])
+        self.BaseTest(
+            code="GH_1355_16", number_inputs=2, references_names=["1"], only_semantic=True
+        )
+
+    def test_GH_1355_16b(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_3 as B
+                        aggr Me_3 := sum ( B#Me_2 ) group except A#Id_2 );
+        Description: Extra of test_GH_1355_16: the same in group except, as group except
+                     Id_2. Both engines raised an internal TypeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_16b", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_16c(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_2 as B , DS_1 as A using Id_1
+                        aggr Me_3 := max ( A#Me_1 ) group by A#Id_2 );
+        Description: Extra of test_GH_1355_16: with using and the operand that has Id_2 as a
+                     Measure first, the result keeps the Identifier Id_2 of DS_1. The DuckDB
+                     data had no Id_2 column.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_16c", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_16d(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_2 as B , DS_1 as A using Id_1
+                        aggr Me_3 := max ( A#Me_1 ) group except Id_1 );
+        Description: Extra of test_GH_1355_16: the same with group except. The DuckDB data had
+                     no Id_2 column.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_16d", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_16e(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B aggr Me_9 := sum ( A#Me_1 )
+                        group by Id_1 having sum ( A#Me_1 ) > 0 );
+        Description: Extra of test_GH_1355_16: a qualified name in the having of an aggr in a
+                     join is the Component of that operand, as in the aggr expression. Both
+                     engines and the semantic analysis raised 1-1-1-10 for A#Me_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1355_16e", number_inputs=2, references_names=["1"])
+
+    def test_GH_1355_17(self):
+        """
+        Status: OK
+        Expression: DS_r <- sum ( DS_1 group by DS_1#Id_2 );
+        Description: Out of a join, DS_1#Id_2 is a membership, not a component name, so the
+                     grouping raises 1-1-6-6. Both engines and the semantic analysis raised an
+                     internal TypeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_17",
+            number_inputs=1,
+            exception_code="1-1-6-6",
+            exception_message="Membership is not allowed inside a clause, found DS_1#Id_2.",
+        )
+
+    def test_GH_1355_18(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_3 as B drop A#Id_2 );
+        Description: The qualified Identifier A#Id_2 is Id_2, which drop cannot remove, as
+                     drop Id_2. Both engines and the semantic analysis raised an internal
+                     TypeError.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(code="GH_1355_18", number_inputs=2, exception_code="1-1-6-2")
+
+    def test_GH_1355_19(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_3 as B keep A#Id_2 );
+        Description: As test_GH_1355_18, for keep, as keep Id_2. Both engines and the semantic
+                     analysis raised 1-1-1-10 with the whole Component, data included, in the
+                     message.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(code="GH_1355_19", number_inputs=2, exception_code="1-1-6-2")
+
+    def test_GH_1355_19b(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_2 as B using Id_1 , Id_2 );
+        Description: Extra of test_GH_1355_19: the using key Id_2 is an Attribute of DS_2,
+                     an operand other than the left-most one, where it must be an Identifier
+                     (the Join operators page of the VTL 2.2 manual: the using clause names
+                     identifiers, and the keys are matched as in an SQL inner join). Both
+                     engines accepted it and gave different data points.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_19b",
+            number_inputs=2,
+            exception_code="1-1-13-7",
+            exception_message="At op inner_join: Invalid subcase B2, the using component 'Id_2' "
+            "must be an Identifier of the Dataset 'B', as of every operand except the "
+            "left-most one.",
+        )
+
+    def test_GH_1355_19c(self):
+        """
+        Status: OK
+        Expression: DS_r <- left_join ( DS_1 as A , DS_2 as B using Id_1 , Id_2 );
+        Description: Extra of test_GH_1355_19: as test_GH_1355_19b for left_join, whose using
+                     clause names for each operand but the left-most one identifiers in
+                     common with the left-most operand (the Join operators page of the VTL
+                     2.2 manual).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_19c",
+            number_inputs=2,
+            exception_code="1-1-13-7",
+            exception_message="At op left_join: Invalid subcase B2, the using component 'Id_2' "
+            "must be an Identifier of the Dataset 'B', as of every operand except the "
+            "left-most one.",
+        )
+
+    def test_GH_1355_26j(self):
+        """
+        Status: OK
+        Expression: SC_1 <- SI_1 + 1;
+                    DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SC_1 preceding and current data point ) ) ];
+                    (SI_1 an input Integer Scalar, null)
+        Description: Extra of test_GH_1355_26: the bound of the window that a statement computes
+                     is null, which raises 2-1-18-1 on both engines. The DuckDB engine raised an
+                     internal InvalidInputException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_26j",
+            number_inputs=1,
+            exception_code="2-1-18-1",
+            exception_message="At op sum: Window bound parameter should be a non-negative Integer.",
+            scalars={"SI_1": None},
+        )
+
+    def test_GH_1355_26k(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer ) returns dataset is
+                        sum ( DS_3 over ( order by Id_1 data points
+                        between current data point and x following ) ) end operator;
+                    DS_r <- f ( null );
+        Description: Extra of test_GH_1355_26: the null written as the argument of the parameter
+                     x is the bound of the window, which is no Integer Scalar, so it raises
+                     1-1-18-4 on both engines and in the semantic analysis, as the script alone
+                     shows it. The DuckDB engine raised an internal BinderException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_26k",
+            number_inputs=1,
+            exception_code="1-1-18-4",
+            exception_message="At op sum: Window bound parameter should be an Integer Scalar.",
+        )
+
+    def test_GH_1355_26l(self):
+        """
+        Status: OK
+        Expression: SC_1 <- SI_1 * 2;
+                    DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SC_1 preceding and current data point ) ) ];
+                    DS_s <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SI_1 preceding and current data point ) ) ];
+                    (SI_1 an input Integer Scalar, -1)
+        Description: Extra of test_GH_1355_26: a negative bound of the window that a Scalar
+                     gives, computed by a statement or an input one, raises 2-1-18-1 on both
+                     engines, as a null one does. The input Scalar gave an unbounded window, and
+                     the computed one an internal ParserException on the pandas engine and an
+                     internal InvalidInputException on the DuckDB engine.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_26l",
+            number_inputs=1,
+            exception_code="2-1-18-1",
+            exception_message="At op sum: Window bound parameter should be a non-negative Integer.",
+            scalars={"SI_1": -1},
+        )
+
+    def test_GH_1355_26m(self):
+        """
+        Status: OK
+        Expression: DS_a <- round ( DS_3 , 1 );
+                    DS_r <- DS_3 [ calc Me_3 := sum ( Me_2 over ( order by Id_1 data points
+                        between SF_2 preceding and current data point ) ) ];
+                    (SF_2 an input Number Scalar, 10000000000000000000.0)
+        Description: Extra of test_GH_1355_26: the bound of the window that a Scalar gives does
+                     not depend on an earlier round, so a bound beyond the range of an Integer
+                     raises 2-1-5-1 on both engines. After the round the pandas engine raised an
+                     internal ConversionException.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_26m",
+            number_inputs=1,
+            exception_code="2-1-5-1",
+            scalars={"SF_2": 10000000000000000000.0},
+        )
+
+    def test_GH_1355_26n(self):
+        """
+        Status: OK
+        Expression: define operator f ( x integer ) returns dataset is
+                        sum ( DS_3 over ( order by Id_1 data points
+                        between current data point and x following ) ) end operator;
+                    DS_r <- f ( -1 );
+        Description: Extra of test_GH_1355_26: the negative literal -1 given to the parameter x
+                     is the bound of the window, which raises 1-1-3-5 on both engines and in the
+                     semantic analysis, as the same literal written in the window does. Both
+                     engines and the semantic analysis raised 2-1-18-1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_26n",
+            number_inputs=1,
+            exception_code="1-1-3-5",
+            exception_message="Invalid limit x = -1 of an analytic window: a limit cannot be "
+            "negative.",
+        )
+
+    def test_GH_1355_case35(self):
+        """
+        Status: OK
+        Expression: DS_r <- inner_join ( DS_1 as A , DS_3 as B calc Me_9 := C#Me_2 );
+        Description: Case 35: C is no operand of the join, so C#Me_2 in a calc expression raises
+                     1-1-1-10 on both engines and in the semantic analysis. Both engines and the
+                     semantic analysis read it as the Me_2 of the join.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1355
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1355_case35",
+            number_inputs=2,
+            exception_code="1-1-1-10",
+            exception_message="Component Me_2 not found in Dataset C.",
         )
