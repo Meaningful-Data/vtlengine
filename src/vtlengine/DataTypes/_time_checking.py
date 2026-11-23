@@ -238,16 +238,16 @@ def _check_time(value: str) -> str:
     raise InputValidationException(code="0-1-1-30", value=value)
 
 
-# Comprehensive time period pattern covering all accepted input formats.
+# Comprehensive time period pattern covering all accepted input formats (used with fullmatch).
 # Compact formats (no hyphen): YYYY, YYYYA, YYYYSN, YYYYQN, YYYYM[M], YYYYW[W], YYYYD[DD]
 _vtl_period_re = re.compile(
-    r"^\d{4}$"  # YYYY (year only)
-    r"|^\d{4}A$"  # YYYYA (annual with indicator)
-    r"|^\d{4}S[1-2]$"  # YYYYSN (semester)
-    r"|^\d{4}Q[1-4]$"  # YYYYQN (quarter)
-    r"|^\d{4}M[0-1]?\d$"  # YYYYM[M] (month, 1 or 2 digits)
-    r"|^\d{4}W[0-5]?\d$"  # YYYYW[W] (week, 1 or 2 digits)
-    r"|^\d{4}D[0-3]?\d{1,2}$",  # YYYYD[DD] (day of year, 1 to 3 digits)
+    r"\d{4}"  # YYYY (year only)
+    r"|\d{4}A"  # YYYYA (annual with indicator)
+    r"|\d{4}S[1-2]"  # YYYYSN (semester)
+    r"|\d{4}Q[1-4]"  # YYYYQN (quarter)
+    r"|\d{4}M[0-1]?\d"  # YYYYM[M] (month, 1 or 2 digits)
+    r"|\d{4}W[0-5]?\d"  # YYYYW[W] (week, 1 or 2 digits)
+    r"|\d{4}D[0-3]?\d{1,2}",  # YYYYD[DD] (day of year, 1 to 3 digits)
     # Only the ASCII digits write a period: \d matches other digits too (issue #1352)
     re.ASCII,
 )
@@ -255,14 +255,14 @@ _vtl_period_re = re.compile(
 # Hyphenated formats: YYYY-MM, YYYY-M, YYYY-MM-DD, YYYY-MXX, YYYY-QX, YYYY-SX, YYYY-WXX,
 # YYYY-DXXX, YYYY-A1
 _sdmx_period_re = re.compile(
-    r"^\d{4}-\d{1,2}$"  # YYYY-MM or YYYY-M (ISO month, 1 or 2 digits)
-    r"|^\d{4}-\d{2}-\d{2}$"  # YYYY-MM-DD (ISO date)
-    r"|^\d{4}-M(0[1-9]|1[0-2]|[1-9])$"  # YYYY-MXX (hyphenated month)
-    r"|^\d{4}-Q[1-4]$"  # YYYY-QX (hyphenated quarter)
-    r"|^\d{4}-S[1-2]$"  # YYYY-SX (hyphenated semester)
-    r"|^\d{4}-W([0-4]\d|5[0-3]|[1-9])$"  # YYYY-WXX (hyphenated week)
-    r"|^\d{4}-D[0-3]?\d{1,2}$"  # YYYY-D[XX]X (hyphenated day)
-    r"|^\d{4}-A1$",  # YYYY-A1 (SDMX reporting annual)
+    r"\d{4}-\d{1,2}"  # YYYY-MM or YYYY-M (ISO month, 1 or 2 digits)
+    r"|\d{4}-\d{2}-\d{2}"  # YYYY-MM-DD (ISO date)
+    r"|\d{4}-M(0[1-9]|1[0-2]|[1-9])"  # YYYY-MXX (hyphenated month)
+    r"|\d{4}-Q[1-4]"  # YYYY-QX (hyphenated quarter)
+    r"|\d{4}-S[1-2]"  # YYYY-SX (hyphenated semester)
+    r"|\d{4}-W([0-4]\d|5[0-3]|[1-9])"  # YYYY-WXX (hyphenated week)
+    r"|\d{4}-D[0-3]?\d{1,2}"  # YYYY-D[XX]X (hyphenated day)
+    r"|\d{4}-A1",  # YYYY-A1 (SDMX reporting annual)
     re.ASCII,
 )
 

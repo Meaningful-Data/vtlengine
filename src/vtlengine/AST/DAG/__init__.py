@@ -165,7 +165,7 @@ class DAGAnalyzer(ASTTemplate):
                     if v in self.dependencies:
                         error_keys[v] = self.dependencies[v]
             except nx.NetworkXNoCycle:
-                pass
+                pass  # No cycle to report: the error lists no node
             raise SemanticError("1-3-2-3", op=error_op, nodes=error_keys) from None
 
     def load_vertex(self) -> None:

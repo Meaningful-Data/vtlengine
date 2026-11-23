@@ -60,5 +60,11 @@ jobs:
           languages: c-cpp
           build-mode: none
           queries: security-extended, security-and-quality
+          # The ANTLR-generated parser is regenerated from Vtl.g4, never edited: only the
+          # hand-written bindings are reported
+          config: |
+            paths-ignore:
+              - src/vtlengine/AST/Grammar/_cpp_parser/Vtl*.cpp
+              - src/vtlengine/AST/Grammar/_cpp_parser/Vtl*.h
       - name: Analyze
         uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2

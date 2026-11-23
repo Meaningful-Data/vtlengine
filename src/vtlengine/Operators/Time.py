@@ -519,8 +519,6 @@ class Fill_time_series(Binary):
         cls.measures = operand.get_measures_names()
         if cls.time_id is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
-        if fill_type not in ["all", "single"]:
-            fill_type = "all"
         # The filled periods are new values of the time Identifier
         components = Operators.on_basic_types(operand.components, [cls.time_id])
         return Dataset(name=dataset_name, components=components, data=None)
@@ -529,15 +527,16 @@ class Fill_time_series(Binary):
     def fill_periods(cls, data: pd.DataFrame, fill_type: str) -> pd.DataFrame:
         # Parse each time_id value once and reuse throughout
         data = data.copy()
-        tp_parsed = data[cls.time_id].map(lambda x: TimePeriodHandler(x), na_action="ignore")
+        tp_parsed = data[cls.time_id].map(TimePeriodHandler, na_action="ignore")
         data[cls.time_id] = tp_parsed.map(str, na_action="ignore")
         # The frequency stays out of the frame, where a Component of any name may be (#1352)
         freq_series = tp_parsed.map(lambda x: x.period_indicator, na_action="ignore")
 
         # Determine global year range (for "all" mode)
+        global_min_year = global_max_year = 0
         if fill_type == "all":
-            global_min_year: int = tp_parsed.map(lambda x: x.year).min()
-            global_max_year: int = tp_parsed.map(lambda x: x.year).max()
+            global_min_year = tp_parsed.map(lambda x: x.year).min()
+            global_max_year = tp_parsed.map(lambda x: x.year).max()
 
         # Group by other_ids + frequency and fill missing periods
         filled_rows: List[Dict[str, Any]] = []

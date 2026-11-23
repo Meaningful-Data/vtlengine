@@ -65,17 +65,16 @@ class Terminals:
 
         else:
             if child.symbol_type == vtl_cpp_parser.BOOLEAN_CONSTANT:
-                if child.text == "true":
-                    constant_node = Constant(type_="BOOLEAN_CONSTANT", value=True, **token_info)
-                elif child.text == "false":
-                    constant_node = Constant(type_="BOOLEAN_CONSTANT", value=False, **token_info)
+                constant_node = Constant(
+                    type_="BOOLEAN_CONSTANT", value=child.text == "true", **token_info
+                )
 
             elif child.symbol_type == vtl_cpp_parser.STRING_CONSTANT:
                 constant_node = Constant(
                     type_="STRING_CONSTANT", value=child.text[1:-1], **token_info
                 )
 
-            elif child.symbol_type == vtl_cpp_parser.NULL_CONSTANT:
+            else:  # NULL_CONSTANT
                 constant_node = Constant(type_="NULL_CONSTANT", value=None, **token_info)
 
         return constant_node
@@ -236,6 +235,8 @@ class Terminals:
         elif c.symbol_type == vtl_cpp_parser.TIME:
             return TimeInterval
 
+        raise InputValidationException(code="0-5-1-1")
+
     def visitComponentRole(self, ctx):
         """
         componentRole: MEASURE
@@ -341,6 +342,8 @@ class Terminals:
         c = ctx_list[0]
         if not c.is_terminal and c.rule_index == RC.CONSTANT[0]:
             return self.visitConstant(c)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitScalarType(self, ctx, allow_constraints=False, allow_value_domain=False):
         """
@@ -571,12 +574,16 @@ class Terminals:
         elif not c.is_terminal and c.ctx_id == RC.COMPONENT_TYPE:
             return self.visitComponentType(c)
 
+        raise InputValidationException(code="0-5-1-1")
+
     def visitScalarItem(self, ctx):
         # ctx is a scalarItem node (either simpleScalar or scalarWithCast alternative)
         if ctx.ctx_id == RC.SIMPLE_SCALAR:
             return self.visitSimpleScalar(ctx)
         elif ctx.ctx_id == RC.SCALAR_WITH_CAST:
             return self.visitScalarWithCast(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitScalarWithCast(self, ctx):
         """
@@ -602,12 +609,9 @@ class Terminals:
             else []
         )
 
-        if len(basic_scalar_type) == 1:
-            children_nodes = [const_node, basic_scalar_type[0]]
+        children_nodes = [const_node, basic_scalar_type[0]]
 
-            return ParamOp(
-                op=op, children=children_nodes, params=param_node, **extract_token_info(ctx)
-            )
+        return ParamOp(op=op, children=children_nodes, params=param_node, **extract_token_info(ctx))
 
     def visitScalarSetType(self, ctx):
         """
@@ -632,16 +636,11 @@ class Terminals:
         token = ctx.children[0]
 
         if token.symbol_type == vtl_cpp_parser.BOOLEAN_CONSTANT:
-            if token.text == "true":
-                param_constant_node = Constant(
-                    type_="BOOLEAN_CONSTANT", value=True, **extract_token_info(token)
-                )
-            elif token.text == "false":
-                param_constant_node = Constant(
-                    type_="BOOLEAN_CONSTANT", value=False, **extract_token_info(token)
-                )
+            param_constant_node = Constant(
+                type_="BOOLEAN_CONSTANT", value=token.text == "true", **extract_token_info(token)
+            )
 
-        elif token.symbol_type == vtl_cpp_parser.ALL:
+        else:  # ALL
             param_constant_node = ParamConstant(
                 type_="PARAM_CONSTANT", value=token.text, **extract_token_info(token)
             )
@@ -656,6 +655,8 @@ class Terminals:
             return self.visitDatasetType(c)
         elif not c.is_terminal and c.ctx_id == RC.SCALAR_TYPE:
             return self.visitScalarType(c)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitAlias(self, ctx):
         # A quoted alias is the name inside the quotes, as a quoted Data Set name (issue #1355)
@@ -882,6 +883,8 @@ class Terminals:
             return -1, limit_dir
         elif c.text == "current":
             return 0, ctx_list[0].text
+
+        raise InputValidationException(code="0-5-1-1")
 
 
 def create_windowing(win_mode, values, modes, token_info):

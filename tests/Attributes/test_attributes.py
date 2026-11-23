@@ -3961,8 +3961,6 @@ class TimeOperatorsTest(TestAttributesHelper):
 
     classTest = "test_attributes.TimeOperatorsTest"
 
-    pass
-
 
 class SetOperatorsTest(TestAttributesHelper):
     """
@@ -4793,29 +4791,6 @@ class ClauseOperatorsTest(TestAttributesHelper):
         references_names = ["1"]
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
-
-    # TODO: Uncomment when Pivot is redefined
-    # def test_17(self):
-    #     """
-    #     PIVOTING: PIVOT
-    #     Dataset --> Dataset
-    #     Status: OK
-    #     Expression: DS_r := DS_1 [ pivot Id_2, Me_1 ]
-    #                         DS_1 Dataset
-    #
-    #     Description: The operator transposes several Data Points of the operand
-    #     Data Set into a single Data Point of the resulting Data Set.
-    #
-    #     Git Branch: #136 Clause operators attributes tests.
-    #     Goal: The operator transposes several Data Points of the operand
-    #     Data Set into a single Data Point of the resulting Data Set and check
-    #     their attributes.
-    #     """
-    #     code = '13-4-1-17'
-    #     number_inputs = 1
-    #     references_names = ["1"]
-    #
-    #     self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
     def test_18(self):
         """

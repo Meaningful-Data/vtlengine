@@ -126,11 +126,8 @@ class InputValidationException(VTLEngineException):
     ) -> None:
         if code is not None:
             catalogued = centralised_messages[code]["message"].format(**kwargs)
-            if message != "default_value":
-                catalogued = f"{catalogued} {message}"
-            super().__init__(catalogued, lino, colno, code)
-        else:
-            super().__init__(message, lino, colno)
+            message = catalogued if message == "default_value" else f"{catalogued} {message}"
+        super().__init__(message, lino, colno, code)
 
 
 def check_key(field: str, dict_keys: Any, key: str) -> None:

@@ -79,6 +79,7 @@ def date_to_period(date_value: date, period_indicator: str) -> Any:
         return TimePeriodHandler(f"{cal[0]}W{cal[1]}")
     elif period_indicator == "D":  # Extract day of the year
         return TimePeriodHandler(f"{date_value.year}D{date_value.timetuple().tm_yday}")
+    raise RunTimeError("2-1-19-2", period=period_indicator)
 
 
 def period_to_date(
@@ -457,8 +458,6 @@ class TimeIntervalHandler:
     def __init__(self, date1: str, date2: str) -> None:
         self.set_date1(date1)
         self.set_date2(date2)
-        # if date1 > date2:
-        #     raise ValueError(f'Invalid Time with duration less than 0 ({self.length} days)')
 
     @classmethod
     def from_dates(cls, date1: date, date2: date) -> "TimeIntervalHandler":
@@ -682,6 +681,7 @@ def date_to_period_str(date_value: date, period_indicator: str) -> Any:
         return f"{cal[0]}W{cal[1]}"
     elif period_indicator == "D":  # Extract day of the year
         return f"{date_value.year}D{date_value.timetuple().tm_yday}"
+    raise RunTimeError("2-1-19-2", period=period_indicator)
 
 
 def interval_to_period_str(interval_value: str) -> Optional[str]:
