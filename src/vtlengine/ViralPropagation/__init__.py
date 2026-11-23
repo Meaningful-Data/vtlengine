@@ -306,7 +306,7 @@ def combined_viral_components(operands: Iterable[Any]) -> List[Any]:
     attribute in two or more operands; those require a propagation rule. A viral
     attribute present in a single operand is copied through and needs no rule. The
     component returned has the common type of the operands, when their types have one
-    (issue #1314).
+    (issue #1314), and their value domain only when all of them are on it (issue #1350).
     """
     counts: Dict[str, int] = {}
     comp_by_name: Dict[str, Any] = {}
@@ -314,9 +314,37 @@ def combined_viral_components(operands: Iterable[Any]) -> List[Any]:
         for comp in op.get_viral_attributes():
             counts[comp.name] = counts.get(comp.name, 0) + 1
             seen = comp_by_name.get(comp.name)
-            common = None if seen is None else _common_type(seen.data_type, comp.data_type)
-            if common is not None and common != comp.data_type:
-                comp = copy(comp)
-                comp.data_type = common
-            comp_by_name[comp.name] = comp
+            comp_by_name[comp.name] = comp if seen is None else combine_viral_component(seen, comp)
     return [comp_by_name[name] for name, n in counts.items() if n >= 2]
+
+
+def operands_rule(name: str, operands: Iterable[Any]) -> Optional[ViralPropagationRule]:
+    """The rule that combines the viral attribute ``name`` of the Data Set ``operands``: the rule
+    of its Components in them, combined, and not of the result Component, which an ``avg`` rule
+    has left without their value domain (issue #1350)."""
+    comps = [op.components[name] for op in operands if name in op.components]
+    if not comps:
+        return None
+    return get_current_registry().rule_for(reduce(combine_viral_component, comps))
+
+
+def _domain_name(component: Any) -> Optional[str]:
+    """The name of the value domain ``component`` is defined on, or None."""
+    return None if component.value_domain is None else component.value_domain.name
+
+
+def combine_viral_component(comp_a: Any, comp_b: Any) -> Any:
+    """The viral attribute ``comp_b`` as it is combined with ``comp_a``, of another operand: of
+    their common type, when they have one, and on their value domain only when both are on it.
+    So a rule on a value domain applies only when every operand is on it, and otherwise only a
+    rule on the variable does, in any order of the operands (issue #1350)."""
+    common = _common_type(comp_a.data_type, comp_b.data_type)
+    same_domain = _domain_name(comp_a) == _domain_name(comp_b)
+    if (common is None or common == comp_b.data_type) and same_domain:
+        return comp_b
+    combined = copy(comp_b)
+    if common is not None:
+        combined.data_type = common
+    if not same_domain:
+        combined.value_domain = None
+    return combined

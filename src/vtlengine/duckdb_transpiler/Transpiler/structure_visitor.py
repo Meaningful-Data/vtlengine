@@ -1059,17 +1059,22 @@ class StructureVisitor(ASTTemplate):
                 col = self._resolve_udo_name(self._resolve_name(assignment.left))
                 if getattr(child, "is_implicit_role", False):
                     calc_role = self._omitted_role(node, input_ds.components.get(col))
-                if col in comps and comps[col].role != calc_role:
+                if col in comps:
+                    # An overwritten Component takes the type and the value domain of its
+                    # expression, as a new one does, with its role or another (issue #1350)
                     old = comps[col]
                     nullable = old.nullable if calc_role != Role.IDENTIFIER else False
-                    comps[col] = self._make_comp(old.name, old.data_type, calc_role, nullable)
-                elif col not in comps and output_ds and col in output_ds.components:
+                    value_type = self._calc_value_type(assignment.right, input_ds) or old.data_type
+                    comps[col] = self._make_comp(col, value_type, calc_role, nullable)
+                    comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
+                elif output_ds and col in output_ds.components:
                     # The result holds the Component as the last calc computes it, so its
                     # type only stands in for an expression not typed here (issue #1309)
                     comp = output_ds.components[col]
                     value_type = self._calc_value_type(assignment.right, input_ds) or comp.data_type
                     comps[col] = self._make_comp(col, value_type, comp.role, comp.nullable)
-                elif col not in comps:
+                    comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
+                else:
                     # calc_role comes from the clause itself, so a new component keeps
                     # its declared role even without an output structure to consult.
                     comps[col] = self._make_comp(
@@ -1078,6 +1083,7 @@ class StructureVisitor(ASTTemplate):
                         calc_role,
                         calc_role != Role.IDENTIFIER,
                     )
+                    comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
         return Dataset(name=input_ds.name, components=comps, data=None)
 
     @staticmethod
@@ -1094,13 +1100,54 @@ class StructureVisitor(ASTTemplate):
             return Role.MEASURE
         return comp.role
 
+    def _calc_value_domain(self, node: AST.AST, source: Dataset) -> Optional[ValueDomain]:
+        """The value domain of a calc expression, as the pandas engine gives it (issue #1350):
+        the one of a Component or a scalar written alone (also in parentheses, or as
+        ``alias#name`` in a join), the one a cast gives, and the one that all the operands of
+        nvl, if-then-else and case are on, nulls aside. Any other expression computes values
+        of a basic type."""
+        if isinstance(node, AST.ParFunction):
+            return self._calc_value_domain(node.operand, source)
+        if isinstance(node, AST.VarID):
+            name = self._resolve_udo_name(node.value)
+            comp = source.components.get(name) or self.scalars.get(name)
+            return getattr(comp, "value_domain", None)
+        if isinstance(node, AST.BinOp) and node.op == tokens.MEMBERSHIP:
+            alias = self._resolve_udo_name(self._resolve_name(node.left))
+            name = self._resolve_udo_name(self._resolve_name(node.right))
+            comp = source.components.get(f"{alias}#{name}") or source.components.get(name)
+            return None if comp is None else comp.value_domain
+        if isinstance(node, AST.ParamOp) and node.op == tokens.CAST and len(node.children) > 1:
+            target = node.children[1]
+            if isinstance(target, AST.Collection):
+                return self.value_domains.get(target.name)
+            return None
+        if isinstance(node, AST.BinOp) and node.op == tokens.NVL:
+            operands = [node.left, node.right]
+        elif isinstance(node, AST.If):
+            operands = [node.thenOp, node.elseOp]
+        elif isinstance(node, AST.Case):
+            operands = [case.thenOp for case in node.cases] + [node.elseOp]
+        else:
+            return None
+        domains = [
+            self._calc_value_domain(operand, source)
+            for operand in operands
+            if not (isinstance(operand, AST.Constant) and operand.value is None)
+        ]
+        names = {None if domain is None else domain.name for domain in domains}
+        return domains[0] if len(names) == 1 else None
+
     def _calc_value_type(self, node: AST.AST, source: Dataset) -> Any:
         """Data type of a calc expression, or ``None`` when unknown.
 
-        Only literals, plain component references and a time_agg of a typed operand
-        are resolved. Callers must treat the result as a best effort, not as a
-        guarantee of the column type.
+        Only literals, plain component references, a cast into a value domain and a
+        time_agg of a typed operand are resolved. Callers must treat the result as a best
+        effort, not as a guarantee of the column type.
         """
+        value_domain = self._calc_value_domain(node, source)
+        if value_domain is not None:
+            return value_domain.type
         if isinstance(node, AST.Constant) and node.value is not None:
             return BASIC_TYPES.get(type(node.value), Number)
         if isinstance(node, AST.VarID):
@@ -1392,6 +1439,8 @@ class StructureVisitor(ASTTemplate):
                     comps[qualified] = self._make_comp(
                         qualified, comp.data_type, role=comp.role, nullable=comp.nullable
                     )
+                    # Only the name changes, so it keeps its value domain (issue #1350)
+                    comps[qualified].value_domain = comp.value_domain
                 elif comp_name not in comps:
                     comps[comp_name] = comp
         if not comps:
