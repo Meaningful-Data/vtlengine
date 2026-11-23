@@ -106,12 +106,10 @@ class AST:
     def ast_equality(self, other):
         if not isinstance(other, self.__class__):
             return False
+        # The children are compared too, in order: two nodes with different operands or two
+        # scripts with different statements are not equal (issue #1364)
         for k in self.__all_annotations():
-            if (
-                getattr(self, k) != getattr(other, k)
-                and k not in AST.__annotations__
-                and k != "children"  # We do not want to compare the children order here
-            ):
+            if getattr(self, k) != getattr(other, k) and k not in AST.__annotations__:
                 return False
         return True
 

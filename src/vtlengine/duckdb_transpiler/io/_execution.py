@@ -38,7 +38,7 @@ from vtlengine.duckdb_transpiler.io._time_handling import (
     format_time_period_scalar,
 )
 from vtlengine.duckdb_transpiler.sql import initialize_time_types
-from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
+from vtlengine.Exceptions import RunTimeError, transformation_output
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Component, Dataset, Scalar
 from vtlengine.Operators.Time import Time_Shift
@@ -92,12 +92,10 @@ def _mixed_frequency_error(msg_lower: str) -> Exception:
 def _map_udo_constraint_error(msg: str) -> Optional[Exception]:
     """A value that breaks a constraint of a type of a user defined operator, or a Number with
     decimals given to an integer parameter (macro vtl_udo_integer)."""
-    integer = re.search("VTL 1-2-18 (.*?)\u00a6(.*)", msg)
+    integer = re.search("VTL 2-3-10 (.*?)\u00a6(.*?)\u00a6(.*)", msg)
     if integer is not None:
-        op, param = integer.groups()
-        return SemanticError(
-            "1-2-18", param_type="Integer", type_name="Number", op=op, param_name=param
-        )
+        op, param, value = integer.groups()
+        return RunTimeError("2-3-10", op=op, value=value, param_name=param)
     match = re.search("VTL 2-3-9 (.*?)\u00a6(.*?)\u00a6(.*?)\u00a6(.*)", msg)
     if match is None:
         return None
