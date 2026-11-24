@@ -182,6 +182,32 @@ class Time(Operators.Operator):
             return "Q"
         return "M"
 
+    @classmethod
+    def _series_frequency(cls, data: pd.DataFrame) -> str:
+        """The period of the reference time Identifier of timeshift and fill_time_series on
+        Dates, read from each time series.
+
+        The reference time Identifier has to be periodical, so every series that shows
+        a gap must agree on one period; the gaps are taken within a series rather than
+        over the whole column, where two series of the same period interleave into
+        shorter ones. A series of a single Data Point shows no gap and
+        takes the period the rest of the Data Set agrees on.
+        """
+        frequencies = set()
+        for _, group in cls._iter_groups(data):
+            # The values of the group itself, which an index label of the operand may repeat
+            series = group[cls.time_id].dropna()
+            if series.nunique() > 1:
+                frequencies.add(cls.find_min_frequency(series))
+        if len(frequencies) > 1:
+            raise RunTimeError(
+                "2-1-19-23",
+                op=cls.op,
+                comp_type="dataset",
+                param="single time series frequency",
+            )
+        return frequencies.pop() if frequencies else "Y"
+
     _PERIOD_BY_RELATIVEDELTA = {
         (1, 0, 0): "Y",
         (0, 6, 0): "S",
@@ -493,7 +519,7 @@ class Fill_time_series(Binary):
         if data_type == TimePeriod:
             result.data = cls.fill_periods(result.data, fill_type)
         elif data_type == Date:
-            frequency = cls.find_min_frequency(operand.data[cls.time_id])
+            frequency = cls._series_frequency(result.data)
             result.data = cls.fill_dates(result.data, fill_type, frequency)
         elif data_type == TimeInterval:
             categories = result.data[cls.time_id].apply(cls._classify_interval_period).unique()
@@ -755,31 +781,6 @@ class Time_Shift(Binary):
         else:
             raise SemanticError("1-1-19-2", op=cls.op)
         return result
-
-    @classmethod
-    def _series_frequency(cls, data: pd.DataFrame) -> str:
-        """The period of the reference time Identifier, read from each time series.
-
-        The reference time Identifier has to be periodical, so every series that shows
-        a gap must agree on one period; the gaps are taken within a series rather than
-        over the whole column, where two series of the same period interleave into
-        shorter ones. A series of a single Data Point shows no gap and
-        takes the period the rest of the Data Set agrees on.
-        """
-        frequencies = set()
-        for _, group in cls._iter_groups(data):
-            # The values of the group itself, which an index label of the operand may repeat
-            series = group[cls.time_id].dropna()
-            if series.nunique() > 1:
-                frequencies.add(cls.find_min_frequency(series))
-        if len(frequencies) > 1:
-            raise RunTimeError(
-                "2-1-19-23",
-                op=cls.op,
-                comp_type="dataset",
-                param="single time series frequency",
-            )
-        return frequencies.pop() if frequencies else "Y"
 
     @classmethod
     def validate(cls, operand: Dataset, shift_value: Any) -> Dataset:

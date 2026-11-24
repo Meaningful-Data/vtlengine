@@ -74,19 +74,14 @@ def _map_time_agg_error(msg: str, msg_lower: str) -> RunTimeError:
 
 
 def _mixed_frequency_error(msg_lower: str) -> Exception:
-    """The time operator that rejected an operand holding more than one frequency."""
-    if "timeshift" in msg_lower:
-        return RunTimeError(
-            "2-1-19-23",
-            op="timeshift",
-            comp_type="dataset",
-            param="single time series frequency",
-        )
+    """The time operator that rejected an operand holding more than one frequency, of its
+    time series or, for fill_time_series on Time values, of its time intervals."""
+    kind = "time interval" if "time interval" in msg_lower else "time series"
     return RunTimeError(
         "2-1-19-23",
-        op="fill_time_series",
+        op="timeshift" if "timeshift" in msg_lower else "fill_time_series",
         comp_type="dataset",
-        param="single time interval frequency",
+        param=f"single {kind} frequency",
     )
 
 

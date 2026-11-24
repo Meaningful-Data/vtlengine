@@ -217,6 +217,14 @@ day: ``timeshift`` by one of ``2020-01-15T10:30:00`` and
 ``2020-01-16T10:30:05``, and ``fill_time_series`` adds no Data Point
 to them.
 
+The period is read from each time series (the Data Points with the
+same values of the other Identifiers), and the reference time
+Identifier must be periodical: when two series have different
+periods, such as a monthly one and a quarterly one, both
+``timeshift`` and ``fill_time_series`` raise ``2-1-19-23``. A series
+of a single Data Point shows no period and takes the one of the
+other series.
+
 Date is a **subtype of Time** — anywhere a Time value is
 expected, a Date is accepted automatically.
 
