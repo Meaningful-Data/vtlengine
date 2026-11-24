@@ -4073,10 +4073,10 @@
   },
   "hierarchy/hierarchy/non_null_rule_computed/manual_ex_1": {
     "anchor": "ex-non-null-rule-computed-manual-ex-1",
-    "duckdb": "🛡 1-2-22",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "🛡 1-2-22",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Manual example 1"
   },
   "hierarchy/hierarchy/non_null_rule_computed/missing_null_and_zero_items": {
@@ -4145,10 +4145,10 @@
   },
   "hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2": {
     "anchor": "ex-non-zero-rule-computed-manual-ex-2",
-    "duckdb": "🛡 1-2-22",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "🛡 1-2-22",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Manual example 2"
   },
   "hierarchy/hierarchy/non_zero_rule_computed/missing_null_and_zero_items": {
@@ -4217,10 +4217,10 @@
   },
   "hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3": {
     "anchor": "ex-partial-null-rule-computed-manual-ex-3",
-    "duckdb": "🛡 1-2-22",
+    "duckdb": "✅",
     "operator_page": "hierarchy/hierarchy.html",
-    "pandas": "🛡 1-2-22",
-    "status": "refused",
+    "pandas": "✅",
+    "status": "ok",
     "title": "Manual example 3"
   },
   "hierarchy/hierarchy/partial_null_rule_computed/missing_null_and_zero_items": {
