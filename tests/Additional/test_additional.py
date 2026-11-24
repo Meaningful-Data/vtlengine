@@ -4040,7 +4040,9 @@ class TimeOperatorsTest(AdditionalHelper):
     def test_36(self):
         """
         Basic behaviour for datasets with date type.
-        Description: Monthly series, filled one month at a time.
+        Description: Monthly series, filled one month at a time. B has a gap of a month: with
+        only its gap of three months it would be a quarterly series, and two series of
+        different periods raise 2-1-19-23 (issue #1396).
         """
         text = """DS_r := fill_time_series(DS_1, single);"""
         code = "7-36"

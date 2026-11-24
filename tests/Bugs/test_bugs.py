@@ -2387,6 +2387,50 @@ class TimeBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    def test_GH_1396_1(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single );
+        Description: ES is a monthly series of month ends and DE a quarterly one of quarter
+                     ends, so the Date Identifier Id_2 has no single period and
+                     fill_time_series raises 2-1-19-23, as timeshift does (issue #960). Both
+                     engines read one period from the whole column, where the dates of the
+                     two series interleave, and filled DE month by month.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1396
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1396_1",
+            number_inputs=1,
+            exception_code="2-1-19-23",
+            exception_message="At op fill_time_series: fill_time_series can only be applied to "
+            "a dataset with a single time series frequency",
+        )
+
+    def test_GH_1396_2(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single );
+        Description: Control of case 1: ES and DE are both quarterly, so each is filled with
+                     its missing quarter, although their dates interleave.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1396
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1396_2", number_inputs=1, references_names=["1"])
+
+    def test_GH_1396_3(self):
+        """
+        Status: OK
+        Expression: DS_r <- fill_time_series ( DS_1 , single );
+        Description: DE has a single Data Point, which shows no gap and takes the period of
+                     the quarterly ES, as in timeshift: ES gets its missing quarter. Both engines
+                     read the period from the whole column, where the date of DE gives gaps of
+                     months, and filled ES month by month.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1396
+        Goal: Check Result.
+        """
+        self.BaseTest(code="GH_1396_3", number_inputs=1, references_names=["1"])
+
 
 class SetBugs(BugHelper):
     """ """

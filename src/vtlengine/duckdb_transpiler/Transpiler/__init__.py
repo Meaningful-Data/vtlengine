@@ -2366,15 +2366,11 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             ds, time_id
         )
         per_group = fill_mode == "single" and bool(other_id_cols)
-        freq_step = "(SELECT step FROM freq)"
+        freq_step = "(SELECT vtl_period_ind_to_interval(period_ind) FROM freq)"
 
         cte = CTEBuilder()
         cte.cte("source", f"SELECT * FROM {src}")
-        freq_inner = self._build_timeshift_date_frequency_subquery("source", time_col)
-        cte.cte(
-            "freq",
-            f"SELECT vtl_period_ind_to_interval(period_ind) AS step FROM ({freq_inner})",
-        )
+        self._date_frequency_ctes(cte, tokens.FILL_TIME_SERIES, time_col, other_id_cols)
 
         if per_group:
             oid_csv = ", ".join(other_id_cols)
@@ -2622,20 +2618,28 @@ FROM {self._as_subquery(src)} AS s, {shift_from}, (
 
             cte = CTEBuilder()
             cte.cte("source", f"SELECT * FROM {src}")
-            cte.cte(
-                "freq_series",
-                self._build_timeshift_date_frequency_subquery("source", time_col, other_ids),
-            )
-            # The reference time Identifier has to be periodical, so the series must
-            # agree on one period. A Data Set of single Data Points shows no gap at
-            # all and takes the annual default, as find_min_frequency does.
-            cte.cte(
-                "freq",
-                "SELECT CASE WHEN COUNT(DISTINCT period_ind) > 1 THEN error("
-                "'VTL 2-1-19-23: timeshift needs a single time series frequency') "
-                "ELSE COALESCE(MIN(period_ind), 'A') END AS period_ind FROM freq_series",
-            )
+            self._date_frequency_ctes(cte, tokens.TIMESHIFT, time_col, other_ids)
             return cte.select(f"SELECT {', '.join(cols)} FROM source s, {shift_from}, freq")
+
+    @classmethod
+    def _date_frequency_ctes(
+        cls, cte: CTEBuilder, op: str, time_col: str, other_ids: List[str]
+    ) -> None:
+        """The CTEs freq_series, the period of each time series of source, and freq, the
+        period_ind of its reference time Identifier on Dates. That Identifier has to be
+        periodical, so the series must agree on one period (VTL 2-1-19-23). A Data Set of
+        single Data Points shows no gap at all and takes the annual default, as
+        find_min_frequency does."""
+        cte.cte(
+            "freq_series",
+            cls._build_timeshift_date_frequency_subquery("source", time_col, other_ids),
+        )
+        cte.cte(
+            "freq",
+            "SELECT CASE WHEN COUNT(DISTINCT period_ind) > 1 THEN error("
+            f"'VTL 2-1-19-23: {op} needs a single time series frequency') "
+            "ELSE COALESCE(MIN(period_ind), 'A') END AS period_ind FROM freq_series",
+        )
 
     @staticmethod
     def _build_timeshift_date_frequency_subquery(
