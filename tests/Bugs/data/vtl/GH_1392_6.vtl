@@ -1,5 +1,0 @@
-define datapoint ruleset dpr_cty ( valuedomain VD_CTY as C ) is
-    r1 : when C = "DE" then false errorcode "DE_found"
-end datapoint ruleset;
-
-DS_r <- check_datapoint ( DS_1 , dpr_cty components Me_3 all );

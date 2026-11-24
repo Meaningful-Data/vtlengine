@@ -1,5 +1,5 @@
-define datapoint ruleset dpr_cty ( valuedomain VD_CTY as C ) is
-    r1 : when C = "DE" then false errorcode "DE_found"
-end datapoint ruleset;
+define hierarchical ruleset hr_cty ( valuedomain rule VD_CTY ) is
+    r1 : DE = ES + FR
+end hierarchical ruleset;
 
-DS_r <- check_datapoint ( DS_1 , dpr_cty components Me_2 all );
+DS_r <- check_hierarchy ( DS_1 , hr_cty rule Id_1 all );

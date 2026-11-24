@@ -6,25 +6,13 @@
         {
           "name": "Id_1",
           "role": "Identifier",
-          "type": "Integer",
+          "type": "VD_CTY2",
           "nullable": false
         },
         {
           "name": "Me_1",
           "role": "Measure",
-          "type": "VD_INT",
-          "nullable": true
-        },
-        {
-          "name": "Me_2",
-          "role": "Measure",
-          "type": "VD_CTY2",
-          "nullable": true
-        },
-        {
-          "name": "Me_3",
-          "role": "Measure",
-          "type": "VD_YEAR",
+          "type": "Number",
           "nullable": true
         }
       ]
