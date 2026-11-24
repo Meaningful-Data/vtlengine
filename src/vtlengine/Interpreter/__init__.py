@@ -64,12 +64,12 @@ from vtlengine.AST.Grammar.tokens import (
 )
 from vtlengine.AST.UDOTypes import (
     resolve_value_domain_type,
+    udo_accepts,
     udo_call_key,
     udo_component_matches,
     udo_dataset_components,
     udo_result_on_basic_types,
     udo_result_on_value_domains,
-    udo_returns,
 )
 from vtlengine.DataTypes import (
     BASIC_TYPES,
@@ -215,16 +215,12 @@ def _udo_scalar_value_domain(param: Dict[str, Any], argument: Scalar) -> Optiona
 def _check_udo_return_type(
     op: str, declared: Any, constraints: Optional[AST.SignatureConstraints], result: Any
 ) -> None:
-    """The result of a user defined operator must have the type it returns (issue #1161)."""
+    """The result of a user defined operator must have the type it returns."""
     if isinstance(declared, Component):
-        # A component declared without a type is parsed with a String instance
-        data_type: Any = declared.data_type
-        matches = udo_component_matches(declared, result) and (
-            not isinstance(data_type, type) or udo_returns(result.data_type, data_type)
-        )
+        matches = udo_component_matches(declared, result)
         found_type = _format_component_type(result)
     elif isinstance(declared, type):
-        matches = udo_returns(result.data_type, declared)
+        matches = udo_accepts(result.data_type, declared)
         found_type = _format_type(result.data_type)
     else:
         return
@@ -3396,7 +3392,7 @@ class InterpreterAnalyzer(ASTTemplate):
             dataset = self.regular_aggregation_dataset
             value = dataset.components.get(value) if dataset is not None else None
         found = getattr(value, "data_type", None)
-        if found is not None and not check_unary_implicit_promotion(found, declared.data_type):
+        if found is not None and not udo_accepts(found, declared.data_type):
             raise SemanticError(
                 "1-2-18", param_type=declared.data_type, type_name=found, op=op, param_name=param
             )
