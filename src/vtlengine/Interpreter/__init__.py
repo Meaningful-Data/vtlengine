@@ -3238,7 +3238,9 @@ class InterpreterAnalyzer(ASTTemplate):
         """The value a parameter of a basic type takes, given or by default: it must be of the
         type the parameter declares, or promote to it, and is cast to it. A Number with
         decimals is no Integer: a literal raises 1-2-18, which the semantic analysis raises too,
-        and a value computed when the script runs is an error of the data (issue #1364)."""
+        and a value computed when the script runs is an error of the data (issue #1364). A
+        literal given to a parameter on a value domain must be one of its values (1-1-10-13), as
+        its default must, also in the semantic analysis."""
         if isinstance(argument, (Dataset, DataComponent)):
             type_2 = "Dataset" if isinstance(argument, Dataset) else "Component"
             raise SemanticError(
@@ -3259,14 +3261,28 @@ class InterpreterAnalyzer(ASTTemplate):
                 op=op,
                 param_name=param["name"],
             )
+        cast_value = scalar_type.cast(value)
+        value_domain = _udo_scalar_value_domain(param, argument)
+        if (
+            argument.literal
+            and value_domain is not None
+            and not is_value_of_domain(cast_value, value_domain)
+        ):
+            raise SemanticError(
+                "1-1-10-13",
+                element="argument",
+                value=literal_text(value),
+                where=f"parameter {param['name']} of the operator {op}",
+                value_domain=value_domain.name,
+            )
         return Scalar(
             name=argument.name,
-            value=scalar_type.cast(value),
+            value=cast_value,
             data_type=scalar_type,
             nullable=argument.nullable,
             # A literal argument stays a literal inside the operator (issue #1192)
             literal=argument.literal,
-            value_domain=_udo_scalar_value_domain(param, argument),
+            value_domain=value_domain,
         )
 
     def _udo_ruleset_argument(self, op: str, param: Dict[str, Any], argument: AST.AST) -> str:
