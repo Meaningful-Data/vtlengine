@@ -1662,8 +1662,6 @@ class BooleanOperatorsTest(AdditionalHelper):
 
     maxDiff = None
 
-    pass
-
 
 class ClauseOperatorsTest(AdditionalHelper):
     """
@@ -2532,7 +2530,7 @@ class JoinOperatorsTest(AdditionalHelper):
         text = """DS_r := inner_join ( DS_1, DS_2 using Id_1 );"""
         code = "2-25"
         number_inputs = 2
-        message = "1-1-13-4"
+        message = "1-1-13-9"
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2549,7 +2547,7 @@ class JoinOperatorsTest(AdditionalHelper):
         text = """DS_r := inner_join ( DS_1, DS_2 using Id_2 );"""
         code = "2-26"
         number_inputs = 2
-        message = "1-1-13-4"
+        message = "1-1-13-9"
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2587,7 +2585,7 @@ class JoinOperatorsTest(AdditionalHelper):
         text = """DS_r := inner_join ( DS_1, DS_2, DS_3 using Id_1 );"""
         code = "2-28"
         number_inputs = 3
-        message = "1-1-13-4"
+        message = "1-1-13-9"
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2604,7 +2602,7 @@ class JoinOperatorsTest(AdditionalHelper):
         text = """DS_r := inner_join ( DS_1, DS_2, DS_3 using Id_1 );"""
         code = "2-29"
         number_inputs = 3
-        message = "1-1-13-4"
+        message = "1-1-13-9"
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2620,7 +2618,7 @@ class JoinOperatorsTest(AdditionalHelper):
         text = """DS_r := left_join ( DS_1, DS_2 using Id_1 );"""
         code = "2-30"
         number_inputs = 2
-        message = "1-1-13-4"
+        message = "1-1-13-24"
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2658,7 +2656,7 @@ class JoinOperatorsTest(AdditionalHelper):
         text = """DS_r := left_join ( DS_2, DS_1 using Id_1, Id_2 );"""
         code = "2-32"
         number_inputs = 2
-        message = "1-1-13-4"
+        message = "1-1-13-24"
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2696,7 +2694,7 @@ class JoinOperatorsTest(AdditionalHelper):
         text = """DS_r := left_join ( DS_1, DS_2, DS_3 using Id_1 );"""
         code = "2-34"
         number_inputs = 3
-        message = "1-1-13-4"
+        message = "1-1-13-24"
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2714,7 +2712,7 @@ class JoinOperatorsTest(AdditionalHelper):
         text = """DS_r := left_join ( DS_1, DS_2 using Id_1 );"""
         code = "2-35"
         number_inputs = 2
-        message = "1-1-13-4"
+        message = "1-1-13-24"
         self.NewSemanticExceptionTest(
             text=text, code=code, number_inputs=number_inputs, exception_code=message
         )
@@ -2851,22 +2849,6 @@ class DataValidationOperatorsTest(AdditionalHelper):
             number_inputs=number_inputs,
             references_names=references_names,
         )
-
-    # TODO: Review this test checking the errorlevel handling.
-    # def test_2(self):
-    #     """ """
-    #     text = """DS_r := check ( DS_1 >= DS_2 errorcode 1.0 errorlevel "local" imbalance DS_1 - DS_2 );"""
-    #
-    #     code = "11-2"
-    #     number_inputs = 2
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(
-    #         text=text,
-    #         code=code,
-    #         number_inputs=number_inputs,
-    #         references_names=references_names,
-    #     )
 
     def test_3(self):
         """ """
@@ -4040,7 +4022,9 @@ class TimeOperatorsTest(AdditionalHelper):
     def test_36(self):
         """
         Basic behaviour for datasets with date type.
-        Description: Monthly series, filled one month at a time.
+        Description: Monthly series, filled one month at a time. B has a gap of a month: with
+        only its gap of three months it would be a quarterly series, and two series of
+        different periods raise 2-1-19-23 (issue #1396).
         """
         text = """DS_r := fill_time_series(DS_1, single);"""
         code = "7-36"

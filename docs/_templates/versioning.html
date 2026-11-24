@@ -6,9 +6,9 @@
   {% set version_class = "version-latest" %}
 {% elif "rc" in branch or "alpha" in branch or "beta" in branch %}
   {% set version_class = "version-prerelease" %}
-{% elif branch == "main" %}
+{% elif branch == "develop" %}
   {% set version_class = "version-development" %}
-{% elif not branch.startswith('v') and branch != "main" %}
+{% elif not branch.startswith('v') and branch != "develop" %}
   {% set version_class = "version-current" %}
 {% endif %}
 <div class="rst-versions {{ version_class }}" data-toggle="rst-versions" role="note" aria-label="versions">
@@ -28,9 +28,9 @@
               <em style="color: #27ae60; font-size: 0.85em;">(latest)</em>
             {% elif "rc" in ver %}
               <em style="color: #e67e22; font-size: 0.85em;">(pre-release)</em>
-            {% elif ver == "main" %}
+            {% elif ver == "develop" %}
               <em style="color: #3498db; font-size: 0.85em;">(development)</em>
-            {% elif not ver.startswith('v') and ver != "main" %}
+            {% elif not ver.startswith('v') and ver != "develop" %}
               <em style="color: #f48fb1; font-size: 0.85em;">(current)</em>
             {% endif %}
           </dd>
@@ -44,9 +44,9 @@
               <em style="color: #27ae60; font-size: 0.85em;">(latest)</em>
             {% elif "rc" in ver %}
               <em style="color: #e67e22; font-size: 0.85em;">(pre-release)</em>
-            {% elif ver == "main" %}
+            {% elif ver == "develop" %}
               <em style="color: #3498db; font-size: 0.85em;">(development)</em>
-            {% elif not ver.startswith('v') and ver != "main" %}
+            {% elif not ver.startswith('v') and ver != "develop" %}
               <em style="color: #f48fb1; font-size: 0.85em;">(current)</em>
             {% endif %}
           </dd>

@@ -6,9 +6,9 @@ name: CodeQL
 
 on:
   pull_request:
-    branches: ["main", "1.9.X"]
+    branches: ["main", "develop"]
   push:
-    branches: ["main", "1.9.X"]
+    branches: ["main", "develop"]
   schedule:
     # Weekly, Mondays 05:00 UTC, on the default branch: new queries meet unchanged code
     - cron: "0 5 * * 1"
@@ -60,5 +60,18 @@ jobs:
           languages: c-cpp
           build-mode: none
           queries: security-extended, security-and-quality
+          # The ANTLR-generated parser is regenerated from Vtl.g4, never edited: only the
+          # hand-written bindings are reported. The headers they include are analyzed anyway,
+          # and without a build the pybind11 and ANTLR headers are not resolved, so the
+          # queries that only report those misread declarations are left out.
+          config: |
+            paths-ignore:
+              - src/vtlengine/AST/Grammar/_cpp_parser/Vtl*.cpp
+            query-filters:
+              - exclude:
+                  id:
+                    - cpp/function-in-block
+                    - cpp/unused-static-variable
+                    - cpp/ambiguously-signed-bit-field
       - name: Analyze
         uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2

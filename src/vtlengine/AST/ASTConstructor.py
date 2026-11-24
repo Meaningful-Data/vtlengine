@@ -41,7 +41,7 @@ from vtlengine.AST.ASTConstructorModules.Terminals import (
 from vtlengine.AST.ASTDataExchange import de_ruleset_elements
 from vtlengine.AST.Grammar._cpp_parser import vtl_cpp_parser
 from vtlengine.AST.Grammar._cpp_parser._rule_constants import RC
-from vtlengine.Exceptions import InputValidationException, SemanticError
+from vtlengine.Exceptions import InputValidationException
 from vtlengine.Model import Component, Dataset, Scalar
 
 # pylint: disable=unreachable,expression-not-assigned
@@ -111,6 +111,8 @@ class ASTVisitor:
         elif ctx.ctx_id == RC.DEFINE_EXPRESSION:
             return self.visitDefineExpression(c)
 
+        raise InputValidationException(code="0-5-1-1")
+
     # varID ASSIGN expr                # temporaryAssignment
     def visitTemporaryAssignment(self, ctx):
         ctx_list = ctx.children
@@ -167,6 +169,8 @@ class ASTVisitor:
 
         elif ctx.ctx_id == RC.DEF_VIRAL_PROPAGATION:
             return self.visitDefViralPropagation(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitDefViralPropagation(self, ctx: Any) -> Any:
         """
@@ -283,7 +287,7 @@ class ASTVisitor:
         return_ = [
             (
                 Terminals().visitOutputParameterType(datatype),
-                Terminals().visitDeclaredOutputType(datatype, allow_constraints=True),
+                Terminals().visitDeclaredOutputType(datatype),
                 self._signature_constraints(datatype),
             )
             for datatype in ctx_list
@@ -298,8 +302,6 @@ class ASTVisitor:
 
         # Without returns, the result is whatever the body gives (issue #1160)
         return_node, return_type, return_constraints = return_[0] if return_ else (None, None, None)
-        if return_ and return_type is None:
-            raise SemanticError("1-3-2-6", op=operator)
 
         token_info = extract_token_info(ctx)
 
@@ -489,7 +491,9 @@ class ASTVisitor:
                 comp_type, name_or_mult = comp.children[0], comp.children[1]
                 constraint = self._component_type_constraint(comp_type)
                 if name_or_mult.ctx_id == RC.MULT_MODIFIER:
-                    component = Terminals().visitComponentType(comp_type, allow_constraints=True)
+                    component = Terminals().visitComponentType(
+                        comp_type, allow_constraints=True, allow_value_domain=True
+                    )
                     multiplicity = name_or_mult.text.lstrip("_")
                     constraints.unnamed.append(
                         UnnamedComponent(component, multiplicity, constraint)

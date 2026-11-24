@@ -345,13 +345,17 @@ class DatapointRulesetTests(TestDataPointRuleset):
                      rulesetName that can be used for validation purposes.
 
         Git Branch: #144
-        Goal:
+        Goal: Has to be an exception: the value domains Id_3 and Me_1 of the ruleset are not
+              given, which the ruleset needs, even if they are named as components of DS_1
+              (issue #1338).
         """
         code = "1-1-1-11"
         number_inputs = 1
-        references_names = ["1"]
+        message = "1-2-22"
 
-        self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
+        self.NewSemanticExceptionTest(
+            code=code, number_inputs=number_inputs, exception_code=message
+        )
 
     """
     - if variable rule in signature:
@@ -393,11 +397,12 @@ class DatapointRulesetTests(TestDataPointRuleset):
                      rulesetName that can be used for validation purposes.
 
         Git Branch: #144
-        Goal: Has to be an exception because types of variable and vd are differents.
+        Goal: Has to be an exception: the value domains TYPE and AMOUNT of the ruleset are not
+              given, which the ruleset needs (issue #1338).
         """
         code = "1-1-1-13"
         number_inputs = 1
-        message = "1-1-1-10"
+        message = "1-2-22"
 
         self.NewSemanticExceptionTest(
             code=code, number_inputs=number_inputs, exception_code=message

@@ -1,0 +1,3 @@
+:Tests: ``unpivot Id_3, Me_2``, on the measures ``A`` (Number), ``B`` and ``C`` (Integer).
+:Manual: `Unpivoting <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Unpivoting/index.html>`__, Example 2, output verbatim: "All the measures of op must have the same basic scalar type, including sub-types", which accepts them, as Integer is a sub-type of Number. The manual's ``ds_2.json`` names its dataset ``DS_1``, a slip: the example loads it as ``DS_2``, the name that the page and the script give it.
+:Expected: Nine data points, with ``Me_2`` typed Number, as the manual types it. The manual prints ``2.1`` for ``(6, A)`` with trailing spaces, which the importer stripped, as for every non-String value.

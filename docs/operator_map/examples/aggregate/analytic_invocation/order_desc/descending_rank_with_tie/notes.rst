@@ -1,0 +1,3 @@
+:Tests: ``order by Me_1 desc``, with a tie: ``rank`` in ``calc``, partitioned by ``Id_1``.
+:Manual: `Analytic invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html>`__: "in descending order if desc is specified"; `Rank <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Rank/index.html>`__: "the same order number (rank) is assigned and a gap appears in the sequence of the assigned ranks".
+:Expected: in ``A`` 5 ranks 1, 3 ranks 2 and the two 1s rank 3; in ``B`` 8 ranks 1 and 4 ranks 2.

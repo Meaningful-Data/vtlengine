@@ -1,0 +1,3 @@
+:Tests: renames, through the aliases, of the four identifiers and of ``d1#Me_2``, on two operands that both have ``Id_1``, ``Id_2`` and ``Me_2``.
+:Manual: `Cross Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Cross%20Join/index.html>`__, Example 1, output verbatim: "a data point in VDS₁ is generated for each pair of data points in the partial result and the joined data set", and the prefixes of the components of several data sets are stripped at the end.
+:Expected: 3 × 3 = 9 data points with ``Id_11``, ``Id_12``, ``Id_21``, ``Id_22``, ``Me_1``, ``Me_12``, ``Me_1A`` and ``Me_2`` (``d2#Me_2`` stripped). Without the renames, the stripping would give two ``Id_1``, ``Id_2`` and ``Me_2``, an error.

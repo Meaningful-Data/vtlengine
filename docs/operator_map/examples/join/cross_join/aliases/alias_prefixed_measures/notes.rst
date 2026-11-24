@@ -1,0 +1,3 @@
+:Tests: the measure ``Me_1`` of both operands, named through the aliases (``d1#Me_1``, ``d2#Me_1``) and renamed: the result depends on the operand each alias stands for.
+:Manual: `Cross Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Cross%20Join/index.html>`__: the components of several data sets are in VDS₁ once per data set, and their "names ... are prefixed with the alias of the data set they come from, separated by the “#” symbol".
+:Expected: the cartesian product of ``DS_1`` (``Id_1`` 1, 2) and ``DS_2`` (``Id_2`` A, B) has 2 × 2 = 4 data points: ``Me_11`` holds the values of ``DS_1`` (10, 10, 20, 20) and ``Me_12`` those of ``DS_2`` (1, 2, 1, 2). An engine that swapped the aliases would swap the columns.

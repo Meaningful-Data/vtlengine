@@ -1,11 +1,19 @@
 """Resolve VTL dataset structures for the DuckDB transpiler."""
 
+import math
 from contextlib import contextmanager
-from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union
+from copy import copy
+from functools import reduce
+from typing import Any, Dict, Generator, List, Optional, Set, Tuple, Union, cast
 
 import vtlengine.AST as AST
 from vtlengine.AST.ASTTemplate import ASTTemplate
 from vtlengine.AST.Grammar import tokens
+from vtlengine.AST.UDOTypes import (
+    udo_call_key,
+    udo_dataset_components,
+    udo_result_on_value_domains,
+)
 from vtlengine.DataTypes import (
     _DUCKDB_TYPE_TO_VTL,
     BASIC_TYPES,
@@ -18,25 +26,28 @@ from vtlengine.DataTypes import (
     Number,
     TimeInterval,
     TimePeriod,
+    binary_implicit_promotion,
 )
 from vtlengine.DataTypes import String as StringType
-from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
+from vtlengine.DataTypes._time_checking import _has_time_component
 from vtlengine.duckdb_transpiler.sql import references_raising_macro
-from vtlengine.duckdb_transpiler.Transpiler.operators import COMPARISON_OPS, get_duckdb_type
+from vtlengine.duckdb_transpiler.Transpiler.operators import (
+    COMPARISON_OPS,
+    calls_raising_function,
+    get_duckdb_type,
+    text_to_period,
+)
 from vtlengine.duckdb_transpiler.Transpiler.sql_builder import quote_name
-from vtlengine.Model import Component, Dataset, Role
+from vtlengine.Exceptions import SemanticError
+from vtlengine.Model import Component, Dataset, Role, ValueDomain, join_homonyms, value_of
 from vtlengine.Operators.CastOperator import Cast
-from vtlengine.Operators.Join import merged_viral_attribute_names
-from vtlengine.Utils import ANALYTIC_MAPPING
-
-
-def _try_normalize_time_period(value: str) -> Optional[str]:
-    """Return the canonical TimePeriod string, or None if the handler rejects it."""
-    try:
-        return str(TimePeriodHandler(value))
-    except Exception:
-        return None
-
+from vtlengine.Operators.Clause import Pivot, Unpivot
+from vtlengine.Operators.Join import Apply, merged_viral_attribute_names
+from vtlengine.Operators.Time import Date_Add
+from vtlengine.Operators.Time import Unary as TimeUnary
+from vtlengine.Operators.Validation import error_domains, error_level_type
+from vtlengine.Utils import AGGREGATION_MAPPING, ANALYTIC_MAPPING, BINARY_MAPPING
+from vtlengine.ViralPropagation import apply_viral_return_types
 
 # Operand type tags
 _DATASET = "Dataset"
@@ -47,12 +58,18 @@ _UDO_DEPTH_PREFIX = "__depth__"
 # Key of a UDO scope with the type constraints that the value of a parameter must meet:
 # (operator, parameter, declared type, constraints), outermost first
 _UDO_CHECKS_PREFIX = "__checks__"
+# Key of a UDO scope with the key of its call (see udo_call_key)
+_UDO_CALL = "__call__"
+# Key of a UDO scope with the name of the scalar a parameter takes: the scalar the argument
+# names, or the parameter that took a value no scalar names
+_UDO_NAME_PREFIX = "__name__"
 
 # Role encoded in UnaryOp.op for calc clauses.
 _CALC_ROLE_BY_TOKEN: Dict[str, Role] = {
     tokens.IDENTIFIER: Role.IDENTIFIER,
     tokens.ATTRIBUTE: Role.ATTRIBUTE,
     tokens.MEASURE: Role.MEASURE,
+    tokens.VIRAL_ATTRIBUTE: Role.VIRAL_ATTRIBUTE,
 }
 
 
@@ -66,6 +83,7 @@ class StructureVisitor(ASTTemplate):
         scalars: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.output_datasets: Dict[str, Dataset] = output_datasets or {}
+        self.value_domains: Dict[str, ValueDomain] = {}
         self.available_tables: Dict[str, Dataset] = {
             **(available_tables or {}),
             **self.output_datasets,
@@ -80,6 +98,9 @@ class StructureVisitor(ASTTemplate):
         self._structure_memo: Optional[Dict[Tuple[int, str], Tuple[AST.AST, Any]]] = None
         self._node_type_memo: Optional[Dict[int, Tuple[AST.AST, str]]] = None
         self._materialized_operands: List[Tuple[str, str]] = []
+        # The results and dataset arguments of the calls of user defined operators, as the
+        # semantic analysis gives them (see InterpreterAnalyzer.udo_results)
+        self.udo_results: Dict[Tuple[Tuple[Any, ...], Optional[str]], Any] = {}
 
     # Dispatcher: two-level visit — first ``visit_{Class}_{op}``, then ``visit_{Class}``
 
@@ -139,8 +160,8 @@ class StructureVisitor(ASTTemplate):
         """Return dataset structure for a parameterized op."""
         if node.op == tokens.CAST and len(node.children) >= 2:
             ds = self._get_dataset_structure(node.children[0])
-            if ds is None:
-                return None
+            if ds is None or isinstance(node.children[1], AST.Collection):
+                return ds
             target_str = self._resolve_name(node.children[1])
             target_type = SCALAR_TYPES.get(
                 target_str, _DUCKDB_TYPE_TO_VTL.get(target_str.upper(), Number)
@@ -294,7 +315,7 @@ class StructureVisitor(ASTTemplate):
         elif isinstance(node, AST.UDOCall) and node.op in self._udos:
             # The body is typed with the arguments of the call bound (issue #1276)
             udo_def = self._udos[node.op]
-            self._push_udo_params(self._build_udo_bindings(udo_def, node.params))
+            self._push_udo_params(self._build_udo_bindings(udo_def, node))
             try:
                 return self._get_node_type(udo_def["expression"])
             finally:
@@ -338,10 +359,14 @@ class StructureVisitor(ASTTemplate):
             return "TRUE" if value else "FALSE"
         if isinstance(value, str):
             if type_name == "Date":
-                return f"DATE '{value}'"
+                # A Date is written as the loaders write it, padded, and keeps the time it
+                # has: 2024-1-5 10:00:00 is 2024-01-05 10:00:00 (issue #1349)
+                value = value_of(Date, value)
+                sql_type = "TIMESTAMP" if _has_time_component(value) else "DATE"
+                return f"{sql_type} '{value}'"
             escaped = value.replace("'", "''")
             if type_name == "TimePeriod":
-                canonical = _try_normalize_time_period(value)
+                canonical = text_to_period(value)
                 if canonical is not None:
                     return f"'{canonical.replace(chr(39), chr(39) * 2)}'"
                 return f"vtl_period_normalize('{escaped}')"
@@ -349,6 +374,10 @@ class StructureVisitor(ASTTemplate):
         if isinstance(value, float):
             # A bare float literal would be typed DECIMAL(p,s) by DuckDB; Number
             # arithmetic and storage are DOUBLE (repr round-trips the exact value).
+            # An infinity and -0.0 are cast from text: as SQL they would be a column name or 0
+            # (issue #1353)
+            if math.isinf(value) or (value == 0 and math.copysign(1.0, value) < 0):
+                return f"CAST('{value!r}' AS DOUBLE)"
             return f"CAST({value!r} AS DOUBLE)"
         return str(value)
 
@@ -389,13 +418,15 @@ class StructureVisitor(ASTTemplate):
         with the operation that holds it when its statistics show that a join needs no row
         of that operation, as an if or a case operand of another one (issue #1314). The
         operands already materialized inside it are read from their own CTE, so they are
-        not checked again.
+        not checked again. Its rows are read as a whole, which no row is not, as DuckDB leaves
+        out of the CTE a column the statement does not read, as a calc Measure that a later
+        keep or drop removes (issue #1352).
         """
-        if not references_raising_macro(sql):
+        if not references_raising_macro(sql) and not calls_raising_function(sql):
             return sql
         cte = quote_name(f"_vtl_checked_{len(self._materialized_operands)}")
         self._materialized_operands.append((cte, sql))
-        return f"(SELECT * FROM {cte})"
+        return f"(SELECT * FROM {cte} WHERE {cte} IS NOT NULL)"
 
     def _with_checked_operands(self, sql: str) -> str:
         """The query ``sql`` of a statement after the MATERIALIZED CTEs of the operands that
@@ -487,12 +518,13 @@ class StructureVisitor(ASTTemplate):
             return udo_val
         return name
 
-    def _resolve_membership_name(self, name: str) -> str:
-        """Resolve a ``alias#component`` name, substituting UDO bindings on each side."""
-        if "#" not in name:
-            return self._resolve_udo_name(name)
-        alias, comp = name.split("#", 1)
-        return f"{self._resolve_udo_name(alias)}#{self._resolve_udo_name(comp)}"
+    def _rename_old_name(self, old_name: Union[str, AST.AST], lookup: Dict[str, Any]) -> str:
+        """The Component that the old name of a rename names: a name, # included, or for the
+        membership alias#comp the qualified Component of a join where ``lookup`` has it and
+        comp otherwise (issue #1355)."""
+        if isinstance(old_name, str):
+            return self._resolve_udo_name(old_name)
+        return self._extract_component_names([old_name], lookup)[0]
 
     def _push_udo_params(self, params: Dict[str, Any]) -> None:
         """Push a new UDO parameter scope onto the stack."""
@@ -573,7 +605,10 @@ class StructureVisitor(ASTTemplate):
         """The structure of the first Data Set operand of an if or a case, as in the semantic
         analysis (issue #1304)."""
         operands = self._branch_operands(node)
-        return next(filter(None, map(self._get_dataset_structure, operands)), None)
+        structures = [self._get_dataset_structure(op) for op in operands]
+        first = next(filter(None, structures), None)
+        names = set(first.get_measures_names()) if first is not None else set()
+        return self._with_time(first, structures, names)
 
     def _resolve_varid_structure(self, node: AST.VarID) -> Optional[Dataset]:
         """Resolve a VarID (including UDO bindings) to its dataset structure."""
@@ -607,6 +642,10 @@ class StructureVisitor(ASTTemplate):
             result = self._build_calc_structure(node)
             if result is not None:
                 return result
+        elif op == tokens.PIVOT:
+            return self._build_pivot_structure(node)
+        elif op == tokens.APPLY:
+            return self._build_apply_structure(node)
         builder_attr = self._CLAUSE_BUILDER_ATTRS.get(op)
         if builder_attr is not None:
             return getattr(self, builder_attr)(node)
@@ -645,7 +684,7 @@ class StructureVisitor(ASTTemplate):
         comps: Dict[str, Component] = {}
         for name, comp in ds.components.items():
             stripped = name.split("#", 1)[-1]
-            comps[stripped] = self._make_comp(stripped, comp.data_type, comp.role, comp.nullable)
+            comps[stripped] = self._renamed(comp, stripped)
         return Dataset(name=ds.name, components=comps, data=None)
 
     @staticmethod
@@ -700,12 +739,23 @@ class StructureVisitor(ASTTemplate):
     def _resolve_paramop_structure(self, node: AST.ParamOp) -> Optional[Dataset]:
         """Resolve a ParamOp to its dataset structure."""
         ds = self._get_dataset_structure(node.children[0]) if node.children else None
-        if ds is None or node.op in (tokens.FILL_TIME_SERIES, tokens.DATE_ADD):
+        if ds is None or node.op == tokens.FILL_TIME_SERIES:
             return ds
+        if node.op == tokens.DATE_ADD:
+            # The shifted Components are Dates, as in the semantic analysis (issue #1352)
+            comps = {name: copy(comp) for name, comp in ds.components.items()}
+            for shifted in Date_Add._dateadd_targets(ds):
+                comps[shifted.name].data_type = Date
+                comps[shifted.name].value_domain = None
+            return Dataset(name=ds.name, components=comps, data=None)
         measures = ds.get_measures()
         if len(measures) == 1 and node.op == tokens.INSTR:
             return self._build_integer_result_structure(ds)
-        to_type = node.children[1] if node.op == tokens.CAST and len(node.children) > 1 else None
+        target = node.children[1] if node.op == tokens.CAST and len(node.children) > 1 else None
+        value_domain = (
+            self.value_domains.get(target.name) if isinstance(target, AST.Collection) else None
+        )
+        to_type = target if value_domain is None else value_domain.type
         if len(measures) == 1 and isinstance(to_type, type):
             name = Cast.result_measure_name(measures[0], to_type)
             comps = {
@@ -714,6 +764,7 @@ class StructureVisitor(ASTTemplate):
                 if c.role in (Role.IDENTIFIER, Role.VIRAL_ATTRIBUTE)
             }
             comps[name] = self._make_comp(name, to_type, nullable=measures[0].nullable)
+            comps[name].value_domain = value_domain
             return Dataset(name=ds.name, components=comps, data=None)
         return self._without_attributes(ds)
 
@@ -736,7 +787,8 @@ class StructureVisitor(ASTTemplate):
             comps["duration_var"] = self._make_comp("duration_var", Duration)
             return Dataset(name=ds.name, components=comps, data=None)
         if node.op in (tokens.FLOW_TO_STOCK, tokens.STOCK_TO_FLOW):
-            return ds
+            # As the semantic analysis builds it (issue #1348)
+            return Dataset(name=ds.name, components=TimeUnary.components(ds), data=None)
         return self._without_attributes(ds)
 
     def _resolve_mulop_structure(self, node: AST.MulOp) -> Optional[Dataset]:
@@ -748,6 +800,11 @@ class StructureVisitor(ASTTemplate):
             if ds is not None and len(ds.get_measures_names()) == 1:
                 return self._build_boolean_result_structure(ds)
             return self._without_attributes(ds)
+        if node.op in (tokens.UNION, tokens.INTERSECT, tokens.SETDIFF, tokens.SYMDIFF):
+            structures = [self._get_dataset_structure(child) for child in node.children]
+            first = structures[0]
+            names = set(first.components) if first is not None else set()
+            return self._with_time(first, structures, names)
         return self._get_dataset_structure(node.children[0])
 
     def _build_aggregation_structure(self, node: AST.Aggregation) -> Optional[Dataset]:
@@ -789,18 +846,16 @@ class StructureVisitor(ASTTemplate):
         return Dataset(name=ds.name, components=comps, data=None)
 
     def _build_udo_bindings(
-        self,
-        udo_def: Dict[str, Any],
-        call_params: List[Any],
-        include_types: bool = False,
-        op: Optional[str] = None,
+        self, udo_def: Dict[str, Any], node: AST.UDOCall, include_types: bool = False
     ) -> Dict[str, Any]:
         """Bind a UDO call's arguments (positional + defaults) to parameter names.
 
-        With include_types, the constraints of the type of each parameter of the operator op
+        With include_types, the constraints of the type of each parameter of the operator
         are kept under __checks__, with the ones of the parameter passed on to it, if any:
         the values are checked where they are read, even inside another operator."""
-        bindings: Dict[str, Any] = {}
+        call_params: List[Any] = node.params
+        op = node.op
+        bindings: Dict[str, Any] = {_UDO_CALL: self._udo_call_key(node)}
         depth = len(self._udo_params or [])  # The arguments are written in the caller's scope
         for i, param_info in enumerate(udo_def["params"]):
             param_name = param_info["name"]
@@ -820,10 +875,16 @@ class StructureVisitor(ASTTemplate):
                 if scope is None:
                     bindings[param_name] = argument
                     bindings[f"{_UDO_DEPTH_PREFIX}{param_name}"] = depth
+                    bindings[f"{_UDO_NAME_PREFIX}{param_name}"] = (
+                        argument.value if isinstance(argument, AST.VarID) else param_name
+                    )
                 else:
                     bindings[param_name] = scope[argument.value]
                     bindings[f"{_UDO_DEPTH_PREFIX}{param_name}"] = scope.get(
                         f"{_UDO_DEPTH_PREFIX}{argument.value}"
+                    )
+                    bindings[f"{_UDO_NAME_PREFIX}{param_name}"] = scope.get(
+                        f"{_UDO_NAME_PREFIX}{argument.value}", argument.value
                     )
                     inherited = scope.get(f"{_UDO_CHECKS_PREFIX}{argument.value}", [])
             elif param_info.get("default") is not None:
@@ -839,16 +900,43 @@ class StructureVisitor(ASTTemplate):
                 bindings[f"{_UDO_CHECKS_PREFIX}{param_name}"] = [*inherited, *own]
         return bindings
 
+    def _udo_call_key(self, node: AST.AST) -> Tuple[Any, ...]:
+        """The key of a call, or of an aggr clause, made in the current UDO scope (see
+        udo_call_key)."""
+        scopes = reversed(self._udo_params or [])
+        return udo_call_key(next((s[_UDO_CALL] for s in scopes if _UDO_CALL in s), ()), node)
+
+    def _udo_result(self, node: AST.UDOCall) -> Any:
+        """The result of a UDO call as the semantic analysis gives it, None when unknown."""
+        return self.udo_results.get((self._udo_call_key(node), None))
+
     def _resolve_udocall_structure(self, node: AST.UDOCall) -> Optional[Dataset]:
-        """Resolve a UDO call by binding its parameters and visiting the body."""
+        """Resolve a UDO call: the structure the semantic analysis gives its result, or the one
+        of its body with its parameters bound."""
         if node.op not in self._udos:
             return self._get_output_dataset()
+        result = self._udo_result(node)
+        if isinstance(result, Dataset):
+            # As the pandas engine computes it, with the types of the components the body
+            # computes, which the structures worked out here only guess (issue #1351)
+            return result
         udo_def = self._udos[node.op]
-        self._push_udo_params(self._build_udo_bindings(udo_def, node.params))
+        self._push_udo_params(self._build_udo_bindings(udo_def, node))
         try:
-            return self._get_dataset_structure(udo_def["expression"])
+            structure = self._get_dataset_structure(udo_def["expression"])
         finally:
             self._pop_udo_params()
+        declared, constraints = udo_def.get("return_type"), udo_def.get("return_constraints")
+        if structure is None or not isinstance(declared, Dataset) or constraints is None:
+            return structure
+        # The components that the dataset type of the result names on a value domain are on
+        # it, as the pandas engine gives them (issue #1351)
+        taken = udo_dataset_components(node.op, "the output", declared, constraints, structure)
+        return udo_result_on_value_domains(structure, constraints, taken)
+
+    def _ruleset_error_levels(self, ruleset_name: str) -> List[Any]:
+        """The error levels of the rules of a ruleset, which the transpiler records."""
+        return []
 
     def _build_validation_structure(self, node: AST.Validation) -> Optional[Dataset]:
         """Build the output structure for a Validation node."""
@@ -856,12 +944,18 @@ class StructureVisitor(ASTTemplate):
         if inner_ds is None:
             return None
         val_comps = self._identifiers_dict(inner_ds)
+        imbalance_ds = self._get_dataset_structure(node.imbalance)
+        imbalance_measures = imbalance_ds.get_measures() if imbalance_ds is not None else []
         self._add_error_measures(
             val_comps,
-            errorlevel_type=Integer,
+            errorlevel_type=error_level_type([node.error_level]),
+            imbalance_type=imbalance_measures[0].data_type if imbalance_measures else Number,
             with_ruleid=False,
             with_bool_var=True,
         )
+        # The viral attributes are copied to the check result (issue #1354)
+        for comp in inner_ds.get_viral_attributes():
+            val_comps.setdefault(comp.name, comp)
         return Dataset(name="", components=val_comps, data=None)
 
     # =========================================================================
@@ -874,11 +968,46 @@ class StructureVisitor(ASTTemplate):
         return node.value if hasattr(node, "value") else str(node)
 
     @staticmethod
+    def _renamed(comp: Component, name: str) -> Component:
+        """The component under another name, with its type and its value domain."""
+        renamed = copy(comp)
+        renamed.name = name
+        return renamed
+
+    @staticmethod
     def _make_comp(
         name: str, dtype: Any, role: Role = Role.MEASURE, nullable: bool = True
     ) -> Component:
         """Build a ``Component`` with the common field ordering."""
         return Component(name=name, data_type=dtype, role=role, nullable=nullable)
+
+    def _with_time(
+        self, ds: Optional[Dataset], structures: List[Optional[Dataset]], names: Set[str]
+    ) -> Optional[Dataset]:
+        """The structure ``ds`` with its Date or Time_Period Components ``names`` that are Time
+        in one of the ``structures`` as Time, as the operators cast them to Time (issue
+        #1352), as in the semantic analysis."""
+        if ds is None:
+            return None
+        time = {
+            name
+            for structure in structures
+            if structure is not None
+            for name, comp in structure.components.items()
+            if comp.data_type is TimeInterval and name in names
+        }
+        changed = [
+            name
+            for name, comp in ds.components.items()
+            if name in time and comp.data_type in (Date, TimePeriod)
+        ]
+        if not changed:
+            return ds
+        comps = dict(ds.components)
+        for name in changed:
+            comp = comps[name]
+            comps[name] = self._make_comp(name, TimeInterval, comp.role, comp.nullable)
+        return Dataset(name=ds.name, components=comps, data=None)
 
     @staticmethod
     def _identifiers_dict(ds: Dataset) -> Dict[str, Component]:
@@ -889,7 +1018,8 @@ class StructureVisitor(ASTTemplate):
         self,
         comps: Dict[str, Component],
         *,
-        errorlevel_type: Any = Number,
+        errorlevel_type: Any = Integer,
+        imbalance_type: Any = Number,
         with_ruleid: bool = True,
         with_imbalance: bool = True,
         with_bool_var: bool = False,
@@ -898,11 +1028,15 @@ class StructureVisitor(ASTTemplate):
         if with_bool_var:
             comps["bool_var"] = self._make_comp("bool_var", Boolean)
         if with_imbalance:
-            comps["imbalance"] = self._make_comp("imbalance", Number)
+            comps["imbalance"] = self._make_comp("imbalance", imbalance_type)
         if with_ruleid:
             comps["ruleid"] = self._make_comp("ruleid", StringType, Role.IDENTIFIER, False)
-        comps["errorcode"] = self._make_comp("errorcode", StringType)
-        comps["errorlevel"] = self._make_comp("errorlevel", errorlevel_type)
+        domains = error_domains(self.value_domains)
+        for element, data_type in (("errorcode", StringType), ("errorlevel", errorlevel_type)):
+            value_domain = domains[element]
+            comps[element] = self._make_comp(
+                element, data_type if value_domain is None else value_domain.type
+            )
 
     # =========================================================================
     # Structure builders for validation/hierarchy operations
@@ -930,7 +1064,14 @@ class StructureVisitor(ASTTemplate):
             with_bool_var = output_mode in ("all", "all_measures")
             if output_mode == "invalid" and measure_name:
                 comps[measure_name] = inner_ds.components[measure_name]
-            self._add_error_measures(comps, with_bool_var=with_bool_var)
+            self._add_error_measures(
+                comps,
+                errorlevel_type=error_level_type(self._ruleset_error_levels(node.ruleset_name)),
+                imbalance_type=inner_ds.components[measure_name].data_type
+                if measure_name
+                else Number,
+                with_bool_var=with_bool_var,
+            )
             # Viral attributes propagate to the check_hierarchy result (issue #877).
             for name, comp in inner_ds.components.items():
                 if comp.role == Role.VIRAL_ATTRIBUTE:
@@ -952,6 +1093,7 @@ class StructureVisitor(ASTTemplate):
 
         self._add_error_measures(
             comps,
+            errorlevel_type=error_level_type(self._ruleset_error_levels(node.ruleset_name)),
             with_imbalance=False,
             with_bool_var=output_mode in ("all", "all_measures"),
         )
@@ -969,31 +1111,39 @@ class StructureVisitor(ASTTemplate):
 
         comps = self._identifiers_dict(left_ds)
         comps["bool_var"] = self._make_comp("bool_var", Boolean)
-        return Dataset(name="", components=comps, data=None)
+        right_ds = self._get_dataset_structure(node.children[1])
+        ds = Dataset(name="", components=comps, data=None)
+        return self._with_time(ds, [right_ds], set(left_ds.get_identifiers_names()))
 
     # =========================================================================
     # Structure builders for clause operations
     # =========================================================================
 
     def _build_unpivot_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
-        """Build the output dataset structure for an unpivot clause."""
+        """The structure of an unpivot clause, as the semantic analysis builds it: the new
+        Measure has the common type of the unpivoted Measures and the value domain they all
+        share (issue #1348)."""
         input_ds = self._get_dataset_structure(node.dataset)
         if input_ds is None:
             return None
-        new_id = self._resolve_name(node.children[0])
-        new_measure = self._resolve_name(node.children[1])
-        comps = self._identifiers_dict(input_ds)
-        comps[new_id] = self._make_comp(new_id, StringType, role=Role.IDENTIFIER, nullable=False)
-        measure_types = [
-            c.data_type for c in input_ds.components.values() if c.role == Role.MEASURE
-        ]
-        m_type = measure_types[0] if measure_types else StringType
-        comps[new_measure] = self._make_comp(new_measure, m_type)
-        # Viral attributes propagate to the unpivot result (issue #877).
-        for name, comp in input_ds.components.items():
-            if comp.role == Role.VIRAL_ATTRIBUTE:
-                comps[name] = comp
-        return Dataset(name="_unpivot", components=comps, data=None)
+        names = [self._resolve_udo_name(self._resolve_name(child)) for child in node.children]
+        return Unpivot.validate(names, input_ds)
+
+    def _build_pivot_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
+        """The structure of a pivot clause, as the semantic analysis builds it."""
+        input_ds = self._get_dataset_structure(node.dataset)
+        if input_ds is None:
+            return None
+        names = [self._resolve_udo_name(self._resolve_name(child)) for child in node.children]
+        return Pivot.validate(names, input_ds)
+
+    def _build_apply_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
+        """The structure of the apply clause of a join, as the semantic analysis builds it:
+        each Measure has the type and the value domain its expression gives (issue #1348)."""
+        input_ds = self._get_dataset_structure(node.dataset)
+        if input_ds is None:
+            return None
+        return Apply.validate(input_ds, node.children, BINARY_MAPPING)
 
     def _build_calc_structure(self, node: AST.RegularAggregation) -> Optional[Dataset]:
         """Build the output dataset structure for a calc clause."""
@@ -1001,7 +1151,7 @@ class StructureVisitor(ASTTemplate):
         if input_ds is None:
             return None
 
-        output_ds = self._get_output_dataset()
+        output_ds = self._calc_result_structure()
         comps = dict(input_ds.components)
         for child in node.children:
             assignment = child
@@ -1013,17 +1163,28 @@ class StructureVisitor(ASTTemplate):
                 col = self._resolve_udo_name(self._resolve_name(assignment.left))
                 if getattr(child, "is_implicit_role", False):
                     calc_role = self._omitted_role(node, input_ds.components.get(col))
-                if col in comps and comps[col].role != calc_role:
+                # In a join, the Component replaces the alias#col of the operands that all
+                # have it (Inner Join page of the VTL 2.2 manual, issue #1355)
+                for homonym in join_homonyms(input_ds.components, col):
+                    del comps[homonym]
+                if col in comps:
+                    # An overwritten Component takes the type and the value domain of its
+                    # expression, as a new one does, with its role or another (issue #1350)
                     old = comps[col]
                     nullable = old.nullable if calc_role != Role.IDENTIFIER else False
-                    comps[col] = self._make_comp(old.name, old.data_type, calc_role, nullable)
-                elif col not in comps and output_ds and col in output_ds.components:
+                    value_type = self._calc_value_type(assignment.right, input_ds) or old.data_type
+                    comps[col] = self._make_comp(col, value_type, calc_role, nullable)
+                    comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
+                elif output_ds and col in output_ds.components:
                     # The result holds the Component as the last calc computes it, so its
-                    # type only stands in for an expression not typed here (issue #1309)
+                    # type only stands in for an expression not typed here (issue #1309). Its
+                    # role is the one the calc gives it, which a later operator of the
+                    # statement can change (issue #1354)
                     comp = output_ds.components[col]
                     value_type = self._calc_value_type(assignment.right, input_ds) or comp.data_type
-                    comps[col] = self._make_comp(col, value_type, comp.role, comp.nullable)
-                elif col not in comps:
+                    comps[col] = self._make_comp(col, value_type, calc_role, comp.nullable)
+                    comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
+                else:
                     # calc_role comes from the clause itself, so a new component keeps
                     # its declared role even without an output structure to consult.
                     comps[col] = self._make_comp(
@@ -1032,7 +1193,17 @@ class StructureVisitor(ASTTemplate):
                         calc_role,
                         calc_role != Role.IDENTIFIER,
                     )
+                    comps[col].value_domain = self._calc_value_domain(assignment.right, input_ds)
         return Dataset(name=input_ds.name, components=comps, data=None)
+
+    def _calc_result_structure(self) -> Any:
+        """The structure whose Components stand in for the type of a calc expression not typed
+        here: the result of the statement, or in the body of a user defined operator the result
+        of its call as the semantic analysis gives it, also where the call is the operand of a
+        clause, whose operand is built without the result of the statement (issue #1355)."""
+        scope = next((s for s in reversed(self._udo_params or []) if _UDO_CALL in s), None)
+        result = self.udo_results.get((scope[_UDO_CALL], None)) if scope is not None else None
+        return result if isinstance(result, Dataset) else self._get_output_dataset()
 
     @staticmethod
     def _omitted_role(node: AST.RegularAggregation, comp: Optional[Component]) -> Role:
@@ -1048,23 +1219,97 @@ class StructureVisitor(ASTTemplate):
             return Role.MEASURE
         return comp.role
 
+    def _calc_value_domain(self, node: AST.AST, source: Dataset) -> Optional[ValueDomain]:
+        """The value domain of a calc expression, as the pandas engine gives it (issue #1350):
+        the one of a Component or a scalar written alone (also in parentheses, or as
+        ``alias#name`` in a join), the one a cast gives, and the one that all the operands of
+        nvl, if-then-else and case are on, nulls aside. Any other expression computes values
+        of a basic type."""
+        if isinstance(node, AST.ParFunction):
+            return self._calc_value_domain(node.operand, source)
+        if isinstance(node, AST.VarID):
+            name = self._resolve_udo_name(node.value)
+            comp = source.components.get(name) or self.scalars.get(name)
+            return getattr(comp, "value_domain", None)
+        if isinstance(node, AST.BinOp) and node.op == tokens.MEMBERSHIP:
+            alias = self._resolve_udo_name(self._resolve_name(node.left))
+            name = self._resolve_udo_name(self._resolve_name(node.right))
+            comp = source.components.get(f"{alias}#{name}") or source.components.get(name)
+            return None if comp is None else comp.value_domain
+        if isinstance(node, AST.ParamOp) and node.op == tokens.CAST and len(node.children) > 1:
+            target = node.children[1]
+            if isinstance(target, AST.Collection):
+                return self.value_domains.get(target.name)
+            return None
+        if isinstance(node, AST.UDOCall) and node.op in self._udos:
+            result = self._udo_result(node)
+            if result is not None:
+                # The one of the result that the semantic analysis gives: also the one of an
+                # argument that a returns of a basic type keeps (issue #1351)
+                return getattr(result, "value_domain", None)
+            # The value domain that the returns of the operator names (issue #1351)
+            constraints = self._udos[node.op].get("return_constraints")
+            constraint = constraints.value if constraints is not None else None
+            return constraint.value_domain if constraint is not None else None
+        operands = self._choice_operands(node)
+        if operands is None:
+            return None
+        domains = [self._calc_value_domain(operand, source) for operand in operands]
+        names = {None if domain is None else domain.name for domain in domains}
+        return domains[0] if len(names) == 1 else None
+
+    def _choice_operands(self, node: AST.AST) -> Optional[List[AST.AST]]:
+        """The operands an nvl, an if-then-else or a case can return, nulls aside, or ``None``
+        for any other expression."""
+        if isinstance(node, AST.BinOp) and node.op == tokens.NVL:
+            operands = [node.left, node.right]
+        elif isinstance(node, (AST.If, AST.Case)):
+            operands = self._branch_operands(node)
+        else:
+            return None
+        return [op for op in operands if not (isinstance(op, AST.Constant) and op.value is None)]
+
     def _calc_value_type(self, node: AST.AST, source: Dataset) -> Any:
         """Data type of a calc expression, or ``None`` when unknown.
 
-        Only literals, plain component references and a time_agg of a typed operand
-        are resolved. Callers must treat the result as a best effort, not as a
-        guarantee of the column type.
+        Only literals, plain component and scalar references (also in parentheses), a cast, the
+        call of a user defined operator, a time_agg of a typed operand, period_indicator and an
+        nvl, an if or a case of typed operands are resolved. Callers must treat the result as a best
+        effort, not as a guarantee of the column type.
         """
+        value_domain = self._calc_value_domain(node, source)
+        if value_domain is not None:
+            return value_domain.type
         if isinstance(node, AST.Constant) and node.value is not None:
             return BASIC_TYPES.get(type(node.value), Number)
+        if isinstance(node, AST.ParFunction):
+            return self._calc_value_type(node.operand, source)
         if isinstance(node, AST.VarID):
-            comp = source.components.get(self._resolve_udo_name(node.value))
+            name = self._resolve_udo_name(node.value)
+            comp = source.components.get(name) or self.scalars.get(name)
             if comp is not None:
                 return comp.data_type
         if isinstance(node, AST.TimeAggregation) and node.operand is not None:
             # time_agg keeps the type of its operand, a Time_Period or a Date (issue #1309)
             return self._calc_value_type(node.operand, source)
-        return None
+        if isinstance(node, AST.UnaryOp) and node.op == tokens.PERIOD_INDICATOR:
+            return Duration
+        if isinstance(node, AST.ParamOp) and node.op == tokens.CAST and len(node.children) > 1:
+            # The type a cast converts to (issue #1352)
+            target = node.children[1]
+            return target if isinstance(target, type) else None
+        if isinstance(node, AST.UDOCall) and node.op in self._udos:
+            # The type of the result the semantic analysis gives (issue #1352)
+            return getattr(self._udo_result(node), "data_type", None)
+        types = [self._calc_value_type(op, source) for op in self._choice_operands(node) or []]
+        if not types or None in types:
+            return None
+        # An nvl, an if or a case has the common type of its operands, as the semantic analysis
+        # gives it: a Number for Integers and Numbers, a Time for Dates and Times (issue #1352)
+        try:
+            return reduce(binary_implicit_promotion, types)
+        except SemanticError:
+            return None
 
     def _build_ds_ds_binop_structure(self, node: AST.BinOp) -> Optional[Dataset]:
         """Build structure for dataset-dataset binary ops."""
@@ -1094,7 +1339,10 @@ class StructureVisitor(ASTTemplate):
                 if comp.role == Role.VIRAL_ATTRIBUTE:
                     comps[name] = comp
 
-        return Dataset(name=left_ds.name, components=comps, data=None)
+        # The keys, and the Measures of nvl, are Time where one operand has a Time (#1352)
+        names = all_ids | (right_measures if node.op == tokens.NVL else set())
+        ds = Dataset(name=left_ds.name, components=comps, data=None)
+        return self._with_time(ds, [left_ds, right_ds], names)
 
     @staticmethod
     def _iter_assignments(children: List[AST.AST]) -> List[AST.Assignment]:
@@ -1116,44 +1364,64 @@ class StructureVisitor(ASTTemplate):
         all_input_ids = {n for n, c in input_ds.components.items() if c.role == Role.IDENTIFIER}
         group_ids: Set[str] = set()
         grouping_op: str = ""
-        computed_roles: Dict[str, Role] = {}
+        computed: Dict[str, Component] = {}
+        # The types the semantic analysis gives the computed Components (issue #1354)
+        analyzed = self.udo_results.get((self._udo_call_key(node), tokens.AGGREGATE)) or []
+        analyzed_types = {comp.name: comp.data_type for comp in analyzed}
 
         for assignment in self._iter_assignments(node.children):
             agg_node = assignment.right
             if isinstance(agg_node, AST.Aggregation) and agg_node.grouping:
                 grouping_op = agg_node.grouping_op or ""
-                for g in agg_node.grouping:
-                    if isinstance(g, (AST.VarID, AST.Identifier)):
-                        group_ids.add(self._resolve_udo_name(g.value))
+                group_ids.update(self._resolve_grouping_names(agg_node.grouping))
             name = self._resolve_udo_name(self._resolve_name(assignment.left))
-            computed_roles[name] = getattr(assignment.left, "role", None) or self._omitted_role(
+            role = getattr(assignment.left, "role", None) or self._omitted_role(
                 node, input_ds.components.get(name)
             )
+            value_type = analyzed_types.get(name) or self._aggregate_value_type(agg_node, input_ds)
+            computed[name] = self._make_comp(name, value_type, role)
 
         if grouping_op == tokens.GROUP_BY:
             kept_ids = group_ids
         elif grouping_op == tokens.GROUP_EXCEPT:
             kept_ids = all_input_ids - group_ids
-        else:
+        elif grouping_op == tokens.GROUP_ALL:
             kept_ids = all_input_ids
+        else:
+            # Without grouping, the aggregation gives a single Data Point (issue #1354)
+            kept_ids = set()
 
         comps: Dict[str, Component] = {
             name: comp
             for name, comp in input_ds.components.items()
             if comp.role == Role.IDENTIFIER and name in kept_ids
         }
-        for col_name, role in computed_roles.items():
-            comps[col_name] = self._make_comp(col_name, Number, role)
+        # The viral Attributes that the aggregation propagates (issue #1354)
+        viral_attributes = input_ds.get_viral_attributes()
+        comps.update((comp.name, comp) for comp in viral_attributes)
+        apply_viral_return_types(viral_attributes, comps)
+        comps.update(computed)
 
         return Dataset(name=input_ds.name, components=comps, data=None)
+
+    def _aggregate_value_type(self, node: AST.AST, source: Dataset) -> Any:
+        """Data type of an expression of an aggr clause: the return type of its aggregate
+        function, else the type of the operand, which max, min and sum keep (issue #1354).
+        Number when it is not worked out here."""
+        if not isinstance(node, AST.Aggregation):
+            return Number
+        return_type = AGGREGATION_MAPPING[node.op].return_type
+        if return_type is not None or node.operand is None:
+            return return_type or Number
+        return self._calc_value_type(node.operand, source) or Number
 
     def _build_membership_structure(self, node: AST.BinOp) -> Optional[Dataset]:
         """Build the output structure for a membership (#) operation.
 
         Mirrors ``Membership.validate``: identifiers and all viral attributes are
-        kept; a measure target keeps its name and role; an identifier or plain
-        attribute target is promoted to a measure named ``COMP_NAME_MAPPING[dtype]``;
-        a viral-attribute target stays viral under its original name (issue #944).
+        kept; a measure target keeps its name and role; any other target is promoted
+        to a measure named ``COMP_NAME_MAPPING[dtype]``, and a viral one also stays
+        viral under its own name (issue #1257).
         """
         parent_ds = self._get_dataset_structure(node.left)
         if parent_ds is None:
@@ -1168,12 +1436,11 @@ class StructureVisitor(ASTTemplate):
         orig = parent_ds.components.get(name)
         if orig is None:
             comps[name] = self._make_comp(name, Number)
-        elif orig.role in (Role.IDENTIFIER, Role.ATTRIBUTE):
-            alias_name = COMP_NAME_MAPPING[orig.data_type]
-            comps[alias_name] = self._make_comp(alias_name, orig.data_type, nullable=orig.nullable)
         elif orig.role == Role.MEASURE:
             comps[name] = orig
-        # A VIRAL_ATTRIBUTE target is already in comps from the loop above (no promotion).
+        else:
+            alias_name = COMP_NAME_MAPPING[orig.data_type]
+            comps[alias_name] = self._make_comp(alias_name, orig.data_type, nullable=orig.nullable)
         return Dataset(name=parent_ds.name, components=comps, data=None)
 
     @staticmethod
@@ -1203,12 +1470,9 @@ class StructureVisitor(ASTTemplate):
         renames: Dict[str, str] = {}
         for child in node.children:
             if isinstance(child, AST.RenameNode):
-                old = self._resolve_membership_name(child.old_name)
-                new = self._resolve_udo_name(child.new_name)
-                # Strip alias prefix from membership refs.
-                if "#" in old and old not in input_ds.components:
-                    old = old.split("#", 1)[1]
-                renames[old] = new
+                old = self._rename_old_name(child.old_name, input_ds.components)
+                # The semantic analysis refuses a membership as the new name (issue #1355)
+                renames[old] = self._resolve_udo_name(cast(str, child.new_name))
 
         unqualified_to_qualified: Dict[str, str] = {}
         for comp_name in input_ds.components:
@@ -1220,13 +1484,13 @@ class StructureVisitor(ASTTemplate):
         for name, comp in input_ds.components.items():
             # Check direct match first, then try matching via qualified name
             matched_new = renames.get(name)
-            if matched_new is None and "#" in name:
-                unqual = name.split("#", 1)[1]
+            # A name that a Component of the join has names that Component only, not a
+            # qualified one of another operand (issue #1355)
+            unqual = name.split("#", 1)[1] if "#" in name else name
+            if matched_new is None and unqual != name and unqual not in input_ds.components:
                 matched_new = renames.get(unqual)
             if matched_new is not None:
-                comps[matched_new] = self._make_comp(
-                    matched_new, comp.data_type, role=comp.role, nullable=comp.nullable
-                )
+                comps[matched_new] = self._renamed(comp, matched_new)
             else:
                 comps[name] = comp
 
@@ -1311,11 +1575,14 @@ class StructureVisitor(ASTTemplate):
         else:
             all_join_ids = set(using_ids)
 
-        # Find non-identifier component names that appear in more than one dataset
+        # Find non-key component names that appear in more than one dataset. A Measure or an
+        # Attribute named as an Identifier of another operand is no key: it is its operand's
+        # own Component, qualified with the alias, as on the pandas engine (issue #1355)
+        join_keys = all_join_ids if using_ids is not None else set()
         comp_count: Dict[str, int] = {}
         for _, ds in clause_datasets:
             for comp_name in ds.components:
-                if comp_name not in all_join_ids:
+                if comp_name not in join_keys:
                     comp_count[comp_name] = comp_count.get(comp_name, 0) + 1
 
         comps: Dict[str, Component] = {}
@@ -1336,17 +1603,27 @@ class StructureVisitor(ASTTemplate):
                             comp_name, comp.data_type, role=comp.role, nullable=nullable
                         )
                     continue
-                is_join_id = comp.role == Role.IDENTIFIER or comp_name in all_join_ids
+                keys_only = using_ids is not None and node.op in (
+                    tokens.LEFT_JOIN,
+                    tokens.FULL_JOIN,
+                    tokens.INNER_JOIN,
+                )
+                is_join_id = (comp.role == Role.IDENTIFIER and not keys_only) or (
+                    comp_name in join_keys
+                )
                 if comp_name in duplicate_comps and (not is_join_id or is_cross):
                     qualified = f"{alias}#{comp_name}"
                     comps[qualified] = self._make_comp(
                         qualified, comp.data_type, role=comp.role, nullable=comp.nullable
                     )
+                    # Only the name changes, so it keeps its value domain (issue #1350)
+                    comps[qualified].value_domain = comp.value_domain
                 elif comp_name not in comps:
                     comps[comp_name] = comp
         if not comps:
             return self._get_output_dataset()
-        return Dataset(name="_join", components=comps, data=None)
+        ds = Dataset(name="_join", components=comps, data=None)
+        return self._with_time(ds, [ds for _, ds in clause_datasets], all_join_ids)
 
     # =========================================================================
     # Component name resolution helpers
@@ -1382,9 +1659,9 @@ class StructureVisitor(ASTTemplate):
         return time_id, other_ids
 
     def _resolve_grouping_names(self, grouping: List[AST.AST]) -> List[str]:
-        """Resolve grouping node names with UDO parameter lookup."""
-        grouping_nodes = (AST.VarID, AST.Identifier)
-        return [self._resolve_udo_name(g.value) for g in grouping if isinstance(g, grouping_nodes)]
+        """Resolve grouping node names with UDO parameter lookup, and a Component of a join
+        named by its qualified name (issue #1355)."""
+        return self._extract_component_names(grouping, self._join_alias_map)
 
     def _resolve_group_cols(self, node: AST.Aggregation, all_ids: List[str]) -> List[str]:
         """Resolve group-by columns from an Aggregation node."""

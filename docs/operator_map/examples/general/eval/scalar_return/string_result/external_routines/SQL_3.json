@@ -1,0 +1,4 @@
+{
+  "name": "SQL_3",
+  "query": "SELECT max(Me_1) AS Me_1 FROM DS_1"
+}

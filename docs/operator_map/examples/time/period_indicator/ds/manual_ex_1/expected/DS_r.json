@@ -1,0 +1,13 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r",
+      "DataStructure": [
+        {"name": "Id_1", "type": "String", "role": "Identifier"},
+        {"name": "Id_2", "type": "Integer", "role": "Identifier"},
+        {"name": "Id_3", "type": "Time_Period", "role": "Identifier"},
+        {"name": "duration_var", "type": "Duration", "role": "Measure"}
+      ]
+    }
+  ]
+}

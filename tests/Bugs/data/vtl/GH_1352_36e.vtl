@@ -1,0 +1,1 @@
+DS_r <- DS_1 [ calc Me_2 := cast ( "2020" , time ) , Me_3 := cast ( "2020-01" , time ) ] [ filter Me_2 = Me_2 and Me_3 = Me_3 ] [ calc Me_4 := cast ( Me_2 , string ) , Me_5 := cast ( Me_3 , string ) ] [ keep Me_4 , Me_5 ];

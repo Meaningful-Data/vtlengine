@@ -1,0 +1,10 @@
+define hierarchical ruleset HR_V (valuedomain rule VD_ID_2) is
+    A = B + C
+end hierarchical ruleset;
+
+define operator check_total (ds dataset, hr hierarchical_on_valuedomains {VD_ID_2})
+    returns dataset is
+        check_hierarchy(ds, hr rule Id_2 all)
+end operator;
+
+DS_r <- check_total(DS_1, HR_V);

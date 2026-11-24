@@ -1,0 +1,3 @@
+:Tests: ``first_value`` at data set level, over a window from one data point before to one after in the order of ``Id_3``.
+:Manual: `First value <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/First%20value/index.html>`__, Example 1, output verbatim: "The operator returns the first value (in the value order) of the set of Data Points that belong to the same analytic window as the current Data Point".
+:Expected: the values of the earliest year in the window: 1993 and 1994 get those of 1993, 1995 those of 1994 and 1996 those of 1995; at ``A, XX, 1995`` that is 4 and 9, while the smallest ``Me_2`` of the window is 5.

@@ -1,0 +1,4 @@
+define datapoint ruleset dpr1 ( variable Me_1 as 'X' ) is
+    r1 : X > 1 errorcode "e"
+end datapoint ruleset;
+DS_r <- check_datapoint ( DS_1 , dpr1 all );

@@ -30,14 +30,17 @@ _TOKEN = re.compile(
     r"'(?:[^']|'')*'"  # string literal
     r'|"(?:[^"]|"")*"'  # quoted identifier
     r"|([A-Za-z_]\w*)(\s*\()?"  # name, maybe of a call
-    r"|[(),]"
-    r"|[^'\"(),A-Za-z_]+"
+    r"|[()\[\]{},]"
+    r"|[^'\"()\[\]{},A-Za-z_]+"
 )
+# Lists and structs nest as parentheses do: their commas do not split a macro argument
+_CLOSING = {"(": ")", "[": "]", "{": "}"}
 _LITERAL = re.compile(r"\s*(?:-?\d+(?:\.\d+)?|'(?:[^']|'')*'|NULL|TRUE|FALSE)\s*", re.IGNORECASE)
 
 
 class _Frame:
-    """The text read so far inside one pair of parentheses, and its expanded size."""
+    """The text read so far inside one pair of parentheses or brackets, and its expanded
+    size."""
 
     __slots__ = ("opening", "macro", "args", "parts", "size")
 
@@ -70,21 +73,21 @@ def bind_repeated_macro_arguments(sql: str) -> str:
         if call is not None:
             macro = name.lower()
             stack.append(_Frame(piece, macro if macro in uses else None))
-        elif name is not None or piece not in "(),":
+        elif name is not None or piece not in "()[]{},":
             top.add(piece, len(piece))
-        elif piece == "(":
+        elif piece in _CLOSING:
             stack.append(_Frame(piece, None))
         elif piece == "," and top.macro is not None:
             top.end_argument()
         elif piece == ",":
             top.add(piece, 1)
-        elif len(stack) == 1:
+        elif len(stack) == 1 or piece != _CLOSING[top.opening[-1]]:
             return sql  # unbalanced: leave the query as it is
         else:
             stack.pop()
             if top.macro is None:
                 stack[-1].add(
-                    f"{top.opening}{''.join(top.parts)})", len(top.opening) + top.size + 1
+                    f"{top.opening}{''.join(top.parts)}{piece}", len(top.opening) + top.size + 1
                 )
             else:
                 top.end_argument()

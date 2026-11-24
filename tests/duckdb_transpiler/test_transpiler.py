@@ -208,14 +208,10 @@ class TestBetweenOperator:
         name, sql, _ = results[0]
         assert name == "DS_r"
 
-        # VTL-compliant BETWEEN with NULL propagation, over the Number tolerance macros
+        # op >= from and op <= to, over the Number tolerance macros (issue #1349)
         ge_sql = number_cmp_sql('"Me_1"', ">=", str(low_value))
         le_sql = number_cmp_sql('"Me_1"', "<=", str(high_value))
-        expected_sql = (
-            f'SELECT * FROM "DS_1" WHERE CASE WHEN "Me_1" IS NULL'
-            f" OR {low_value} IS NULL OR {high_value} IS NULL"
-            f" THEN NULL ELSE ({ge_sql} AND {le_sql}) END"
-        )
+        expected_sql = f'SELECT * FROM "DS_1" WHERE ({ge_sql} AND {le_sql})'
         assert_sql_equal(sql, expected_sql)
 
 
@@ -498,17 +494,17 @@ class TestCastOperator:
         assert_sql_equal(sql, expected_sql)
 
     def test_cast_with_date_mask(self):
-        """Test CAST to Date with mask producing STRPTIME SQL."""
+        """Test CAST to Date with a mask, which the vtl_cast_mask UDF applies."""
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
         transpiler = create_transpiler(
             input_datasets={"DS_1": ds},
             output_datasets={"DS_r": ds},
         )
 
-        # Create AST: DS_r := cast(DS_1, Date, "%Y-%m-%d")
+        # Create AST: DS_r := cast(DS_1, Date, "YYYY-MM-DD")
         operand = VarID(**make_ast_node(value="DS_1"))
         type_node = VarID(**make_ast_node(value="Date"))
-        mask = Constant(**make_ast_node(type_="STRING_CONSTANT", value="%Y-%m-%d"))
+        mask = Constant(**make_ast_node(type_="STRING_CONSTANT", value="YYYY-MM-DD"))
         expr = ParamOp(**make_ast_node(op="cast", children=[operand, type_node], params=[mask]))
         ast = create_start_with_assignment("DS_r", expr)
 
@@ -519,7 +515,8 @@ class TestCastOperator:
         assert name == "DS_r"
 
         expected_sql = """
-            SELECT "Id_1", STRFTIME(STRPTIME("Me_1", '%Y-%m-%d'), '%Y-%m-%d %H:%M:%S') AS "Me_1" FROM "DS_1"
+            SELECT "Id_1", CAST(vtl_cast_mask(CAST("Me_1" AS VARCHAR), 'String', 'Date',
+            'YYYY-MM-DD') AS TIMESTAMP) AS "Me_1" FROM "DS_1"
         """
         assert_sql_equal(sql, expected_sql)
 
@@ -674,7 +671,8 @@ class TestUnaryOperations:
             ("ceil", 'CAST(CEIL("{0}") AS BIGINT)'),
             ("floor", 'CAST(FLOOR("{0}") AS BIGINT)'),
             ("abs", 'ABS("{0}")'),
-            ("exp", 'EXP("{0}")'),
+            # exp beyond the range of a Number raises 2-1-3-1 (#1356).
+            ("exp", "vtl_finite(EXP(\"{0}\"), 'exp')"),
             ("ln", 'vtl_ln("{0}")'),
             ("sqrt", 'vtl_sqrt("{0}")'),
         ],
@@ -1154,12 +1152,12 @@ class TestEvalOperator:
         )
 
         result = transpiler.visit_EvalOp(eval_op)
-        # Table name is mapped to the actual DuckDB table name
-        expected_sql = 'SELECT Id_1, Me_1 * 2 AS Me_1 FROM "DS_1"'
+        # The query runs as written: the operand DS_1 is the table DS_1 (#1356)
+        expected_sql = "SELECT * FROM (SELECT Id_1, Me_1 * 2 AS Me_1 FROM DS_1\n) AS eval_result"
         assert_sql_equal(result, expected_sql)
 
     def test_eval_op_with_subquery_replacement(self):
-        """Test EVAL operator replaces table references and converts double-quoted strings."""
+        """Test EVAL operator reads "N/A", which names no Component, as a text (#1356)."""
         ds = create_simple_dataset("DS_1", ["Id_1"], ["Me_1"])
         external_routine = ExternalRoutine(
             dataset_names=["DS_1"],
@@ -1187,10 +1185,10 @@ class TestEvalOperator:
         )
 
         result = transpiler.visit_EvalOp(eval_op)
-        # Double-quoted strings are converted to single quotes (matching pandas backend)
-        # and table names are mapped to the actual DuckDB table names
+        # As on the pandas engine, "N/A" names no Component: it is the text 'N/A' (#1356)
         expected_sql = (
-            "SELECT Id_1, SUM(Me_1) AS total, ifnull(Me_1, 'N/A') FROM \"DS_1\" GROUP BY Id_1"
+            "SELECT * FROM (SELECT Id_1, SUM(Me_1) AS total, ifnull(Me_1, 'N/A') FROM DS_1 "
+            "GROUP BY Id_1\n) AS eval_result"
         )
         assert_sql_equal(result, expected_sql)
 

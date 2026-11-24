@@ -84,11 +84,13 @@ CREATE OR REPLACE MACRO vtl_period_normalize(input VARCHAR) AS (
                     SUBSTR(input, 1, 4) || '-D'
                     || LPAD(CAST(TRY_CAST(SUBSTR(input, 7) AS INTEGER) AS VARCHAR), 3, '0')
             END
-        WHEN LENGTH(input) >= 10 AND SUBSTR(input, 5, 1) = '-'
-             AND SUBSTR(input, 8, 1) = '-' THEN
-            -- Full date (2020-01-15) or timestamp (2020-01-15 00:00:00) → daily period
+        WHEN SUBSTR(input, 5, 1) = '-' AND STRPOS(SUBSTR(input, 6), '-') > 0 THEN
+            -- Full date (2020-01-15, also written without zeros as 2020-1-5) or timestamp
+            -- (2020-01-15 00:00:00) → daily period
             SUBSTR(input, 1, 4) || '-D'
-            || LPAD(CAST(DAYOFYEAR(CAST(SUBSTR(input, 1, 10) AS DATE)) AS VARCHAR), 3, '0')
+            || LPAD(CAST(DAYOFYEAR(
+                CAST(SPLIT_PART(SPLIT_PART(input, ' ', 1), 'T', 1) AS DATE)
+            ) AS VARCHAR), 3, '0')
         ELSE
             SUBSTR(input, 1, 4) || '-M'
             || LPAD(CAST(CAST(SUBSTR(input, 6) AS INTEGER) AS VARCHAR), 2, '0')
@@ -208,50 +210,37 @@ CREATE OR REPLACE MACRO vtl_interval_to_date(interval_str VARCHAR) AS (
     END
 );
 
--- TimeInterval (VARCHAR) -> TimePeriod (VARCHAR): match interval to period
--- Reference: interval_to_period_str in TimeHandling.py
--- Tries A, S, Q, M, W, D period indicators to find a match.
+-- TimeInterval (VARCHAR) -> TimePeriod (VARCHAR), in the internal form of the loaders, for
+-- a pair of dates of a whole year, semester, quarter, month, ISO week or day from the year
+-- 1000: the cast of the pandas engine (interval_to_period_str in TimeHandling.py) for the
+-- common Times. NULL for any other text, which the transpiler casts with the Python UDF
+-- vtl_time_to_period, that gives the pandas result and error for every Time.
 CREATE OR REPLACE MACRO vtl_interval_to_period(interval_str VARCHAR) AS (
     CASE
-        WHEN interval_str IS NULL THEN NULL
-        ELSE (SELECT CASE
-            -- Day: same date
+        WHEN regexp_full_match(interval_str, '[0-9]{4}-[0-9]{2}-[0-9]{2}/[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        THEN (SELECT CASE
+            WHEN d1 IS NULL OR d2 IS NULL OR YEAR(d1) < 1000 THEN NULL
             WHEN d1 = d2 THEN
-                vtl_period_normalize(CAST(d1 AS VARCHAR))
-            -- Annual: Jan 1 to Dec 31
-            WHEN MONTH(d1) = 1 AND DAY(d1) = 1
-                 AND MONTH(d2) = 12 AND DAY(d2) = 31
-                 AND YEAR(d1) = YEAR(d2)
-            THEN CAST(YEAR(d1) AS VARCHAR) || 'A'
-            -- Semester 1: Jan 1 to Jun 30
-            WHEN MONTH(d1) = 1 AND DAY(d1) = 1
-                 AND MONTH(d2) = 6 AND DAY(d2) = 30
-                 AND YEAR(d1) = YEAR(d2)
-            THEN CAST(YEAR(d1) AS VARCHAR) || '-S1'
-            -- Semester 2: Jul 1 to Dec 31
-            WHEN MONTH(d1) = 7 AND DAY(d1) = 1
-                 AND MONTH(d2) = 12 AND DAY(d2) = 31
-                 AND YEAR(d1) = YEAR(d2)
-            THEN CAST(YEAR(d1) AS VARCHAR) || '-S2'
-            -- Quarter
-            WHEN DAY(d1) = 1 AND YEAR(d1) = YEAR(d2)
-                 AND MONTH(d1) IN (1, 4, 7, 10)
-                 AND d2 = LAST_DAY(d1 + INTERVAL 2 MONTH)
-            THEN CAST(YEAR(d1) AS VARCHAR) || '-Q'
-                 || CAST(((MONTH(d1) - 1) / 3 + 1) AS VARCHAR)
-            -- Month
-            WHEN DAY(d1) = 1 AND d2 = LAST_DAY(d1)
-                 AND YEAR(d1) = YEAR(d2)
-            THEN CAST(YEAR(d1) AS VARCHAR) || '-M'
-                 || LPAD(CAST(MONTH(d1) AS VARCHAR), 2, '0')
-            -- Week (ISO)
-            WHEN ISODOW(d1) = 1 AND d2 = d1 + INTERVAL 6 DAY
-            THEN CAST(ISOYEAR(d1) AS VARCHAR) || '-W'
-                 || LPAD(CAST(WEEKOFYEAR(d1) AS VARCHAR), 2, '0')
-            ELSE error('Cannot determine period for interval: ' || interval_str)
+                CAST(YEAR(d1) AS VARCHAR) || '-D'
+                || LPAD(CAST(DAYOFYEAR(d1) AS VARCHAR), 3, '0')
+            WHEN MONTH(d1) = 1 AND DAY(d1) = 1 AND d2 = MAKE_DATE(YEAR(d1), 12, 31) THEN
+                CAST(YEAR(d1) AS VARCHAR) || 'A'
+            WHEN DAY(d1) = 1 AND MONTH(d1) IN (1, 7)
+                 AND d2 = LAST_DAY(d1 + INTERVAL 5 MONTH) THEN
+                CAST(YEAR(d1) AS VARCHAR) || '-S' || CAST(MONTH(d1) // 6 + 1 AS VARCHAR)
+            WHEN DAY(d1) = 1 AND MONTH(d1) IN (1, 4, 7, 10)
+                 AND d2 = LAST_DAY(d1 + INTERVAL 2 MONTH) THEN
+                CAST(YEAR(d1) AS VARCHAR) || '-Q' || CAST((MONTH(d1) - 1) // 3 + 1 AS VARCHAR)
+            WHEN DAY(d1) = 1 AND d2 = LAST_DAY(d1) THEN
+                CAST(YEAR(d1) AS VARCHAR) || '-M' || LPAD(CAST(MONTH(d1) AS VARCHAR), 2, '0')
+            WHEN ISODOW(d1) = 1 AND d2 = d1 + INTERVAL 6 DAY THEN
+                CAST(ISOYEAR(d1) AS VARCHAR) || '-W'
+                || LPAD(CAST(WEEKOFYEAR(d1) AS VARCHAR), 2, '0')
+            ELSE NULL
         END
-        FROM (SELECT CAST(SPLIT_PART(interval_str, '/', 1) AS DATE) AS d1,
-                     CAST(SPLIT_PART(interval_str, '/', 2) AS DATE) AS d2) AS _iv)
+        FROM (SELECT TRY_CAST(SPLIT_PART(interval_str, '/', 1) AS DATE) AS d1,
+                     TRY_CAST(SPLIT_PART(interval_str, '/', 2) AS DATE) AS d2) AS _iv)
+        ELSE NULL
     END
 );
 
@@ -374,12 +363,32 @@ CREATE OR REPLACE MACRO vtl_period_to_natural(input VARCHAR) AS (
 
 -- An integer parameter of substr or instr read from the data, which must be at
 -- least min_value (mirrors VTL error 2-1-18-1). A literal parameter is checked
--- by the semantic analysis before any SQL runs.
+-- by the semantic analysis before any SQL runs. A Number is checked as it is and
+-- then truncated to an integer, as the pandas engine does (issue #1351).
 CREATE OR REPLACE MACRO vtl_param_min(x, min_value, op_name, param_name) AS (
     CASE WHEN x < min_value
          THEN error('VTL 2-1-18-1 ' || op_name || ' ' || param_name || ' '
                     || CAST(min_value AS VARCHAR))
-         ELSE x
+         ELSE CAST(trunc(x) AS BIGINT)
+    END
+);
+
+-- The offset of lag or lead that an Integer Scalar gives when only the query knows
+-- it. A null offset is no Integer (mirrors VTL error 2-1-18-1, issue #1355).
+CREATE OR REPLACE MACRO vtl_lag_offset(x, op_name) AS (
+    CASE WHEN x IS NULL
+         THEN error('VTL 2-1-18-1 ' || op_name || ' Offset Integer')
+         ELSE CAST(x AS BIGINT)
+    END
+);
+
+-- A bound of an analytic window that an Integer Scalar gives when only the query
+-- knows it, checked as the pandas engine checks it: a null or negative bound raises
+-- VTL error 2-1-18-1 (issue #1355).
+CREATE OR REPLACE MACRO vtl_window_bound(x, op_name) AS (
+    CASE WHEN x IS NULL OR x < 0
+         THEN error('VTL 2-1-18-1 ' || op_name || ' Window bound')
+         ELSE CAST(x AS BIGINT)
     END
 );
 
@@ -395,6 +404,14 @@ CREATE OR REPLACE MACRO vtl_instr(
                 WHEN INSTR(s[COALESCE(start_pos_raw, 1):], pat) = 0 THEN 0
                 ELSE INSTR(s[COALESCE(start_pos_raw, 1):], pat)
                      + COALESCE(start_pos_raw, 1) - 1
+            END
+        -- An empty pattern is found before each character and at the end of the
+        -- string, as on the pandas engine, never past it (issue #1353)
+        WHEN pat = '' THEN
+            CASE
+                WHEN COALESCE(start_pos_raw, 1) + occur_raw - 1 <= LENGTH(s) + 1
+                    THEN COALESCE(start_pos_raw, 1) + occur_raw - 1
+                ELSE 0
             END
         ELSE (
             WITH RECURSIVE find_occ(pos, n) AS (
@@ -460,6 +477,12 @@ CREATE OR REPLACE MACRO vtl_mod(a, b) AS (
     END
 );
 
+-- A result beyond the range of a DOUBLE is infinite: it raises VTL error 2-1-3-1, as
+-- the pandas engine does (issue #1356).
+CREATE OR REPLACE MACRO vtl_finite(x, op) AS (
+    CASE WHEN isinf(x) THEN error('VTL Error 2-1-3-1: infinite values in ' || op) ELSE x END
+);
+
 -- Power that mirrors VTL error 2-1-15-2: a negative base raised to a
 -- fractional exponent has no real result. Zero raised to a negative exponent
 -- is a division by zero (2-1-15-6), like the pandas engine.
@@ -468,7 +491,7 @@ CREATE OR REPLACE MACRO vtl_power(a, b) AS (
          THEN error('VTL 2-1-15-2 power: negative base ' || CAST(a AS VARCHAR))
          WHEN a = 0 AND b < 0
          THEN error('VTL 2-1-15-6 power: Scalar division by Zero')
-         ELSE POWER(a, b)
+         ELSE vtl_finite(POWER(a, b), 'power')
     END
 );
 
@@ -481,11 +504,43 @@ CREATE OR REPLACE MACRO vtl_text_to_double(x) AS (
     END
 );
 
+-- A value read as an Integer whatever its SQL type, as the pandas engine reads the result of
+-- eval: a value that is no number raises VTL error 2-1-5-1, and a number with decimals
+-- 2-1-5-2 (issue #1356).
+CREATE OR REPLACE MACRO vtl_to_integer(x) AS (
+    CASE WHEN x IS NULL THEN NULL
+         WHEN TRY_CAST(x AS DOUBLE) IS NULL
+         THEN error('VTL 2-1-5-1 Integer ' || CAST(x AS VARCHAR))
+         WHEN TRY_CAST(x AS DOUBLE) != trunc(TRY_CAST(x AS DOUBLE))
+         THEN error('VTL 2-1-5-2 ' || CAST(x AS VARCHAR))
+         ELSE COALESCE(TRY_CAST(x AS BIGINT), CAST(CAST(x AS DOUBLE) AS BIGINT))
+    END
+);
+
 CREATE OR REPLACE MACRO vtl_text_to_integer(x) AS (
     CASE WHEN x IS NULL THEN NULL
          WHEN NOT regexp_full_match(trim(x), '[+-]?[0-9]+(_[0-9]+)*')
          THEN error('VTL 2-1-5-1 Integer ' || x)
          ELSE CAST(replace(trim(x), '_', '') AS BIGINT)
+    END
+);
+
+-- A value put into a component defined on a value domain, from an operand of its basic type
+-- (downcast), must be one of the values vals of the value domain: mirrors VTL error
+-- 2-1-5-4, with info holding the operator, the basic type and the value domain, each
+-- followed by a broken bar (issue #1301).
+CREATE OR REPLACE MACRO vtl_downcast(v, vals, info) AS (
+    CASE WHEN v IS NULL OR list_contains(vals, v) THEN v
+         ELSE error('VTL 2-1-5-4 ' || info || CAST(v AS VARCHAR))
+    END
+);
+
+-- vtl_downcast into a value domain of Strings, which a value of another type is compared with
+-- as the text it is promoted to: a Boolean is 'true' or 'false' (issue #1351). The value is
+-- returned as it is.
+CREATE OR REPLACE MACRO vtl_downcast_text(v, vals, info) AS (
+    CASE WHEN v IS NULL OR list_contains(vals, CAST(v AS VARCHAR)) THEN v
+         ELSE error('VTL 2-1-5-4 ' || info || CAST(v AS VARCHAR))
     END
 );
 
@@ -498,20 +553,6 @@ CREATE OR REPLACE MACRO vtl_text_to_duration(x) AS (
         WHEN 'P1Y' THEN 'A' WHEN 'P6M' THEN 'S' WHEN 'P3M' THEN 'Q' WHEN 'P1M' THEN 'M'
         WHEN 'P1W' THEN 'W' WHEN 'P7D' THEN 'W' WHEN 'P1D' THEN 'D'
         ELSE CASE WHEN x IS NULL THEN NULL ELSE error('VTL 2-1-5-1 Duration ' || x) END
-    END
-);
-
--- Text cast to Date, which mirrors VTL error 2-1-19-8 for text that is not a date
--- written YYYY-MM-DD (or YYYY-MM-D) or a full YYYY-MM-DD[T| ]HH:MM:SS datetime.
-CREATE OR REPLACE MACRO vtl_text_to_date(x) AS (
-    CASE WHEN x IS NULL THEN NULL
-         WHEN regexp_full_match(x, '[0-9]{4}-[0-9]{2}-[0-9]{1,2}')
-              OR regexp_full_match(
-                  x,
-                  '[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([+-][0-9]{2}:[0-9]{2}|Z)?'
-              )
-         THEN x
-         ELSE error('VTL 2-1-19-8 ' || x)
     END
 );
 
@@ -608,11 +649,11 @@ CREATE OR REPLACE MACRO vtl_ln(x) AS (
 );
 
 -- Logarithm with the pandas engine's guard order: null base -> NULL,
--- base <= 0 -> 2-1-15-3, null value -> NULL, value <= 0 -> 2-1-15-8.
+-- base <= 0 or base 1 -> 2-1-15-3, null value -> NULL, value <= 0 -> 2-1-15-8.
 CREATE OR REPLACE MACRO vtl_log(x, base) AS (
     CASE WHEN base IS NULL THEN NULL
-         WHEN base <= 0
-         THEN error('VTL 2-1-15-3 log: non-positive base ' || CAST(base AS VARCHAR))
+         WHEN base <= 0 OR base = 1
+         THEN error('VTL 2-1-15-3 log: invalid base ' || CAST(base AS VARCHAR))
          WHEN x IS NULL OR isnan(CAST(x AS DOUBLE)) THEN NULL
          WHEN x <= 0
          THEN error('VTL 2-1-15-8 log: non-positive value ' || CAST(x AS VARCHAR))
@@ -666,10 +707,27 @@ CREATE OR REPLACE MACRO vtl_num_le(a, b, tol) AS (a <= b OR vtl_num_close(a, b, 
 -- =========================================================================
 
 -- Levenshtein distance: minimum single-character edits to turn s1 into s2.
+-- The text s with each character replaced with the one-byte character chr(n), n its
+-- position among the distinct characters of alphabet_text, so that a function that
+-- counts bytes counts its characters (issue #1353). Exact up to 127 distinct
+-- characters.
+CREATE OR REPLACE MACRO vtl_one_byte_characters(s VARCHAR, alphabet_text VARCHAR) AS (
+    array_to_string(list_transform(
+        string_split(s, ''),
+        lambda ch: chr(list_position(list_sort(list_distinct(string_split(alphabet_text, ''))), ch))
+    ), '')
+);
+
 CREATE OR REPLACE MACRO vtl_levenshtein(s1 VARCHAR, s2 VARCHAR) AS (
     CASE
         WHEN s1 IS NULL OR s2 IS NULL THEN NULL
-        ELSE levenshtein(s1, s2)
+        -- levenshtein counts bytes, so a text beyond ASCII, whose characters can take
+        -- more than one byte, is given to it with one byte per character (issue #1353)
+        WHEN strlen(s1) = LENGTH(s1) AND strlen(s2) = LENGTH(s2) THEN levenshtein(s1, s2)
+        WHEN s1 = '' OR s2 = '' THEN LENGTH(s1) + LENGTH(s2)
+        ELSE levenshtein(
+            vtl_one_byte_characters(s1, s1 || s2), vtl_one_byte_characters(s2, s1 || s2)
+        )
     END
 );
 
@@ -683,7 +741,7 @@ CREATE OR REPLACE MACRO vtl_damerau_levenshtein(s1 VARCHAR, s2 VARCHAR) AS (
     END
 );
 
--- Hamming distance: count of differing positions. Strings must be equal length;
+-- Hamming distance: count of differing positions. Strings must be equal length,
 -- otherwise raise via error() with the structured VTL prefix matched by the
 -- Python error mapper (see duckdb_transpiler/io/_execution.py:_map_query_error).
 CREATE OR REPLACE MACRO vtl_hamming(s1 VARCHAR, s2 VARCHAR) AS (
@@ -692,7 +750,12 @@ CREATE OR REPLACE MACRO vtl_hamming(s1 VARCHAR, s2 VARCHAR) AS (
         WHEN LENGTH(s1) <> LENGTH(s2) THEN
             error('VTL 2-1-18-2: hamming length mismatch '
                   || LENGTH(s1) || ' ' || LENGTH(s2))
-        ELSE hamming(s1, s2)
+        -- The positions are characters, where hamming counts bytes and refuses two
+        -- empty strings (issue #1353)
+        ELSE COALESCE(list_sum(list_transform(
+            range(1, LENGTH(s1) + 1),
+            lambda i: CAST(substring(s1, i, 1) <> substring(s2, i, 1) AS BIGINT)
+        )), 0)
     END
 );
 

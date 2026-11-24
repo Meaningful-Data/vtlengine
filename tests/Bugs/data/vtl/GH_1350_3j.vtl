@@ -1,0 +1,5 @@
+define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+    r1 : time_agg ( "A" , _ , Me_1 ) = cast ( "2020A" , time_period ) errorcode "E1"
+end datapoint ruleset;
+
+DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );

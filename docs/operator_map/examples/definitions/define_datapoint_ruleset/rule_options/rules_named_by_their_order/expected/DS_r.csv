@@ -1,0 +1,5 @@
+Id_1,Id_2,ruleid,bool_var,errorcode,errorlevel
+1,CREDIT,1,true,,
+2,DEBIT,1,true,,
+1,CREDIT,2,true,,
+2,DEBIT,2,false,,

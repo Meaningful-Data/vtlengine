@@ -5,23 +5,23 @@ Data Types
 This page documents the data types supported by vtlengine,
 covering input formats, internal representation, output formats,
 and type casting rules based on the
-`VTL 2.2 specification <https://sdmx-twg.github.io/vtl/2.2/>`_.
+`VTL 2.2 specification <https://sdmx-twg.github.io/vtl/v2.2/>`_.
 
 .. seealso::
 
     - `VTL Data Types
-      <https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html>`_
+      <https://sdmx-twg.github.io/vtl/v2.2/user_manual/types.html>`_
       — Full type system in the VTL 2.2 User Manual
     - `Scalar type definitions
-      <https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html
+      <https://sdmx-twg.github.io/vtl/v2.2/user_manual/types.html
       #scalar-types>`_
       — Detailed scalar type descriptions
     - `Type conversion\: cast
-      <https://sdmx-twg.github.io/vtl/2.2/reference_manual/operators
+      <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators
       /General%20purpose%20operators/Type%20conversion/index.html>`_
       — Cast operator reference
     - `Type Conversion and Formatting Mask
-      <https://sdmx-twg.github.io/vtl/2.2/reference_manual
+      <https://sdmx-twg.github.io/vtl/v2.2/reference_manual
       /typical_behaviour.html
       #type-conversion-and-formatting-mask>`_
       — Conversion rules and masks
@@ -31,7 +31,7 @@ Type Hierarchy
 
 The VTL 2.2 specification defines a hierarchy of
 `scalar types
-<https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html
+<https://sdmx-twg.github.io/vtl/v2.2/user_manual/types.html
 #basic-scalar-types>`_:
 
 .. code-block:: text
@@ -59,7 +59,7 @@ Data Types Reference
 Each type below describes how vtlengine handles input, storage,
 and output. For the formal VTL definitions, see
 `External representations and literals
-<https://sdmx-twg.github.io/vtl/2.2/user_manual/types.html
+<https://sdmx-twg.github.io/vtl/v2.2/user_manual/types.html
 #external-representations-and-literals-used-in-the-vtl-manuals>`_.
 
 String
@@ -173,12 +173,20 @@ Date
         microseconds. A time at midnight is no time:
         ``"2020-01-15T00:00:00"`` loads as
         ``"2020-01-15"``; any other time is kept.
-        Year range: 1800–9999.
+        Year range: 1000–9999, as for a Time_Period
+        and a Time.
     * - **Input (DataFrame)**
       - String values validated against the same
         ISO 8601 formats, or values pandas has already
         parsed into dates or datetimes, read on the
         same rule.
+    * - **Input (scalar value)**
+      - A ``Date`` value given in ``scalar_values`` is
+        read on the same rule, in both execution
+        engines: ``"2020-1-15"`` and
+        ``"2020-01-15T00:00:00"`` are
+        ``"2020-01-15"``, and
+        ``"2020-01-15 10:30:00"`` keeps its time.
     * - **Internal representation**
       - Python ``str`` in ``"YYYY-MM-DD"`` format, or
         ``"YYYY-MM-DD HH:MM:SS"`` for a value whose
@@ -188,10 +196,34 @@ Date
       - ISO 8601 with ``T`` separator, each value on its
         own in both execution engines: ``"YYYY-MM-DD"``,
         or ``"YYYY-MM-DDThh:mm:ss"`` for a value whose
-        time is not midnight. Timezone offsets are not
-        included in the output.
+        time is not midnight, with a fraction of a
+        second in six digits when it has one
+        (``"2020-01-15T10:30:00.123000"``). Timezone
+        offsets are not included in the output.
     * - **Output dtype**
       - ``string[pyarrow]``
+
+``dateadd`` and ``timeshift`` give a Date of the years 1000–9999
+only, the years a Date is read in: a result out of them raises
+``2-1-19-10``, in both execution engines.
+
+``timeshift`` and ``fill_time_series`` read the period of a series of
+Dates from the days of its values: the day, the week, the month, the
+quarter, the semester or the year. The shortest is the day, so two
+values on one day, at different times of it, make a daily series, and
+the periods are counted from the lower limit with its time of the
+day: ``timeshift`` by one of ``2020-01-15T10:30:00`` and
+``2020-01-15T10:30:05`` gives ``2020-01-16T10:30:00`` and
+``2020-01-16T10:30:05``, and ``fill_time_series`` adds no Data Point
+to them.
+
+The period is read from each time series (the Data Points with the
+same values of the other Identifiers), and the reference time
+Identifier must be periodical: when two series have different
+periods, such as a monthly one and a quarterly one, both
+``timeshift`` and ``fill_time_series`` raise ``2-1-19-23``. A series
+of a single Data Point shows no period and takes the one of the
+other series.
 
 Date is a **subtype of Time** — anywhere a Time value is
 expected, a Date is accepted automatically.
@@ -204,7 +236,18 @@ Time_Period
     :header-rows: 0
 
     * - **Input (CSV/DataFrame)**
-      - Multiple formats accepted (see tables below).
+      - Multiple formats accepted (see tables below),
+        read without the whitespace around the value
+        (spaces, tabs and line breaks). The digits are
+        the ASCII ones. Year range: 1000–9999. A value
+        written in one of the formats that is no period
+        (``"2020M13"``, ``"2021D366"``, ``"0001"``) raises
+        ``0-3-1-6``.
+    * - **Input (scalar value)**
+      - A ``Time_Period`` value given in ``scalar_values``
+        is read on the same rule, in both execution
+        engines; a value that is no period raises
+        ``0-1-2-7``.
     * - **Internal representation**
       - Hyphenated string (e.g. ``"2020-M01"``,
         ``"2020-Q1"``), stored as ``string[pyarrow]``.
@@ -239,10 +282,39 @@ Time_Period
       - ``YYYYWw``, ``YYYYWww``, ``YYYY-Wxx``
       - ``2020W1``, ``2020W01``, ``2020-W01``
     * - Daily
-      - ``YYYYD[dd]d``, ``YYYY-D[xx]x``, ``YYYY-MM-DD``
+      - ``YYYYD[dd]d``, ``YYYY-D[xx]x``, ``YYYY-MM-DD``,
+        ``YYYY-M-D``
       - ``2020D1``, ``2020D01``, ``2020D001``,
         ``2020D-1``, ``2020D-01``, ``2020D-001``,
-        ``2020-01-01``
+        ``2020-01-01``, ``2020-1-1``
+
+The operators ``>``, ``<``, ``>=``, ``<=`` and ``between`` order the
+periods of one period indicator; two periods of different indicators
+raise ``2-1-19-19``. ``between(op, from, to)`` is
+``op >= from and op <= to``, as the VTL 2.2 manual defines it, for
+every type (the same types are accepted, and the values are ordered
+as those two operators order them), except that it always compares
+the operand with both bounds: it raises ``2-1-19-19`` for a bound of
+another period indicator even when the other comparison is already
+false, where the pair stops at a false first comparison. A null bound gives ``false`` where the other
+comparison is false and null elsewhere.
+
+The time operators count the periods of each year on its calendar: a
+year has 52 or 53 ISO weeks and 365 or 366 days, so ``timeshift`` of
+``2020W53`` by one period is ``2021W1``, and ``fill_time_series`` adds
+``2020W53`` and ``2020D366``. A week stays in the year it is numbered
+in, also when it ends in the next one: ``time_agg`` gives ``2020Q4``
+and ``2020`` for ``2020W53`` (2020-12-28 to 2021-01-03). A result out
+of the years 1000–9999 raises ``2-1-19-10``.
+
+``fill_time_series`` in ``all`` mode fills the periods of a
+Time_Period to whole years, from the first period of the earliest
+year to the last period of the latest one, also for a single Data
+Point: ``2020Q2`` alone gives ``2020Q1`` to ``2020Q4``. A series of
+Dates or of Time values of a single Data Point stays as it is, in
+both execution engines: its period cannot be read from one value,
+and the limits the manual gives, its earliest and latest values,
+are that value.
 
 **Output formats** (controlled by ``time_period_output_format``
 parameter):
@@ -287,6 +359,9 @@ parameter):
       - ``2020-W15``
       - ``2020-01-15``
 
+Writing a semester, a quarter or a week in ``"sdmx_gregorian"``
+raises ``2-1-19-21``, in both execution engines.
+
 Time_Period is a **subtype of Time** — anywhere a Time value
 is expected, a Time_Period is accepted automatically.
 
@@ -301,7 +376,10 @@ Time (TimeInterval)
       - ISO 8601 interval: ``"2020-01-01/2020-12-31"``.
         Also accepts ``"YYYY"`` (expanded to full year
         interval) and ``"YYYY-MM"`` (expanded to full
-        month interval).
+        month interval). Year range: 1000–9999, as for
+        a Date and a Time_Period: ``timeshift`` of a
+        Time out of those years raises ``2-1-19-10``,
+        in both execution engines.
     * - **Internal representation**
       - Python ``str`` in ``"YYYY-MM-DD/YYYY-MM-DD"``
         format, stored as ``string[pyarrow]``.
@@ -324,6 +402,11 @@ Duration
         stored as ``string[pyarrow]``.
     * - **Output dtype**
       - ``string[pyarrow]``
+
+The operators ``>``, ``<``, ``>=``, ``<=`` and ``between``, ``max`` and
+``min`` (also as analytic functions) and the ``order by`` of an analytic
+function order the Durations by their length, not by their text: ``D`` <
+``W`` < ``M`` < ``Q`` < ``S`` < ``A``.
 
 
 Null Handling
@@ -353,109 +436,78 @@ Implicit casts happen automatically when operators receive
 operands of different but compatible types.
 The engine resolves the common type using the
 `type promotion rules
-<https://sdmx-twg.github.io/vtl/2.2/reference_manual
+<https://sdmx-twg.github.io/vtl/v2.2/reference_manual
 /typical_behaviour.html#operators-changing-the-data-type>`_
-defined in VTL 2.2.
+defined in VTL 2.2: the common type of two operands is the
+type of one of them, to which the other one is implicitly
+cast. Two types that are only cast to a third one have no
+common type.
 
-.. list-table::
-    :widths: 14 10 10 10 10 10 10 12 10
-    :header-rows: 1
-
-    * - From / To
-      - String
-      - Number
-      - Integer
-      - Boolean
-      - Time
-      - Date
-      - Time_Period
-      - Duration
-    * - **String**
-      - |y|
-      - —
-      - —
-      - —
-      - —
-      - —
-      - —
-      - —
-    * - **Number**
-      - —
-      - |y|
-      - |y|
-      - —
-      - —
-      - —
-      - —
-      - —
-    * - **Integer**
-      - —
-      - |y|
-      - |y|
-      - —
-      - —
-      - —
-      - —
-      - —
-    * - **Boolean**
-      - |y|
-      - —
-      - —
-      - |y|
-      - —
-      - —
-      - —
-      - —
-    * - **Time**
-      - —
-      - —
-      - —
-      - —
-      - |y|
-      - —
-      - —
-      - —
-    * - **Date**
-      - —
-      - —
-      - —
-      - —
-      - |y|
-      - |y|
-      - —
-      - —
-    * - **Time_Period**
-      - —
-      - —
-      - —
-      - —
-      - |y|
-      - —
-      - |y|
-      - —
-    * - **Duration**
-      - —
-      - —
-      - —
-      - —
-      - —
-      - —
-      - —
-      - |y|
+The implicit conversions are those that the table at the end
+of the `Behaviour
+<https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators
+/General%20purpose%20operators/Type%20conversion/index.html#behaviour>`__
+section of the VTL 2.2 reference manual marks as implicit:
+Integer to Number, Boolean to String, Date to Time and
+Time_Period to Time.
 
 Key rules:
 
-- **Integer / Number**: Both directions are implicit
-  (Integer is a subtype of Number).
+- **Integer / Number**: An Integer is implicitly converted
+  to a Number (Integer is a subtype of Number). A Number is
+  never converted to an Integer, as the VTL 2.2 reference
+  manual marks that conversion as not feasible: a Number
+  given where an Integer is expected, such as the length of
+  ``substr``, the offset of ``lag`` or an ``integer``
+  parameter of a user defined operator, raises a
+  SemanticError. The common type of an
+  Integer and a Number is Number: the common Identifiers
+  that the joins (whatever the order of their operands),
+  the set operators, the binary operators, ``exists_in``
+  and ``nvl`` match are matched as Number values and are
+  Number in the result, so ``3.5`` does not match ``3``;
+  and a Component that the set operators give from an
+  Integer and a Number is a Number.
 - **Date to Time**: A Date is implicitly converted to a
   Time interval
   (``"2020-01-15"`` becomes ``"2020-01-15/2020-01-15"``).
 - **Time_Period to Time**: A Time_Period is implicitly
   converted to a Time interval
   (``"2020-Q1"`` becomes ``"2020-01-01/2020-03-31"``).
+  So wherever an operator combines a Date or a Time_Period
+  with a Time, the Date or the Time_Period is converted to
+  a Time value: comparisons and ``in`` / ``not_in``
+  compare Time values; ``nvl``, ``if``, ``case``, the set
+  operators and ``unpivot`` give a Time; and the common
+  Identifiers that the joins (whatever the order of their
+  operands), the binary operators, ``exists_in`` and
+  ``nvl`` match are matched as Time values and are Time in
+  the result.
+- **Date with Time_Period**: Neither is implicitly
+  converted to the other, so they have no common type,
+  although both are converted to Time. An operator that
+  receives both, such as ``=``, ``<``, ``between``,
+  ``nvl``, ``if``, ``case``, ``union``, or a join, a
+  binary operator, ``exists_in`` or ``nvl`` on a Date and
+  a Time_Period Identifier, raises a
+  SemanticError, and the script must ``cast`` one of them,
+  as the `Type conversion
+  <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators
+  /General%20purpose%20operators/Type%20conversion/index.html>`_
+  page of the VTL 2.2 reference manual asks for every
+  conversion that is not implicit: for instance
+  ``cast(Me_1, time_period) = Me_2``.
 - **Boolean to String**: ``true`` becomes ``"true"``,
   ``false`` becomes ``"false"``, as the VTL 2.2 reference
-  manual defines it, in both execution engines.
+  manual defines it, in both execution engines. So a
+  Boolean Identifier that those operators match with a
+  String one is matched as its text, only ``"true"``
+  matches ``true``, and the Identifier is a String in the
+  result (a String is never converted to a Boolean, which
+  only ``cast`` does). Likewise ``in`` and ``not_in``
+  compare a String with a set of Booleans as text:
+  ``"true" in {true}`` is true and ``"1" in {true}`` is
+  false.
 - **Null to any type**: Null is compatible with every type.
 
 
@@ -463,7 +515,7 @@ Explicit Casting (cast operator)
 ================================
 
 The `cast
-<https://sdmx-twg.github.io/vtl/2.2/reference_manual/operators
+<https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators
 /General%20purpose%20operators/Type%20conversion/index.html>`_
 operator converts values from one type to another:
 
@@ -481,203 +533,143 @@ operator converts values from one type to another:
     ``string``, ``integer``, ``number``, ``boolean``,
     ``time``, ``date``, ``time_period``, ``duration``.
 
-Supported conversions without mask
------------------------------------
+Supported conversions
+---------------------
 
-.. list-table::
-    :widths: 14 10 10 10 10 10 10 12 10
-    :header-rows: 1
-
-    * - From / To
-      - String
-      - Number
-      - Integer
-      - Boolean
-      - Time
-      - Date
-      - Time_Period
-      - Duration
-    * - **String**
-      - |y|
-      - |y|
-      - |y|
-      - —
-      - |y|
-      - |y|
-      - |y|
-      - |y|
-    * - **Number**
-      - |y|
-      - |y|
-      - |y|
-      - |y|
-      - —
-      - —
-      - —
-      - —
-    * - **Integer**
-      - |y|
-      - |y|
-      - |y|
-      - |y|
-      - —
-      - —
-      - —
-      - —
-    * - **Boolean**
-      - |y|
-      - |y|
-      - |y|
-      - |y|
-      - —
-      - —
-      - —
-      - —
-    * - **Time**
-      - |y|
-      - —
-      - —
-      - —
-      - |y|
-      - —
-      - —
-      - —
-    * - **Date**
-      - |y|
-      - —
-      - —
-      - —
-      - —
-      - |y|
-      - |y|
-      - —
-    * - **Time_Period**
-      - |y|
-      - —
-      - —
-      - —
-      - —
-      - —
-      - |y|
-      - —
-    * - **Duration**
-      - |y|
-      - —
-      - —
-      - —
-      - —
-      - —
-      - —
-      - |y|
+The conversions that ``cast`` supports are those of the table at the end of
+the `Behaviour
+<https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators
+/General%20purpose%20operators/Type%20conversion/index.html#behaviour>`_
+section of the VTL 2.2 reference manual: implicit, explicit, and explicit with
+an optional mask. A cast to the same type is accepted too. A conversion that
+the table marks as not feasible raises SemanticError ``1-1-5-4``, or
+``1-1-5-1`` when the target is a value domain.
 
 Conversion details:
 
+- **Number to Integer**: Not feasible, also to a value
+  domain of integers: ``cast(2.7, integer)`` raises
+  ``1-1-5-4``. Use ``round``, ``trunc``, ``floor`` or ``ceil`` to choose how
+  the decimals are dropped: without a number of decimals,
+  ``round`` and ``trunc`` give an Integer, as ``floor`` and
+  ``ceil`` do.
 - **Number/Integer to Boolean**: ``0`` becomes ``false``,
   any other value becomes ``true``.
 - **Boolean to Number/Integer**: ``true`` becomes ``1``
   (or ``1.0``), ``false`` becomes ``0`` (or ``0.0``).
 - **Boolean to String**: ``true`` becomes ``"true"``,
   ``false`` becomes ``"false"``, as the VTL 2.2 reference
-  manual defines it, in both execution engines.
+  manual defines it, in both execution engines. So a
+  Boolean Identifier that those operators match with a
+  String one is matched as its text, only ``"true"``
+  matches ``true``, and the Identifier is a String in the
+  result (a String is never converted to a Boolean, which
+  only ``cast`` does). Likewise ``in`` and ``not_in``
+  compare a String with a set of Booleans as text:
+  ``"true" in {true}`` is true and ``"1" in {true}`` is
+  false.
 - **String to Integer**: Must be a valid integer string
   (rejects ``"3.5"``).
+- **String to Date**: The text is read as the loaders read a
+  ``Date`` (see the Date section above): ``"2020-1-15"``,
+  ``"20200115"`` and ``"2020-01-15T00:00:00"`` are ``2020-01-15``,
+  and a time other than midnight is kept. A text that is not a
+  ``Date`` raises ``1-1-5-6`` for a literal and ``2-1-19-8`` for
+  data.
+- **String to Time_Period**: The text is read in any of the
+  accepted input formats of a Time_Period (see the Time_Period
+  section above), a date written without zeros too
+  (``"2020-1-5"`` is ``2020D5``), without the whitespace around
+  it (``" 2020Q1"`` is ``2020Q1``), as the loaders read it. A
+  ``start/end`` text is the period of its interval when that
+  interval is a whole year, semester, quarter, month, week or day
+  (``"2020-01-01/2020-03-31"`` is ``2020Q1``), as the VTL 2.2
+  reference manual defines it. Any other text raises ``1-1-5-6``
+  for a literal and ``2-1-5-1`` for data.
 - **Date to Time_Period**: Converts to daily period
   (e.g. ``"2020-01-15"`` becomes ``"2020D15"``
   with the default ``vtl`` output format).
+- **Time to Time_Period**: A Time is the period of its interval
+  when that interval is a whole year, semester, quarter, month,
+  week or day of a year from 1000 (``2020-01-01/2020-03-31`` is
+  ``2020Q1``), as a ``start/end`` text is. Any other Time raises
+  ``2-1-5-1``.
 
 Supported conversions with mask
 -------------------------------
 
-.. list-table::
-    :widths: 18 14 14 14 14 14 14
-    :header-rows: 1
+A mask gives the format of a String that is cast to, or from, a Number, an
+Integer, a Time, a Date, a Time_Period or a Duration. Both directions are
+supported, on both engines:
 
-    * - From / To
-      - String
-      - Number
-      - Time
-      - Date
-      - Time_Period
-      - Duration
-    * - **String**
-      - —
-      - |p|
-      - |p|
-      - |p|
-      - |p|
-      - |p|
-    * - **Time**
-      - |p|
-      - —
-      - —
-      - —
-      - —
-      - —
-    * - **Date**
-      - |p|
-      - —
-      - —
-      - —
-      - —
-      - —
-    * - **Time_Period**
-      - —
-      - —
-      - —
-      - |p|
-      - —
-      - —
-    * - **Duration**
-      - |p|
-      - —
-      - —
-      - —
-      - —
-      - —
+.. code-block::
 
-Legend: |y| = implemented, |p| = defined in VTL 2.2 but not
-yet implemented (raises ``NotImplementedError``).
+    DS_r <- DS_1 [ calc Me_2 := cast(Me_1, date, "YYYY-MM-DD"),
+                        Me_3 := cast(Me_4, string, "DD.DDD") ];
 
-.. |y| unicode:: U+2705
-.. |p| unicode:: U+23F3
+The masks are those of the `Type Conversion and Formatting Mask
+<https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html
+#type-conversion-and-formatting-mask>`_ section of the VTL 2.2 reference manual.
+A Number written with a fixed number of decimals is rounded to them.
 
-.. note::
+A value that its mask does not describe raises RunTimeError ``2-1-5-3``, and
+a mask that does not describe the type raises SemanticError ``1-1-5-4``. A
+Date, a Time or a Time_Period read through a mask has the years 1000–9999, as
+any other: a value of another year raises ``2-1-5-3``, and a literal of the
+script, such as ``cast("0999-01-15", date, "YYYY-MM-DD")``, SemanticError
+``1-1-5-6``.
+vtlengine does not support these parts of the VTL 2.2 masks, which raise
+SemanticError ``1-3-13``:
 
-    Formal definition of masks is still to be decided.
+- the exponent ``E`` of a Number mask;
+- the textual words ``MONTH``, ``DAY`` and ``AM/PM``;
+- the ISO 8601 composite durations, such as ``P10Y2M12D``: a Duration of
+  vtlengine is one period indicator;
+- a Time written with a duration, such as ``YYYY-MM-DD/PY\YM\MDD\D``.
 
 
 Cast on datasets
 ----------------
 
 When ``cast`` is applied to a Dataset, it must have exactly
-**one measure** (monomeasure). The measure is renamed to a
-generic name based on the target type:
-
-.. list-table::
-    :widths: 40 60
-    :header-rows: 1
-
-    * - Target type
-      - Renamed measure
-    * - String
-      - ``str_var``
-    * - Number
-      - ``num_var``
-    * - Integer
-      - ``int_var``
-    * - Boolean
-      - ``bool_var``
-    * - Time
-      - ``time_var``
-    * - Time_Period
-      - ``time_period_var``
-    * - Date
-      - ``date_var``
-    * - Duration
-      - ``duration_var``
+**one measure** (monomeasure). The measure is renamed to the
+default Variable of the target type, as the table at the end of
+`Operators changing the data type
+<https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html
+#operators-changing-the-data-type>`_ in the VTL 2.2 reference manual
+gives it (``num_var``, ``int_var``, ``bool_var``, ...), except for
+a String, which vtlengine names ``str_var`` instead of
+``string_var``.
 
 .. note::
 
     When the source type can be implicitly promoted to the
-    target type (e.g. Boolean to String, Integer to Number,
-    or Number to Integer), the measure is **not** renamed.
+    target type (e.g. Boolean to String or Integer to
+    Number), the measure is **not** renamed.
+
+
+Cast to a value domain
+----------------------
+
+The target of ``cast`` can be the name of a value domain given in
+``value_domains`` (see :ref:`components_on_value_domains`):
+
+.. code-block::
+
+    DS_r <- DS_1 [calc Me_2 := cast(Me_1, VD_1)];
+
+As the VTL manual describes, the cast converts the operand to the
+basic type of the value domain, and then checks that the result is
+a value of the value domain: ``cast(Me_1, VD_1)`` gives the values
+of ``cast(cast(Me_1, <basic type of VD_1>), VD_1)``. The operand
+can be of any type that casts to the basic type without a mask,
+following the conversion table of the manual, or on another value domain of such a
+type; any other type raises ``1-1-5-1``. With a mask, the cast to
+the basic type uses it. A value that is not a value of the value
+domain raises ``2-1-5-4`` (``1-1-5-6`` for a literal).
+
+The result is defined on the value domain. The Measure of a Data
+Set is named as in a cast to the basic type: it keeps its name when
+its type is implicitly promoted to the basic type, and takes the
+generic name otherwise (``int_var`` for a value domain of
+integers). A scalar is defined on the value domain as well.

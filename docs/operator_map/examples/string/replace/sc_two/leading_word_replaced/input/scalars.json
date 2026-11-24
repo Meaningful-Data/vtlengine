@@ -1,0 +1,7 @@
+{
+  "scalars": [
+    {"name": "SC_1", "type": "String"},
+    {"name": "SC_2", "type": "String"},
+    {"name": "SC_3", "type": "String"}
+  ]
+}

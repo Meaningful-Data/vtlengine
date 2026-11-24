@@ -1,6 +1,7 @@
 import copy
 from typing import Any, Dict, List, Tuple
 
+import pandas as pd
 import pytest
 
 import vtlengine.DataTypes as DataTypes
@@ -368,3 +369,58 @@ def test_scalar_repr_leaves_out_the_literal_flag():
     value = Scalar(name="sc_r", data_type=DataTypes.Integer, value=-1)
     assert "literal" not in repr(literal)
     assert repr(literal) == repr(value)
+
+
+def test_GH_1349_17():
+    """from_json reads back what to_dict and to_json write: a type that names a value domain is
+    read on the value domain given in value_domains; it raised a raw KeyError. Without the
+    value domain the type is neither a basic type nor a value domain given, and it raises
+    0-2-1-1, as the structure loaders of run and semantic_analysis do."""
+    vd_b = ValueDomain("VD_B", DataTypes.Boolean, [True, False])
+    vd_tp = ValueDomain("VD_TP", DataTypes.TimePeriod, ["2024Q1", "2024Q2"])
+    value_domains = {"VD_B": vd_b, "VD_TP": vd_tp}
+    id_2 = Component("Id_2", DataTypes.Boolean, Role.IDENTIFIER, False, vd_b)
+    dataset = Dataset("DS_r", {"Id_2": id_2}, pd.DataFrame({"Id_2": [True, False]}))
+    scalar = Scalar("SC_r", DataTypes.TimePeriod, "2024Q1", value_domain=vd_tp)
+    data_component = DataComponent("Me_2", None, DataTypes.TimePeriod, value_domain=vd_tp)
+
+    restored = Dataset.from_json(dataset.to_dict(), value_domains)
+    assert restored.components["Id_2"].value_domain is vd_b
+    assert restored.components["Id_2"].data_type is DataTypes.Boolean
+    assert restored.to_dict() == dataset.to_dict()
+    assert Component.from_json(id_2.to_dict(), value_domains) == id_2
+    restored_component = DataComponent.from_json(data_component.to_dict(), value_domains)
+    assert restored_component.value_domain is vd_tp
+    assert restored_component == data_component
+    restored_scalar = Scalar.from_json(scalar.to_json(), value_domains)
+    assert restored_scalar.value_domain is vd_tp
+    assert restored_scalar.data_type is DataTypes.TimePeriod
+    assert restored_scalar == scalar
+
+    calls = [
+        lambda: Dataset.from_json(dataset.to_dict()),
+        lambda: Component.from_json(id_2.to_dict()),
+        lambda: DataComponent.from_json(data_component.to_dict()),
+        lambda: Scalar.from_json(scalar.to_json()),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-2-1-1"
+
+
+def test_GH_1356_71():
+    """value_domains of from_json is a dict of the value domains by name: a list raises 0-1-1-2,
+    as run does for an input of the wrong kind. It raised a raw AttributeError (issue #1356)."""
+    vd_1 = ValueDomain("VD_1", DataTypes.Integer, [1, 2, 3])
+    data = {
+        "name": "DS_8",
+        "data": {"Id_1": [1], "Me_1": [1]},
+        "components": {
+            "Id_1": {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False},
+            "Me_1": {"name": "Me_1", "role": "Measure", "type": "VD_1", "nullable": True},
+        },
+    }
+    with pytest.raises(InputValidationException) as error:
+        Dataset.from_json(data, value_domains=[vd_1])
+    assert error.value.args[1] == "0-1-1-2"

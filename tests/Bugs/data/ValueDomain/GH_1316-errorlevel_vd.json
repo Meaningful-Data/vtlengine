@@ -1,0 +1,8 @@
+{
+  "name": "errorlevel_vd",
+  "type": "String",
+  "setlist": [
+    "WARNING",
+    "ERROR"
+  ]
+}

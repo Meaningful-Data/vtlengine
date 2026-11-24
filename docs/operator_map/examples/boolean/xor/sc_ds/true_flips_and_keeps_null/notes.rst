@@ -1,0 +1,3 @@
+:Tests: ``true xor DS_1``: the boolean scalar true on the left, and a data set with ``Me_1`` true, false and null.
+:Manual: `Exclusive disjunction <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Boolean%20operators/Exclusive%20disjunction/index.html>`__: "``false xor null`` gives ``null``", "``true xor null`` gives ``null``" and "``null xor null`` gives ``null``"; the page's sentence "returns **true** if only one of the operand is **true** (but not both), **false** otherwise" conflicts with its null rows (``false xor null`` is null, not false), and the listed rows govern.
+:Expected: ``Me_1`` is false, true and null: ``xor true`` flips the operand, and a null operand gives null whatever the other operand is (``true xor null`` is null).

@@ -1,3 +1,4 @@
+import contextlib
 import re
 from typing import Any, Dict, FrozenSet, Optional, Set, Type, Union
 
@@ -45,9 +46,6 @@ CAST_MAPPING: Dict[str, type] = {
 class DataTypeSimpleRepr(type):
     def __repr__(cls) -> Any:
         return SCALAR_TYPES_CLASS_REVERSE[cls]
-
-    def __hash__(cls) -> int:
-        return id(cls)
 
 
 class ScalarType(metaclass=DataTypeSimpleRepr):
@@ -159,8 +157,9 @@ class String(ScalarType):
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> str:
+        if from_type is Integer:
+            return to_string(int(value))
         if from_type in {
-            Integer,
             Number,
             Boolean,
             String,
@@ -199,8 +198,6 @@ class Number(ScalarType):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> float:
-        # if pd.isna(value):
-        #     return cls.default
         if from_type in {Integer, Number}:
             return float(value)
 
@@ -277,15 +274,8 @@ class Integer(Number):
             # TODO: VTL 2.2 specifies truncation toward zero (return int(value)),
             #  pending discussion
             if value.is_integer():
-                return int(value)
-            # else:
-            #     raise RunTimeError(
-            #         "2-1-5-1",
-            #         value=value,
-            #         type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-            #         type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-            #     )
-            return int(value)
+                return cls.in_range(value, from_type)
+            return cls.in_range(value, from_type)
 
         raise RunTimeError(
             "2-1-5-1",
@@ -293,6 +283,20 @@ class Integer(Number):
             type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
             type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
         )
+
+    @classmethod
+    def in_range(cls, value: Any, from_type: Any) -> int:
+        """The whole number value as an Integer, which holds 64 bits: a value out of that range
+        raises 2-1-5-1, as the DuckDB engine does (issue #1356)."""
+        whole = int(value)
+        if not -(2**63) <= whole < 2**63:
+            raise RunTimeError(
+                "2-1-5-1",
+                value=value,
+                type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
+            )
+        return whole
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> int:
@@ -317,7 +321,7 @@ class Integer(Number):
                     type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
                     type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
                 )
-            return int(value)
+            return cls.in_range(value, from_type)
 
         raise RunTimeError(
             "2-1-5-1",
@@ -428,7 +432,14 @@ class Date(TimeInterval):
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
         if from_type == String:
-            return check_max_date(value)
+            # A text is read as the loaders read a Date: 2024-1-5 and 20240105 are the Date
+            # 2024-01-05, a time at midnight is no time (issue #1349)
+            if pd.isnull(value):
+                return None
+            try:
+                return check_date(value)
+            except (InputValidationException, ValueError):
+                raise RunTimeError("2-1-19-8", date=value) from None
         if from_type == TimePeriod:
             handler = TimePeriodHandler(str(value))
             if handler.period_indicator == "D":
@@ -487,49 +498,22 @@ class TimePeriod(TimeInterval):
 
     @classmethod
     def explicit_cast(cls, value: Any, from_type: Any) -> Any:
-        if from_type in {Date}:
-            try:
-                period_str = date_to_period_str(value, "D")
-            except ValueError:
-                raise RunTimeError(
-                    "2-1-5-1",
-                    value=value,
-                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-                    type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-                )
-            return period_str
-        if from_type == String:
-            s = str(value)
-            if "/" in s:
-                result = interval_to_period_str(s)
-                if result is not None:
-                    return result
-                raise RunTimeError(
-                    "2-1-5-1",
-                    value=value,
-                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-                    type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-                )
-            if not cls.check(value):
-                # Text that is no time period, such as 2020X1 (issue #1192)
-                raise RunTimeError(
-                    "2-1-5-1",
-                    value=value,
-                    type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-                    type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-                )
-            return value
-        if from_type == TimeInterval:
-            result = interval_to_period_str(str(value))
-            if result is not None:
-                return result
-            raise RunTimeError(
-                "2-1-5-1",
-                value=value,
-                type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-                type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-            )
-
+        period: Optional[str] = None
+        if from_type == Date:
+            with contextlib.suppress(ValueError):
+                period = date_to_period_str(value, "D")
+        elif from_type in (String, TimeInterval):
+            # The space around a text is taken off, as the loaders do; a start/end text is the
+            # period of its interval (issue #1352)
+            text = str(value).strip()
+            is_interval = from_type == TimeInterval or "/" in text
+            period = interval_to_period_str(text) if is_interval else text
+        if period is not None:
+            # A Time_Period is written in the one form the loaders write it in, whatever gives
+            # it, so that its values are ordered as periods, and a period the loaders refuse,
+            # such as the year 0001, is no Time_Period (issue #1352)
+            with contextlib.suppress(InputValidationException):
+                return check_time_period(period)
         raise RunTimeError(
             "2-1-5-1",
             value=value,
@@ -576,7 +560,7 @@ class Duration(ScalarType):
                 return True
             else:
                 raise InputValidationException(
-                    code="0-1-1-35", value=value, type_1=type(value).__name__, type_2="Duration"
+                    code="0-1-1-35", value=value, type_1="String", type_2="Duration"
                 )
         return False
 
@@ -778,7 +762,7 @@ RESERVED_COMPONENT_NAMES: FrozenSet[str] = frozenset(COMP_NAME_MAPPING.values())
 # Key is the data type, value is the set of types to which it can be implicitly promoted
 IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     String: {String},
-    Number: {Number, Integer},
+    Number: {Number},
     Integer: {Number, Integer},
     TimeInterval: {TimeInterval},
     Date: {Date, TimeInterval},
@@ -800,7 +784,7 @@ IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
 
 EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     String: {Integer, Number, Boolean, String, Date, TimePeriod, TimeInterval, Duration},
-    Number: {Integer, Boolean, String, Number},
+    Number: {Boolean, String, Number},
     Integer: {Number, Boolean, String, Integer},
     TimeInterval: {Date, TimePeriod, String, TimeInterval},
     Date: {TimePeriod, Date, String},
@@ -869,17 +853,9 @@ def binary_implicit_promotion(
     if right_type.is_included(left_implicities):
         return right_type
 
-    # Fallback: check if both types can be promoted to a common type
-    # e.g. Date → TimeInterval and TimePeriod → TimeInterval
-    common = left_implicities.intersection(right_implicities)
-    if common:
-        if return_type:
-            return return_type
-        # Return the common promoted type (exclude Null if present)
-        common.discard(Null)
-        if len(common) == 1:
-            return common.pop()
-
+    # Two types that are each implicitly cast to a third one, such as a Date and a
+    # Time_Period (both cast to Time), have no common type: the script must cast one of them
+    # (issue #1352)
     raise SemanticError(
         code="1-1-1-1",
         type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
@@ -907,11 +883,7 @@ def check_binary_implicit_promotion(
     if type_to_check:
         return type_to_check.is_included(set_=left_implicities.intersection(right_implicities))
 
-    return (
-        left.is_included(right_implicities)
-        or right.is_included(left_implicities)
-        or bool(left_implicities.intersection(right_implicities))
-    )
+    return left.is_included(right_implicities) or right.is_included(left_implicities)
 
 
 def unary_implicit_promotion(

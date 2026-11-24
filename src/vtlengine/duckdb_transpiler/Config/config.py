@@ -31,6 +31,7 @@ from typing import Iterator, Optional, Union
 import duckdb
 
 from vtlengine.duckdb_transpiler.Transpiler.operators import (
+    register_cast_mask_function,
     register_regex_functions,
     register_time_functions,
 )
@@ -154,9 +155,11 @@ def _sql_literal(value: Union[str, int, bool]) -> str:
 
 
 def _register_python_functions(conn: duckdb.DuckDBPyConnection) -> None:
-    """Register Python UDFs (regex fallback for patterns RE2 cannot compile, time checks)."""
+    """Register Python UDFs (regex fallback for patterns RE2 cannot compile, time checks,
+    mask casts)."""
     register_regex_functions(conn)
     register_time_functions(conn)
+    register_cast_mask_function(conn)
 
 
 def create_configured_connection(database: str = ":memory:") -> duckdb.DuckDBPyConnection:

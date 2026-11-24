@@ -1,0 +1,9 @@
+{
+  "scalars": [
+    {"name": "SC_1", "type": "Integer"},
+    {"name": "SC_2", "type": "Integer"},
+    {"name": "SC_3", "type": "Integer"},
+    {"name": "SC_4", "type": "Integer"},
+    {"name": "SC_5", "type": "Integer"}
+  ]
+}

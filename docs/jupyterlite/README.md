@@ -59,12 +59,19 @@ Open <http://localhost:8000/lab/index.html> and run `content/vtl-demo.ipynb`.
 
 ## Deployment
 
-The `build-jupyterlite` job in `.github/workflows/docs.yml` runs both steps in CI
-(host Python 3.14 + emsdk 5.0.3, with the wasm wheel and Emscripten SDK cached)
-and the docs `build` job publishes the result at `/jupyterlite/` on the docs
+The `build-jupyterlite` job in `.github/workflows/docs.yml` assembles the site in CI
+and the docs `deploy` job publishes the result at `/jupyterlite/` on the docs
 site — e.g. <https://docs.vtlengine.meaningfuldata.eu/jupyterlite/lab/index.html>.
-The docs workflow runs on releases, manual dispatch, or a merged `cr-N` PR whose
-issue carries the `documentation` label.
+On a run at a release tag (Create Release dispatches the workflow at the tag) it compiles
+the wasm wheel from that tag (host Python 3.14 + emsdk 5.0.3, with the wasm wheel and
+Emscripten SDK cached). On
+any other run (a push to `develop`, a manual dispatch on a branch) it downloads the wasm wheel of
+the newest release, release candidates included, from PyPI with
+`fetch_release_wheel.py`, so the demo matches the last release. A failure of this job,
+for example PyPI being unreachable, stops the deployment: a Pages deployment replaces
+the whole site, so publishing without the demo would remove it.
+The docs workflow runs on releases, manual dispatch, and pushes to `develop` that touch
+the docs.
 
 ## Notes
 

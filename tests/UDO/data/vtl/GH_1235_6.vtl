@@ -1,0 +1,11 @@
+define operator inside (x component<string>, s set<string>)
+    returns component<boolean> is
+        x in s
+end operator;
+
+define operator flag (d dataset, s set<string>)
+    returns dataset is
+        d[calc Me_2 := inside(Me_1, s)]
+end operator;
+
+DS_r <- flag(DS_1, VD_AB);

@@ -1,0 +1,3 @@
+:Tests: ``fill_time_series(DS_4, all)`` on an annual and a quarterly series of the same phenomenon ``A``.
+:Manual: `Fill time series <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Fill%20time%20series/index.html>`__, Example 8, output verbatim: "If *limitsMethod* is **all**, the time limits are determined with reference to all the time_series of the Data Set: the limits are the minimum and the maximum values of the reference time Identifier Component of the Data Set."
+:Expected: The limits are the years 2010 to 2012: the annual series gets 2011, and the quarterly one every missing quarter from 2010Q1 to 2012Q4. The manual writes the quarters with a ``-``, as in ``2010-Q1``, the same periods as ``2010Q1``.

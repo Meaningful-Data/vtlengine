@@ -1,0 +1,12 @@
+define operator keep_in (d dataset, s set<string>)
+    returns dataset is
+        d[filter Me_1 in s]
+end operator;
+
+define operator keep_both (s dataset, t set<string>)
+    returns dataset is
+        keep_in(s, t)
+end operator;
+
+DS_r <- keep_both(DS_1, VD_AB);
+DS_q <- keep_in(DS_1, VD_AB);

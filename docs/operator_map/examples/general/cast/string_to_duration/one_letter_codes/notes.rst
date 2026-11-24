@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, duration)`` on a String measure, without a mask: the one-letter codes.
+:Manual: `Type conversion <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html>`__: "To **duration**: If the input string starts with ``P``, the entire string is consumed and parsed, according to the ISO-8601 standard for durations [...]. Otherwise, one of ``A``, ``S``, ``Q``, ``M``, ``W`` or ``D`` is consumed, and a ``duration`` value is returned representing the duration respectively of a year, a half of a year, a quarter of a year, a month, a week and a day."
+:Expected: A year, a quarter and a day, written with the same codes: ``A``, ``Q`` and ``D``. The inputs have no blanks for the conversion to remove.

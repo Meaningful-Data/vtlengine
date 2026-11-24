@@ -1,0 +1,3 @@
+:Tests: ``sub Id_1 = 1, Id_2 = "A"``: two of the three identifiers fixed.
+:Manual: `Subspace <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Clause%20operators/Subspace/index.html>`__, Example 1, output verbatim: "It maintains the Data Points of VDS for which identifier = value (for all the specified identifier) and eliminates all the Data Points for which identifier <> value (even for only one specified identifier)", then "It projects out (“drops”, in VTL terms) all the identifier (s)".
+:Expected: The two data points with ``Id_1`` = 1 and ``Id_2`` = ``A``, without these two identifiers: ``Id_3``, ``Me_1`` and ``At_1`` = ``XX``, 20, ``F`` and ``YY``, 1, ``F``.

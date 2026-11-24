@@ -1,0 +1,3 @@
+:Tests: ``calc identifier Id_3 := "X"``, a new constant identifier.
+:Manual: `Left Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Left%20Join/index.html>`__: "The role of the new components can be specified"; ``Id_3`` is new, so no identifier of the input is overwritten.
+:Expected: the left join keeps the four keys of ``DS_1``, with ``Me_2`` null at ``(1,B)``; each gets ``Id_3`` = ``X`` and the keys stay unique. A constant is never null, so the decision of #1010 (``1-1-1-16`` for an identifier calculated from a declared-nullable expression) does not apply.

@@ -1,0 +1,5 @@
+define datapoint ruleset dpr_num ( valuedomain VD_NUM as N ) is
+    r1 : N > 1 errorcode "LOW"
+end datapoint ruleset;
+
+DS_r <- check_datapoint ( DS_1 , dpr_num components Me_1 all_measures );

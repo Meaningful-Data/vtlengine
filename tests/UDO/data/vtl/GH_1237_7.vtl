@@ -1,0 +1,15 @@
+define datapoint ruleset DPR_1 (variable Me_1) is
+    Me_1 >= 0
+end datapoint ruleset;
+
+define operator check_positive (ds dataset, dpr datapoint)
+    returns dataset is
+        check_datapoint(ds, dpr all)
+end operator;
+
+define operator check_kept (e dataset, dpr datapoint)
+    returns dataset is
+        check_positive(e[calc Me_1 := Me_1], dpr)
+end operator;
+
+DS_r <- check_kept(DS_1, DPR_1);

@@ -1,0 +1,4 @@
+IBSC := inner_join(DS_5, DS_6[sub Id_4 = "c"] as CI);
+IBSD := inner_join(DS_5, DS_6[sub Id_4 = "d"] as DI);
+DS_r <- inner_join(DS_4, IBSC[drop Me_3][rename Id_2 to Id_21, Id_3 to Id_31, Me_2 to Me_21] as IBSC,
+    IBSD[rename Id_2 to Id_22, Id_3 to Id_32, Me_2 to Me_22] as IBSD);

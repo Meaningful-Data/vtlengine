@@ -62,6 +62,23 @@ a name and a list of components. Each component has the four fields:
     * - ``name``
       - string
       - Component name. Must match the column name in the datapoints.
+        Any non-empty name without a single quote, a double quote, a
+        ``#``, a NUL or a carriage return is accepted, also one that is not a regular
+        VTL name, such as the ``2024-01-05`` or ``A B`` Measures of a
+        ``pivot`` result; a script reads such a Component by its quoted
+        name (``'2024-01-05'``). A name written
+        between single quotes (``"'A B'"``) names the same Component as
+        the name without them (``A B``). A ``#`` only separates the alias
+        of a join operand from the name of its Component inside a join
+        (`Inner Join
+        <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html>`_
+        in the VTL 2.2 manual), so an input name holding it raises ``0-2-1-1``,
+        a new Component that a script names with any of these characters
+        (``rename``, ``calc``, ``aggr``, ``pivot``, ``unpivot``, ``eval``)
+        raises ``1-1-6-19``, and the alias of a join operand, or the name
+        of a Data Set joined without an alias, holding one, or an empty
+        alias (``''``), raises ``1-1-13-28``. A quoted alias (``as 'A-B'``)
+        names its operand without the quotes, as a quoted Data Set name.
     * - ``type``
       - string
       - VTL data type. See :doc:`data_types` for the full list.
@@ -75,6 +92,8 @@ a name and a list of components. Each component has the four fields:
 
 If you have many datasets, or you'd rather keep your Python code tidy,
 save the same JSON to a ``.json`` file and pass the ``Path`` instead.
+A ``.json`` file that is not valid JSON raises ``0-1-1-40``, naming
+the file.
 
 Scalar inputs (used with ``run``'s ``scalar_values`` argument) can be
 declared alongside datasets:

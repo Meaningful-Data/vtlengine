@@ -1,0 +1,5 @@
+:Tests: ``flow_to_stock(DS_1)`` on annual series whose reference time identifier is a *time*.
+:Manual: `Flow to stock <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Flow%20to%20stock/index.html>`__, Example 1: "the operator perform the cumulative sum from the first Data Point of each time series to each other following Data Point of the same time series."
+:Expected: The manual's values: ``A`` 2, 7, 4, 13 and ``B`` 4, -4, -4, 2, an Integer ``Me_1``.
+:Erratum: The manual's output structure declares ``Me_1`` as String, but the result has "the same Identifier, Measure and Attribute Components as the operand Data Set", whose ``Me_1`` is Integer, and the values are integers: the expected ``Me_1`` is Integer.
+:Adaptation: The page writes its *time* values in "the time format YYYY-MM/YYYY-MM", as ``2010M1/2010M12``, which vtlengine cannot load (DataLoadError ``0-3-1-6`` on both engines). Each ``YYYYM1/YYYYM12`` of the input and the output is written ``YYYY-01-01/YYYY-12-31``, the same interval in the ``YYYY-MM-DD/YYYY-MM-DD`` form of the manual's "Behaviour of Time operators" and of ``docs/data_types.rst``; nothing else changes.

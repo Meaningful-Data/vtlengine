@@ -1,0 +1,3 @@
+:Tests: ``instr(Me_1, Me_2, Me_3, Me_4)`` inside ``calc``: ``pattern``, ``start`` and ``occurrence`` all come from components.
+:Manual: `String pattern location <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/String%20pattern%20location/index.html>`__ types ``occurrence`` as ``component<integer [value >= 1]> | integer [value >= 1]``, and "If the nth ``occurrence`` of the string-pattern after the ``start`` th character is not found in the input string, the returned value is 0."
+:Expected: ``Me_5`` is 8, 4, 5 and 0: the 2nd ``o`` of ``hello world`` is at 8, ``an`` from the 3rd character of ``banana`` at 4, the 3rd ``o`` of ``o-o-o`` at 5, and ``hello`` has no 2nd ``o``.

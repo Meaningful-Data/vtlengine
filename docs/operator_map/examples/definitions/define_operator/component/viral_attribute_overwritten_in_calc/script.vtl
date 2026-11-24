@@ -1,0 +1,6 @@
+define operator with_suffix (c viral attribute<string>)
+    returns component<string> is
+        c || "_X"
+end operator;
+
+DS_r := DS_1[calc At_1 := with_suffix(At_1)];

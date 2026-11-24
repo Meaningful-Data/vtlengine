@@ -1,0 +1,10 @@
+define operator with_suffix ( x component < VD_FLOW > )
+    returns component < string > is
+        x || "_X"
+end operator;
+
+define operator flag ( x VD_FLOW )
+    returns string is
+        x || "_F"
+end operator;
+DS_r <- DS_1 [ calc Me_2 := with_suffix ( Id_2 ) , Me_3 := flag ( "DEBIT" ) ];

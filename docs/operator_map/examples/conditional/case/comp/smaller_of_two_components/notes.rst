@@ -1,0 +1,3 @@
+:Tests: ``case when Me_1 < Me_2 then Me_1 else Me_2`` inside ``calc``: one ``when`` with component branches, so the conditions cannot overlap.
+:Manual: `Case <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Case/index.html>`__: at Component level "the operation is applied for each Data Point of the unique input Data Set, the **case** operator returns the value from the *thenOperand* Component whose corresponding *condition* evaluates to *true*; if none of the **when** conditions evaluates to **true**, it returns the value from the *elseOperand* Component".
+:Expected: ``Me_3`` is the smaller measure: 5, 3 and 7. ``Me_1 < Me_2`` is true only for 3 < 8; for 10 and 5, and for 7 and 7, the ``else`` gives ``Me_2``.

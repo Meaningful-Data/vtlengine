@@ -1,0 +1,5 @@
+define hierarchical ruleset HR_1 (variable condition Id_1 as C rule Id_2) is
+    when C = "X" then A = B
+end hierarchical ruleset;
+
+DS_r := check_hierarchy(DS_1, HR_1 condition Id_1 rule Id_2 all);

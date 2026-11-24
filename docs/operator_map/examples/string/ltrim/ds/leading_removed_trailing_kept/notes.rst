@@ -1,0 +1,3 @@
+:Tests: ``ltrim`` on values with spaces at both ends, a space inside and a null; the input quotes its cells, so the spaces are data.
+:Manual: `Whitespace removal <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/Whitespace%20removal/index.html>`__: "Removes trailing or/and leading whitespace from a string."
+:Expected: ``"  hello  "`` gives ``"hello  "`` and ``" a b "`` gives ``"a b "``: the leading spaces go; the trailing ones and the space inside stay (the page's ``rtrim`` examples remove the trailing ones). A null operand gives a null result: "most of the scalar operations (arithmetic, logical, and others) return null when any of their arguments is null" (User Manual), as the manual's ``length`` and ``instr`` examples show.

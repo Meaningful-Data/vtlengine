@@ -1,10 +1,11 @@
+import re
 from dataclasses import fields
 from pathlib import Path
 
 import pytest
 
 from vtlengine.API import create_ast, prettify
-from vtlengine.AST import AST, Comment
+from vtlengine.AST import AST, Comment, Start
 from vtlengine.AST.ASTComment import create_ast_with_comments
 from vtlengine.AST.ASTString import ASTString
 
@@ -47,6 +48,10 @@ params = [
     "GH_1166.vtl",
     "GH_1156.vtl",
     "GH_1247.vtl",
+    "GH_1241.vtl",
+    "GH_1236.vtl",
+    "GH_1351.vtl",
+    "GH_1355.vtl",
 ]
 
 params_prettier = [
@@ -85,6 +90,15 @@ params_prettier = [
     ("GH_1160.vtl", "reference_GH_1160.vtl"),
     ("GH_1166.vtl", "reference_GH_1166.vtl"),
     ("GH_1322.vtl", "reference_GH_1322.vtl"),
+    ("GH_1334.vtl", "reference_GH_1334.vtl"),
+    # An error code is written as the literal it is, a number with no quotes (issue #1349)
+    ("GH_1349.vtl", "reference_GH_1349.vtl"),
+    ("GH_1358.vtl", "reference_GH_1358.vtl"),
+    # A qualified alias#comp of partition by, order by or rename is written unquoted, and a quoted
+    # join alias keeps one pair of quotes, in the alias and in alias#comp (issue #1355)
+    ("GH_1355.vtl", "reference_GH_1355.vtl"),
+    # A qualified alias#comp of group by or group except of a join is written as it is (issue #1355)
+    ("GH_1355_group.vtl", "reference_GH_1355_group.vtl"),
 ]
 
 POSITION_FIELDS = {"line_start", "column_start", "line_stop", "column_stop"}
@@ -232,6 +246,42 @@ def test_prettier_no_trailing_whitespace(filename, expected):
     lines = prettify(script).splitlines()
 
     assert [line for line in lines if line != line.rstrip()] == []
+
+
+def test_prettier_joined_modules():
+    """Modules parsed one by one and joined into one Start render like the whole script (GH_1334).
+
+    Each module numbers its lines from 1, and its banner comment is made at (0, 0).
+    """
+    with open(prettier_path / "GH_1334.vtl", "r") as file:
+        modules = re.split(r"^(?=/\* Module)", file.read(), flags=re.MULTILINE)[1:]
+    children = []
+    for module in modules:
+        banner, body = module.split("\n", 1)
+        children += [Comment(0, 0, 0, 0, banner), *create_ast_with_comments(body).children]
+
+    result_script = ASTString(pretty=True).render(Start(0, 0, 0, 0, children))
+
+    with open(prettier_path / "reference_GH_1334.vtl", "r") as file:
+        expected_script = file.read()
+    assert normalize_lines_in_text(result_script) == normalize_lines_in_text(expected_script)
+
+
+def test_prettier_joined_scripts():
+    """Scripts parsed one by one and joined into one Start render like the whole script (GH_1358).
+
+    Each script numbers its lines from 1, so the comments of a script fall within the lines of
+    the last statement of the script before it, a ruleset among them.
+    """
+    with open(prettier_path / "GH_1358.vtl", "r") as file:
+        scripts = re.split(r"^(?=/\* Module)", file.read(), flags=re.MULTILINE)[1:]
+    children = [child for script in scripts for child in create_ast_with_comments(script).children]
+
+    result_script = ASTString(pretty=True).render(Start(0, 0, 0, 0, children))
+
+    with open(prettier_path / "reference_GH_1358.vtl", "r") as file:
+        expected_script = file.read()
+    assert normalize_lines_in_text(result_script) == normalize_lines_in_text(expected_script)
 
 
 @pytest.mark.parametrize("filename", params)

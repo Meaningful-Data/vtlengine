@@ -1,5 +1,6 @@
 from copy import copy
-from typing import Dict, List, Optional, Union
+from math import inf
+from typing import Any, Dict, List, Optional, Union, cast
 
 import pandas as pd
 import pyarrow as pa
@@ -26,7 +27,9 @@ from vtlengine.AST.Grammar.tokens import (
     VAR_SAMP,
 )
 from vtlengine.DataTypes import (
+    BASIC_TYPES,
     COMP_NAME_MAPPING,
+    Boolean,
     Date,
     Duration,
     Integer,
@@ -34,9 +37,11 @@ from vtlengine.DataTypes import (
     String,
     TimeInterval,
     TimePeriod,
+    binary_implicit_promotion,
     unary_implicit_promotion,
 )
 from vtlengine.DataTypes._time_checking import DATE_COMPARISON_DTYPE, _from_date_value
+from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, PERIOD_IND_MAPPING_REVERSE
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
@@ -49,6 +54,28 @@ from vtlengine.ViralPropagation import (
 )
 
 return_integer_operators = [MAX, MIN, SUM]
+
+# What a bound of a window that a Scalar gives must be (VTL error 2-1-18-1)
+WINDOW_BOUND = "a non-negative Integer"
+
+
+def scalar_window_bound(op: str, value: Any) -> int:
+    """The bound of a window that an Integer Scalar gives, as the bound written in the window.
+    A null or a negative bound raises 2-1-18-1 and one beyond the range of an Integer 2-1-5-1,
+    on both engines and whatever ran before (issue #1355)."""
+    if pd.isnull(value) or value < 0:
+        raise RunTimeError("2-1-18-1", op=op, param_type="Window bound", correct_type=WINDOW_BOUND)
+    return Integer.in_range(value, Integer)
+
+
+def _sql_literal(value: Any) -> str:
+    """A value of the offset or the default of lag and lead as a SQL literal: a text is quoted
+    and a null is NULL, where they were read as column names (issue #1352)."""
+    if value is None:
+        return "NULL"
+    if isinstance(value, str):
+        return "'{}'".format(value.replace("'", "''"))
+    return str(value)
 
 
 def _range_bound(value: Union[int, str], bound: str, by_days: bool) -> str:
@@ -86,7 +113,8 @@ class Analytic(Operator.Unary):
         params: Optional[List[int]],
         component_name: Optional[str] = None,
     ) -> Dataset:
-        order_components = [] if ordering is None else [o.component for o in ordering]
+        # Names: the interpreter gives a Component named alias#comp in a join by its name
+        order_components = [] if ordering is None else [cast(str, o.component) for o in ordering]
         identifier_names = operand.get_identifiers_names()
         result_components = {
             comp_name: comp
@@ -124,8 +152,9 @@ class Analytic(Operator.Unary):
                     op=cls.op,
                     context="analytic",
                 )
-            # RANGE window is not supported for String, Duration, TimePeriod, TimeInterval
-            range_unsupported_types = (String, Duration, TimePeriod, TimeInterval)
+            # RANGE window is not supported for String, Duration, TimePeriod, TimeInterval, nor
+            # Boolean, which has no distance (issue #1356)
+            range_unsupported_types = (String, Duration, TimePeriod, TimeInterval, Boolean)
             if (
                 window is not None
                 and window.type_ != "data"
@@ -137,6 +166,18 @@ class Analytic(Operator.Unary):
                     data_type=operand.components[comp_name].data_type.__name__,
                     comp_name=comp_name,
                 )
+
+        if (
+            window is not None
+            and window.type_ != "data"
+            and len(order_components) != 1
+            and any(
+                limit not in ("unbounded", "current row", 0)
+                for limit in (window.start, window.stop)
+            )
+        ):
+            # The limits of a range window are distances on one order by Component (issue #1356)
+            raise SemanticError("1-1-3-3", op=cls.op, number=len(order_components))
 
         # TimeInterval is not supported as a measure in analytic operations
         if component_name is not None:
@@ -183,8 +224,8 @@ class Analytic(Operator.Unary):
                 if component_name in result_components:
                     del result_components[component_name]
             if cls.op in (LAG, LEAD) and component_name in result_components:
-                result_components[component_name] = cls._as_nullable(
-                    result_components[component_name]
+                result_components[component_name] = cls._shifted(
+                    result_components[component_name], params
                 )
         else:
             measures = operand.get_measures()
@@ -234,9 +275,23 @@ class Analytic(Operator.Unary):
             if cls.op in (LAG, LEAD):
                 for measure in measures:
                     if measure.name in result_components:
-                        result_components[measure.name] = cls._as_nullable(
-                            result_components[measure.name]
+                        result_components[measure.name] = cls._shifted(
+                            result_components[measure.name], params
                         )
+        analyzed = [component_name] if component_name is not None else operand.get_measures_names()
+        # The operators that give one of the values of the operand keep its value domain, but
+        # for lag and lead with a default, a literal of the basic type (issue #1364)
+        has_default = cls.op in (LAG, LEAD) and params is not None and len(params) > 1
+        keeps_domain = cls.op in (MAX, MIN, FIRST_VALUE, LAST_VALUE, LAG, LEAD) and not has_default
+        for name in analyzed:
+            if name not in result_components:
+                continue
+            if not keeps_domain and result_components[name].value_domain is not None:
+                result_components[name] = copy(result_components[name])
+                result_components[name].value_domain = None
+            # A window of a single Data Point has no sample statistic (issue #1354)
+            if cls.op in (STDDEV_SAMP, VAR_SAMP) or (cls.op != COUNT and cls._may_be_empty(window)):
+                result_components[name] = cls._shifted(result_components[name], None)
         dataset_name = VirtualCounter._new_ds_name()
         # Analytic combines the data points within each partition, so the surviving viral
         # attributes are combined and require a propagation rule (issue #906).
@@ -254,7 +309,7 @@ class Analytic(Operator.Unary):
         measure_names: List[str],
         ordering: List[OrderBy],
         window: Optional[Windowing],
-        params: Optional[List[int]] = None,
+        params: Optional[List[Any]] = None,
     ) -> pd.DataFrame:
         """Annotation class
 
@@ -290,6 +345,9 @@ class Analytic(Operator.Unary):
             start = (
                 "UNBOUNDED"
                 if window.start == "unbounded" or window.start == -1
+                # A limit 0 read from a Scalar is the current data point (issue #1356)
+                else "CURRENT ROW"
+                if window.start == 0
                 else str(window.start)
             )
             stop = (
@@ -327,7 +385,7 @@ class Analytic(Operator.Unary):
             elif cls.op == RATIO_TO_REPORT:
                 measure_query = f'CAST("{measure}" AS DOUBLE) / SUM(CAST("{measure}" AS DOUBLE))'
             elif cls.op in [LAG, LEAD]:
-                args = "".join(f", {param}" for param in params or [])
+                args = "".join(f", {_sql_literal(param)}" for param in params or [])
                 measure_query = f'{cls.sql_op}("{measure}"{args})'
             else:
                 measure_query = f'{cls.sql_op}("{measure}")'
@@ -356,9 +414,10 @@ class Analytic(Operator.Unary):
                     f'as "{denominator_prefix}{measure}"'
                 )
 
-        measures_sql = ", ".join(measure_queries)
-        identifiers_sql = ", ".join(f'"{name}"' for name in identifier_names)
-        query = f"SELECT {identifiers_sql} , {measures_sql} FROM df"
+        # A Data Set without Identifiers, such as the result of an aggr without grouping, has
+        # Measures only (issues #1354 and #1356)
+        columns = [f'"{name}"' for name in identifier_names] + measure_queries
+        query = f"SELECT {', '.join(columns)} FROM df"
 
         try:
             with query_connection() as conn:
@@ -380,24 +439,47 @@ class Analytic(Operator.Unary):
         return result
 
     @classmethod
+    def _check_null_limits(cls, window: Optional[Windowing], params: Optional[List[Any]]) -> None:
+        """A limit of the window or an offset of lag or lead read from a null Scalar is data,
+        and raises 2-1-18-1 (issues #1355 and #1356)."""
+        if window is not None and any(pd.isnull(limit) for limit in (window.start, window.stop)):
+            raise RunTimeError(
+                "2-1-18-1", op=cls.op, param_type="Window bound", correct_type=WINDOW_BOUND
+            )
+        if cls.op in (LAG, LEAD) and params and pd.isnull(params[0]):
+            raise RunTimeError("2-1-18-1", op=cls.op, param_type="Offset", correct_type="Integer")
+
+    @classmethod
     def evaluate(  # type: ignore[override]
         cls,
         operand: Dataset,
         partitioning: List[str],
         ordering: Optional[List[OrderBy]],
         window: Optional[Windowing],
-        params: Optional[List[int]],
+        params: Optional[List[Any]],
         component_name: Optional[str] = None,
     ) -> Dataset:
         result = cls.validate(operand, partitioning, ordering, window, params, component_name)
+        cls._check_null_limits(window, params)
         df = operand.data.copy() if operand.data is not None else pd.DataFrame()
         df = cls.normalize_dates(df, operand.components)
         identifier_names = operand.get_identifiers_names()
+        # A Duration is ordered by its length, not by its letter: the window orders and takes
+        # the max and the min of the rank of each Duration, read back after (issue #1352)
+        for comp in operand.components.values():
+            if comp.data_type is Duration and comp.role in (Role.IDENTIFIER, Role.MEASURE):
+                df[comp.name] = df[comp.name].map(PERIOD_IND_MAPPING, na_action="ignore")
 
         if component_name is not None:
             measure_names = [component_name]
         else:
             measure_names = operand.get_measures_names()
+        durations = all(operand.components[name].data_type is Duration for name in measure_names)
+        if cls.op in (LAG, LEAD):
+            df = cls._in_result_types(df, operand, result, measure_names)
+        if params and len(params) > 1 and cls.op in (LAG, LEAD) and durations:
+            # The default of lag and lead is the rank of a Duration too (issue #1352)
+            params = [params[0], PERIOD_IND_MAPPING.get(params[1], params[1])]
 
         # Validate TimePeriod measures have same period indicator for MAX/MIN
         if cls.op in [MAX, MIN]:
@@ -429,16 +511,20 @@ class Analytic(Operator.Unary):
             registry = get_current_registry()
             result.data = cls.normalize_dates(result.data, result.components)
             viral_src = df[identifier_names + viral_attr_names].copy()
+            # The rules read the values as given, not as the Dates parsed for the analytic
+            # (issue #1354)
+            viral_src[viral_attr_names] = operand.data[viral_attr_names]
             for va_name in viral_attr_names:
-                if registry.get_rule_for_variable(va_name) is None:
+                component = operand.components[va_name]
+                if registry.rule_for(component) is None:
                     # No rule -> per-row passthrough (keep the original value).
                     continue
                 if partitioning:
                     viral_src[va_name] = viral_src.groupby(partitioning, sort=False)[
                         va_name
-                    ].transform(lambda vals, n=va_name: registry.resolve_group(n, list(vals)))
+                    ].transform(lambda vals, c=component: registry.resolve_group(c, list(vals)))
                 else:
-                    viral_src[va_name] = registry.resolve_group(va_name, list(viral_src[va_name]))
+                    viral_src[va_name] = registry.resolve_group(component, list(viral_src[va_name]))
             result.data = merge_frames(result.data, viral_src, on=identifier_names, how="left")
 
         if result.data is not None:
@@ -449,22 +535,71 @@ class Analytic(Operator.Unary):
                 if comp.data_type is Date:
                     # A Date is written back value by value, the bare date at midnight
                     column = column.map(_from_date_value, na_action="ignore")
+                elif comp.data_type is Duration:
+                    column = column.map(PERIOD_IND_MAPPING_REVERSE, na_action="ignore")
                 result.data[comp_name] = column.astype(comp.data_type.dtype())  # type: ignore[call-overload]
 
         return result
 
+    @staticmethod
+    def _in_result_types(
+        df: pd.DataFrame, operand: Dataset, result: Dataset, names: List[str]
+    ) -> pd.DataFrame:
+        """The data of lag and lead with the Measures ``names`` cast to their type in the
+        result, the common type of the operand and the default value, in which the values are
+        shifted (issue #1353)."""
+        for name in names:
+            from_type = operand.components[name].data_type
+            to_type = result.components[name].data_type
+            if Operator._promotes(from_type, to_type):
+                df[name] = Operator._as_type(df[name], to_type, from_type)
+        return df
+
     @classmethod
-    def _as_nullable(cls, component: Component) -> Component:
-        """Copy of the Component marked as nullable.
+    def _shifted(cls, component: Component, params: Optional[List[Any]]) -> Component:
+        """The result Component of lag and lead on the Component, a copy where it changes.
 
         lag and lead have no value to shift in at the edges of the partition, so their
-        result holds nulls whatever the operand declared.
+        result holds nulls whatever the operand declared. Their result has the common type of
+        the operand and the default value, as nvl gives it: a Number default makes an Integer
+        operand a Number, and a String default on a Number raises 1-1-1-1 (issue #1353). A
+        time type has no literals, so a String default is a value of it (issue #1352).
+        Without params it is a nullable copy, for a window that can hold no data point
+        (issue #1354).
         """
-        if component.nullable:
+        data_type = component.data_type
+        default_type = BASIC_TYPES.get(type(params[1])) if params and len(params) > 1 else None
+        if default_type is not None and not (
+            default_type is String and data_type in (Date, TimePeriod, TimeInterval, Duration)
+        ):
+            data_type = binary_implicit_promotion(data_type, default_type)
+        if component.nullable and data_type is component.data_type:
             return component
-        nullable_component = copy(component)
-        nullable_component.nullable = True
-        return nullable_component
+        shifted = copy(component)
+        shifted.nullable, shifted.data_type = True, data_type
+        return shifted
+
+    @staticmethod
+    def _may_be_empty(window: Optional[Windowing]) -> bool:
+        """Whether the window can hold no data point: it does when it does not reach the
+        current data point, so the function gives null there (issue #1354)."""
+        if window is None:
+            return False
+
+        def offset(limit: Union[int, str], mode: str) -> Optional[float]:
+            """Position of a limit from the current data point, None when it is not known
+            here (a scalar in the semantic analysis)."""
+            if limit == "current row":
+                return 0
+            if limit == "unbounded":
+                return -inf if mode == "preceding" else inf
+            if not isinstance(limit, int):
+                return None
+            return -limit if mode == "preceding" else limit
+
+        start = offset(window.start, window.start_mode)
+        stop = offset(window.stop, window.stop_mode)
+        return start is None or stop is None or start > 0 or stop < 0
 
     @classmethod
     def normalize_dates(
@@ -475,7 +610,8 @@ class Analytic(Operator.Unary):
         elif any(comp.data_type is Date for comp in components.values()):
             data = data.copy()
             for comp_name, comp in components.items():
-                if comp.data_type is Date:
+                # A viral Attribute is not in the data yet (issue #1354)
+                if comp.data_type is Date and comp_name in data.columns:
                     data[comp_name] = data[comp_name].astype(DATE_COMPARISON_DTYPE)
         return data
 

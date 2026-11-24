@@ -57,6 +57,8 @@ def save_datapoints(
         if isinstance(output_path, str):
             output_path = Path(output_path)
 
+        # The output folder is created with the first result written (issue #1349)
+        output_path.mkdir(parents=True, exist_ok=True)
         output_file = output_path / f"{dataset.name}.csv"
         dataset.data.to_csv(output_file, index=False, float_format=float_format)
     finally:

@@ -1,0 +1,4 @@
+:Tests: ``dateadd(SC_1, 1, "A")`` with ``SC_1`` = 2020-02-10: one year added to a date.
+:Manual: `Add time unit to date <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Add%20time%20unit%20to%20date/index.html>`__: "adding years to a given date returns the date plus integer years; for years the “Y” is used", and "``dateadd (2020-02-10, 1, “Y”)`` gives ``2021-02-10``".
+:Expected: ``DS_r = 2021-02-10``, a Date, the page's result.
+:Adaptation: The year is written ``A``, not the page's “Y”: VTL prescribes no representation of durations, and the chapter's list of period indicators gives ``A`` for a year and says that "each VTL system can personalize the representation of time, date, time_period and duration as desired". vtlengine's ``docs/data_types.rst`` gives the same codes for Duration, and the manual's default conversion from string to duration (Type conversion) reads ``A``, ``S``, ``Q``, ``M``, ``W`` or ``D``.

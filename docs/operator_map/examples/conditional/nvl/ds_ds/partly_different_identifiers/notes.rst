@@ -1,0 +1,3 @@
+:Tests: ``nvl ( DS_1, DS_2 )`` on two data sets with the same components and partly different identifiers: id 1 is only in ``DS_1`` and id 4 only in ``DS_2``.
+:Manual: `Nvl <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Conditional%20operators/Nvl/index.html>`__: "The operator has the typical behaviour of the operators applicable on two scalar values or Data Sets or Data Set Components", where "Data Points that are not coupled are left out" (Typical behaviours).
+:Expected: only ids 2 and 3 are coupled: id 2 is null in ``DS_1`` and takes ``DS_2``'s 200; id 3 keeps its 30, and ``DS_2``'s 300 is not used.

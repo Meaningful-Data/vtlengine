@@ -187,6 +187,12 @@ Authentication uses the standard AWS environment variables (``AWS_ACCESS_KEY_ID`
 ``AWS_ENDPOINT_URL`` for S3-compatible services). See the
 :doc:`S3 Configuration <environment_variables>` section for the full list.
 
+An S3 ``output_folder`` is handed to DuckDB as written: the result files, and
+``_scalars.csv`` when there are scalar results, are written under the URI, and no local
+folder is created. DuckDB installs and loads its httpfs extension the first time it writes
+to S3, which needs network access. A result file that cannot be written, for instance
+without credentials, raises ``0-3-1-19``.
+
 Behavioural notes
 *****************
 
@@ -205,3 +211,7 @@ Behavioural notes
   implicit coercions produce ``"true"``/``"false"``, as the VTL 2.2 reference manual
   defines them, in both engines. Parquet output and in-memory results keep the
   native boolean type.
+* **Empty strings in CSV output**: an empty String and a null are both written to CSV
+  output as an empty field, in both engines. The loaders read an empty field back as
+  null, so an empty String does not survive a CSV round trip. Parquet output and
+  in-memory results keep the empty String.

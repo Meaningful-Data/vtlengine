@@ -82,6 +82,12 @@ def get_measure_from_dataset(dataset: Dataset, code_item: str) -> DataComponent:
     )
 
 
+def fills_with_zero(mode: str) -> bool:
+    """Whether a hierarchical ruleset mode reads a missing code item as 0 (non_zero,
+    partial_zero, always_zero)."""
+    return mode.endswith("zero")
+
+
 class HRBinOp(Operators.Binary):
     @classmethod
     def apply_operation_two_series(cls, left: Any, right: Any, op: Any = None) -> Any:
@@ -91,7 +97,7 @@ class HRBinOp(Operators.Binary):
 
     @classmethod
     def align_series(cls, left: Any, right: Any, mode: str) -> Tuple[Any, Any]:
-        fill_value = 0 if mode.endswith("zero") else None
+        fill_value = 0 if fills_with_zero(mode) else None
         # Convert to object dtype for sentinel-based alignment. A rule whose right code
         # items are all excluded reads them as missing.
         left_obj = left.astype(object).replace(EXCLUDE, REMOVE)
@@ -349,11 +355,17 @@ class Hierarchy(Operators.Operator):
         node_children: Optional[Dict[str, Tuple[str, List[str]]]] = None,
         rule_component: Optional[str] = None,
         ruleset: Optional[str] = None,
+        keep_rule_domain: bool = False,
     ) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {
             comp_name: copy(comp) for comp_name, comp in dataset.components.items()
         }
+        for comp in result_components.values():
+            # The Measures hold the computed values, and the rule Identifier the computed code
+            # items: it keeps its value domain when keep_rule_domain says so (issue #1348)
+            if comp.role == Role.MEASURE or (comp.name == rule_component and not keep_rule_domain):
+                comp.value_domain = None
         # Viral attributes propagate to the hierarchy result (issue #877).
         for viral_comp in viral_components or []:
             result_components[viral_comp.name] = copy(viral_comp)
@@ -366,7 +378,7 @@ class Hierarchy(Operators.Operator):
     @staticmethod
     def _combine_node_viral(
         viral_values: DataFrame,
-        viral_names: List[str],
+        viral_components: Dict[str, Component],
         node_children: Dict[str, Tuple[str, List[str]]],
         rule_component: str,
         other_ids: List[str],
@@ -381,6 +393,7 @@ class Hierarchy(Operators.Operator):
         it computed (issue #1142).
         """
         registry = get_current_registry()
+        viral_names = list(viral_components)
         rules_per_node = Counter(node for node, _ in node_children.values())
         node_viral: Dict[str, DataFrame] = {}
         tagged_frames: List[DataFrame] = []
@@ -407,7 +420,7 @@ class Hierarchy(Operators.Operator):
                 combined = pd.concat(padded, ignore_index=True)
                 grouped = combined.groupby(other_ids, sort=False)
                 agg = {
-                    va: (lambda vals, name=va: registry.resolve_group(name, list(vals)))
+                    va: (lambda vals, c=viral_components[va]: registry.resolve_group(c, list(vals)))
                     for va in viral_names
                 }
                 nv = grouped.agg(agg).reset_index()
@@ -417,7 +430,7 @@ class Hierarchy(Operators.Operator):
                     {
                         va: [
                             registry.resolve_group(
-                                va,
+                                viral_components[va],
                                 [cf[va].iloc[0] if len(cf) else None for cf in child_frames],
                             )
                         ]
@@ -463,8 +476,16 @@ class Hierarchy(Operators.Operator):
         node_children: Optional[Dict[str, Tuple[str, List[str]]]] = None,
         rule_component: Optional[str] = None,
         ruleset: Optional[str] = None,
+        keep_rule_domain: bool = False,
     ) -> Dataset:
-        result = cls.validate(dataset, computed_dict, output, viral_components=viral_components)
+        result = cls.validate(
+            dataset,
+            computed_dict,
+            output,
+            viral_components=viral_components,
+            rule_component=rule_component,
+            keep_rule_domain=keep_rule_domain,
+        )
         if len(computed_dict) == 0:
             computed_data = pd.DataFrame(columns=result.get_components_names())
         else:
@@ -485,7 +506,12 @@ class Hierarchy(Operators.Operator):
         ):
             other_ids = [i for i in dataset.get_identifiers_names() if i != rule_component]
             computed_viral = cls._combine_node_viral(
-                viral_values, viral_names, node_children, rule_component, other_ids, computed_dict
+                viral_values,
+                {vc.name: vc for vc in viral_components or []},
+                node_children,
+                rule_component,
+                other_ids,
+                computed_dict,
             )
             if computed_viral is not None:
                 # Each data point takes the viral values of the rule that computed it

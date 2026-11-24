@@ -1,0 +1,3 @@
+Id_1,ruleid,Me_1,errorcode,errorlevel
+1,R1,-5,100,ERROR
+2,R2,200,200,WARNING

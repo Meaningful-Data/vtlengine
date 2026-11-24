@@ -2,20 +2,31 @@ import copy
 import pickle
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Sequence, Union, cast
+from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 
 import pandas as pd
 from pysdmx.io.pd import PandasDataset
 from pysdmx.model import TransformationScheme
-from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
-from pysdmx.model.vtl import VtlDataflowMapping
+from pysdmx.model.dataflow import Schema
 
+from vtlengine._input_types import (
+    DatapointsInput,
+    DataStructureInput,
+    DataStructuresInput,
+    ExternalRoutinesInput,
+    ScalarValuesInput,
+    ScriptInput,
+    SdmxMappingsInput,
+    ValueDomainsInput,
+)
 from vtlengine.API._InternalApi import (
     _check_output_folder,
     _check_script,
+    _fill_data,
     _handle_scalars_values,
     _handle_url_datapoints,
     _is_url,
+    _load_inputs,
     _return_only_persistent_datasets,
     ast_to_sdmx,
     load_datasets,
@@ -34,6 +45,7 @@ from vtlengine.duckdb_transpiler.Config.config import configured_connection
 from vtlengine.duckdb_transpiler.io import (
     execute_queries,
     extract_datapoint_paths,
+    is_s3_uri,
     validate_datapoints,
 )
 from vtlengine.duckdb_transpiler.Transpiler import SQLTranspiler
@@ -45,13 +57,13 @@ from vtlengine.files.output._time_period_representation import (
 )
 from vtlengine.files.sdmx_handler import to_vtl_json
 from vtlengine.Interpreter import InterpreterAnalyzer
-from vtlengine.Model import Dataset, Scalar
+from vtlengine.Model import Dataset, ExternalRoutine, Scalar, ValueDomain
 from vtlengine.Utils._recursion import recursion_headroom, with_recursion_headroom
 
 pd.options.mode.chained_assignment = None
 
 
-def _extract_input_datasets(script: Union[str, TransformationScheme, Path]) -> List[str]:
+def _extract_input_datasets(script: ScriptInput) -> List[str]:
     if isinstance(script, TransformationScheme):
         vtl_script = _check_script(script)
     elif isinstance(script, (str, Path)):
@@ -65,7 +77,7 @@ def _extract_input_datasets(script: Union[str, TransformationScheme, Path]) -> L
     return dag_inputs
 
 
-def prettify(script: Union[str, TransformationScheme, Path]) -> str:
+def prettify(script: ScriptInput) -> str:
     """
     Function that prettifies the VTL script given.
 
@@ -122,30 +134,35 @@ def create_ast(text: str) -> Start:
 
 
 def validate_dataset(
-    data_structures: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
-    datapoints: Optional[
-        Union[Dict[str, Union[pd.DataFrame, Path, str]], List[Union[str, Path]], Path, str]
-    ] = None,
-    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+    data_structures: DataStructuresInput,
+    datapoints: Optional[DatapointsInput] = None,
+    scalar_values: Optional[ScalarValuesInput] = None,
     use_duckdb: bool = False,
+    value_domains: Optional[ValueDomainsInput] = None,
 ) -> None:
     """
     Validate that datasets can be loaded from the given data_structures and optional datapoints.
 
     Args:
-        data_structures: Dict, Path, or List of Dict/Path objects representing data structures.
+        data_structures: Dict, Path, str, pysdmx Schema, DataStructureDefinition or Dataflow, \
+        or a List of them, with the data structures.
         datapoints: Optional Dict, Path, or List of Dict/Path objects representing datapoints.
         scalar_values: Optional Dict with scalar values to be used in the datasets.
         use_duckdb: If True, load the datapoints with the DuckDB engine, as \
         run(use_duckdb=True) loads them, instead of pandas. (default: False)
+        value_domains: Dict or Path, or List of Dicts or Paths of the value domains \
+        the type of a Component can name. (default: None)
 
     Raises:
         Exception: If the data structures or datapoints are invalid or cannot be loaded.
     """
+    vd = load_value_domains(value_domains) if value_domains is not None else None
     if not use_duckdb:
-        load_datasets_with_data(data_structures, datapoints, scalar_values, validate=True)
+        load_datasets_with_data(
+            data_structures, datapoints, scalar_values, validate=True, value_domains=vd
+        )
         return
-    datasets, scalars = load_datasets(cast(Any, data_structures))
+    datasets, scalars = load_datasets(data_structures, value_domains=vd)
     _handle_scalars_values(scalars, scalar_values)
     _load_url_datapoints(datapoints, data_structures, None, datasets)
     path_dict, dataframe_dict = extract_datapoint_paths(datapoints, datasets)
@@ -154,13 +171,13 @@ def validate_dataset(
 
 
 def validate_value_domain(
-    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    input: ValueDomainsInput,
 ) -> None:
     """
     Validate ValueDomain(s) using JSON Schema.
 
     Args:
-        input: Dict, Path, or List of Dict/Path objects representing value domain definitions.
+        input: Dict, Path or ValueDomain, or a List of them, with the value domain definitions.
 
     Raises:
         Exception: If the input file is invalid, does not exist,
@@ -170,7 +187,7 @@ def validate_value_domain(
 
 
 def validate_external_routine(
-    input: Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]],
+    input: ExternalRoutinesInput,
 ) -> None:
     """
     Validate External Routine(s) using JSON Schema and SQLGlot.
@@ -187,21 +204,11 @@ def validate_external_routine(
 
 @with_recursion_headroom
 def semantic_analysis(
-    script: Union[str, TransformationScheme, Path],
-    data_structures: Union[
-        Dict[str, Any],
-        Path,
-        str,
-        Schema,
-        DataStructureDefinition,
-        Dataflow,
-        List[Union[Dict[str, Any], Path, str, Schema, DataStructureDefinition, Dataflow]],
-    ],
-    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
-    external_routines: Optional[
-        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
-    ] = None,
-    sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
+    script: ScriptInput,
+    data_structures: DataStructuresInput,
+    value_domains: Optional[ValueDomainsInput] = None,
+    external_routines: Optional[ExternalRoutinesInput] = None,
+    sdmx_mappings: Optional[SdmxMappingsInput] = None,
 ) -> Dict[str, Dataset]:
     """
     Checks if the vtl scripts and its related datastructures are valid. As part of the compatibility
@@ -227,15 +234,17 @@ def semantic_analysis(
         that holds the vtl script.
         data_structures: Dict or Path (file or folder), \
         or List of Dicts or Paths with the data structures JSON files.
-        value_domains: Dict or Path, or List of Dicts or Paths of the \
-        value domains JSON files. (default:None) It is passed as an object, that can be read from \
-        a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        value_domains: Dict, Path or ValueDomain, or List of them, with the value domains. \
+        (default:None) A Dict or a Path to a JSON file (or folder of JSON files) holds the \
+        value domain definitions, one or a list of them per file; a ValueDomain object is \
+        used as it is. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
         external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        A JSON file holds one routine or a list of them, each used under its name. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
@@ -258,13 +267,14 @@ def semantic_analysis(
     vtl = load_vtl(checking)
     ast = create_ast(vtl)
 
-    # Loading datasets from file/dict/pysdmx objects/URLs
-    datasets, scalars = load_datasets(data_structures, sdmx_mappings=mapping_dict)
-
-    # Handling of library items
+    # Handling of library items, the value domains first as a Component type can name one
     vd = None
     if value_domains is not None:
         vd = load_value_domains(value_domains)
+
+    # Loading datasets from file/dict/pysdmx objects/URLs
+    datasets, scalars = load_datasets(data_structures, mapping_dict, vd)
+
     ext_routines = None
     if external_routines is not None:
         ext_routines = load_external_routines(external_routines)
@@ -295,6 +305,30 @@ def _copy_ast(ast: Start) -> Start:
         return copy.deepcopy(ast)
 
 
+def _analyse_script(
+    ast: Start,
+    datasets: Dict[str, Dataset],
+    value_domains: Optional[Dict[str, ValueDomain]],
+    external_routines: Optional[Dict[str, ExternalRoutine]],
+    scalars: Dict[str, Scalar],
+) -> Tuple[Dict[str, Any], InterpreterAnalyzer]:
+    """The semantic analysis of the whole script, over copies of the inputs, which both engines
+    run before they read or compute any data, so a script with a structural error raises it
+    whatever its data hold (issue #1352). The Scalars carry the values given to the run.
+
+    Returns the structures of the results and the interpreter that analysed the script.
+    """
+    interpreter = InterpreterAnalyzer(
+        datasets=copy.deepcopy(datasets),
+        value_domains=value_domains,
+        external_routines=external_routines,
+        scalars=copy.deepcopy(scalars),
+        only_semantic=True,
+        return_only_persistent=False,
+    )
+    return interpreter.visit(_copy_ast(ast)), interpreter
+
+
 def _load_url_datapoints(
     datapoints: Any,
     data_structures: Any,
@@ -321,26 +355,16 @@ def _load_url_datapoints(
 
 @with_recursion_headroom
 def _run_with_duckdb(
-    script: Union[str, TransformationScheme, Path],
-    data_structures: Union[
-        str,
-        Dict[str, Any],
-        Path,
-        Schema,
-        DataStructureDefinition,
-        Dataflow,
-        List[Union[str, Dict[str, Any], Path, Schema, DataStructureDefinition, Dataflow]],
-    ],
-    datapoints: Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path],
-    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
-    external_routines: Optional[
-        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
-    ] = None,
+    script: ScriptInput,
+    data_structures: DataStructuresInput,
+    datapoints: DatapointsInput,
+    value_domains: Optional[ValueDomainsInput] = None,
+    external_routines: Optional[ExternalRoutinesInput] = None,
     return_only_persistent: bool = True,
-    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
+    scalar_values: Optional[ScalarValuesInput] = None,
     output_folder: Optional[Union[str, Path]] = None,
     time_period_output_format: str = "vtl",
-    sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
+    sdmx_mappings: Optional[SdmxMappingsInput] = None,
     output_format: Literal["csv", "parquet"] = "csv",
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
@@ -360,25 +384,32 @@ def _run_with_duckdb(
     ast = create_ast(vtl)
     dag = DAGAnalyzer.create_dag(ast)
 
-    # Load datasets structure (without data)
-    input_datasets, input_scalars = load_datasets(data_structures, sdmx_mappings=mapping_dict)
+    # Load datasets structure (without data), after the value domains a Component type
+    # can name
+    loaded_vds = load_value_domains(value_domains) if value_domains else None
+    input_datasets, input_scalars = load_datasets(data_structures, mapping_dict, loaded_vds)
+
+    # The datapoints are checked after the structures and before the scalar values, the
+    # external routines and the output folder, in the order of the pandas engine, so a bad
+    # input is reported first and creates no output folder (issue #1349)
+    _load_url_datapoints(datapoints, data_structures, mapping_dict, input_datasets)
+
+    # Extract paths without pandas validation (DuckDB-optimized)
+    # This avoids the double CSV read that load_datasets_with_data causes
+    path_dict, dataframe_dict = extract_datapoint_paths(datapoints, input_datasets)
 
     # Apply scalar values if provided, casting them to the declared data type
     _handle_scalars_values(input_scalars, scalar_values)
 
     # Run semantic analysis to get output structures
-    loaded_vds = load_value_domains(value_domains) if value_domains else None
     loaded_routines = load_external_routines(external_routines) if external_routines else None
 
-    interpreter = InterpreterAnalyzer(
-        datasets=copy.deepcopy(input_datasets),
-        value_domains=loaded_vds,
-        external_routines=loaded_routines,
-        scalars=copy.deepcopy(input_scalars),
-        only_semantic=True,
-        return_only_persistent=False,
+    # Checking the output path to be a folder before the analysis, as the pandas engine does
+    output_folder = _check_output_folder(output_folder, use_duckdb=True)
+
+    semantic_results, interpreter = _analyse_script(
+        ast, input_datasets, loaded_vds, loaded_routines, input_scalars
     )
-    semantic_results = interpreter.visit(_copy_ast(ast))
 
     # Separate output datasets and scalars
     output_datasets: Dict[str, Dataset] = {}
@@ -392,12 +423,6 @@ def _run_with_duckdb(
     # Get DAG analysis for efficient load/save scheduling
     ds_analysis = DAGAnalyzer.ds_structure(ast)
 
-    _load_url_datapoints(datapoints, data_structures, mapping_dict, input_datasets)
-
-    # Extract paths without pandas validation (DuckDB-optimized)
-    # This avoids the double CSV read that load_datasets_with_data causes
-    path_dict, dataframe_dict = extract_datapoint_paths(datapoints, input_datasets)
-
     # Create transpiler and generate SQL
     transpiler = SQLTranspiler(
         input_datasets=input_datasets,
@@ -407,12 +432,15 @@ def _run_with_duckdb(
         value_domains=loaded_vds or {},
         external_routines=loaded_routines or {},
         dag=dag,
+        udo_results=interpreter.udo_results,
         time_period_output_format=time_period_output_format,
     )
     queries = transpiler.transpile(ast)
 
-    # Normalize output folder path
-    output_folder_path = Path(output_folder) if output_folder else None
+    # An S3 URI reaches DuckDB as written: as a Path, its "//" would collapse into a local folder
+    output_folder_path: Optional[Union[str, Path]] = None
+    if output_folder:
+        output_folder_path = output_folder if is_s3_uri(output_folder) else Path(output_folder)
 
     # Create DuckDB connection and execute queries with DAG scheduling
     with configured_connection() as conn:
@@ -444,26 +472,16 @@ def _run_with_duckdb(
 
 @with_recursion_headroom
 def run(
-    script: Union[str, TransformationScheme, Path],
-    data_structures: Union[
-        Dict[str, Any],
-        Path,
-        str,
-        Schema,
-        DataStructureDefinition,
-        Dataflow,
-        List[Union[Dict[str, Any], Path, str, Schema, DataStructureDefinition, Dataflow]],
-    ],
-    datapoints: Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path],
-    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
-    external_routines: Optional[
-        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
-    ] = None,
+    script: ScriptInput,
+    data_structures: DataStructuresInput,
+    datapoints: DatapointsInput,
+    value_domains: Optional[ValueDomainsInput] = None,
+    external_routines: Optional[ExternalRoutinesInput] = None,
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
-    scalar_values: Optional[Dict[str, Optional[Union[int, str, bool, float]]]] = None,
-    sdmx_mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
+    scalar_values: Optional[ScalarValuesInput] = None,
+    sdmx_mappings: Optional[SdmxMappingsInput] = None,
     use_duckdb: bool = False,
     output_format: Literal["csv", "parquet"] = "csv",
 ) -> Dict[str, Union[Dataset, Scalar]]:
@@ -531,15 +549,17 @@ def run(
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
-        value_domains: Dict or Path, or List of Dicts or Paths of the \
-        value domains JSON files. (default:None) It is passed as an object, that can be read from \
-        a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        value_domains: Dict, Path or ValueDomain, or List of them, with the value domains. \
+        (default:None) A Dict or a Path to a JSON file (or folder of JSON files) holds the \
+        value domain definitions, one or a list of them per file; a ValueDomain object is \
+        used as it is. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
         external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        A JSON file holds one routine or a list of them, each used under its name. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
@@ -550,8 +570,10 @@ def run(
         return_only_persistent: If True, run function will only return the results of \
         Persistent Assignments. (default: True)
 
-        output_folder: Path to the output folder. S3 URIs are supported when \
-        ``use_duckdb=True``. (default: None)
+        output_folder: Path to the output folder. A missing folder is created with its \
+        parents when the first result is written; an existing file, or a missing path with \
+        a file suffix (``result.csv``), raises ``0-3-1-2``. An empty string is no output \
+        folder, as None is. S3 URIs are supported when ``use_duckdb=True``. (default: None)
 
         scalar_values: Dict with the scalar values to be used in the VTL script.
 
@@ -607,31 +629,36 @@ def run(
     vtl = load_vtl(script)
     ast = create_ast(vtl)
 
-    # Loading datasets and datapoints (handles URLs, file paths, DataFrames)
-    datasets, scalars, path_dict = load_datasets_with_data(
-        data_structures,
-        datapoints,
-        scalar_values,
-        sdmx_mappings=mapping_dict,
-    )
-
-    # Handling of library items
+    # Handling of library items, the value domains first as a Component type can name one
     vd = None
     if value_domains is not None:
         vd = load_value_domains(value_domains)
+
+    # Loading datasets and the scalar values, and checking where the datapoints are (handles
+    # URLs, file paths, DataFrames), without checking any data yet
+    datasets, scalars, path_dict, dataframes = _load_inputs(
+        data_structures, datapoints, scalar_values, mapping_dict, vd
+    )
+
     ext_routines = None
     if external_routines is not None:
         ext_routines = load_external_routines(external_routines)
 
+    # Checking the output path to be a directory; an empty string is no output folder
+    output_folder = _check_output_folder(output_folder)
+
+    # The semantic analysis of the whole script comes before any data is checked or computed,
+    # in the order of the DuckDB engine
+    _analyse_script(ast, datasets, vd, ext_routines, scalars)
+
     # Checking time period output format value
     time_period_representation = TimePeriodRepresentation.check_value(time_period_output_format)
 
+    # Checking the DataFrames given as datapoints
+    _fill_data(datasets, dataframes)
+
     # VTL Efficient analysis
     ds_analysis = DAGAnalyzer.ds_structure(ast)
-
-    # Checking the output path to be a Path object to a directory
-    if output_folder is not None:
-        _check_output_folder(output_folder)
 
     # Running the interpreter
     interpreter = InterpreterAnalyzer(
@@ -639,7 +666,7 @@ def run(
         value_domains=vd,
         external_routines=ext_routines,
         ds_analysis=ds_analysis,
-        datapoints_paths=path_dict,
+        datapoints_paths=cast(Optional[Dict[str, Path]], path_dict),
         output_path=output_folder,
         time_period_representation=time_period_representation,
         return_only_persistent=return_only_persistent,
@@ -664,13 +691,11 @@ def run(
 
 
 def run_sdmx(
-    script: Union[str, TransformationScheme, Path],
+    script: ScriptInput,
     datasets: Sequence[PandasDataset],
-    mappings: Optional[Union[VtlDataflowMapping, Dict[str, str]]] = None,
-    value_domains: Optional[Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]] = None,
-    external_routines: Optional[
-        Union[Dict[str, Any], Path, List[Union[Dict[str, Any], Path]]]
-    ] = None,
+    mappings: Optional[SdmxMappingsInput] = None,
+    value_domains: Optional[ValueDomainsInput] = None,
+    external_routines: Optional[ExternalRoutinesInput] = None,
     time_period_output_format: str = "vtl",
     return_only_persistent: bool = True,
     output_folder: Optional[Union[str, Path]] = None,
@@ -712,15 +737,17 @@ def run_sdmx(
 
         mappings: A dictionary or VtlDataflowMapping object that maps the dataset names.
 
-        value_domains: Dict or Path, or List of Dicts or Paths of the \
-        value domains JSON files. (default:None) It is passed as an object, that can be read from \
-        a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        value_domains: Dict, Path or ValueDomain, or List of them, with the value domains. \
+        (default:None) A Dict or a Path to a JSON file (or folder of JSON files) holds the \
+        value domain definitions, one or a list of them per file; a ValueDomain object is \
+        used as it is. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
         external_routines: Dict or Path, or List of Dicts or Paths of the \
         external routines JSON files. (default: None) It is passed as an object, that can be read \
         from a Path or from a dictionary. Furthermore, a list of those objects can be passed. \
+        A JSON file holds one routine or a list of them, each used under its name. \
         Check the following example: \
         :doc:`Extra Inputs <extra_inputs>`.
 
@@ -731,7 +758,7 @@ def run_sdmx(
         return_only_persistent: If True, run function will only return the results of \
         Persistent Assignments. (default: True)
 
-        output_folder: Path to the output folder. (default: None)
+        output_folder: Path to the output folder, checked as in :obj:`run`. (default: None)
 
         use_duckdb: If True, use DuckDB as the execution engine instead of pandas. \
         This transpiles VTL to SQL and executes it using DuckDB, which can be more \
@@ -767,8 +794,8 @@ def run_sdmx(
             raise InputValidationException(code="0-1-3-5", dataset_name=vtl_name)
 
     # Convert PandasDatasets to VTL data structures and datapoints
-    datapoints_dict: Dict[str, pd.DataFrame] = {}
-    data_structures_list: List[Dict[str, Any]] = []
+    datapoints_dict: Dict[str, Union[pd.DataFrame, str, Path]] = {}
+    data_structures_list: List[DataStructureInput] = []
     for dataset in datasets:
         schema = dataset.structure
         if not isinstance(schema, Schema):
@@ -791,11 +818,8 @@ def run_sdmx(
 
     return run(
         script=script,
-        data_structures=cast(
-            List[Union[Dict[str, Any], Path, str, Schema, DataStructureDefinition, Dataflow]],
-            data_structures_list,
-        ),
-        datapoints=cast(Dict[str, Union[pd.DataFrame, str, Path]], datapoints_dict),
+        data_structures=data_structures_list,
+        datapoints=datapoints_dict,
         value_domains=value_domains,
         external_routines=external_routines,
         time_period_output_format=time_period_output_format,

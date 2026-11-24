@@ -1,0 +1,5 @@
+define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+    r1 : when cast ( Me_1 , string ) = "2020Q1" then Me_2 > 5 errorcode "E1"
+end datapoint ruleset;
+
+DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );

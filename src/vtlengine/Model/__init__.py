@@ -1,20 +1,134 @@
 import inspect
 import json
-from collections import Counter
+import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Type, Union
+from functools import lru_cache
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import pandas as pd
 import sqlglot
 import sqlglot.expressions as exp
 from pandas import DataFrame as PandasDataFrame
 from pandas._testing import assert_frame_equal
+from sqlglot.dialects.duckdb import DuckDB
 
-import vtlengine.DataTypes as DataTypes
-from vtlengine.DataTypes import RESERVED_COMPONENT_NAMES, SCALAR_TYPES, ScalarType
+from vtlengine.DataTypes import (
+    RESERVED_COMPONENT_NAMES,
+    SCALAR_TYPES,
+    SCALAR_TYPES_CLASS_REVERSE,
+    Date,
+    Null,
+    ScalarType,
+    TimeInterval,
+    TimePeriod,
+)
+from vtlengine.DataTypes._time_checking import check_date, check_time, check_time_period
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException, SemanticError
+
+# The loaders write the values of the time types in one form, which the values of a value
+# domain on one of them are compared in
+_TIME_VALUE_CHECKS: Dict[Any, Any] = {
+    Date: check_date,
+    TimePeriod: check_time_period,
+    TimeInterval: check_time,
+}
+TIME_TYPES = tuple(_TIME_VALUE_CHECKS)
+
+
+def on_distinct(series: Any, function: Any) -> Any:
+    """The Series the function gives for the series, computed on its distinct values that are
+    not null, each once, and taken back to its rows, null where the series is null. A column of
+    a time type holds few distinct values, and each costs Python calls."""
+    codes, distinct = pd.factorize(series)
+    result = function(pd.Series(distinct))
+    return pd.Series(result.array.take(codes, allow_fill=True), index=series.index)
+
+
+@lru_cache(maxsize=None)
+def component_name_pattern() -> "re.Pattern[str]":
+    """The pattern of a Component name in the JSON schema of the data structures."""
+    schema_path = Path(__file__).parents[1] / "API" / "data" / "schema" / "json_schema_2.1.json"
+    with open(schema_path, "r") as file:
+        return re.compile(json.load(file)["$defs"]["component-name"]["pattern"])
+
+
+# How a message names a character that cannot be printed
+_CHARACTER_NAMES = {"\x00": "NUL", "\r": "carriage return"}
+
+
+@lru_cache(maxsize=None)
+def component_name_characters() -> str:
+    """The characters a Component name cannot contain: the ones that the name pattern of the
+    JSON schema of the data structures leaves out (issue #1355)."""
+    pattern = component_name_pattern().pattern
+    excluded = pattern[len("^[^") : pattern.index("]")]
+    return excluded.encode().decode("unicode_escape")
+
+
+def component_name_characters_text() -> str:
+    """The characters a Component name cannot contain, as a message lists them."""
+    names = [_CHARACTER_NAMES.get(char, char) for char in component_name_characters()]
+    return f"{', '.join(names[:-1])} or {names[-1]}"
+
+
+def join_homonyms(names: Iterable[str], name: str) -> List[str]:
+    """The Components alias#name that a join names after the operands that all have name. A
+    calc that computes name replaces them (Inner Join page of the VTL 2.2 manual), and no other
+    Component name holds # (issue #1355)."""
+    return [comp for comp in names if comp.partition("#")[2] == name]
+
+
+def printable_name(name: str) -> str:
+    """A name as a message writes it, with the characters that cannot be printed escaped."""
+    return "".join(char if char.isprintable() else repr(char)[1:-1] for char in name)
+
+
+def component_name_error(name: str) -> str:
+    """Why an input structure cannot name a Component name (0-2-1-1)."""
+    return (
+        f"'{printable_name(name)}' is not a valid Component name: a Component name cannot be "
+        f"empty or contain {component_name_characters_text()}, except quotes around the "
+        "whole name"
+    )
+
+
+def check_input_component_name(name: str) -> None:
+    """A Component name of an input structure follows the name pattern of the JSON schema of
+    the data structures: no quotes, no # (issue #1355), no NUL and no carriage return."""
+    if not component_name_pattern().search(name):
+        raise InputValidationException(
+            code="0-2-1-1",
+            element=f"Component '{printable_name(name)}'",
+            error=component_name_error(name),
+        )
+
+
+def value_of(data_type: Any, value: Any) -> Any:
+    """The value written in the one form the loaders write the values of its type in, so that
+    two forms of a value compare equal. A value that is not one of the type is kept as it is
+    written, equal to no value of it."""
+    check = _TIME_VALUE_CHECKS.get(data_type)
+    if check is None:
+        return value
+    try:
+        return check(str(value))
+    except (InputValidationException, ValueError, TypeError):
+        return value
+
+
+def values_of(data_type: Any, values: Any) -> Any:
+    """The values of the series, each written as value_of writes it."""
+    if data_type not in _TIME_VALUE_CHECKS:
+        return values
+    return on_distinct(values, lambda distinct: distinct.map(lambda v: value_of(data_type, v)))
+
+
+BASIC_TYPE_NAMES = frozenset(
+    ("string", "integer", "number", "boolean", "date", "time", "time_period", "duration", "scalar")
+)
 
 
 @dataclass
@@ -30,6 +144,8 @@ class Scalar:
     persistent: bool = False
     # A literal written in the script, whose value the semantic analysis already knows
     literal: bool = field(default=False, repr=False)
+    # The value domain the scalar is defined on, whose basic type is its data type
+    value_domain: Optional["ValueDomain"] = None
 
     def __init__(
         self,
@@ -39,6 +155,7 @@ class Scalar:
         nullable: bool = True,
         persistent: bool = False,
         literal: bool = False,
+        value_domain: Optional["ValueDomain"] = None,
     ) -> None:
         self.name = name
         self.data_type = data_type
@@ -46,6 +163,7 @@ class Scalar:
         self.nullable = nullable
         self.persistent = persistent
         self.literal = literal
+        self.value_domain = value_domain
 
     @property
     def value(self) -> Any:
@@ -64,15 +182,22 @@ class Scalar:
         self._value = new_value
 
     @classmethod
-    def from_json(cls, json_str: str) -> "Scalar":
+    def from_json(
+        cls, json_str: str, value_domains: Optional[Dict[str, "ValueDomain"]] = None
+    ) -> "Scalar":
+        """The scalar to_json writes. Its type can name one of the value domains given, by
+        name, on which the scalar is then defined."""
         data = json.loads(json_str)
         # Support both 'type' and 'data_type' for backward compatibility
-        data_type_value = data.get("type") or data.get("data_type")
+        data_type, value_domain = named_type(
+            data.get("type") or data.get("data_type"), value_domains, f"Scalar '{data['name']}'"
+        )
         return cls(
             data["name"],
-            SCALAR_TYPES[data_type_value],
+            data_type,
             data["value"],
             data.get("nullable", True),
+            value_domain=value_domain,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -81,7 +206,7 @@ class Scalar:
             data_type = self.data_type.__class__
         return {
             "name": self.name,
-            "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
+            "type": component_type_name(data_type, self.value_domain),
             "value": self.value,
             "nullable": self.nullable,
         }
@@ -95,7 +220,10 @@ class Scalar:
         x = None if not pd.isnull(self.value) else self.value
         y = None if not pd.isnull(other.value) else other.value
         same_value = x == y
-        return same_name and same_type and same_value
+        same_domain = getattr(self.value_domain, "name", None) == getattr(
+            other.value_domain, "name", None
+        )
+        return same_name and same_type and same_value and same_domain
 
 
 Role_keys = [
@@ -117,6 +245,33 @@ class Role(Enum):
     VIRAL_ATTRIBUTE = "Viral Attribute"
 
 
+def component_type_name(data_type: Any, value_domain: Optional["ValueDomain"]) -> str:
+    """The type a component is written with: its value domain, if it is defined on one."""
+    if value_domain is not None:
+        return value_domain.name
+    return SCALAR_TYPES_CLASS_REVERSE[data_type]
+
+
+def named_type(
+    type_name: Any, value_domains: Optional[Dict[str, "ValueDomain"]], element: str
+) -> Tuple[Type[ScalarType], Optional["ValueDomain"]]:
+    """The data type and the value domain of the type a Component or a scalar is written with,
+    the inverse of component_type_name: a basic type, or one of the value domains given, by
+    name, on its basic type. Any other name raises 0-2-1-1 for the element."""
+    if value_domains is not None and not isinstance(value_domains, dict):
+        raise InputValidationException(code="0-1-1-2", input=value_domains)
+    if type_name in SCALAR_TYPES:
+        return SCALAR_TYPES[type_name], None
+    value_domain = (value_domains or {}).get(type_name)
+    if value_domain is None:
+        raise InputValidationException(
+            code="0-2-1-1",
+            element=element,
+            error=f"'{type_name}' is neither a basic type nor the name of a value domain given",
+        )
+    return value_domain.type, value_domain
+
+
 @dataclass
 class DataComponent:
     """A component of a dataset with data"""
@@ -126,6 +281,7 @@ class DataComponent:
     data_type: Type[ScalarType]
     role: Role = Role.MEASURE
     nullable: bool = True
+    value_domain: Optional["ValueDomain"] = None
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, DataComponent):
@@ -133,15 +289,24 @@ class DataComponent:
         return self.to_dict() == other.to_dict()
 
     @classmethod
-    def from_json(cls, json_str: Any) -> "DataComponent":
+    def from_json(
+        cls, json_str: Any, value_domains: Optional[Dict[str, "ValueDomain"]] = None
+    ) -> "DataComponent":
+        """The component to_dict writes. Its type can name one of the value domains given, by
+        name, on which the component is then defined."""
         # Support both 'type' and 'data_type' for backward compatibility
-        data_type_value = json_str.get("type") or json_str.get("data_type")
+        data_type, value_domain = named_type(
+            json_str.get("type") or json_str.get("data_type"),
+            value_domains,
+            f"Component '{json_str['name']}'",
+        )
         return cls(
             json_str["name"],
             None,
-            SCALAR_TYPES[data_type_value],
+            data_type,
             Role(json_str["role"]),
             json_str["nullable"],
+            value_domain,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -151,7 +316,7 @@ class DataComponent:
         return {
             "name": self.name,
             "data": self.data,
-            "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
+            "type": component_type_name(data_type, self.value_domain),
             "role": self.role.value if self.role is not None else None,  # type: ignore[redundant-expr]
             "nullable": self.nullable,
         }
@@ -170,6 +335,7 @@ class Component:
     data_type: Type[ScalarType]
     role: Role
     nullable: bool
+    value_domain: Optional["ValueDomain"] = None
 
     def __post_init__(self) -> None:
         if self.role == Role.IDENTIFIER and self.nullable:
@@ -192,26 +358,37 @@ class Component:
         return clone
 
     def copy(self) -> "Component":
-        return Component(self.name, self.data_type, self.role, self.nullable)
+        return Component(self.name, self.data_type, self.role, self.nullable, self.value_domain)
 
     @classmethod
-    def from_json(cls, json_str: Any) -> "Component":
+    def from_json(
+        cls, json_str: Any, value_domains: Optional[Dict[str, "ValueDomain"]] = None
+    ) -> "Component":
+        """The component to_dict writes. Its type can name one of the value domains given, by
+        name, on which the component is then defined."""
+        check_input_component_name(json_str["name"])
         # Support both 'type' and 'data_type' for backward compatibility
-        data_type_value = json_str.get("type") or json_str.get("data_type")
+        data_type, value_domain = named_type(
+            json_str.get("type") or json_str.get("data_type"),
+            value_domains,
+            f"Component '{json_str['name']}'",
+        )
         return cls(
-            json_str["name"],
-            SCALAR_TYPES[data_type_value],
-            Role(json_str["role"]),
-            json_str["nullable"],
+            json_str["name"], data_type, Role(json_str["role"]), json_str["nullable"], value_domain
         )
 
     def to_dict(self) -> Dict[str, Any]:
-        data_type = self.data_type
-        if not inspect.isclass(self.data_type):
-            data_type = self.data_type.__class__
+        data_type: Any = self.data_type
+        if isinstance(data_type, ScalarType):
+            data_type = data_type.__class__
+        type_ = (
+            component_type_name(data_type, self.value_domain)
+            if inspect.isclass(data_type)
+            else str(data_type)
+        )
         return {
             "name": self.name,
-            "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type],
+            "type": type_,
             # Need to check here for NoneType as UDO argument has it
             "role": self.role.value if self.role is not None else None,  # type: ignore[redundant-expr]
             "nullable": self.nullable,
@@ -427,8 +604,14 @@ class Dataset:
         return list(self.components.keys())
 
     @classmethod
-    def from_json(cls, json_str: Any) -> "Dataset":
-        components = {k: Component.from_json(v) for k, v in json_str["components"].items()}
+    def from_json(
+        cls, json_str: Any, value_domains: Optional[Dict[str, "ValueDomain"]] = None
+    ) -> "Dataset":
+        """The Data Set to_dict writes. The type of a Component can name one of the value
+        domains given, by name, on which the Component is then defined."""
+        components = {
+            k: Component.from_json(v, value_domains) for k, v in json_str["components"].items()
+        }
         return cls(json_str["name"], components, pd.DataFrame(json_str["data"]))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -494,10 +677,16 @@ class ScalarSet:
     def __contains__(self, item: str) -> Optional[bool]:
         if isinstance(item, float) and item.is_integer():
             item = int(item)
-        if self.data_type == DataTypes.Null:
+        if self.data_type == Null:
             return None
         value = self.data_type.cast(item)
-        return value in self.values
+        return value_of(self.data_type, value) in self.compared_values()
+
+    def compared_values(self) -> List[Any]:
+        """The values of the set, each written as the loaders write the values of its type: a
+        value is compared with them as a value of its type, whatever form it is written in
+        (issue #1349)."""
+        return [value_of(self.data_type, value) for value in self.values]
 
 
 @dataclass
@@ -511,12 +700,33 @@ class ValueDomain:
     setlist: List[Union[int, float, str, bool]]
 
     def __post_init__(self) -> None:
-        if len(set(self.setlist)) != len(self.setlist):
-            duplicated = [item for item, count in Counter(self.setlist).items() if count > 1]
+        """The name must not be a basic scalar type, and the setlist must hold valid values of
+        the type, each once, also in another form of it."""
+        if self.name in BASIC_TYPE_NAMES:
+            raise InputValidationException(code="0-1-1-39", name=self.name)
+        for value in self.setlist:
+            if not self._is_valid(value):
+                raise InputValidationException(
+                    code="0-1-1-37",
+                    value=value,
+                    name=self.name,
+                    type=SCALAR_TYPES_CLASS_REVERSE[self.type],
+                )
+        self.setlist = [self.type.cast(value) for value in self.setlist]
+        forms: Dict[Any, List[Any]] = {}
+        for item, value in zip(self.setlist, self.values()):
+            forms.setdefault(value, []).append(item)
+        duplicated = [
+            item for items in forms.values() if len(items) > 1 for item in dict.fromkeys(items)
+        ]
+        if duplicated:
             raise InputValidationException(code="0-1-1-21", name=self.name, duplicated=duplicated)
 
-        # Cast values to the correct type
-        self.setlist = [self.type.cast(value) for value in self.setlist]
+    def _is_valid(self, value: Any) -> bool:
+        try:
+            return bool(self.type.check(value))
+        except InputValidationException:
+            return False
 
     @classmethod
     def from_json(cls, json_str: str) -> str:
@@ -537,7 +747,22 @@ class ValueDomain:
         return cls(value["name"], SCALAR_TYPES[value["type"]], value["setlist"])
 
     def to_dict(self) -> Dict[str, Any]:
-        return {"name": self.name, "type": self.type.__name__, "setlist": self.setlist}
+        return {
+            "name": self.name,
+            "type": SCALAR_TYPES_CLASS_REVERSE[self.type],
+            "setlist": self.setlist,
+        }
+
+    def values(self) -> List[Any]:
+        """The values of the domain, written as the loaders write the values of its type."""
+        return [value_of(self.type, value) for value in self.setlist]
+
+    def outside(self, values: Any) -> Any:
+        """The values of the series, other than the nulls, that are not values of the domain.
+        A value is compared as a value of the type, whatever form it is written in: 2024Q1
+        and 2024-Q1 are the same Time_Period (issue #1349)."""
+        values = values[values.notna()]
+        return values[~values_of(self.type, values).isin(self.values())]
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
@@ -566,7 +791,27 @@ class ExternalRoutine:
 
     @classmethod
     def _extract_dataset_names(cls, query: str) -> List[str]:
+        """The tables the query reads, each once: a name its WITH clause defines is not one
+        (issue #1356)."""
         expression = sqlglot.parse_one(query, dialect="duckdb")
-        tables_info = list(expression.find_all(exp.Table))
-        dataset_names = [t.name for t in tables_info]
-        return dataset_names
+        defined = {cte.alias for cte in expression.find_all(exp.CTE)}
+        tables = [t.name for t in expression.find_all(exp.Table) if t.name not in defined]
+        return list(dict.fromkeys(tables))
+
+    def query_on(self, operands: Iterable["Dataset"]) -> str:
+        """The query both engines run. A double-quoted name is an identifier when it names a
+        Component or an operand, or the query defines it (an alias, a WITH name or column);
+        otherwise it is a text, as between single quotes. DuckDB matches identifiers ignoring
+        case, so does this (issue #1356)."""
+        expression = sqlglot.parse_one(self.query, dialect="duckdb")
+        names = [*self.dataset_names, *(a.alias for a in expression.find_all(exp.Alias))]
+        for alias in expression.find_all(exp.TableAlias):
+            names += [alias.name, *(column.name for column in alias.columns)]
+        names += [name for operand in operands for name in operand.components]
+        identifiers = {name.lower() for name in names}
+        query = self.query
+        for token in reversed(DuckDB().tokenize(self.query)):
+            if self.query[token.start] == '"' and token.text.lower() not in identifiers:
+                text = token.text.replace("'", "''")
+                query = f"{query[: token.start]}'{text}'{query[token.end + 1 :]}"
+        return query

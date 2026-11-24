@@ -1,0 +1,13 @@
+define viral propagation VP_1 ( valuedomain VD_STR ) is
+    when "A" then "A";
+    else "B"
+end viral propagation;
+define viral propagation VP_2 ( valuedomain VD_STR2 ) is
+    when "A" then "X";
+    else "X"
+end viral propagation;
+define viral propagation VP_3 ( variable At_1 ) is
+    when "A" then "V";
+    else "W"
+end viral propagation;
+DS_r <- inner_join ( DS_3 as a , DS_4 as b apply a + b );

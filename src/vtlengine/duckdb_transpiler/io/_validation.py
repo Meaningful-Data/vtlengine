@@ -15,7 +15,6 @@ from typing import Callable, Dict, List, Optional
 import duckdb
 
 from vtlengine.DataTypes import (
-    SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Date,
     Duration,
@@ -24,8 +23,32 @@ from vtlengine.DataTypes import (
     TimeInterval,
     TimePeriod,
 )
+from vtlengine.DataTypes._time_checking import check_time, check_time_period
+from vtlengine.DataTypes.TimeHandling import MAX_YEAR, MIN_YEAR
 from vtlengine.Exceptions import DataLoadError, InputValidationException
-from vtlengine.Model import Component, Role
+from vtlengine.Model import Component, Role, component_type_name
+
+# The characters around a value that the pandas loaders take off a Time_Period, a Time
+# and a Date, the ones str.strip takes off: spaces, tabs and line breaks (issue #1352).
+# DuckDB's TRIM takes off spaces only.
+_WHITESPACE = (
+    "\t\n\x0b\x0c\r\x1c\x1d\x1e\x1f \x85\xa0\u1680"
+    + "".join(chr(c) for c in range(0x2000, 0x200B))
+    + "\u2028\u2029\u202f\u205f\u3000"
+)
+
+
+def sql_trim(value_expr: str) -> str:
+    """SQL of a text without the whitespace around it, as str.strip takes it off.
+
+    TRIM with a set of characters is many times slower than without, so it runs only on a
+    text that starts or ends with one of them.
+    """
+    edges = " OR ".join(
+        f"strpos('{_WHITESPACE}', {side}({value_expr}, 1)) > 0" for side in ("left", "right")
+    )
+    return f"CASE WHEN {edges} THEN TRIM({value_expr}, '{_WHITESPACE}') ELSE {value_expr} END"
+
 
 # =============================================================================
 # Regex patterns for VTL temporal types (only these need explicit validation)
@@ -33,34 +56,37 @@ from vtlengine.Model import Component, Role
 
 _MONTH = r"(0?[1-9]|1[0-2])"
 _WEEK = r"(0?[1-9]|[1-4]\d|5[0-3])"
+# A year of four digits, from 1000, which the pandas loader reads for a Time_Period, a Date and a
+# Time (issue #1352)
+_YEAR = r"[1-9]\d{3}"
 _DAY_OF_YEAR = r"(0{0,2}[1-9]|0?[1-9]\d|[12]\d\d|3[0-5]\d|36[0-6])"
 
 TIME_PERIOD_PATTERN = (
-    r"^\d{4}$|"  # Year - 2024
-    r"^\d{4}A$|"  # Annual - 2024A
-    r"^\d{4}[S][1-2]$|"  # Semester - 2024S1
-    r"^\d{4}[Q][1-4]$|"  # Quarter - 2024Q1
-    rf"^\d{{4}}[M]{_MONTH}$|"  # Month - 2024M01, 2024M1
-    rf"^\d{{4}}[W]{_WEEK}$|"  # Week - 2024W01, 2024W1
-    rf"^\d{{4}}[D]{_DAY_OF_YEAR}$|"  # Day - 2024D001, 2024D01, 2024D1
+    rf"^{_YEAR}$|"  # Year - 2024
+    rf"^{_YEAR}A$|"  # Annual - 2024A
+    rf"^{_YEAR}[S][1-2]$|"  # Semester - 2024S1
+    rf"^{_YEAR}[Q][1-4]$|"  # Quarter - 2024Q1
+    rf"^{_YEAR}[M]{_MONTH}$|"  # Month - 2024M01, 2024M1
+    rf"^{_YEAR}[W]{_WEEK}$|"  # Week - 2024W01, 2024W1
+    rf"^{_YEAR}[D]{_DAY_OF_YEAR}$|"  # Day - 2024D001, 2024D01, 2024D1
     # SDMX Gregorian formats (hyphen-separated)
-    rf"^\d{{4}}-{_MONTH}$|"  # Month numeric - 2024-01, 2024-1
-    r"^\d{4}-A1$|"  # Annual - 2024-A1
-    r"^\d{4}-S[1-2]$|"  # Semester - 2024-S1
-    r"^\d{4}-Q[1-4]$|"  # Quarter - 2024-Q1
-    rf"^\d{{4}}-M{_MONTH}$|"  # Month - 2024-M01, 2024-M1
-    rf"^\d{{4}}-W{_WEEK}$|"  # Week - 2024-W01, 2024-W1
-    rf"^\d{{4}}-D{_DAY_OF_YEAR}$|"  # Day - 2024-D001, 2024-D01, 2024-D1
-    r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$"  # Full date - 2024-01-15
+    rf"^{_YEAR}-{_MONTH}$|"  # Month numeric - 2024-01, 2024-1
+    rf"^{_YEAR}-A1$|"  # Annual - 2024-A1
+    rf"^{_YEAR}-S[1-2]$|"  # Semester - 2024-S1
+    rf"^{_YEAR}-Q[1-4]$|"  # Quarter - 2024-Q1
+    rf"^{_YEAR}-M{_MONTH}$|"  # Month - 2024-M01, 2024-M1
+    rf"^{_YEAR}-W{_WEEK}$|"  # Week - 2024-W01, 2024-W1
+    rf"^{_YEAR}-D{_DAY_OF_YEAR}$|"  # Day - 2024-D001, 2024-D01, 2024-D1
+    rf"^{_YEAR}-{_MONTH}-(0?[1-9]|[1-2][0-9]|3[0-1])$"  # Full date - 2024-01-15, 2024-1-5
 )
 
 # A Time interval is written as a pair of dates, or as the year or the month it covers,
 # which the pandas loader expands into that pair (issue #1066).
 TIME_INTERVAL_PATTERN = (
-    r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?/"
-    r"\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?$|"
-    r"^\d{4}$|"  # Year - 2020, covering it whole
-    r"^\d{4}-[0-1]?\d$"  # Month - 2020-05, 2020-5, covering it whole
+    rf"^{_YEAR}-\d{{2}}-\d{{2}}(T\d{{2}}:\d{{2}}:\d{{2}})?/"
+    rf"{_YEAR}-\d{{2}}-\d{{2}}(T\d{{2}}:\d{{2}}:\d{{2}})?$|"
+    rf"^{_YEAR}$|"  # Year - 2020, covering it whole
+    rf"^{_YEAR}-[0-1]?\d$"  # Month - 2020-05, 2020-5, covering it whole
 )
 
 DURATION_PATTERN = r"^(A|S|Q|M|W|D)$"  # Year, Semester, Quarter, Month, Week, Day
@@ -76,9 +102,9 @@ VALID_DATE_REGEX = (
     r"([ T]([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d+)?([+-]\d{2}:\d{2}|Z)?)?$"
 )
 
-# A Date runs from the year 1800 to 9999, which the pandas loader reads it under, and
-# reports apart from a value of the wrong shape (issue #1065).
-VALID_DATE_YEAR_REGEX = r"^(1[89]\d{2}|[2-9]\d{3})(-|\d{4}$)"
+# A Date runs from the year 1000 to 9999, which the pandas loader reads it under, and
+# reports apart from a value of the wrong shape (issues #1065, #1352).
+VALID_DATE_YEAR_REGEX = rf"^{_YEAR}(-|\d{{4}}$)"
 
 
 # =============================================================================
@@ -132,12 +158,12 @@ def _value_error(
         return DataLoadError(
             "0-3-1-6", name=dataset_name, column="unknown", type="unknown", error=message
         )
-    data_type = components[comp_name].data_type
+    comp = components[comp_name]
     return DataLoadError(
         "0-3-1-6",
         name=dataset_name,
         column=comp_name,
-        type=SCALAR_TYPES_CLASS_REVERSE.get(data_type, "unknown"),
+        type=component_type_name(comp.data_type, comp.value_domain),
         error=message,
     )
 
@@ -332,6 +358,34 @@ def validate_no_duplicates(
         raise DataLoadError("0-3-1-7", name=table_name, row_index="(duplicate keys detected)")
 
 
+def validate_value_domains(
+    conn: duckdb.DuckDBPyConnection,
+    table_name: str,
+    components: Dict[str, Component],
+) -> None:
+    """A component defined on a value domain takes only its values."""
+    for comp_name, comp in components.items():
+        value_domain = comp.value_domain
+        if value_domain is None:
+            continue
+        row = conn.execute(
+            f'SELECT "{comp_name}" FROM "{table_name}" WHERE "{comp_name}" IS NOT NULL AND NOT '
+            f'list_contains(CAST(? AS {get_column_sql_type(comp)}[]), "{comp_name}") LIMIT 1',
+            [value_domain.values()],
+        ).fetchone()
+        if row is not None:
+            error = InputValidationException(
+                code="0-1-1-36", value=row[0], value_domain=value_domain.name
+            )
+            raise DataLoadError(
+                "0-3-1-6",
+                name=table_name,
+                column=comp_name,
+                type=value_domain.name,
+                error=error.args[0],
+            )
+
+
 # =============================================================================
 # CSV Loading Helpers
 # =============================================================================
@@ -396,22 +450,29 @@ def _time_interval_out_of_order(col_name: str) -> str:
 
     The two dates are read as text, as the pandas loader compares them.
     """
-    value = f'TRIM("{col_name}")'
+    value = sql_trim(f'"{col_name}"')
     return f"(CONTAINS({value}, '/') AND SPLIT_PART({value}, '/', 1) > SPLIT_PART({value}, '/', 2))"
 
 
 def _time_period_day_out_of_range(col_name: str) -> str:
-    """Whether the day of year a Time_Period carries passes the days its year holds.
+    """Whether the day a Time_Period carries is no day: a day of year past the days its year
+    holds, or a date the calendar has not.
 
     Only the year tells 366 apart from an invalid day, so the regex cannot bound this
     one: 2024D366 is a day of a leap year and 2023D366 is no day at all.
     """
-    value = f'TRIM("{col_name}")'
+    value = sql_trim(f'"{col_name}"')
     day = f"TRY_CAST(regexp_extract({value}, 'D0*(\\d+)$', 1) AS INTEGER)"
     year = f"TRY_CAST(SUBSTR({value}, 1, 4) AS INTEGER)"
+    # A date the calendar has no day for, such as 2020-02-30, is no day either; refused here, it
+    # is told with the message of the pandas loader (issue #1352)
+    no_date = (
+        f"(regexp_matches({value}, '^[0-9]{{4}}-[0-9]{{1,2}}-[0-9]{{1,2}}$') "
+        f"AND try_strptime({value}, '%Y-%m-%d') IS NULL)"
+    )
     return (
-        f"({day} IS NOT NULL AND {year} IS NOT NULL "
-        f"AND {day} > DAYOFYEAR(MAKE_DATE({year}, 12, 31)))"
+        f"(({day} IS NOT NULL AND {year} IS NOT NULL "
+        f"AND {day} > DAYOFYEAR(MAKE_DATE({year}, 12, 31))) OR {no_date})"
     )
 
 
@@ -451,7 +512,7 @@ def validate_temporal_columns(
         # A Time_Period and a Time interval are read with the space around them taken
         # off, and stored that way; a Duration is read as it was written, which is how
         # the pandas loader reads each of them (issue #1067).
-        checked = f'"{col_name}"' if type_name == "Duration" else f'TRIM("{col_name}")'
+        checked = f'"{col_name}"' if type_name == "Duration" else sql_trim(f'"{col_name}"')
         invalid = f"NOT regexp_matches({checked}, '{pattern}')"
         if type_name == "Time":
             invalid = f"({invalid} OR {_time_interval_out_of_order(col_name)})"
@@ -478,12 +539,21 @@ def validate_temporal_columns(
         # Parse "column|type|value" format
         parts = result[0].split("|", 2)
         col_name, type_name, invalid_value = parts[0], parts[1], parts[2]
+        error = f"Invalid format: '{invalid_value}'"
+        if type_name == "Duration":
+            # The message of the pandas loader (issue #1352)
+            error = InputValidationException(
+                code="0-1-1-35", value=invalid_value, type_1="String", type_2="Duration"
+            ).args[0]
+        elif type_name in ("Time_Period", "Time"):
+            # The message of the pandas loader, which reads the value with check_time_period or
+            # check_time (issue #1352)
+            try:
+                (check_time_period if type_name == "Time_Period" else check_time)(invalid_value)
+            except InputValidationException as e:
+                error = e.args[0]
         raise DataLoadError(
-            "0-3-1-6",
-            name=table_name,
-            column=col_name,
-            type=type_name,
-            error=f"Invalid format: '{invalid_value}'",
+            "0-3-1-6", name=table_name, column=col_name, type=type_name, error=error
         )
 
 
@@ -569,6 +639,13 @@ def _number_cast(value_expr: str) -> str:
     return f"CASE WHEN isnan({double}) THEN NULL ELSE {double} END"
 
 
+def text_to_date(value_expr: str, target_type: str) -> str:
+    """SQL of a String cast to Date, which reads the text as the loader reads a Date and
+    raises VTL 2-1-19-8 for a text that is not one (issue #1349)."""
+    error = f"'VTL 2-1-19-8 ' || {sql_trim(f'CAST({value_expr} AS VARCHAR)')}"
+    return _date_sql(value_expr, target_type, error, error)
+
+
 def _date_cast(value_expr: str, column_name: str, target_type: str) -> str:
     """SQL reading a Date input value as text, on the rules of the pandas loader.
 
@@ -578,7 +655,21 @@ def _date_cast(value_expr: str, column_name: str, target_type: str) -> str:
     (issue #1284). Anything else is refused here with a clear message, where the cast
     truncated a partial time ("...T12:30") or failed with an out-of-range error.
     """
-    text = f"TRIM(CAST({value_expr} AS VARCHAR))"
+    text = sql_trim(f"CAST({value_expr} AS VARCHAR)")
+    format_err = (
+        f"'Column {column_name}: Date ' || {text} || ' is not in the correct format. "
+        f"Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS.'"
+    )
+    year_err = (
+        f"'Date ' || {text} || ' is invalid. Year must be between {MIN_YEAR} and {MAX_YEAR}.'"
+    )
+    return _date_sql(value_expr, target_type, format_err, year_err)
+
+
+def _date_sql(value_expr: str, target_type: str, format_err: str, year_err: str) -> str:
+    """SQL reading a Date written as text on the rules of the pandas loader, raising the
+    errors given for a text of another shape or a year out of range."""
+    text = sql_trim(f"CAST({value_expr} AS VARCHAR)")
     # DuckDB casts a date written in full only, and rewriting the value of the length of
     # a compact date alone keeps the regex off the others
     date = (
@@ -586,11 +677,6 @@ def _date_cast(value_expr: str, column_name: str, target_type: str) -> str:
         f"THEN regexp_replace({text}, '{_COMPACT_DATE_REGEX}', '{_FULL_DATE_REPLACEMENT}') "
         f"ELSE {text} END"
     )
-    format_err = (
-        f"'Column {column_name}: Date ' || {text} || ' is not in the correct format. "
-        f"Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS.'"
-    )
-    year_err = f"'Date ' || {text} || ' is invalid. Year must be between 1800 and 9999.'"
     return (
         f"CASE WHEN {value_expr} IS NULL THEN NULL "
         f"WHEN NOT regexp_matches({text}, '{VALID_DATE_REGEX}') THEN error({format_err}) "

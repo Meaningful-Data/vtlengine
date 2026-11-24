@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, boolean)`` on a String measure, an explicit cast without mask: ``true`` in any case.
+:Manual: `Type conversion <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/General%20purpose%20operators/Type%20conversion/index.html>`__: "From **string** to **boolean**: The ``boolean`` value representing true is returned if the input string, with any leading or trailing blanks removed, is equal to ``"true"`` not considering the case. The ``boolean`` value representing false is returned in any other case."
+:Expected: ``true`` and ``TRUE`` give ``true``, and ``false`` gives ``false``.

@@ -6,9 +6,20 @@ name: Build caches
 # branch. The keys come from .github/actions/build-cpp-parser and
 # .github/actions/install-ubuntu-2404-deps, which the test jobs use too.
 
+# The push trigger lists the files the cache keys are made of. The weekly run keeps the caches
+# of develop from being evicted after 7 days without a read, and refreshes the APT plan, which
+# changes with the Ubuntu archive and not with a commit. A scheduled run uses the default branch.
 on:
   push:
-    branches: ["1.9.X"]
+    branches: ["develop", "main"]
+    paths:
+      - "src/vtlengine/AST/Grammar/_cpp_parser/**"
+      - "CMakeLists.txt"
+      - "scripts/setup_antlr4_runtime.sh"
+      - ".github/actions/**"
+      - ".github/workflows/build_cache.yml"
+  schedule:
+    - cron: "0 5 * * 1"
   workflow_dispatch:
 
 concurrency:

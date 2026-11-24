@@ -1,0 +1,3 @@
+:Tests: ``aggr`` with ``group except Id_2``, which groups by ``Id_1``.
+:Manual: `Cross Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Cross%20Join/index.html>`__, and Aggregate invocation: with group except "the Data Points are grouped by the values of the Identifiers not specified in the clause. The specified Identifiers are dropped in the result".
+:Expected: the cartesian product of ``DS_1`` (``Id_1`` 1, 2) and ``DS_2`` (``Id_2`` A, B) has 2 × 2 = 4 data points; the groups are those of ``group by Id_1``: ``Me_3`` is 20 for ``Id_1`` = 1 and 40 for ``Id_1`` = 2.

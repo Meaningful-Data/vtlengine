@@ -1,0 +1,1 @@
+DS_r <- full_join(DS_1 as d1, DS_2 as d2 using Id_1, nvl(d2#Id_2, "X") rename d1#Id_2 to Id_21, d2#Id_2 to Id_22);

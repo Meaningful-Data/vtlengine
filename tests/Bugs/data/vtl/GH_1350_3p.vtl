@@ -1,0 +1,7 @@
+define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+    r1 : getmonth ( Me_1 ) < 6 errorcode "E1";
+    r2 : dayofmonth ( Me_1 ) <> 31 errorcode "E2";
+    r3 : dayofyear ( Me_1 ) < 100 errorcode "E3"
+end datapoint ruleset;
+
+DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );

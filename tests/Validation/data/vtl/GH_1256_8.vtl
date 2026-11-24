@@ -1,0 +1,5 @@
+define hierarchical ruleset hr1 (variable rule Id_2) is
+    r1: A = B + C errorcode "unbalanced" errorlevel true
+end hierarchical ruleset;
+
+DS_r <- check_hierarchy(DS_1, hr1 rule Id_2 always_zero dataset all);

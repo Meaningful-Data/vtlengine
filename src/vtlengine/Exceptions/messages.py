@@ -109,7 +109,8 @@ centralised_messages = {
     "0-1-1-21": {
         "message": "The setlist of Value Domain {name} must have unique values. Duplicated values: "
         "{duplicated}",
-        "description": "Raised when the setlist of a Value Domain repeats a value.",
+        "description": "Raised when the setlist of a Value Domain repeats a value, also written "
+        "in another form of its type, such as the time periods 2020Q1 and 2020-Q1.",
     },
     "0-1-1-22": {
         "message": "Empty JSON string for ValueDomain",
@@ -169,7 +170,37 @@ centralised_messages = {
     },
     "0-1-1-35": {
         "message": "Impossible to cast {value} from type {type_1} to {type_2}.",
-        "description": "Raised when a value given as Duration is not a duration code.",
+        "description": "Raised when a value given as Duration is not a duration code, or a "
+        "value given as Time_Period is no period of its format, such as 2020M13.",
+    },
+    "0-1-1-36": {
+        "message": "Value {value} is not one of the values of Value Domain {value_domain}.",
+        "description": "Raised when a component defined on a Value Domain is given a value "
+        "outside it.",
+    },
+    "0-1-1-37": {
+        "message": "Value {value} of the setlist of Value Domain {name} is not a valid {type}.",
+        "description": "Raised when a value of the setlist of a Value Domain is not a value of "
+        "its type, such as a Date that does not exist.",
+    },
+    "0-1-1-38": {
+        "message": "Value Domain {name} is defined more than once.",
+        "description": "Raised when two of the Value Domains given have the same name.",
+    },
+    "0-1-1-39": {
+        "message": "Value Domain {name} has the name of a basic scalar type.",
+        "description": "Raised when a Value Domain is named as a basic scalar type of VTL "
+        "(string, integer, number, boolean, date, time, time_period, duration, scalar), "
+        "which a script cannot refer to as a Value Domain.",
+    },
+    "0-1-1-40": {
+        "message": "File {file} is not valid JSON: {error}.",
+        "description": "Raised when a JSON file given as data structures, value domains or "
+        "external routines cannot be read as JSON.",
+    },
+    "0-1-1-41": {
+        "message": "External Routine {name} is defined more than once.",
+        "description": "Raised when two of the External Routines given have the same name.",
     },
     "0-1-2-3": {
         "message": "{element_type} '{element}' is/are duplicated.",
@@ -195,6 +226,11 @@ centralised_messages = {
         "message": "Cannot pass as inputs Datasets/Scalars defined as outputs of transformations "
         "in the script, please check: {names}",
         "description": "Raised when an output of a transformation is incorrectly used as an input.",
+    },
+    "0-1-2-9": {
+        "message": "Not found dataset {name} in datastructures.",
+        "description": "Raised when datapoints are given for a Dataset that the data structures "
+        "do not define.",
     },
     # Run SDMX errors
     "0-1-3-1": {
@@ -333,6 +369,12 @@ centralised_messages = {
         "description": "Raised when a row of a CSV file has more fields than its header names, "
         "or a quote that leaves it unterminated.",
     },
+    "0-3-1-19": {
+        "message": "Could not write {file}: {error}",
+        "description": "Raised when the DuckDB engine cannot write a result file to the output "
+        "folder, such as an S3 URI without credentials, or without network access to install "
+        "the httpfs extension.",
+    },
     # Input validation errors for URL datapoints
     "0-1-3-8": {
         "message": "data_structures must be a file path or URL "
@@ -372,11 +414,6 @@ centralised_messages = {
     "0-5-1-7": {
         "message": "Cannot have 2 following clauses with unbounded in analytic clause {window}.",
         "description": "Raised when both bounds of an analytic window are unbounded following.",
-    },
-    "0-5-1-8": {
-        "message": "Value Domain '{name}' not available for cast operator or scalar type "
-        "representation or rulesets.",
-        "description": "Raised when a value domain is used where only a scalar type is allowed.",
     },
     "0-5-1-9": {
         "message": "Dataset Priority input mode on HR is not implemented",
@@ -515,6 +552,24 @@ centralised_messages = {
         "description": "Raised when a non-Identifier component is used as a "
         "partitioning key in an analytic operation.",
     },
+    "1-1-3-3": {
+        "message": "At op {op}: A range window with a limit other than unbounded or current "
+        "data point needs one order by Component, found {number}.",
+        "description": "Raised when a range window measures its limits on no order by "
+        "Component or on more than one, as its limits are distances between the values of "
+        "one Component.",
+    },
+    "1-1-3-4": {
+        "message": "Invalid analytic window {window}: the window starts after it ends.",
+        "description": "Raised when an analytic window starts after it ends: a following "
+        "start before a preceding or current data point end, or a current data point start "
+        "before a preceding end.",
+    },
+    "1-1-3-5": {
+        "message": "Invalid limit {limit} of an analytic window: a limit cannot be negative.",
+        "description": "Raised when a limit of an analytic window is a negative number, which "
+        "is neither a number of data points nor a distance.",
+    },
     "2-1-1-1": {
         "message": "At op {op}: DuckDB runtime error during query execution: {error}.",
         "description": "Raised when DuckDB encounters an unexpected runtime error "
@@ -536,9 +591,10 @@ centralised_messages = {
         "than its operand.",
     },  # RunTimeError.
     "2-1-3-1": {
-        "message": "At op {op}: Division by zero produced infinite values.",
-        "description": "Raised when a division by zero in a DuckDB query produces "
-        "infinite floating-point values in measure columns.",
+        "message": "At op {op}: Division by zero or a value beyond the range of a Number "
+        "produced infinite values.",
+        "description": "Raised when a division by zero, or a result too large for a Number "
+        "(as power or exp can give), produces infinite floating-point values.",
     },
     # Cast errors
     "1-1-5-1": {
@@ -583,6 +639,12 @@ centralised_messages = {
     "2-1-5-3": {
         "message": "Impossible to cast {value} from type {type_1} to {type_2} using mask {mask}.",
         "description": "Occurs when a value cannot be converted between the specified types.",
+    },
+    "2-1-5-4": {
+        "message": "At op {op}: Cannot cast {value} of {type} to Value Domain {value_domain}.",
+        "description": "Raised when the values of a basic type are converted into a Value "
+        "Domain of that type (downcast), as cast does, and one of them is not a value of the "
+        "Value Domain.",
     },
     # Clause errors
     "1-1-6-2": {
@@ -654,8 +716,24 @@ centralised_messages = {
     },
     "1-1-6-17": {
         "message": "At op {op}: {op} clause requires two operands.",
-        "description": "Raised when an unpivot clause does not name its identifier and its "
-        "measure.",
+        "description": "Raised when a pivot or unpivot clause does not name its identifier and "
+        "its measure.",
+    },
+    "1-1-6-18": {
+        "message": "At op {op}: The Identifier {name} is not defined on a value domain, whose "
+        "values give the Measures of the result.",
+        "description": "Raised when a pivot clause pivots an Identifier that is not defined on "
+        "a value domain: the Measures it creates are named after the values of the value "
+        "domain.",
+    },
+    "1-1-6-19": {
+        "message": "At op {op}: Invalid Component name {name}, a Component name cannot contain "
+        "{characters}.",
+        "description": "Raised when a script names a new Component (rename, calc, aggr, unpivot, "
+        "the Measures of pivot, the result of eval) with a name that contains a character "
+        "that the names of the Components of the input structures cannot contain: a quote, a "
+        "double quote, #, NUL or a carriage return. # only separates the alias of a join "
+        "operand from the name of its Component.",
     },
     # Comparison errors
     "1-1-7-1": {
@@ -702,9 +780,10 @@ centralised_messages = {
         "description": "Occurs when a component in a clause has an incorrect role type.",
     },
     "1-1-9-10": {
-        "message": "At op {op}: {clause} Dataset have different number of Identifiers compared "
-        "with condition Dataset.",
-        "description": "Raised when a Dataset in a clause has mismatched Identifier count.",
+        "message": "At op {op}: The Identifiers of {clause} ({ids}) are not the Identifiers of "
+        "the condition ({condition_ids}).",
+        "description": "Raised when a Data Set operand or condition of if-then-else or case does "
+        "not have the Identifiers of the condition, with the same names and basic types.",
     },
     "1-1-9-11": {
         "message": "At op {op}: Condition component {name} must be Boolean, found {type}.",
@@ -800,6 +879,42 @@ centralised_messages = {
         "description": "Raised when several '=' rules define the same code item in a hierarchy "
         "operation and one of them has no when condition, so their results always overlap.",
     },
+    "1-1-10-12": {
+        "message": "At op {op}: Component {comp_name} of type {type} is not defined on the Value "
+        "Domain {value_domain} of the ruleset {ruleset}, nor of its basic type {basic_type}.",
+        "description": "Raised when a ruleset defined on value domains is called with a "
+        "component that is neither defined on the value domain it is bound to nor of its basic "
+        "type, plain or on another value domain, such as an Integer component bound to a Number "
+        "value domain or a component on a value domain of Strings bound to a Number one.",
+    },
+    "1-1-10-14": {
+        "message": "At op {op}: The ruleset {ruleset} is defined on value domains, so the call "
+        "must list the components bound to them.",
+        "description": "Raised when check_datapoint calls a ruleset defined on value domains "
+        "without the components clause.",
+    },
+    "1-1-10-15": {
+        "message": "At op {op}: The ruleset {ruleset} is defined on {expected} value domains, "
+        "but the call lists {found} components.",
+        "description": "Raised when check_datapoint calls a ruleset defined on value domains "
+        "with another number of components than the value domains of its signature.",
+    },
+    "1-1-10-16": {
+        "message": "At op {op}: The condition of the ruleset {ruleset} is defined on {expected} "
+        "value domains, but the call lists {found} condition components.",
+        "description": "Raised when check_hierarchy or hierarchy calls a ruleset defined on value "
+        "domains with another number of condition components than the value domains of its "
+        "condition.",
+    },
+    "1-1-10-13": {
+        "message": "The {element} {value} of {where} is not one of the values of the Value "
+        "Domain {value_domain}.",
+        "description": "Raised when an error code or an error level is not a value of "
+        "errorcode_vd or errorlevel_vd, given as value domains, also when it is a literal of "
+        "another type, which is not converted, when a constant of a viral propagation rule "
+        "on a value domain is not one of its values, or when a code item of a hierarchical "
+        "ruleset on a value domain is not one of its values.",
+    },
     "1-1-10-11": {
         "message": "At op {op}: The validation and imbalance operands must have the same "
         "identifiers.",
@@ -841,12 +956,6 @@ centralised_messages = {
         "description": "Raised when a Join operation encounters column "
         "name conflicts across input Datasets.",
     },
-    "1-1-13-4": {
-        "message": "At op {op}: Using clause, using={using_names}, does not define all the "
-        "Identifiers, of non reference Dataset {dataset}.",
-        "description": "Occurs when a 'using' clause in a join does not cover all Identifiers of a "
-        "non-reference Dataset.",
-    },
     "1-1-13-5": {
         "message": "At op {op}: Invalid subcase B1, All the Datasets must share as "
         "Identifiers the using ones.",
@@ -861,10 +970,12 @@ centralised_messages = {
         "reference Dataset in subcase B2.",
     },
     "1-1-13-7": {
-        "message": "At op {op}: Invalid subcase B2, All the non reference Datasets must "
-        "share as Identifiers the using ones.",
-        "description": "Raised when non-reference Datasets in subcase B2 do not share "
-        "the declared 'using' Identifiers.",
+        "message": "At op {op}: Invalid subcase B2, the using component '{using_component}' "
+        "must be an Identifier of the Dataset '{dataset}', as of every operand except the "
+        "left-most one.",
+        "description": "Raised when a using component of an inner_join or a left_join is not "
+        "an Identifier of an operand other than the left-most one, which alone may have it as "
+        "a Measure or an Attribute.",
     },
     "1-1-13-8": {
         "message": "At op {op}: No available using clause.",
@@ -882,6 +993,37 @@ centralised_messages = {
         "binary operation between operands of the join, such as d1 + d2.",
         "description": "Raised when the apply expression of a join is not a binary operation, "
         "such as a function call or an if-then-else.",
+    },
+    "1-1-13-24": {
+        "message": "At op {op}: Identifier {name} of {dataset} is not in the using clause and "
+        "has no nvl rule.",
+        "description": "Raised when an identifier of a left_join or full_join operand is neither "
+        "a join key of the using clause nor given a value by a nvl rule.",
+    },
+    "1-1-13-25": {
+        "message": "At op {op}: The nvl rule of {name} gives a constant of type {type_1} to a "
+        "component of type {type_2}.",
+        "description": "Raised when the constant of a nvl rule of a join does not have the type "
+        "of the component it gives a value to.",
+    },
+    "1-1-13-26": {
+        "message": "At op {op}: The operands cannot be ordered so that each one has an "
+        "identifier in common with one before it, as {dataset} has none in common with the "
+        "others.",
+        "description": "Raised when the operands of an inner_join without using cannot be "
+        "ordered so that each one shares an identifier with an operand before it.",
+    },
+    "1-1-13-27": {
+        "message": "At op {op}: The nvl rule of {name} gives null to an Identifier, which "
+        "cannot be null.",
+        "description": "Raised when a nvl rule of a join gives the null constant to an Identifier.",
+    },
+    "1-1-13-28": {
+        "message": "At op {op}: Invalid name {name} of a join operand, the alias of a join "
+        "operand, or else its Data Set name, cannot be empty or contain {characters}.",
+        "description": "Raised when the alias of a join operand, or the name of a Data Set "
+        "joined without an alias, is empty or contains a character that a Component name "
+        "cannot contain: the join names the Components of its operands alias#comp.",
     },
     "1-1-13-9": {
         "message": "Ambiguity for this variable {comp_name} inside a Join clause.",
@@ -988,9 +1130,9 @@ centralised_messages = {
         "description": "Runtime error when a value is negative but must be non-negative.",
     },  # RunTimeError.
     "2-1-15-3": {
-        "message": "At op {op}: Base value {value} could not be less or equal 0.",
-        "description": "Runtime error when a base value is less than or equal to zero, "
-        "which is not allowed.",
+        "message": "At op {op}: Base value {value} must be greater than 0 and other than 1.",
+        "description": "Runtime error when a logarithm base is less than or equal to zero, "
+        "or 1, which have no logarithm.",
     },  # RunTimeError.
     "2-1-15-4": {
         "message": "At op {op}: Invalid values in Component {name}.",
@@ -1387,12 +1529,6 @@ centralised_messages = {
         "description": "Occurs when an evaluation is attempted without a necessary "
         "type definition.",
     },
-    "1-3-2-6": {
-        "message": "At op {op}: value domains are not supported in the returns of a user defined "
-        "operator.",
-        "description": "Raised when a user defined operator declares its result with a type "
-        "form that the engine cannot check.",
-    },
     "1-3-2-3": {
         "message": "At op {op}: Vtl Script contains Cycles, no DAG established. "
         "Nodes involved: {nodes}.",
@@ -1452,8 +1588,9 @@ centralised_messages = {
         "'define viral propagation' rule for it.",
         "description": "Raised when a viral attribute is combined -- in an operation over "
         "two or more datasets, an aggregation/analytic group-by, or a hierarchy roll-up -- "
-        "without a 'define viral propagation' rule. Viral attributes that are only copied "
-        "through row-preserving operators do not require a rule.",
+        "without a 'define viral propagation' rule. A rule on a value domain applies only "
+        "when the viral attribute is on it in every operand combined. Viral attributes that "
+        "are only copied through row-preserving operators do not require a rule.",
     },
     "1-3-3-7": {
         "message": "Viral attribute {name} uses a reserved component name; "
@@ -1462,13 +1599,6 @@ centralised_messages = {
         "the component names the engine reserves for automatically named measures "
         "(str_var, num_var, int_var, time_var, time_period_var, date_var, duration_var, "
         "bool_var, null_var), which would collide with a promoted measure of the same name.",
-    },
-    "1-3-3-8": {
-        "message": "Viral propagation definition {name} is defined on value domain "
-        "{value_domain}, which is not supported yet; define it on a variable instead.",
-        "description": "Raised when a viral propagation definition uses a valuedomain "
-        "signature. Components do not carry a value domain yet, so the rule could not be "
-        "applied to any viral attribute.",
     },
     "1-3-3-9": {
         "message": "Viral propagation rule {rule} for {name} uses the constant {value}, which "
@@ -1534,8 +1664,9 @@ centralised_messages = {
         "description": "Occurs when the day value is invalid for the given year.",
     },
     "2-1-19-10": {
-        "message": "Invalid year {year}, must be between 1900 and 9999.",
-        "description": "Raised when the year is outside the allowed range.",
+        "message": "Invalid year {year}, must be between {min_year} and 9999.",
+        "description": "Raised when a time operator gives a Time_Period or a Date out of the "
+        "years 1000 to 9999, the years each type holds.",
     },
     "2-1-19-11": {
         "message": "{op} operator is not compatible with time values",
@@ -1584,9 +1715,9 @@ centralised_messages = {
         "description": "Raised when the time values of the operand hold more than one frequency.",
     },
     "2-1-19-24": {
-        "message": "At op time_agg: The period indicator {name} to aggregate to has no value.",
-        "description": "Raised when the scalar that gives time_agg its period indicator holds "
-        "a null.",
+        "message": "At op {op}: The {scalar} has no value.",
+        "description": "Raised when the scalar that gives time_agg its period indicator or "
+        "timeshift its shift number holds a null.",
     },
     "2-1-19-25": {
         "message": "At op {op}: {op} can only be applied to a {comp_type}",

@@ -1,0 +1,5 @@
+define operator f ( x time_period ) returns time_period is x end operator;
+define operator g ( x component < time_period > ) returns component < time_period > is
+    x
+end operator;
+DS_r <- DS_1 [ calc Me_2 := time_agg ( "A" , _ , f ( SC_1 ) ) , Me_3 := time_agg ( "A" , _ , g ( Me_1 ) ) , Me_4 := getmonth ( g ( Me_1 ) ) ];

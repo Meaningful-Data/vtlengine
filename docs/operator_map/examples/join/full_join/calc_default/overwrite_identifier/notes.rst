@@ -1,0 +1,3 @@
+:Tests: ``calc Id_2 := "X"`` with no role: the calculated component has the name of the identifier ``Id_2``, which both operands have.
+:Manual: `Full Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Full%20Join/index.html>`__: "If a generated component already exists in any of the input data sets, all input components homonymous to the former are removed, and only the generated component is kept".
+:Expected: the error ``1-1-6-13``, "Not allowed to overwrite an Identifier: {comp_name}", for "if any of the removed components were identifiers, an error is raised": the calc would remove the identifier ``Id_2``.

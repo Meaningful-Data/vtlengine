@@ -1,0 +1,3 @@
+:Tests: a ruleset on ``Id_2`` conditioned by the variable ``Id_1``, ``when Id_1 = "X" then A = B``.
+:Manual: `define hierarchical ruleset <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/vtl_dl_rulesets/hierarchical_rulesets.html>`__: ``varConditioningSignature ::= condVariable { as vdAlias } ...``, and the left condition "defines the pre-condition for evaluating the left member Code Item (i.e., it is evaluated only when the leftCondition is true)".
+:Expected: one data point, for ``X``: 5 = 5, so ``bool_var`` is true and ``imbalance`` 0. ``Y`` fails the condition and is not compared, so the output ``all``, "all the Data Points produced by the comparison", has no data point for it: the reading of the closed issue #1141.

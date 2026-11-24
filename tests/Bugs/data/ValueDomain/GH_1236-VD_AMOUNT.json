@@ -1,0 +1,9 @@
+{
+  "name": "VD_AMOUNT",
+  "type": "Integer",
+  "setlist": [
+    10,
+    -5,
+    -2
+  ]
+}

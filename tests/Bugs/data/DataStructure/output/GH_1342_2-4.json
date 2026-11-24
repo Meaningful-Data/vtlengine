@@ -1,0 +1,21 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r4",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "type": "Integer",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "str_var",
+          "type": "String",
+          "role": "Measure",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

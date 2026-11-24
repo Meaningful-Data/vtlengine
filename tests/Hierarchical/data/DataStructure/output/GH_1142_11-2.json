@@ -12,7 +12,7 @@
         {
           "name": "Id_2",
           "role": "Identifier",
-          "type": "String",
+          "type": "VD_2",
           "nullable": false
         },
         {
@@ -36,7 +36,7 @@
         {
           "name": "errorlevel",
           "role": "Measure",
-          "type": "Number",
+          "type": "Integer",
           "nullable": true
         },
         {

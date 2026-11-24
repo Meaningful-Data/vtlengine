@@ -1,0 +1,6 @@
+define operator flag (d dataset, s set<string>)
+    returns dataset is
+        d in s
+end operator;
+
+DS_r <- flag(DS_1, VD_AB);

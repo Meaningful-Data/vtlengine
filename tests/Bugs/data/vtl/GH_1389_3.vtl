@@ -1,0 +1,5 @@
+define operator f ( ds dataset , x measure < integer > )
+  returns dataset is ds [ calc Me_5 := x ]
+end operator;
+
+DS_r <- f ( DS_1 , Me_1 );

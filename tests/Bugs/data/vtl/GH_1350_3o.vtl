@@ -1,0 +1,9 @@
+define operator f ( x component )
+    returns component is x > 5
+end operator;
+
+define datapoint ruleset DPR_1 ( variable Me_1 , Me_2 ) is
+    r1 : f ( Me_2 ) errorcode "E1"
+end datapoint ruleset;
+
+DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );

@@ -1,0 +1,3 @@
+:Tests: ``fill_time_series(DS_1)`` without ``limitsMethod`` on annual time_period series: ``A`` has 2010 and 2012, ``B`` has 2011 and 2012.
+:Manual: `Fill time series <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Fill%20time%20series/index.html>`__: ``limitsMethod`` has the "default: **all**", and "If *limitsMethod* is **all**, the time limits are determined with reference to all the time_series of the Data Set: the limits are the minimum and the maximum values of the reference time Identifier Component of the Data Set."
+:Expected: The limits are 2010 and 2012 for both series, so ``A`` gets 2011 and ``B`` gets 2010, which ``single`` would not add; "For the added Data Points, Measures and Attributes assume the **null** value."

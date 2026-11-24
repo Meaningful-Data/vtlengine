@@ -1,0 +1,3 @@
+:Tests: ``var_pop`` as an analytic function at data set level, partitioned by ``Id_1``, with no order and no window clause.
+:Manual: `Analytic invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html>`__: "If windowClause is not specified, then the set of Data Points which contribute to the analytic operation is the whole partition which the current Data Point belongs to". With no order clause, the two defaults that the page gives for an omitted window agree.
+:Expected: every data point gets the values of its partition: 2.75 and 1.25 in ``A``, 4 and 1 in ``B``.

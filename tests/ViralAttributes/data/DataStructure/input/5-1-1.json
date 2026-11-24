@@ -10,9 +10,21 @@
           "nullable": false
         },
         {
+          "name": "Id_2",
+          "type": "Integer",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
           "name": "Me_1",
           "type": "Number",
           "role": "Measure",
+          "nullable": true
+        },
+        {
+          "name": "VAt_1",
+          "type": "CL_OBS",
+          "role": "Viral Attribute",
           "nullable": true
         }
       ]

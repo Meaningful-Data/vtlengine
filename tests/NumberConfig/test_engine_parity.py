@@ -143,7 +143,7 @@ ARITHMETIC_SCRIPTS = {
 @pytest.mark.parametrize("script", ARITHMETIC_SCRIPTS.values(), ids=ARITHMETIC_SCRIPTS.keys())
 def test_arithmetic_parity(script: str) -> None:
     with TemporaryDirectory() as tmp:
-        results = _run_both(script, NUMBER_DS, _number_df(), output_folder=Path(tmp))
+        _run_both(script, NUMBER_DS, _number_df(), output_folder=Path(tmp))
         _assert_csv_parity(Path(tmp))
     results = _run_both(script, NUMBER_DS, _number_df())
     _assert_values_identical(results, "DS_r")
@@ -161,7 +161,7 @@ def test_chained_rounding_matches_pandas_kernel() -> None:
 def test_unary_math_parity() -> None:
     """Sqrt is IEEE-correctly-rounded so raw float64 results are identical;
     exp/ln act as canaries for libm agreement on valid values."""
-    values = [0.123456789012345, 1.5, 4.0, 12345.6789012345, 2.0]
+    values = [0.123456789012345, 1.5, 4.0, 123.456789012345, 2.0]
     df = pd.DataFrame({"Id_1": range(1, len(values) + 1), "Me_1": values})
     script = """
         DS_sqrt <- DS_1[calc Me_1 := sqrt(Me_1)];

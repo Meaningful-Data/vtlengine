@@ -1,0 +1,3 @@
+:Tests: ``DS_1 || "!"``: a scalar appended to every value, where one measure is null.
+:Manual: `String concatenation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/String%20concatenation/index.html>`__: "Concatenates two strings." The scalar is composed with every measure: "An operand Scalar value is composed with all the Measures of the other operand" (Typical behaviours).
+:Expected: ``Me_1`` is ``hello!`` and ``world!``. A null operand gives a null result: "most of the scalar operations (arithmetic, logical, and others) return null when any of their arguments is null" (User Manual), as the manual's ``length`` and ``instr`` examples show.

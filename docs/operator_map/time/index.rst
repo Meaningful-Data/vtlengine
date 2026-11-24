@@ -1,0 +1,328 @@
+============================
+Time operators
+============================
+
+.. raw:: html
+
+   <div class="om-head"><span class="om-chip ok">🟢 17 of 17 operators all ok</span> · <span class="om-gen">
+
+.. raw:: html
+   :file: ../run.html
+
+.. raw:: html
+
+   </span></div>
+
+.. raw:: html
+
+   <div class="om-legend"><span class="om-chip ok">🟢 all ok</span><span class="om-chip partial">🟡 partially implemented</span><span class="om-chip refused">🛡️ refused with an error</span><span class="om-chip missing">🔴 not implemented or crash</span><span class="om-chip diverge">🔵 engines differ</span> <span class="om-key">✅ match · ❌ wrong result · 🛡 guarded error (code) · 💥 crash · 📌 team decision</span></div>
+
+.. raw:: html
+
+   <div class="om-diagram">
+
+.. mermaid::
+   :config: {"flowchart": {"useMaxWidth": false}}
+
+   flowchart LR
+       classDef ok fill:#d4edda,stroke:#28a745,color:#000
+       classDef partial fill:#fff3cd,stroke:#ffc107,color:#000
+       classDef refused fill:#d4edda,stroke:#28a745,stroke-width:3px,stroke-dasharray: 2 2,color:#000
+       classDef missing fill:#f8d7da,stroke:#dc3545,color:#000
+       classDef diverge fill:#cce5ff,stroke:#007bff,color:#000
+       classDef block fill:#2b3a4a,stroke:#2b3a4a,color:#fff,font-weight:bold
+       classDef ext fill:#fff,stroke:#666,color:#000,stroke-dasharray: 5 5
+       B["Time operators"]:::block
+       time__period_indicator["Period indicator · period_indicator<br/>🟢4"]:::ok
+       time__fill_time_series["Fill time series · fill_time_series<br/>🟢8"]:::ok
+       time__flow_to_stock["Flow to stock · flow_to_stock<br/>🟢3"]:::ok
+       time__stock_to_flow["Stock to flow · stock_to_flow<br/>🟢3"]:::ok
+       time__timeshift["Time shift · timeshift<br/>🟢3"]:::ok
+       time__time_agg["Time aggregation · time_agg<br/>🟢8"]:::ok
+       time__current_date["Actual time · current_date<br/>🟢1"]:::ok
+       time__datediff["Days between two dates · datediff<br/>🟢4"]:::ok
+       time__dateadd["Add time unit to date · dateadd<br/>🟢4"]:::ok
+       time__getyear["Extract the year · getyear<br/>🟢2"]:::ok
+       time__getmonth["Extract the month · getmonth<br/>🟢2"]:::ok
+       time__dayofmonth["Extract the day of the month · dayofmonth<br/>🟢2"]:::ok
+       time__dayofyear["Extract the day of the year · dayofyear<br/>🟢2"]:::ok
+       time__daytoyear["Number of days to years and days · daytoyear 📌<br/>🟢2"]:::ok
+       time__daytomonth["Number of days to months and days · daytomonth 📌<br/>🟢2"]:::ok
+       time__yeartoday["Years and days to number of days · yeartoday 📌<br/>🟢2"]:::ok
+       time__monthtoday["Months and days to number of days · monthtoday 📌<br/>🟢2"]:::ok
+       time__period_indicator --- B
+       time__fill_time_series --- B
+       time__flow_to_stock --- B
+       time__stock_to_flow --- B
+       time__timeshift --- B
+       time__time_agg --- B
+       time__current_date --- B
+       time__datediff --- B
+       time__dateadd --- B
+       B --- time__getyear
+       B --- time__getmonth
+       B --- time__dayofmonth
+       B --- time__dayofyear
+       B --- time__daytoyear
+       B --- time__daytomonth
+       B --- time__yeartoday
+       B --- time__monthtoday
+       click time__period_indicator href "period_indicator.html"
+       click time__fill_time_series href "fill_time_series.html"
+       click time__flow_to_stock href "flow_to_stock.html"
+       click time__stock_to_flow href "stock_to_flow.html"
+       click time__timeshift href "timeshift.html"
+       click time__time_agg href "time_agg.html"
+       click time__current_date href "current_date.html"
+       click time__datediff href "datediff.html"
+       click time__dateadd href "dateadd.html"
+       click time__getyear href "getyear.html"
+       click time__getmonth href "getmonth.html"
+       click time__dayofmonth href "dayofmonth.html"
+       click time__dayofyear href "dayofyear.html"
+       click time__daytoyear href "daytoyear.html"
+       click time__daytomonth href "daytomonth.html"
+       click time__yeartoday href "yeartoday.html"
+       click time__monthtoday href "monthtoday.html"
+
+.. raw:: html
+
+   </div>
+
+.. rubric:: Operators
+
+.. list-table::
+   :header-rows: 1
+   :widths: auto
+
+   * - Operator
+     - Status
+     - Forms
+   * - :doc:`Period indicator <period_indicator>` ``period_indicator``
+     - 🟢
+     - 4
+   * - :doc:`Fill time series <fill_time_series>` ``fill_time_series``
+     - 🟢
+     - 8
+   * - :doc:`Flow to stock <flow_to_stock>` ``flow_to_stock``
+     - 🟢
+     - 3
+   * - :doc:`Stock to flow <stock_to_flow>` ``stock_to_flow``
+     - 🟢
+     - 3
+   * - :doc:`Time shift <timeshift>` ``timeshift``
+     - 🟢
+     - 3
+   * - :doc:`Time aggregation <time_agg>` ``time_agg``
+     - 🟢
+     - 8
+   * - :doc:`Actual time <current_date>` ``current_date``
+     - 🟢
+     - 1
+   * - :doc:`Days between two dates <datediff>` ``datediff``
+     - 🟢
+     - 4
+   * - :doc:`Add time unit to date <dateadd>` ``dateadd``
+     - 🟢
+     - 4
+   * - :doc:`Extract the year <getyear>` ``getyear``
+     - 🟢
+     - 2
+   * - :doc:`Extract the month <getmonth>` ``getmonth``
+     - 🟢
+     - 2
+   * - :doc:`Extract the day of the month <dayofmonth>` ``dayofmonth``
+     - 🟢
+     - 2
+   * - :doc:`Extract the day of the year <dayofyear>` ``dayofyear``
+     - 🟢
+     - 2
+   * - :doc:`Number of days to years and days <daytoyear>` ``daytoyear``
+     - 🟢
+     - 2
+   * - :doc:`Number of days to months and days <daytomonth>` ``daytomonth``
+     - 🟢
+     - 2
+   * - :doc:`Years and days to number of days <yeartoday>` ``yeartoday``
+     - 🟢
+     - 2
+   * - :doc:`Months and days to number of days <monthtoday>` ``monthtoday``
+     - 🟢
+     - 2
+
+.. rubric:: Types
+
+.. list-table::
+   :header-rows: 1
+   :widths: auto
+
+   * - Operator
+     - number
+     - integer
+     - time
+     - date
+     - time_period
+     - duration
+     - any type
+   * - :doc:`Period indicator <period_indicator>`
+     -
+     -
+     -
+     -
+     - in
+     - out
+     -
+   * - :doc:`Fill time series <fill_time_series>`
+     -
+     -
+     - in · out
+     - in · out
+     - in · out
+     -
+     - out
+   * - :doc:`Flow to stock <flow_to_stock>`
+     - in · out
+     -
+     - in · out
+     - in · out
+     - in · out
+     -
+     -
+   * - :doc:`Stock to flow <stock_to_flow>`
+     - in · out
+     -
+     - in · out
+     - in · out
+     - in · out
+     -
+     -
+   * - :doc:`Time shift <timeshift>`
+     -
+     - in
+     - in · out
+     - in · out
+     - in · out
+     -
+     - out
+   * - :doc:`Time aggregation <time_agg>`
+     -
+     -
+     - in · out
+     - in · out
+     - in · out
+     - in
+     -
+   * - :doc:`Actual time <current_date>`
+     -
+     -
+     -
+     - out
+     -
+     -
+     -
+   * - :doc:`Days between two dates <datediff>`
+     -
+     - out
+     -
+     - in
+     - in
+     -
+     -
+   * - :doc:`Add time unit to date <dateadd>`
+     -
+     - in
+     - in · out
+     - in · out
+     - in
+     - in
+     - out
+   * - :doc:`Extract the year <getyear>`
+     -
+     - out
+     -
+     - in
+     - in
+     -
+     -
+   * - :doc:`Extract the month <getmonth>`
+     -
+     - out
+     -
+     - in
+     - in
+     -
+     -
+   * - :doc:`Extract the day of the month <dayofmonth>`
+     -
+     - out
+     -
+     - in
+     - in
+     -
+     -
+   * - :doc:`Extract the day of the year <dayofyear>`
+     -
+     - out
+     -
+     - in
+     - in
+     -
+     -
+   * - :doc:`Number of days to years and days <daytoyear>`
+     -
+     - in
+     -
+     -
+     -
+     - out
+     -
+   * - :doc:`Number of days to months and days <daytomonth>`
+     -
+     - in
+     -
+     -
+     -
+     - out
+     -
+   * - :doc:`Years and days to number of days <yeartoday>`
+     -
+     - out
+     -
+     -
+     -
+     - in
+     -
+   * - :doc:`Months and days to number of days <monthtoday>`
+     -
+     - out
+     -
+     -
+     -
+     - in
+     -
+
+.. rubric:: Forms that are not green
+
+Every form is 🟢 or 🛡️.
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   period_indicator
+   fill_time_series
+   flow_to_stock
+   stock_to_flow
+   timeshift
+   time_agg
+   current_date
+   datediff
+   dateadd
+   getyear
+   getmonth
+   dayofmonth
+   dayofyear
+   daytoyear
+   daytomonth
+   yeartoday
+   monthtoday

@@ -1,0 +1,3 @@
+:Tests: ``sum`` at data set level, partitioned by ``Id_1`` and ordered by ``Id_2``, with no window clause, where ``(A, 1, x)`` and ``(A, 1, y)`` tie on ``Id_2``.
+:Manual: `Analytic invocation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Aggregate%20and%20Analytic%20operators/Analytic%20invocation/index.html>`__: with an order clause and no window clause, the default is "range between unbounded preceding and current data point". sdmx-twg/vtl#694 made it the default window of SQL, whose range takes in the data points that tie with the current one on the order keys.
+:Expected: in ``A``, ``Me_1`` is 1 + 2 = 3 on both tied data points, then 6 and 10; in ``B``, 5 and 11.

@@ -45,6 +45,14 @@ from vtlengine.Exceptions import InputValidationException, SemanticError
 from vtlengine.Model import Role
 
 
+def _new_component(ctx: Any) -> Any:
+    """The name that a clause gives a new Component, or the membership alias#comp written in its
+    place, kept as a node, which the semantic analysis refuses (issue #1355)."""
+    if len(ctx.children) > 1:
+        return Terminals().visitComponentID(ctx)
+    return Terminals().visitSimpleComponentId(ctx)
+
+
 class Expr:
     """______________________________________________________________________________________
 
@@ -164,6 +172,8 @@ class Expr:
         elif ctx_id == RC.VAR_ID_EXPR:
             return Terminals().visitVarIdExpr(c)
 
+        raise InputValidationException(code="0-5-1-1")
+
     def bin_op_creator(self, ctx: Any) -> BinOp:
         ctx_list = ctx.children
         left_node = self.visitExpr(ctx_list[0])
@@ -193,7 +203,7 @@ class Expr:
 
         if not ctx_list[2].is_terminal and ctx_list[2].rule_index == RC.LISTS[0]:
             right_node = Terminals().visitLists(ctx_list[2])
-        elif not ctx_list[2].is_terminal and ctx_list[2].rule_index == RC.VALUE_DOMAIN_ID[0]:
+        else:  # valueDomainID
             right_node = Terminals().visitValueDomainID(ctx_list[2])
         bin_op_node = BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
@@ -308,6 +318,8 @@ class Expr:
         elif ctx.ctx_id == RC.ANALYTIC_FUNCTIONS:
             return self.visitAnalyticFunctions(c)
 
+        raise InputValidationException(code="0-5-1-1")
+
     """
                         -----------------------------------
                                 Join Functions
@@ -375,7 +387,12 @@ class Expr:
         const_ctx = next(
             c for c in ctx_list if not c.is_terminal and c.rule_index == RC.CONSTANT[0]
         )
-        component = Terminals().visitComponentID(comp_ctx).value
+        component_node = Terminals().visitComponentID(comp_ctx)
+        component = (
+            f"{component_node.left.value}#{component_node.right.value}"
+            if isinstance(component_node, BinOp)
+            else component_node.value
+        )
         default = Terminals().visitConstant(const_ctx)
         return NvlJoinPair(component=component, default=default, **extract_token_info(ctx))
 
@@ -466,6 +483,8 @@ class Expr:
         elif ctx.ctx_id == RC.CAST_EXPR_DATASET:
             return self.visitCastExprDataset(ctx)
 
+        raise InputValidationException(code="0-5-1-1")
+
     def visitCallDataset(self, ctx: Any) -> UDOCall:
         """
         callFunction: operatorID LPAREN (parameter (COMMA parameter)*)? RPAREN   ;
@@ -545,14 +564,11 @@ class Expr:
         ]
         basic_scalar_type = [
             Terminals().visitBasicScalarType(type_)
+            if type_.rule_index == RC.BASIC_SCALAR_TYPE[0]
+            else Terminals().visitValueDomainName(type_)
             for type_ in ctx_list
-            if not type_.is_terminal and type_.rule_index == RC.BASIC_SCALAR_TYPE[0]
-        ]
-
-        [
-            Terminals().visitValueDomainName(valueD)
-            for valueD in ctx_list
-            if not valueD.is_terminal and valueD.rule_index == RC.VALUE_DOMAIN_NAME[0]
+            if not type_.is_terminal
+            and type_.rule_index in (RC.BASIC_SCALAR_TYPE[0], RC.VALUE_DOMAIN_NAME[0])
         ]
 
         if len(ctx_list) > 6:
@@ -568,15 +584,14 @@ class Expr:
         else:
             param_node = []
 
-        if len(basic_scalar_type) == 1:
-            children_nodes = expr_node + basic_scalar_type
+        children_nodes = expr_node + basic_scalar_type
 
-            return ParamOp(
-                op=op,
-                children=children_nodes,
-                params=param_node,
-                **extract_token_info(ctx),
-            )
+        return ParamOp(
+            op=op,
+            children=children_nodes,
+            params=param_node,
+            **extract_token_info(ctx),
+        )
 
     def visitParameter(self, ctx: Any) -> Any:
         ctx_list = ctx.children
@@ -586,6 +601,8 @@ class Expr:
             return self.visitExpr(c)
         elif c.is_terminal:
             return ID(type_="OPTIONAL", value=c.text, **extract_token_info(c))
+
+        raise InputValidationException(code="0-5-1-1")
 
     """
                         -----------------------------------
@@ -604,6 +621,8 @@ class Expr:
             return self.visitInstrAtom(ctx)
         elif ctx.ctx_id == RC.STRING_DISTANCE_ATOM:
             return self.visitStringDistanceAtom(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitUnaryStringFunction(self, ctx: Any) -> UnaryOp:
         ctx_list = ctx.children
@@ -745,6 +764,8 @@ class Expr:
         elif ctx.ctx_id == RC.BINARY_NUMERIC:
             return self.visitBinaryNumeric(ctx)
 
+        raise InputValidationException(code="0-5-1-1")
+
     def visitUnaryNumeric(self, ctx: Any) -> UnaryOp:
         ctx_list = ctx.children
         c = ctx_list[0]
@@ -808,6 +829,8 @@ class Expr:
             return self.visitIsNullAtom(ctx)
         elif ctx.ctx_id == RC.EXIST_IN_ATOM:
             return self.visitExistInAtom(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitBetweenAtom(self, ctx: Any) -> MulOp:
         ctx_list = ctx.children
@@ -892,6 +915,8 @@ class Expr:
             RC.MONTH_TODAY_ATOM,
         ):
             return self.visitTimeUnaryAtom(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitTimeUnaryAtom(self, ctx: Any) -> UnaryOp:
         ctx_list = ctx.children
@@ -1075,6 +1100,8 @@ class Expr:
         if ctx.ctx_id == RC.NVL_ATOM:
             return self.visitNvlAtom(ctx)
 
+        raise InputValidationException(code="0-5-1-1")
+
     def visitNvlAtom(self, ctx: Any) -> BinOp:
         ctx_list = ctx.children
         c = ctx_list[0]
@@ -1102,6 +1129,8 @@ class Expr:
             return self.visitIntersectAtom(ctx)
         elif ctx.ctx_id == RC.SET_OR_SYM_DIFF_ATOM:
             return self.visitSetOrSYmDiffAtom(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitUnionAtom(self, ctx: Any) -> MulOp:
         ctx_list = ctx.children
@@ -1231,6 +1260,8 @@ class Expr:
             return self.visitValidateHRruleset(ctx)
         elif ctx.ctx_id == RC.VALIDATION_SIMPLE:
             return self.visitValidationSimple(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitValidateDPruleset(self, ctx: Any) -> DPValidation:
         """
@@ -1385,6 +1416,8 @@ class Expr:
         if ctx.ctx_id == RC.AGGR_DATASET:
             return self.visitAggrDataset(ctx)
 
+        raise InputValidationException(code="0-5-1-1")
+
     def visitAggrDataset(self, ctx: Any) -> Aggregation:
         ctx_list = ctx.children
 
@@ -1434,6 +1467,8 @@ class Expr:
             return self.visitLagOrLeadAn(ctx)
         elif ctx.ctx_id == RC.RATIO_TO_REPORT_AN:
             return self.visitRatioToReportAn(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitAnSimpleFunction(self, ctx: Any) -> Analytic:
         ctx_list = ctx.children
@@ -1590,6 +1625,8 @@ class Expr:
         elif not c.is_terminal and c.rule_index == RC.SUBSPACE_CLAUSE[0]:
             return self.visitSubspaceClause(c)
 
+        raise InputValidationException(code="0-5-1-1")
+
     """
                     -----------------------------------
                             Rename Clause
@@ -1622,13 +1659,16 @@ class Expr:
         """
         ctx_list = ctx.children
 
+        # The membership alias#comp is kept as a node, apart from a name holding # (issue #1355)
         left_node = Terminals().visitComponentID(ctx_list[0])
-        if isinstance(left_node, BinOp):
-            left_node = f"{left_node.left.value}{left_node.op}{left_node.right.value}"
-        else:
+        if not isinstance(left_node, BinOp):
             left_node = left_node.value
 
-        right_node = Terminals().visitVarID(ctx_list[2]).value
+        # A membership as the new name is kept as a node, which the semantic analysis refuses
+        # (issue #1355)
+        right_node = _new_component(ctx_list[2])
+        if not isinstance(right_node, BinOp):
+            right_node = right_node.value
 
         return RenameNode(old_name=left_node, new_name=right_node, **extract_token_info(ctx))
 
@@ -1671,7 +1711,7 @@ class Expr:
             base_index = 0
             role = None
 
-        left_node = Terminals().visitSimpleComponentId(ctx_list[base_index])
+        left_node = _new_component(ctx_list[base_index])
         op_node = ":="
         right_node = ExprComp().visitAggregateFunctionsComponents(ctx_list[base_index + 2])
         # Encoding the role information inside the Assignment for easiness and simplicity.
@@ -1739,6 +1779,8 @@ class Expr:
             return self.visitGroupByOrExcept(ctx)
         elif ctx.ctx_id == RC.GROUP_ALL:
             return self.visitGroupAll(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitHavingClause(self, ctx: Any) -> ParamOp:
         """
@@ -1938,7 +1980,7 @@ class Expr:
                 return implicit_node
             return UnaryOp(op=role.value.lower(), operand=operand_node, **extract_token_info(c))
         else:
-            left_node = Terminals().visitSimpleComponentId(c)
+            left_node = _new_component(c)
             op_node = ":="
             right_node = ExprComp().visitExprComponent(ctx_list[2])
 
@@ -2049,3 +2091,5 @@ class Expr:
         elif c.is_terminal:
             opt = c.text
             return ID(type_="OPTIONAL", value=opt, **extract_token_info(ctx))
+
+        raise InputValidationException(code="0-5-1-1")

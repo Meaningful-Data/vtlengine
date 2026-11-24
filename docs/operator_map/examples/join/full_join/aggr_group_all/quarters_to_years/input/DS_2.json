@@ -1,0 +1,11 @@
+{
+  "datasets": [
+    {
+      "name": "DS_2",
+      "DataStructure": [
+        {"name": "Id_1", "type": "Time_Period", "role": "Identifier", "nullable": false},
+        {"name": "Me_2", "type": "Number", "role": "Measure", "nullable": true}
+      ]
+    }
+  ]
+}

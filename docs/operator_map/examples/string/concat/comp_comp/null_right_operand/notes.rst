@@ -1,0 +1,3 @@
+:Tests: ``Me_1 || Me_2`` inside ``calc``, where ``Me_2`` is null in one data point.
+:Manual: `String concatenation <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/String%20concatenation/index.html>`__: "Concatenates two strings." A new component "is added to the original Components of DS_1, by default as a Measure" (Typical behaviours).
+:Expected: ``Me_3`` is ``foobar`` and ``abcd``; ``Me_1`` and ``Me_2`` are kept. A null operand gives a null result: "most of the scalar operations (arithmetic, logical, and others) return null when any of their arguments is null" (User Manual), as the manual's ``length`` and ``instr`` examples show.

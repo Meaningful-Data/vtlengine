@@ -1,0 +1,3 @@
+:Tests: ``cast(Me_1, string, "\PppP")`` on a Duration measure: the "ISO 4 characters representation" of a duration.
+:Manual: `Type Conversion and Formatting Mask <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html#type-conversion-and-formatting-mask>`__: "ISO 4 characters representation: P10M (ten months), P02Q (two quarters) …", with "VTL Mask: ``\PppP``", and "the letter p denotes the number of periods".
+:Expected: ``P01M``, one month, and ``P01Q``, one quarter: a ``P``, the number of periods in two digits and the period indicator. Only the mask explains them: without it, a duration is printed in ISO 8601: ``P1M`` for a month, and no ``Q`` for a quarter.

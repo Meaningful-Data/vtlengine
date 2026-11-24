@@ -1,0 +1,45 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "type": "VD_CTY2",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "ruleid",
+          "type": "String",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "bool_var",
+          "type": "Boolean",
+          "role": "Measure",
+          "nullable": true
+        },
+        {
+          "name": "errorcode",
+          "type": "String",
+          "role": "Measure",
+          "nullable": true
+        },
+        {
+          "name": "errorlevel",
+          "type": "Integer",
+          "role": "Measure",
+          "nullable": true
+        },
+        {
+          "name": "imbalance",
+          "type": "Number",
+          "role": "Measure",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

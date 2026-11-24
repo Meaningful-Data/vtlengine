@@ -1,0 +1,18 @@
+{
+  "name": "COUNTERPART_SECTOR",
+  "type": "String",
+  "setlist": [
+    "S1",
+    "S121",
+    "S122",
+    "S123",
+    "S12K",
+    "S12T",
+    "S13",
+    "S1N",
+    "S1P",
+    "S12M",
+    "S1V",
+    "S1Z"
+  ]
+}

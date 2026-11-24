@@ -1,2 +1,2 @@
 Id_1,Id_2,ruleid,bool_var,errorcode,errorlevel,imbalance
-2,A,R1,False,E1,1.0,10.0
+2,A,R1,False,E1,1,10.0

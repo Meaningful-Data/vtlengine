@@ -1,0 +1,3 @@
+:Tests: ``drop d1#Me_2``, the page's only example of ``drop``, after a ``filter`` and a ``calc``, on two operands that both have ``Me_2``.
+:Manual: `Inner Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Inner%20Join/index.html>`__, Example 2, output verbatim: "drop will remove all specified non-identifier components of VDS₃", and then the prefixes of the components that were in several data sets are stripped.
+:Expected: the join keeps ``(1,A)`` and ``(1,B)``; ``filter Me_1 = "A"`` keeps ``(1,A)``, ``calc Me_4 := Me_1 || Me_1A`` gives the Measure ``AB``, and ``d2#Me_2`` becomes ``Me_2`` = ``Q``.

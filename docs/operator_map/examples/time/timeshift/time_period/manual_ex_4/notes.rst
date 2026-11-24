@@ -1,0 +1,3 @@
+:Tests: ``timeshift(DS_4, -1)`` on an annual and a quarterly series of the same phenomenon ``A``: one period of each series into the past.
+:Manual: `Time shift <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Time%20operators/Time%20shift/index.html>`__, Example 4, output verbatim: the operator "shifts the reference time Identifier of a number of periods (of the time series) equal to the *shiftNumber* parameter. If *shiftNumber* is negative, the shift is in the past".
+:Expected: The years move back one year, 2010 to 2013 becoming 2009 to 2012, and the quarters one quarter, 2010Q1 to 2010Q4 becoming 2009Q4 to 2010Q3.

@@ -1,0 +1,3 @@
+:Tests: ``aggr`` by ``Id_1`` with ``having min(Me_1) > 15``.
+:Manual: `Cross Join <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/Join%20operators/Cross%20Join/index.html>`__, and Aggregate invocation: "only groups for which havingCondition evaluates to true appear in the result", and the condition "must invoke aggregate operators" (``min`` here, which the reading of #1119 also allows).
+:Expected: the cartesian product of ``DS_1`` (``Id_1`` 1, 2) and ``DS_2`` (``Id_2`` A, B) has 2 × 2 = 4 data points. The smallest ``Me_1`` of ``Id_1`` = 1 is 10, so only ``Id_1`` = 2 is kept, with ``Me_3`` = 40.

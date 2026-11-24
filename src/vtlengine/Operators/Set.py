@@ -6,7 +6,7 @@ from vtlengine.AST.Grammar.tokens import INTERSECT, SETDIFF, SYMDIFF, UNION
 from vtlengine.DataTypes import binary_implicit_promotion
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, Dataset
-from vtlengine.Operators import Operator
+from vtlengine.Operators import Operator, promoted, share_value_domains
 from vtlengine.Utils._dataframe import merge_frames
 
 
@@ -46,8 +46,19 @@ class Set(Operator):
                     dataset_2=dataset_2.name,
                 )
 
+    @staticmethod
+    def _promoted_operands(operands: List[Dataset], result: Dataset) -> List[Dataset]:
+        """The operands with their Components cast to their type in the result, the common type
+        of the operands, so that their values and the matching of their Data Points are values
+        of it: an Integer is a Number, a Boolean a String, a Date or a Time_Period a Time
+        (issues #1352 and #1353)."""
+        return [promoted(operand, result, operand.get_components_names()) for operand in operands]
+
     @classmethod
     def validate(cls, operands: List[Dataset]) -> Dataset:
+        if any(len(operand.get_identifiers()) == 0 for operand in operands):
+            # The Data Points are matched by their Identifiers, as in a join (issue #1356)
+            raise SemanticError("1-2-10", op=cls.op)
         base_operand = operands[0]
         for operand in operands[1:]:
             cls.check_same_structure(base_operand, operand)
@@ -64,6 +75,7 @@ class Set(Operator):
                     current_comp.data_type, comp.data_type
                 )
                 current_comp.nullable = current_comp.nullable or comp.nullable
+        share_value_domains(result_components, operands)
 
         result = Dataset(name="result", components=result_components, data=None)
         return result
@@ -75,6 +87,7 @@ class Union(Set):
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
+        operands = cls._promoted_operands(operands, result)
         all_datapoints = [ds.data for ds in operands]
         result.data = pd.concat(all_datapoints, sort=True, ignore_index=True)
         identifiers_names = result.get_identifiers_names()
@@ -89,6 +102,7 @@ class Intersection(Set):
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
+        operands = cls._promoted_operands(operands, result)
         all_datapoints = [ds.data for ds in operands]
         for data in all_datapoints:
             if result.data is None:
@@ -121,6 +135,7 @@ class Symdiff(Set):
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
+        operands = cls._promoted_operands(operands, result)
         id_names = result.get_identifiers_names()
         not_identifiers = (
             result.get_measures_names()
@@ -158,6 +173,7 @@ class Setdiff(Set):
     @classmethod
     def evaluate(cls, operands: List[Dataset]) -> Dataset:
         result = cls.validate(operands)
+        operands = cls._promoted_operands(operands, result)
         all_datapoints = [ds.data for ds in operands]
         for data in all_datapoints:
             if result.data is None:

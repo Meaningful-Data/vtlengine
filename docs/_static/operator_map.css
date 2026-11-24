@@ -1,0 +1,136 @@
+/* The VTL operator map (docs/operator_map), as tool/render.py writes its pages.
+ *
+ * Every rule is scoped by a class that only the pages of the map use (om-...), so no other page
+ * of the docs changes. The colours of the statuses are those of the diagrams (tool/mermaid.py). */
+
+/* Statuses: a chip of the colour of the status. "refused" is the green of "ok" with a dotted
+ * border, as in the diagrams. */
+.om-chip {
+    display: inline-block;
+    margin: 2px 3px;
+    padding: 0 6px;
+    border: 1px solid #999;
+    border-radius: 4px;
+    color: #000 !important;
+    font-size: 13px;
+    text-decoration: none !important;
+}
+.om-chip.ok { background: #d4edda; border-color: #28a745; }
+.om-chip.partial { background: #fff3cd; border-color: #ffc107; }
+.om-chip.refused { background: #d4edda; border: 2px dotted #28a745; }
+.om-chip.missing { background: #f8d7da; border-color: #dc3545; }
+.om-chip.diverge { background: #cce5ff; border-color: #007bff; }
+.om-chip small { color: #444; }
+
+/* The legend, and the key of the borders of the boxes of an operator diagram. */
+.om-legend { margin: 4px 0; }
+.om-legend .om-key { display: block; color: #444; font-size: 13px; }
+.om-box {
+    display: inline-block;
+    margin: 2px 4px;
+    padding: 0 8px;
+    background: #f8f9fa;
+    border: 2px solid #495057;
+    font-size: 13px;
+}
+.om-box.dashed { border-style: dashed; }
+.om-box.dotted { border-style: dotted; }
+
+/* The title of a light box that the forms of an operator name (Signature, Body, Return type),
+ * above the first form of the box in the Forms section: the light fill and the thin solid border
+ * of the box in the diagram. It is a caption, not a heading. */
+.om-box-title {
+    margin: 20px 0 0;
+    padding: 2px 10px;
+    background: #f8f9fa;
+    border: 1px solid #868e96;
+    color: #343a40;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+/* The line under the title: the status, the manual page and the versions of the engines. */
+.om-head { margin: 0 0 6px; }
+.om-head .om-gen { color: #666; font-size: 12px; }
+
+/* Diagrams. The docs draw a diagram at most 700 px wide (mermaid_width in conf.py), which makes
+ * the text of a wide diagram too small to read. The diagrams of the map are drawn at their
+ * natural size (the directive turns useMaxWidth off): the diagram takes its own width, and one
+ * wider than the page scrolls inside its block instead of shrinking. The extension wraps each
+ * diagram in a flex container (.mermaid-container), which would shrink it to the page: it must
+ * not shrink. */
+.om-diagram { margin: 0 0 24px; overflow-x: auto; }
+.om-diagram pre.mermaid {
+    flex: none;
+    width: max-content !important;
+    max-width: none !important;
+    margin: 0;
+}
+
+/* The overview diagram is drawn small, at about half its natural width (420 px): the tables under
+ * it lead to the pages. The diagram scales with its block (its SVG is as wide as the block, and
+ * its height follows). The button of the extension that opens it in full screen (⛶, 28 px wide,
+ * 4 px from the right of the container that the extension puts around the diagram) sits in a
+ * margin of its own, on the right, and covers no node. A scale (zoom, transform) would not do:
+ * Mermaid measures the labels while it draws them in the page, and would size the boxes for the
+ * scaled text. */
+.om-diagram.om-small { max-width: 456px; }
+.om-diagram.om-small .mermaid-container { box-sizing: border-box; padding-right: 36px; }
+.om-diagram.om-small pre.mermaid { width: 100% !important; }
+
+/* Types: the "Takes · Gives" line, then "Comes from" and "Goes to" side by side, each a
+ * collapsible list by block. */
+.om-takes, .om-line { margin: 4px 0; }
+.om-cols { display: flex; gap: 16px; align-items: flex-start; }
+.om-col { flex: 1; min-width: 0; }
+details.om-dir { margin: 4px 0; }
+details.om-blk { margin: 2px 0 2px 12px; padding-left: 8px; border-left: 3px solid #ddd; }
+details.om-dir > summary, details.om-blk > summary { cursor: pointer; }
+@media (max-width: 768px) {
+    .om-cols { flex-direction: column; }
+}
+
+/* Examples: a collapsible block with the title, the status and the marks of the engines. */
+details.om-example {
+    margin: 8px 0;
+    padding: 6px 12px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+details.om-example > summary { cursor: pointer; font-size: 15px; }
+.om-ex-title { font-weight: bold; }
+.om-marks { color: #333; font-size: 13px; }
+.om-detail { margin: 6px 0; color: #555; font-size: 13px; }
+.om-files { margin: 6px 0 2px; font-size: 13px; }
+
+/* The data of an example, as written in its files: a cell keeps its spaces. The theme, and
+ * custom.css, make the cells of tables wrap normally; these rules are more specific. */
+.rst-content table.om-data td,
+.rst-content table.om-data th {
+    white-space: pre-wrap !important;
+}
+
+/* The index: the results at a glance, a bar of the examples by status and a chip for each, and
+ * the note on how the results were made, in small print. */
+.om-glance {
+    border: 1px solid #e1e4e5;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 0 0 16px;
+    background: #f8f9fa;
+}
+.om-glance p { margin: 0 0 6px; }
+.om-glance-bar {
+    display: flex;
+    height: 14px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+.om-glance-bar .ok { background: #5cb85c; }
+.om-glance-bar .refused { background: #9ed49e; }
+.om-glance-bar .partial { background: #ffc107; }
+.om-glance-bar .missing { background: #dc3545; }
+.om-glance-bar .diverge { background: #007bff; }
+.om-note { font-size: 13px; line-height: 18px; color: #777; }

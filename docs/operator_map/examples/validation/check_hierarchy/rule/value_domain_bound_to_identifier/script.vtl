@@ -1,0 +1,6 @@
+define hierarchical ruleset HR_2 ( valuedomain rule VD_1 ) is
+    R1 : A = B + C
+    ; R2 : C >= B
+end hierarchical ruleset;
+
+DS_r := check_hierarchy ( DS_1, HR_2 rule Id_2 );

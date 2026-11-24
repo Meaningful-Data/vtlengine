@@ -1,0 +1,8 @@
+{
+  "name": "VD_FLOW",
+  "setlist": [
+    "CREDIT",
+    "DEBIT"
+  ],
+  "type": "String"
+}

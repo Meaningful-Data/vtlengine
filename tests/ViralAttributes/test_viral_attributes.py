@@ -47,7 +47,7 @@ execution_codes = [
     ("11-1", 1),  # measure target: Me_1 kept + all three virals copied per row
     ("11-2", 1),  # identifier target: promoted to int_var, virals kept
     ("11-3", 1),  # plain-attribute target: promoted to str_var (At_1 gone), virals kept
-    ("11-4", 1),  # viral target: stays viral under its own name, no measure added
+    ("11-4", 1),  # viral target: promoted to str_var and kept as viral (#1257)
     ("11-5", 1),  # aggregate-max rule defined: still copied per row, NOT collapsed (#906)
     ("11-6", 1),  # unary over membership: abs(DS_1#Me_1)
     ("11-7", 1),  # calc over a viral-target membership (regression: BinderException)
@@ -123,13 +123,26 @@ def test_definition_statement_ordering(code: str, number_inputs: int) -> None:
 validation_codes = [
     ("6-1", "1-3-3-1"),  # duplicate variable-level rule
     ("6-2", "1-3-3-4"),  # duplicate enumeration combination
-    ("5-1", "1-3-3-8"),  # a value-domain rule is not supported yet
 ]
 
 
 @pytest.mark.parametrize("code,exception_code", validation_codes)
 def test_validation(code: str, exception_code: str) -> None:
     ViralHelper.NewSemanticExceptionTest(code=code, number_inputs=1, exception_code=exception_code)
+
+
+# -- Rules on the value domain a viral attribute is defined on, issue #1236 --
+value_domain_rule_codes = [
+    ("5-1", 1),  # aggregation, enumerated rule on the value domain, which the result keeps
+    ("5-2", 2),  # binary, the rule on the variable overrides the one on the value domain
+]
+
+
+@pytest.mark.parametrize("code,number_inputs", value_domain_rule_codes)
+def test_value_domain_rule(code: str, number_inputs: int) -> None:
+    ViralHelper.BaseTest(
+        code=code, number_inputs=number_inputs, references_names=["DS_r"], vd_names=["CL_OBS"]
+    )
 
 
 # -- Rule constants must be values of the viral attribute's type, issue #1158 --

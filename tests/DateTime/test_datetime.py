@@ -98,7 +98,7 @@ check_date_valid_params = [
 
 check_date_invalid_params = [
     pytest.param("2020-01-15T25:00:00", InputValidationException, id="invalid_datetime_bad_hour"),
-    pytest.param("1799-12-31", InputValidationException, id="invalid_year_below_range"),
+    pytest.param("0999-12-31", InputValidationException, id="invalid_year_below_range"),
     pytest.param("2020-01-01T12", InputValidationException, id="invalid_partial_hour_t"),
     pytest.param("2020-01-01T12:30", InputValidationException, id="invalid_partial_no_sec_t"),
     pytest.param("2020-01-01 12", InputValidationException, id="invalid_partial_hour_space"),
@@ -636,9 +636,9 @@ def test_check_date_invalid_message(input_value, expected_substring):
 
 def test_check_date_year_range_message():
     with pytest.raises(InputValidationException) as exc_info:
-        check_date("1799-12-31")
+        check_date("0999-12-31")
     message = str(exc_info.value.args[0])
-    assert "1800" in message
+    assert "1000" in message
     assert "1900" not in message
 
 
@@ -1211,7 +1211,8 @@ _DATE_STRUCTURE = {
 }
 
 # One rule set for Date, read by either engine: a month or a day may be written short,
-# the space around a value is not part of it, and the year runs from 1800 (issue #1065).
+# the space around a value is not part of it, and the year runs from 1000 (issues #1065,
+# #1352).
 date_load_valid_params = [
     pytest.param("2020-1-5", "2020-01-05", id="month_and_day_short"),
     pytest.param("2020-01-5", "2020-01-05", id="day_short"),
@@ -1219,13 +1220,13 @@ date_load_valid_params = [
     pytest.param("2020-1-5T12:30:45", "2020-01-05T12:30:45", id="date_part_short_with_time"),
     pytest.param(" 2020-01-01", "2020-01-01", id="leading_space"),
     pytest.param("2020-01-01 ", "2020-01-01", id="trailing_space"),
-    pytest.param("1800-01-01", "1800-01-01", id="first_year"),
+    pytest.param("1000-01-01", "1000-01-01", id="first_year"),
     pytest.param("9999-12-31", "9999-12-31", id="last_year"),
 ]
 
 date_load_invalid_params = [
-    pytest.param("1799-12-31", id="year_below_range"),
-    pytest.param("1700-01-01", id="year_well_below_range"),
+    pytest.param("0999-12-31", id="year_below_range"),
+    pytest.param("0100-01-01", id="year_well_below_range"),
     pytest.param("0500-01-01", id="year_of_three_digits"),
     pytest.param("2020-13-01", id="month_past_december"),
     pytest.param("2020-02-30", id="day_past_the_month"),

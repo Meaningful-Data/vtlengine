@@ -10,6 +10,12 @@
           "nullable": false
         },
         {
+          "name": "str_var",
+          "type": "String",
+          "role": "Measure",
+          "nullable": true
+        },
+        {
           "name": "VAt_1",
           "type": "String",
           "role": "Viral Attribute",

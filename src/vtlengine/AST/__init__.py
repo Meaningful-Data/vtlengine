@@ -10,10 +10,10 @@ Basic AST nodes.
 import inspect
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from vtlengine.DataTypes import ScalarType
-from vtlengine.Model import Dataset, Role
+from vtlengine.Model import Dataset, Role, ValueDomain
 
 if hasattr(inspect, "get_annotations"):
     _get_annotations = inspect.get_annotations
@@ -106,12 +106,10 @@ class AST:
     def ast_equality(self, other):
         if not isinstance(other, self.__class__):
             return False
+        # The children are compared too, in order: two nodes with different operands or two
+        # scripts with different statements are not equal (issue #1364)
         for k in self.__all_annotations():
-            if (
-                getattr(self, k) != getattr(other, k)
-                and k not in AST.__annotations__
-                and k != "children"  # We do not want to compare the children order here
-            ):
+            if getattr(self, k) != getattr(other, k) and k not in AST.__annotations__:
                 return False
         return True
 
@@ -121,10 +119,13 @@ class AST:
 @dataclass
 class Comment(AST):
     """
-    Comment: (value)
+    Comment: (value, inner)
+
+    inner: the comment is written inside the statement before it in its script.
     """
 
     value: str
+    inner: bool = False
     __eq__ = AST.ast_equality
 
 
@@ -369,7 +370,14 @@ class Windowing(AST):
 
 @dataclass
 class OrderBy(AST):
-    component: str
+    """
+    OrderBy: (component, order)
+
+    component: the name of a Component, or the membership alias#comp that names a Component
+        of a join by its qualified name (issue #1355).
+    """
+
+    component: Union[str, AST]
     order: str
 
     __eq__ = AST.ast_equality
@@ -383,7 +391,8 @@ class Analytic(AST):
     op: SUM, AVG, COUNT, MEDIAN, MIN, MAX, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP,
         FIRST_VALUE, LAST_VALUE, LAG, LEAD, RATIO_TO_REPORT
 
-    partition_by: List of components (as written in the clause).
+    partition_by: List of components (as written in the clause): names, or memberships
+        alias#comp that name a Component of a join by its qualified name (issue #1355).
     partition_op: "by", "except", or "except all" — VTL 2.2 (sdmx-twg/vtl#699,
         #391). For "except" the listed components are excluded from the operand's
         identifiers; for "except all" the partition is empty (single global
@@ -396,7 +405,7 @@ class Analytic(AST):
     operand: Optional[AST]
     window: Optional[Windowing] = None
     params: Optional[List[int]] = None
-    partition_by: Optional[List[str]] = None
+    partition_by: Optional[List[Union[str, AST]]] = None
     partition_op: Optional[str] = None
     order_by: Optional[List[OrderBy]] = None
 
@@ -423,10 +432,15 @@ class RegularAggregation(AST):
 class RenameNode(AST):
     """
     RenameNode: (old_name, new_name)
+
+    old_name: the name of a Component, or the membership alias#comp that names a Component of
+        a join by its qualified name (issue #1355).
+    new_name: the name of the Component, or a membership alias#comp written in its place, which
+        the semantic analysis refuses (issue #1355).
     """
 
-    old_name: str
-    new_name: str
+    old_name: Union[str, AST]
+    new_name: Union[str, AST]
 
     __eq__ = AST.ast_equality
 
@@ -566,6 +580,32 @@ class Types(AST):
     __eq__ = AST.ast_equality
 
 
+@dataclass(frozen=True)
+class RulesetType:
+    """The type of a ruleset parameter of a user defined operator, whose argument is a ruleset.
+
+    kind is ruleset (any ruleset), datapoint or hierarchical; signature_type, valuedomain or
+    variable, is the sub-type, None taking either. names are the value domains or variables of
+    a datapoint ruleset, in order, or the one of a hierarchical ruleset, and conditions the
+    conditioning ones of a hierarchical ruleset; None takes any.
+    """
+
+    kind: str
+    signature_type: Optional[str] = None
+    names: Optional[Tuple[str, ...]] = None
+    conditions: Optional[Tuple[str, ...]] = None
+
+
+@dataclass(frozen=True)
+class SetType:
+    """The type set<data_type> of a parameter of a user defined operator, whose argument is a
+    value domain or a set of values of that type. A set of any scalar type has no data_type.
+    A value domain can be the data_type, which the operator, once defined, gives as its basic
+    type, whose values must be values of it (issue #1351)."""
+
+    data_type: Optional[Union[Type[ScalarType], "ValueDomainType"]] = None
+
+
 @dataclass
 class TypeConstraint:
     """What a type in the signature of a user defined operator requires of its values: not
@@ -574,6 +614,22 @@ class TypeConstraint:
     not_null: bool = False
     condition: Optional[AST] = None
     values: Optional[List[AST]] = None
+    # The value domain that types the parameter, whose values the values must be (issue #1236)
+    value_domain: Optional[ValueDomain] = None
+
+
+@dataclass
+class ValueDomainType:
+    """A value domain that types a parameter of a user defined operator, as the signature names
+    it, and where: the operator, once defined, gives the parameter its basic type and checks
+    the values against the value domain."""
+
+    name: str
+    # Where the signature names it, for the error raised when no value domain has the name
+    definition: str = field(default="", compare=False, repr=False)
+
+    def __str__(self) -> str:
+        return self.name
 
 
 @dataclass

@@ -18,12 +18,14 @@ class RoleSetter(Unary):
     def validate(cls, operand: ALLOWED_MODEL_TYPES, data_size: int = 0) -> DataComponent:
         if isinstance(operand, Scalar):
             nullable = cls.role != Role.IDENTIFIER and operand.nullable
+            # The component a scalar gives is defined on the value domain of the scalar
             return DataComponent(
                 name=operand.name,
                 data_type=operand.data_type,
                 role=cls.role,
                 nullable=nullable,
                 data=None,
+                value_domain=operand.value_domain,
             )
         operand.role = cls.role
         return copy(operand)

@@ -2,9 +2,9 @@ name: Version Consistency Check
 
 on:
   push:
-    branches: [ main, 1.9.X ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main, 1.9.X ]
+    branches: [ main, develop ]
   merge_group:
 
 permissions:

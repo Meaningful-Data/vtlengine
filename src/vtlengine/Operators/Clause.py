@@ -1,6 +1,6 @@
 import re
 from copy import copy
-from typing import List, Type, Union
+from typing import List, Type, Union, cast
 
 import pandas as pd
 
@@ -11,6 +11,7 @@ from vtlengine.AST.Grammar.tokens import (
     DROP,
     FILTER,
     KEEP,
+    PIVOT,
     RENAME,
     SUBSPACE,
     UNPIVOT,
@@ -18,14 +19,36 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
+    Duration,
     ScalarType,
     String,
     binary_implicit_promotion,
+    to_string,
 )
 from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
-from vtlengine.Operators import Operator
+from vtlengine.Model import (
+    Component,
+    DataComponent,
+    Dataset,
+    Role,
+    Scalar,
+    ValueDomain,
+    join_homonyms,
+)
+from vtlengine.Operators import (
+    Operator,
+    _as_type,
+    _promotes,
+    check_component_name,
+    shared_value_domain,
+)
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
+from vtlengine.Utils._dataframe import merge_frames
+from vtlengine.ViralPropagation import (
+    apply_viral_return_types,
+    combine_viral_groups,
+    require_rules,
+)
 
 
 def _check_repeated(op: str, operands: List[str]) -> None:
@@ -40,34 +63,48 @@ class Calc(Operator):
 
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
+        # A Component computed twice (issue #1356)
+        _check_repeated(cls.op, [operand.name for operand in operands])
         result_components = {name: copy(comp) for name, comp in dataset.components.items()}
         dataset_name = VirtualCounter._new_ds_name()
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
 
         for operand in operands:
+            # Checked also where the name is a Component of the operand, as the join's
+            # qualified A#Me_1 (issue #1355)
+            check_component_name(cls.op, operand.name)
+            # In a join, the Component replaces the Components alias#name of the operands
+            # that all have it (Inner Join page of the VTL 2.2 manual, issue #1355)
+            replaced = join_homonyms(dataset.components, operand.name)
             if operand.name in result_dataset.components:
-                if result_dataset.components[operand.name].role == Role.IDENTIFIER:
-                    raise SemanticError("1-1-6-13", op=cls.op, comp_name=operand.name)
+                replaced.append(operand.name)
+            for name in replaced:
+                if result_dataset.components[name].role == Role.IDENTIFIER:
+                    raise SemanticError("1-1-6-13", op=cls.op, comp_name=name)
                 # Override component with same name
-                # TODO: Check this for version 2.1
-                result_dataset.delete_component(operand.name)
+                result_dataset.delete_component(name)
 
             if isinstance(operand, Scalar):
+                # A scalar written alone keeps the value domain it is defined on, as a
+                # component does
                 result_dataset.add_component(
                     Component(
                         name=operand.name,
                         data_type=operand.data_type,
                         role=Role.MEASURE,
                         nullable=True,
+                        value_domain=operand.value_domain,
                     )
                 )
             else:
+                # A component written alone keeps the value domain it is defined on
                 result_dataset.add_component(
                     Component(
                         name=operand.name,
                         data_type=operand.data_type,
                         role=operand.role,
                         nullable=operand.nullable,
+                        value_domain=operand.value_domain,
                     )
                 )
         return result_dataset
@@ -81,6 +118,8 @@ class Calc(Operator):
                 result_dataset.data[operand.name] = operand.value
             else:
                 result_dataset.data[operand.name] = operand.data
+            replaced = join_homonyms(dataset.components, operand.name)
+            result_dataset.data = result_dataset.data.drop(columns=replaced)
         return result_dataset
 
 
@@ -89,10 +128,13 @@ class Aggregate(Operator):
 
     @classmethod
     def validate(cls, operands: List[Union[DataComponent, Scalar]], dataset: Dataset) -> Dataset:
+        # A Component computed twice (issue #1356)
+        _check_repeated(cls.op, [operand.name for operand in operands])
         dataset_name = VirtualCounter._new_ds_name()
         result_dataset = Dataset(name=dataset_name, components=dataset.components, data=None)
 
         for operand in operands:
+            check_component_name(cls.op, operand.name)
             if operand.name in dataset.get_identifiers_names() or (
                 isinstance(operand, DataComponent) and operand.role == Role.IDENTIFIER
             ):
@@ -112,12 +154,14 @@ class Aggregate(Operator):
                     )
                 )
             else:
+                # An aggregate that gives one of the values, as max, keeps its value domain
                 result_dataset.add_component(
                     Component(
                         name=operand.name,
                         data_type=operand.data_type,
                         role=operand.role,
                         nullable=operand.nullable,
+                        value_domain=operand.value_domain,
                     )
                 )
         return result_dataset
@@ -240,6 +284,8 @@ class Rename(Operator):
 
         from_names_set = set(from_names)
         for operand in operands:
+            # A name: the semantic analysis refused a membership (issue #1355)
+            check_component_name(cls.op, cast(str, operand.new_name))
             if operand.old_name not in dataset.components:
                 raise SemanticError(
                     "1-1-1-10",
@@ -255,7 +301,7 @@ class Rename(Operator):
                     dataset_name=dataset_name,
                 )
 
-        rename_map = {op.old_name: op.new_name for op in operands}
+        rename_map = {op.old_name: cast(str, op.new_name) for op in operands}
         result_components = {}
         for comp in dataset.components.values():
             if comp.name in rename_map:
@@ -265,6 +311,7 @@ class Rename(Operator):
                     data_type=comp.data_type,
                     role=comp.role,
                     nullable=comp.nullable,
+                    value_domain=comp.value_domain,
                 )
             else:
                 result_components[comp.name] = comp
@@ -281,13 +328,100 @@ class Rename(Operator):
 
 
 class Pivot(Operator):
+    """pivot identifier, measure: one Measure per value of the value domain the Identifier is
+    defined on, named after the value, which holds the value of the measure of the data point
+    of that value in each group of the other Identifiers."""
+
+    op = PIVOT
+
+    @staticmethod
+    def measure_names(value_domain: ValueDomain) -> List[str]:
+        """The names of the Measures, the values of the value domain as a cast to string
+        writes them, whatever form the setlist writes them in: true and false for a Boolean
+        one, 2024Q1 for a Time_Period 2024-Q1, 2024-01-05 for a Date 2024-1-5 (issue #1349).
+        A Duration keeps the form of the data and the setlist (A, Q), not the one of the cast
+        (P1Y, P3M)."""
+        if value_domain.type is Duration:
+            return [to_string(value) for value in value_domain.setlist]
+        return [String.explicit_cast(value, value_domain.type) for value in value_domain.values()]
+
+    @classmethod
+    def _check_role(cls, dataset: Dataset, name: str, role: Role) -> Component:
+        if name not in dataset.components:
+            raise SemanticError("1-1-1-10", op=cls.op, comp_name=name, dataset_name=dataset.name)
+        component = dataset.components[name]
+        if component.role != role:
+            raise SemanticError(
+                "1-1-1-13",
+                op=cls.op,
+                comp_name=name,
+                role_1=role.value,
+                role_2=component.role.value,
+            )
+        return component
+
     @classmethod
     def validate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        raise SemanticError("1-3-13", construct="pivot clause")
+        if len(operands) != 2:
+            raise SemanticError("1-1-6-17", op=cls.op)
+        identifier = cls._check_role(dataset, operands[0], Role.IDENTIFIER)
+        measure = cls._check_role(dataset, operands[1], Role.MEASURE)
+        if identifier.value_domain is None:
+            raise SemanticError("1-1-6-18", op=cls.op, name=identifier.name)
+
+        components = {
+            comp.name: comp for comp in dataset.get_identifiers() if comp.name != identifier.name
+        }
+        viral_attributes = dataset.get_viral_attributes()
+        names = cls.measure_names(identifier.value_domain)
+        for name in names:
+            check_component_name(cls.op, name)
+        kept = {*components, *(comp.name for comp in viral_attributes)}
+        repeated = sorted({name for name in names if name in kept})
+        if repeated:
+            raise SemanticError("1-1-6-9", op=cls.op, from_components=repeated)
+        # The Measures are of the type, and on the value domain, of the input Measure
+        for name in names:
+            components[name] = Component(
+                name=name,
+                data_type=measure.data_type,
+                role=Role.MEASURE,
+                nullable=True,
+                value_domain=measure.value_domain,
+            )
+        # The data points of a group are combined, so are their viral attributes
+        components.update((comp.name, copy(comp)) for comp in viral_attributes)
+        require_rules(viral_attributes)
+        apply_viral_return_types(viral_attributes, components)
+        return Dataset(name=VirtualCounter._new_ds_name(), components=components, data=None)
 
     @classmethod
     def evaluate(cls, operands: List[str], dataset: Dataset) -> Dataset:
-        raise SemanticError("1-3-13", construct="pivot clause")
+        result = cls.validate(operands, dataset)
+        identifier, measure = operands
+        value_domain = dataset.components[identifier].value_domain
+        if dataset.data is None or value_domain is None:
+            return result
+        keys = [name for name in dataset.get_identifiers_names() if name != identifier]
+        names = dict(zip(value_domain.values(), cls.measure_names(value_domain)))
+        # A key for the single group of a pivot of the only Identifier
+        index = keys or ["__pivot_group__"]
+        data = dataset.data.assign(__pivot_group__=0) if not keys else dataset.data
+        wide = data.pivot(index=index, columns=identifier, values=measure)
+        wide = wide.reindex(columns=list(names)).rename(columns=names)
+        wide.columns.name = None
+        wide = wide.reset_index()
+        viral_components = dataset.get_viral_attributes()
+        if viral_components and len(data):
+            groups = combine_viral_groups(data, index, viral_components)
+            wide = merge_frames(wide, groups, how="left", on=index)
+        result.data = wide.drop(columns="__pivot_group__", errors="ignore")
+        for name, comp in result.components.items():
+            if name not in result.data.columns:
+                result.data[name] = None
+            result.data[name] = result.data[name].astype(comp.data_type.dtype())  # type: ignore[call-overload]
+        result.data = result.data[result.get_components_names()]
+        return result
 
 
 class Unpivot(Operator):
@@ -299,6 +433,8 @@ class Unpivot(Operator):
         if len(operands) != 2:
             raise SemanticError("1-1-6-17", op=cls.op)
         identifier, measure = operands
+        check_component_name(cls.op, identifier)
+        check_component_name(cls.op, measure)
 
         if len(dataset.get_identifiers()) < 1:
             raise SemanticError("1-2-10", op=cls.op)
@@ -324,8 +460,16 @@ class Unpivot(Operator):
                 else binary_implicit_promotion(final_type, comp.data_type)
             )
 
+        # The new Measure holds the values of the unpivoted Measures, so it keeps the value
+        # domain they all share, and has the basic type otherwise (issue #1348)
         result_dataset.add_component(
-            Component(name=measure, data_type=final_type, role=Role.MEASURE, nullable=True)
+            Component(
+                name=measure,
+                data_type=final_type,
+                role=Role.MEASURE,
+                nullable=True,
+                value_domain=shared_value_domain(dataset.get_measures()),
+            )
         )
         # Viral attributes propagate to the result, replicated across the unpivoted rows.
         for viral_comp in dataset.get_viral_attributes():
@@ -339,7 +483,16 @@ class Unpivot(Operator):
             viral_names = dataset.get_viral_attributes_names()
             # Unpivot replicates each source row's viral attribute values across the
             # unpivoted rows (kept as id_vars); no rule is executed — copy only (issue #906).
-            src = dataset.data
+            # The values are cast to the type of the new Measure: a Date or a Time_Period is a
+            # Time value (issue #1352), a Boolean the String "true" or "false" (issue #1353)
+            measure_type = result_dataset.components[operands[1]].data_type
+            src = dataset.data.assign(
+                **{
+                    comp.name: _as_type(dataset.data[comp.name], measure_type, comp.data_type)
+                    for comp in dataset.get_measures()
+                    if _promotes(comp.data_type, measure_type)
+                }
+            )
             result_dataset.data = src.melt(
                 id_vars=dataset.get_identifiers_names() + viral_names,
                 value_vars=dataset.get_measures_names(),

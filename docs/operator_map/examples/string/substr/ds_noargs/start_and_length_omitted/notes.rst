@@ -1,0 +1,3 @@
+:Tests: ``substr(DS_1)`` with neither ``start`` nor ``length``.
+:Manual: `Sub-string extraction <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators/String%20operators/Sub-string%20extraction/index.html>`__: "If ``start`` is omitted, the substring starts from the 1st position." and "If ``length`` is omitted or overcomes the length of the input string, the substring ends at the end of the input string."
+:Expected: the substring runs from the 1st position to the end, so every value comes out as it went in. A null operand gives a null result: "most of the scalar operations (arithmetic, logical, and others) return null when any of their arguments is null" (User Manual), as the manual's ``length`` and ``instr`` examples show.

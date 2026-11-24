@@ -1,5 +1,5 @@
 ACCOUNTING_ENTRY,FUNCTIONAL_CAT,INSTR_ASSET,INT_ACC_ITEM,REF_AREA,REF_SECTOR,bool_var,ruleid,errorcode,errorlevel,TEST
-C,D,F,G,IT,S1,False,sign1c,sign1c,1.0,1c
+C,D,F,G,IT,S1,False,sign1c,sign1c,1,1c
 C,P,F,G,IT,S1,True,sign1c,,,
 C,D,FL,S,PT,S1,True,sign1c,,,
 D,P,F,G,PT,S1,True,sign1c,,,
@@ -13,7 +13,7 @@ D,D,F,S,IT,S1,True,sign2c,,,
 D,P,FL,S,PT,S1,True,sign2c,,,
 C,D,F,G,IT,S1,True,sign3c,,,
 C,P,F,G,IT,S1,True,sign3c,,,
-C,D,FL,S,PT,S1,False,sign3c,sign3c,1.0,3c
+C,D,FL,S,PT,S1,False,sign3c,sign3c,1,3c
 D,P,F,G,PT,S1,True,sign3c,,,
 D,D,F,S,IT,S1,True,sign3c,,,
 D,P,FL,S,PT,S1,True,sign3c,,,

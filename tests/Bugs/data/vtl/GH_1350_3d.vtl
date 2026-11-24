@@ -1,0 +1,5 @@
+define datapoint ruleset DPR_1 ( variable Me_1 as X ) is
+    r1 : between ( X , 1 , 2 ) errorcode "E1"
+end datapoint ruleset;
+
+DS_r <- check_datapoint ( DS_1 , DPR_1 invalid );

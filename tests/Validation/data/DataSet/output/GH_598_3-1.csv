@@ -1,2 +1,2 @@
 Id_1,Id_2,bool_var,imbalance,errorcode,errorlevel
-A,2,False,,True,False
+A,2,False,,true,False

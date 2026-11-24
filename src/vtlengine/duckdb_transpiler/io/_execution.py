@@ -5,10 +5,12 @@ This module contains helper functions for executing VTL scripts with DuckDB,
 handling dataset loading/saving with DAG scheduling for memory efficiency.
 """
 
+import operator
 import re
+from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, List, Literal, Optional, Tuple, Union
 
 import duckdb
 import pandas as pd
@@ -39,6 +41,8 @@ from vtlengine.duckdb_transpiler.sql import initialize_time_types
 from vtlengine.Exceptions import RunTimeError, transformation_output
 from vtlengine.files.output._time_period_representation import TimePeriodRepresentation
 from vtlengine.Model import Component, Dataset, Scalar
+from vtlengine.Operators.Analytic import WINDOW_BOUND
+from vtlengine.Operators.Time import Time_Aggregation, Time_Shift
 from vtlengine.Utils._number_config import get_effective_output_digits
 
 # A query that returns one table as it is: ``SELECT * FROM "name"``
@@ -70,20 +74,46 @@ def _map_time_agg_error(msg: str, msg_lower: str) -> RunTimeError:
 
 
 def _mixed_frequency_error(msg_lower: str) -> Exception:
-    """The time operator that rejected an operand holding more than one frequency."""
-    if "timeshift" in msg_lower:
-        return RunTimeError(
-            "2-1-19-23",
-            op="timeshift",
-            comp_type="dataset",
-            param="single time series frequency",
-        )
+    """The time operator that rejected an operand holding more than one frequency, of its
+    time series or, for fill_time_series on Time values, of its time intervals."""
+    kind = "time interval" if "time interval" in msg_lower else "time series"
     return RunTimeError(
         "2-1-19-23",
-        op="fill_time_series",
+        op="timeshift" if "timeshift" in msg_lower else "fill_time_series",
         comp_type="dataset",
-        param="single time interval frequency",
+        param=f"single {kind} frequency",
     )
+
+
+def _parameter_error(msg: str) -> RunTimeError:
+    """A parameter read from the data that the operator does not take (mirrors 2-1-18-1): a
+    null or negative window bound that a Scalar gives (macro vtl_window_bound), a null offset
+    of lag or lead (macro vtl_lag_offset, issue #1355) or an integer parameter of substr or
+    instr below its minimum."""
+    window_bound = re.search(r"VTL 2-1-18-1 (\S+) Window bound", msg)
+    if window_bound is not None:
+        op = window_bound.group(1)
+        return RunTimeError("2-1-18-1", op=op, param_type="Window bound", correct_type=WINDOW_BOUND)
+    match = re.search(r"VTL 2-1-18-1 (\S+) (\S+) (\S+)", msg)
+    op, param, expected = match.groups() if match else ("", "", "")
+    correct_type = expected if expected == "Integer" else f">= {expected}"
+    return RunTimeError("2-1-18-1", op=op, param_type=param, correct_type=correct_type)
+
+
+def _period_error(msg: str) -> Optional[Exception]:
+    """A period indicator that is not one (macros vtl_dateadd and vtl_time_agg_period, mirrors
+    2-1-19-2), and the period that a Scalar gives time_agg, which the query checks (macro
+    vtl_time_agg_period, issue #1355): a null or one not coarser than the period to aggregate
+    from."""
+    if "vtl 2-1-19-2 invalid period" in msg.lower():
+        return RunTimeError("2-1-19-2", period=msg.rsplit(" ", 1)[-1])
+    missing = re.search(r"VTL 2-1-19-24 (\S+)", msg)
+    if missing is not None:
+        return Time_Aggregation.no_value_error(missing.group(1))
+    finer = re.search(r"VTL 2-1-19-26 (\S+) (\S+)", msg)
+    if finer is not None:
+        return RunTimeError("2-1-19-26", value_1=finer.group(1), value_2=finer.group(2))
+    return None
 
 
 def _map_udo_constraint_error(msg: str) -> Optional[Exception]:
@@ -93,6 +123,18 @@ def _map_udo_constraint_error(msg: str) -> Optional[Exception]:
         return None
     op, element, constraint, value = match.groups()
     return RunTimeError("2-3-9", op=op, element=element, value=value, constraint=constraint)
+
+
+def _downcast_error(msg: str) -> Optional[RunTimeError]:
+    """VTL macro vtl_downcast: a value put into a value domain that is not one of its values."""
+    match = re.search("VTL 2-1-5-4 (.*?)\u00a6(.*?)\u00a6(.*?)\u00a6(.*)", msg)
+    if match is None:
+        return None
+    op, type_, value_domain, value = match.groups()
+    if type_ == "Date":
+        # A TIMESTAMP column writes a date with its time: write it as the pandas engine does
+        value = _format_timestamp(pd.Timestamp(value))
+    return RunTimeError("2-1-5-4", op=op, value=value, type=type_, value_domain=value_domain)
 
 
 def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
@@ -140,23 +182,29 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
         type_2, value = match.groups() if match else ("Number", "unknown")
         return RunTimeError("2-1-5-1", value=value, type_1="String", type_2=type_2)
 
-    # VTL macro vtl_text_to_date: text that is not a date (mirrors 2-1-19-8)
+    downcast = _downcast_error(msg)
+    if downcast is not None:
+        return downcast
+
+    if "vtl 2-1-5-3 " in msg_lower:
+        match = re.search(r"VTL 2-1-5-3 (.*?)\|~\|(.*?)\|~\|(.*?)\|~\|(.*?)\|~\|", msg, re.S)
+        type_1, type_2, mask, value = match.groups() if match else ("", "", "", "unknown")
+        return RunTimeError("2-1-5-3", value=value, type_1=type_1, type_2=type_2, mask=mask)
+
+    # A text cast to Date that is not a date (text_to_date, mirrors 2-1-19-8)
     if "vtl 2-1-19-8 " in msg_lower:
         return RunTimeError("2-1-19-8", date=msg.split("VTL 2-1-19-8 ", 1)[-1])
 
-    # VTL macro vtl_dateadd: a period indicator that is not one (mirrors 2-1-19-2)
-    if "vtl 2-1-19-2 invalid period" in msg_lower:
-        return RunTimeError("2-1-19-2", period=msg.rsplit(" ", 1)[-1])
+    period = _period_error(msg)
+    if period is not None:
+        return period
 
     # datediff: a Time value, which holds two dates
     if "vtl 2-1-19-25" in msg_lower:
         return RunTimeError("2-1-19-25", op="datediff", comp_type="Date or Time_Period value")
 
-    # substr / instr: an integer parameter read from the data below its minimum
     if "vtl 2-1-18-1" in msg_lower:
-        match = re.search(r"VTL 2-1-18-1 (\S+) (\S+) (-?\d+)", msg)
-        op, param, minimum = match.groups() if match else ("", "", "")
-        return RunTimeError("2-1-18-1", op=op, param_type=param, correct_type=f">= {minimum}")
+        return _parameter_error(msg)
 
     # hierarchy: two rules compute different values for one data point (issues #1142, #1193)
     if "vtl 2-1-10-1" in msg_lower:
@@ -179,6 +227,41 @@ def _map_vtl_macro_error(msg: str, msg_lower: str) -> Optional[Exception]:
 # The VTL type of the SQL types a text is cast to when it is read as a number
 _NUMERIC_SQL_TYPES = {"DOUBLE": "Number", "INT64": "Integer", "BIGINT": "Integer"}
 
+_INT64_OPERATIONS: Dict[str, Callable[[int, int], int]] = {
+    "+": operator.add,
+    "-": operator.sub,
+    "*": operator.mul,
+}
+
+
+def _integer_out_of_range(msg: str) -> Optional[RunTimeError]:
+    """An Integer result that does not fit in 64 bits: an INT64 overflow in +, - or *, whose
+    exact value the pandas engine gives, or a DOUBLE out of the range of BIGINT (issue #1356)."""
+    overflow = re.search(r"Overflow in \w+ of INT64 \((-?\d+) ([-+*]) (-?\d+)\)", msg)
+    if overflow is not None:
+        left, sign, right = overflow.groups()
+        value: Any = _INT64_OPERATIONS[sign](int(left), int(right))
+        return RunTimeError("2-1-5-1", value=value, type_1="Number", type_2="Integer")
+    double = re.search(
+        r"Type DOUBLE with value (\S+) can't be cast because the value is out of "
+        r"range for the destination type INT64",
+        msg,
+    )
+    if double is not None:
+        return RunTimeError("2-1-5-1", value=double.group(1), type_1="Number", type_2="Integer")
+    return None
+
+
+def _eval_result_error(msg: str) -> Optional[RunTimeError]:
+    """The checks of the result of eval against its returns clause (issue #1356): a number with
+    decimals for an Integer (vtl_to_integer, 2-1-5-2) and duplicated Identifiers (2-1-15-4)."""
+    if "VTL 2-1-5-2 " in msg:
+        return RunTimeError("2-1-5-2", value=re.split(r"VTL 2-1-5-2 |\n", msg)[1])
+    if "VTL 2-1-15-4 " in msg:
+        op, name = re.split(r"VTL 2-1-15-4 |\n", msg)[1].split(" ", 1)
+        return RunTimeError("2-1-15-4", op=op, name=name)
+    return None
+
 
 def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     """Map a DuckDB query execution error to a VTL exception.
@@ -191,9 +274,30 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
     msg = str(error)
     msg_lower = msg.lower()
 
-    macro_error = _map_udo_constraint_error(msg) or _map_vtl_macro_error(msg, msg_lower)
+    macro_error = (
+        _map_udo_constraint_error(msg)
+        or _map_vtl_macro_error(msg, msg_lower)
+        or _integer_out_of_range(msg)
+        or _eval_result_error(msg)
+    )
     if macro_error is not None:
         return macro_error
+
+    # timeshift, dateadd: a period or a date of a year it cannot have (check before the
+    # 2-1-19-1 prefix match)
+    if "vtl error 2-1-19-10" in msg_lower:
+        match = re.search(r"Invalid year (-?\d+), must be between (\d+)", msg)
+        year, min_year = match.groups() if match else ("unknown", "1000")
+        return RunTimeError("2-1-19-10", year=year, min_year=min_year)
+
+    # timeshift: a shift number of no value (mirrors 2-1-19-24)
+    if "vtl error 2-1-19-24" in msg_lower:
+        match = re.search(r"2-1-19-24 scalar (.*?) \|end", msg, re.S)
+        return Time_Shift.no_value_error(match.group(1) if match else "unknown")
+
+    # sdmx_gregorian output format: a period of an indicator it cannot write (mirrors 2-1-19-21)
+    if "vtl error 2-1-19-21" in msg_lower:
+        return RunTimeError("2-1-19-21", period=msg.rsplit("got ", 1)[-1].strip()[:1])
 
     # time_agg: period indicator too coarse for target
     if "vtl error 2-1-19-1" in msg_lower:
@@ -211,7 +315,8 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
 
     # Custom VTL macro errors: cannot determine period
     if "cannot determine period for interval" in msg_lower:
-        value = msg.split(": ", 1)[-1] if ": " in msg else "unknown"
+        match = re.search(r"Cannot determine period for interval: (.*)", msg)
+        value = match.group(1) if match else "unknown"
         return RunTimeError("2-1-5-1", value=value, type_1="Time", type_2="Time_Period")
 
     # Text cast to a number whose type the SQL generation could not tell (mirrors 2-1-5-1)
@@ -270,6 +375,18 @@ def _map_query_error(error: duckdb.Error, sql_query: str) -> Exception:
 
     # Return original error if no mapping found
     return error
+
+
+@contextmanager
+def _mapped_query_errors(sql_query: str) -> Iterator[None]:
+    """Raise the VTL error that a DuckDB error of the query maps to, or the DuckDB error."""
+    try:
+        yield
+    except duckdb.Error as e:
+        mapped = _map_query_error(e, sql_query)
+        if mapped is not e:
+            raise mapped from e
+        raise
 
 
 def _format_timestamp(ts: Any) -> str:
@@ -356,8 +473,13 @@ def _declared_type_expr(
         return f"CAST({quoted} AS BIGINT) AS {quoted}"
     if comp.data_type == Boolean and col_type != "BOOLEAN":
         return f"CAST({quoted} AS BOOLEAN) AS {quoted}"
-    if comp.data_type == String and col_type != "VARCHAR":
-        return f"CAST({quoted} AS VARCHAR) AS {quoted}"
+    if comp.data_type == String:
+        text = quoted if col_type == "VARCHAR" else f"CAST({quoted} AS VARCHAR)"
+        if csv_text_mode:
+            # An empty String is written as an empty field, as null and as on the pandas
+            # engine, where COPY would quote it (issue #1353)
+            return f"NULLIF({text}, '') AS {quoted}"
+        return quoted if text == quoted else f"{text} AS {quoted}"
     return quoted
 
 
@@ -513,7 +635,7 @@ def cleanup_scheduled_datasets(
     conn: duckdb.DuckDBPyConnection,
     statement_num: int,
     ds_analysis: DatasetSchedule,
-    output_folder: Optional[Path],
+    output_folder: Optional[Union[Path, str]],
     output_datasets: Dict[str, Dataset],
     output_scalars: Dict[str, Scalar],
     results: Dict[str, Union[Dataset, Scalar]],
@@ -528,7 +650,7 @@ def cleanup_scheduled_datasets(
         conn: DuckDB connection
         statement_num: Current statement number (1-indexed)
         ds_analysis: DAG analysis dict with deletion schedule
-        output_folder: Path to save CSVs (None for in-memory mode)
+        output_folder: Folder or S3 URI to save the results in (None for in-memory mode)
         output_datasets: Dict of output dataset structures
         output_scalars: Dict of output scalar structures
         results: Dict to store results
@@ -568,7 +690,7 @@ def cleanup_scheduled_datasets(
 def fetch_result(
     conn: duckdb.DuckDBPyConnection,
     result_name: str,
-    output_folder: Optional[Path],
+    output_folder: Optional[Union[Path, str]],
     output_datasets: Dict[str, Dataset],
     output_scalars: Dict[str, Scalar],
     representation: Optional[TimePeriodRepresentation] = None,
@@ -580,7 +702,7 @@ def fetch_result(
     Args:
         conn: DuckDB connection
         result_name: Name of the result table
-        output_folder: Path to save CSV (None for in-memory mode)
+        output_folder: Folder or S3 URI to save the result in (None for in-memory mode)
         output_datasets: Dict of output dataset structures
         output_scalars: Dict of output scalar structures
         representation: TimePeriod output format (applied before save/fetch)
@@ -589,10 +711,12 @@ def fetch_result(
     Returns:
         Dataset or Scalar with result data
     """
-    # Apply time period representation before saving/fetching
-    apply_time_period_representation(
-        conn, result_name, output_datasets, output_scalars, representation
-    )
+    # Apply time period representation before saving/fetching. A period the format cannot
+    # write raises its VTL error (issue #1352)
+    with _mapped_query_errors(""):
+        apply_time_period_representation(
+            conn, result_name, output_datasets, output_scalars, representation
+        )
 
     # Scalars are always fetched in-memory (never saved to CSV)
     if result_name in output_scalars:
@@ -693,7 +817,7 @@ def execute_queries(
     input_datasets: Dict[str, Dataset],
     output_datasets: Dict[str, Dataset],
     output_scalars: Dict[str, Scalar],
-    output_folder: Optional[Path],
+    output_folder: Optional[Union[Path, str]],
     return_only_persistent: bool,
     time_period_output_format: str = "vtl",
     output_format: Literal["csv", "parquet"] = "csv",
@@ -710,7 +834,7 @@ def execute_queries(
         input_datasets: Dict of input dataset structures
         output_datasets: Dict of output dataset structures
         output_scalars: Dict of output scalar structures
-        output_folder: Path to save CSVs (None for in-memory mode)
+        output_folder: Folder or S3 URI to save the results in (None for in-memory mode)
         return_only_persistent: Only return persistent assignments
         time_period_output_format: Output format for TimePeriod columns
         output_format: Output file format ("csv" or "parquet")
@@ -736,10 +860,6 @@ def execute_queries(
         sql_fragments.append(repr_macro)
     initialize_time_types(conn, sql_fragments=sql_fragments)
 
-    # Ensure output folder exists if provided
-    if output_folder:
-        output_folder.mkdir(parents=True, exist_ok=True)
-
     copies, ds_analysis = _reuse_repeated_statements(queries, ds_analysis)
 
     # Execute each query with DAG scheduling
@@ -758,13 +878,8 @@ def execute_queries(
             # Execute query and create table
             copied = copies.get(statement_num)
             source_sql = sql_query if copied is None else f'SELECT * FROM "{copied}"'
-            try:
+            with _mapped_query_errors(sql_query):
                 conn.execute(f'CREATE TABLE "{result_name}" AS {source_sql}')
-            except duckdb.Error as e:
-                mapped = _map_query_error(e, sql_query)
-                if mapped is not e:
-                    raise mapped from e
-                raise
 
         # Clean up datasets scheduled for deletion
         cleanup_scheduled_datasets(
@@ -802,6 +917,6 @@ def execute_queries(
     # Save scalars to CSV when output_folder is provided
     if output_folder:
         result_scalars = {k: v for k, v in results.items() if isinstance(v, Scalar)}
-        save_scalars_duckdb(result_scalars, output_folder)
+        save_scalars_duckdb(conn, result_scalars, output_folder)
 
     return results

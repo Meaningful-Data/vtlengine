@@ -1,0 +1,6 @@
+define operator outside (d dataset, s set<string>)
+    returns dataset is
+        d[calc Me_2 := Me_1 not_in s]
+end operator;
+
+DS_r <- outside(DS_1, VD_AB);

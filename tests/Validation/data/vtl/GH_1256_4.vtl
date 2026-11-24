@@ -1,0 +1,6 @@
+define datapoint ruleset dpr1 (variable Me_1) is
+    r1: Me_1 >= 0 errorcode "neg" errorlevel 1;
+    r2: Me_1 >= -2 errorcode "low" errorlevel true
+end datapoint ruleset;
+
+DS_r <- check_datapoint(DS_1, dpr1 all);

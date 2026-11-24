@@ -2,6 +2,7 @@ import csv
 import json
 import sys
 from pathlib import Path
+from typing import Any, Dict
 
 import pandas as pd
 import pytest
@@ -10,7 +11,6 @@ from pysdmx.model import (
     TransformationScheme,
 )
 
-import vtlengine.DataTypes as DataTypes
 from tests.Helper import _use_duckdb_backend, engine_params
 from vtlengine.API import (
     create_ast,
@@ -30,8 +30,13 @@ from vtlengine.API._InternalApi import (
     load_value_domains,
     load_vtl,
 )
-from vtlengine.DataTypes import Integer, Null, String
-from vtlengine.Exceptions import DataLoadError, InputValidationException, SemanticError
+from vtlengine.DataTypes import Boolean, Integer, Null, Number, String
+from vtlengine.Exceptions import (
+    DataLoadError,
+    InputValidationException,
+    RunTimeError,
+    SemanticError,
+)
 from vtlengine.Model import Component, Dataset, ExternalRoutine, Role, Scalar, ValueDomain
 from vtlengine.Utils._recursion import MIN_RECURSION_LIMIT, recursion_headroom
 
@@ -138,19 +143,19 @@ load_datasets_with_data_without_dp_params_OK = [
                     components={
                         "Id_1": Component(
                             name="Id_1",
-                            data_type=DataTypes.Integer,
+                            data_type=Integer,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Id_2": Component(
                             name="Id_2",
-                            data_type=DataTypes.String,
+                            data_type=String,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Me_1": Component(
                             name="Me_1",
-                            data_type=DataTypes.Number,
+                            data_type=Number,
                             role=Role.MEASURE,
                             nullable=True,
                         ),
@@ -158,7 +163,7 @@ load_datasets_with_data_without_dp_params_OK = [
                     data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 )
             },
-            {"sc_1": Scalar(name="sc_1", data_type=DataTypes.Integer, value=None)},
+            {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
             None,
         ),
     )
@@ -175,19 +180,19 @@ load_datasets_with_data_path_params_OK = [
                     components={
                         "Id_1": Component(
                             name="Id_1",
-                            data_type=DataTypes.Integer,
+                            data_type=Integer,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Id_2": Component(
                             name="Id_2",
-                            data_type=DataTypes.String,
+                            data_type=String,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Me_1": Component(
                             name="Me_1",
-                            data_type=DataTypes.Number,
+                            data_type=Number,
                             role=Role.MEASURE,
                             nullable=True,
                         ),
@@ -209,19 +214,19 @@ load_datasets_with_data_path_params_OK = [
                     components={
                         "Id_1": Component(
                             name="Id_1",
-                            data_type=DataTypes.Integer,
+                            data_type=Integer,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Id_2": Component(
                             name="Id_2",
-                            data_type=DataTypes.String,
+                            data_type=String,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Me_1": Component(
                             name="Me_1",
-                            data_type=DataTypes.Number,
+                            data_type=Number,
                             role=Role.MEASURE,
                             nullable=True,
                         ),
@@ -233,19 +238,19 @@ load_datasets_with_data_path_params_OK = [
                     components={
                         "Id_1": Component(
                             name="Id_1",
-                            data_type=DataTypes.Integer,
+                            data_type=Integer,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Id_2": Component(
                             name="Id_2",
-                            data_type=DataTypes.String,
+                            data_type=String,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Me_1": Component(
                             name="Me_1",
-                            data_type=DataTypes.Number,
+                            data_type=Number,
                             role=Role.MEASURE,
                             nullable=True,
                         ),
@@ -267,19 +272,19 @@ load_datasets_with_data_path_params_OK = [
                     components={
                         "Id_1": Component(
                             name="Id_1",
-                            data_type=DataTypes.Integer,
+                            data_type=Integer,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Id_2": Component(
                             name="Id_2",
-                            data_type=DataTypes.String,
+                            data_type=String,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Me_1": Component(
                             name="Me_1",
-                            data_type=DataTypes.Number,
+                            data_type=Number,
                             role=Role.MEASURE,
                             nullable=True,
                         ),
@@ -649,19 +654,19 @@ def test_load_datastructures(datastructure):
         components={
             "Id_1": Component(
                 name="Id_1",
-                data_type=DataTypes.Integer,
+                data_type=Integer,
                 role=Role.IDENTIFIER,
                 nullable=False,
             ),
             "Id_2": Component(
                 name="Id_2",
-                data_type=DataTypes.String,
+                data_type=String,
                 role=Role.IDENTIFIER,
                 nullable=False,
             ),
             "Me_1": Component(
                 name="Me_1",
-                data_type=DataTypes.Number,
+                data_type=Number,
                 role=Role.MEASURE,
                 nullable=True,
             ),
@@ -670,7 +675,7 @@ def test_load_datastructures(datastructure):
     )
     reference_scalar = Scalar(
         name="sc_1",
-        data_type=DataTypes.Integer,
+        data_type=Integer,
         value=None,
     )
 
@@ -731,7 +736,7 @@ def test_load_datasets_with_wrong_inputs(ds_r, dp, error_message):
                     }
                 ]
             },
-            {"id1": DataTypes.Integer, "measure1": DataTypes.Number},
+            {"id1": Integer, "measure1": Number},
         ),
         # Test with 'data_type' key for backward compatibility
         (
@@ -756,7 +761,7 @@ def test_load_datasets_with_wrong_inputs(ds_r, dp, error_message):
                     }
                 ]
             },
-            {"id1": DataTypes.String, "attr1": DataTypes.Boolean},
+            {"id1": String, "attr1": Boolean},
         ),
     ],
     ids=["type_key", "data_type_key_backward_compat"],
@@ -798,7 +803,7 @@ def test_load_datasets_datastructure_key_compatibility(data_structure, expected_
                 ],
                 "datasets": [{"name": "test_ds", "structure": "test_structure"}],
             },
-            {"id1": DataTypes.Integer, "measure1": DataTypes.String},
+            {"id1": Integer, "measure1": String},
         ),
         # Test with 'data_type' key for backward compatibility
         (
@@ -824,7 +829,7 @@ def test_load_datasets_datastructure_key_compatibility(data_structure, expected_
                 ],
                 "datasets": [{"name": "test_ds", "structure": "test_structure"}],
             },
-            {"id1": DataTypes.Number, "attr1": DataTypes.Boolean},
+            {"id1": Number, "attr1": Boolean},
         ),
     ],
     ids=["type_key", "data_type_key_backward_compat"],
@@ -850,19 +855,19 @@ def test_semantic(script, data_structures, value_domains, external_routines):
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Id_2": Component(
                     name="Id_2",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -893,19 +898,19 @@ def test_run(script, data_structures, datapoints, value_domains, external_routin
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Id_2": Component(
                     name="Id_2",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -921,19 +926,19 @@ def test_run(script, data_structures, datapoints, value_domains, external_routin
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Id_2": Component(
                     name="Id_2",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -974,19 +979,19 @@ def test_run_only_persistent_results(
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Id_2": Component(
                     name="Id_2",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -1024,19 +1029,19 @@ def test_run_only_persistent(script, data_structures, datapoints, value_domains,
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Id_2": Component(
                     name="Id_2",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -1097,13 +1102,13 @@ def test_readme_example():
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -1162,13 +1167,13 @@ def test_readme_run():
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -1277,25 +1282,25 @@ def test_non_mandatory_fill_at():
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Id_2": Component(
                     name="Id_2",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
                 "At_1": Component(
                     name="At_1",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.ATTRIBUTE,
                     nullable=True,
                 ),
@@ -1373,25 +1378,25 @@ def test_non_mandatory_fill_me():
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Id_2": Component(
                     name="Id_2",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
                 "At_1": Component(
                     name="At_1",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.ATTRIBUTE,
                     nullable=True,
                 ),
@@ -1526,25 +1531,25 @@ def test_load_data_structure_with_new_schema(data_structure):
         components={
             "Id_1": Component(
                 name="Id_1",
-                data_type=DataTypes.String,
+                data_type=String,
                 role=Role.IDENTIFIER,
                 nullable=False,
             ),
             "Id_2": Component(
                 name="Id_2",
-                data_type=DataTypes.String,
+                data_type=String,
                 role=Role.IDENTIFIER,
                 nullable=False,
             ),
             "Me_1": Component(
                 name="Me_1",
-                data_type=DataTypes.Integer,
+                data_type=Integer,
                 role=Role.MEASURE,
                 nullable=True,
             ),
             "At_1": Component(
                 name="At_1",
-                data_type=DataTypes.String,
+                data_type=String,
                 role=Role.VIRAL_ATTRIBUTE,
                 nullable=True,
             ),
@@ -1733,13 +1738,13 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -1751,7 +1756,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
             components={
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -1806,13 +1811,13 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -1824,7 +1829,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
             components={
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -2023,10 +2028,10 @@ def test_with_multiple_vd_and_ext_routines():
         "DS_r": Dataset(
             name="DS_r",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", Boolean, Role.MEASURE, True),
             },
             data=pd.DataFrame(
                 {
@@ -2040,10 +2045,10 @@ def test_with_multiple_vd_and_ext_routines():
         "DS_r2": Dataset(
             name="DS_r2",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", Boolean, Role.MEASURE, True),
             },
             data=pd.DataFrame(
                 {
@@ -2057,8 +2062,8 @@ def test_with_multiple_vd_and_ext_routines():
         "DS_r3": Dataset(
             name="DS_r3",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
             },
             data=pd.DataFrame(
                 {
@@ -2070,13 +2075,13 @@ def test_with_multiple_vd_and_ext_routines():
         "DS_r4": Dataset(
             name="DS_r4",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
             },
             data=pd.DataFrame(
                 {
-                    "Id_1": [2012, 2012, 2012],
-                    "Me_1": [0.0, 4.0, 9.0],
+                    "Id_1": [2012],
+                    "Me_1": [9.0],
                 }
             ),
         ),
@@ -2131,36 +2136,36 @@ def test_semantic_analysis_list_vd_ext_routines():
         "DS_r": Dataset(
             name="DS_r",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", Boolean, Role.MEASURE, True),
             },
             data=None,
         ),
         "DS_r2": Dataset(
             name="DS_r2",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", Boolean, Role.MEASURE, True),
             },
             data=None,
         ),
         "DS_r3": Dataset(
             name="DS_r3",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
             },
             data=None,
         ),
         "DS_r4": Dataset(
             name="DS_r4",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
             },
             data=None,
         ),
@@ -2785,3 +2790,1160 @@ def test_referenced_structure_not_found():
     with pytest.raises(InputValidationException, match="0-2-1-1") as excinfo:
         load_datasets(data_structures)
     assert "Missing" in excinfo.value.args[0]
+
+
+def test_GH_1326_load_value_domain_objects():
+    """``ValueDomain`` objects are accepted, alone or mixed in a list (GH #1326).
+
+    https://github.com/Meaningful-Data/vtlengine/issues/1326
+    """
+    value_domain = ValueDomain(name="VD_1", type=String, setlist=["DE", "FR"])
+    assert load_value_domains(value_domain) == {"VD_1": value_domain}
+
+    loaded = load_value_domains(
+        [
+            value_domain,
+            {"name": "VD_2", "type": "Integer", "setlist": [1, 2]},
+            filepath_ValueDomains / "VD_2.json",
+        ]
+    )
+    assert loaded["VD_1"] == value_domain
+    assert loaded["VD_2"] == ValueDomain(name="VD_2", type=Integer, setlist=[1, 2])
+    assert "Countries" in loaded
+    validate_value_domain([value_domain])
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize("as_list", [False, True])
+def test_GH_1326_run_with_value_domain_object(use_duckdb, as_list):
+    """``run`` and ``semantic_analysis`` take ``ValueDomain`` objects (GH #1326).
+
+    https://github.com/Meaningful-Data/vtlengine/issues/1326
+    """
+    value_domain = ValueDomain(name="vd", type=String, setlist=["A", "B"])
+    value_domains = [value_domain] if as_list else value_domain
+    script = "DS_r <- DS_1 [filter Id_1 in vd];"
+    data_structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": ["A", "C"], "Me_1": [1.0, 2.0]})}
+
+    semantic_result = semantic_analysis(
+        script=script, data_structures=data_structures, value_domains=value_domains
+    )
+    assert "DS_r" in semantic_result
+
+    result = run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        value_domains=value_domains,
+        use_duckdb=use_duckdb,
+    )
+    data = result["DS_r"].data
+    assert data["Id_1"].tolist() == ["A"]
+    assert data["Me_1"].tolist() == [1.0]
+
+
+@pytest.mark.parametrize(
+    "value_domain, value, type_",
+    [
+        (
+            {"name": "VD_1", "type": "Date", "setlist": ["2020-01-01", "2020-13-45"]},
+            "2020-13-45",
+            "Date",
+        ),
+        (
+            {"name": "VD_1", "type": "Time_Period", "setlist": ["2020Q1", "2020Q9"]},
+            "2020Q9",
+            "Time_Period",
+        ),
+        ({"name": "VD_1", "type": "Duration", "setlist": ["A", "X"]}, "X", "Duration"),
+        ({"name": "VD_1", "type": "Time", "setlist": ["2020-01-01/2020-12-31", "X"]}, "X", "Time"),
+    ],
+)
+def test_GH_1343_invalid_setlist_values(value_domain, value, type_):
+    """Each value of a setlist must be a valid value of the type of the value domain (GH #1343).
+
+    https://github.com/Meaningful-Data/vtlengine/issues/1343
+    """
+    message = f"Value {value} of the setlist of Value Domain VD_1 is not a valid {type_}"
+    with pytest.raises(InputValidationException, match=message) as error:
+        validate_value_domain(value_domain)
+    assert error.value.args[1] == "0-1-1-37"
+
+
+@pytest.mark.parametrize(
+    "type_, setlist",
+    [
+        ("Time_Period", ["2020Q1", "2020-Q1"]),
+        ("Date", ["2020-01-01", "2020-1-1"]),
+    ],
+)
+def test_GH_1343_setlist_values_in_another_form(type_, setlist):
+    """A setlist cannot repeat a value written in another form of its type (GH #1343)."""
+    with pytest.raises(InputValidationException, match="0-1-1-21") as error:
+        validate_value_domain({"name": "VD_1", "type": type_, "setlist": setlist})
+    assert str(setlist) in error.value.args[0]
+
+
+def test_GH_1343_valid_time_setlists():
+    """Valid values of the time types are accepted (GH #1343)."""
+    validate_value_domain(
+        [
+            {"name": "VD_1", "type": "Date", "setlist": ["2020-01-01", "2020-12-31"]},
+            {"name": "VD_2", "type": "Time_Period", "setlist": ["2020Q1", "2020-M01", "2020"]},
+            {"name": "VD_3", "type": "Duration", "setlist": ["A", "Q", "D"]},
+            {"name": "VD_4", "type": "Time", "setlist": ["2020-01-01/2020-12-31"]},
+        ]
+    )
+
+
+def test_GH_1343_repeated_names(tmp_path):
+    """Two value domains cannot have the same name, given in a list or in a directory
+    (GH #1343)."""
+    first = {"name": "VD_1", "type": "String", "setlist": ["ES", "FR"]}
+    second = {"name": "VD_1", "type": "String", "setlist": ["IT"]}
+    with pytest.raises(InputValidationException, match="Value Domain VD_1 is defined more"):
+        validate_value_domain([first, second])
+    for name, value_domain in (("first.json", first), ("second.json", second)):
+        (tmp_path / name).write_text(json.dumps(value_domain))
+    with pytest.raises(InputValidationException, match="0-1-1-38"):
+        load_value_domains(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["string", "integer", "number", "boolean", "date", "time", "time_period", "duration", "scalar"],
+)
+def test_GH_1343_basic_type_names(name):
+    """A value domain cannot be named as a basic scalar type, which a script cannot refer to
+    as a value domain (GH #1343)."""
+    with pytest.raises(InputValidationException, match="0-1-1-39"):
+        validate_value_domain({"name": name, "type": "String", "setlist": ["ES"]})
+    with pytest.raises(InputValidationException, match="0-1-1-39"):
+        ValueDomain(name=name, type=String, setlist=["ES"])
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1343_run_rejects_an_unused_invalid_value_domain(use_duckdb):
+    """The value domains that run and semantic_analysis load are checked even when the script
+    does not use them, and a value domain named as a basic type with capitals can be used
+    (GH #1343)."""
+    structures = {"datasets": [], "scalars": [{"name": "SC_1", "type": "Date"}]}
+    invalid = [{"name": "VD_1", "type": "Date", "setlist": ["2020-01-01", "2020-13-45"]}]
+    with pytest.raises(InputValidationException, match="0-1-1-37"):
+        semantic_analysis(script="SC_r <- SC_1;", data_structures=structures, value_domains=invalid)
+    with pytest.raises(InputValidationException, match="0-1-1-37"):
+        run(
+            script="SC_r <- SC_1;",
+            data_structures=structures,
+            datapoints={},
+            value_domains=invalid,
+            scalar_values={"SC_1": "2020-01-01"},
+            use_duckdb=use_duckdb,
+        )
+    result = run(
+        script='SC_r <- "ES" in String;',
+        data_structures={"datasets": []},
+        datapoints={},
+        value_domains=[{"name": "String", "type": "String", "setlist": ["ES"]}],
+        use_duckdb=use_duckdb,
+    )
+    assert result["SC_r"].value is True
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_16(use_duckdb):
+    """The legacy subset key of a Component or a scalar was ignored, so OTHER loaded into a
+    Component declared String with subset VD_1. It is rejected with an input error that tells
+    to name the value domain in the type, by run, semantic_analysis and validate_dataset."""
+    value_domains = [{"name": "VD_1", "type": "String", "setlist": ["A", "B"]}]
+    identifier = {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False}
+    measure = {"name": "Me_3", "role": "Measure", "type": "String", "subset": "VD_1"}
+    dataset = {"datasets": [{"name": "DS_1", "DataStructure": [identifier, measure]}]}
+    scalar = {"datasets": [], "scalars": [{"name": "SC_1", "type": "String", "subset": "VD_1"}]}
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_3": ["A", "OTHER"]})}
+    calls = [
+        lambda: run("DS_r <- DS_1;", dataset, datapoints, value_domains, use_duckdb=use_duckdb),
+        lambda: run("SC_r <- SC_1;", scalar, {}, value_domains, use_duckdb=use_duckdb),
+        lambda: semantic_analysis("DS_r <- DS_1;", dataset, value_domains),
+        lambda: semantic_analysis("SC_r <- SC_1;", scalar, value_domains),
+        lambda: validate_dataset(
+            dataset, datapoints, use_duckdb=use_duckdb, value_domains=value_domains
+        ),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-2-1-1"
+        assert "is not accepted; name the value domain in its type instead" in error.value.args[0]
+        assert '("type": "VD_1")' in error.value.args[0]
+
+
+@pytest.mark.parametrize(
+    "type_name, value",
+    [
+        ("String", "A"),
+        ("Number", 1.5),
+        ("Integer", 1),
+        ("Boolean", True),
+        ("Date", "2024-01-05"),
+        ("Time_Period", "2024Q1"),
+        ("Time", "2024-01-01/2024-12-31"),
+        ("Duration", "A"),
+    ],
+)
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_18(use_duckdb, type_name, value):
+    """ValueDomain.to_dict and to_json write the type name that the loaders read, for every
+    basic type: a Time_Period value domain was written TimePeriod and a Time one TimeInterval,
+    which ValueDomain.from_dict rejected with 0-1-1-24 and the loaders with 0-2-1-1."""
+    value_domain = ValueDomain.from_dict({"name": "VD_1", "type": type_name, "setlist": [value]})
+    written = value_domain.to_dict()
+    assert written["type"] == type_name
+    assert ValueDomain.from_dict(written) == value_domain
+    assert ValueDomain.from_json(value_domain.to_json()) == value_domain
+    validate_value_domain(written)
+    structures = {"datasets": [], "scalars": [{"name": "SC_1", "type": "VD_1"}]}
+    analysis = semantic_analysis("SC_r <- SC_1;", structures, written)
+    assert analysis["SC_r"].to_dict()["type"] == "VD_1"
+    result = run(
+        "SC_r <- SC_1;",
+        structures,
+        {},
+        written,
+        scalar_values={"SC_1": value},
+        use_duckdb=use_duckdb,
+    )
+    assert result["SC_r"].to_dict()["type"] == "VD_1"
+
+
+_STRUCTURES_1349 = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+            ],
+        }
+    ],
+    "scalars": [{"name": "SC_4", "type": "Integer"}],
+}
+
+_ROUTINE_1349 = (
+    'DS_r <- eval(SQL_1(DS_1) language "SQL" returns dataset'
+    " { identifier<integer> Id_1, measure<integer> Me_1 });"
+)
+
+_SQL_1 = {"name": "SQL_1", "query": "SELECT Id_1, Me_1 FROM DS_1"}
+
+
+def _datapoints_1349():
+    return {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [1, 3]})}
+
+
+def _run_1349(script, use_duckdb, **arguments):
+    arguments = {"datapoints": _datapoints_1349(), **arguments}
+    return run(script, _STRUCTURES_1349, use_duckdb=use_duckdb, **arguments)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_19(use_duckdb, tmp_path):
+    """value_domains given as a Path to one JSON file holding a list of value domains, or to a
+    folder holding such a file, loads every value domain of the list, as the documentation
+    says; it raised 0-1-1-23."""
+    value_domains = [
+        {"name": "VD_B", "type": "Boolean", "setlist": [True, False]},
+        {"name": "VD_TP", "type": "Time_Period", "setlist": ["2024Q1", "2024Q2"]},
+    ]
+    folder = tmp_path / "value_domains"
+    folder.mkdir()
+    path = folder / "value_domains.json"
+    path.write_text(json.dumps(value_domains))
+    identifier = {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False}
+    id_2 = {"name": "Id_2", "type": "VD_B", "role": "Identifier", "nullable": False}
+    structures = {"datasets": [{"name": "DS_1", "DataStructure": [identifier, id_2]}]}
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Id_2": [True, False]})}
+    for given in (path, folder):
+        validate_value_domain(given)
+        assert sorted(load_value_domains(given)) == ["VD_B", "VD_TP"]
+        result = run("DS_r <- DS_1;", structures, datapoints, given, use_duckdb=use_duckdb)
+        ds_r = result["DS_r"]
+        assert ds_r.components["Id_2"].to_dict()["type"] == "VD_B"
+        assert ds_r.data.sort_values("Id_1")["Id_2"].tolist() == [True, False]
+        analysis = semantic_analysis("DS_r <- DS_1;", structures, given)
+        assert analysis["DS_r"].components["Id_2"].to_dict()["type"] == "VD_B"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_25(use_duckdb):
+    """Datapoints given as a list holding a DataFrame is not an accepted form: both engines
+    raise 0-1-1-2; DuckDB raised a raw AttributeError."""
+    with pytest.raises(InputValidationException) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, datapoints=[_datapoints_1349()["DS_1"]])
+    assert error.value.args[1] == "0-1-1-2"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_26(use_duckdb, tmp_path):
+    """An output_folder that does not exist yet, nested in another missing folder, is created
+    with its parents and the results are written there; pandas raised FileNotFoundError."""
+    output_folder = tmp_path / "missing" / "deeper"
+    _run_1349("DS_r <- DS_1;", use_duckdb, output_folder=output_folder)
+    written = pd.read_csv(output_folder / "DS_r.csv").sort_values("Id_1")
+    assert written["Me_1"].tolist() == [1, 3]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_27(use_duckdb, tmp_path):
+    """An output_folder that is an existing file raises 0-3-1-2 on both engines; pandas raised
+    a raw OSError and DuckDB a raw FileExistsError."""
+    output_folder = tmp_path / "out.txt"
+    output_folder.write_text("x")
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, output_folder=output_folder)
+    assert error.value.args[1] == "0-3-1-2"
+    assert output_folder.read_text() == "x"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_28(use_duckdb, tmp_path):
+    """A missing output_folder with a file suffix (result.csv) raises 0-3-1-2 on both engines;
+    DuckDB created a folder named result.csv and wrote the results into it."""
+    output_folder = tmp_path / "result.csv"
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, output_folder=output_folder)
+    assert error.value.args[1] == "0-3-1-2"
+    assert not output_folder.exists()
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_28b(use_duckdb, tmp_path):
+    """The datapoints are checked before the output_folder on both engines: a missing
+    datapoint file raises 0-3-1-1 and creates no output folder, also when the output folder is
+    bad. DuckDB checked the output folder first, so it created the missing folder before
+    raising 0-3-1-1 and raised 0-3-1-2 for an existing file."""
+    datapoints = {"DS_1": tmp_path / "missing.csv"}
+    output_folder = tmp_path / "missing" / "deeper"
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, datapoints=datapoints, output_folder=output_folder)
+    assert error.value.args[1] == "0-3-1-1"
+    assert not (tmp_path / "missing").exists()
+    output_file = tmp_path / "out.txt"
+    output_file.write_text("x")
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, datapoints=datapoints, output_folder=output_file)
+    assert error.value.args[1] == "0-3-1-1"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_28c(use_duckdb, tmp_path):
+    """Datapoints whose values do not fit the structure (a text in an Integer Measure), given
+    as a DataFrame or as a CSV file, raise 0-3-1-6 on both engines and create no output folder:
+    the folder is created with the first result written. DuckDB created the folder before
+    loading the DataFrame, pandas before loading the CSV file."""
+    csv_path = tmp_path / "DS_1.csv"
+    csv_path.write_text("Id_1,Me_1\n1,x\n")
+    frame = pd.DataFrame({"Id_1": [1], "Me_1": ["x"]})
+    output_folder = tmp_path / "missing" / "deeper"
+    for datapoints in ({"DS_1": frame}, {"DS_1": csv_path}):
+        with pytest.raises(DataLoadError) as error:
+            _run_1349(
+                "DS_r <- DS_1;", use_duckdb, datapoints=datapoints, output_folder=output_folder
+            )
+        assert error.value.args[1] == "0-3-1-6"
+        assert not (tmp_path / "missing").exists()
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_51(use_duckdb, tmp_path, monkeypatch):
+    """An empty string as output_folder is no output folder, as None is: both engines write
+    nothing and return the results with their data. pandas wrote the results into the current
+    folder and returned them without data."""
+    monkeypatch.chdir(tmp_path)
+    result = _run_1349("DS_r <- DS_1;", use_duckdb, output_folder="")
+    assert result["DS_r"].data.sort_values("Id_1")["Me_1"].tolist() == [1, 3]
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_29(use_duckdb):
+    """A list given as a value in scalar_values is not a scalar value: it raises 0-1-2-7 as a
+    value of the wrong type does (case 30); it raised a raw ValueError."""
+    with pytest.raises(InputValidationException) as error:
+        _run_1349("DS_r <- DS_1 * SC_4;", use_duckdb, scalar_values={"SC_4": [1, 2]})
+    assert error.value.args[1] == "0-1-2-7"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_30(use_duckdb):
+    """Control of case 29: a text given as the value of an Integer scalar raises 0-1-2-7."""
+    with pytest.raises(InputValidationException) as error:
+        _run_1349("DS_r <- DS_1 * SC_4;", use_duckdb, scalar_values={"SC_4": "x"})
+    assert error.value.args[1] == "0-1-2-7"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_31(use_duckdb, tmp_path):
+    """external_routines given as a Path to a JSON file holding an array of routines loads
+    every routine of the array, as the documentation says; it raised a raw TypeError."""
+    path = tmp_path / "routines.json"
+    path.write_text(json.dumps([_SQL_1, {**_SQL_1, "name": "SQL_2"}]))
+    script = _ROUTINE_1349 + _ROUTINE_1349.replace("DS_r", "DS_s").replace("SQL_1", "SQL_2")
+    result = _run_1349(script, use_duckdb, external_routines=path)
+    for name in ("DS_r", "DS_s"):
+        assert result[name].data.sort_values("Id_1")["Me_1"].tolist() == [1, 3]
+    analysis = semantic_analysis(script, _STRUCTURES_1349, external_routines=path)
+    assert sorted(analysis["DS_s"].components) == ["Id_1", "Me_1"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_32(use_duckdb, tmp_path):
+    """A value_domains .json file that is not valid JSON raises the input error 0-1-1-40
+    naming the file; run and semantic_analysis raised a raw JSONDecodeError."""
+    path = tmp_path / "broken.json"
+    path.write_text("not json")
+    calls = [
+        lambda: _run_1349("DS_r <- DS_1;", use_duckdb, value_domains=path),
+        lambda: semantic_analysis("DS_r <- DS_1;", _STRUCTURES_1349, path),
+        lambda: validate_value_domain(path),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-1-1-40"
+        assert "broken.json" in error.value.args[0]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_32b(use_duckdb, tmp_path):
+    """The data structures read from a .json file that is not valid JSON raise the same input
+    error 0-1-1-40 as the value domains of case 32; they raised a raw JSONDecodeError."""
+    path = tmp_path / "broken.json"
+    path.write_text("not json")
+    calls = [
+        lambda: run("DS_r <- DS_1;", path, _datapoints_1349(), use_duckdb=use_duckdb),
+        lambda: semantic_analysis("DS_r <- DS_1;", path),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-1-1-40"
+        assert "broken.json" in error.value.args[0]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_33(use_duckdb, tmp_path):
+    """An external_routines .json file that is not valid JSON raises the input error 0-1-1-40
+    naming the file; run and semantic_analysis raised a raw JSONDecodeError."""
+    path = tmp_path / "broken.json"
+    path.write_text("not json")
+    calls = [
+        lambda: _run_1349(_ROUTINE_1349, use_duckdb, external_routines=path),
+        lambda: semantic_analysis(_ROUTINE_1349, _STRUCTURES_1349, external_routines=path),
+        lambda: validate_external_routine(path),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-1-1-40"
+        assert "broken.json" in error.value.args[0]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_34(use_duckdb, tmp_path):
+    """A routine read from a file is registered under the name its JSON gives, not under the
+    name of the file: routine.json holding SQL_1 serves eval(SQL_1(...)); it raised 1-3-5."""
+    path = tmp_path / "routine.json"
+    path.write_text(json.dumps(_SQL_1))
+    result = _run_1349(_ROUTINE_1349, use_duckdb, external_routines=path)
+    assert result["DS_r"].data.sort_values("Id_1")["Me_1"].tolist() == [1, 3]
+    analysis = semantic_analysis(_ROUTINE_1349, _STRUCTURES_1349, external_routines=path)
+    assert sorted(analysis["DS_r"].components) == ["Id_1", "Me_1"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_52(use_duckdb, tmp_path):
+    """Two external routines of one name raise 0-1-1-41, as two value domains of one name
+    raise 0-1-1-38, whether they are given in a list, in one JSON file or in two files of a
+    folder; the routine read last was used."""
+    other = {**_SQL_1, "query": "SELECT Id_1, Me_1 * 10 AS Me_1 FROM DS_1"}
+    array = tmp_path / "routines.json"
+    array.write_text(json.dumps([_SQL_1, other]))
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "a.json").write_text(json.dumps(_SQL_1))
+    (folder / "b.json").write_text(json.dumps(other))
+    for routines in ([_SQL_1, other], array, folder):
+        calls = [
+            lambda: _run_1349(_ROUTINE_1349, use_duckdb, external_routines=routines),
+            lambda: semantic_analysis(_ROUTINE_1349, _STRUCTURES_1349, external_routines=routines),
+            lambda: validate_external_routine(routines),
+        ]
+        for call in calls:
+            with pytest.raises(InputValidationException) as error:
+                call()
+            assert error.value.args[1] == "0-1-1-41"
+            assert "SQL_1" in error.value.args[0]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1349_57(use_duckdb, tmp_path):
+    """The structure semantic_analysis writes for a pivot result, whose Measures are named
+    2024-01-05 or A B, is read back as an input structure by run and validate_dataset, and a
+    script reads those Measures by their quoted names; written between single quotes in the
+    structure, a name names the same Component. The structure schema rejected those names."""
+
+    def component(name, role, type_):
+        return {"name": name, "role": role, "type": type_, "nullable": role != "Identifier"}
+
+    value_domains = [
+        {"name": "VD_D", "type": "Date", "setlist": ["2024-1-5", "2024-01-06"]},
+        {"name": "VD_S", "type": "String", "setlist": ["A B", "x-y"]},
+    ]
+    structures = {
+        "datasets": [
+            {
+                "name": name,
+                "DataStructure": [
+                    component("Id_1", "Identifier", "Integer"),
+                    component("Id_2", "Identifier", value_domain),
+                    component("Me_1", "Measure", "Integer"),
+                ],
+            }
+            for name, value_domain in (("DS_1", "VD_D"), ("DS_2", "VD_S"))
+        ]
+    }
+    analysis = semantic_analysis(
+        "DS_r <- DS_1[pivot Id_2, Me_1]; DS_s <- DS_2[pivot Id_2, Me_1];", structures, value_domains
+    )
+    back = []
+    for result, name in (("DS_r", "DS_1"), ("DS_s", "DS_2")):
+        written = json.loads(analysis[result].to_json_datastructure())
+        written["datasets"][0]["name"] = name
+        back.append(written)
+    assert [c["name"] for c in back[1]["datasets"][0]["DataStructure"]] == ["Id_1", "A B", "x-y"]
+    back[1]["datasets"][0]["DataStructure"][2]["name"] = "'x-y'"
+    ds_1 = tmp_path / "DS_1.csv"
+    ds_1.write_text("Id_1,2024-01-05,2024-01-06\n1,1,2\n")
+    ds_2 = tmp_path / "DS_2.csv"
+    ds_2.write_text("Id_1,A B,x-y\n1,3,4\n")
+    script = (
+        "DS_a <- DS_1[calc Me_9 := '2024-01-05' + '2024-01-06'];"
+        " DS_b <- DS_2[calc Me_9 := 'A B' * 'x-y'];"
+    )
+    result = run(script, back, {"DS_1": ds_1, "DS_2": ds_2}, use_duckdb=use_duckdb)
+    assert result["DS_a"].data["Me_9"].tolist() == [3]
+    assert result["DS_b"].data["Me_9"].tolist() == [12]
+    assert list(result["DS_b"].components) == ["Id_1", "A B", "x-y", "Me_9"]
+    validate_dataset(back[0], ds_1, use_duckdb=use_duckdb)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+@pytest.mark.parametrize(
+    "name",
+    ['a"b', "'a\"b'", "a\x00b", "'a\x00b'", "a\rb", "'a\rb'"],
+    ids=["double-quote", "quoted-double-quote", "nul", "quoted-nul", "cr", "quoted-cr"],
+)
+def test_GH_1349_57b(use_duckdb, name):
+    """A Component name holding a double quote, a NUL or a carriage return is rejected by the
+    structure schema (0-2-1-1), in run on both engines and in semantic_analysis, also between
+    single quotes: the DuckDB engine cannot create the table of a name with a double quote or
+    a NUL, and reads no row from a CSV file whose header holds a carriage return, so pandas
+    alone would run it."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False},
+                    {"name": name, "role": "Measure", "type": "Integer", "nullable": True},
+                ],
+            }
+        ]
+    }
+    data = pd.DataFrame({"Id_1": [1], name.strip("'"): [1]})
+    with pytest.raises(InputValidationException, match="0-2-1-1"):
+        run("DS_r <- DS_1;", structures, {"DS_1": data}, use_duckdb=use_duckdb)
+    with pytest.raises(InputValidationException, match="0-2-1-1"):
+        semantic_analysis("DS_r <- DS_1;", structures)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_39b(use_duckdb):
+    """Extra of case 39: a Time_Period Scalar value is read without the space around it, as a
+    loaded Time_Period and a Date Scalar value are, so "2020-01-15 " is the day 2020D15 and
+    " 2020Q1" is 2020Q1. The pandas engine raised a raw ValueError and 2-1-19-2, and the DuckDB
+    engine a raw ConversionException for " 2020Q1" (issue #1352)."""
+    structures = {
+        "datasets": [],
+        "scalars": [
+            {"name": "SC_1", "type": "Time_Period"},
+            {"name": "SC_2", "type": "Time_Period"},
+        ],
+    }
+    result = run(
+        "SC_r1 <- SC_1; SC_r2 <- SC_2;",
+        structures,
+        {},
+        scalar_values={"SC_1": "2020-01-15 ", "SC_2": " 2020Q1"},
+        use_duckdb=use_duckdb,
+    )
+    assert result["SC_r1"].value == "2020D15"
+    assert result["SC_r2"].value == "2020Q1"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_13c(use_duckdb):
+    """Extra of case 13: a Time_Period Scalar value and a Time_Period given by cast are held in
+    one form, so the analytic max of an if over them orders the periods and gives 2020Q2. The
+    pandas engine held the cast text as written beside the Scalar value in the loaders' form and
+    ordered the texts, giving 2020Q1 (issue #1352)."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Integer", "role": "Measure", "nullable": True},
+                ],
+            }
+        ],
+        "scalars": [{"name": "SC_1", "type": "Time_Period"}],
+    }
+    script = (
+        "DS_r <- DS_1[calc Me_2 := max((if Id_1 = 1 then SC_1 "
+        'else cast("2020Q1", time_period)) over ())][keep Me_2];'
+    )
+    result = run(
+        script,
+        structures,
+        {"DS_1": pd.DataFrame({"Id_1": [1, 2], "Me_1": [1, 2]})},
+        scalar_values={"SC_1": "2020Q2"},
+        use_duckdb=use_duckdb,
+    )
+    assert result["DS_r"].data["Me_2"].tolist() == ["2020Q2", "2020Q2"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_39c(use_duckdb):
+    """Extra of case 39: a Time_Period Scalar value has a year of four digits from 1000, so the
+    value 0001 is refused with 0-1-2-7 on both engines (issue #1352)."""
+    structures = {"datasets": [], "scalars": [{"name": "SC_1", "type": "Time_Period"}]}
+    with pytest.raises(InputValidationException) as context:
+        run("SC_r <- SC_1;", structures, {}, scalar_values={"SC_1": "0001"}, use_duckdb=use_duckdb)
+    assert context.value.args[1] == "0-1-2-7"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_36z2(use_duckdb):
+    """Extra of case 36: run analyses the whole script before it checks the DataFrames given
+    as datapoints, so time_agg of a Date without first or last raises 1-1-19-11 before the Date
+    0999-01-15, out of the years 1000 to 9999, is checked, as semantic_analysis raises it. The
+    pandas engine checked the DataFrame first and raised 0-3-1-6 (issue #1352)."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Date", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    script = 'DS_r <- DS_1[calc Me_2 := time_agg("A", _, Me_1)];'
+    data = pd.DataFrame({"Id_1": [1, 2], "Me_1": ["2020-01-15", "0999-01-15"]})
+    with pytest.raises(SemanticError) as context:
+        run(script, structures, {"DS_1": data}, use_duckdb=use_duckdb)
+    assert context.value.args[1] == "1-1-19-11"
+    with pytest.raises(SemanticError) as context:
+        semantic_analysis(script, structures)
+    assert context.value.args[1] == "1-1-19-11"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_19i(use_duckdb):
+    """Extra of case 19: each time series of timeshift is read from its own Data Points, also
+    when the DataFrame given repeats its index labels, so the monthly series A and the daily
+    series B disagree on the period and raise 2-1-19-23. The pandas engine read the series by
+    the index labels and shifted both by one day (issue #1352)."""
+    structures = {
+        "datasets": [
+            {
+                "name": "DS_1",
+                "DataStructure": [
+                    {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                    {"name": "Id_2", "type": "Date", "role": "Identifier", "nullable": False},
+                    {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+                ],
+            }
+        ]
+    }
+    data = pd.DataFrame(
+        {
+            "Id_1": ["A", "A", "B", "B"],
+            "Id_2": ["2020-01-31", "2020-03-31", "2020-01-01", "2020-01-02"],
+            "Me_1": [1.0, 2.0, 3.0, 4.0],
+        },
+        index=[0, 1, 0, 1],
+    )
+    with pytest.raises(RunTimeError) as context:
+        run("DS_r <- timeshift(DS_1, 1);", structures, {"DS_1": data}, use_duckdb=use_duckdb)
+    assert context.value.args[1] == "2-1-19-23"
+
+
+_DATE_SERIES_STRUCTURES = {
+    "datasets": [
+        {
+            "name": "DS_1",
+            "DataStructure": [
+                {"name": "Id_1", "type": "String", "role": "Identifier", "nullable": False},
+                {"name": "Id_2", "type": "Date", "role": "Identifier", "nullable": False},
+                {"name": "Me_1", "type": "Number", "role": "Measure", "nullable": True},
+            ],
+        }
+    ]
+}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_19h(use_duckdb):
+    """Extra of case 19: the shortest period of a Date is the day, so the series of
+    2020-01-15T10:30:00 and 2020-01-15T10:30:05, two points on one day, has the period of a day
+    and moves to 2020-01-16. The pandas engine read no period and moved it one year, and the
+    DuckDB engine read a week (issue #1352)."""
+    data = pd.DataFrame(
+        {
+            "Id_1": ["A", "A"],
+            "Id_2": ["2020-01-15T10:30:00", "2020-01-15T10:30:05"],
+            "Me_1": [1.0, 2.0],
+        }
+    )
+    result = run(
+        "DS_r <- timeshift(DS_1, 1);",
+        _DATE_SERIES_STRUCTURES,
+        {"DS_1": data},
+        use_duckdb=use_duckdb,
+    )["DS_r"].data
+    assert sorted(result["Id_2"].tolist()) == ["2020-01-16T10:30:00", "2020-01-16T10:30:05"]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1352_32e(use_duckdb):
+    """Extra of case 32: the series of 2020-01-01T10:00:00 and 2020-01-01T10:00:03 has the
+    period of a day, counted from its lower limit with its time of the day, so no Data Point is
+    missing. The pandas engine dropped the time of the limits and added the Data Point
+    2020-01-01 (issue #1352)."""
+    data = pd.DataFrame(
+        {
+            "Id_1": ["A", "A"],
+            "Id_2": ["2020-01-01T10:00:00", "2020-01-01T10:00:03"],
+            "Me_1": [1.0, 2.0],
+        }
+    )
+    result = run(
+        "DS_r <- fill_time_series(DS_1, single);",
+        _DATE_SERIES_STRUCTURES,
+        {"DS_1": data},
+        use_duckdb=use_duckdb,
+    )["DS_r"].data
+    assert sorted(result["Id_2"].tolist()) == ["2020-01-01T10:00:00", "2020-01-01T10:00:03"]
+
+
+_STRUCTURES_1353 = {
+    "datasets": [
+        {
+            "name": "DS_7",
+            "DataStructure": [
+                {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False},
+                {"name": "Me_5", "type": "String", "role": "Measure", "nullable": True},
+            ],
+        }
+    ],
+    "scalars": [{"name": "SC_3", "type": "Integer"}],
+}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1353_21(use_duckdb, tmp_path):
+    """An empty String and null are both written to the CSV output as an empty field, on both
+    engines (the loaders read an empty field back as null); DuckDB wrote the empty String as
+    "" (issue #1353)."""
+    datapoints = {"DS_7": pd.DataFrame({"Id_1": [1, 2], "Me_5": ["", None]})}
+    run(
+        "DS_r <- DS_7;",
+        _STRUCTURES_1353,
+        datapoints,
+        output_folder=tmp_path,
+        use_duckdb=use_duckdb,
+    )
+    assert (tmp_path / "DS_r.csv").read_text() == "Id_1,Me_5\n1,\n2,\n"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1353_27(use_duckdb):
+    """A value of an Integer Scalar beyond 64 bits, 2 ** 70, is no Integer value: it raises
+    0-1-2-7 on both engines, as the datapoints of an Integer Component beyond 64 bits are
+    refused; pandas kept the Python int and DuckDB gave a float (issue #1353)."""
+    datapoints = {"DS_7": pd.DataFrame({"Id_1": [1], "Me_5": ["a"]})}
+    with pytest.raises(InputValidationException) as error:
+        run(
+            "SC_r <- SC_3;",
+            _STRUCTURES_1353,
+            datapoints,
+            scalar_values={"SC_3": 2**70},
+            use_duckdb=use_duckdb,
+        )
+    assert error.value.args[1] == "0-1-2-7"
+
+
+_DS_9 = {"DS_9": pd.DataFrame({"Id_1": [1], "Me_1": [1]})}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_40(use_duckdb):
+    """Datapoints for DS_9, which data_structures does not define, raise the input error
+    0-1-2-9 on both engines when the script reads DS_9. The pandas engine raised an
+    InputValidationException without a code and the DuckDB engine 1-2-19 (issue #1356)."""
+    with pytest.raises(InputValidationException) as error:
+        _run_1349("DS_r <- DS_9;", use_duckdb, datapoints={**_datapoints_1349(), **_DS_9})
+    assert error.value.args[1] == "0-1-2-9"
+    assert "Not found dataset DS_9 in datastructures." in error.value.args[0]
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_41(use_duckdb):
+    """The datapoints for DS_9 of case 40 raise 0-1-2-9 also when the script does not read
+    DS_9; both engines raised an InputValidationException without a code (issue #1356)."""
+    with pytest.raises(InputValidationException) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, datapoints={**_datapoints_1349(), **_DS_9})
+    assert error.value.args[1] == "0-1-2-9"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_42(use_duckdb):
+    """The Scalar values are checked before the datapoints: with Id_1 1 twice in DS_1 and the
+    text "x" for the Integer SC_4, both engines raise 0-1-2-7 for SC_4. The pandas engine
+    reported the duplicated Identifiers (0-3-1-7) (issue #1356)."""
+    datapoints = {"DS_1": pd.DataFrame({"Id_1": [1, 1], "Me_1": [1, 2]})}
+    with pytest.raises(InputValidationException) as error:
+        _run_1349(
+            "DS_r <- DS_1 + SC_4;", use_duckdb, datapoints=datapoints, scalar_values={"SC_4": "x"}
+        )
+    assert error.value.args[1] == "0-1-2-7"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_68(use_duckdb, tmp_path):
+    """An output_folder whose parent is a file raises 0-3-1-2 on both engines before anything
+    runs; both engines raised a raw NotADirectoryError (issue #1356)."""
+    (tmp_path / "a_file").write_text("x")
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1;", use_duckdb, output_folder=tmp_path / "a_file" / "out")
+    assert error.value.args[1] == "0-3-1-2"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_68b(use_duckdb, tmp_path):
+    """The output_folder of case 68 is checked before the script runs, so a division by zero
+    in the script does not raise first: both engines raise 0-3-1-2. They raised 2-1-15-6
+    (issue #1356)."""
+    (tmp_path / "a_file").write_text("x")
+    with pytest.raises(DataLoadError) as error:
+        _run_1349("DS_r <- DS_1 / 0;", use_duckdb, output_folder=tmp_path / "a_file" / "out")
+    assert error.value.args[1] == "0-3-1-2"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_68c(use_duckdb):
+    """An output_folder that is a filesystem root is an existing folder, accepted by the check
+    of case 68 on both engines (the script has no persistent result, so nothing is written).
+    Both engines raised a raw StopIteration (issue #1356)."""
+    root = Path(Path.cwd().anchor)
+    result = _run_1349("DS_r := DS_1;", use_duckdb, output_folder=root)
+    assert result == {}
+
+
+def _twice_1356(name_1, name_2):
+    identifier = {"name": "Id_1", "type": "Integer", "role": "Identifier", "nullable": False}
+    number = {"name": name_1, "type": "Number", "role": "Measure", "nullable": True}
+    string = {"name": name_2, "type": "String", "role": "Measure", "nullable": True}
+    return {"datasets": [{"name": "DS_2", "DataStructure": [identifier, number, string]}]}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_69(use_duckdb):
+    """A Component given twice in the structure of a Data Set, Me_1 as a Number and as a
+    String, raises 0-1-2-3 on both engines and in semantic_analysis, as the CSV loaders do for
+    a column given twice. The second Component replaced the first (issue #1356)."""
+    structures = _twice_1356("Me_1", "Me_1")
+    datapoints = {"DS_2": pd.DataFrame({"Id_1": [1, 2], "Me_1": [1.5, None]})}
+    for call in (
+        lambda: run("DS_r <- DS_2;", structures, datapoints, use_duckdb=use_duckdb),
+        lambda: semantic_analysis("DS_r <- DS_2;", structures),
+    ):
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-1-2-3"
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1356_70(use_duckdb):
+    """A B and 'A B' name the same Component: given as a Number and as a String in the
+    structure of a Data Set, they raise 0-1-2-3 on both engines and in semantic_analysis, as in
+    case 69. The second Component replaced the first (issue #1356)."""
+    structures = _twice_1356("A B", "'A B'")
+    datapoints = {"DS_2": pd.DataFrame({"Id_1": [1, 2], "A B": [1.5, None]})}
+    for call in (
+        lambda: run("DS_r <- DS_2;", structures, datapoints, use_duckdb=use_duckdb),
+        lambda: semantic_analysis("DS_r <- DS_2;", structures),
+    ):
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-1-2-3"
+
+
+def _run_1355(script: str, use_duckdb: bool, tmp_path: Path) -> dict:
+    """Run with DS_3 (Me_2 3, 20) and DS_4 (Me_2 100, 200) given as CSV files, which both
+    engines load at the statements that read them."""
+
+    def structure(name):
+        return {
+            "name": name,
+            "DataStructure": [
+                {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False},
+                {"name": "Me_2", "role": "Measure", "type": "Integer", "nullable": True},
+            ],
+        }
+
+    ds_3 = tmp_path / "DS_3.csv"
+    ds_3.write_text("Id_1,Me_2\n1,3\n2,20\n")
+    ds_4 = tmp_path / "DS_4.csv"
+    ds_4.write_text("Id_1,Me_2\n1,100\n2,200\n")
+    structures = {"datasets": [structure("DS_3"), structure("DS_4")]}
+    datapoints = {"DS_3": ds_3, "DS_4": ds_4}
+    return run(script, structures, datapoints, use_duckdb=use_duckdb)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_8b(use_duckdb, tmp_path):
+    """Extra of test_GH_1355_8, with the datapoints given as files: the body of f reads the
+    input DS_4, which it does not receive as a parameter, so the statement loads it. The
+    pandas engine gave DS_r without data points, and the DuckDB engine never loaded DS_4."""
+    script = "define operator f (x dataset) returns dataset is x + DS_4 end operator;"
+    result = _run_1355(script + " DS_r <- f(DS_3);", use_duckdb, tmp_path)
+    data = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+    assert data.to_dict("list") == {"Id_1": [1, 2], "Me_2": [103, 220]}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_9b(use_duckdb, tmp_path):
+    """Extra of test_GH_1355_9, with the datapoints given as files: the body of f reads DS_9,
+    which an earlier statement computes, so the statement that calls f depends on it. The
+    DuckDB engine dropped DS_9 before that statement."""
+    script = (
+        "DS_9 <- DS_4 * 10;"
+        " define operator f (x dataset) returns dataset is x + DS_9 end operator;"
+        " DS_r <- f(DS_3);"
+    )
+    result = _run_1355(script, use_duckdb, tmp_path)
+    data = result["DS_r"].data.sort_values("Id_1").reset_index(drop=True)
+    assert data.to_dict("list") == {"Id_1": [1, 2], "Me_2": [1003, 2020]}
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_14e(use_duckdb):
+    """Extra of test_GH_1355_14: # only separates the alias of a join operand from the name of
+    its Component (Inner Join page of the VTL 2.2 manual), so an input structure with a
+    Component named Id#1 is rejected by the name pattern of the JSON schema, by run,
+    semantic_analysis, validate_dataset and Dataset.from_json. It was accepted."""
+    identifier = {"name": "Id#1", "role": "Identifier", "type": "Integer", "nullable": False}
+    measure = {"name": "Me_1", "role": "Measure", "type": "Number", "nullable": True}
+    structures = {"datasets": [{"name": "DS_1", "DataStructure": [identifier, measure]}]}
+    datapoints = {"DS_1": pd.DataFrame({"Id#1": [1, 2], "Me_1": [1.0, 2.0]})}
+    as_json = {
+        "name": "DS_1",
+        "components": {"Id#1": identifier, "Me_1": measure},
+        "data": datapoints["DS_1"].to_dict("list"),
+    }
+    calls = [
+        lambda: run("DS_r <- DS_1;", structures, datapoints, use_duckdb=use_duckdb),
+        lambda: semantic_analysis("DS_r <- DS_1;", structures),
+        lambda: validate_dataset(structures, datapoints, use_duckdb=use_duckdb),
+        lambda: Dataset.from_json(as_json),
+    ]
+    for call in calls:
+        with pytest.raises(InputValidationException) as error:
+            call()
+        assert error.value.args[1] == "0-2-1-1"
+        assert (
+            "'Id#1' is not a valid Component name: a Component name cannot be empty or contain "
+            "', \", #, NUL or carriage return, except quotes around the whole name"
+        ) in error.value.args[0]
+
+
+def _structures_1355() -> Dict[str, Any]:
+    """DS_1 and DS_2, with the Identifiers Id_1 and Id_2 and the Measure Me_1."""
+    components = [
+        {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False},
+        {"name": "Id_2", "role": "Identifier", "type": "String", "nullable": False},
+        {"name": "Me_1", "role": "Measure", "type": "Number", "nullable": True},
+    ]
+    return {
+        "datasets": [
+            {"name": "DS_1", "DataStructure": components},
+            {"name": "DS_2", "DataStructure": components},
+        ]
+    }
+
+
+def _datapoints_1355() -> Dict[str, pd.DataFrame]:
+    data = {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [1.0, 2.0]}
+    return {"DS_1": pd.DataFrame(data), "DS_2": pd.DataFrame(data)}
+
+
+def _check_semantic_error_1355(script: str, use_duckdb: bool, code: str, message: str) -> None:
+    """The script raises the SemanticError code with the message, on the engine and in the
+    semantic analysis."""
+    calls = [
+        lambda: run(script, _structures_1355(), _datapoints_1355(), use_duckdb=use_duckdb),
+        lambda: semantic_analysis(script, _structures_1355()),
+    ]
+    for call in calls:
+        with pytest.raises(SemanticError) as error:
+            call()
+        assert error.value.args[1] == code
+        assert error.value.args[0].startswith(message)
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_11t(use_duckdb):
+    """Extra of test_GH_1355_11: a new Component name cannot contain a NUL, which the names of
+    the input structures cannot contain either. The pandas engine and the semantic analysis
+    created the Component and the DuckDB engine raised a raw ParserException."""
+    _check_semantic_error_1355(
+        "DS_r <- DS_1 [ calc 'a\x00b' := Me_1 ];",
+        use_duckdb,
+        "1-1-6-19",
+        "At op calc: Invalid Component name a\\x00b, a Component name cannot contain "
+        "', \", #, NUL or carriage return.",
+    )
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_11u(use_duckdb):
+    """Extra of test_GH_1355_11: as test_GH_1355_11t, for a carriage return. Both engines
+    created the Component."""
+    _check_semantic_error_1355(
+        "DS_r <- DS_1 [ rename Me_1 to 'a\rb' ];",
+        use_duckdb,
+        "1-1-6-19",
+        "At op rename: Invalid Component name a\\rb, a Component name cannot contain "
+        "', \", #, NUL or carriage return.",
+    )
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_11v(use_duckdb):
+    """Extra of test_GH_1355_11l: the alias of a join operand cannot contain a carriage return
+    either. The pandas engine and the semantic analysis ran the join and the DuckDB engine
+    raised a raw BinderException."""
+    _check_semantic_error_1355(
+        "DS_r <- inner_join ( DS_1 as 'A\rB' , DS_2 as C using Id_1 , Id_2 drop C#Me_1 );",
+        use_duckdb,
+        "1-1-13-28",
+        "At op inner_join: Invalid name A\\rB of a join operand, the alias of a join "
+        "operand, or else its Data Set name, cannot be empty or contain ', \", #, NUL or "
+        "carriage return.",
+    )
+
+
+def _check_result_1355(script: str, use_duckdb: bool, expected: Dict[str, dict]) -> None:
+    """The script gives the expected data on the engine, from DS_1 (Me_1 1, 2), DS_2 (Me_1 3, 4)
+    and DS_3 (Me_2 3, 4) with the Identifiers Id_1 and Id_2, and the semantic analysis gives
+    the same Components. A Data Set named x-y cannot be written in a reference file, whose
+    Data Set names follow the input rule."""
+    ids = [
+        {"name": "Id_1", "role": "Identifier", "type": "Integer", "nullable": False},
+        {"name": "Id_2", "role": "Identifier", "type": "String", "nullable": False},
+    ]
+
+    def measure(name: str) -> Dict[str, Any]:
+        return {"name": name, "role": "Measure", "type": "Number", "nullable": True}
+
+    structures = {
+        "datasets": [
+            {"name": "DS_1", "DataStructure": [*ids, measure("Me_1")]},
+            {"name": "DS_2", "DataStructure": [*ids, measure("Me_1")]},
+            {"name": "DS_3", "DataStructure": [*ids, measure("Me_2")]},
+        ]
+    }
+    keys = {"Id_1": [1, 2], "Id_2": ["A", "B"]}
+    datapoints = {
+        "DS_1": pd.DataFrame({**keys, "Me_1": [1.0, 2.0]}),
+        "DS_2": pd.DataFrame({**keys, "Me_1": [3.0, 4.0]}),
+        "DS_3": pd.DataFrame({**keys, "Me_2": [3.0, 4.0]}),
+    }
+    result = run(script, structures, datapoints, use_duckdb=use_duckdb)
+    semantic = semantic_analysis(script, structures)
+    assert set(result) == set(semantic) == set(expected)
+    for name, data in expected.items():
+        assert list(result[name].components) == list(semantic[name].components) == list(data)
+        got = result[name].data.sort_values("Id_1").reset_index(drop=True)
+        assert got[list(data)].to_dict("list") == data
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_10f(use_duckdb):
+    """Extra of test_GH_1355_10d: the name of a Data Set joined without an alias may hold any
+    character a Component name allows, also one such as - that SQL does not take without
+    quotes. The DuckDB engine raised a raw ParserException."""
+    _check_result_1355(
+        "'x-y' <- DS_1; DS_r <- inner_join ( 'x-y' , DS_3 using Id_1 , Id_2 );",
+        use_duckdb,
+        {
+            "x-y": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [1.0, 2.0]},
+            "DS_r": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [1.0, 2.0], "Me_2": [3.0, 4.0]},
+        },
+    )
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_10g(use_duckdb):
+    """Extra of test_GH_1355_10d: control, a Data Set named x-y read by a later statement
+    outside a join."""
+    _check_result_1355(
+        "'x-y' <- DS_1 * 2; DS_r <- 'x-y' [ calc Me_2 := Me_1 + 1 ];",
+        use_duckdb,
+        {
+            "x-y": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [2.0, 4.0]},
+            "DS_r": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [2.0, 4.0], "Me_2": [3.0, 5.0]},
+        },
+    )
+
+
+@pytest.mark.parametrize("use_duckdb", engine_params())
+def test_GH_1355_10i(use_duckdb):
+    """Extra of test_GH_1355_10f: the qualified name 'x-y'#Me_1 names the Component Me_1 of
+    the Data Set x-y joined without an alias. Both engines and the semantic analysis raised
+    1-1-1-10, as the name before # kept its quotes."""
+    _check_result_1355(
+        "'x-y' <- DS_1; DS_r <- inner_join ( 'x-y' , DS_2 using Id_1 , Id_2"
+        " calc Me_9 := 'x-y'#Me_1 + DS_2#Me_1 drop 'x-y'#Me_1 , DS_2#Me_1 );",
+        use_duckdb,
+        {
+            "x-y": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_1": [1.0, 2.0]},
+            "DS_r": {"Id_1": [1, 2], "Id_2": ["A", "B"], "Me_9": [4.0, 6.0]},
+        },
+    )

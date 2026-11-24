@@ -4,13 +4,25 @@ import contextlib
 import re
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any, Callable, Dict, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Optional, Set, Tuple, Type
 
 import duckdb
 from duckdb.sqltypes import BOOLEAN, VARCHAR
 
 import vtlengine.AST.Grammar.tokens as tokens
-from vtlengine.DataTypes import Duration, Integer, Number, TimeInterval, TimePeriod
+from vtlengine.DataTypes import (
+    SCALAR_TYPES,
+    SCALAR_TYPES_CLASS_REVERSE,
+    Duration,
+    Integer,
+    Number,
+    ScalarType,
+    String,
+    TimeInterval,
+    TimePeriod,
+)
+from vtlengine.DataTypes.CastMasks import cast_with_mask
+from vtlengine.Exceptions import RunTimeError
 from vtlengine.Utils._number_config import (
     get_effective_comparison_digits,
     get_effective_numeric_digits,
@@ -230,6 +242,8 @@ def _create_default_registry() -> OperatorRegistry:
     # Numeric functions (come through BinOp AST)
     ops.register(tokens.POWER, "vtl_power({0}, {1})")
     ops.register(tokens.LOG, "vtl_log({0}, {1})")  # macro internally calls LOG(base, value)
+    # The index of random read from a Component, as in a join apply, is checked by the query
+    ops.register(tokens.RANDOM, "vtl_random({0}, vtl_random_index({1}))")
     # Conditional (come through BinOp AST)
     ops.register(tokens.NVL, "COALESCE({0}, {1})")
     # Date/Time
@@ -271,7 +285,7 @@ def _create_default_registry() -> OperatorRegistry:
     ops.register(tokens.CEIL, "CAST(CEIL({0}) AS BIGINT)")
     ops.register(tokens.FLOOR, "CAST(FLOOR({0}) AS BIGINT)")
     ops.register(tokens.ABS, "ABS({0})")
-    ops.register(tokens.EXP, "EXP({0})")
+    ops.register(tokens.EXP, "vtl_finite(EXP({0}), 'exp')")
     ops.register(tokens.LN, "vtl_ln({0})")
     ops.register(tokens.SQRT, "vtl_sqrt({0})")
     # Logical. NOT goes in parentheses: IS NULL, BETWEEN, IN and the comparisons bind tighter
@@ -581,23 +595,115 @@ def is_re2_incompatible(pattern: str) -> bool:
     return _has_numeric_backreference(pattern)
 
 
-# Python UDFs telling whether a text is a time period or a time the pandas engine reads
-TIME_PERIOD_CHECK_FUNCTION = "vtl_is_time_period"
+# Python UDFs casting a text and a time to a time period and telling whether a text is a time,
+# as the pandas engine reads them
+TIME_PERIOD_CAST_FUNCTION = "vtl_text_to_period"
+TIME_TO_PERIOD_FUNCTION = "vtl_time_to_period"
 TIME_CHECK_FUNCTION = "vtl_is_time"
+CAST_MASK_FUNCTION = "vtl_cast_mask"
+# The time period casts, the casts with a mask and the error() that the SQL of a cast to date or
+# to time and other checks call raise a data point error, so an operand that calls them is
+# computed over all its data points, as one that calls a SQL macro that raises (issue #1352)
+RAISING_FUNCTIONS = (
+    TIME_PERIOD_CAST_FUNCTION,
+    TIME_TO_PERIOD_FUNCTION,
+    CAST_MASK_FUNCTION,
+    "error",
+)
+# A call of one of them: the name before a parenthesis, outside a string literal and a quoted
+# name, which a group of their own keeps from matching
+_RAISING_CALL = re.compile(
+    r"'(?:[^']|'')*'|\"(?:[^\"]|\"\")*\"|\b(" + "|".join(RAISING_FUNCTIONS) + r")\s*\(",
+    re.IGNORECASE,
+)
+
+
+def calls_raising_function(sql: str) -> bool:
+    """Whether ``sql`` calls a function of RAISING_FUNCTIONS."""
+    return any(match.group(1) for match in _RAISING_CALL.finditer(sql))
+
+
+def text_to_period(value: str) -> Optional[str]:
+    """The canonical text of the Time_Period that a text casts to, as the pandas engine casts
+    it: also a start/end interval of a whole period and a date written without zeros (issue
+    #1352). None when the text is no time period."""
+    try:
+        return str(TimePeriod.explicit_cast(value, String))
+    except Exception:
+        return None
+
+
+def _cast_text_to_period(value: str) -> str:
+    """text_to_period of a value, where a text that is no time period raises VTL error 2-1-5-1,
+    which _map_vtl_macro_error turns into the RunTimeError of the pandas engine."""
+    period = text_to_period(value)
+    if period is None:
+        raise CastMaskError(f"VTL 2-1-5-1 Time_Period {value}")
+    return period
+
+
+def _cast_time_to_period(value: str) -> str:
+    """The Time_Period that a time casts to, as the pandas engine casts it, in the form the
+    loaders give it, and only with a year from 1000 (issue #1352). A time that is no period
+    raises the error of _map_vtl_macro_error that gives the RunTimeError 2-1-5-1."""
+    try:
+        return str(TimePeriod.explicit_cast(value, TimeInterval))
+    except Exception:
+        raise CastMaskError(f"Cannot determine period for interval: {value}") from None
 
 
 def register_time_functions(conn: duckdb.DuckDBPyConnection) -> None:
-    """Register the time period and time check UDFs on a DuckDB connection (issue #1192).
+    """Register the time period cast and time check UDFs on a DuckDB connection (issue #1192).
 
-    They apply the checks of the pandas engine, so both engines accept the same texts as time
-    periods and times. Idempotent, as register_regex_functions.
+    They apply the casts and the checks of the pandas engine, so both engines accept the same
+    texts as time periods and times. Idempotent, as register_regex_functions.
     """
-    for name, check in (
-        (TIME_PERIOD_CHECK_FUNCTION, TimePeriod.check),
-        (TIME_CHECK_FUNCTION, TimeInterval.check),
-    ):
-        with contextlib.suppress(duckdb.Error):
-            conn.create_function(name, check, [VARCHAR], BOOLEAN)
+    with contextlib.suppress(duckdb.Error):
+        conn.create_function(TIME_PERIOD_CAST_FUNCTION, _cast_text_to_period, [VARCHAR], VARCHAR)
+    with contextlib.suppress(duckdb.Error):
+        conn.create_function(TIME_TO_PERIOD_FUNCTION, _cast_time_to_period, [VARCHAR], VARCHAR)
+    with contextlib.suppress(duckdb.Error):
+        conn.create_function(TIME_CHECK_FUNCTION, TimeInterval.check, [VARCHAR], BOOLEAN)
+
+
+# The scalar types by the names that the transpiler and the pandas engine give them
+_MASK_TYPE_NAMES: Dict[str, Any] = {
+    **SCALAR_TYPES,
+    **{data_type.__name__: data_type for data_type in SCALAR_TYPES.values()},
+}
+
+
+class CastMaskError(Exception):
+    """Carries VTL error 2-1-5-3 out of the vtl_cast_mask UDF, or 2-1-5-1 out of the time
+    period cast UDF, in the message of the error that DuckDB raises, to _map_vtl_macro_error."""
+
+
+def _cast_mask_text(value: str, from_name: str, to_name: str, mask: str) -> str:
+    """The text of a value cast with a mask, in the form the DuckDB engine keeps the target
+    type. A value that the mask does not describe raises VTL error 2-1-5-3, which
+    _map_vtl_macro_error turns into the RunTimeError of the pandas engine."""
+    from_type: Type[ScalarType] = _MASK_TYPE_NAMES[from_name]
+    to_type: Type[ScalarType] = _MASK_TYPE_NAMES[to_name]
+    source: Any = value
+    if from_type is Number:
+        source = float(value)
+    elif from_type is Integer:
+        source = int(value)
+    try:
+        result = cast_with_mask(source, from_type, to_type, mask)
+    except RunTimeError:
+        types = f"{SCALAR_TYPES_CLASS_REVERSE[from_type]}|~|{SCALAR_TYPES_CLASS_REVERSE[to_type]}"
+        raise CastMaskError(f"VTL 2-1-5-3 {types}|~|{mask}|~|{value}|~|") from None
+    return repr(result) if isinstance(result, float) else str(result)
+
+
+def register_cast_mask_function(conn: duckdb.DuckDBPyConnection) -> None:
+    """Register the mask cast UDF on a DuckDB connection. Idempotent, as
+    register_regex_functions."""
+    with contextlib.suppress(duckdb.Error):
+        conn.create_function(
+            CAST_MASK_FUNCTION, _cast_mask_text, [VARCHAR, VARCHAR, VARCHAR, VARCHAR], VARCHAR
+        )
 
 
 def register_regex_functions(conn: duckdb.DuckDBPyConnection) -> None:

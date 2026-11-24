@@ -71,7 +71,7 @@
           },
           {
             "name": "PAYMENT_CATEGORY",
-            "type": "String",
+            "type": "payment_category",
             "nullable": false,
             "role": "Identifier"
           },

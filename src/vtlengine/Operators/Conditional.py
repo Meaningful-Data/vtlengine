@@ -3,17 +3,32 @@ from typing import Any, Dict, List, Optional, Union, cast
 
 import pandas as pd
 
+from vtlengine.AST.Grammar.tokens import CASE, IF, NVL
 from vtlengine.DataTypes import (
     SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
     Null,
     String,
+    TimeInterval,
     binary_implicit_promotion,
     to_strings,
 )
 from vtlengine.Exceptions import SemanticError
 from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar
-from vtlengine.Operators import Binary, Operator, _id_type_promotion_join_keys
+from vtlengine.Operators import (
+    Binary,
+    Operator,
+    _as_type,
+    _id_type_promotion_join_keys,
+    check_common_identifier_types,
+    common_identifiers,
+    may_be_null,
+    promoted_keys,
+    share_value_domains,
+    shared_value_domain,
+    time_names,
+    to_time,
+)
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
@@ -87,19 +102,47 @@ def _scalar_result(conditions: List[Scalar], then_ops: List[Scalar], else_op: Sc
         data_type=data_type,
         nullable=any(op.nullable or op.data_type == Null for op in operands),
         literal=selected is not None and selected.literal,
+        value_domain=shared_value_domain(operands),
     )
 
 
-def _as_type(data: Any, data_type: Any) -> Any:
-    """The data in the dtype of ``data_type``. As a String, a Boolean is "true" or "false", as
-    VTL casts it, where astype writes a numpy or Python Boolean as "True" (issue #1314)."""
-    return to_strings(data) if data_type is String else data.astype(data_type.dtype())
+def _time_operand(operand: Any, result: Any) -> Any:
+    """An operand of an if or a case with its Date or Time_Period values cast to Time where the
+    result is a Time, as the then and else operands take the common type (issue #1352)."""
+    if isinstance(result, Dataset):
+        if isinstance(operand, Dataset):
+            return to_time(operand, time_names(result))
+        types = {comp.data_type for comp in result.get_measures()}
+        return to_time(operand) if types == {TimeInterval} else operand
+    return to_time(operand) if result.data_type is TimeInterval else operand
 
 
-def _identifiers(dataset: Dataset) -> Dict[str, Component]:
-    """The Identifiers of a Data Set by name: an operand of an if or a case matches the
-    condition in whatever order each one declares them, as their Components (issue #1008)."""
-    return {comp.name: comp for comp in dataset.get_identifiers()}
+def _identifiers(dataset: Dataset) -> Dict[str, Any]:
+    """The basic types of the Identifiers of a Data Set by name: an operand of an if or a case
+    matches the condition in whatever order each one declares them (issue #1008), and on the
+    basic types, as a value domain is upcast to its basic type (issue #1348)."""
+    return {comp.name: comp.data_type for comp in dataset.get_identifiers()}
+
+
+def _check_identifiers(op: str, operand: Dataset, condition: Dataset) -> None:
+    """A Data Set operand or condition of an if or a case has the Identifiers of the condition,
+    on their names and basic types; the error names both (issue #1364)."""
+    if _identifiers(operand) != _identifiers(condition):
+        raise SemanticError(
+            "1-1-9-10",
+            op=op,
+            clause=operand.name,
+            ids=_identifiers_text(operand),
+            condition_ids=_identifiers_text(condition),
+        )
+
+
+def _identifiers_text(dataset: Dataset) -> str:
+    """The Identifiers of a Data Set with their basic types, as Id_1 String, Id_2 Integer."""
+    return ", ".join(
+        f"{name} {SCALAR_TYPES_CLASS_REVERSE[data_type]}"
+        for name, data_type in _identifiers(dataset).items()
+    )
 
 
 def _promote_measures(components: Dict[str, Component], operands: List[Any]) -> None:
@@ -154,11 +197,13 @@ def _combine_viral_attributes(result: Any, operands: List[Any]) -> None:
             ]
         else:
             cols = [list(d[va]) for d in carriers]
+        # The rule of the attribute is the one of its variable or its value domain
+        comp = next(op.components[va] for op in ds_ops if va in op.components)
         # A column of the type of the Attribute: a list of nulls made a column of Python None,
         # which the viral rule of an operator that takes this result directly cannot add to a
         # number (issue #1314)
         res_data[va] = pd.Series(
-            [registry.resolve_group(va, [col[r] for col in cols]) for r in range(n)],
+            [registry.resolve_group(comp, [col[r] for col in cols]) for r in range(n)],
             index=res_data.index,
             dtype=result.components[va].data_type.dtype(),
         )
@@ -167,7 +212,7 @@ def _combine_viral_attributes(result: Any, operands: List[Any]) -> None:
 class If(Operator):
     """
     If class:
-        `If-then-else <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=225&zoom=100,72,142>`_ operator
+        If-then-else operator
         inherits from Operator, a superclass that contains general validate and evaluate class methods.
         It has the following class methods:
     Class methods:
@@ -191,6 +236,8 @@ class If(Operator):
         cls, condition: Any, true_branch: Any, false_branch: Any, is_from_having: bool = False
     ) -> Any:
         result = cls.validate(condition, true_branch, false_branch, is_from_having)
+        true_branch = _time_operand(true_branch, result)
+        false_branch = _time_operand(false_branch, result)
         if isinstance(result, Scalar):
             # The value of the operand that the condition selects, in the type of the result
             selected = true_branch if condition.value else false_branch
@@ -315,6 +362,7 @@ class If(Operator):
                 data_type=binary_implicit_promotion(left.data_type, right.data_type),
                 role=Role.MEASURE,
                 nullable=nullable,
+                value_domain=shared_value_domain([left, right]),
             )
 
         # Dataset
@@ -330,11 +378,9 @@ class If(Operator):
             # Two Scalars (having) only need a common type: an operand is never retyped
             binary_implicit_promotion(left.data_type, right.data_type)
             return Dataset(name=dataset_name, components=copy(condition.components), data=None)
-        if _identifiers(left) != _identifiers(condition):
-            raise SemanticError("1-1-9-10", op=cls.op, clause=left.name)
+        _check_identifiers(IF, left, condition)
         if isinstance(right, Dataset):
-            if _identifiers(right) != _identifiers(condition):
-                raise SemanticError("1-1-9-10", op=cls.op, clause=right.name)
+            _check_identifiers(IF, right, condition)
             # The branches must hold the same Components, in whatever order each one
             # happens to declare them (issue #1008).
             if set(left.get_components_names()) != set(right.get_components_names()):
@@ -344,6 +390,9 @@ class If(Operator):
         # (issue #1314)
         result_components = {comp_name: copy(comp) for comp_name, comp in left.components.items()}
         _promote_measures(result_components, [right])
+        share_value_domains(result_components, [left, right])
+        # The Identifiers match the ones of the condition too (issue #1348)
+        share_value_domains(result_components, [condition, left, right], _identifiers(condition))
         if isinstance(condition, Dataset):
             if len(condition.get_measures()) != 1:
                 raise SemanticError("1-1-9-4", op=cls.op, name=condition.name)
@@ -364,7 +413,7 @@ class If(Operator):
 class Nvl(Binary):
     """
     Null class:
-        `Nvl <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf#page=229&zoom=100,72,370>`_operator class.
+        Nvl operator class.
         It has the following class methods:
 
     Class methods:
@@ -376,6 +425,8 @@ class Nvl(Binary):
     @classmethod
     def evaluate(cls, left: Any, right: Any) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(left, right)
+        if isinstance(result, Dataset) and isinstance(left, Dataset) and isinstance(right, Dataset):
+            left, right = promoted_keys(left, result), promoted_keys(right, result)
 
         if isinstance(left, Scalar) and isinstance(result, Scalar):
             if left.data_type is Null:
@@ -395,10 +446,12 @@ class Nvl(Binary):
                     for me in result.get_measures_names():
                         if me in result.data.columns:
                             result.data[me] = _as_type(
-                                result.data[me], result.components[me].data_type
+                                result.data[me],
+                                result.components[me].data_type,
+                                left.components[me].data_type,
                             )
                 else:
-                    result.data = _as_type(left.data, result.data_type)
+                    result.data = _as_type(left.data, result.data_type, left.data_type)
                 if isinstance(right, Scalar):
                     # A null applicable value replaces nothing, so the operand is
                     # returned as it is instead of filling with it (issue #1008).
@@ -422,7 +475,7 @@ class Nvl(Binary):
                     ]
                     right_data = right.data[join_keys + measures].copy()
                     for join_key in join_keys:
-                        _id_type_promotion_join_keys(
+                        result.data, right_data = _id_type_promotion_join_keys(
                             left.get_component(join_key),
                             right.get_component(join_key),
                             join_key,
@@ -434,12 +487,16 @@ class Nvl(Binary):
                     )
                     for me in measures:
                         data_type = result.components[me].data_type
-                        fill = _as_type(result.data[f"{me}_r"], data_type)
+                        fill = _as_type(
+                            result.data[f"{me}_r"], data_type, right.components[me].data_type
+                        )
                         result.data[me] = _as_type(result.data[me].fillna(fill), data_type)
                 else:
                     # nvl is single-operand: the primary operand's viral attributes are
                     # copied through unchanged; no rule is executed (issue #906).
-                    result.data = result.data.fillna(_as_type(right.data, result.data_type))
+                    result.data = result.data.fillna(
+                        _as_type(right.data, result.data_type, right.data_type)
+                    )
                 if isinstance(result, Dataset):
                     result.data = result.data[result.get_components_names()]
         return result
@@ -449,7 +506,10 @@ class Nvl(Binary):
         dataset_name = VirtualCounter._new_ds_name()
         comp_name = VirtualCounter._new_dc_name()
         result_components = {}
-        keeps_nulls = isinstance(right, Scalar) and (right.data_type is Null or right.value is None)
+        # A scalar replacement that cannot be null, such as a cast of a literal, replaces the
+        # nulls also in the semantic analysis, which does not know the values it computes
+        # (issue #1354)
+        keeps_nulls = isinstance(right, Scalar) and (right.data_type is Null or may_be_null(right))
         if isinstance(right, DataComponent):
             keeps_nulls = right.nullable
         if isinstance(left, Scalar):
@@ -461,7 +521,13 @@ class Nvl(Binary):
             # Matching main (#762): a scalar nvl result is reported non-nullable. The flag
             # must not depend on the operand VALUES (keeps_nulls tests right.value), or
             # semantic_analysis and run() would disagree on the same script's structure.
-            return Scalar(name="result", value=None, data_type=data_type, nullable=False)
+            return Scalar(
+                name="result",
+                value=None,
+                data_type=data_type,
+                nullable=False,
+                value_domain=shared_value_domain([left, right]),
+            )
         if isinstance(left, DataComponent):
             if isinstance(right, Dataset):
                 raise SemanticError(
@@ -474,6 +540,7 @@ class Nvl(Binary):
                 data_type=data_type,
                 role=Role.MEASURE,
                 nullable=keeps_nulls and left.nullable,
+                value_domain=shared_value_domain([left, right]),
             )
         if isinstance(left, Dataset):
             if isinstance(right, DataComponent):
@@ -487,6 +554,12 @@ class Nvl(Binary):
                         component.data_type, right.data_type
                     )
             if isinstance(right, Dataset):
+                # The operands must have the same Components, as in a case (issue #1354)
+                if set(left.get_components_names()) != set(right.get_components_names()):
+                    raise SemanticError("1-1-9-20", op=NVL)
+                # The Data Points match on the common Identifiers, which need a common type, as
+                # in the other operators on two Data Sets (issue #1352)
+                check_common_identifier_types(NVL, left, right)
                 for component in left.get_measures():
                     promoted[component.name] = cls.type_validation(
                         component.data_type, right.components[component.name].data_type
@@ -503,6 +576,9 @@ class Nvl(Binary):
                 comp.nullable = replacement_keeps_nulls and comp.nullable
                 if comp.name in promoted:
                     comp.data_type = promoted[comp.name]
+            if isinstance(right, Dataset):
+                common_identifiers(result_components, left, right)
+            share_value_domains(result_components, [left, right])
         return Dataset(name=dataset_name, components=result_components, data=None)
 
 
@@ -512,6 +588,8 @@ class Case(Operator):
         cls, conditions: List[Any], thenOps: List[Any], elseOp: Any, is_from_having: bool = False
     ) -> Union[Scalar, DataComponent, Dataset]:
         result = cls.validate(conditions, thenOps, elseOp, is_from_having)
+        thenOps = [_time_operand(op, result) for op in thenOps]
+        elseOp = _time_operand(elseOp, result)
         if isinstance(result, Scalar):
             # The value of the then operand of the first true condition (issues #1008 and
             # #1251), in the common type of the operands (issue #1314)
@@ -639,6 +717,7 @@ class Case(Operator):
                 data_type=_supertype(ops),
                 role=Role.MEASURE,
                 nullable=nullable,
+                value_domain=shared_value_domain(ops),
             )
 
         # Dataset
@@ -665,12 +744,14 @@ class Case(Operator):
         # Each later condition and each Data Set operand has the Identifiers of the first
         # condition, which gives the Data Points, as in an if (issue #1314)
         for item in [*conditions[1:], *ops]:
-            if isinstance(item, Dataset) and _identifiers(item) != _identifiers(conditions[0]):
-                raise SemanticError("1-1-9-10", op=cls.op, clause=item.name)
+            if isinstance(item, Dataset):
+                _check_identifiers(CASE, item, conditions[0])
 
-        # Rebuild the dict: the result must never share it with the branch dataset, as
-        # apply_viral_return_types may replace entries in it.
-        components = dict(next(op for op in ops if isinstance(op, Dataset)).components)
+        # Copy the components: the result must never share them, or the dict, with the
+        # branch dataset, as their value domains are set and apply_viral_return_types may
+        # replace entries in it.
+        branch = next(op for op in ops if isinstance(op, Dataset))
+        components = {name: copy(comp) for name, comp in branch.components.items()}
         comp_names = {comp.name for comp in components.values()}
         for op in ops:
             # The operands must hold the same Components, in whatever order each one
@@ -684,6 +765,9 @@ class Case(Operator):
 
         # case over two or more datasets combines their data points, so viral attributes
         # carried by two or more branches require a propagation rule (issue #906).
+        share_value_domains(components, ops)
+        # The Identifiers match the ones of the conditions too (issue #1348)
+        share_value_domains(components, [*conditions, *ops], _identifiers(conditions[0]))
         combined = combined_viral_components([op for op in ops if isinstance(op, Dataset)])
         require_rules(combined)
         apply_viral_return_types(combined, components)

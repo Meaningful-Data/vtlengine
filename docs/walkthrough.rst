@@ -3,7 +3,7 @@
 ########################
 
 The VTL Engine is a Python library that runs
-`VTL 2.1 <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf>`_
+`VTL 2.2 <https://sdmx-twg.github.io/vtl/v2.2/index.html>`_
 scripts against tabular data. You bring three things — a script, a
 description of your data, and the data itself — and the engine parses,
 type-checks, and executes the whole thing.
@@ -54,14 +54,16 @@ roles, regardless of which method you use:
 
 A few optional inputs let you extend or tune the run:
 
-* ``value_domains`` — codelists referenced by the ``in`` operator.
-  See :doc:`extra_inputs`.
+* ``value_domains`` — codelists referenced by the ``in`` operator and
+  by the type of a Component. See :doc:`extra_inputs`.
 * ``external_routines`` — SQL snippets invoked from inside ``eval``.
   See :doc:`extra_inputs`.
 * ``scalar_values`` — scalar inputs to the script (``run`` only). See
   Example 2 below.
 * ``output_folder`` — write results to disk instead of returning them
-  in memory.
+  in memory. In CSV output an empty String and a null are both an empty
+  field, which the loaders read back as null: an empty String does not
+  survive the round trip.
 * ``output_format`` — ``"csv"`` (default) or ``"parquet"`` for results
   written to ``output_folder``. ``"parquet"`` requires ``use_duckdb=True``;
   see :doc:`duckdb_engine`.
@@ -329,7 +331,7 @@ input, the engine auto-matches them — no ``mappings`` argument needed.
     :header-rows: 1
 
 For VTL syntax reference, see the
-`VTL 2.1 manual <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf>`_.
+`VTL 2.2 Reference Manual <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/index.html>`_.
 
 Files used in the example:
 

@@ -1,6 +1,7 @@
 import re
+import threading
 from copy import copy
-from typing import Any, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import pandas as pd
 
@@ -22,18 +23,42 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import (
     COMP_NAME_MAPPING,
     SCALAR_TYPES_CLASS_REVERSE,
+    Date,
+    Integer,
+    Null,
+    Number,
+    TimeInterval,
+    TimePeriod,
     binary_implicit_promotion,
     check_binary_implicit_promotion,
     check_unary_implicit_promotion,
+    to_strings,
     unary_implicit_promotion,
 )
+
+# Aliased: the submodules Boolean and String of this package take these names once imported
+from vtlengine.DataTypes import Boolean as BooleanType
+from vtlengine.DataTypes import String as StringType
 from vtlengine.DataTypes.TimeHandling import (
     PERIOD_IND_MAPPING,
     TimeIntervalHandler,
     TimePeriodHandler,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError
-from vtlengine.Model import Component, DataComponent, Dataset, Role, Scalar, ScalarSet
+from vtlengine.Model import (
+    TIME_TYPES,
+    Component,
+    DataComponent,
+    Dataset,
+    Role,
+    Scalar,
+    ScalarSet,
+    ValueDomain,
+    component_name_characters,
+    component_name_characters_text,
+    on_distinct,
+    printable_name,
+)
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.ViralPropagation import (
@@ -53,7 +78,105 @@ MONOMEASURE_CHANGED_ALLOWED = [CEIL, FLOOR, ROUND, TRUNC]
 BINARY_COMPARISON_OPERATORS = [EQ, NEQ, GT, GTE, LT, LTE]
 BINARY_BOOLEAN_OPERATORS = [AND, OR, XOR]
 
-only_semantic = False
+# Whether the operators check the structures only (the semantic analysis) or also compute the
+# data, for the thread that runs them: run() analyses a whole script before it computes it, and
+# one thread's analysis must not stop the computation of another (issue #1352)
+_mode = threading.local()
+
+
+def is_only_semantic() -> bool:
+    return bool(getattr(_mode, "only_semantic", False))
+
+
+def set_only_semantic(value: bool) -> None:
+    _mode.only_semantic = value
+
+
+def _part_of(operand: Any, component: Any) -> Any:
+    """What an operand puts into a component of the result: its component of that name, or
+    the operand itself when it is a scalar or a component, which goes into the Measures."""
+    if isinstance(operand, Dataset):
+        return operand.components.get(component.name)
+    return operand if component.role == Role.MEASURE else None
+
+
+def check_component_name(op: str, name: str) -> None:
+    """A Component a script names cannot hold the characters that the names of the Components
+    of the input structures cannot hold: # only separates the alias of a join operand from
+    the name of its Component (issue #1355)."""
+    if any(char in name for char in component_name_characters()):
+        raise SemanticError(
+            "1-1-6-19",
+            op=op,
+            name=printable_name(name),
+            characters=component_name_characters_text(),
+        )
+
+
+def shared_value_domain(parts: Iterable[Any]) -> Optional[ValueDomain]:
+    """The value domain a component keeps when an operator puts the values of several
+    operands into it: the one they are all defined on, nulls aside. Two value domains, or a
+    value domain and a basic type, even its own, give the promotion of the basic types, as a
+    value domain is always upcast to its basic type."""
+    parts = [part for part in parts if part is not None and part.data_type is not Null]
+    domains = {getattr(part.value_domain, "name", None) for part in parts}
+    return parts[0].value_domain if len(domains) == 1 else None
+
+
+def share_value_domains(
+    components: Dict[str, Any], operands: List[Any], names: Optional[Iterable[str]] = None
+) -> None:
+    """Gives the components of the result the value domain their operands share."""
+    for name in components if names is None else names:
+        component = components[name]
+        component.value_domain = shared_value_domain(
+            _part_of(operand, component) for operand in operands
+        )
+
+
+def on_basic_types(components: Dict[str, Any], names: Iterable[str]) -> Dict[str, Any]:
+    """The components with the ones of ``names`` copied onto their basic type: an operator that
+    computes new values into a component takes it off its value domain, as the values are no
+    longer values of it (issue #1348). The components given are not changed."""
+    result = dict(components)
+    for name in names:
+        result[name] = copy(components[name])
+        result[name].value_domain = None
+    return result
+
+
+def check_values(values: Any, value_domain: ValueDomain, op: str) -> None:
+    """The values an operator converts into a value domain must be values of it."""
+    outside = value_domain.outside(values)
+    if len(outside):
+        raise RunTimeError(
+            "2-1-5-4",
+            op=op,
+            value=outside.iloc[0],
+            type=SCALAR_TYPES_CLASS_REVERSE[value_domain.type],
+            value_domain=value_domain.name,
+        )
+
+
+def _time_value(value: str) -> Any:
+    """A Time as a comparison reads it: its start/end interval, or its text when it is written
+    as the year or the month it covers, as cast to time keeps it, which is equal to that text
+    alone, as on the DuckDB engine (issue #1352)."""
+    return TimeIntervalHandler.from_iso_format(value) if "/" in value else value
+
+
+def may_be_null(scalar: Scalar) -> bool:
+    """Whether a Scalar operand can hold a null: it is declared nullable and its value is not
+    known to be one that is not null, as in the semantic analysis (issue #1354)."""
+    return scalar.nullable and scalar.value is None
+
+
+def param_may_be_null(param: Any) -> bool:
+    """Whether a parameter of an operator can hold a null: a nullable Component, or a Scalar
+    that may be null (issue #1354)."""
+    if isinstance(param, DataComponent):
+        return param.nullable
+    return isinstance(param, Scalar) and may_be_null(param)
 
 
 class Operator:
@@ -66,7 +189,7 @@ class Operator:
 
     @classmethod
     def analyze(cls, *args: Any, **kwargs: Any) -> Any:
-        if only_semantic:
+        if is_only_semantic():
             return cls.validate(*args, **kwargs)
         return cls.evaluate(*args, **kwargs)
 
@@ -80,27 +203,33 @@ class Operator:
         raise NotImplementedError
 
     @classmethod
-    def cast_time_types(cls, data_type: Any, series: Any) -> Any:
+    def cast_time_types(cls, data_type: Any, series: Any, other_type: Any = None) -> Any:
+        """The values of the series as a comparison orders them, each distinct value of a time
+        type cast once, as cast_time_types_scalar casts it."""
         if cls.op not in BINARY_COMPARISON_OPERATORS:
             return series
-        if data_type.__name__ == "TimeInterval":
-            series = series.map(
-                lambda x: TimeIntervalHandler.from_iso_format(x), na_action="ignore"
+        if data_type.__name__ == "Duration":
+            return series.map(PERIOD_IND_MAPPING)
+        if data_type in (TimePeriod, TimeInterval) or _is_cast_to_time(data_type, other_type):
+            return on_distinct(
+                series,
+                lambda values: values.map(
+                    lambda x: cls.cast_time_types_scalar(data_type, x, other_type)
+                ),
             )
-        elif data_type.__name__ == "TimePeriod":
-            series = series.map(lambda x: TimePeriodHandler(x), na_action="ignore")
-        elif data_type.__name__ == "Duration":
-            series = series.map(PERIOD_IND_MAPPING)
         return series
 
     @classmethod
-    def cast_time_types_scalar(cls, data_type: Any, value: str) -> Any:
+    def cast_time_types_scalar(cls, data_type: Any, value: str, other_type: Any = None) -> Any:
         if cls.op not in BINARY_COMPARISON_OPERATORS:
             return value
         if value is None:
             return None
+        if _is_cast_to_time(data_type, other_type):
+            value = TimeInterval.implicit_cast(value, data_type)
+            data_type = TimeInterval
         if data_type.__name__ == "TimeInterval":
-            return TimeIntervalHandler.from_iso_format(value)
+            return _time_value(value)
         elif data_type.__name__ == "TimePeriod":
             return TimePeriodHandler(value)
         elif data_type.__name__ == "Duration":
@@ -150,51 +279,177 @@ class Operator:
         return binary_implicit_promotion(left, right, cls.type_to_check, cls.return_type)
 
 
+# The types that are implicitly cast to Time (TimeInterval)
+TIME_CASTS = (Date, TimePeriod)
+
+
+def _is_cast_to_time(data_type: Any, other_type: Any) -> bool:
+    """A Date or a Time_Period with a Time is implicitly cast to Time: a Date to the Time that
+    starts and ends on it, a Time_Period to the Time of its start and end dates (issue
+    #1352)."""
+    return other_type is TimeInterval and data_type in TIME_CASTS
+
+
+def _time_series(series: Any, from_type: Any) -> Any:
+    """The Date or Time_Period values of the series as Time values."""
+    return series.map(lambda x: TimeInterval.implicit_cast(x, from_type), na_action="ignore")
+
+
+def time_names(structure: Any) -> List[str]:
+    """The names of the Time Components of a Data Set."""
+    return [name for name, comp in structure.components.items() if comp.data_type is TimeInterval]
+
+
+def to_time(operand: Any, names: Iterable[str] = ()) -> Any:
+    """A copy of the operand with its Date or Time_Period values cast to Time, by the implicit
+    cast of the VTL 2.2 manual (issue #1352): a Scalar, a Component, a set of values, or the
+    Components ``names`` of a Data Set. Any other operand is returned as it is. The operand is
+    never changed: the other statements read it too."""
+    if isinstance(operand, Dataset):
+        names = [
+            name
+            for name in names
+            if name in operand.components and operand.components[name].data_type in TIME_CASTS
+        ]
+        if not names:
+            return operand
+        converted = copy(operand)
+        converted.components = {name: copy(comp) for name, comp in operand.components.items()}
+        converted.data = None if operand.data is None else operand.data.copy()
+        for name in names:
+            comp = converted.components[name]
+            if converted.data is not None:
+                converted.data[name] = _time_series(converted.data[name], comp.data_type)
+            comp.data_type, comp.value_domain = TimeInterval, None
+        return converted
+    from_type = operand.data_type
+    if from_type not in TIME_CASTS:
+        return operand
+    if isinstance(operand, ScalarSet):
+        values = [TimeInterval.implicit_cast(value, from_type) for value in operand.values]
+        return ScalarSet(data_type=TimeInterval, values=values)
+    converted = copy(operand)
+    converted.data_type, converted.value_domain = TimeInterval, None
+    if isinstance(operand, Scalar):
+        converted.value = (
+            None if operand.value is None else TimeInterval.implicit_cast(operand.value, from_type)
+        )
+    elif operand.data is not None:
+        converted.data = _time_series(operand.data, from_type)
+    return converted
+
+
+def _time_values(data: Any, data_type: Any, from_type: Any) -> Any:
+    """The data of a Date or a Time_Period ``from_type`` as Time values when ``data_type`` is
+    Time: the Time that starts and ends on a Date, the start and end of a Time_Period (issue
+    #1352). Other data is returned as it is."""
+    if not _is_cast_to_time(from_type, data_type):
+        return data
+    return data.map(lambda x: TimeInterval.implicit_cast(x, from_type), na_action="ignore")
+
+
+def _as_type(data: Any, data_type: Any, from_type: Any = None) -> Any:
+    """The data in the dtype of ``data_type``. As a String, a Boolean is "true" or "false", as
+    VTL casts it, where astype writes a numpy or Python Boolean as "True" (issue #1314). The
+    values of a Date or a Time_Period ``from_type`` become Time values (issue #1352)."""
+    data = _time_values(data, data_type, from_type)
+    return to_strings(data) if data_type is StringType else data.astype(data_type.dtype())
+
+
+def _promotes(from_type: Any, to_type: Any) -> bool:
+    """Whether the values of ``from_type`` are cast to ``to_type`` to be matched or merged with
+    values of it: the implicit casts of the VTL 2.2 manual from integer to number, from boolean
+    to string, and from a Date or a Time_Period to Time (issues #1352 and #1353)."""
+    return (from_type, to_type) in (
+        (Integer, Number),
+        (BooleanType, StringType),
+    ) or _is_cast_to_time(from_type, to_type)
+
+
+def promoted(dataset: Dataset, result: Dataset, names: Iterable[str]) -> Dataset:
+    """A copy of the Data Set with its Components ``names`` cast to their type in the result,
+    where that is the type they are implicitly cast to (see _promotes): an Integer becomes a
+    Number, a Boolean the String "true" or "false", a Date or a Time_Period a Time (issues #1352
+    and #1353). The Data Set is never changed: the other statements read it too."""
+    names = [
+        name
+        for name in names
+        if name in dataset.components
+        and name in result.components
+        and _promotes(dataset.components[name].data_type, result.components[name].data_type)
+    ]
+    if not names:
+        return dataset
+    converted = copy(dataset)
+    converted.components = {name: copy(comp) for name, comp in dataset.components.items()}
+    converted.data = None if dataset.data is None else dataset.data.copy()
+    for name in names:
+        comp = converted.components[name]
+        data_type = result.components[name].data_type
+        if converted.data is not None and name in converted.data.columns:
+            converted.data[name] = _as_type(converted.data[name], data_type, comp.data_type)
+        comp.data_type, comp.value_domain = data_type, None
+    return converted
+
+
+def common_identifiers(components: Dict[str, Component], left: Dataset, right: Dataset) -> None:
+    """The common Identifiers of two Data Sets have their common type in the result
+    ``components``, whatever the order of the operands, as their values are matched as values
+    of it: an Integer and a Number are Numbers, a Boolean and a String Strings, a Date or a
+    Time_Period and a Time are Times (issues #1352 and #1353). A retyped Component is replaced
+    with a copy."""
+    for name in set(left.get_identifiers_names()) & set(right.get_identifiers_names()):
+        left_type, right_type = left.components[name].data_type, right.components[name].data_type
+        comp = components.get(name)
+        if comp is None or left_type is right_type:
+            continue
+        data_type = binary_implicit_promotion(left_type, right_type)
+        if comp.data_type is not data_type:
+            components[name] = copy(comp)
+            components[name].data_type, components[name].value_domain = data_type, None
+
+
+def promoted_keys(dataset: Dataset, result: Dataset) -> Dataset:
+    """The Data Set with its Identifiers cast to their type in the result, on a copy (issues
+    #1352 and #1353)."""
+    return promoted(dataset, result, dataset.get_identifiers_names())
+
+
+def check_common_identifier_types(op: str, left: Dataset, right: Dataset) -> None:
+    """The Identifiers that two Data Sets have in common, on which their Data Points match,
+    have a common type (issues #1314 and #1352)."""
+    for id_name in sorted(set(left.get_identifiers_names()) & set(right.get_identifiers_names())):
+        left_type = left.components[id_name].data_type
+        right_type = right.components[id_name].data_type
+        if not check_binary_implicit_promotion(left_type, right_type):
+            raise SemanticError(
+                "1-1-13-18",
+                op=op,
+                id_name=id_name,
+                type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
+                type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
+            )
+
+
 def _id_type_promotion_join_keys(
     c_left: Component,
     c_right: Component,
     join_key: str,
-    left_data: Optional[pd.DataFrame] = None,
-    right_data: Optional[pd.DataFrame] = None,
-) -> None:
-    if left_data is None:
-        left_data = pd.DataFrame()
-    if right_data is None:
-        right_data = pd.DataFrame()
-
-    left_type_name: str = str(c_left.data_type.__name__)
-    right_type_name: str = str(c_right.data_type.__name__)
-
-    target_dtype = c_left.data_type.dtype()
-    if left_type_name == right_type_name or len(left_data) == 0 or len(right_data) == 0:
-        left_data[join_key] = left_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
-        right_data[join_key] = right_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
-        return
-    if (left_type_name == "Integer" and right_type_name == "Number") or (
-        left_type_name == "Number" and right_type_name == "Integer"
-    ):
-        left_data[join_key] = left_data[join_key].map(lambda x: int(float(x)))
-        right_data[join_key] = right_data[join_key].map(lambda x: int(float(x)))
-        target_dtype = "int64[pyarrow]"
-    elif (left_type_name == "String" and right_type_name in ("Integer", "Number")) or (
-        left_type_name in ("Integer", "Number") and right_type_name == "String"
-    ):
-        left_data[join_key] = left_data[join_key].map(lambda x: _handle_str_number(x))
-        right_data[join_key] = right_data[join_key].map(lambda x: _handle_str_number(x))
-    left_data[join_key] = left_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
-    right_data[join_key] = right_data[join_key].astype(target_dtype)  # type: ignore[call-overload]
-
-
-def _handle_str_number(x: Union[str, int, float]) -> Union[str, int, float]:
-    if isinstance(x, int):
-        return x
-    try:
-        x = float(x)
-        if x.is_integer():
-            return int(x)
-        return x
-    except ValueError:  # Unable to get to string, return the same value that will not be matched
-        return x
+    left_data: Any,
+    right_data: Any,
+) -> Tuple[Any, Any]:
+    """The data of two operands with their join key in the common type of its two Components,
+    on copies: the data of the operands is never changed, as the other statements read it too.
+    An Integer key matched with a Number one is a Number, never truncated (issue #1353)."""
+    data_type = c_left.data_type
+    if c_right.data_type is not data_type:
+        data_type = binary_implicit_promotion(data_type, c_right.data_type)
+    frames = []
+    for data, comp in ((left_data, c_left), (right_data, c_right)):
+        if data is not None:
+            data = data.assign(**{join_key: _as_type(data[join_key], data_type, comp.data_type)})
+        frames.append(data)
+    return frames[0], frames[1]
 
 
 class Binary(Operator):
@@ -260,8 +515,8 @@ class Binary(Operator):
             return cls.dataset_set_validation(left_operand, right_operand)
         if isinstance(left_operand, Scalar) and isinstance(right_operand, ScalarSet):
             return cls.scalar_set_validation(left_operand, right_operand)
-        if isinstance(left_operand, DataComponent) and isinstance(right_operand, ScalarSet):
-            return cls.component_set_validation(left_operand, right_operand)
+        # DataComponent and ScalarSet
+        return cls.component_set_validation(left_operand, right_operand)
 
     @classmethod
     def dataset_validation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
@@ -309,17 +564,7 @@ class Binary(Operator):
             )
         # The Data Points match on the values of the common Identifiers, which need a common
         # type, as in a join (issue #1314)
-        for id_name in sorted(left_ids_set & right_ids_set):
-            left_type = left_operand.components[id_name].data_type
-            right_type = right_operand.components[id_name].data_type
-            if not check_binary_implicit_promotion(left_type, right_type):
-                raise SemanticError(
-                    "1-1-13-18",
-                    op=cls.op,
-                    id_name=id_name,
-                    type_1=SCALAR_TYPES_CLASS_REVERSE[left_type],
-                    type_2=SCALAR_TYPES_CLASS_REVERSE[right_type],
-                )
+        check_common_identifier_types(cls.op, left_operand, right_operand)
 
         # Deleting extra identifiers that we do not need anymore
 
@@ -330,6 +575,7 @@ class Binary(Operator):
             for component_name, component in base_operand.components.items()
             if component.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
+        common_identifiers(result_components, left_operand, right_operand)
         # Also include viral attributes from the other operand
         for comp_name, comp in other_operand.components.items():
             if comp.role == Role.VIRAL_ATTRIBUTE and comp_name not in result_components:
@@ -340,6 +586,10 @@ class Binary(Operator):
                 left_comp = left_operand.components[comp.name]
                 right_comp = right_operand.components[comp.name]
                 comp.nullable = left_comp.nullable or right_comp.nullable
+        # The Identifiers of both operands are matched, so their values are the ones of both
+        share_value_domains(
+            result_components, [left_operand, right_operand], left_ids_set & right_ids_set
+        )
 
         # Viral attributes present in BOTH operands have their data points merged, so they
         # are combined and require a propagation rule; a viral attribute in a single operand
@@ -363,6 +613,9 @@ class Binary(Operator):
             for comp_name, comp in dataset.components.items()
             if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
         }
+        if may_be_null(scalar):
+            for comp in result_components.values():
+                comp.nullable = comp.nullable or comp.role == Role.MEASURE
         result_dataset = Dataset(name=dataset_name, components=result_components, data=None)
         cls.apply_return_type_dataset(result_dataset, dataset, scalar)
         return result_dataset
@@ -413,7 +666,7 @@ class Binary(Operator):
             data_type=cls.type_validation(component.data_type, scalar.data_type),
             data=None,
             role=component.role,
-            nullable=component.nullable or scalar is None,
+            nullable=component.nullable or may_be_null(scalar),
         )
         return result
 
@@ -456,7 +709,8 @@ class Binary(Operator):
             name="result",
             data_type=cls.type_validation(scalar.data_type, scalar_set.data_type),
             value=None,
-            nullable=scalar.nullable,
+            # A set of nulls gives null, as 1 in {null} and 1 not_in {null} (issue #1353)
+            nullable=scalar.nullable or scalar_set.data_type == Null,
         )
 
     # The following class method implements the type promotion
@@ -529,6 +783,7 @@ class Binary(Operator):
                 raise SemanticError("1-1-1-4", op=cls.op)
             else:
                 measure.data_type = result_data_type
+                measure.value_domain = None
 
     @staticmethod
     def _cleanup_attributes_after_merge(
@@ -559,8 +814,9 @@ class Binary(Operator):
             has_y = va + "_y" in result_data.columns
             if has_x and has_y:
                 # Both operands have this viral attr — apply propagation rule
+                component = left_operand.components[va]
                 result_data[va] = result_data[[va + "_x", va + "_y"]].apply(
-                    lambda row: registry.resolve_pair(va, row.iloc[0], row.iloc[1]),
+                    lambda row, c=component: registry.resolve_pair(c, row.iloc[0], row.iloc[1]),
                     axis=1,
                 )
                 result_data = result_data.drop([va + "_x", va + "_y"], axis=1)
@@ -573,15 +829,16 @@ class Binary(Operator):
     @classmethod
     def dataset_evaluation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
         result_dataset = cls.dataset_validation(left_operand, right_operand)
+        left_operand = promoted_keys(left_operand, result_dataset)
+        right_operand = promoted_keys(right_operand, result_dataset)
 
         use_right_as_base = False
+        base_operand, other_operand = left_operand, right_operand
         if len(left_operand.get_identifiers_names()) < len(right_operand.get_identifiers_names()):
             use_right_as_base = True
-            base_operand_data = right_operand.data
-            other_operand_data = left_operand.data
-        else:
-            base_operand_data = left_operand.data
-            other_operand_data = right_operand.data
+            base_operand, other_operand = right_operand, left_operand
+        base_operand_data = base_operand.data
+        other_operand_data = other_operand.data
 
         join_keys = list(
             set(left_operand.get_identifiers_names()).intersection(
@@ -590,9 +847,9 @@ class Binary(Operator):
         )
 
         for join_key in join_keys:
-            _id_type_promotion_join_keys(
-                left_operand.get_component(join_key),
-                right_operand.get_component(join_key),
+            base_operand_data, other_operand_data = _id_type_promotion_join_keys(
+                base_operand.get_component(join_key),
+                other_operand.get_component(join_key),
                 join_key,
                 base_operand_data,
                 other_operand_data,
@@ -615,40 +872,16 @@ class Binary(Operator):
 
         # Measures are the same, using left operand measures names
         for measure in left_operand.get_measures():
-            left_type = measure.data_type
-            right_type = right_operand.get_component(measure.name).data_type
-
-            if left_type != right_type:
-                promoted_type = binary_implicit_promotion(left_type, right_type)
-                # Only apply implicit_cast when both types need conversion
-                # (e.g. Date + TimePeriod → TimeInterval)
-                if promoted_type != left_type and promoted_type != right_type:
-                    if use_right_as_base:
-                        x_type, y_type = right_type, left_type
-                    else:
-                        x_type, y_type = left_type, right_type
-
-                    def _cast_x(v: Any, ft: Any = x_type) -> Any:
-                        return promoted_type.implicit_cast(v, ft)
-
-                    def _cast_y(v: Any, ft: Any = y_type) -> Any:
-                        return promoted_type.implicit_cast(v, ft)
-
-                    result_data[measure.name + "_x"] = result_data[measure.name + "_x"].map(
-                        _cast_x, na_action="ignore"
-                    )
-                    result_data[measure.name + "_y"] = result_data[measure.name + "_y"].map(
-                        _cast_y, na_action="ignore"
-                    )
-                cast_type = promoted_type
-            else:
-                cast_type = left_type
-
+            # The _x columns are the ones of the base operand
+            x_type = measure.data_type
+            y_type = right_operand.get_component(measure.name).data_type
+            if use_right_as_base:
+                x_type, y_type = y_type, x_type
             result_data[measure.name + "_x"] = cls.cast_time_types(
-                cast_type, result_data[measure.name + "_x"]
+                x_type, result_data[measure.name + "_x"], y_type
             )
             result_data[measure.name + "_y"] = cls.cast_time_types(
-                cast_type, result_data[measure.name + "_y"]
+                y_type, result_data[measure.name + "_y"], x_type
             )
             if use_right_as_base:
                 result_data[measure.name] = cls.apply_operation_two_series(
@@ -675,10 +908,33 @@ class Binary(Operator):
     @classmethod
     def scalar_evaluation(cls, left_operand: Scalar, right_operand: Scalar) -> Scalar:
         result_scalar = cls.scalar_validation(left_operand, right_operand)
-        left_value = cls.cast_time_types_scalar(left_operand.data_type, left_operand.value)
-        right_value = cls.cast_time_types_scalar(right_operand.data_type, right_operand.value)
+        left_type, right_type = left_operand.data_type, right_operand.data_type
+        left_value = cls.cast_time_types_scalar(left_type, left_operand.value, right_type)
+        right_value = cls.cast_time_types_scalar(right_type, right_operand.value, left_type)
         result_scalar.value = cls.op_func(left_value, right_value)
         return result_scalar
+
+    @classmethod
+    def _series_scalar_operation(
+        cls, data_type: Any, series: Any, scalar: Scalar, series_left: bool
+    ) -> Any:
+        """The operation of the values of the series, of the type given, with the Scalar. A
+        comparison of values of a time type is computed once per distinct value."""
+        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value, data_type)
+        if (
+            data_type.__name__.__str__() == "Duration"
+            and not isinstance(scalar_value, int)
+            and scalar_value is not None
+        ):
+            scalar_value = PERIOD_IND_MAPPING[scalar_value]
+
+        def operation(values: Any) -> Any:
+            values = cls.cast_time_types(data_type, values, scalar.data_type)
+            return cls.apply_operation_series_scalar(values, scalar_value, series_left)
+
+        if cls.op in BINARY_COMPARISON_OPERATORS and data_type in TIME_TYPES:
+            return on_distinct(series, operation)
+        return operation(series)
 
     @classmethod
     def dataset_scalar_evaluation(
@@ -688,18 +944,9 @@ class Binary(Operator):
         result_data = dataset.data.copy() if dataset.data is not None else pd.DataFrame()
         result_dataset.data = result_data
 
-        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
-
         for measure in dataset.get_measures():
-            measure_data = cls.cast_time_types(measure.data_type, result_data[measure.name].copy())
-            if (
-                measure.data_type.__name__.__str__() == "Duration"
-                and not isinstance(scalar_value, int)
-                and scalar_value is not None
-            ):
-                scalar_value = PERIOD_IND_MAPPING[scalar_value]
-            result_dataset.data[measure.name] = cls.apply_operation_series_scalar(
-                measure_data, scalar_value, dataset_left
+            result_dataset.data[measure.name] = cls._series_scalar_operation(
+                measure.data_type, result_data[measure.name].copy(), scalar, dataset_left
             )
             # Enforce measure dtype from component declaration
             result_comp = result_dataset.components.get(measure.name)
@@ -730,10 +977,12 @@ class Binary(Operator):
         left_data = cls.cast_time_types(
             left_operand.data_type,
             left_operand.data.copy() if left_operand.data is not None else pd.Series(),
+            right_operand.data_type,
         )
         right_data = cls.cast_time_types(
             right_operand.data_type,
             (right_operand.data.copy() if right_operand.data is not None else pd.Series()),
+            left_operand.data_type,
         )
         result_component.data = cls.apply_operation_two_series(left_data, right_data)
         # Enforce dtype from component declaration
@@ -747,19 +996,11 @@ class Binary(Operator):
         cls, component: DataComponent, scalar: Scalar, component_left: bool = True
     ) -> DataComponent:
         result_component = cls.component_scalar_validation(component, scalar)
-        comp_data = cls.cast_time_types(
+        result_component.data = cls._series_scalar_operation(
             component.data_type,
             component.data.copy() if component.data is not None else pd.Series(),
-        )
-        scalar_value = cls.cast_time_types_scalar(scalar.data_type, scalar.value)
-        if (
-            component.data_type.__name__.__str__() == "Duration"
-            and not isinstance(scalar_value, int)
-            and scalar_value is not None
-        ):
-            scalar_value = PERIOD_IND_MAPPING[scalar_value]
-        result_component.data = cls.apply_operation_series_scalar(
-            comp_data, scalar_value, component_left
+            scalar,
+            component_left,
         )
         # Enforce dtype from component declaration
         target = result_component.data_type.dtype()
@@ -830,8 +1071,8 @@ class Binary(Operator):
             return cls.dataset_set_evaluation(left_operand, right_operand)
         if isinstance(left_operand, DataComponent) and isinstance(right_operand, ScalarSet):
             return cls.component_set_evaluation(left_operand, right_operand)
-        if isinstance(left_operand, Scalar) and isinstance(right_operand, ScalarSet):
-            return cls.scalar_set_evaluation(left_operand, right_operand)
+        # Scalar and ScalarSet
+        return cls.scalar_set_evaluation(left_operand, right_operand)
 
 
 class Unary(Operator):
@@ -860,8 +1101,8 @@ class Unary(Operator):
             return cls.dataset_validation(operand)
         elif isinstance(operand, DataComponent):
             return cls.component_validation(operand)
-        elif isinstance(operand, Scalar):
-            return cls.scalar_validation(operand)
+        # Scalar
+        return cls.scalar_validation(operand)
 
     @classmethod
     def dataset_validation(cls, operand: Dataset) -> Dataset:
@@ -958,6 +1199,7 @@ class Unary(Operator):
                 raise SemanticError("1-1-1-4", op=cls.op)
             else:
                 measure.data_type = result_data_type
+                measure.value_domain = None
 
     @classmethod
     def evaluate(cls, operand: ALL_MODEL_DATA_TYPES) -> Any:
@@ -965,8 +1207,8 @@ class Unary(Operator):
             return cls.dataset_evaluation(operand)
         if isinstance(operand, Scalar):
             return cls.scalar_evaluation(operand)
-        if isinstance(operand, DataComponent):
-            return cls.component_evaluation(operand)
+        # DataComponent
+        return cls.component_evaluation(operand)
 
     @classmethod
     def dataset_evaluation(cls, operand: Dataset) -> Dataset:

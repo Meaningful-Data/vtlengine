@@ -1,25 +1,201 @@
 from copy import copy
-from typing import Any, Collection, Dict, List, Optional, Type, Union
+from typing import Any, Collection, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import pandas as pd
 
-from vtlengine.AST.Grammar.tokens import CHECK, CHECK_HIERARCHY
+from vtlengine.AST.Grammar.tokens import CHECK, CHECK_DATAPOINT, CHECK_HIERARCHY
 from vtlengine.DataTypes import (
+    BASIC_TYPES,
+    SCALAR_TYPES_CLASS_REVERSE,
     Boolean,
+    Date,
+    Duration,
     Integer,
     Number,
     ScalarType,
     String,
+    TimeInterval,
+    TimePeriod,
     check_unary_implicit_promotion,
+    to_string,
 )
-from vtlengine.Exceptions import SemanticError
-from vtlengine.Model import Component, Dataset, Role
-from vtlengine.Operators import Operator
+from vtlengine.Exceptions import InputValidationException, SemanticError
+from vtlengine.Model import Component, Dataset, Role, ValueDomain, component_type_name
+from vtlengine.Operators import (
+    Operator,
+    _id_type_promotion_join_keys,
+    check_common_identifier_types,
+    check_values,
+    on_basic_types,
+)
+from vtlengine.Operators.HROperators import fills_with_zero
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 
+ERROR_VALUE_DOMAINS = {"errorcode": "errorcode_vd", "errorlevel": "errorlevel_vd"}
+# The Measures a validation computes
+VALIDATION_MEASURES = ("bool_var", "imbalance", "errorcode", "errorlevel")
+
+
+def error_domains(
+    value_domains: Optional[Dict[str, ValueDomain]],
+) -> Dict[str, Optional[ValueDomain]]:
+    """The value domains given for the errorcode and errorlevel Measures."""
+    return {
+        element: (value_domains or {}).get(name) for element, name in ERROR_VALUE_DOMAINS.items()
+    }
+
+
+def _is_literal_of(value: Any, data_type: Type[ScalarType]) -> bool:
+    """Whether a literal is written as a value of the type, with no conversion: an Integer is a
+    Number, and the time types are written as strings."""
+    literal_type = BASIC_TYPES[type(value)]
+    if data_type in (Date, TimePeriod, TimeInterval, Duration):
+        return literal_type is String
+    return literal_type is data_type or (literal_type is Integer and data_type is Number)
+
+
+def literal_text(value: Any) -> str:
+    """A literal as a script writes it: a string in quotes, so that "1" and 1 read apart."""
+    return f'"{value}"' if isinstance(value, str) else to_string(value)
+
+
+def error_value(element: str, value: Any, value_domain: Optional[ValueDomain], where: str) -> Any:
+    """The error code or level (element) that where writes, as a value of its value domain when
+    it is given: one that is not raises, also a literal of another type, which is not converted
+    (issue #1349). Without errorcode_vd, an error code is a String."""
+    if value is None:
+        return value
+    if value_domain is None:
+        return to_string(value) if element == "errorcode" else value
+    try:
+        cast_value = (
+            value_domain.type.cast(value) if _is_literal_of(value, value_domain.type) else None
+        )
+    except (ValueError, TypeError, InputValidationException):
+        cast_value = None
+    if cast_value is None or len(value_domain.outside(pd.Series([cast_value]))):
+        raise SemanticError(
+            "1-1-10-13",
+            element=element,
+            value=literal_text(value),
+            where=where,
+            value_domain=value_domain.name,
+        )
+    return cast_value
+
+
+def error_values(
+    code: Any, level: Any, value_domains: Optional[Dict[str, ValueDomain]], where: str
+) -> Tuple[Any, Any]:
+    """The error code and level that where writes, as values of errorcode_vd and
+    errorlevel_vd when they are given."""
+    domains = error_domains(value_domains)
+    return (
+        error_value("errorcode", code, domains["errorcode"], where),
+        error_value("errorlevel", level, domains["errorlevel"], where),
+    )
+
+
+def _set_error_types(
+    components: Dict[str, Component], value_domains: Optional[Dict[str, ValueDomain]]
+) -> None:
+    """The errorcode and errorlevel Measures take the basic types of the value domains given."""
+    for element, value_domain in error_domains(value_domains).items():
+        if value_domain is not None:
+            components[element].data_type = value_domain.type
+
+
+def _cast_error_columns(result: Dataset, value_domains: Optional[Dict[str, ValueDomain]]) -> None:
+    if result.data is None:
+        return
+    for element, value_domain in error_domains(value_domains).items():
+        if value_domain is not None and element in result.data.columns:
+            result.data[element] = result.data[element].astype(value_domain.type.dtype())  # type: ignore[call-overload]
+
+
+def error_level_type(levels: Collection[Any]) -> Type[ScalarType]:
+    """The type of errorlevel: Integer when the levels are integers or omitted, as the VTL 2.2
+    manual says when there is no errorlevel_vd, and the type of the literals otherwise, with
+    String when they mix."""
+    given = [level for level in levels if level is not None]
+    if given and all(isinstance(level, bool) for level in given):
+        return Boolean
+    numbers = [level for level in given if isinstance(level, (int, float))]
+    if len(numbers) < len(given) or any(isinstance(level, bool) for level in numbers):
+        return String
+    return Integer if all(isinstance(level, int) for level in numbers) else Number
+
+
+def error_level_text(level: Any) -> str:
+    """A level written as VTL writes it, for an errorlevel of String type."""
+    return str(level).lower() if isinstance(level, bool) else str(level)
+
 
 # noinspection PyTypeChecker
+def bind_value_domains(
+    ruleset: str,
+    signature: Dict[str, str],
+    called: Optional[List[str]],
+    components: Dict[str, Component],
+    value_domains: Optional[Dict[str, ValueDomain]],
+    data: Optional[pd.DataFrame] = None,
+) -> Dict[str, str]:
+    """The components a datapoint ruleset on value domains is called with, bound in order to the
+    value domains of its signature, or their aliases.
+
+    The call must list the components, as many as the value domains, which must be given, and
+    each component must be accepted by check_value_domains, with the values of data."""
+    if not called:
+        raise SemanticError("1-1-10-14", op=CHECK_DATAPOINT, ruleset=ruleset)
+    if len(called) != len(signature):
+        raise SemanticError(
+            "1-1-10-15",
+            op=CHECK_DATAPOINT,
+            ruleset=ruleset,
+            expected=len(signature),
+            found=len(called),
+        )
+    check_value_domains(
+        CHECK_DATAPOINT, ruleset, zip(signature.values(), called), components, value_domains, data
+    )
+    return dict(zip(signature, called))
+
+
+def check_value_domains(
+    op: str,
+    ruleset: str,
+    bindings: Iterable[Tuple[str, str]],
+    components: Dict[str, Component],
+    value_domains: Optional[Dict[str, ValueDomain]],
+    data: Optional[pd.DataFrame] = None,
+) -> None:
+    """Each value domain of a ruleset must be given, and the component bound to it must be
+    defined on it, or be of its basic type, plain or on another value domain: a value is
+    downcast only into a value domain of its own basic type. The values in data of a component
+    that is not defined on it are cast into the value domain, so each must be one of its values
+    (2-1-5-4), as cast does."""
+    for name, comp_name in bindings:
+        if value_domains is None:
+            raise SemanticError("1-2-22", comp_type="Value Domains")
+        if name not in value_domains:
+            raise SemanticError("1-2-8", name=name)
+        component = components[comp_name]
+        on_domain = getattr(component.value_domain, "name", None) == name
+        if not on_domain and component.data_type is not value_domains[name].type:
+            raise SemanticError(
+                "1-1-10-12",
+                op=op,
+                comp_name=comp_name,
+                type=component_type_name(component.data_type, component.value_domain),
+                value_domain=name,
+                ruleset=ruleset,
+                basic_type=SCALAR_TYPES_CLASS_REVERSE[value_domains[name].type],
+            )
+        if not on_domain and data is not None:
+            check_values(data[comp_name], value_domains[name], op)
+
+
 class Check(Operator):
     op = CHECK
 
@@ -31,6 +207,7 @@ class Check(Operator):
         error_code: Optional[Union[str, int, float, bool]],
         error_level: Optional[Union[str, int, float, bool]],
         invalid: bool,
+        value_domains: Optional[Dict[str, ValueDomain]] = None,
     ) -> Dataset:
         dataset_name = VirtualCounter._new_ds_name()
         if len(validation_element.get_measures()) != 1:
@@ -38,22 +215,13 @@ class Check(Operator):
         measure = validation_element.get_measures()[0]
         if measure.data_type != Boolean:
             raise SemanticError("1-1-10-1", op=cls.op, op_type="validation", me_type="Boolean")
-        error_level_type: Optional[Type[ScalarType]] = None
-        if isinstance(error_level, bool):
-            error_level_type = Boolean
-        elif error_level is None or isinstance(error_level, int):
-            error_level_type = Integer
-        elif isinstance(error_level, str):
-            error_level_type = String
-        else:
-            error_level_type = String
-
         imbalance_measure = None
         if imbalance_element is not None:
             operand_identifiers = validation_element.get_identifiers_names()
             imbalance_identifiers = imbalance_element.get_identifiers_names()
             if operand_identifiers != imbalance_identifiers:
                 raise SemanticError("1-1-10-11", op=cls.op)
+            check_common_identifier_types(cls.op, validation_element, imbalance_element)
             if len(imbalance_element.get_measures()) != 1:
                 raise SemanticError("1-1-10-1", op=cls.op, op_type="imbalance", me_type="Numeric")
 
@@ -61,19 +229,20 @@ class Check(Operator):
             if imbalance_measure.data_type not in (Number, Integer):
                 raise SemanticError("1-1-10-1", op=cls.op, op_type="imbalance", me_type="Numeric")
 
-        # Generating the result dataset components
-        result_components = {
-            comp.name: comp
-            for comp in validation_element.components.values()
-            if comp.role in [Role.IDENTIFIER, Role.MEASURE, Role.VIRAL_ATTRIBUTE]
-        }
+        # The result has the Identifiers of op, its Measure as bool_var and its viral
+        # Attributes, which are copied unchanged as no data points are combined (issue #1354)
+        result_components = {comp.name: comp for comp in validation_element.get_identifiers()}
+        result_components["bool_var"] = copy(measure)
+        result_components["bool_var"].name = "bool_var"
         if imbalance_measure is None:
             result_components["imbalance"] = Component(
                 name="imbalance", data_type=Number, role=Role.MEASURE, nullable=True
             )
         else:
+            # A data point of op without one in imbalance has a null imbalance
             result_components["imbalance"] = copy(imbalance_measure)
             result_components["imbalance"].name = "imbalance"
+            result_components["imbalance"].nullable = True
 
         result_components["errorcode"] = Component(
             name="errorcode", data_type=String, role=Role.MEASURE, nullable=True
@@ -81,10 +250,14 @@ class Check(Operator):
 
         result_components["errorlevel"] = Component(
             name="errorlevel",
-            data_type=error_level_type,
+            data_type=error_level_type([error_level]),
             role=Role.MEASURE,
             nullable=True,
         )
+        _set_error_types(result_components, value_domains)
+        # A viral Attribute named like a computed Measure gives way to it
+        for viral_comp in validation_element.get_viral_attributes():
+            result_components.setdefault(viral_comp.name, copy(viral_comp))
 
         return Dataset(name=dataset_name, components=result_components, data=None)
 
@@ -96,38 +269,62 @@ class Check(Operator):
         error_code: Optional[Union[str, int, float, bool]],
         error_level: Optional[Union[str, int, float, bool]],
         invalid: bool,
+        value_domains: Optional[Dict[str, ValueDomain]] = None,
     ) -> Dataset:
         result = cls.validate(
-            validation_element, imbalance_element, error_code, error_level, invalid
+            validation_element, imbalance_element, error_code, error_level, invalid, value_domains
         )
         if validation_element.data is None:
             validation_element.data = pd.DataFrame()
-        columns_to_keep = (
-            validation_element.get_identifiers_names() + validation_element.get_measures_names()
-        )
-        result.data = validation_element.data.loc[:, columns_to_keep]
+        identifiers = validation_element.get_identifiers_names()
+        validation_measure_name = validation_element.get_measures_names()[0]
+        result.data = validation_element.data[
+            identifiers + [validation_measure_name] + result.get_viral_attributes_names()
+        ].rename(columns={validation_measure_name: "bool_var"})
         if imbalance_element is not None and imbalance_element.data is not None:
+            # Matched on the Identifiers, as all keeps every data point of op (issue #1354)
             imbalance_measure_name = imbalance_element.get_measures_names()[0]
-            result.data["imbalance"] = imbalance_element.data[imbalance_measure_name]
+            imbalance_data = imbalance_element.data[identifiers + [imbalance_measure_name]].rename(
+                columns={imbalance_measure_name: "imbalance"}
+            )
+            op_data = result.data
+            for id_name in identifiers:
+                op_comp = validation_element.components[id_name]
+                imbalance_comp = imbalance_element.components[id_name]
+                if op_comp.data_type is not imbalance_comp.data_type:
+                    op_data, imbalance_data = _id_type_promotion_join_keys(
+                        op_comp, imbalance_comp, id_name, op_data, imbalance_data
+                    )
+            if identifiers:
+                merged = merge_frames(op_data, imbalance_data, on=identifiers, how="left")
+            else:
+                # Without Identifiers, op and imbalance have one data point at most, which match
+                merged = op_data.reset_index(drop=True).join(imbalance_data.reset_index(drop=True))
+            # The left merge keeps the order of the data points of op, whose Identifiers keep
+            # their type where the imbalance has another one matched by value
+            result.data = merged.assign(**{name: result.data[name].array for name in identifiers})
         else:
             result.data["imbalance"] = None
 
         # Set errorcode/errorlevel ONLY when validation explicitly fails (bool_var is False)
         # NULL bool_var means indeterminate - should NOT have errorcode/errorlevel
-        validation_measure_name = validation_element.get_measures_names()[0]
-        bool_col = result.data[validation_measure_name]
+        bool_col = result.data["bool_var"]
         is_false = bool_col.fillna(True) == False  # noqa: E712
-        result.data["errorcode"] = pd.Series(None, index=result.data.index, dtype="string[pyarrow]")
-        ec_value = str(error_code) if error_code is not None else None
-        result.data.loc[is_false, "errorcode"] = ec_value
+        errorcode_type = result.components["errorcode"].data_type
+        result.data["errorcode"] = pd.Series(
+            None, index=result.data.index, dtype=errorcode_type.dtype()
+        )
+        if error_code is not None:
+            result.data.loc[is_false, "errorcode"] = errorcode_type.cast(error_code)
         errorlevel_dtype = result.components["errorlevel"].data_type.dtype()
         result.data["errorlevel"] = pd.Series(None, index=result.data.index, dtype=errorlevel_dtype)
         if error_level is not None:
             result.data.loc[is_false, "errorlevel"] = error_level
 
         if invalid:
-            result.data = result.data[result.data[validation_measure_name] == False]
+            result.data = result.data[result.data["bool_var"] == False]
             result.data.reset_index(drop=True, inplace=True)
+        result.data = result.data[result.get_components_names()]
         return result
 
 
@@ -158,23 +355,14 @@ class Validation(Operator):
         output: str,
         viral_components: Optional[List[Component]] = None,
         viral_values: Optional[pd.DataFrame] = None,
+        value_domains: Optional[Dict[str, ValueDomain]] = None,
     ) -> Dataset:
-        error_level_type: Optional[Type[ScalarType]] = None
-        error_levels = [
-            rule_data.get("errorlevel")
-            for rule_data in rule_info.values()
-            if "errorlevel" in rule_data
-        ]
-        non_null_levels = [el for el in error_levels if el is not None]
-
-        if all(isinstance(el, bool) for el in non_null_levels) and len(non_null_levels) > 0:
-            error_level_type = Boolean
-        elif len(non_null_levels) == 0 or all(isinstance(el, int) for el in non_null_levels):
-            error_level_type = Number
-        elif all(isinstance(el, str) for el in non_null_levels):
-            error_level_type = String
-        else:
-            error_level_type = String
+        # A Measure of the operand that the result keeps (invalid, all_measures) and that is named
+        # like a computed one would collide with it, as in an unpivot (issue #1354)
+        for name in dataset_element.get_measures_names() if output != "all" else []:
+            if name in VALIDATION_MEASURES:
+                raise SemanticError("1-1-6-14", op=cls.op, name=name, dataset=dataset_element.name)
+        error_levels = [rule_data.get("errorlevel") for rule_data in rule_info.values()]
         dataset_name = VirtualCounter._new_ds_name()
         result_components = {comp.name: comp for comp in dataset_element.get_identifiers()}
         result_components["ruleid"] = Component(
@@ -202,10 +390,11 @@ class Validation(Operator):
         )
         result_components["errorlevel"] = Component(
             name="errorlevel",
-            data_type=error_level_type,
+            data_type=error_level_type(error_levels),
             role=Role.MEASURE,
             nullable=True,
         )
+        _set_error_types(result_components, value_domains)
         # Viral attributes propagate to the validation result; their values are
         # re-attached in evaluate (issue #877). check_datapoint uses the operand's own
         # viral; check_hierarchy passes captured viral (its dataset is stripped).
@@ -227,8 +416,28 @@ class Validation(Operator):
         output: str,
         viral_components: Optional[List[Component]] = None,
         viral_values: Optional[pd.DataFrame] = None,
+        value_domains: Optional[Dict[str, ValueDomain]] = None,
+        **kwargs: Any,
     ) -> Dataset:
-        result = cls.validate(dataset_element, rule_info, output, viral_components=viral_components)
+        result = cls.validate(
+            dataset_element,
+            rule_info,
+            output,
+            viral_components=viral_components,
+            value_domains=value_domains,
+            **kwargs,
+        )
+        if result.components["errorlevel"].data_type is String:
+            # Levels of mixed types are written as text, a boolean as true or false
+            rule_info = {
+                name: {
+                    **data,
+                    "errorlevel": None
+                    if data.get("errorlevel") is None
+                    else error_level_text(data["errorlevel"]),
+                }
+                for name, data in rule_info.items()
+            }
         result.data = cls._generate_result_data(rule_info)
 
         result.data = result.data.dropna(subset=result.get_identifiers_names(), how="any")
@@ -236,8 +445,8 @@ class Validation(Operator):
             subset=result.get_identifiers_names() + ["ruleid"]
         ).reset_index(drop=True)
         validation_measures = ["bool_var", "errorcode", "errorlevel"]
-        # Only for check hierarchy
-        if "imbalance" in result.components:
+        # Only for check hierarchy, not a viral Attribute named imbalance (issue #1354)
+        if "imbalance" in result.get_measures_names():
             validation_measures.append("imbalance")
         if output == "invalid":
             result.data = result.data[result.data["bool_var"] == False]
@@ -280,11 +489,12 @@ class Validation(Operator):
                 result.data = merge_frames(result.data, viral_src, on=join_ids, how="left")
 
         result.data = result.data[result.get_components_names()]
+        _cast_error_columns(result, value_domains)
         return result
 
 
 class Check_Datapoint(Validation):
-    pass
+    op = CHECK_DATAPOINT
 
 
 class Check_Hierarchy(Validation):
@@ -316,12 +526,33 @@ class Check_Hierarchy(Validation):
         output: str,
         viral_components: Optional[List[Component]] = None,
         viral_values: Optional[pd.DataFrame] = None,
+        value_domains: Optional[Dict[str, ValueDomain]] = None,
+        rule_component: Optional[str] = None,
+        mode: Optional[str] = None,
+        keep_rule_domain: bool = False,
     ) -> Dataset:
         result = super().validate(
-            dataset_element, rule_info, output, viral_components=viral_components
+            dataset_element,
+            rule_info,
+            output,
+            viral_components=viral_components,
+            value_domains=value_domains,
         )
+        measures = dataset_element.get_measures()
+        # As in hierarchy, the rule Identifier holds the checked code items and keeps its value
+        # domain when keep_rule_domain says so, and the Measures the 0 of a missing one in the
+        # modes that read it as 0 (issue #1348)
+        computed = (
+            [rule_component] if rule_component in result.components and not keep_rule_domain else []
+        )
+        if mode is not None and fills_with_zero(mode):
+            computed += [m.name for m in measures if m.name in result.components]
+        result.components = on_basic_types(result.components, computed)
         result.components["imbalance"] = Component(
-            name="imbalance", data_type=Number, role=Role.MEASURE, nullable=True
+            name="imbalance",
+            data_type=measures[0].data_type if measures else Number,
+            role=Role.MEASURE,
+            nullable=True,
         )
         return result
 
@@ -338,13 +569,11 @@ class Check_Hierarchy(Validation):
             raise SemanticError(
                 "1-1-10-1", op=Check_Hierarchy.op, op_type="hierarchy", me_type="Number"
             )
-        if component_name not in dataset.components:
-            raise SemanticError(
-                "1-1-1-10",
-                op=Check_Hierarchy.op,
-                comp_name=component_name,
-                dataset_name=dataset.name,
-            )
+        for name in (component_name, *condition_components):
+            if name not in dataset.components:
+                raise SemanticError(
+                    "1-1-1-10", op=Check_Hierarchy.op, comp_name=name, dataset_name=dataset.name
+                )
         if dataset.components[component_name].role != Role.IDENTIFIER:
             raise SemanticError(
                 "1-2-7",

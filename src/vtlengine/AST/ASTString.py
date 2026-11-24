@@ -129,13 +129,30 @@ def _format_component_type(
 ) -> str:
     role = "component" if component.role is None else component.role.value.lower()
     # A component declared without a type is parsed with a String instance, not the class
-    if isinstance(component.data_type, type):
-        return f"{role}<{_format_type(component.data_type)}{_format_constraint(constraint)}>"
+    if isinstance(component.data_type, (AST.ValueDomainType, type)):
+        return f"{role}<{_format_type(component.data_type, AST.SignatureConstraints(constraint))}>"
     return role
+
+
+def _format_ruleset_type(type_: AST.RulesetType) -> str:
+    """A ruleset type, with its sub-type and constraint, written as the grammar takes it."""
+    if type_.kind == "ruleset":
+        return "ruleset"
+    suffix = {"valuedomain": "_on_valuedomains", "variable": "_on_variables"}
+    written = f"{type_.kind}{suffix.get(type_.signature_type or '', '')}"
+    if type_.names is None:
+        return written
+    names = " * ".join(_format_name(name) for name in type_.names)
+    if type_.conditions:
+        conditions = " * ".join(_format_name(name) for name in type_.conditions)
+        names = f"{names} ({conditions})"
+    return f"{written} {{{names}}}"
 
 
 def _format_type(type_: Any, constraints: Optional[AST.SignatureConstraints] = None) -> str:
     """The type of an operator parameter or result, written as declared."""
+    if isinstance(type_, AST.RulesetType):
+        return _format_ruleset_type(type_)
     if isinstance(type_, Dataset):
         named = constraints.components if constraints is not None else {}
         unnamed = constraints.unnamed if constraints is not None else []
@@ -147,11 +164,20 @@ def _format_type(type_: Any, constraints: Optional[AST.SignatureConstraints] = N
             for entry in unnamed
         ]
         return f"dataset {{{', '.join(components)}}}" if components else "dataset"
+    if isinstance(type_, AST.SetType):
+        if type_.data_type is None:
+            return "set"
+        return f"set<{_format_type(type_.data_type, constraints)}>"
     constraint = constraints.value if constraints is not None else None
     if isinstance(type_, Component):
         return _format_component_type(type_, constraint)
     if isinstance(type_, Scalar):
         return f"scalar{_format_constraint(constraint)}"
+    if isinstance(type_, AST.ValueDomainType):
+        return f"{type_.name}{_format_constraint(constraint)}"
+    if constraint is not None and constraint.value_domain is not None:
+        # A basic type that a value domain gave, written as the value domain (issue #1351)
+        return f"{constraint.value_domain.name}{_format_constraint(constraint)}"
     return f"{SCALAR_TYPES_CLASS_REVERSE[type_].lower()}{_format_constraint(constraint)}"
 
 
@@ -225,17 +251,16 @@ class ASTString(ASTTemplate):
     def _inner_comments(children: List[AST.AST]) -> Dict[int, List[AST.Comment]]:
         """The comments written inside each statement, by the id of the statement.
 
-        The children come sorted by position, so a statement is followed by its comments.
+        create_ast_with_comments marks them while the positions come from one script, so they
+        are not compared here, where the children can come from several scripts, each
+        numbering its lines from 1, or hold comments made at (0, 0).
         """
         inner: Dict[int, List[AST.Comment]] = {}
         statement: Optional[AST.AST] = None
         for child in children:
             if not isinstance(child, AST.Comment):
                 statement = child
-            elif statement is not None and (child.line_start, child.column_start) < (
-                statement.line_stop,
-                statement.column_stop,
-            ):
+            elif statement is not None and child.inner:
                 inner.setdefault(id(statement), []).append(child)
         return inner
 
@@ -498,6 +523,7 @@ class ASTString(ASTTemplate):
         if return_element:
             return expression
         self.vtl_script += f"{expression};"
+        return None
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Optional[str]:
         return self.visit_Assignment(node)
@@ -548,7 +574,11 @@ class ASTString(ASTTemplate):
 
         elif node.op == CAST:
             operand = self.visit(node.children[0])
-            data_type = SCALAR_TYPES_CLASS_REVERSE[node.children[1]].lower()
+            data_type = (
+                self.visit(node.children[1])
+                if isinstance(node.children[1], AST.Collection)
+                else SCALAR_TYPES_CLASS_REVERSE[node.children[1]].lower()
+            )
             mask = ""
             if len(node.params) == 1:
                 mask = f", {_handle_literal(self.visit(node.params[0]))}"
@@ -641,7 +671,8 @@ class ASTString(ASTTemplate):
                 if isinstance(grouping_value, TimeAggregation):
                     time_aggregations.append(self.visit(grouping_value))
                 else:
-                    names.append(_format_name(grouping_value.value))
+                    # A name, or the membership alias#comp of a Component of a join (issue #1355)
+                    names.append(self.visit(grouping_value))
             # time_agg follows the components without a comma: group by Id_1 time_agg("A")
             grouping_values = [", ".join(names)] if names else []
             grouping = " " + " ".join([node.grouping_op] + grouping_values + time_aggregations)
@@ -662,7 +693,7 @@ class ASTString(ASTTemplate):
             partition = "partition except all"
         elif node.partition_by:
             keyword = "except" if node.partition_op == "except" else "by"
-            partition_values = [_format_name(x) for x in node.partition_by]
+            partition_values = [self._clause_component(x) for x in node.partition_by]
             partition = f"partition {keyword} {', '.join(partition_values)}"
         order = ""
         if node.order_by:
@@ -738,7 +769,9 @@ class ASTString(ASTTemplate):
         nvl_str = ""
         if node.nvl:
             nvl_parts = [
-                f"nvl({_format_name(p.component)}, {self.visit(p.default)})" for p in node.nvl
+                f"nvl({'#'.join(_format_name(n) for n in p.component.split('#'))}, "
+                f"{self.visit(p.default)})"
+                for p in node.nvl
             ]
             nvl_str = ", " + ", ".join(nvl_parts)
         if self.pretty:
@@ -815,7 +848,7 @@ class ASTString(ASTTemplate):
                 return f"{dataset}[{node.op} {body}]"
 
     def visit_RenameNode(self, node: AST.RenameNode) -> str:
-        return f"{_format_name(node.old_name)} to {_format_name(node.new_name)}"
+        return f"{self._clause_component(node.old_name)} to {self._clause_component(node.new_name)}"
 
     def visit_TimeAggregation(self, node: AST.TimeAggregation) -> str:
         if node.period_to_ref is not None:
@@ -906,8 +939,13 @@ class ASTString(ASTTemplate):
 
     def visit_OrderBy(self, node: AST.OrderBy) -> str:
         if node.order == "asc":
-            return f"{_format_name(node.component)}"
-        return f"{_format_name(node.component)} {node.order}"
+            return f"{self._clause_component(node.component)}"
+        return f"{self._clause_component(node.component)} {node.order}"
+
+    def _clause_component(self, component: Union[str, AST.AST]) -> str:
+        """A component of partition by, order by or rename: a name, or the membership
+        alias#comp of a Component of a join (issue #1355)."""
+        return _format_name(component) if isinstance(component, str) else self.visit(component)
 
     def visit_Comment(self, node: AST.Comment) -> None:
         self.vtl_script += self._comment_text(node)

@@ -14,6 +14,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 import duckdb
 import pandas as pd
 
+from vtlengine._input_types import DatapointsInput
 from vtlengine.DataTypes import Date, Integer, Number, String, TimeInterval, TimePeriod
 from vtlengine.duckdb_transpiler.io._validation import (
     build_create_table_sql,
@@ -25,9 +26,11 @@ from vtlengine.duckdb_transpiler.io._validation import (
     get_column_sql_type,
     handle_sdmx_columns,
     map_duckdb_error,
+    sql_trim,
     validate_input_path,
     validate_no_duplicates,
     validate_temporal_columns,
+    validate_value_domains,
 )
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.files.parser import string_value
@@ -62,9 +65,10 @@ def _validate_loaded_table(
     2. DWI check (no identifiers → max 1 row)
     3. Duplicate identifier check via GROUP BY HAVING
     4. Temporal type regex validation (TimePeriod, TimeInterval, Duration)
+    5. Value domain check (the values of a component defined on one are its values)
 
     On validation failure, drops the table and re-raises DataLoadError.
-    Respects VTL_SKIP_LOAD_VALIDATION (skips checks 2-4 when set).
+    Respects VTL_SKIP_LOAD_VALIDATION (skips checks 2-5 when set).
     """
     skip_validation = _skip_load_validation()
 
@@ -82,6 +86,8 @@ def _validate_loaded_table(
         return
 
     try:
+        validate_value_domains(conn, table_name, components)
+
         id_columns = [n for n, c in components.items() if c.role == Role.IDENTIFIER]
 
         # DWI: no identifiers → max 1 row
@@ -111,10 +117,11 @@ def _normalize_time_period_columns(
     """
     for comp_name, comp in components.items():
         if comp.data_type == TimePeriod:
+            value = sql_trim(f'"{comp_name}"')
             try:
                 conn.execute(
                     f'UPDATE "{table_name}" SET "{comp_name}" = '
-                    f'vtl_period_normalize(TRIM("{comp_name}")) '
+                    f"vtl_period_normalize({value}) "
                     f'WHERE "{comp_name}" IS NOT NULL AND "{comp_name}" != \'\''
                 )
             except duckdb.Error as e:
@@ -144,7 +151,7 @@ def _normalize_time_interval_columns(
     for comp_name, comp in components.items():
         if comp.data_type != TimeInterval:
             continue
-        value = f'TRIM("{comp_name}")'
+        value = sql_trim(f'"{comp_name}"')
         year = f"CAST(SUBSTR({value}, 1, 4) AS INTEGER)"
         month = f"CAST(SUBSTR({value}, 6) AS INTEGER)"
         first_day = f"MAKE_DATE({year}, {month}, 1)"
@@ -429,7 +436,8 @@ def load_datapoints_duckdb(
             action_filter = 'WHERE "ACTION" != \'D\' OR "ACTION" IS NULL'
 
         # 8. Execute INSERT
-        read_expr = f"""
+        def csv_read(parallel: bool) -> str:
+            return f"""
             FROM read_csv(
                 '{file_path}',
                 header=true,
@@ -437,17 +445,26 @@ def load_datapoints_duckdb(
                 auto_detect=false,
                 {_sniffed_fmt},
                 null_padding=true,
-                parallel=true,
+                parallel={str(parallel).lower()},
                 ignore_errors=false
             )
             {action_filter}
         """
-        insert_sql = f"""
-            INSERT INTO "{dataset_name}"
-            SELECT {", ".join(select_cols)}
-            {read_expr}
-        """
-        conn.execute(insert_sql)
+
+        def insert(read: str) -> None:
+            conn.execute(f'INSERT INTO "{dataset_name}" SELECT {", ".join(select_cols)} {read}')
+
+        read_expr = csv_read(parallel=True)
+        try:
+            insert(read_expr)
+        except duckdb.Error as e:
+            if "quoted new lines" not in str(e):
+                raise
+            # A value with a line break between quotes, which the pandas loader reads, is read
+            # by the serial reader only, as the parallel one refuses it with null_padding
+            # (issue #1352)
+            read_expr = csv_read(parallel=False)
+            insert(read_expr)
 
     except duckdb.Error as e:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
@@ -564,8 +581,12 @@ def save_datapoints_duckdb(
             valid_options="csv, parquet",
         )
 
-    output_path = Path(output_path) if isinstance(output_path, str) else output_path
-    output_file = output_path / f"{dataset_name}.{output_format}"
+    # A local output folder is created with the first result written, so an input that fails
+    # to load creates none, as on the pandas engine (issue #1349); an S3 URI is written through
+    # DuckDB (issue #1361)
+    if not is_s3_uri(output_path):
+        Path(output_path).mkdir(parents=True, exist_ok=True)
+    output_file = output_target(output_path, f"{dataset_name}.{output_format}")
 
     source = f"({select_sql})" if select_sql else f'"{dataset_name}"'
 
@@ -574,34 +595,66 @@ def save_datapoints_duckdb(
     else:
         copy_options = "WITH (HEADER true, DELIMITER ',')"
 
-    conn.execute(f"COPY {source} TO '{output_file}' {copy_options}")
+    _copy_to(conn, f"COPY {source} TO '{output_file}' {copy_options}", output_file)
 
     if delete_after_save:
         conn.execute(f'DROP TABLE IF EXISTS "{dataset_name}"')
 
 
+def is_s3_uri(output_path: Union[Path, str]) -> bool:
+    return isinstance(output_path, str) and output_path.startswith("s3://")
+
+
+def output_target(output_path: Union[Path, str], file_name: str) -> str:
+    """Where a result file is written: in an S3 URI as written, which DuckDB writes through
+    httpfs, or in a local folder."""
+    if is_s3_uri(output_path):
+        return f"{str(output_path).rstrip('/')}/{file_name}"
+    return str(Path(output_path) / file_name)
+
+
+def _copy_to(conn: duckdb.DuckDBPyConnection, statement: str, target: str) -> None:
+    try:
+        conn.execute(statement)
+    except duckdb.IOException as error:
+        raise DataLoadError("0-3-1-19", file=target, error=str(error).splitlines()[0]) from error
+
+
 def save_scalars_duckdb(
+    conn: duckdb.DuckDBPyConnection,
     scalars: Dict[str, Scalar],
     output_path: Union[Path, str],
 ) -> None:
-    """Save scalar results to a _scalars.csv file.
+    """Save scalar results to a _scalars.csv file, through DuckDB in an S3 URI.
 
     Args:
+        conn: DuckDB connection
         scalars: Dict mapping scalar names to Scalar objects
-        output_path: Directory path where _scalars.csv will be saved
+        output_path: Directory path or S3 URI where _scalars.csv will be saved
     """
     if not scalars:
         return
-    output_path = Path(output_path) if isinstance(output_path, str) else output_path
-    file_path = output_path / "_scalars.csv"
+    rows = [
+        (name, None if scalar.value is None else format_scalar_value_for_csv(scalar.value))
+        for name, scalar in sorted(scalars.items(), key=lambda item: item[0])
+    ]
+    file_path = output_target(output_path, "_scalars.csv")
+    if is_s3_uri(output_path):
+        conn.register("_vtl_scalars", pd.DataFrame(rows, columns=["name", "value"], dtype=object))
+        try:
+            _copy_to(
+                conn,
+                f"COPY _vtl_scalars TO '{file_path}' WITH (HEADER true, DELIMITER ',')",
+                file_path,
+            )
+        finally:
+            conn.unregister("_vtl_scalars")
+        return
+    Path(output_path).mkdir(parents=True, exist_ok=True)
     with open(file_path, "w", newline="", encoding="utf-8") as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(["name", "value"])
-        for name, scalar in sorted(scalars.items(), key=lambda item: item[0]):
-            if scalar.value is None:
-                writer.writerow([name, ""])
-            else:
-                writer.writerow([name, format_scalar_value_for_csv(scalar.value)])
+        writer.writerows((name, "" if value is None else value) for name, value in rows)
 
 
 # The files a directory of datapoints is read from: what the pandas engine reads,
@@ -609,8 +662,11 @@ def save_scalars_duckdb(
 DATAPOINT_SUFFIXES = (".csv", ".xml", ".parquet")
 
 
-def _as_datapoint_path(value: Union[str, Path]) -> Path:
-    """The Path a datapoint input stands for."""
+def _as_datapoint_path(value: Any) -> Path:
+    """The Path a datapoint input stands for. Anything else, such as a DataFrame in a list,
+    is rejected with 0-1-1-2, as the pandas engine rejects it (issue #1349)."""
+    if not isinstance(value, (str, Path)):
+        raise InputValidationException(code="0-1-1-2", input=value, message="Input must be a Path")
     return Path(value) if isinstance(value, str) else value
 
 
@@ -664,9 +720,7 @@ def _sdmx_dataframe(
 
 
 def extract_datapoint_paths(
-    datapoints: Optional[
-        Union[Dict[str, Union[pd.DataFrame, str, Path]], List[Union[str, Path]], str, Path]
-    ],
+    datapoints: Optional[DatapointsInput],
     input_datasets: Dict[str, Dataset],
 ) -> Tuple[Optional[Dict[str, Path]], Dict[str, pd.DataFrame]]:
     """
@@ -705,14 +759,14 @@ def extract_datapoint_paths(
             return
         resolved = name or path.stem
         if resolved not in input_datasets:
-            raise InputValidationException(f"Not found dataset {resolved} in datastructures.")
+            raise InputValidationException(code="0-1-2-9", name=resolved)
         path_dict[resolved] = path
 
     # Handle dictionary input
     if isinstance(datapoints, dict):
         for name, value in datapoints.items():
             if name not in input_datasets:
-                raise InputValidationException(f"Not found dataset {name} in datastructures.")
+                raise InputValidationException(code="0-1-2-9", name=name)
 
             if isinstance(value, pd.DataFrame):
                 # Store DataFrame for direct DuckDB registration

@@ -1,0 +1,7 @@
+define operator f ( x component < time_period > ) returns component < time_period > is
+    x
+end operator;
+define operator g ( x component < date > ) returns component < date > is
+    x
+end operator;
+DS_r <- DS_1 [ calc Me_3 := cast ( f ( Me_1 ) , string ) , Me_4 := cast ( g ( Me_2 ) , string ) ];

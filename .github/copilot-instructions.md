@@ -4,8 +4,8 @@
 
 VTL Engine is a Python library for validating, formatting, and executing VTL (Validation and Transformation Language) 2.1 scripts. It's built around ANTLR-generated parsers and uses Pandas DataFrames for data manipulation.
 
-- **VTL 2.1 Reference Manual**: <https://sdmx.org/wp-content/uploads/VTL-2.1-Reference-Manual.pdf>
-- **VTL 2.2 Documentation (preview)**: <https://sdmx-twg.github.io/vtl/2.2/>
+- **VTL 2.2 Reference Manual**: <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/index.html>
+- **VTL 2.2 Documentation**: <https://sdmx-twg.github.io/vtl/v2.2/index.html>
 
 ## Core Architecture
 
@@ -184,7 +184,7 @@ Only use the following labels — **never create new labels**:
 
 | Label | Purpose |
 | ----- | ------- |
-| `documentation` | Documentation changes (triggers docs workflow on PR merge) |
+| `documentation` | Documentation changes |
 | `workflows` | CI/CD and GitHub Actions issues |
 | `dependencies` | Dependency management and updates |
 | `optimization` | Performance improvements and code complexity reduction |
@@ -193,14 +193,20 @@ Only use the following labels — **never create new labels**:
 
 ## Git Workflow
 
+### Branches
+
+- `develop`: default branch. All pull requests target it, and release candidates (`X.Y.ZrcN`) are published from it
+- `main`: stable releases only. It is updated from `develop` when a stable version is released, and stable releases are published from it
+- Both branches are protected: pull requests only, linear history, signed commits and the merge queue
+
 ### Branch Naming
 
-- Issue branches: `cr-{issue_number}` (e.g., `cr-457` for issue #457)
+- Issue branches: `cr-{issue_number}` (e.g., `cr-457` for issue #457), created from `origin/develop`
 - Version bump branches: `bump-version-{version}` (e.g., `bump-version-1.6.0rc2`)
 
 ### Workflow
 
-1. Create branch: `git checkout -b cr-{issue_number}`
+1. Create branch: `git checkout -b cr-{issue_number} origin/develop`
 2. Make changes with descriptive commits
 3. Run all quality checks (ruff format, ruff check, mypy, pytest)
 4. Push and create draft PR: `gh pr create --draft --title "Fix #{issue_number}: Description"`
@@ -265,7 +271,7 @@ print(run_result)
 3. **AST node equality** - Override `ast_equality()` when adding nodes
 4. **Nullable identifiers** - Will raise `InputValidationException("0-1-1-18")`
 5. **ANTLR version** - Use 4.13.x to match the bundled C++ runtime (see `scripts/setup_antlr4_runtime.sh`). The legacy `antlr4-python3-runtime` Python dependency was removed when the parser moved to C++ in commit `6ee162c4`.
-6. **Version updates** - When bumping version, update BOTH `pyproject.toml` AND `src/vtlengine/__init__.py`. Always create a new branch named `bump-version-{version}` from `origin/main` for version bumps and create a PR with no body
+6. **Version updates** - When bumping version, update BOTH `pyproject.toml` AND `src/vtlengine/__init__.py`. Always create a new branch named `bump-version-{version}` from `origin/develop` for version bumps and create a PR with no body
 
 ## External Dependencies
 
