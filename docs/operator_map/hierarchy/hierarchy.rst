@@ -227,8 +227,7 @@ hierarchy(DS, HR non\_null rule computed) 🟢 · number, hierarchical ruleset �
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-null-rule-computed-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-2-22</code> · DuckDB 🛡 <code>1-2-22</code></span></summary>
-   <p class="om-detail">SemanticError 1-2-22: No Value Domains have been defined. Please check transformation with output Dataset DS_r</p>
+   <details class="om-example" id="ex-non-null-rule-computed-manual-ex-1"><summary><span class="om-ex-title">Manual example 1</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/notes.rst
 
@@ -243,7 +242,7 @@ hierarchy(DS, HR non\_null rule computed) 🟢 · number, hierarchical ruleset �
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/script.vtl">script.vtl</a> · <a href="../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/script.vtl">script.vtl</a> · <a href="../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/value_domains/VD_1.json">value_domains/VD_1.json</a> · <a href="../examples/hierarchy/hierarchy/non_null_rule_computed/manual_ex_1/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -450,8 +449,7 @@ hierarchy(DS, HR non\_zero rule computed) 🟢 · number, hierarchical ruleset �
 
 .. raw:: html
 
-   <details class="om-example" id="ex-non-zero-rule-computed-manual-ex-2"><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-2-22</code> · DuckDB 🛡 <code>1-2-22</code></span></summary>
-   <p class="om-detail">SemanticError 1-2-22: No Value Domains have been defined. Please check transformation with output Dataset DS_r</p>
+   <details class="om-example" id="ex-non-zero-rule-computed-manual-ex-2"><summary><span class="om-ex-title">Manual example 2</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/notes.rst
 
@@ -466,7 +464,7 @@ hierarchy(DS, HR non\_zero rule computed) 🟢 · number, hierarchical ruleset �
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/script.vtl">script.vtl</a> · <a href="../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/script.vtl">script.vtl</a> · <a href="../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/value_domains/VD_1.json">value_domains/VD_1.json</a> · <a href="../examples/hierarchy/hierarchy/non_zero_rule_computed/manual_ex_2/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
@@ -673,8 +671,7 @@ hierarchy(DS, HR partial\_null rule computed) 🟢 · number, hierarchical rules
 
 .. raw:: html
 
-   <details class="om-example" id="ex-partial-null-rule-computed-manual-ex-3"><summary><span class="om-ex-title">Manual example 3</span> <span class="om-chip refused" title="refused with an error">🛡️</span> <span class="om-marks">pandas 🛡 <code>1-2-22</code> · DuckDB 🛡 <code>1-2-22</code></span></summary>
-   <p class="om-detail">SemanticError 1-2-22: No Value Domains have been defined. Please check transformation with output Dataset DS_r</p>
+   <details class="om-example" id="ex-partial-null-rule-computed-manual-ex-3"><summary><span class="om-ex-title">Manual example 3</span> <span class="om-chip ok" title="all ok">🟢</span> <span class="om-marks">pandas ✅ · DuckDB ✅</span></summary>
 
 .. include:: ../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/notes.rst
 
@@ -689,7 +686,7 @@ hierarchy(DS, HR partial\_null rule computed) 🟢 · number, hierarchical rules
 
 .. raw:: html
 
-   <p class="om-files">Files: <a href="../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/script.vtl">script.vtl</a> · <a href="../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/index.html">example page ↗</a></p>
+   <p class="om-files">Files: <a href="../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/script.vtl">script.vtl</a> · <a href="../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/input/DS_1.csv">input/DS_1.csv</a> · <a href="../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/input/DS_1.json">input/DS_1.json</a> · <a href="../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/expected/DS_r.csv">expected/DS_r.csv</a> · <a href="../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/expected/DS_r.json">expected/DS_r.json</a> · <a href="../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/value_domains/VD_1.json">value_domains/VD_1.json</a> · <a href="../examples/hierarchy/hierarchy/partial_null_rule_computed/manual_ex_3/index.html">example page ↗</a></p>
    </details>
 
 .. raw:: html
