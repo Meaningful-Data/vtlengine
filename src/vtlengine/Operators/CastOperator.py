@@ -122,8 +122,8 @@ class Cast(Operator.Unary):
             return cls.dataset_validation(operand, scalarType, mask)
         elif isinstance(operand, DataComponent):
             return cls.component_validation(operand, scalarType, mask)
-        elif isinstance(operand, Scalar):
-            return cls.scalar_validation(operand, scalarType, mask)
+        # Scalar
+        return cls.scalar_validation(operand, scalarType, mask)
 
     @staticmethod
     def result_measure_name(measure: Component, to_type: Type[ScalarType]) -> str:
@@ -247,8 +247,8 @@ class Cast(Operator.Unary):
             return cls.dataset_evaluation(operand, scalarType, mask)
         if isinstance(operand, Scalar):
             return cls.scalar_evaluation(operand, scalarType, mask)
-        if isinstance(operand, DataComponent):
-            return cls.component_evaluation(operand, scalarType, mask)
+        # DataComponent
+        return cls.component_evaluation(operand, scalarType, mask)
 
     @classmethod
     def dataset_evaluation(  # type: ignore[override]

@@ -79,9 +79,7 @@ class Aggregation(Operator.Unary):
                         lambda x: str(TimePeriodHandler(str(x))), na_action="ignore"
                     )
                 else:
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: str(x), na_action="ignore"
-                    )
+                    data[measure.name] = data[measure.name].map(str, na_action="ignore")
             elif measure.data_type == TimeInterval:
                 if mode == "input":
                     data[measure.name] = data[measure.name].map(
@@ -89,9 +87,7 @@ class Aggregation(Operator.Unary):
                         na_action="ignore",
                     )
                 else:
-                    data[measure.name] = data[measure.name].map(
-                        lambda x: str(x), na_action="ignore"
-                    )
+                    data[measure.name] = data[measure.name].map(str, na_action="ignore")
             elif measure.data_type == Duration:
                 if mode == "input":
                     data[measure.name] = data[measure.name].map(PERIOD_IND_MAPPING)

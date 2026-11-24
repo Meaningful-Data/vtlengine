@@ -30,7 +30,6 @@ from vtlengine.AST.Grammar.tokens import (
 from vtlengine.DataTypes import SCALAR_TYPES_CLASS_REVERSE, Integer, Number
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import DataComponent, Dataset, Scalar
-from vtlengine.Operators import ALL_MODEL_DATA_TYPES
 from vtlengine.Utils._number_config import get_effective_numeric_digits
 
 # Binary arithmetic whose results are rounded to the configured significant
@@ -560,7 +559,7 @@ class Parameterized(Unary):
     @classmethod
     def evaluate(
         cls,
-        operand: ALL_MODEL_DATA_TYPES,
+        operand: Operator.ALL_MODEL_DATA_TYPES,
         param: Optional[Union[DataComponent, Scalar]] = None,
     ) -> Union[DataComponent, Dataset, Scalar]:
         if isinstance(operand, Dataset):

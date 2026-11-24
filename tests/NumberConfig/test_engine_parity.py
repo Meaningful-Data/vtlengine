@@ -143,7 +143,7 @@ ARITHMETIC_SCRIPTS = {
 @pytest.mark.parametrize("script", ARITHMETIC_SCRIPTS.values(), ids=ARITHMETIC_SCRIPTS.keys())
 def test_arithmetic_parity(script: str) -> None:
     with TemporaryDirectory() as tmp:
-        results = _run_both(script, NUMBER_DS, _number_df(), output_folder=Path(tmp))
+        _run_both(script, NUMBER_DS, _number_df(), output_folder=Path(tmp))
         _assert_csv_parity(Path(tmp))
     results = _run_both(script, NUMBER_DS, _number_df())
     _assert_values_identical(results, "DS_r")

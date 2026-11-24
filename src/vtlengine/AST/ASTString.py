@@ -523,6 +523,7 @@ class ASTString(ASTTemplate):
         if return_element:
             return expression
         self.vtl_script += f"{expression};"
+        return None
 
     def visit_PersistentAssignment(self, node: AST.PersistentAssignment) -> Optional[str]:
         return self.visit_Assignment(node)
