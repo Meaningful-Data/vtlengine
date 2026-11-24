@@ -36,7 +36,6 @@ if pyproject_toml_file.exists() and pyproject_toml_file.is_file():
         data = toml_load(f)
     project = str(data["project"]["name"])
     version = str(data["project"]["version"])
-    description = str(data["project"]["description"])
 
 copyright = "2025 MeaningfulData"
 

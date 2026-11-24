@@ -5853,6 +5853,133 @@ class DefinedBugs(BugHelper):
 
         self.BaseTest(code=code, number_inputs=number_inputs, references_names=references_names)
 
+    vd_1389 = ["GH_1389-VD_INT", "GH_1389-VD_NUM"]
+
+    def test_GH_1389_1(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component < integer > ) returns component is x
+                        end operator;
+                    DS_r <- DS_1 [ calc Me_5 := f ( Me_1 ) ];
+        Description: The Number Component Me_1 given to the parameter x component < integer >
+                     raises 1-2-18, as a Number given to an integer parameter: a Number is not
+                     cast to an Integer. The semantic analysis and both engines took it and gave
+                     its Number values, decimals included.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1389
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1389_1",
+            number_inputs=1,
+            exception_code="1-2-18",
+            exception_message="Expected Integer, got Number on UDO f, parameter x.",
+            vd_names=self.vd_1389,
+        )
+
+    def test_GH_1389_2(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component < VD_INT > ) returns component is x
+                        end operator;
+                    DS_r <- DS_1 [ calc Me_5 := f ( Me_2 ) ];
+        Description: Me_2, on the Number value domain VD_NUM, given to a parameter on the
+                     Integer value domain VD_INT raises 1-2-18. The semantic analysis typed the
+                     result on VD_NUM and both engines raised 2-1-5-4 for the value 1.5.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1389
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1389_2",
+            number_inputs=1,
+            exception_code="1-2-18",
+            exception_message="Expected Integer, got Number on UDO f, parameter x.",
+            vd_names=self.vd_1389,
+        )
+
+    def test_GH_1389_3(self):
+        """
+        Status: OK
+        Expression: define operator f ( ds dataset , x measure < integer > )
+                        returns dataset is ds [ calc Me_5 := x ] end operator;
+                    DS_r <- f ( DS_1 , Me_1 );
+        Description: The Number Component Me_1 given to the parameter x measure < integer > of
+                     an operator on a dataset raises 1-2-18. The semantic analysis and both
+                     engines took it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1389
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1389_3",
+            number_inputs=1,
+            exception_code="1-2-18",
+            exception_message="Expected Integer, got Number on UDO f, parameter x.",
+            vd_names=self.vd_1389,
+        )
+
+    def test_GH_1389_4(self):
+        """
+        Status: OK
+        Expression: define operator f ( ds dataset { identifier < integer > Id_1 ,
+                        measure < integer > Me_1 , component _* } ) returns dataset is ds
+                        end operator;
+                    DS_r <- f ( DS_1 );
+        Description: The Number Me_1 of DS_1 is not the measure < integer > Me_1 the dataset type
+                     of the parameter declares: 1-3-1-12. The semantic analysis and both engines
+                     took it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1389
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1389_4",
+            number_inputs=1,
+            exception_code="1-3-1-12",
+            exception_message="At op f: component Me_1 of parameter ds is measure<number>, but "
+            "its type dataset {identifier<integer> Id_1, measure<integer> Me_1, component _*} "
+            "declares it as measure<integer>.",
+            vd_names=self.vd_1389,
+        )
+
+    def test_GH_1389_5(self):
+        """
+        Status: OK
+        Expression: define operator f ( ds dataset ) returns dataset { identifier < integer > Id_1
+                        , measure < integer > Me_1 , component _* } is ds end operator;
+                    DS_r <- f ( DS_1 );
+        Description: A result whose Me_1 is a Number is not of the dataset type the operator
+                     returns, which declares measure < integer > Me_1: 1-3-1-12, as a Number
+                     result of an operator that returns component < integer > raises. The
+                     semantic analysis and both engines took it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1389
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1389_5",
+            number_inputs=1,
+            exception_code="1-3-1-12",
+            exception_message="At op f: component Me_1 of the output is measure<number>, but its "
+            "type dataset {identifier<integer> Id_1, measure<integer> Me_1, component _*} "
+            "declares it as measure<integer>.",
+            vd_names=self.vd_1389,
+        )
+
+    def test_GH_1389_6(self):
+        """
+        Status: OK
+        Expression: define operator f ( x component < integer > ) returns component is x
+                        end operator;
+                    define operator g ( x component < VD_INT > ) returns component is x
+                        end operator;
+                    DS_r <- DS_1 [ calc Me_5 := f ( Me_3 ) , Me_6 := f ( Me_4 ) ,
+                                        Me_7 := g ( Me_3 ) , Me_8 := g ( Me_4 ) ];
+        Description: Control of cases 1 and 2: the Integer Me_3 and Me_4, on the Integer value
+                     domain VD_INT, are taken by both parameters, each keeping its type.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1389
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1389_6", number_inputs=1, references_names=["1"], vd_names=self.vd_1389
+        )
+
 
 class OtherBugs(BugHelper):
     """ """
@@ -8355,7 +8482,9 @@ class ValueDomainBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- DS_1 [ calc Me_2 := flag ( "OTHER" ) ];
-        Description: The literal OTHER is not one of VD_FLOW, which types the parameter.
+        Description: The literal OTHER is not one of VD_FLOW, which types the parameter. The
+                     literal is known before the script runs, so it raises 1-1-10-13, also in
+                     the semantic analysis (issue #1393); it raised 2-1-5-4.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
         Goal: Check Exception.
         """
@@ -8365,8 +8494,9 @@ class ValueDomainBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
-            exception_code="2-1-5-4",
-            exception_message="At op flag: Cannot cast OTHER of String to Value Domain VD_FLOW",
+            exception_code="1-1-10-13",
+            exception_message='The argument "OTHER" of parameter x of the operator flag is not '
+            "one of the values of the Value Domain VD_FLOW.",
             vd_names=["GH_1236-VD_FLOW"],
         )
 
@@ -8596,7 +8726,8 @@ class ValueDomainBugs(BugHelper):
         Expression: DS_r <- check_datapoint ( DS_1 , dpr_cty components Me_3 all );
         Description: Me_3, a String, is of the basic type of VD_CTY, the value domain it is
                      bound to, so the ruleset applies to it (issue #1348); it raised 1-1-10-12.
-                     The value IT, outside VD_CTY, is checked as any other.
+                     Its values ES and FR are values of VD_CTY: one outside it raises 2-1-5-4
+                     (issue #1391, GH_1391_1).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1338
         Goal: Check Result.
         """
@@ -8666,8 +8797,8 @@ class ValueDomainBugs(BugHelper):
         Expression: DS_r <- check_hierarchy ( DS_1 , hr_cty rule Id_1 all );
         Description: hr_cty is defined on the value domain VD_CTY, and Id_1 is a String
                      component, of the basic type of VD_CTY, so the ruleset applies to it and
-                     Id_1 stays a String (issue #1348); the value IT, outside VD_CTY, is not a
-                     code item of it. It raised 1-1-10-12.
+                     Id_1 stays a String (issue #1348). It raised 1-1-10-12. Its values are
+                     values of VD_CTY: one outside it raises 2-1-5-4 (issue #1391, GH_1391_3).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
         Goal: Check Result.
         """
@@ -10044,6 +10175,148 @@ class ValueDomainBugs(BugHelper):
             vd_names=self.vd_1348,
         )
 
+    vd_1391 = ["GH_1391-VD_CTY", "GH_1391-VD_NUM", "GH_1391-VD_GRP"]
+
+    def test_GH_1391_1(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset dpr_cty ( valuedomain VD_CTY as C ) is
+                        r1 : when C = "DE" then false errorcode "DE_found"
+                    end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , dpr_cty components Me_1 all );
+        Description: The String Me_1 is cast into VD_CTY (ES, FR, DE) by the ruleset, so its
+                     value IT raises 2-1-5-4, as cast ( Me_1 , VD_CTY ) does. Both engines
+                     evaluated the rule on it, true.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1391
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1391_1",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op check_datapoint: Cannot cast IT of String to Value Domain "
+            "VD_CTY.",
+            vd_names=self.vd_1391,
+        )
+
+    def test_GH_1391_2(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset dpr_num ( valuedomain VD_NUM as N ) is
+                        r1 : N > 1 errorcode "LOW" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , dpr_num components Me_2 all );
+        Description: The Integer Me_2 is cast into VD_NUM (1.5, 2.0, 3.0), so its value 1 raises
+                     2-1-5-4. Both engines evaluated the rule on it, false with LOW.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1391
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1391_2",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op check_datapoint: Cannot cast 1 of Number to Value Domain "
+            "VD_NUM.",
+            vd_names=self.vd_1391,
+        )
+
+    def test_GH_1391_3(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset hr_cty ( valuedomain rule VD_CTY ) is
+                        r1 : DE = ES + FR end hierarchical ruleset;
+                    DS_r <- check_hierarchy ( DS_1 , hr_cty rule Id_1 all );
+        Description: The String rule Identifier Id_1 is cast into VD_CTY, so its value IT, a
+                     code item no rule reads, raises 2-1-5-4. Both engines left it out.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1391
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1391_3",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op check_hierarchy: Cannot cast IT of String to Value Domain "
+            "VD_CTY.",
+            vd_names=self.vd_1391,
+        )
+
+    def test_GH_1391_4(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset hr_cty ( valuedomain rule VD_CTY ) is
+                        r1 : DE = ES + FR end hierarchical ruleset;
+                    DS_r <- hierarchy ( DS_1 , hr_cty rule Id_1 all );
+        Description: As case 3, hierarchy raises 2-1-5-4 for IT. Both engines kept it in the
+                     result.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1391
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1391_4",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op hierarchy: Cannot cast IT of String to Value Domain VD_CTY.",
+            vd_names=self.vd_1391,
+        )
+
+    def test_GH_1391_5(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset hr_cond ( valuedomain condition VD_GRP as g
+                        rule VD_CTY ) is r1 : when g = "A" then DE = ES + FR
+                    end hierarchical ruleset;
+                    DS_r <- check_hierarchy ( DS_1 , hr_cond condition Id_2 rule Id_1 all );
+        Description: The String condition Identifier Id_2 is cast into VD_GRP (A, B), so its
+                     value Z raises 2-1-5-4, as the rule Identifier does.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1391
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1391_5",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op check_hierarchy: Cannot cast Z of String to Value Domain "
+            "VD_GRP.",
+            vd_names=self.vd_1391,
+        )
+
+    def test_GH_1391_6(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset dpr_two ( valuedomain VD_CTY as C , VD_NUM as N )
+                        is r1 : N > 1 errorcode "LOW" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , dpr_two components Me_1 , Me_2 all );
+        Description: Me_1 is cast into VD_CTY although no rule reads C, so its value IT raises
+                     2-1-5-4 on both engines.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1391
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1391_6",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op check_datapoint: Cannot cast IT of String to Value Domain "
+            "VD_CTY.",
+            vd_names=self.vd_1391,
+        )
+
+    def test_GH_1391_7(self):
+        """
+        Status: OK
+        Expression: DS_r1 <- check_datapoint ( DS_1 , dpr_two components Me_1 , Me_2 all );
+                    DS_r2 <- check_hierarchy ( DS_2 , hr_cond condition Id_2 rule Id_1 all );
+        Description: Control of cases 5 and 6: the values of the Components of a basic type,
+                     nulls included, are values of the value domains, so both rulesets give
+                     their results.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1391
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1391_7",
+            number_inputs=2,
+            references_names=["1", "2"],
+            vd_names=self.vd_1391,
+        )
+
     vd_1349 = ["GH_1349-VD_TP", "GH_1349-VD_DATE", "GH_1349-VD_B", "GH_1349-VD_1"]
 
     def test_GH_1349_7(self):
@@ -11262,15 +11535,18 @@ class ValueDomainBugs(BugHelper):
                     SC_r <- f ( true );
         Description: A Boolean argument is promoted to String as the text true, which is not a
                      value of VD_S. The DuckDB engine failed with an internal error comparing
-                     the Boolean with the Strings of VD_S.
+                     the Boolean with the Strings of VD_S. The literal is known before the
+                     script runs, so it raises 1-1-10-13, also in the semantic analysis (issue
+                     #1393); it raised 2-1-5-4.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(
             code="GH_1351_32a",
             number_inputs=1,
-            exception_code="2-1-5-4",
-            exception_message="At op f: Cannot cast true of String to Value Domain VD_S",
+            exception_code="1-1-10-13",
+            exception_message="The argument true of parameter x of the operator f is not one of "
+            "the values of the Value Domain VD_S.",
             vd_names=self.vd_1351,
         )
 
@@ -11510,12 +11786,13 @@ class ValueDomainBugs(BugHelper):
     def test_GH_1351_39(self):
         """
         Status: OK
-        Expression: define operator f ( x component < integer > )
+        Expression: define operator f ( x component )
                         returns component < integer > is x end operator;
                     DS_r <- DS_1 [ calc Me_2 := f ( Me_1 ) ];
-        Description: A Number Component is accepted by a component < integer > parameter, but
-                     a Number is not implicitly cast to Integer, so the Number result does not
-                     have the type the returns declares (issue #1364).
+        Description: A Number is not implicitly cast to Integer, so the Number result does not
+                     have the type the returns declares (issue #1364). The parameter takes any
+                     Component: a component < integer > one raises 1-2-18 for the Number Me_1
+                     first (issue #1389, GH_1389_1).
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Exception.
         """
@@ -15787,6 +16064,118 @@ class ValueDomainFollowUpBugs(BugHelper):
             exception_message="At op f: The value 3.5 given to the parameter x is not an Integer.",
             vd_names=self.vd_1364,
             scalars={"SC_1": 7},
+        )
+
+    vd_1393 = ["GH_1393-VD_CTY", "GH_1393-VD_NUM"]
+
+    def test_GH_1393_1(self):
+        """
+        Status: OK
+        Expression: define operator f_cty ( x VD_CTY ) returns string is x end operator;
+                    SC_r <- f_cty ( "IT" );
+        Description: The literal "IT" is not one of the values of VD_CTY (ES, FR, DE), the value
+                     domain of the parameter x: 1-1-10-13, in the semantic analysis too, as for
+                     a default outside it. The semantic analysis took it and run raised 2-1-5-4.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1393
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1393_1",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message='The argument "IT" of parameter x of the operator f_cty is not one '
+            "of the values of the Value Domain VD_CTY.",
+            vd_names=self.vd_1393,
+        )
+
+    def test_GH_1393_2(self):
+        """
+        Status: OK
+        Expression: define operator f_num ( x VD_NUM ) returns number is x end operator;
+                    SC_r <- f_num ( 1 );
+        Description: The Integer literal 1 is promoted to the Number 1.0, which is not one of the
+                     values of VD_NUM (1.5, 2.0, 3.0): 1-1-10-13.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1393
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1393_2",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message="The argument 1 of parameter x of the operator f_num is not one of "
+            "the values of the Value Domain VD_NUM.",
+            vd_names=self.vd_1393,
+        )
+
+    def test_GH_1393_3(self):
+        """
+        Status: OK
+        Expression: define operator f_ds ( ds dataset , x VD_CTY )
+                        returns dataset is ds [ calc Me_2 := x ] end operator;
+                    DS_r <- f_ds ( DS_1 , "IT" );
+        Description: As case 1, for a literal given next to a dataset argument.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1393
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1393_3",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message='The argument "IT" of parameter x of the operator f_ds is not one '
+            "of the values of the Value Domain VD_CTY.",
+            vd_names=self.vd_1393,
+        )
+
+    def test_GH_1393_4(self):
+        """
+        Status: OK
+        Expression: define operator f_wrap ( y string ) returns string is f_cty ( y )
+                        end operator;
+                    SC_r <- f_wrap ( "IT" );
+        Description: A literal stays a literal inside the operator it is given to, so "IT",
+                     passed on by f_wrap to f_cty, raises 1-1-10-13 at f_cty.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1393
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1393_4",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message='The argument "IT" of parameter x of the operator f_cty is not one '
+            "of the values of the Value Domain VD_CTY.",
+            vd_names=self.vd_1393,
+        )
+
+    def test_GH_1393_5(self):
+        """
+        Status: OK
+        Expression: define operator f_cty ( x VD_CTY ) returns string is x end operator;
+                    SC_r <- f_cty ( "I" || "T" );
+        Description: Control of case 1: a value computed when the script runs is not known to
+                     the semantic analysis, so "IT" raises 2-1-5-4 when it is computed.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1393
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1393_5",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op f_cty: Cannot cast IT of String to Value Domain VD_CTY.",
+            vd_names=self.vd_1393,
+        )
+
+    def test_GH_1393_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := f_cty ( "ES" ) , Me_3 := f_num ( 2 ) ,
+                                        Me_4 := f_cty ( null ) ];
+        Description: Control of cases 1 and 2: the literals ES, 2 (promoted to 2.0) and null are
+                     values of the value domains of the parameters.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1393
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1393_6", number_inputs=1, references_names=["1"], vd_names=self.vd_1393
         )
 
 

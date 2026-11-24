@@ -14,8 +14,16 @@ from pandas import DataFrame as PandasDataFrame
 from pandas._testing import assert_frame_equal
 from sqlglot.dialects.duckdb import DuckDB
 
-import vtlengine.DataTypes as DataTypes
-from vtlengine.DataTypes import RESERVED_COMPONENT_NAMES, SCALAR_TYPES, ScalarType
+from vtlengine.DataTypes import (
+    RESERVED_COMPONENT_NAMES,
+    SCALAR_TYPES,
+    SCALAR_TYPES_CLASS_REVERSE,
+    Date,
+    Null,
+    ScalarType,
+    TimeInterval,
+    TimePeriod,
+)
 from vtlengine.DataTypes._time_checking import check_date, check_time, check_time_period
 from vtlengine.DataTypes.TimeHandling import TimePeriodHandler
 from vtlengine.Exceptions import InputValidationException, SemanticError
@@ -23,9 +31,9 @@ from vtlengine.Exceptions import InputValidationException, SemanticError
 # The loaders write the values of the time types in one form, which the values of a value
 # domain on one of them are compared in
 _TIME_VALUE_CHECKS: Dict[Any, Any] = {
-    DataTypes.Date: check_date,
-    DataTypes.TimePeriod: check_time_period,
-    DataTypes.TimeInterval: check_time,
+    Date: check_date,
+    TimePeriod: check_time_period,
+    TimeInterval: check_time,
 }
 TIME_TYPES = tuple(_TIME_VALUE_CHECKS)
 
@@ -241,7 +249,7 @@ def component_type_name(data_type: Any, value_domain: Optional["ValueDomain"]) -
     """The type a component is written with: its value domain, if it is defined on one."""
     if value_domain is not None:
         return value_domain.name
-    return DataTypes.SCALAR_TYPES_CLASS_REVERSE[data_type]
+    return SCALAR_TYPES_CLASS_REVERSE[data_type]
 
 
 def named_type(
@@ -669,7 +677,7 @@ class ScalarSet:
     def __contains__(self, item: str) -> Optional[bool]:
         if isinstance(item, float) and item.is_integer():
             item = int(item)
-        if self.data_type == DataTypes.Null:
+        if self.data_type == Null:
             return None
         value = self.data_type.cast(item)
         return value_of(self.data_type, value) in self.compared_values()
@@ -702,7 +710,7 @@ class ValueDomain:
                     code="0-1-1-37",
                     value=value,
                     name=self.name,
-                    type=DataTypes.SCALAR_TYPES_CLASS_REVERSE[self.type],
+                    type=SCALAR_TYPES_CLASS_REVERSE[self.type],
                 )
         self.setlist = [self.type.cast(value) for value in self.setlist]
         forms: Dict[Any, List[Any]] = {}
@@ -741,7 +749,7 @@ class ValueDomain:
     def to_dict(self) -> Dict[str, Any]:
         return {
             "name": self.name,
-            "type": DataTypes.SCALAR_TYPES_CLASS_REVERSE[self.type],
+            "type": SCALAR_TYPES_CLASS_REVERSE[self.type],
             "setlist": self.setlist,
         }
 

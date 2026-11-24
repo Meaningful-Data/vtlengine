@@ -114,6 +114,8 @@ class ExprComp:
             var_id_node = VarID(value=token_text, **extract_token_info(ctx))
             return var_id_node
 
+        raise InputValidationException(code="0-5-1-1")
+
     def bin_op_creator_comp(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
         left_node = self.visitExprComponent(ctx_list[0])
@@ -143,7 +145,7 @@ class ExprComp:
 
         if not ctx_list[2].is_terminal and ctx_list[2].ctx_id == RC.LISTS:
             right_node = Terminals().visitLists(ctx_list[2])
-        elif not ctx_list[2].is_terminal and ctx_list[2].ctx_id == RC.VALUE_DOMAIN_ID:
+        else:  # valueDomainID
             right_node = Terminals().visitValueDomainID(ctx_list[2])
         bin_op_node = BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
@@ -216,6 +218,8 @@ class ExprComp:
             opt = c.text
             return ID(type_="OPTIONAL", value=opt, **extract_token_info(ctx))
 
+        raise InputValidationException(code="0-5-1-1")
+
     """____________________________________________________________________________________
 
 
@@ -264,6 +268,8 @@ class ExprComp:
         elif ctx.ctx_id == RC.ANALYTIC_FUNCTIONS_COMPONENTS:
             return self.visitAnalyticFunctionsComponents(c)
 
+        raise InputValidationException(code="0-5-1-1")
+
     """
                                 -----------------------------------
                                     Generic Functions Components
@@ -277,6 +283,8 @@ class ExprComp:
             return self.visitEvalAtomComponent(ctx)
         elif ctx.ctx_id == RC.CAST_EXPR_COMPONENT:
             return self.visitCastExprComponent(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitCallComponent(self, ctx):  # type: ignore[no-untyped-def]
         """
@@ -336,12 +344,9 @@ class ExprComp:
         else:
             param_node = []
 
-        if len(basic_scalar_type) == 1:
-            children_nodes = expr_node + basic_scalar_type
+        children_nodes = expr_node + basic_scalar_type
 
-            return ParamOp(
-                op=op, children=children_nodes, params=param_node, **extract_token_info(ctx)
-            )
+        return ParamOp(op=op, children=children_nodes, params=param_node, **extract_token_info(ctx))
 
     def visitParameterComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -351,6 +356,8 @@ class ExprComp:
             return self.visitExprComponent(c)
         elif c.is_terminal:
             return ID(type_="OPTIONAL", value=c.text, **extract_token_info(ctx))
+
+        raise InputValidationException(code="0-5-1-1")
 
     """
                             -----------------------------------
@@ -369,6 +376,8 @@ class ExprComp:
             return self.visitInstrAtomComponent(ctx)
         elif ctx.ctx_id == RC.STRING_DISTANCE_ATOM_COMPONENT:
             return self.visitStringDistanceAtomComponent(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitUnaryStringFunctionComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -502,6 +511,8 @@ class ExprComp:
         elif ctx.ctx_id == RC.BINARY_NUMERIC_COMPONENT:
             return self.visitBinaryNumericComponent(ctx)
 
+        raise InputValidationException(code="0-5-1-1")
+
     def visitUnaryNumericComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
         c = ctx_list[0]
@@ -583,6 +594,8 @@ class ExprComp:
             RC.MONTH_TODAY_ATOM_COMPONENT,
         ):
             return self.visitTimeUnaryAtomComponent(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitTimeUnaryAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
         """
@@ -687,7 +700,6 @@ class ExprComp:
             in (vtl_cpp_parser.STRING_CONSTANT, vtl_cpp_parser.OPTIONAL)
         ):
             period_ind_from_token = ctx_list[idx + 1]
-            idx = idx + 2
 
         period_from_optional = (
             period_ind_from_token is not None
@@ -779,6 +791,8 @@ class ExprComp:
         if ctx.ctx_id == RC.NVL_ATOM_COMPONENT:
             return self.visitNvlAtomComponent(ctx)
 
+        raise InputValidationException(code="0-5-1-1")
+
     def visitNvlAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
         c = ctx_list[0]
@@ -801,6 +815,8 @@ class ExprComp:
             return self.visitCharsetMatchAtomComponent(ctx)
         elif ctx.ctx_id == RC.IS_NULL_ATOM_COMPONENT:
             return self.visitIsNullAtomComponent(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitBetweenAtomComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
@@ -848,6 +864,8 @@ class ExprComp:
         elif ctx.ctx_id == RC.COUNT_AGGR_COMP:
             return self.visitCountAggrComp(ctx)
 
+        raise InputValidationException(code="0-5-1-1")
+
     def visitAggrComp(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children
         op_node = ctx_list[0].text
@@ -874,6 +892,8 @@ class ExprComp:
             return self.visitRankAnComponent(ctx)
         elif ctx.ctx_id == RC.RATIO_TO_REPORT_AN_COMPONENT:
             return self.visitRatioToReportAnComponent(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitAnSimpleFunctionComponent(self, ctx):  # type: ignore[no-untyped-def]
         ctx_list = ctx.children

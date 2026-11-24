@@ -106,8 +106,6 @@ def test_case_ds(request, load_input, load_reference, code, expression):
         data_structures = sorted(ds_dir / f for f in os.listdir(ds_dir) if f.startswith(prefix))
 
         datapoints = {}
-        import json
-
         for ds_file in data_structures:
             with open(ds_file) as f:
                 structure = json.load(f)

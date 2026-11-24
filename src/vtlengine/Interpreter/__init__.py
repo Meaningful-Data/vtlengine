@@ -64,12 +64,12 @@ from vtlengine.AST.Grammar.tokens import (
 )
 from vtlengine.AST.UDOTypes import (
     resolve_value_domain_type,
+    udo_accepts,
     udo_call_key,
     udo_component_matches,
     udo_dataset_components,
     udo_result_on_basic_types,
     udo_result_on_value_domains,
-    udo_returns,
 )
 from vtlengine.DataTypes import (
     BASIC_TYPES,
@@ -215,16 +215,12 @@ def _udo_scalar_value_domain(param: Dict[str, Any], argument: Scalar) -> Optiona
 def _check_udo_return_type(
     op: str, declared: Any, constraints: Optional[AST.SignatureConstraints], result: Any
 ) -> None:
-    """The result of a user defined operator must have the type it returns (issue #1161)."""
+    """The result of a user defined operator must have the type it returns."""
     if isinstance(declared, Component):
-        # A component declared without a type is parsed with a String instance
-        data_type: Any = declared.data_type
-        matches = udo_component_matches(declared, result) and (
-            not isinstance(data_type, type) or udo_returns(result.data_type, data_type)
-        )
+        matches = udo_component_matches(declared, result)
         found_type = _format_component_type(result)
     elif isinstance(declared, type):
-        matches = udo_returns(result.data_type, declared)
+        matches = udo_accepts(result.data_type, declared)
         found_type = _format_type(result.data_type)
     else:
         return
@@ -2451,6 +2447,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     ),
                     dataset.components,
                     self.value_domains,
+                    dataset.data,
                 )
                 # The code items of a ruleset on a value domain are values of it (issue #1348)
                 rule_domain = cast(Dict[str, ValueDomain], self.value_domains)[hr_info["signature"]]
@@ -2601,6 +2598,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 node.components,
                 dataset_element.components,
                 self.value_domains,
+                dataset_element.data,
             )
 
         rule_output_values = {}
@@ -3242,7 +3240,9 @@ class InterpreterAnalyzer(ASTTemplate):
         """The value a parameter of a basic type takes, given or by default: it must be of the
         type the parameter declares, or promote to it, and is cast to it. A Number with
         decimals is no Integer: a literal raises 1-2-18, which the semantic analysis raises too,
-        and a value computed when the script runs is an error of the data (issue #1364)."""
+        and a value computed when the script runs is an error of the data (issue #1364). A
+        literal given to a parameter on a value domain must be one of its values (1-1-10-13), as
+        its default must, also in the semantic analysis."""
         if isinstance(argument, (Dataset, DataComponent)):
             type_2 = "Dataset" if isinstance(argument, Dataset) else "Component"
             raise SemanticError(
@@ -3263,14 +3263,28 @@ class InterpreterAnalyzer(ASTTemplate):
                 op=op,
                 param_name=param["name"],
             )
+        cast_value = scalar_type.cast(value)
+        value_domain = _udo_scalar_value_domain(param, argument)
+        if (
+            argument.literal
+            and value_domain is not None
+            and not is_value_of_domain(cast_value, value_domain)
+        ):
+            raise SemanticError(
+                "1-1-10-13",
+                element="argument",
+                value=literal_text(value),
+                where=f"parameter {param['name']} of the operator {op}",
+                value_domain=value_domain.name,
+            )
         return Scalar(
             name=argument.name,
-            value=scalar_type.cast(value),
+            value=cast_value,
             data_type=scalar_type,
             nullable=argument.nullable,
             # A literal argument stays a literal inside the operator (issue #1192)
             literal=argument.literal,
-            value_domain=_udo_scalar_value_domain(param, argument),
+            value_domain=value_domain,
         )
 
     def _udo_ruleset_argument(self, op: str, param: Dict[str, Any], argument: AST.AST) -> str:
@@ -3396,7 +3410,7 @@ class InterpreterAnalyzer(ASTTemplate):
             dataset = self.regular_aggregation_dataset
             value = dataset.components.get(value) if dataset is not None else None
         found = getattr(value, "data_type", None)
-        if found is not None and not check_unary_implicit_promotion(found, declared.data_type):
+        if found is not None and not udo_accepts(found, declared.data_type):
             raise SemanticError(
                 "1-2-18", param_type=declared.data_type, type_name=found, op=op, param_name=param
             )

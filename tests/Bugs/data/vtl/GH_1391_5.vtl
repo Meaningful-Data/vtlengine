@@ -1,0 +1,5 @@
+define hierarchical ruleset hr_cond ( valuedomain condition VD_GRP as g rule VD_CTY ) is
+    r1 : when g = "A" then DE = ES + FR
+end hierarchical ruleset;
+
+DS_r <- check_hierarchy ( DS_1 , hr_cond condition Id_2 rule Id_1 all );

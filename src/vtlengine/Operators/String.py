@@ -717,8 +717,8 @@ class Instr(Parameterized):
             return cls.dataset_evaluation(operand, param1, param2, param3)
         if isinstance(operand, DataComponent):
             return cls.component_evaluation(operand, param1, param2, param3)
-        if isinstance(operand, Scalar):
-            return cls.scalar_evaluation(operand, param1, param2, param3)
+        # Scalar
+        return cls.scalar_evaluation(operand, param1, param2, param3)
 
     @classmethod
     def op_func(  # type: ignore[override]

@@ -1,0 +1,9 @@
+define operator f ( x component < integer > )
+  returns component is x
+end operator;
+
+define operator g ( x component < VD_INT > )
+  returns component is x
+end operator;
+
+DS_r <- DS_1 [ calc Me_5 := f ( Me_3 ) , Me_6 := f ( Me_4 ) , Me_7 := g ( Me_3 ) , Me_8 := g ( Me_4 ) ];

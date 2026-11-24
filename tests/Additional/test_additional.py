@@ -1662,8 +1662,6 @@ class BooleanOperatorsTest(AdditionalHelper):
 
     maxDiff = None
 
-    pass
-
 
 class ClauseOperatorsTest(AdditionalHelper):
     """
@@ -2851,22 +2849,6 @@ class DataValidationOperatorsTest(AdditionalHelper):
             number_inputs=number_inputs,
             references_names=references_names,
         )
-
-    # TODO: Review this test checking the errorlevel handling.
-    # def test_2(self):
-    #     """ """
-    #     text = """DS_r := check ( DS_1 >= DS_2 errorcode 1.0 errorlevel "local" imbalance DS_1 - DS_2 );"""
-    #
-    #     code = "11-2"
-    #     number_inputs = 2
-    #     references_names = ["DS_r"]
-    #
-    #     self.BaseTest(
-    #         text=text,
-    #         code=code,
-    #         number_inputs=number_inputs,
-    #         references_names=references_names,
-    #     )
 
     def test_3(self):
         """ """
