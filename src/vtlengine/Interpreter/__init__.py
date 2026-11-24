@@ -2451,6 +2451,7 @@ class InterpreterAnalyzer(ASTTemplate):
                     ),
                     dataset.components,
                     self.value_domains,
+                    dataset.data,
                 )
                 # The code items of a ruleset on a value domain are values of it (issue #1348)
                 rule_domain = cast(Dict[str, ValueDomain], self.value_domains)[hr_info["signature"]]
@@ -2601,6 +2602,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 node.components,
                 dataset_element.components,
                 self.value_domains,
+                dataset_element.data,
             )
 
         rule_output_values = {}
