@@ -1,0 +1,4 @@
+Id_1,ruleid,Me_1,Me_2,Me_3,bool_var,errorcode,errorlevel
+1,r1,1,ES,2020,False,LOW,
+2,r1,2,FR,2021,True,,
+3,r1,3,DE,,True,,

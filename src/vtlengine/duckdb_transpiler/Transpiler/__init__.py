@@ -722,14 +722,14 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         self, table_src: str, op: str, bindings: List[Tuple[str, str]], ds: Dataset
     ) -> str:
         """The operand of a ruleset on value domains, raising VTL 2-1-5-4 on a value of a
-        component of a basic type that is not one of the value domain it is bound to. The check
+        component not defined on the value domain it is bound to that is not one of it. The check
         filters the rows of a materialized CTE, which the filters of the ruleset do not reach,
         so it reads every value, also of a component or a code item no rule reads."""
         checks = [
             f"{self._downcast_expr(quote_name(comp), op, self.value_domains[name])} "
             f"IS NOT DISTINCT FROM {quote_name(comp)}"
             for name, comp in bindings
-            if ds.components[comp].value_domain is None
+            if getattr(ds.components[comp].value_domain, "name", None) != name
         ]
         if not checks:
             return table_src

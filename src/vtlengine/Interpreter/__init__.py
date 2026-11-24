@@ -2510,13 +2510,17 @@ class InterpreterAnalyzer(ASTTemplate):
             Check_Hierarchy.remove_attributes(dataset)
 
             # The rule Identifier keeps the value domain a ruleset is defined on, and for a
-            # ruleset on a variable the one of the Component when the code items that the rules
-            # compute, or check, are values of it (issue #1348)
-            keep_rule_domain = on_value_domains or self._hr_items_on_domain(
+            # ruleset on a variable, or a Component on another value domain, the one of the
+            # Component when the code items that the rules compute, or check, are values of it
+            comp_domain = dataset.components[component].value_domain
+            keep_rule_domain = (
+                on_value_domains
+                and getattr(comp_domain, "name", hr_info["signature"]) == hr_info["signature"]
+            ) or self._hr_items_on_domain(
                 hr_info["rules"]
                 if node.op == CHECK_HIERARCHY
                 else self._hr_eq_rules(hr_info["rules"]),
-                dataset.components[component].value_domain,
+                comp_domain,
             )
 
             # Final evaluation
