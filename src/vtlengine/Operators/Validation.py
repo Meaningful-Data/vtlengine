@@ -25,6 +25,7 @@ from vtlengine.Operators import (
     Operator,
     _id_type_promotion_join_keys,
     check_common_identifier_types,
+    check_values,
     on_basic_types,
 )
 from vtlengine.Operators.HROperators import fills_with_zero
@@ -138,12 +139,13 @@ def bind_value_domains(
     called: Optional[List[str]],
     components: Dict[str, Component],
     value_domains: Optional[Dict[str, ValueDomain]],
+    data: Optional[pd.DataFrame] = None,
 ) -> Dict[str, str]:
     """The components a datapoint ruleset on value domains is called with, bound in order to the
     value domains of its signature, or their aliases.
 
     The call must list the components, as many as the value domains, which must be given, and
-    each component must be accepted by check_value_domains."""
+    each component must be accepted by check_value_domains, with the values of data."""
     if not called:
         raise SemanticError("1-1-10-14", op=CHECK_DATAPOINT, ruleset=ruleset)
     if len(called) != len(signature):
@@ -155,7 +157,7 @@ def bind_value_domains(
             found=len(called),
         )
     check_value_domains(
-        CHECK_DATAPOINT, ruleset, zip(signature.values(), called), components, value_domains
+        CHECK_DATAPOINT, ruleset, zip(signature.values(), called), components, value_domains, data
     )
     return dict(zip(signature, called))
 
@@ -166,10 +168,13 @@ def check_value_domains(
     bindings: Iterable[Tuple[str, str]],
     components: Dict[str, Component],
     value_domains: Optional[Dict[str, ValueDomain]],
+    data: Optional[pd.DataFrame] = None,
 ) -> None:
     """Each value domain of a ruleset must be given, and the component bound to it must be
     defined on it, or be of a basic type that promotes to the basic type of the value domain
-    (issue #1348): a component on another value domain is rejected."""
+    (issue #1348): a component on another value domain is rejected. The values in data of a
+    component of a basic type are cast into the value domain, so each must be one of its values
+    (2-1-5-4), as cast does."""
     for name, comp_name in bindings:
         if value_domains is None:
             raise SemanticError("1-2-22", comp_type="Value Domains")
@@ -190,6 +195,8 @@ def check_value_domains(
                 ruleset=ruleset,
                 basic_type=SCALAR_TYPES_CLASS_REVERSE[value_domains[name].type],
             )
+        if component.value_domain is None and data is not None:
+            check_values(data[comp_name], value_domains[name], op)
 
 
 class Check(Operator):

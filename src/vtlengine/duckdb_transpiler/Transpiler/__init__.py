@@ -717,6 +717,25 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return self._unqualify_join_columns(node, sql)
         return sql
 
+    def _downcast_source(
+        self, table_src: str, op: str, bindings: List[Tuple[str, str]], ds: Dataset
+    ) -> str:
+        """The operand of a ruleset on value domains, raising VTL 2-1-5-4 on a value of a
+        component of a basic type that is not one of the value domain it is bound to. The check
+        filters the rows of a materialized CTE, which the filters of the ruleset do not reach,
+        so it reads every value, also of a component or a code item no rule reads."""
+        checks = [
+            f"{self._downcast_expr(quote_name(comp), op, self.value_domains[name])} "
+            f"IS NOT DISTINCT FROM {quote_name(comp)}"
+            for name, comp in bindings
+            if ds.components[comp].value_domain is None
+        ]
+        if not checks:
+            return table_src
+        checked = f"SELECT * FROM {table_src} AS _vd_src WHERE {' AND '.join(checks)}"
+        cte = CTEBuilder().cte("_vd_src", checked, materialized=True)
+        return f"({cte.select('SELECT * FROM _vd_src')})"
+
     def _downcast_expr(self, expr: str, op: str, value_domain: ValueDomain) -> str:
         """expr, raising VTL 2-1-5-4 on a value that is not one of the value domain."""
         type_name = value_domain.type.__name__
@@ -4783,9 +4802,11 @@ FROM (
         id_cols = ds.get_identifiers_names()
         signature = dpr_info["signature"]
         if dpr_info["signature_type"] == "valuedomain" and signature:
+            bindings = list(zip(signature.values(), node.components or []))
             signature = bind_value_domains(
                 node.ruleset_name, signature, node.components, ds.components, self.value_domains
             )
+            table_src = self._downcast_source(table_src, tokens.CHECK_DATAPOINT, bindings, ds)
 
         if not dpr_info["rules"]:
             cols = [quote_name(c) for c in id_cols]
@@ -4933,6 +4954,13 @@ FROM (
         if node.conditions and hr_info["condition"]:
             for i, cond_node in enumerate(node.conditions):
                 cond_mapping[hr_info["condition"][i]] = self._get_node_value(cond_node)
+
+        if hr_info["signature_type"] == "valuedomain":
+            element = hr_info["node"].element
+            names = [e.value for e in element] if isinstance(element, list) else [element.value]
+            conditions = [self._resolve_udo_name(c) for c in cond_mapping.values()]
+            bindings = list(zip(names, [*conditions, component]))
+            table_src = self._downcast_source(table_src, node.op, bindings, ds)
 
         mode = node.validation_mode.value if node.validation_mode else "non_null"
         parsed_rules = [self._parse_hr_rule(r, i) for i, r in enumerate(hr_info["rules"])]
