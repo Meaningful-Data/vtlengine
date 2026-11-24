@@ -1,0 +1,9 @@
+define operator f_cty ( x VD_CTY )
+  returns string is x
+end operator;
+
+define operator f_wrap ( y string )
+  returns string is f_cty ( y )
+end operator;
+
+SC_r <- f_wrap ( "IT" );

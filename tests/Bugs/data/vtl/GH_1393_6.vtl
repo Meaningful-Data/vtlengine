@@ -1,0 +1,9 @@
+define operator f_cty ( x VD_CTY )
+  returns string is x
+end operator;
+
+define operator f_num ( x VD_NUM )
+  returns number is x
+end operator;
+
+DS_r <- DS_1 [ calc Me_2 := f_cty ( "ES" ) , Me_3 := f_num ( 2 ) , Me_4 := f_cty ( null ) ];

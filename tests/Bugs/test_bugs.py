@@ -8311,7 +8311,9 @@ class ValueDomainBugs(BugHelper):
         """
         Status: OK
         Expression: DS_r <- DS_1 [ calc Me_2 := flag ( "OTHER" ) ];
-        Description: The literal OTHER is not one of VD_FLOW, which types the parameter.
+        Description: The literal OTHER is not one of VD_FLOW, which types the parameter. The
+                     literal is known before the script runs, so it raises 1-1-10-13, also in
+                     the semantic analysis (issue #1393); it raised 2-1-5-4.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1236
         Goal: Check Exception.
         """
@@ -8321,8 +8323,9 @@ class ValueDomainBugs(BugHelper):
         self.NewSemanticExceptionTest(
             code=code,
             number_inputs=number_inputs,
-            exception_code="2-1-5-4",
-            exception_message="At op flag: Cannot cast OTHER of String to Value Domain VD_FLOW",
+            exception_code="1-1-10-13",
+            exception_message='The argument "OTHER" of parameter x of the operator flag is not '
+            "one of the values of the Value Domain VD_FLOW.",
             vd_names=["GH_1236-VD_FLOW"],
         )
 
@@ -11218,15 +11221,18 @@ class ValueDomainBugs(BugHelper):
                     SC_r <- f ( true );
         Description: A Boolean argument is promoted to String as the text true, which is not a
                      value of VD_S. The DuckDB engine failed with an internal error comparing
-                     the Boolean with the Strings of VD_S.
+                     the Boolean with the Strings of VD_S. The literal is known before the
+                     script runs, so it raises 1-1-10-13, also in the semantic analysis (issue
+                     #1393); it raised 2-1-5-4.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1351
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(
             code="GH_1351_32a",
             number_inputs=1,
-            exception_code="2-1-5-4",
-            exception_message="At op f: Cannot cast true of String to Value Domain VD_S",
+            exception_code="1-1-10-13",
+            exception_message="The argument true of parameter x of the operator f is not one of "
+            "the values of the Value Domain VD_S.",
             vd_names=self.vd_1351,
         )
 
@@ -15743,6 +15749,118 @@ class ValueDomainFollowUpBugs(BugHelper):
             exception_message="At op f: The value 3.5 given to the parameter x is not an Integer.",
             vd_names=self.vd_1364,
             scalars={"SC_1": 7},
+        )
+
+    vd_1393 = ["GH_1393-VD_CTY", "GH_1393-VD_NUM"]
+
+    def test_GH_1393_1(self):
+        """
+        Status: OK
+        Expression: define operator f_cty ( x VD_CTY ) returns string is x end operator;
+                    SC_r <- f_cty ( "IT" );
+        Description: The literal "IT" is not one of the values of VD_CTY (ES, FR, DE), the value
+                     domain of the parameter x: 1-1-10-13, in the semantic analysis too, as for
+                     a default outside it. The semantic analysis took it and run raised 2-1-5-4.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1393
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1393_1",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message='The argument "IT" of parameter x of the operator f_cty is not one '
+            "of the values of the Value Domain VD_CTY.",
+            vd_names=self.vd_1393,
+        )
+
+    def test_GH_1393_2(self):
+        """
+        Status: OK
+        Expression: define operator f_num ( x VD_NUM ) returns number is x end operator;
+                    SC_r <- f_num ( 1 );
+        Description: The Integer literal 1 is promoted to the Number 1.0, which is not one of the
+                     values of VD_NUM (1.5, 2.0, 3.0): 1-1-10-13.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1393
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1393_2",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message="The argument 1 of parameter x of the operator f_num is not one of "
+            "the values of the Value Domain VD_NUM.",
+            vd_names=self.vd_1393,
+        )
+
+    def test_GH_1393_3(self):
+        """
+        Status: OK
+        Expression: define operator f_ds ( ds dataset , x VD_CTY )
+                        returns dataset is ds [ calc Me_2 := x ] end operator;
+                    DS_r <- f_ds ( DS_1 , "IT" );
+        Description: As case 1, for a literal given next to a dataset argument.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1393
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1393_3",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message='The argument "IT" of parameter x of the operator f_ds is not one '
+            "of the values of the Value Domain VD_CTY.",
+            vd_names=self.vd_1393,
+        )
+
+    def test_GH_1393_4(self):
+        """
+        Status: OK
+        Expression: define operator f_wrap ( y string ) returns string is f_cty ( y )
+                        end operator;
+                    SC_r <- f_wrap ( "IT" );
+        Description: A literal stays a literal inside the operator it is given to, so "IT",
+                     passed on by f_wrap to f_cty, raises 1-1-10-13 at f_cty.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1393
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1393_4",
+            number_inputs=1,
+            exception_code="1-1-10-13",
+            exception_message='The argument "IT" of parameter x of the operator f_cty is not one '
+            "of the values of the Value Domain VD_CTY.",
+            vd_names=self.vd_1393,
+        )
+
+    def test_GH_1393_5(self):
+        """
+        Status: OK
+        Expression: define operator f_cty ( x VD_CTY ) returns string is x end operator;
+                    SC_r <- f_cty ( "I" || "T" );
+        Description: Control of case 1: a value computed when the script runs is not known to
+                     the semantic analysis, so "IT" raises 2-1-5-4 when it is computed.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1393
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1393_5",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op f_cty: Cannot cast IT of String to Value Domain VD_CTY.",
+            vd_names=self.vd_1393,
+        )
+
+    def test_GH_1393_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := f_cty ( "ES" ) , Me_3 := f_num ( 2 ) ,
+                                        Me_4 := f_cty ( null ) ];
+        Description: Control of cases 1 and 2: the literals ES, 2 (promoted to 2.0) and null are
+                     values of the value domains of the parameters.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1393
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1393_6", number_inputs=1, references_names=["1"], vd_names=self.vd_1393
         )
 
 
