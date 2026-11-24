@@ -101,14 +101,14 @@ def udo_component_matches(declared: Any, found: Any) -> bool:
     # A component declared without a role or a type is parsed with None and a String instance,
     # so declared is not typed as a Component
     return (declared.role is None or found.role == declared.role) and (
-        not isinstance(declared.data_type, type)
-        or check_unary_implicit_promotion(found.data_type, declared.data_type)
+        not isinstance(declared.data_type, type) or udo_accepts(found.data_type, declared.data_type)
     )
 
 
-def udo_returns(found: Any, declared: Any) -> bool:
-    """Whether a value of the type found is of the basic type a returns declares: of that type,
-    or of one implicitly cast to it. A Number is not cast to an Integer (issue #1364)."""
+def udo_accepts(found: Any, declared: Any) -> bool:
+    """Whether a value of the type found is of the basic type a parameter, a component of a
+    dataset type or a returns declares: of that type, or of one implicitly cast to it. A Number
+    is not cast to an Integer."""
     return check_unary_implicit_promotion(found, declared) and not (
         found is Number and declared is Integer
     )

@@ -111,6 +111,8 @@ class ASTVisitor:
         elif ctx.ctx_id == RC.DEFINE_EXPRESSION:
             return self.visitDefineExpression(c)
 
+        raise InputValidationException(code="0-5-1-1")
+
     # varID ASSIGN expr                # temporaryAssignment
     def visitTemporaryAssignment(self, ctx):
         ctx_list = ctx.children
@@ -167,6 +169,8 @@ class ASTVisitor:
 
         elif ctx.ctx_id == RC.DEF_VIRAL_PROPAGATION:
             return self.visitDefViralPropagation(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitDefViralPropagation(self, ctx: Any) -> Any:
         """

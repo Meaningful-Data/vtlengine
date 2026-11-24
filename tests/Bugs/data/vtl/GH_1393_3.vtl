@@ -1,0 +1,5 @@
+define operator f_ds ( ds dataset , x VD_CTY )
+  returns dataset is ds [ calc Me_2 := x ]
+end operator;
+
+DS_r <- f_ds ( DS_1 , "IT" );

@@ -515,8 +515,8 @@ class Binary(Operator):
             return cls.dataset_set_validation(left_operand, right_operand)
         if isinstance(left_operand, Scalar) and isinstance(right_operand, ScalarSet):
             return cls.scalar_set_validation(left_operand, right_operand)
-        if isinstance(left_operand, DataComponent) and isinstance(right_operand, ScalarSet):
-            return cls.component_set_validation(left_operand, right_operand)
+        # DataComponent and ScalarSet
+        return cls.component_set_validation(left_operand, right_operand)
 
     @classmethod
     def dataset_validation(cls, left_operand: Dataset, right_operand: Dataset) -> Dataset:
@@ -1071,8 +1071,8 @@ class Binary(Operator):
             return cls.dataset_set_evaluation(left_operand, right_operand)
         if isinstance(left_operand, DataComponent) and isinstance(right_operand, ScalarSet):
             return cls.component_set_evaluation(left_operand, right_operand)
-        if isinstance(left_operand, Scalar) and isinstance(right_operand, ScalarSet):
-            return cls.scalar_set_evaluation(left_operand, right_operand)
+        # Scalar and ScalarSet
+        return cls.scalar_set_evaluation(left_operand, right_operand)
 
 
 class Unary(Operator):
@@ -1101,8 +1101,8 @@ class Unary(Operator):
             return cls.dataset_validation(operand)
         elif isinstance(operand, DataComponent):
             return cls.component_validation(operand)
-        elif isinstance(operand, Scalar):
-            return cls.scalar_validation(operand)
+        # Scalar
+        return cls.scalar_validation(operand)
 
     @classmethod
     def dataset_validation(cls, operand: Dataset) -> Dataset:
@@ -1207,8 +1207,8 @@ class Unary(Operator):
             return cls.dataset_evaluation(operand)
         if isinstance(operand, Scalar):
             return cls.scalar_evaluation(operand)
-        if isinstance(operand, DataComponent):
-            return cls.component_evaluation(operand)
+        # DataComponent
+        return cls.component_evaluation(operand)
 
     @classmethod
     def dataset_evaluation(cls, operand: Dataset) -> Dataset:

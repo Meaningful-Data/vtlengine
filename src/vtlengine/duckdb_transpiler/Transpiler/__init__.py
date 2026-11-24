@@ -2225,6 +2225,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         for comp in ds.components.values():
             if comp.data_type in (TimePeriod, Date, TimeInterval) and comp.role == Role.IDENTIFIER:
                 return comp.name, comp.data_type
+        raise SemanticError("1-1-19-8", op=op_name, comp_type="time dataset")
 
     def _build_time_grid_parts(
         self,

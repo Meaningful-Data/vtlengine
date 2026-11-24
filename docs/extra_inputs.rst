@@ -456,7 +456,11 @@ Value domains also appear in the VTL-DL definitions:
 - A value domain types a scalar or a component parameter of a user
   defined operator (``x VD_FLOW``, ``x component<VD_FLOW>``): the
   argument is of the basic type of the value domain, and its values
-  must be values of it (``2-1-5-4``). In the body a scalar parameter
+  must be values of it (``2-1-5-4``). A literal argument of a scalar
+  parameter, known before the script runs, must be one of its values
+  as its default must (``1-1-10-13``, also in ``semantic_analysis``):
+  ``f("IT")`` on ``x VD_CTY`` raises it, as ``cast("IT", VD_CTY)``
+  raises ``1-1-5-6``. In the body a scalar parameter
   is defined on the value domain, and a component parameter behaves
   as its basic type. A value of a type promoted to the basic type is
   compared as the value it is promoted to, here and in the forms

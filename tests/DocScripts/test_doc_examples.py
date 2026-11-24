@@ -61,8 +61,6 @@ def _exec_block(source: str, filename: str, capture_results: bool = False) -> di
     # Skip blocks that already pass use_duckdb explicitly (e.g. doc examples that
     # demonstrate the DuckDB engine).
     if _use_duckdb_backend() and "use_duckdb=" not in source:
-        import re
-
         source = re.sub(
             r"\brun\((\s*script=)",
             r"run(use_duckdb=True, \1",
