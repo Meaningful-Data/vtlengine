@@ -106,14 +106,6 @@ def udo_component_matches(declared: Any, found: Any) -> bool:
     )
 
 
-def udo_returns(found: Any, declared: Any) -> bool:
-    """Whether a value of the type found is of the basic type a returns declares: of that type,
-    or of one implicitly cast to it. A Number is not cast to an Integer (issue #1364)."""
-    return check_unary_implicit_promotion(found, declared) and not (
-        found is Number and declared is Integer
-    )
-
-
 def udo_dataset_components(
     op: str,
     element: str,

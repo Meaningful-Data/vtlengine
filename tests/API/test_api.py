@@ -11,7 +11,6 @@ from pysdmx.model import (
     TransformationScheme,
 )
 
-import vtlengine.DataTypes as DataTypes
 from tests.Helper import _use_duckdb_backend, engine_params
 from vtlengine.API import (
     create_ast,
@@ -31,7 +30,7 @@ from vtlengine.API._InternalApi import (
     load_value_domains,
     load_vtl,
 )
-from vtlengine.DataTypes import Integer, Null, String
+from vtlengine.DataTypes import Boolean, Integer, Null, Number, String
 from vtlengine.Exceptions import (
     DataLoadError,
     InputValidationException,
@@ -144,19 +143,19 @@ load_datasets_with_data_without_dp_params_OK = [
                     components={
                         "Id_1": Component(
                             name="Id_1",
-                            data_type=DataTypes.Integer,
+                            data_type=Integer,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Id_2": Component(
                             name="Id_2",
-                            data_type=DataTypes.String,
+                            data_type=String,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Me_1": Component(
                             name="Me_1",
-                            data_type=DataTypes.Number,
+                            data_type=Number,
                             role=Role.MEASURE,
                             nullable=True,
                         ),
@@ -164,7 +163,7 @@ load_datasets_with_data_without_dp_params_OK = [
                     data=pd.DataFrame(columns=["Id_1", "Id_2", "Me_1"]),
                 )
             },
-            {"sc_1": Scalar(name="sc_1", data_type=DataTypes.Integer, value=None)},
+            {"sc_1": Scalar(name="sc_1", data_type=Integer, value=None)},
             None,
         ),
     )
@@ -181,19 +180,19 @@ load_datasets_with_data_path_params_OK = [
                     components={
                         "Id_1": Component(
                             name="Id_1",
-                            data_type=DataTypes.Integer,
+                            data_type=Integer,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Id_2": Component(
                             name="Id_2",
-                            data_type=DataTypes.String,
+                            data_type=String,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Me_1": Component(
                             name="Me_1",
-                            data_type=DataTypes.Number,
+                            data_type=Number,
                             role=Role.MEASURE,
                             nullable=True,
                         ),
@@ -215,19 +214,19 @@ load_datasets_with_data_path_params_OK = [
                     components={
                         "Id_1": Component(
                             name="Id_1",
-                            data_type=DataTypes.Integer,
+                            data_type=Integer,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Id_2": Component(
                             name="Id_2",
-                            data_type=DataTypes.String,
+                            data_type=String,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Me_1": Component(
                             name="Me_1",
-                            data_type=DataTypes.Number,
+                            data_type=Number,
                             role=Role.MEASURE,
                             nullable=True,
                         ),
@@ -239,19 +238,19 @@ load_datasets_with_data_path_params_OK = [
                     components={
                         "Id_1": Component(
                             name="Id_1",
-                            data_type=DataTypes.Integer,
+                            data_type=Integer,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Id_2": Component(
                             name="Id_2",
-                            data_type=DataTypes.String,
+                            data_type=String,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Me_1": Component(
                             name="Me_1",
-                            data_type=DataTypes.Number,
+                            data_type=Number,
                             role=Role.MEASURE,
                             nullable=True,
                         ),
@@ -273,19 +272,19 @@ load_datasets_with_data_path_params_OK = [
                     components={
                         "Id_1": Component(
                             name="Id_1",
-                            data_type=DataTypes.Integer,
+                            data_type=Integer,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Id_2": Component(
                             name="Id_2",
-                            data_type=DataTypes.String,
+                            data_type=String,
                             role=Role.IDENTIFIER,
                             nullable=False,
                         ),
                         "Me_1": Component(
                             name="Me_1",
-                            data_type=DataTypes.Number,
+                            data_type=Number,
                             role=Role.MEASURE,
                             nullable=True,
                         ),
@@ -655,19 +654,19 @@ def test_load_datastructures(datastructure):
         components={
             "Id_1": Component(
                 name="Id_1",
-                data_type=DataTypes.Integer,
+                data_type=Integer,
                 role=Role.IDENTIFIER,
                 nullable=False,
             ),
             "Id_2": Component(
                 name="Id_2",
-                data_type=DataTypes.String,
+                data_type=String,
                 role=Role.IDENTIFIER,
                 nullable=False,
             ),
             "Me_1": Component(
                 name="Me_1",
-                data_type=DataTypes.Number,
+                data_type=Number,
                 role=Role.MEASURE,
                 nullable=True,
             ),
@@ -676,7 +675,7 @@ def test_load_datastructures(datastructure):
     )
     reference_scalar = Scalar(
         name="sc_1",
-        data_type=DataTypes.Integer,
+        data_type=Integer,
         value=None,
     )
 
@@ -737,7 +736,7 @@ def test_load_datasets_with_wrong_inputs(ds_r, dp, error_message):
                     }
                 ]
             },
-            {"id1": DataTypes.Integer, "measure1": DataTypes.Number},
+            {"id1": Integer, "measure1": Number},
         ),
         # Test with 'data_type' key for backward compatibility
         (
@@ -762,7 +761,7 @@ def test_load_datasets_with_wrong_inputs(ds_r, dp, error_message):
                     }
                 ]
             },
-            {"id1": DataTypes.String, "attr1": DataTypes.Boolean},
+            {"id1": String, "attr1": Boolean},
         ),
     ],
     ids=["type_key", "data_type_key_backward_compat"],
@@ -804,7 +803,7 @@ def test_load_datasets_datastructure_key_compatibility(data_structure, expected_
                 ],
                 "datasets": [{"name": "test_ds", "structure": "test_structure"}],
             },
-            {"id1": DataTypes.Integer, "measure1": DataTypes.String},
+            {"id1": Integer, "measure1": String},
         ),
         # Test with 'data_type' key for backward compatibility
         (
@@ -830,7 +829,7 @@ def test_load_datasets_datastructure_key_compatibility(data_structure, expected_
                 ],
                 "datasets": [{"name": "test_ds", "structure": "test_structure"}],
             },
-            {"id1": DataTypes.Number, "attr1": DataTypes.Boolean},
+            {"id1": Number, "attr1": Boolean},
         ),
     ],
     ids=["type_key", "data_type_key_backward_compat"],
@@ -856,19 +855,19 @@ def test_semantic(script, data_structures, value_domains, external_routines):
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Id_2": Component(
                     name="Id_2",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -899,19 +898,19 @@ def test_run(script, data_structures, datapoints, value_domains, external_routin
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Id_2": Component(
                     name="Id_2",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -927,19 +926,19 @@ def test_run(script, data_structures, datapoints, value_domains, external_routin
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Id_2": Component(
                     name="Id_2",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -980,19 +979,19 @@ def test_run_only_persistent_results(
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Id_2": Component(
                     name="Id_2",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -1030,19 +1029,19 @@ def test_run_only_persistent(script, data_structures, datapoints, value_domains,
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Id_2": Component(
                     name="Id_2",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -1103,13 +1102,13 @@ def test_readme_example():
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -1168,13 +1167,13 @@ def test_readme_run():
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -1283,25 +1282,25 @@ def test_non_mandatory_fill_at():
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Id_2": Component(
                     name="Id_2",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
                 "At_1": Component(
                     name="At_1",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.ATTRIBUTE,
                     nullable=True,
                 ),
@@ -1379,25 +1378,25 @@ def test_non_mandatory_fill_me():
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Id_2": Component(
                     name="Id_2",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
                 "At_1": Component(
                     name="At_1",
-                    data_type=DataTypes.String,
+                    data_type=String,
                     role=Role.ATTRIBUTE,
                     nullable=True,
                 ),
@@ -1532,25 +1531,25 @@ def test_load_data_structure_with_new_schema(data_structure):
         components={
             "Id_1": Component(
                 name="Id_1",
-                data_type=DataTypes.String,
+                data_type=String,
                 role=Role.IDENTIFIER,
                 nullable=False,
             ),
             "Id_2": Component(
                 name="Id_2",
-                data_type=DataTypes.String,
+                data_type=String,
                 role=Role.IDENTIFIER,
                 nullable=False,
             ),
             "Me_1": Component(
                 name="Me_1",
-                data_type=DataTypes.Integer,
+                data_type=Integer,
                 role=Role.MEASURE,
                 nullable=True,
             ),
             "At_1": Component(
                 name="At_1",
-                data_type=DataTypes.String,
+                data_type=String,
                 role=Role.VIRAL_ATTRIBUTE,
                 nullable=True,
             ),
@@ -1739,13 +1738,13 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -1757,7 +1756,7 @@ def test_run_with_scalars(data_structures, datapoints, tmp_path):
             components={
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -1812,13 +1811,13 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
             components={
                 "Id_1": Component(
                     name="Id_1",
-                    data_type=DataTypes.Integer,
+                    data_type=Integer,
                     role=Role.IDENTIFIER,
                     nullable=False,
                 ),
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -1830,7 +1829,7 @@ def test_run_with_scalar_being_none(data_structures, datapoints, tmp_path):
             components={
                 "Me_1": Component(
                     name="Me_1",
-                    data_type=DataTypes.Number,
+                    data_type=Number,
                     role=Role.MEASURE,
                     nullable=True,
                 ),
@@ -2029,10 +2028,10 @@ def test_with_multiple_vd_and_ext_routines():
         "DS_r": Dataset(
             name="DS_r",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", Boolean, Role.MEASURE, True),
             },
             data=pd.DataFrame(
                 {
@@ -2046,10 +2045,10 @@ def test_with_multiple_vd_and_ext_routines():
         "DS_r2": Dataset(
             name="DS_r2",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", Boolean, Role.MEASURE, True),
             },
             data=pd.DataFrame(
                 {
@@ -2063,8 +2062,8 @@ def test_with_multiple_vd_and_ext_routines():
         "DS_r3": Dataset(
             name="DS_r3",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
             },
             data=pd.DataFrame(
                 {
@@ -2076,8 +2075,8 @@ def test_with_multiple_vd_and_ext_routines():
         "DS_r4": Dataset(
             name="DS_r4",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
             },
             data=pd.DataFrame(
                 {
@@ -2137,36 +2136,36 @@ def test_semantic_analysis_list_vd_ext_routines():
         "DS_r": Dataset(
             name="DS_r",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", Boolean, Role.MEASURE, True),
             },
             data=None,
         ),
         "DS_r2": Dataset(
             name="DS_r2",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Id_2": Component("Id_2", DataTypes.String, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
-                "Me_2": Component("Me_2", DataTypes.Boolean, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Id_2": Component("Id_2", String, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
+                "Me_2": Component("Me_2", Boolean, Role.MEASURE, True),
             },
             data=None,
         ),
         "DS_r3": Dataset(
             name="DS_r3",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
             },
             data=None,
         ),
         "DS_r4": Dataset(
             name="DS_r4",
             components={
-                "Id_1": Component("Id_1", DataTypes.Integer, Role.IDENTIFIER, False),
-                "Me_1": Component("Me_1", DataTypes.Number, Role.MEASURE, True),
+                "Id_1": Component("Id_1", Integer, Role.IDENTIFIER, False),
+                "Me_1": Component("Me_1", Number, Role.MEASURE, True),
             },
             data=None,
         ),

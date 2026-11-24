@@ -47,9 +47,6 @@ class DataTypeSimpleRepr(type):
     def __repr__(cls) -> Any:
         return SCALAR_TYPES_CLASS_REVERSE[cls]
 
-    def __hash__(cls) -> int:
-        return id(cls)
-
 
 class ScalarType(metaclass=DataTypeSimpleRepr):
     """ """
@@ -201,8 +198,6 @@ class Number(ScalarType):
 
     @classmethod
     def implicit_cast(cls, value: Any, from_type: Any) -> float:
-        # if pd.isna(value):
-        #     return cls.default
         if from_type in {Integer, Number}:
             return float(value)
 
@@ -280,13 +275,6 @@ class Integer(Number):
             #  pending discussion
             if value.is_integer():
                 return cls.in_range(value, from_type)
-            # else:
-            #     raise RunTimeError(
-            #         "2-1-5-1",
-            #         value=value,
-            #         type_1=SCALAR_TYPES_CLASS_REVERSE[from_type],
-            #         type_2=SCALAR_TYPES_CLASS_REVERSE[cls],
-            #     )
             return cls.in_range(value, from_type)
 
         raise RunTimeError(

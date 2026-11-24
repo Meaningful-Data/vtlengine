@@ -1,0 +1,39 @@
+{
+  "datasets": [
+    {
+      "name": "DS_r",
+      "DataStructure": [
+        {
+          "name": "Id_1",
+          "type": "Integer",
+          "role": "Identifier",
+          "nullable": false
+        },
+        {
+          "name": "Me_1",
+          "type": "String",
+          "role": "Measure",
+          "nullable": true
+        },
+        {
+          "name": "Me_2",
+          "type": "VD_CTY",
+          "role": "Measure",
+          "nullable": false
+        },
+        {
+          "name": "Me_3",
+          "type": "VD_NUM",
+          "role": "Measure",
+          "nullable": false
+        },
+        {
+          "name": "Me_4",
+          "type": "VD_CTY",
+          "role": "Measure",
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

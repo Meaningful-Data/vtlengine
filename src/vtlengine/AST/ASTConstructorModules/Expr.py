@@ -172,6 +172,8 @@ class Expr:
         elif ctx_id == RC.VAR_ID_EXPR:
             return Terminals().visitVarIdExpr(c)
 
+        raise InputValidationException(code="0-5-1-1")
+
     def bin_op_creator(self, ctx: Any) -> BinOp:
         ctx_list = ctx.children
         left_node = self.visitExpr(ctx_list[0])
@@ -201,7 +203,7 @@ class Expr:
 
         if not ctx_list[2].is_terminal and ctx_list[2].rule_index == RC.LISTS[0]:
             right_node = Terminals().visitLists(ctx_list[2])
-        elif not ctx_list[2].is_terminal and ctx_list[2].rule_index == RC.VALUE_DOMAIN_ID[0]:
+        else:  # valueDomainID
             right_node = Terminals().visitValueDomainID(ctx_list[2])
         bin_op_node = BinOp(left=left_node, op=op, right=right_node, **extract_token_info(ctx))
 
@@ -315,6 +317,8 @@ class Expr:
 
         elif ctx.ctx_id == RC.ANALYTIC_FUNCTIONS:
             return self.visitAnalyticFunctions(c)
+
+        raise InputValidationException(code="0-5-1-1")
 
     """
                         -----------------------------------
@@ -479,6 +483,8 @@ class Expr:
         elif ctx.ctx_id == RC.CAST_EXPR_DATASET:
             return self.visitCastExprDataset(ctx)
 
+        raise InputValidationException(code="0-5-1-1")
+
     def visitCallDataset(self, ctx: Any) -> UDOCall:
         """
         callFunction: operatorID LPAREN (parameter (COMMA parameter)*)? RPAREN   ;
@@ -578,15 +584,14 @@ class Expr:
         else:
             param_node = []
 
-        if len(basic_scalar_type) == 1:
-            children_nodes = expr_node + basic_scalar_type
+        children_nodes = expr_node + basic_scalar_type
 
-            return ParamOp(
-                op=op,
-                children=children_nodes,
-                params=param_node,
-                **extract_token_info(ctx),
-            )
+        return ParamOp(
+            op=op,
+            children=children_nodes,
+            params=param_node,
+            **extract_token_info(ctx),
+        )
 
     def visitParameter(self, ctx: Any) -> Any:
         ctx_list = ctx.children
@@ -596,6 +601,8 @@ class Expr:
             return self.visitExpr(c)
         elif c.is_terminal:
             return ID(type_="OPTIONAL", value=c.text, **extract_token_info(c))
+
+        raise InputValidationException(code="0-5-1-1")
 
     """
                         -----------------------------------
@@ -614,6 +621,8 @@ class Expr:
             return self.visitInstrAtom(ctx)
         elif ctx.ctx_id == RC.STRING_DISTANCE_ATOM:
             return self.visitStringDistanceAtom(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitUnaryStringFunction(self, ctx: Any) -> UnaryOp:
         ctx_list = ctx.children
@@ -755,6 +764,8 @@ class Expr:
         elif ctx.ctx_id == RC.BINARY_NUMERIC:
             return self.visitBinaryNumeric(ctx)
 
+        raise InputValidationException(code="0-5-1-1")
+
     def visitUnaryNumeric(self, ctx: Any) -> UnaryOp:
         ctx_list = ctx.children
         c = ctx_list[0]
@@ -818,6 +829,8 @@ class Expr:
             return self.visitIsNullAtom(ctx)
         elif ctx.ctx_id == RC.EXIST_IN_ATOM:
             return self.visitExistInAtom(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitBetweenAtom(self, ctx: Any) -> MulOp:
         ctx_list = ctx.children
@@ -902,6 +915,8 @@ class Expr:
             RC.MONTH_TODAY_ATOM,
         ):
             return self.visitTimeUnaryAtom(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitTimeUnaryAtom(self, ctx: Any) -> UnaryOp:
         ctx_list = ctx.children
@@ -1085,6 +1100,8 @@ class Expr:
         if ctx.ctx_id == RC.NVL_ATOM:
             return self.visitNvlAtom(ctx)
 
+        raise InputValidationException(code="0-5-1-1")
+
     def visitNvlAtom(self, ctx: Any) -> BinOp:
         ctx_list = ctx.children
         c = ctx_list[0]
@@ -1112,6 +1129,8 @@ class Expr:
             return self.visitIntersectAtom(ctx)
         elif ctx.ctx_id == RC.SET_OR_SYM_DIFF_ATOM:
             return self.visitSetOrSYmDiffAtom(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitUnionAtom(self, ctx: Any) -> MulOp:
         ctx_list = ctx.children
@@ -1241,6 +1260,8 @@ class Expr:
             return self.visitValidateHRruleset(ctx)
         elif ctx.ctx_id == RC.VALIDATION_SIMPLE:
             return self.visitValidationSimple(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitValidateDPruleset(self, ctx: Any) -> DPValidation:
         """
@@ -1395,6 +1416,8 @@ class Expr:
         if ctx.ctx_id == RC.AGGR_DATASET:
             return self.visitAggrDataset(ctx)
 
+        raise InputValidationException(code="0-5-1-1")
+
     def visitAggrDataset(self, ctx: Any) -> Aggregation:
         ctx_list = ctx.children
 
@@ -1444,6 +1467,8 @@ class Expr:
             return self.visitLagOrLeadAn(ctx)
         elif ctx.ctx_id == RC.RATIO_TO_REPORT_AN:
             return self.visitRatioToReportAn(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitAnSimpleFunction(self, ctx: Any) -> Analytic:
         ctx_list = ctx.children
@@ -1600,6 +1625,8 @@ class Expr:
         elif not c.is_terminal and c.rule_index == RC.SUBSPACE_CLAUSE[0]:
             return self.visitSubspaceClause(c)
 
+        raise InputValidationException(code="0-5-1-1")
+
     """
                     -----------------------------------
                             Rename Clause
@@ -1752,6 +1779,8 @@ class Expr:
             return self.visitGroupByOrExcept(ctx)
         elif ctx.ctx_id == RC.GROUP_ALL:
             return self.visitGroupAll(ctx)
+
+        raise InputValidationException(code="0-5-1-1")
 
     def visitHavingClause(self, ctx: Any) -> ParamOp:
         """
@@ -2062,3 +2091,5 @@ class Expr:
         elif c.is_terminal:
             opt = c.text
             return ID(type_="OPTIONAL", value=opt, **extract_token_info(ctx))
+
+        raise InputValidationException(code="0-5-1-1")
