@@ -590,13 +590,6 @@ class TestCastOperator:
     @pytest.mark.parametrize(
         "vtl_script,input_data,measure_name,expected_type",
         [
-            # Cast to Integer (same numeric family: measure keeps its name)
-            (
-                "DS_r := cast(DS_1, integer);",
-                [["A", 10.5], ["B", 20.7]],
-                "Me_1",
-                "int",
-            ),
             # Cast to String (mono-measure type change: measure renamed to str_var)
             (
                 "DS_r := cast(DS_1, string);",
@@ -605,7 +598,7 @@ class TestCastOperator:
                 "str",
             ),
         ],
-        ids=["to_integer", "to_string"],
+        ids=["to_string"],
     )
     def test_cast_type_conversion(
         self, temp_data_dir, vtl_script, input_data, measure_name, expected_type

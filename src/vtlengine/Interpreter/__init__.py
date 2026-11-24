@@ -64,7 +64,6 @@ from vtlengine.AST.Grammar.tokens import (
 )
 from vtlengine.AST.UDOTypes import (
     resolve_value_domain_type,
-    udo_accepts,
     udo_call_key,
     udo_component_matches,
     udo_dataset_components,
@@ -220,7 +219,7 @@ def _check_udo_return_type(
         matches = udo_component_matches(declared, result)
         found_type = _format_component_type(result)
     elif isinstance(declared, type):
-        matches = udo_accepts(result.data_type, declared)
+        matches = check_unary_implicit_promotion(result.data_type, declared)
         found_type = _format_type(result.data_type)
     else:
         return
@@ -518,12 +517,6 @@ class InterpreterAnalyzer(ASTTemplate):
                 if not isinstance(declared, Scalar) and not (
                     isinstance(declared, type)
                     and check_unary_implicit_promotion(default.data_type, declared)
-                    # A Number with decimals is no Integer, as for an argument (issue #1356)
-                    and not (
-                        declared == Integer
-                        and isinstance(default.value, float)
-                        and not default.value.is_integer()
-                    )
                 ):
                     raise SemanticError(
                         "1-3-1-1",
@@ -3238,9 +3231,8 @@ class InterpreterAnalyzer(ASTTemplate):
 
     def _udo_scalar_argument(self, op: str, param: Dict[str, Any], argument: Any) -> Scalar:
         """The value a parameter of a basic type takes, given or by default: it must be of the
-        type the parameter declares, or promote to it, and is cast to it. A Number with
-        decimals is no Integer: a literal raises 1-2-18, which the semantic analysis raises too,
-        and a value computed when the script runs is an error of the data (issue #1364). A
+        type the parameter declares, or promote to it, and is cast to it. A Number is no
+        Integer, as the VTL 2.2 manual marks the conversion as not feasible (issue #1388). A
         literal given to a parameter on a value domain must be one of its values (1-1-10-13), as
         its default must, also in the semantic analysis."""
         if isinstance(argument, (Dataset, DataComponent)):
@@ -3250,12 +3242,7 @@ class InterpreterAnalyzer(ASTTemplate):
             )
         scalar_type = param["type"]
         value = argument.value
-        has_decimals = (
-            scalar_type == Integer and isinstance(value, float) and not value.is_integer()
-        )
-        if has_decimals and not argument.literal:
-            raise RunTimeError("2-3-10", op=op, value=value, param_name=param["name"])
-        if not check_unary_implicit_promotion(argument.data_type, scalar_type) or has_decimals:
+        if not check_unary_implicit_promotion(argument.data_type, scalar_type):
             raise SemanticError(
                 "1-2-18",
                 param_type=scalar_type,
@@ -3410,7 +3397,7 @@ class InterpreterAnalyzer(ASTTemplate):
             dataset = self.regular_aggregation_dataset
             value = dataset.components.get(value) if dataset is not None else None
         found = getattr(value, "data_type", None)
-        if found is not None and not udo_accepts(found, declared.data_type):
+        if found is not None and not check_unary_implicit_promotion(found, declared.data_type):
             raise SemanticError(
                 "1-2-18", param_type=declared.data_type, type_name=found, op=op, param_name=param
             )

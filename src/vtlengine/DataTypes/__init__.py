@@ -762,7 +762,7 @@ RESERVED_COMPONENT_NAMES: FrozenSet[str] = frozenset(COMP_NAME_MAPPING.values())
 # Key is the data type, value is the set of types to which it can be implicitly promoted
 IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     String: {String},
-    Number: {Number, Integer},
+    Number: {Number},
     Integer: {Number, Integer},
     TimeInterval: {TimeInterval},
     Date: {Date, TimeInterval},
@@ -784,7 +784,7 @@ IMPLICIT_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
 
 EXPLICIT_WITHOUT_MASK_TYPE_PROMOTION_MAPPING: Dict[Type[ScalarType], Any] = {
     String: {Integer, Number, Boolean, String, Date, TimePeriod, TimeInterval, Duration},
-    Number: {Integer, Boolean, String, Number},
+    Number: {Boolean, String, Number},
     Integer: {Number, Boolean, String, Integer},
     TimeInterval: {Date, TimePeriod, String, TimeInterval},
     Date: {TimePeriod, Date, String},

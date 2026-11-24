@@ -793,11 +793,6 @@ class Time_Shift(Binary):
             raise SemanticError(
                 "1-1-18-4", op=cls.op, param_type="Shift number", correct_type="an Integer Scalar"
             )
-        if shift_value.data_type == Number:
-            # A shift is a whole number of periods, as the one of dateadd (issue #1352)
-            raise SemanticError(
-                "1-1-19-15", op=cls.op, type="Number", name="shiftNumber", expected="Integer"
-            )
         if cls._get_time_id(operand) is None:
             raise SemanticError("1-1-19-8", op=cls.op, comp_type="time dataset")
         # The shifted periods are new values of the time Identifier

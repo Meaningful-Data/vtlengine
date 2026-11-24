@@ -443,96 +443,24 @@ type of one of them, to which the other one is implicitly
 cast. Two types that are only cast to a third one have no
 common type.
 
-.. list-table::
-    :widths: 14 10 10 10 10 10 10 12 10
-    :header-rows: 1
-
-    * - From / To
-      - String
-      - Number
-      - Integer
-      - Boolean
-      - Time
-      - Date
-      - Time_Period
-      - Duration
-    * - **String**
-      - |y|
-      - —
-      - —
-      - —
-      - —
-      - —
-      - —
-      - —
-    * - **Number**
-      - —
-      - |y|
-      - |y|
-      - —
-      - —
-      - —
-      - —
-      - —
-    * - **Integer**
-      - —
-      - |y|
-      - |y|
-      - —
-      - —
-      - —
-      - —
-      - —
-    * - **Boolean**
-      - |y|
-      - —
-      - —
-      - |y|
-      - —
-      - —
-      - —
-      - —
-    * - **Time**
-      - —
-      - —
-      - —
-      - —
-      - |y|
-      - —
-      - —
-      - —
-    * - **Date**
-      - —
-      - —
-      - —
-      - —
-      - |y|
-      - |y|
-      - —
-      - —
-    * - **Time_Period**
-      - —
-      - —
-      - —
-      - —
-      - |y|
-      - —
-      - |y|
-      - —
-    * - **Duration**
-      - —
-      - —
-      - —
-      - —
-      - —
-      - —
-      - —
-      - |y|
+The implicit conversions are those that the table at the end
+of the `Behaviour
+<https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators
+/General%20purpose%20operators/Type%20conversion/index.html#behaviour>`__
+section of the VTL 2.2 reference manual marks as implicit:
+Integer to Number, Boolean to String, Date to Time and
+Time_Period to Time.
 
 Key rules:
 
-- **Integer / Number**: Both directions are implicit
-  (Integer is a subtype of Number). The common type of an
+- **Integer / Number**: An Integer is implicitly converted
+  to a Number (Integer is a subtype of Number). A Number is
+  never converted to an Integer, as the VTL 2.2 reference
+  manual marks that conversion as not feasible: a Number
+  given where an Integer is expected, such as the length of
+  ``substr``, the offset of ``lag`` or an ``integer``
+  parameter of a user defined operator, raises a
+  SemanticError. The common type of an
   Integer and a Number is Number: the common Identifiers
   that the joins (whatever the order of their operands),
   the set operators, the binary operators, ``exists_in``
@@ -605,101 +533,26 @@ operator converts values from one type to another:
     ``string``, ``integer``, ``number``, ``boolean``,
     ``time``, ``date``, ``time_period``, ``duration``.
 
-Supported conversions without mask
------------------------------------
+Supported conversions
+---------------------
 
-.. list-table::
-    :widths: 14 10 10 10 10 10 10 12 10
-    :header-rows: 1
-
-    * - From / To
-      - String
-      - Number
-      - Integer
-      - Boolean
-      - Time
-      - Date
-      - Time_Period
-      - Duration
-    * - **String**
-      - |y|
-      - |y|
-      - |y|
-      - —
-      - |y|
-      - |y|
-      - |y|
-      - |y|
-    * - **Number**
-      - |y|
-      - |y|
-      - |y|
-      - |y|
-      - —
-      - —
-      - —
-      - —
-    * - **Integer**
-      - |y|
-      - |y|
-      - |y|
-      - |y|
-      - —
-      - —
-      - —
-      - —
-    * - **Boolean**
-      - |y|
-      - |y|
-      - |y|
-      - |y|
-      - —
-      - —
-      - —
-      - —
-    * - **Time**
-      - |y|
-      - —
-      - —
-      - —
-      - |y|
-      - —
-      - —
-      - —
-    * - **Date**
-      - |y|
-      - —
-      - —
-      - —
-      - —
-      - |y|
-      - |y|
-      - —
-    * - **Time_Period**
-      - |y|
-      - —
-      - —
-      - —
-      - —
-      - —
-      - |y|
-      - —
-    * - **Duration**
-      - |y|
-      - —
-      - —
-      - —
-      - —
-      - —
-      - —
-      - |y|
-
-Legend: |y| = implemented.
-
-.. |y| unicode:: U+2705
+The conversions that ``cast`` supports are those of the table at the end of
+the `Behaviour
+<https://sdmx-twg.github.io/vtl/v2.2/reference_manual/operators
+/General%20purpose%20operators/Type%20conversion/index.html#behaviour>`_
+section of the VTL 2.2 reference manual: implicit, explicit, and explicit with
+an optional mask. A cast to the same type is accepted too. A conversion that
+the table marks as not feasible raises SemanticError ``1-1-5-4``, or
+``1-1-5-1`` when the target is a value domain.
 
 Conversion details:
 
+- **Number to Integer**: Not feasible, also to a value
+  domain of integers: ``cast(2.7, integer)`` raises
+  ``1-1-5-4``. Use ``round``, ``trunc``, ``floor`` or ``ceil`` to choose how
+  the decimals are dropped: without a number of decimals,
+  ``round`` and ``trunc`` give an Integer, as ``floor`` and
+  ``ceil`` do.
 - **Number/Integer to Boolean**: ``0`` becomes ``false``,
   any other value becomes ``true``.
 - **Boolean to Number/Integer**: ``true`` becomes ``1``
@@ -754,51 +607,10 @@ supported, on both engines:
     DS_r <- DS_1 [ calc Me_2 := cast(Me_1, date, "YYYY-MM-DD"),
                         Me_3 := cast(Me_4, string, "DD.DDD") ];
 
-.. list-table::
-    :widths: 18 41 41
-    :header-rows: 1
-
-    * - Type
-      - Example masks
-      - Example values
-    * - Number
-      - ``DD.DDD``, ``D*,D+``
-      - ``12.375``, ``0,50``
-    * - Integer
-      - ``DD``, ``D+``
-      - ``07``, ``123``
-    * - Date
-      - ``YYYY-MM-DD``, ``YYYYMMDD``, ``{D}D/{M}M/YYYY``,
-        ``YYYY-DDD``, ``YYYY-\WWW-D``, ``YYYY-MM-DD hh:mm:ss``
-      - ``2020-01-15``, ``20200115``, ``15/1/2020``, ``2020-015``,
-        ``2020-W03-3``, ``2020-01-15 10:30:45``
-    * - Time
-      - ``YYYY-MM-DD/YYYY-MM-DD``
-      - ``2020-01-01/2020-12-31``
-    * - Time_Period
-      - ``YYYY\QQ``, ``YYYY\MMM``, ``YYYYP{ppp}``, ``YYYY``,
-        ``YYYY\.MM\.DD``
-      - ``2020Q3``, ``2015M03``, ``2015D365``, ``2015``,
-        ``2000.03.01`` (the daily period ``2000D61``)
-    * - Duration
-      - ``P``, ``\PpP``
-      - ``M``, ``P1M``
-
-Number and Integer masks are made of ``D`` (one digit), ``*`` (any number of
-digits), ``+`` (at least one digit) and, for a Number, a ``.`` or ``,``
-separator between the integer and the decimal parts. A Number written with a
-fixed number of decimals is rounded to them.
-
-The masks of the time types are made of a digit for each letter of a time
-unit: ``C`` century, ``Y`` year, ``S`` semester, ``Q`` quarter, ``M`` month,
-``W`` week, ``D`` day, ``h`` hour, ``m`` minute, ``s`` second, ``d`` decimal
-of second, ``P`` period indicator and ``p`` number of periods. Braces enclose
-the digits that may be left out (``{M}M`` writes April as ``4``), a reverse
-slash writes the next character as it is (``\Q``), and any other character
-appears as it is. A day is within the month when the mask has one, within the
-week when it has a week, and within the year otherwise; a Time_Period mask with
-a day and a month, or a week, writes a daily period. A Time is two Date masks
-separated by ``/``.
+The masks are those of the `Type Conversion and Formatting Mask
+<https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html
+#type-conversion-and-formatting-mask>`_ section of the VTL 2.2 reference manual.
+A Number written with a fixed number of decimals is rounded to them.
 
 A value that its mask does not describe raises RunTimeError ``2-1-5-3``, and
 a mask that does not describe the type raises SemanticError ``1-1-5-4``. A
@@ -820,37 +632,20 @@ Cast on datasets
 ----------------
 
 When ``cast`` is applied to a Dataset, it must have exactly
-**one measure** (monomeasure). The measure is renamed to a
-generic name based on the target type:
-
-.. list-table::
-    :widths: 40 60
-    :header-rows: 1
-
-    * - Target type
-      - Renamed measure
-    * - String
-      - ``str_var``
-    * - Number
-      - ``num_var``
-    * - Integer
-      - ``int_var``
-    * - Boolean
-      - ``bool_var``
-    * - Time
-      - ``time_var``
-    * - Time_Period
-      - ``time_period_var``
-    * - Date
-      - ``date_var``
-    * - Duration
-      - ``duration_var``
+**one measure** (monomeasure). The measure is renamed to the
+default Variable of the target type, as the table at the end of
+`Operators changing the data type
+<https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html
+#operators-changing-the-data-type>`_ in the VTL 2.2 reference manual
+gives it (``num_var``, ``int_var``, ``bool_var``, ...), except for
+a String, which vtlengine names ``str_var`` instead of
+``string_var``.
 
 .. note::
 
     When the source type can be implicitly promoted to the
-    target type (e.g. Boolean to String, Integer to Number,
-    or Number to Integer), the measure is **not** renamed.
+    target type (e.g. Boolean to String or Integer to
+    Number), the measure is **not** renamed.
 
 
 Cast to a value domain
@@ -868,7 +663,7 @@ basic type of the value domain, and then checks that the result is
 a value of the value domain: ``cast(Me_1, VD_1)`` gives the values
 of ``cast(cast(Me_1, <basic type of VD_1>), VD_1)``. The operand
 can be of any type that casts to the basic type without a mask,
-following the tables above, or on another value domain of such a
+following the conversion table of the manual, or on another value domain of such a
 type; any other type raises ``1-1-5-1``. With a mask, the cast to
 the basic type uses it. A value that is not a value of the value
 domain raises ``2-1-5-4`` (``1-1-5-6`` for a literal).

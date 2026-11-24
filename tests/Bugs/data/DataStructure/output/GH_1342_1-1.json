@@ -40,12 +40,6 @@
           "nullable": true
         },
         {
-          "name": "Me_6",
-          "type": "VD_INT",
-          "role": "Measure",
-          "nullable": true
-        },
-        {
           "name": "Me_7",
           "type": "VD_NUM",
           "role": "Measure",

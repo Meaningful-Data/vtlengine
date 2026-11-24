@@ -82,7 +82,6 @@ from vtlengine.duckdb_transpiler.Transpiler.structure_visitor import (
     _UDO_CHECKS_PREFIX,
     _UDO_DEPTH_PREFIX,
     _UDO_NAME_PREFIX,
-    _UDO_OP,
     StructureVisitor,
 )
 from vtlengine.Exceptions import RunTimeError, SemanticError, transformation_output
@@ -818,12 +817,7 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             return str(scope[f"{_UDO_SQL_PREFIX}{name}"])
         sql = self._resolve_udo_param_sql(name, udo_val)
         declared = scope.get(f"__type__{name}") if scope is not None else None
-        if declared is Integer and scope is not None:
-            # A whole Number is the Integer, one with decimals raises 2-3-10, as on the pandas
-            # engine, instead of being rounded (issues #1351, #1364)
-            where = f"{scope[_UDO_OP]}\u00a6{name}".replace("'", "''")
-            sql = f"vtl_udo_integer({sql}, '{where}')"
-        elif declared is Number or declared is String:
+        if declared is Integer or declared is Number or declared is String:
             # A scalar argument is promoted to the type of its parameter, as on the pandas
             # engine: an Integer to a Number, a Boolean to the String true or false (issue #1351)
             sql = f"CAST({sql} AS {get_duckdb_type(declared.__name__)})"
@@ -956,15 +950,6 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
             )
             # The arguments are checked in the order of the parameters
             holds = check if holds == "TRUE" else f"CASE WHEN {check} THEN {holds} END"
-        # A Number with decimals given to an integer parameter raises 2-3-10 before any
-        # constraint is checked, also where the body does not read it, as on the pandas engine
-        # (issue #1351)
-        for param in reversed(params):
-            argument = self._get_udo_param(param["name"])
-            if param["type"] is Integer and argument is not None:
-                value = self._resolve_udo_param(param["name"], argument)
-                check = f"CASE WHEN {value} IS NULL THEN TRUE ELSE TRUE END"
-                holds = check if holds == "TRUE" else f"CASE WHEN {check} THEN {holds} END"
         if holds == "TRUE":
             return sql
         if is_dataset:
@@ -3997,7 +3982,7 @@ FROM (
 
         def scalar_bound(value: Any, mode: str) -> str:
             # A bound that a Scalar gives is read as any Scalar, the argument of a scalar
-            # parameter included, and checked and rounded as on the pandas engine
+            # parameter included, and checked as on the pandas engine
             # (scalar_window_bound): here when its value is known, else where the query runs,
             # once (issue #1355)
             if not isinstance(value, AST.VarID):
@@ -6430,8 +6415,7 @@ FROM (
         a statement computes or the argument of a scalar parameter, an expression included. A
         null offset raises 2-1-18-1, as on the pandas engine: here when its value is known, else
         where the query runs, once, also where the operand has no data points (issue #1355). A
-        known value is written as it is, and a Number is rounded half away from zero, as on the
-        pandas engine."""
+        known value is written as it is."""
         known, value = self._known_scalar_value(offset.value)
         if known and value is None:
             raise RunTimeError("2-1-18-1", op=op, param_type="Offset", correct_type="Integer")

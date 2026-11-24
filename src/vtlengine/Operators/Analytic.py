@@ -44,7 +44,6 @@ from vtlengine.DataTypes._time_checking import DATE_COMPARISON_DTYPE, _from_date
 from vtlengine.DataTypes.TimeHandling import PERIOD_IND_MAPPING, PERIOD_IND_MAPPING_REVERSE
 from vtlengine.Exceptions import RunTimeError, SemanticError
 from vtlengine.Model import Component, Dataset, Role
-from vtlengine.Operators.Numeric import _half_away_from_zero
 from vtlengine.Utils.__Virtual_Assets import VirtualCounter
 from vtlengine.Utils._dataframe import merge_frames
 from vtlengine.Utils._duckdb import query_connection
@@ -61,16 +60,12 @@ WINDOW_BOUND = "a non-negative Integer"
 
 
 def scalar_window_bound(op: str, value: Any) -> int:
-    """The bound of a window that a Scalar gives, as the bound written in the window: a Number
-    is rounded half away from zero, as the offset of lag or lead. A null or a negative bound
-    raises 2-1-18-1 and one beyond the range of an Integer 2-1-5-1, on both engines and
-    whatever ran before (issue #1355)."""
-    from_type = Number if isinstance(value, float) else Integer
-    if not pd.isnull(value) and from_type is Number:
-        value = _half_away_from_zero(value)
+    """The bound of a window that an Integer Scalar gives, as the bound written in the window.
+    A null or a negative bound raises 2-1-18-1 and one beyond the range of an Integer 2-1-5-1,
+    on both engines and whatever ran before (issue #1355)."""
     if pd.isnull(value) or value < 0:
         raise RunTimeError("2-1-18-1", op=op, param_type="Window bound", correct_type=WINDOW_BOUND)
-    return Integer.in_range(value, from_type)
+    return Integer.in_range(value, Integer)
 
 
 def _sql_literal(value: Any) -> str:
