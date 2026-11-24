@@ -1,0 +1,10 @@
+define datapoint ruleset dpr_two ( valuedomain VD_CTY as C , VD_NUM as N ) is
+    r1 : N > 1 errorcode "LOW"
+end datapoint ruleset;
+
+define hierarchical ruleset hr_cond ( valuedomain condition VD_GRP as g rule VD_CTY ) is
+    r1 : when g = "A" then DE = ES + FR
+end hierarchical ruleset;
+
+DS_r1 <- check_datapoint ( DS_1 , dpr_two components Me_1 , Me_2 all );
+DS_r2 <- check_hierarchy ( DS_2 , hr_cond condition Id_2 rule Id_1 all );
