@@ -8740,16 +8740,18 @@ class ValueDomainBugs(BugHelper):
         Status: OK
         Expression: DS_r <- check_datapoint ( DS_1 , dpr_cty components Me_2 all );
         Description: Me_2 is defined on VD_CTY2, a value domain of the same basic type as
-                     VD_CTY, the one it is bound to.
+                     VD_CTY, the one it is bound to, so it is accepted and downcast into VD_CTY
+                     (issue #1392): its value IT, a value of VD_CTY2 but not of VD_CTY, raises
+                     2-1-5-4. It raised 1-1-10-12.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1338
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(
             code="GH_1338_4",
             number_inputs=1,
-            exception_code="1-1-10-12",
-            exception_message="Component Me_2 of type VD_CTY2 is not defined on the Value Domain "
-            "VD_CTY",
+            exception_code="2-1-5-4",
+            exception_message="At op check_datapoint: Cannot cast IT of String to Value Domain "
+            "VD_CTY.",
             vd_names=self.vd_1338,
         )
 
@@ -8811,16 +8813,17 @@ class ValueDomainBugs(BugHelper):
         Status: OK
         Expression: DS_r <- hierarchy ( DS_1 , hr_cty rule Id_1 );
         Description: Id_1 is defined on VD_CTY2, which has the basic type of VD_CTY and more
-                     values. hierarchy kept the values outside VD_CTY.
+                     values, so it is accepted and downcast into VD_CTY (issue #1392): its value
+                     IT, outside VD_CTY, raises 2-1-5-4. hierarchy kept the values outside
+                     VD_CTY, and then raised 1-1-10-12.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1339
         Goal: Check Exception.
         """
         self.NewSemanticExceptionTest(
             code="GH_1339_2",
             number_inputs=1,
-            exception_code="1-1-10-12",
-            exception_message="Component Id_1 of type VD_CTY2 is not defined on the Value Domain "
-            "VD_CTY of the ruleset hr_cty",
+            exception_code="2-1-5-4",
+            exception_message="At op hierarchy: Cannot cast IT of String to Value Domain VD_CTY.",
             vd_names=self.vd_1339,
         )
 
@@ -9757,7 +9760,7 @@ class ValueDomainBugs(BugHelper):
             number_inputs=1,
             exception_code="1-1-10-12",
             exception_message="Component Id_3 of type String is not defined on the Value Domain "
-            "VD_NUM of the ruleset HR_1, nor of a basic type that promotes to its type Number",
+            "VD_NUM of the ruleset HR_1, nor of its basic type Number",
             vd_names=self.vd_1348_n,
         )
 
@@ -9768,17 +9771,19 @@ class ValueDomainBugs(BugHelper):
                         rule VD_STR ) is r1 : when Y > 2020 then A = B
                     end hierarchical ruleset;
                     DS_r <- hierarchy ( DS_1 , HR_1 condition Id_3 rule Id_2 all );
-        Description: The condition Component Id_3 is an Integer, which promotes to Number,
-                     the basic type of VD_NUM, so the ruleset applies to it: A is computed in
-                     2021 only, and Id_3 stays an Integer. It raised 1-1-10-12, as Id_3 is not
-                     defined on VD_NUM.
+        Description: The condition Component Id_3 is an Integer, not of Number, the basic type
+                     of VD_NUM: a value is downcast only into a value domain of its own basic
+                     type, so it raises 1-1-10-12 (issue #1392). Since #1348 it was taken, as an
+                     Integer promotes to Number.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
-        Goal: Check Result.
+        Goal: Check Exception.
         """
-        self.BaseTest(
+        self.NewSemanticExceptionTest(
             code="GH_1348_8e",
             number_inputs=1,
-            references_names=["1"],
+            exception_code="1-1-10-12",
+            exception_message="Component Id_3 of type Integer is not defined on the Value Domain "
+            "VD_NUM of the ruleset HR_1, nor of its basic type Number.",
             vd_names=self.vd_1348_n,
         )
 
@@ -9810,16 +9815,15 @@ class ValueDomainBugs(BugHelper):
                     end datapoint ruleset;
                     DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 , Me_2 all_measures );
         Description: Me_1 is on VD_STR2, another value domain of the basic type of VD_STR, so
-                     it is rejected, as a basic String would not be.
+                     it is accepted, as a basic String is (issue #1392): its values A and B are
+                     values of VD_STR. Me_1 keeps VD_STR2 in the result. It raised 1-1-10-12.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1348
-        Goal: Check Exception.
+        Goal: Check Result.
         """
-        self.NewSemanticExceptionTest(
+        self.BaseTest(
             code="GH_1348_8g",
             number_inputs=1,
-            exception_code="1-1-10-12",
-            exception_message="Component Me_1 of type VD_STR2 is not defined on the Value Domain "
-            "VD_STR of the ruleset DPR_1",
+            references_names=["1"],
             vd_names=self.vd_1348_n,
         )
 
@@ -10196,26 +10200,6 @@ class ValueDomainBugs(BugHelper):
             vd_names=self.vd_1391,
         )
 
-    def test_GH_1391_2(self):
-        """
-        Status: OK
-        Expression: define datapoint ruleset dpr_num ( valuedomain VD_NUM as N ) is
-                        r1 : N > 1 errorcode "LOW" end datapoint ruleset;
-                    DS_r <- check_datapoint ( DS_1 , dpr_num components Me_2 all );
-        Description: The Integer Me_2 is cast into VD_NUM (1.5, 2.0, 3.0), so its value 1 raises
-                     2-1-5-4. Both engines evaluated the rule on it, false with LOW.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1391
-        Goal: Check Exception.
-        """
-        self.NewSemanticExceptionTest(
-            code="GH_1391_2",
-            number_inputs=1,
-            exception_code="2-1-5-4",
-            exception_message="At op check_datapoint: Cannot cast 1 of Number to Value Domain "
-            "VD_NUM.",
-            vd_names=self.vd_1391,
-        )
-
     def test_GH_1391_3(self):
         """
         Status: OK
@@ -10233,25 +10217,6 @@ class ValueDomainBugs(BugHelper):
             exception_code="2-1-5-4",
             exception_message="At op check_hierarchy: Cannot cast IT of String to Value Domain "
             "VD_CTY.",
-            vd_names=self.vd_1391,
-        )
-
-    def test_GH_1391_4(self):
-        """
-        Status: OK
-        Expression: define hierarchical ruleset hr_cty ( valuedomain rule VD_CTY ) is
-                        r1 : DE = ES + FR end hierarchical ruleset;
-                    DS_r <- hierarchy ( DS_1 , hr_cty rule Id_1 all );
-        Description: As case 3, hierarchy raises 2-1-5-4 for IT. Both engines kept it in the
-                     result.
-        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1391
-        Goal: Check Exception.
-        """
-        self.NewSemanticExceptionTest(
-            code="GH_1391_4",
-            number_inputs=1,
-            exception_code="2-1-5-4",
-            exception_message="At op hierarchy: Cannot cast IT of String to Value Domain VD_CTY.",
             vd_names=self.vd_1391,
         )
 
@@ -10312,6 +10277,90 @@ class ValueDomainBugs(BugHelper):
             number_inputs=2,
             references_names=["1", "2"],
             vd_names=self.vd_1391,
+        )
+
+    vd_1392 = [
+        "GH_1392-VD_NUM",
+        "GH_1392-VD_INT",
+        "GH_1392-VD_CTY",
+        "GH_1392-VD_CTY2",
+        "GH_1392-VD_CTY4",
+        "GH_1392-VD_YEAR",
+    ]
+
+    def test_GH_1392_1(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset dpr_num ( valuedomain VD_NUM as N ) is
+                        r1 : N > 1 errorcode "LOW" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , dpr_num components Me_1 all_measures );
+        Description: Me_1 is on VD_INT, a value domain of Integers, not of Number, the basic
+                     type of VD_NUM: a value is downcast only into a value domain of its own
+                     basic type, so it raises 1-1-10-12, as a plain Integer does.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1392
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1392_1",
+            number_inputs=1,
+            exception_code="1-1-10-12",
+            exception_message="Component Me_1 of type VD_INT is not defined on the Value Domain "
+            "VD_NUM of the ruleset dpr_num, nor of its basic type Number.",
+            vd_names=self.vd_1392,
+        )
+
+    def test_GH_1392_3(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset hr_cty ( valuedomain rule VD_CTY ) is
+                        r1 : DE = ES + FR end hierarchical ruleset;
+                    DS_r <- check_hierarchy ( DS_1 , hr_cty rule Id_1 all );
+        Description: The rule Identifier Id_1, on VD_CTY2, is accepted by a ruleset on VD_CTY:
+                     DE is true. Id_1 keeps VD_CTY2, as the code items of the rules are values
+                     of it. It raised 1-1-10-12.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1392
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1392_3", number_inputs=1, references_names=["1"], vd_names=self.vd_1392
+        )
+
+    def test_GH_1392_4(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset hr_cty ( valuedomain rule VD_CTY ) is
+                        r1 : DE = ES + FR end hierarchical ruleset;
+                    DS_r <- hierarchy ( DS_1 , hr_cty rule Id_1 all );
+        Description: The rule Identifier Id_1, on VD_CTY4 (ES, FR, IT), is accepted by a ruleset
+                     on VD_CTY. hierarchy writes the computed DE, which is not a value of
+                     VD_CTY4, into Id_1, so Id_1 has the basic type String in the result, as for
+                     a ruleset on a variable.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1392
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1392_4", number_inputs=1, references_names=["1"], vd_names=self.vd_1392
+        )
+
+    def test_GH_1392_5(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset hr_cty ( valuedomain rule VD_CTY ) is
+                        r1 : DE = ES + FR end hierarchical ruleset;
+                    DS_r <- check_hierarchy ( DS_1 , hr_cty rule Id_1 all );
+        Description: The rule Identifier Id_1, on VD_CTY2, is downcast into VD_CTY, the value
+                     domain of the ruleset, so its value IT, a value of VD_CTY2 but not of
+                     VD_CTY, raises 2-1-5-4, also as no rule names it.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1392
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1392_5",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            exception_message="At op check_hierarchy: Cannot cast IT of String to Value Domain "
+            "VD_CTY.",
+            vd_names=self.vd_1392,
         )
 
     vd_1349 = ["GH_1349-VD_TP", "GH_1349-VD_DATE", "GH_1349-VD_B", "GH_1349-VD_1"]

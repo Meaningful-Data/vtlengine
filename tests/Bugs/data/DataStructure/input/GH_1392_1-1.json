@@ -1,7 +1,7 @@
 {
   "datasets": [
     {
-      "name": "DS_r",
+      "name": "DS_1",
       "DataStructure": [
         {
           "name": "Id_1",
@@ -10,21 +10,21 @@
           "nullable": false
         },
         {
-          "name": "Id_2",
-          "role": "Identifier",
-          "type": "VD_STR",
-          "nullable": false
-        },
-        {
-          "name": "Id_3",
-          "role": "Identifier",
-          "type": "Integer",
-          "nullable": false
-        },
-        {
           "name": "Me_1",
           "role": "Measure",
-          "type": "Integer",
+          "type": "VD_INT",
+          "nullable": true
+        },
+        {
+          "name": "Me_2",
+          "role": "Measure",
+          "type": "VD_CTY2",
+          "nullable": true
+        },
+        {
+          "name": "Me_3",
+          "role": "Measure",
+          "type": "VD_YEAR",
           "nullable": true
         }
       ]

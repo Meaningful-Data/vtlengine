@@ -171,9 +171,9 @@ def check_value_domains(
     data: Optional[pd.DataFrame] = None,
 ) -> None:
     """Each value domain of a ruleset must be given, and the component bound to it must be
-    defined on it, or be of a basic type that promotes to the basic type of the value domain
-    (issue #1348): a component on another value domain is rejected. The values in data of a
-    component of a basic type are cast into the value domain, so each must be one of its values
+    defined on it, or be of its basic type, plain or on another value domain: a value is
+    downcast only into a value domain of its own basic type. The values in data of a component
+    that is not defined on it are cast into the value domain, so each must be one of its values
     (2-1-5-4), as cast does."""
     for name, comp_name in bindings:
         if value_domains is None:
@@ -181,11 +181,8 @@ def check_value_domains(
         if name not in value_domains:
             raise SemanticError("1-2-8", name=name)
         component = components[comp_name]
-        if component.value_domain is None:
-            accepted = check_unary_implicit_promotion(component.data_type, value_domains[name].type)
-        else:
-            accepted = component.value_domain.name == name
-        if not accepted:
+        on_domain = getattr(component.value_domain, "name", None) == name
+        if not on_domain and component.data_type is not value_domains[name].type:
             raise SemanticError(
                 "1-1-10-12",
                 op=op,
@@ -195,7 +192,7 @@ def check_value_domains(
                 ruleset=ruleset,
                 basic_type=SCALAR_TYPES_CLASS_REVERSE[value_domains[name].type],
             )
-        if component.value_domain is None and data is not None:
+        if not on_domain and data is not None:
             check_values(data[comp_name], value_domains[name], op)
 
 
