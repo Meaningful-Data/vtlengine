@@ -178,7 +178,7 @@ DS#At 🟢 · any scalar → any type
 .. raw:: html
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_1</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_1</th><th class="head">Me_2</th><th class="head">At_1</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>1</td><td>5</td><td></td></tr><tr><td>1</td><td>B</td><td>2</td><td>10</td><td>P</td></tr><tr><td>2</td><td>A</td><td>3</td><td>12</td><td></td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">str_var</th></tr></thead><tbody><tr><td>1</td><td>A</td><td></td></tr><tr><td>1</td><td>B</td><td>P</td></tr><tr><td>2</td><td>A</td><td></td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">string_var</th></tr></thead><tbody><tr><td>1</td><td>A</td><td></td></tr><tr><td>1</td><td>B</td><td>P</td></tr><tr><td>2</td><td>A</td><td></td></tr></tbody></table>
 
 .. raw:: html
 
@@ -235,7 +235,7 @@ DS#At (viral) 🟢 · any scalar → any type
 .. raw:: html
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_2</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_1</th><th class="head">Me_2</th><th class="head">At_1</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>1</td><td>5</td><td></td></tr><tr><td>1</td><td>B</td><td>2</td><td>10</td><td>P</td></tr><tr><td>2</td><td>A</td><td>3</td><td>12</td><td></td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">str_var</th><th class="head">At_1</th></tr></thead><tbody><tr><td>1</td><td>A</td><td></td><td></td></tr><tr><td>1</td><td>B</td><td>P</td><td>P</td></tr><tr><td>2</td><td>A</td><td></td><td></td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>DS_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">string_var</th><th class="head">At_1</th></tr></thead><tbody><tr><td>1</td><td>A</td><td></td><td></td></tr><tr><td>1</td><td>B</td><td>P</td><td>P</td></tr><tr><td>2</td><td>A</td><td></td><td></td></tr></tbody></table>
 
 .. raw:: html
 
@@ -255,7 +255,7 @@ DS#At (viral) 🟢 · any scalar → any type
 .. raw:: html
 
    <table class="docutils align-default om-data"><caption><span class="caption-text">Input <code>DS_2</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">Me_1</th><th class="head">Me_2</th><th class="head">At_1</th></tr></thead><tbody><tr><td>1</td><td>A</td><td>1</td><td>5</td><td></td></tr><tr><td>1</td><td>B</td><td>2</td><td>10</td><td>P</td></tr><tr><td>2</td><td>A</td><td>3</td><td>12</td><td></td></tr></tbody></table>
-   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>SC_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">str_var</th><th class="head">At_1</th></tr></thead><tbody><tr><td>1</td><td>A</td><td></td><td></td></tr><tr><td>1</td><td>B</td><td>P</td><td>P</td></tr><tr><td>2</td><td>A</td><td></td><td></td></tr></tbody></table>
+   <table class="docutils align-default om-data"><caption><span class="caption-text">Expected <code>SC_r</code></span></caption><thead><tr><th class="head">Id_1</th><th class="head">Id_2</th><th class="head">string_var</th><th class="head">At_1</th></tr></thead><tbody><tr><td>1</td><td>A</td><td></td><td></td></tr><tr><td>1</td><td>B</td><td>P</td><td>P</td></tr><tr><td>2</td><td>A</td><td></td><td></td></tr></tbody></table>
 
 .. raw:: html
 

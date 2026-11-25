@@ -15314,11 +15314,11 @@
     }
   },
   "meta": {
-    "date": "2026-11-24",
+    "date": "2026-11-25",
     "duckdb_version": "1.4.4",
     "pandas_version": "2.3.3",
     "spec_commit": "1bea1153beda0dc553767e7ca8fe16a0d51c5b34",
-    "vtlengine_commit": "9e1c81a66",
-    "vtlengine_version": "1.10.0rc3"
+    "vtlengine_commit": "70025d0b4",
+    "vtlengine_version": "1.10.0"
   }
 }

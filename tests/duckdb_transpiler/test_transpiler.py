@@ -1348,7 +1348,7 @@ class TestMembershipOperator:
         result = transpiler.visit_BinOp(membership_op)
 
         # Full SQL: select identifiers and the extracted component
-        expected_sql = 'SELECT "Id_1", "Id_2", "Id_2" AS "str_var" FROM "DS_1"'
+        expected_sql = 'SELECT "Id_1", "Id_2", "Id_2" AS "string_var" FROM "DS_1"'
         assert_sql_equal(result, expected_sql)
 
 

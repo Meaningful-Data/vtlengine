@@ -16,7 +16,7 @@
                     "nullable": false
                 },
                 {
-                    "name": "str_var",
+                    "name": "string_var",
                     "role": "Measure",
                     "type": "String",
                     "nullable": true

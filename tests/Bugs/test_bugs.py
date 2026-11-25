@@ -2579,10 +2579,10 @@ class SetBugs(BugHelper):
     def test_GH_796(self):
         """
         Expression: res <- union(count(cd # ID group by CI), count(cd group by CI));
-        Description: ``Membership.validate`` added the synthetic ``str_var`` measure
+        Description: ``Membership.validate`` added the synthetic ``string_var`` measure
             (from ``cd # ID``) directly into the shared operand ``cd``. The mutation
             leaked into the later ``count(cd ...)`` over the multi-measure ``cd``,
-            so the DuckDB transpiler emitted ``COUNT(CASE WHEN ... "str_var" ...)``
+            so the DuckDB transpiler emitted ``COUNT(CASE WHEN ... "string_var" ...)``
             against a table without that column, raising ``BinderException``. The
             union of the two count branches surfaced it.
         Git Issue: GH_796.
@@ -7548,7 +7548,7 @@ class CastBugs(BugHelper):
         Expression: DS_r1 <- cast ( DS_1 , VD_INT ); DS_r2 <- cast ( DS_2 , VD_CODE );
                     DS_r3 <- cast ( DS_2 , VD_NUM ) + 1; DS_r4 <- cast ( DS_2 , string );
         Description: The Measure of a Data Set cast to a value domain is named as in a cast to
-                     its basic type: int_var and str_var, which the DuckDB engine left empty.
+                     its basic type: int_var and string_var, which the DuckDB engine left empty.
                      The Integers of DS_2, with a null, are cast to "2" and not "2.0" on the
                      pandas engine.
         Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1342

@@ -10,7 +10,7 @@
           "nullable": false
         },
         {
-          "name": "str_var",
+          "name": "string_var",
           "type": "String",
           "role": "Measure",
           "nullable": true

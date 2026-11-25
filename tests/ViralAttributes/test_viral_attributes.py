@@ -46,8 +46,8 @@ execution_codes = [
     # -- membership keeps viral attributes, issue #944 (row-preserving: no rule needed) --
     ("11-1", 1),  # measure target: Me_1 kept + all three virals copied per row
     ("11-2", 1),  # identifier target: promoted to int_var, virals kept
-    ("11-3", 1),  # plain-attribute target: promoted to str_var (At_1 gone), virals kept
-    ("11-4", 1),  # viral target: promoted to str_var and kept as viral (#1257)
+    ("11-3", 1),  # plain-attribute target: promoted to string_var (At_1 gone), virals kept
+    ("11-4", 1),  # viral target: promoted to string_var and kept as viral (#1257)
     ("11-5", 1),  # aggregate-max rule defined: still copied per row, NOT collapsed (#906)
     ("11-6", 1),  # unary over membership: abs(DS_1#Me_1)
     ("11-7", 1),  # calc over a viral-target membership (regression: BinderException)
@@ -159,9 +159,9 @@ def test_rule_constant_type(code: str, exception_code: str) -> None:
 
 
 # -- Reserved component names: a viral attribute may not use the names the engine
-# assigns to automatically generated measures (str_var, int_var, ...), issue #944 --
+# assigns to automatically generated measures (string_var, int_var, ...), issue #944 --
 reserved_name_script_codes = [
-    ("13-2", "1-3-3-7"),  # rename a viral attribute to str_var
+    ("13-2", "1-3-3-7"),  # rename a viral attribute to string_var
     ("13-3", "1-3-3-7"),  # calc viral attribute bool_var
 ]
 
