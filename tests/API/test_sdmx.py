@@ -16,8 +16,22 @@ import pandas as pd
 import pytest
 from pysdmx.io import get_datasets
 from pysdmx.io.pd import PandasDataset
-from pysdmx.model import DataflowRef, Reference, Ruleset, TransformationScheme, UserDefinedOperator
+from pysdmx.model import (
+    Code,
+    Codelist,
+    Components,
+    DataflowRef,
+    DataType,
+    HierarchicalCode,
+    Hierarchy,
+    Reference,
+    Ruleset,
+    TransformationScheme,
+    UserDefinedOperator,
+)
+from pysdmx.model.dataflow import Component as SDMXComponent
 from pysdmx.model.dataflow import Dataflow, Schema
+from pysdmx.model.dataflow import Role as SDMXRole
 from pysdmx.model.vtl import VtlDataflowMapping
 
 from tests.Helper import TestHelper, _use_duckdb_backend
@@ -401,6 +415,68 @@ def test_to_vtl_json_function(data, structure, path_reference):
     with open(path_reference, "r") as file:
         reference = json.load(file)
     assert result == reference
+
+
+def _codelist_component(id_, role, dtype, **kwargs):
+    attachment_level = "O" if role == SDMXRole.ATTRIBUTE else None
+    return SDMXComponent(
+        id=id_,
+        required=role == SDMXRole.DIMENSION,
+        role=role,
+        concept=id_,
+        local_dtype=dtype,
+        attachment_level=attachment_level,
+        **kwargs,
+    )
+
+
+@pytest.mark.parametrize(
+    "codelist_types, types",
+    [
+        (False, ["String", "Integer", "Number", "String", "String", "String", "String"]),
+        (True, ["CL_AREA", "Integer", "Number", "VL_STATUS", "String", "CL_CONF", "String"]),
+    ],
+)
+def test_to_vtl_json_codelist_types(codelist_types, types):
+    """GH_1410: a Component represented by a codelist or a valuelist, resolved or referenced by
+    its URN, is typed by its id when codelist_types is set; any other keeps its basic type."""
+    codes = [Code(id="A"), Code(id="B")]
+    cl_area = Codelist(id="CL_AREA", agency="MD", version="1.0", items=codes)
+    vl_status = Codelist(
+        id="VL_STATUS", agency="MD", version="1.0", items=codes, sdmx_type="valuelist"
+    )
+    h_area = Hierarchy(
+        id="H_AREA", agency="MD", version="1.0", name="H_AREA", codes=[HierarchicalCode(id="A")]
+    )
+    urn = "urn:sdmx:org.sdmx.infomodel.codelist.{}=MD:{}(1.0)"
+    components = [
+        _codelist_component("Id_1", SDMXRole.DIMENSION, DataType.STRING, local_codes=cl_area),
+        _codelist_component("Id_2", SDMXRole.DIMENSION, DataType.INTEGER),
+        _codelist_component("Me_1", SDMXRole.MEASURE, DataType.DOUBLE),
+        _codelist_component("Me_2", SDMXRole.MEASURE, DataType.STRING, local_codes=vl_status),
+        _codelist_component("Me_3", SDMXRole.MEASURE, DataType.STRING, local_codes=h_area),
+        _codelist_component(
+            "At_1",
+            SDMXRole.ATTRIBUTE,
+            DataType.STRING,
+            local_enum_ref=urn.format("Codelist", "CL_CONF"),
+        ),
+        _codelist_component(
+            "At_2",
+            SDMXRole.ATTRIBUTE,
+            DataType.STRING,
+            local_enum_ref=urn.format("Hierarchy", "H_CONF"),
+        ),
+    ]
+    schema = Schema(
+        context="datastructure",
+        agency="MD",
+        id="DSD_1",
+        version="1.0",
+        components=Components(components),
+    )
+    result = to_vtl_json(schema, dataset_name="DS_1", codelist_types=codelist_types)
+    assert [c["type"] for c in result["datasets"][0]["DataStructure"]] == types
 
 
 params_exception_vtl_to_json = [

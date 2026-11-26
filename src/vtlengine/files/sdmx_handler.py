@@ -17,9 +17,11 @@ from pysdmx.io import get_datasets as sdmx_get_datasets
 from pysdmx.io.format import Format
 from pysdmx.io.input_processor import process_string_to_read
 from pysdmx.io.pd import PandasDataset
+from pysdmx.model import Codelist
 from pysdmx.model.dataflow import Component as SDMXComponent
 from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
 from pysdmx.model.dataflow import Role as SDMX_Role
+from pysdmx.util import parse_urn
 
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.Model import Component, Role
@@ -333,9 +335,24 @@ def load_sdmx_structure(
     return {"datasets": all_datasets}
 
 
+def _component_type(component: SDMXComponent, codelist_types: bool) -> str:
+    """The VTL type of an SDMX Component: the id of the codelist or valuelist that represents
+    it when ``codelist_types`` is set, else the VTL basic type of its SDMX data type."""
+    if codelist_types:
+        enumeration = component.enumeration
+        if isinstance(enumeration, Codelist):
+            return enumeration.id
+        if enumeration is None and component.enum_ref is not None:
+            reference = parse_urn(component.enum_ref)
+            if reference.sdmx_type in ("Codelist", "ValueList"):
+                return reference.id
+    return VTL_DTYPES_MAPPING[component.dtype]
+
+
 def to_vtl_json(
     structure: Union[DataStructureDefinition, Schema, Dataflow],
     dataset_name: Optional[str] = None,
+    codelist_types: bool = False,
 ) -> Dict[str, Any]:
     """
     Convert a pysdmx structure to VTL-compatible JSON representation.
@@ -348,6 +365,10 @@ def to_vtl_json(
         structure: An instance of DataStructureDefinition, Schema, or Dataflow.
         dataset_name: The name of the resulting VTL dataset. If not provided,
             uses the structure's ID (or Dataflow's ID for Dataflow objects).
+        codelist_types: If True, a Component represented by a codelist or a valuelist
+            (resolved, or only referenced by its URN) is typed by the id of that codelist or
+            valuelist, which must then be given as a value domain. Any other Component keeps
+            the VTL basic type of its SDMX data type. Defaults to False.
 
     Returns:
         A dictionary representing the dataset in VTL format, with keys for
@@ -390,7 +411,7 @@ def to_vtl_json(
     _components.extend(structure.components.attributes)
 
     for c in _components:
-        _type = VTL_DTYPES_MAPPING[c.dtype]
+        _type = _component_type(c, codelist_types)
         _nullability = c.role != SDMX_Role.DIMENSION
         _role = VTL_ROLE_MAPPING[c.role]
 
