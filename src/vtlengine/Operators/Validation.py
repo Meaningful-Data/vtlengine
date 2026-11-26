@@ -140,12 +140,14 @@ def bind_value_domains(
     components: Dict[str, Component],
     value_domains: Optional[Dict[str, ValueDomain]],
     data: Optional[pd.DataFrame] = None,
+    skip_checks: bool = False,
 ) -> Dict[str, str]:
     """The components a datapoint ruleset on value domains is called with, bound in order to the
     value domains of its signature, or their aliases.
 
     The call must list the components, as many as the value domains, which must be given, and
-    each component must be accepted by check_value_domains, with the values of data."""
+    each component must be accepted by check_value_domains, with the values of data, unless
+    skip_checks is set (issue #1413)."""
     if not called:
         raise SemanticError("1-1-10-14", op=CHECK_DATAPOINT, ruleset=ruleset)
     if len(called) != len(signature):
@@ -156,9 +158,15 @@ def bind_value_domains(
             expected=len(signature),
             found=len(called),
         )
-    check_value_domains(
-        CHECK_DATAPOINT, ruleset, zip(signature.values(), called), components, value_domains, data
-    )
+    if not skip_checks:
+        check_value_domains(
+            CHECK_DATAPOINT,
+            ruleset,
+            zip(signature.values(), called),
+            components,
+            value_domains,
+            data,
+        )
     return dict(zip(signature, called))
 
 

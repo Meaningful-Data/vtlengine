@@ -471,6 +471,8 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
 
     # cast(time_period, string) format
     time_period_output_format: str = field(default="vtl")
+    # The value domain checks of rulesets are skipped (issue #1413)
+    skip_value_domain_checks: bool = False
 
     # Runtime context
     current_assignment: str = ""
@@ -723,7 +725,10 @@ class SQLTranspiler(StructureVisitor, ASTTemplate):
         """The operand of a ruleset on value domains, raising VTL 2-1-5-4 on a value of a
         component not defined on the value domain it is bound to that is not one of it. The check
         filters the rows of a materialized CTE, which the filters of the ruleset do not reach,
-        so it reads every value, also of a component or a code item no rule reads."""
+        so it reads every value, also of a component or a code item no rule reads. Nothing is
+        checked when the value domain checks are skipped (issue #1413)."""
+        if self.skip_value_domain_checks:
+            return table_src
         checks = [
             f"{self._downcast_expr(quote_name(comp), op, self.value_domains[name])} "
             f"IS NOT DISTINCT FROM {quote_name(comp)}"
@@ -4808,7 +4813,12 @@ FROM (
         if dpr_info["signature_type"] == "valuedomain" and signature:
             bindings = list(zip(signature.values(), node.components or []))
             signature = bind_value_domains(
-                node.ruleset_name, signature, node.components, ds.components, self.value_domains
+                node.ruleset_name,
+                signature,
+                node.components,
+                ds.components,
+                self.value_domains,
+                skip_checks=self.skip_value_domain_checks,
             )
             table_src = self._downcast_source(table_src, tokens.CHECK_DATAPOINT, bindings, ds)
 

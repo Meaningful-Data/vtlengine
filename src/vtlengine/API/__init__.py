@@ -209,6 +209,7 @@ def semantic_analysis(
     value_domains: Optional[ValueDomainsInput] = None,
     external_routines: Optional[ExternalRoutinesInput] = None,
     sdmx_mappings: Optional[SdmxMappingsInput] = None,
+    skip_value_domain_checks: bool = False,
 ) -> Dict[str, Dataset]:
     """
     Checks if the vtl scripts and its related datastructures are valid. As part of the compatibility
@@ -251,6 +252,12 @@ def semantic_analysis(
         sdmx_mappings: A dictionary or VtlDataflowMapping object that maps SDMX URNs \
         (e.g., "Dataflow=MD:TEST_DF(1.0)") to VTL dataset names. (default: None)
 
+        skip_value_domain_checks: If True, the checks of the rulesets and the viral \
+        propagation rules on value domains are skipped: a value domain of a ruleset signature \
+        that is not given, the Components bound to a ruleset and their values, the code items \
+        of a hierarchical ruleset and the constants of a viral propagation rule. The input data \
+        and a cast into a value domain are still checked. (default: False)
+
     Returns:
         The computed datasets.
 
@@ -286,6 +293,7 @@ def semantic_analysis(
         external_routines=ext_routines,
         scalars=scalars,
         only_semantic=True,
+        skip_value_domain_checks=skip_value_domain_checks,
     )
     result = interpreter.visit(ast)
     return result
@@ -311,6 +319,7 @@ def _analyse_script(
     value_domains: Optional[Dict[str, ValueDomain]],
     external_routines: Optional[Dict[str, ExternalRoutine]],
     scalars: Dict[str, Scalar],
+    skip_value_domain_checks: bool = False,
 ) -> Tuple[Dict[str, Any], InterpreterAnalyzer]:
     """The semantic analysis of the whole script, over copies of the inputs, which both engines
     run before they read or compute any data, so a script with a structural error raises it
@@ -325,6 +334,7 @@ def _analyse_script(
         scalars=copy.deepcopy(scalars),
         only_semantic=True,
         return_only_persistent=False,
+        skip_value_domain_checks=skip_value_domain_checks,
     )
     return interpreter.visit(_copy_ast(ast)), interpreter
 
@@ -366,6 +376,7 @@ def _run_with_duckdb(
     time_period_output_format: str = "vtl",
     sdmx_mappings: Optional[SdmxMappingsInput] = None,
     output_format: Literal["csv", "parquet"] = "csv",
+    skip_value_domain_checks: bool = False,
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run VTL script using DuckDB as the execution engine.
@@ -408,7 +419,7 @@ def _run_with_duckdb(
     output_folder = _check_output_folder(output_folder, use_duckdb=True)
 
     semantic_results, interpreter = _analyse_script(
-        ast, input_datasets, loaded_vds, loaded_routines, input_scalars
+        ast, input_datasets, loaded_vds, loaded_routines, input_scalars, skip_value_domain_checks
     )
 
     # Separate output datasets and scalars
@@ -434,6 +445,7 @@ def _run_with_duckdb(
         dag=dag,
         udo_results=interpreter.udo_results,
         time_period_output_format=time_period_output_format,
+        skip_value_domain_checks=skip_value_domain_checks,
     )
     queries = transpiler.transpile(ast)
 
@@ -484,6 +496,7 @@ def run(
     sdmx_mappings: Optional[SdmxMappingsInput] = None,
     use_duckdb: bool = False,
     output_format: Literal["csv", "parquet"] = "csv",
+    skip_value_domain_checks: bool = False,
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Run is the main function of the ``API``, which mission is to execute
@@ -589,6 +602,12 @@ def run(
         output_format: Output file format used when ``output_folder`` is set.
             Either ``"csv"`` (default) or ``"parquet"``.
 
+        skip_value_domain_checks: If True, the checks of the rulesets and the viral \
+        propagation rules on value domains are skipped: a value domain of a ruleset signature \
+        that is not given, the Components bound to a ruleset and their values, the code items \
+        of a hierarchical ruleset and the constants of a viral propagation rule. The input data \
+        and a cast into a value domain are still checked. (default: False)
+
     Returns:
        The datasets are produced without data if the output folder is defined.
 
@@ -619,6 +638,7 @@ def run(
             time_period_output_format=time_period_output_format,
             sdmx_mappings=sdmx_mappings,
             output_format=output_format,
+            skip_value_domain_checks=skip_value_domain_checks,
         )
 
     # Convert sdmx_mappings to dict format for internal use
@@ -649,7 +669,7 @@ def run(
 
     # The semantic analysis of the whole script comes before any data is checked or computed,
     # in the order of the DuckDB engine
-    _analyse_script(ast, datasets, vd, ext_routines, scalars)
+    _analyse_script(ast, datasets, vd, ext_routines, scalars, skip_value_domain_checks)
 
     # Checking time period output format value
     time_period_representation = TimePeriodRepresentation.check_value(time_period_output_format)
@@ -671,6 +691,7 @@ def run(
         time_period_representation=time_period_representation,
         return_only_persistent=return_only_persistent,
         scalars=scalars,
+        skip_value_domain_checks=skip_value_domain_checks,
     )
     result = interpreter.visit(ast)
 
@@ -703,6 +724,7 @@ def run_sdmx(
     output_folder: Optional[Union[str, Path]] = None,
     use_duckdb: bool = False,
     output_format: Literal["csv", "parquet"] = "csv",
+    skip_value_domain_checks: bool = False,
 ) -> Dict[str, Union[Dataset, Scalar]]:
     """
     Executes a VTL script using a list of pysdmx `PandasDataset` objects.
@@ -769,6 +791,12 @@ def run_sdmx(
         output_format: Output file format used when ``output_folder`` is set.
             Either ``"csv"`` (default) or ``"parquet"``.
 
+        skip_value_domain_checks: If True, the checks of the rulesets and the viral \
+        propagation rules on value domains are skipped: a value domain of a ruleset signature \
+        that is not given, the Components bound to a ruleset and their values, the code items \
+        of a hierarchical ruleset and the constants of a viral propagation rule. The input data \
+        and a cast into a value domain are still checked. (default: False)
+
     Returns:
        The datasets are produced without data if the output folder is defined.
 
@@ -830,6 +858,7 @@ def run_sdmx(
         sdmx_mappings=mappings,
         use_duckdb=use_duckdb,
         output_format=output_format,
+        skip_value_domain_checks=skip_value_domain_checks,
     )
 
 
