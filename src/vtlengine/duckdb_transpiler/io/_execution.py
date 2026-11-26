@@ -741,6 +741,8 @@ def fetch_result(
     # Build fetch query: column projection + ISO 8601 date/timestamp
     # formatting inside DuckDB.
     ds = output_datasets.get(result_name, Dataset(name=result_name, components={}, data=None))
+    # The SELECT projects the columns in the order of the Components (issue #1285)
+    ds.sort_components()
     fetch_sql = _build_dataset_fetch_select(
         conn,
         result_name,
