@@ -678,6 +678,8 @@ def run(
     for obj in result.values():
         if not isinstance(obj, (Dataset, Scalar)):
             continue
+        if isinstance(obj, Dataset):
+            obj.sort_components()
         if output_folder is None:
             format_date_iso8601(obj)
             format_time_period_external_representation(obj, time_period_representation)
