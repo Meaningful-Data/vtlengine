@@ -335,17 +335,25 @@ def load_sdmx_structure(
     return {"datasets": all_datasets}
 
 
+def _enumeration_id(component: SDMXComponent) -> Optional[str]:
+    """The id of the codelist or valuelist that represents an SDMX Component, resolved or only
+    referenced by its URN, or None when no codelist or valuelist represents it."""
+    enumeration = component.enumeration
+    if isinstance(enumeration, Codelist):
+        return enumeration.id
+    if enumeration is None and component.enum_ref is not None:
+        reference = parse_urn(component.enum_ref)
+        if reference.sdmx_type in ("Codelist", "ValueList"):
+            return reference.id
+    return None
+
+
 def _component_type(component: SDMXComponent, codelist_types: bool) -> str:
-    """The VTL type of an SDMX Component: the id of the codelist or valuelist that represents
-    it when ``codelist_types`` is set, else the VTL basic type of its SDMX data type."""
-    if codelist_types:
-        enumeration = component.enumeration
-        if isinstance(enumeration, Codelist):
-            return enumeration.id
-        if enumeration is None and component.enum_ref is not None:
-            reference = parse_urn(component.enum_ref)
-            if reference.sdmx_type in ("Codelist", "ValueList"):
-                return reference.id
+    """The VTL type of an SDMX Component: on a codelist or valuelist, its id when
+    ``codelist_types`` is set, else String; otherwise the VTL basic type of its SDMX data type."""
+    enumeration_id = _enumeration_id(component)
+    if enumeration_id is not None:
+        return enumeration_id if codelist_types else "String"
     return VTL_DTYPES_MAPPING[component.dtype]
 
 
@@ -365,10 +373,8 @@ def to_vtl_json(
         structure: An instance of DataStructureDefinition, Schema, or Dataflow.
         dataset_name: The name of the resulting VTL dataset. If not provided,
             uses the structure's ID (or Dataflow's ID for Dataflow objects).
-        codelist_types: If True, a Component represented by a codelist or a valuelist
-            (resolved, or only referenced by its URN) is typed by the id of that codelist or
-            valuelist, which must then be given as a value domain. Any other Component keeps
-            the VTL basic type of its SDMX data type. Defaults to False.
+        codelist_types: Type a Component on a codelist or valuelist by its id instead of
+            String. Defaults to False.
 
     Returns:
         A dictionary representing the dataset in VTL format, with keys for

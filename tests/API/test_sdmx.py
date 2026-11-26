@@ -439,18 +439,19 @@ def _codelist_component(id_, role, dtype, **kwargs):
 )
 def test_to_vtl_json_codelist_types(codelist_types, types):
     """GH_1410: a Component represented by a codelist or a valuelist, resolved or referenced by
-    its URN, is typed by its id when codelist_types is set; any other keeps its basic type."""
-    codes = [Code(id="A"), Code(id="B")]
+    its URN, is typed by its id when codelist_types is set and as String otherwise, whatever its
+    SDMX data type; any other Component keeps its basic type."""
+    codes = [Code(id="1"), Code(id="2")]
     cl_area = Codelist(id="CL_AREA", agency="MD", version="1.0", items=codes)
     vl_status = Codelist(
         id="VL_STATUS", agency="MD", version="1.0", items=codes, sdmx_type="valuelist"
     )
     h_area = Hierarchy(
-        id="H_AREA", agency="MD", version="1.0", name="H_AREA", codes=[HierarchicalCode(id="A")]
+        id="H_AREA", agency="MD", version="1.0", name="H_AREA", codes=[HierarchicalCode(id="1")]
     )
     urn = "urn:sdmx:org.sdmx.infomodel.codelist.{}=MD:{}(1.0)"
     components = [
-        _codelist_component("Id_1", SDMXRole.DIMENSION, DataType.STRING, local_codes=cl_area),
+        _codelist_component("Id_1", SDMXRole.DIMENSION, DataType.INTEGER, local_codes=cl_area),
         _codelist_component("Id_2", SDMXRole.DIMENSION, DataType.INTEGER),
         _codelist_component("Me_1", SDMXRole.MEASURE, DataType.DOUBLE),
         _codelist_component("Me_2", SDMXRole.MEASURE, DataType.STRING, local_codes=vl_status),
@@ -458,7 +459,7 @@ def test_to_vtl_json_codelist_types(codelist_types, types):
         _codelist_component(
             "At_1",
             SDMXRole.ATTRIBUTE,
-            DataType.STRING,
+            DataType.INTEGER,
             local_enum_ref=urn.format("Codelist", "CL_CONF"),
         ),
         _codelist_component(
