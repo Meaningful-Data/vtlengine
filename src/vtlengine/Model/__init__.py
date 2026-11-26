@@ -236,13 +236,20 @@ Role_keys = [
 
 class Role(Enum):
     """
-    Enum class for the role of a component  (Identifier, Attribute, Measure, Viral Attribute)
+    Enum class for the role of a component  (Identifier, Measure, Viral Attribute, Attribute)
+
+    The members are defined in the order the Components of a Data Set result are given to
+    the user (issue #1285): changing it changes that order.
     """
 
     IDENTIFIER = "Identifier"
-    ATTRIBUTE = "Attribute"
     MEASURE = "Measure"
     VIRAL_ATTRIBUTE = "Viral Attribute"
+    ATTRIBUTE = "Attribute"
+
+
+# The position of each role in a Data Set result, from the order of the members of Role
+_ROLE_OUTPUT_ORDER: Dict[Role, int] = {role: position for position, role in enumerate(Role)}
 
 
 def component_type_name(data_type: Any, value_domain: Optional["ValueDomain"]) -> str:
@@ -602,6 +609,20 @@ class Dataset:
 
     def get_components_names(self) -> List[str]:
         return list(self.components.keys())
+
+    def sort_components(self) -> None:
+        """Order the Components, and the data columns, as Identifiers, Measures, Viral
+        Attributes and other Attributes, by name within each group (issue #1285)."""
+        ordered = sorted(
+            self.components.values(),
+            key=lambda component: (_ROLE_OUTPUT_ORDER[component.role], component.name),
+        )
+        self.components = {component.name: component for component in ordered}
+        if self.data is None or len(self.data.columns) == 0:
+            return
+        columns = [component.name for component in ordered if component.name in self.data]
+        if columns != list(self.data.columns):
+            self.data = self.data[columns]
 
     @classmethod
     def from_json(
