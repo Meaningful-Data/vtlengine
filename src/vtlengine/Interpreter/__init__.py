@@ -243,6 +243,9 @@ class InterpreterAnalyzer(ASTTemplate):
     external_routines: Optional[Dict[str, ExternalRoutine]] = None
     # Analysis mode
     only_semantic: bool = False
+    # The value domain checks of rulesets and viral propagation rules are skipped, for scripts
+    # written before value domains were supported (issue #1413)
+    skip_value_domain_checks: bool = False
     # Memory efficient
     ds_analysis: Optional[DatasetSchedule] = None
     datapoints_paths: Optional[Dict[str, Path]] = None
@@ -707,7 +710,9 @@ class InterpreterAnalyzer(ASTTemplate):
         if node.signature_type == "valuedomain":
             domain = self._value_domain(node.target)
             constants = [v for c in node.enumerated_clauses for v in (*c.values, c.result)]
-            for value in [*constants, node.default_value]:
+            # Not checked when the value domain checks are skipped (issue #1413)
+            checked = [] if self.skip_value_domain_checks else [*constants, node.default_value]
+            for value in checked:
                 if not is_value_of_domain(value, domain):
                     raise SemanticError(
                         "1-1-10-13",
@@ -2430,7 +2435,7 @@ class InterpreterAnalyzer(ASTTemplate):
             # A ruleset with a signature or a rule clause gives the component
             component = cast(str, component)
             Check_Hierarchy.validate_hr_dataset(dataset, component, cond_info.values())
-            if on_value_domains:
+            if on_value_domains and not self.skip_value_domain_checks:
                 check_value_domains(
                     node.op,
                     hr_name,
@@ -2596,6 +2601,7 @@ class InterpreterAnalyzer(ASTTemplate):
                 dataset_element.components,
                 self.value_domains,
                 dataset_element.data,
+                skip_checks=self.skip_value_domain_checks,
             )
 
         rule_output_values = {}
