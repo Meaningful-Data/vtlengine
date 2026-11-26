@@ -9,8 +9,9 @@ This module consolidates all SDMX-related file operations including:
 """
 
 import csv
+import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 import pandas as pd
 from pysdmx.io import get_datasets as sdmx_get_datasets
@@ -21,6 +22,7 @@ from pysdmx.model.dataflow import Component as SDMXComponent
 from pysdmx.model.dataflow import Dataflow, DataStructureDefinition, Schema
 from pysdmx.model.dataflow import Role as SDMX_Role
 
+from vtlengine.DataTypes import TimePeriod
 from vtlengine.Exceptions import DataLoadError, InputValidationException
 from vtlengine.Model import Component, Role
 from vtlengine.Utils import VTL_DTYPES_MAPPING, VTL_ROLE_MAPPING
@@ -219,6 +221,32 @@ def load_sdmx_datapoints(
 
     # Sanitize SDMX-specific columns
     data = _sanitize_sdmx_columns(components, dataset_name, file_path, data)
+    return sdmx_time_periods(
+        data, [name for name, comp in components.items() if comp.data_type is TimePeriod]
+    )
+
+
+_TIME_ZONE = r"(?:Z|[+-]\d{2}:\d{2})$"
+_TIME_OF_DAY = re.compile(
+    rf"(?<=^\d{{4}}-\d{{2}}-\d{{2}})T\d{{2}}(?::\d{{2}}(?::\d{{2}}(?:\.\d+)?)?)?(?=$|{_TIME_ZONE})"
+)
+
+
+def _period_of_its_day(value: Any) -> Any:
+    if not isinstance(value, str):
+        return value
+    return re.sub(_TIME_ZONE, "", _TIME_OF_DAY.sub("", value))
+
+
+def sdmx_time_periods(data: pd.DataFrame, columns: Iterable[str]) -> pd.DataFrame:
+    """The SDMX values of the Time_Period columns, as the SDMX technical notes read them: a
+    date with a time is the period of its day, and the time zone is dropped."""
+    columns = [column for column in columns if column in data.columns]
+    if not columns:
+        return data
+    data = data.copy()
+    for column in columns:
+        data[column] = data[column].map(_period_of_its_day)
     return data
 
 

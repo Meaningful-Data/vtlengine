@@ -55,7 +55,7 @@ from vtlengine.files.output._time_period_representation import (
     TimePeriodRepresentation,
     format_time_period_external_representation,
 )
-from vtlengine.files.sdmx_handler import to_vtl_json
+from vtlengine.files.sdmx_handler import sdmx_time_periods, to_vtl_json
 from vtlengine.Interpreter import InterpreterAnalyzer
 from vtlengine.Model import Dataset, ExternalRoutine, Scalar, ValueDomain
 from vtlengine.Utils._recursion import recursion_headroom, with_recursion_headroom
@@ -807,10 +807,12 @@ def run_sdmx(
         dataset_name = mapping_dict[schema.short_urn]
         vtl_structure = to_vtl_json(schema, dataset_name)
         data_structures_list.append(vtl_structure)
-        defined = {comp["name"] for comp in vtl_structure["datasets"][0]["DataStructure"]}
+        vtl_components = vtl_structure["datasets"][0]["DataStructure"]
+        defined = {comp["name"] for comp in vtl_components}
         undefined = [name for name in dataset.data.columns if name not in defined]
-        datapoints_dict[dataset_name] = (
-            dataset.data.drop(columns=undefined) if undefined else dataset.data
+        datapoints_dict[dataset_name] = sdmx_time_periods(
+            dataset.data.drop(columns=undefined) if undefined else dataset.data,
+            [comp["name"] for comp in vtl_components if comp["type"] == "Time_Period"],
         )
 
     # Validate all script inputs are mapped
