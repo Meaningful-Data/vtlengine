@@ -10,8 +10,34 @@ permissions:
   pull-requests: read
 
 jobs:
+  check-branch:
+    # Runs before the approval: pre-releases come from develop, stable releases from main.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check the branch matches the version
+        run: |
+          version=$(grep -m1 -oP '^version\s*=\s*"\K[^"]+' pyproject.toml)
+          if [[ "$version" =~ rc|alpha|beta|dev ]]; then
+            kind="Pre-release"; branch="develop"
+          else
+            kind="Stable release"; branch="main"
+          fi
+          if [[ "$GITHUB_REF" != "refs/heads/$branch" ]]; then
+            echo "::error::$kind $version must be created from $branch, not $GITHUB_REF_NAME"
+            exit 1
+          fi
+          echo "$kind $version from $branch"
+
   create-release:
-    # Runs in the release environment: it waits for a reviewer's approval, on develop or main.
+    needs: check-branch
+    # Runs in the release environment: it waits for a reviewer's approval.
     environment: release
     runs-on: ubuntu-latest
     steps:
