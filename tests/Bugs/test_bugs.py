@@ -18474,3 +18474,121 @@ class NameResolutionBugs(BugHelper):
             exception_code="1-1-1-10",
             exception_message="Component Me_2 not found in Dataset C.",
         )
+
+    vd_1413 = ["GH_1413-VD_1", "GH_1413-VD_N"]
+
+    def test_GH_1413_1(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_1 as X ) is
+                        R1 : X <> "B" errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 all );
+        Description: Check 1: with the value domain checks skipped, the value domain VD_1 of the
+                     signature is not given, and Me_1 is bound to X as it is. It raises 1-2-22
+                     without the flag (test_GH_1236_3).
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1413
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1413_1",
+            number_inputs=1,
+            references_names=["1"],
+            skip_value_domain_checks=True,
+        )
+
+    def test_GH_1413_2(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_N as X ) is
+                        R1 : X > 2 errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 all );
+        Description: Check 2: with the value domain checks skipped, the Number Me_1 is bound to
+                     VD_N, an Integer value domain, and the rule reads its values. It raises
+                     1-1-10-12 without the flag.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1413
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1413_2",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1413,
+            skip_value_domain_checks=True,
+        )
+
+    def test_GH_1413_3(self):
+        """
+        Status: OK
+        Expression: define hierarchical ruleset HR_1 ( valuedomain rule VD_1 ) is
+                        R1 : A = B + C end hierarchical ruleset;
+                    DS_r <- hierarchy ( DS_1 , HR_1 rule Id_1 );
+        Description: Check 3: with the value domain checks skipped, the code item C, which is
+                     not a value of VD_1, is computed as the others. It raises 1-1-10-13
+                     without the flag.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1413
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1413_3",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1413,
+            skip_value_domain_checks=True,
+        )
+
+    def test_GH_1413_4(self):
+        """
+        Status: OK
+        Expression: define viral propagation VP_1 ( valuedomain VD_1 ) is
+                        when "X" then "X"; else "A" end viral propagation;
+                    DS_r <- DS_1 + DS_2;
+        Description: Check 4: with the value domain checks skipped, the constant X of the rule,
+                     which is not a value of VD_1, is accepted. It raises 1-1-10-13 without the
+                     flag.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1413
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1413_4",
+            number_inputs=2,
+            references_names=["1"],
+            vd_names=self.vd_1413,
+            skip_value_domain_checks=True,
+        )
+
+    def test_GH_1413_5(self):
+        """
+        Status: OK
+        Expression: define datapoint ruleset DPR_1 ( valuedomain VD_1 as X ) is
+                        R1 : X <> "B" errorcode "E1" end datapoint ruleset;
+                    DS_r <- check_datapoint ( DS_1 , DPR_1 components Me_1 all );
+        Description: Check 5: with the value domain checks skipped, the value C of the String
+                     Me_1, which is not a value of VD_1, is read by the rule. It raises 2-1-5-4
+                     without the flag.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1413
+        Goal: Check Result.
+        """
+        self.BaseTest(
+            code="GH_1413_5",
+            number_inputs=1,
+            references_names=["1"],
+            vd_names=self.vd_1413,
+            skip_value_domain_checks=True,
+        )
+
+    def test_GH_1413_6(self):
+        """
+        Status: OK
+        Expression: DS_r <- DS_1 [ calc Me_2 := cast ( Me_1 , VD_1 ) ];
+        Description: A cast into a value domain is still checked with the value domain checks
+                     skipped: C is not a value of VD_1.
+        Git Issue: https://github.com/Meaningful-Data/vtlengine/issues/1413
+        Goal: Check Exception.
+        """
+        self.NewSemanticExceptionTest(
+            code="GH_1413_6",
+            number_inputs=1,
+            exception_code="2-1-5-4",
+            vd_names=self.vd_1413,
+            skip_value_domain_checks=True,
+        )

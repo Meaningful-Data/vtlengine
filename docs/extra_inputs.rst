@@ -556,6 +556,42 @@ or ``errorlevel 1.0`` on an ``Integer`` one (an ``Integer`` literal is
 a value of a ``Number`` value domain). Without them, the Measures
 keep their usual types.
 
+.. _skip_value_domain_checks:
+
+Skipping the Value Domain Checks
+================================
+
+Scripts written before the engine supported value domains can fail
+on the checks above. ``run()``, ``run_sdmx()`` and
+``semantic_analysis()`` take ``skip_value_domain_checks=True`` to
+skip these checks of the rulesets and the viral propagation rules:
+
+- a value domain of the signature of a datapoint or hierarchical
+  ruleset that is not given (``1-2-22``, ``1-2-8``): the components of
+  the call are bound as they are;
+- a component bound to a ruleset on a value domain of another basic
+  type (``1-1-10-12``), and the values of a component bound to it that
+  are not values of it (``2-1-5-4``);
+- the code items of a hierarchical ruleset on a value domain that are
+  not values of it (``1-1-10-13``);
+- the constants of a viral propagation rule on a value domain that
+  are not values of it (``1-1-10-13``).
+
+The value domains still type the components and scalars, and every
+other check still applies: the values of the input data on a value
+domain, a ``cast`` into a value domain, the user defined operators
+and the error code and level value domains.
+
+.. code-block:: python
+
+    run(
+        script=script,
+        data_structures=data_structures,
+        datapoints=datapoints,
+        value_domains=value_domains,
+        skip_value_domain_checks=True,
+    )
+
 .. _scalars_on_value_domains:
 
 Scalars Defined on a Value Domain

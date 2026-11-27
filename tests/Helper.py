@@ -199,6 +199,7 @@ class TestHelper(TestCase):
         text: Optional[str] = None,
         scalars: Dict[str, Any] = None,
         only_semantic=False,
+        skip_value_domain_checks: bool = False,
     ):
         warnings.filterwarnings("ignore", category=FutureWarning)
         if text is None:
@@ -214,6 +215,7 @@ class TestHelper(TestCase):
                 vd_names=vd_names,
                 sql_names=sql_names,
                 scalars=scalars,
+                skip_value_domain_checks=skip_value_domain_checks,
             )
         else:
             # Original Pandas/Interpreter backend
@@ -241,6 +243,7 @@ class TestHelper(TestCase):
                 value_domains=value_domains,
                 external_routines=external_routines,
                 only_semantic=only_semantic,
+                skip_value_domain_checks=skip_value_domain_checks,
             )
             result = interpreter.visit(ast)
 
@@ -271,6 +274,7 @@ class TestHelper(TestCase):
         sql_names: List[str] = None,
         scalars: Dict[str, Any] = None,
         use_duckdb: bool = True,
+        skip_value_domain_checks: bool = False,
     ) -> Dict[str, Union[Dataset, Scalar]]:
         """
         Execute test through run(), on the DuckDB backend unless use_duckdb is False.
@@ -326,6 +330,7 @@ class TestHelper(TestCase):
             scalar_values=scalar_values,
             return_only_persistent=False,
             use_duckdb=use_duckdb,
+            skip_value_domain_checks=skip_value_domain_checks,
         )
 
     @classmethod
@@ -389,6 +394,7 @@ class TestHelper(TestCase):
         text: Optional[str] = None,
         scalars: Dict[str, Any] = None,
         exception_message: Optional[str] = None,
+        skip_value_domain_checks: bool = False,
     ):
         # Data Loading.--------------------------------------------------------
         warnings.filterwarnings("ignore", category=FutureWarning)
@@ -424,6 +430,7 @@ class TestHelper(TestCase):
                         vd_names=vd_names,
                         sql_names=sql_names,
                         scalars=scalars,
+                        skip_value_domain_checks=skip_value_domain_checks,
                     )
             else:
                 value_domains = None
@@ -453,6 +460,7 @@ class TestHelper(TestCase):
                     scalars=scalars_obj,
                     value_domains=value_domains,
                     external_routines=external_routines,
+                    skip_value_domain_checks=skip_value_domain_checks,
                 )
                 with pytest.raises(VTLEngineException) as context:
                     ast = create_ast(text)

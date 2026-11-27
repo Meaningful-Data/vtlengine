@@ -272,6 +272,23 @@ following the official SDMX-to-VTL correspondence published in the
 See :doc:`data_types` for the VTL type semantics and which casts are
 supported.
 
+**Codelists as types.** A component represented by a codelist or a
+valuelist, whether the codes are resolved or only referenced by their
+URN, is a ``String`` whatever its SDMX data type. With
+``codelist_types=True``, it is typed by the id of that codelist or
+valuelist instead. Any other component (no enumeration, or a hierarchy)
+keeps the type of the table above. The option is off by default, and the
+engine does not set it when it converts an SDMX structure itself:
+
+.. code-block:: python
+
+    vtl_structure = to_vtl_json(my_dsd, codelist_types=True)
+    # A component on the codelist CL_AREA gets "type": "CL_AREA"
+
+Each id then names a value domain, which must be given through the
+``value_domains`` parameter of ``run`` or ``semantic_analysis`` (see
+:ref:`components_on_value_domains`).
+
 
 .. seealso::
 

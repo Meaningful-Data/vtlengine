@@ -3345,7 +3345,7 @@ def test_GH_1349_57(use_duckdb, tmp_path):
     result = run(script, back, {"DS_1": ds_1, "DS_2": ds_2}, use_duckdb=use_duckdb)
     assert result["DS_a"].data["Me_9"].tolist() == [3]
     assert result["DS_b"].data["Me_9"].tolist() == [12]
-    assert list(result["DS_b"].components) == ["Id_1", "A B", "x-y", "Me_9"]
+    assert list(result["DS_b"].components) == ["Id_1", "A B", "Me_9", "x-y"]
     validate_dataset(back[0], ds_1, use_duckdb=use_duckdb)
 
 

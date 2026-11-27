@@ -47,6 +47,7 @@ def save_datapoints(
     original_data = dataset.data
     dataset.data = original_data.copy(deep=False)
     try:
+        dataset.sort_components()
         format_date_iso8601(dataset)
         if time_period_representation is not None:
             format_time_period_external_representation(dataset, time_period_representation)
