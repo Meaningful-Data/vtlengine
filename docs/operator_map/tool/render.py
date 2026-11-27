@@ -1410,8 +1410,7 @@ def _adaptations(entries: Sequence[_Entry]) -> str:
         "Adaptations",
         "Examples where the manual's representation of an input or of an output name was "
         "rewritten to the equivalent representation vtlengine documents (such as the ``time`` "
-        "values ``2010M1/2010M12`` of an input, or the default measure name ``string_var`` of "
-        "an output, which vtlengine writes ``str_var``), or values that no engine can reproduce "
+        "values ``2010M1/2010M12`` of an input), or values that no engine can reproduce "
         "(the manual's illustrative random draws) were left out of the expected output and are "
         "property-checked. The notes of the example keep the original. These are not errata.",
         "None: no example needed an adaptation.",

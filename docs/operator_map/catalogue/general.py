@@ -129,14 +129,6 @@ _DECIDED: Final[dict[tuple[str, str, str], int]] = {
 _VIRAL_RULE_DECISION: Final = 1257
 
 
-# The manual's default measure name of a string, ``string_var``, is one that "can be personalised
-# in the implementations" (typical behaviour, "Default Names"); vtlengine documents ``str_var``.
-_STR_VAR = (
-    "the default measure name string_var is written str_var, the name vtlengine documents "
-    "(the manual's default names can be personalised in the implementations)"
-)
-
-
 def _page(page: str) -> str:
     return f"{_CHAPTER}/{page}"
 
@@ -325,7 +317,7 @@ CHAPTER = Chapter(
                 Variant(
                     "attribute",
                     "DS#At",
-                    (manual("ex_3", adaptation=_STR_VAR), authored("dataset_without_identifiers")),
+                    (manual("ex_3"), authored("dataset_without_identifiers")),
                     takes=(ANY_SCALAR,),
                     gives=(ANY_TYPE,),
                 ),
@@ -333,12 +325,11 @@ CHAPTER = Chapter(
                     "viral_attribute",
                     "DS#At (viral)",
                     (
-                        manual("ex_6", adaptation=_STR_VAR, decision=_VIRAL_RULE_DECISION),
+                        manual("ex_6", decision=_VIRAL_RULE_DECISION),
                         manual(
                             "ex_8",
                             erratum="DS_2 has identifiers, so DS_2#At_1 is a dataset (the one "
                             "of ex_6), not the scalar 'P' that the manual gives",
-                            adaptation=_STR_VAR,
                             decision=_VIRAL_RULE_DECISION,
                         ),
                     ),

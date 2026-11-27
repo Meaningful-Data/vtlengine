@@ -4924,7 +4924,7 @@ class ClauseOperatorsTest(TestAttributesHelper):
     def test_GH_1222_6(self):
         """
         Expression: DS_r <- cast(DS_1, string)[calc attribute At_1 := "z"];
-        Description: Calc after a cast that renames the Measure to str_var, on an operand with a non-viral attribute,
+        Description: Calc after a cast that renames the Measure to string_var, on an operand with a non-viral attribute,
                      the same on both engines.
         Git Issue: GH_1222.
         """

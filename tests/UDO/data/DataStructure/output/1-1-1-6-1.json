@@ -4,7 +4,7 @@
       "name": "DS_r",
       "DataStructure": [
         {
-          "name": "str_var",
+          "name": "string_var",
           "role": "Measure",
           "type": "String",
           "nullable": false

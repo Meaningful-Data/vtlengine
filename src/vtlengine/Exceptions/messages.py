@@ -1597,7 +1597,7 @@ centralised_messages = {
         "reserved names are: {reserved}.",
         "description": "Raised when a viral attribute is declared or renamed with one of "
         "the component names the engine reserves for automatically named measures "
-        "(str_var, num_var, int_var, time_var, time_period_var, date_var, duration_var, "
+        "(string_var, num_var, int_var, time_var, time_period_var, date_var, duration_var, "
         "bool_var, null_var), which would collide with a promoted measure of the same name.",
     },
     "1-3-3-9": {

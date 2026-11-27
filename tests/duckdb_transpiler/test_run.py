@@ -590,11 +590,11 @@ class TestCastOperator:
     @pytest.mark.parametrize(
         "vtl_script,input_data,measure_name,expected_type",
         [
-            # Cast to String (mono-measure type change: measure renamed to str_var)
+            # Cast to String (mono-measure type change: measure renamed to string_var)
             (
                 "DS_r := cast(DS_1, string);",
                 [["A", 10], ["B", 20]],
-                "str_var",
+                "string_var",
                 "str",
             ),
         ],

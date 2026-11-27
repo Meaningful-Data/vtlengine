@@ -743,7 +743,7 @@ _DUCKDB_TYPE_TO_VTL = {
 }
 
 COMP_NAME_MAPPING: Dict[Type[ScalarType], str] = {
-    String: "str_var",
+    String: "string_var",
     Number: "num_var",
     Integer: "int_var",
     TimeInterval: "time_var",

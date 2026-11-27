@@ -637,9 +637,8 @@ default Variable of the target type, as the table at the end of
 `Operators changing the data type
 <https://sdmx-twg.github.io/vtl/v2.2/reference_manual/typical_behaviour.html
 #operators-changing-the-data-type>`_ in the VTL 2.2 reference manual
-gives it (``num_var``, ``int_var``, ``bool_var``, ...), except for
-a String, which vtlengine names ``str_var`` instead of
-``string_var``.
+gives it (``string_var``, ``num_var``, ``int_var``, ``bool_var``,
+...).
 
 .. note::
 

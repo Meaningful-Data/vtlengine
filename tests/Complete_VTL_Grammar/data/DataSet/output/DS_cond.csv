@@ -1,4 +1,4 @@
-Id_1,Id_2,Id_3,Me_bool,Id_date,Id_period,str_var,int_var
+Id_1,Id_2,Id_3,Me_bool,Id_date,Id_period,string_var,int_var
 1,A,1,True,2001-01-01,2000M01,A,1
 2,A,2,,2002-02-01,2000M02,A,2
 3,A,3,True,2003-03-01,2000M03,A,3
